@@ -1,0 +1,60 @@
+project_id = "nightflow"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = true
+
+[storage]
+enabled = true
+
+# Edge Function Cron Schedules (Supabase Dashboard에서 설정 필수!)
+# Dashboard > Edge Functions > [함수명] > Settings > Cron Schedule 에서 활성화
+#
+# [functions.activate-scheduled-auctions]
+# schedule = "* * * * *"          # 매 1분 - scheduled → active 전환
+#
+# [functions.close-expired-auctions]
+# schedule = "*/2 * * * *"        # 매 2분 - 만료 경매 자동 종료
+#
+# [functions.expire-payments]
+# schedule = "*/5 * * * *"        # 매 5분 - 15분 미결제 자동 취소 + 단계적 패널티
+#
+# [functions.payment-reminders]
+# schedule = "* * * * *"          # 매 1분 - 결제 마감 5분 전 리마인더 알림톡
+
+# Edge Functions는 Supabase Dashboard에서 Cron 설정
+# Dashboard > Edge Functions > [함수명] > Settings > Cron Schedule
+
+[functions.purge-deleted-accounts]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/purge-deleted-accounts/index.ts"
+
+[functions.notify-closing-soon]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/notify-closing-soon/index.ts"
+
+[functions.payment-reminders]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/payment-reminders/index.ts"

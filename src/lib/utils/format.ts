@@ -1,0 +1,168 @@
+import dayjs from "dayjs";
+
+/** 가격 포맷: 230000 → "230,000원" */
+export function formatPrice(price: number): string {
+  return `${price.toLocaleString("ko-KR")}원`;
+}
+
+/** 가격 포맷 (원 제외): 230000 → "230,000" */
+export function formatNumber(num: number): string {
+  return num ? num.toLocaleString("ko-KR") : "0";
+}
+
+/** 
+ * 포함 사항 요약 포맷: 
+ * ["샴페인 1병", "기본 안주", "과일"] → "샴페인 1병 · 기본 안주 외 1건" 
+ */
+export function formatIncludes(includes: string[], maxItems = 2): string {
+  if (!includes || includes.length === 0) return "";
+  if (includes.length <= maxItems) return includes.join(" · ");
+
+  const mainItems = includes.slice(0, maxItems).join(" · ");
+  return `${mainItems} 외 ${includes.length - maxItems}건`;
+}
+
+/** 날짜 포맷: "2026-02-18" → "2월 18일 (수)" */
+export function formatDate(date: string): string {
+  return dayjs(date).format("M월 D일 (ddd)");
+}
+
+/**
+ * 방문 날짜 포맷 (클럽 나이트라이프 기준)
+ * 오버나이트 표기: "3/13 (금) ~ 3/14 (토)"
+ * 정확한 입장 시간은 entry_time 배지에서 별도 표시
+ */
+export function formatEventDate(eventDate: string): string {
+  const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
+  const event = dayjs(eventDate);
+  const nextDay = event.add(1, "day");
+  const dow1 = DAYS[event.day()];
+  const dow2 = DAYS[nextDay.day()];
+  return `${event.format("M/D")} (${dow1}) ~ ${nextDay.format("M/D")} (${dow2})`;
+}
+
+/** 시간 포맷: "2026-02-18T20:00:00" → "오후 8:00" */
+export function formatTime(datetime: string): string {
+  const d = dayjs(datetime);
+  const hour = d.hour();
+  const minute = d.minute();
+  const period = hour < 12 ? "오전" : "오후";
+  const h = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+  return `${period} ${h}:${minute.toString().padStart(2, "0")}`;
+}
+
+/** 주류/부가 서비스 분류 */
+export function categorizeLiquor(includes: string[]): {
+  liquor: string[];
+  extras: string[];
+} {
+  const keywords = [
+    "병", "샴페인", "보드카", "위스키", "와인", "럼", "데킬라", "진",
+    "모엣", "그레이구스", "잭다니엘", "발렌타인", "맥켈란", "돔 페리뇽",
+    "헨네시", "파트론", "봄베이", "바카디", "벨베디어", "조니워커",
+    "로얄살루트", "글렌피딕", "시바스", "크뤽", "뵈브", "엔젤",
+    "스노우레퍼드", "시록", "앱솔루트", "스미노프",
+    "호세", "돈 훌리오", "카사미고스", "캡틴모건", "핸드릭스",
+    "탱커레이", "고든스", "비피터", "말리부", "하바나",
+    "맥주", "소주", "하이볼", "논알콜", "Mumm", "G.H.",
+  ];
+
+  return {
+    liquor: (includes || []).filter((item) =>
+      keywords.some((kw) => item.includes(kw))
+    ),
+    extras: (includes || []).filter((item) =>
+      !keywords.some((kw) => item.includes(kw))
+    ),
+  };
+}
+
+/**
+ * 주류 우선 표시:
+ * ["잭다니엘 2병", "기본 안주", "모엣 샹동 1병"] → "잭다니엘 2병 · 모엣 샹동 1병 외 1건"
+ */
+export function formatLiquorFirst(includes: string[], maxLiquor = 2): string {
+  if (!includes || includes.length === 0) return "";
+  const { liquor } = categorizeLiquor(includes);
+  if (liquor.length === 0) return formatIncludes(includes, 2);
+
+  const display = liquor.slice(0, maxLiquor);
+  const remaining = includes.length - display.length;
+  if (remaining === 0) return display.join(" · ");
+  return `${display.join(" · ")} 외 ${remaining}건`;
+}
+
+/** 주류 카테고리별 색상 스타일 */
+export const DRINK_CATEGORY_STYLES: Record<string, { bg: string; text: string; border: string }> = {
+  champagne: { bg: "bg-yellow-500/15", text: "text-yellow-300", border: "border-yellow-500/20" },
+  vodka:     { bg: "bg-sky-500/15",    text: "text-sky-300",    border: "border-sky-500/20" },
+  whisky:    { bg: "bg-amber-600/15",  text: "text-amber-400",  border: "border-amber-600/20" },
+  tequila:   { bg: "bg-lime-500/15",   text: "text-lime-300",   border: "border-lime-500/20" },
+  wine:      { bg: "bg-rose-500/15",   text: "text-rose-300",   border: "border-rose-500/20" },
+  rum:       { bg: "bg-orange-500/15", text: "text-orange-300", border: "border-orange-500/20" },
+  gin:       { bg: "bg-teal-500/15",   text: "text-teal-300",   border: "border-teal-500/20" },
+  etc:       { bg: "bg-purple-500/15", text: "text-purple-300", border: "border-purple-500/20" },
+  extra:     { bg: "bg-neutral-800/50", text: "text-neutral-500", border: "border-neutral-700/30" },
+};
+
+/** 아이템에서 주류 카테고리 판별 */
+export function getLiquorCategory(item: string): string {
+  const categories: [string, string[]][] = [
+    ["champagne", ["샴페인", "모엣", "돔 페리뇽", "Mumm", "G.H.", "엔젤", "아르망", "크뤽", "뵈브", "페리에", "볼랭저"]],
+    ["vodka", ["보드카", "그레이구스", "벨베디어", "스노우레퍼드", "시록", "앱솔루트", "스미노프", "핀란디아", "케텔원"]],
+    ["whisky", ["위스키", "잭다니엘", "발렌타인", "맥켈란", "조니워커", "로얄살루트", "글렌피딕", "시바스", "헨네시"]],
+    ["tequila", ["데킬라", "호세", "파트론", "돈 훌리오", "카사미고스", "에라두라"]],
+    ["wine", ["와인", "레드와인", "화이트와인", "로제와인", "스파클링"]],
+    ["rum", ["럼", "바카디", "캡틴모건", "하바나", "말리부"]],
+    ["gin", ["봄베이", "핸드릭스", "탱커레이", "고든스", "비피터"]],
+    ["etc", ["맥주", "소주", "하이볼", "논알콜"]],
+  ];
+
+  for (const [category, keywords] of categories) {
+    if (keywords.some(kw => item.includes(kw))) return category;
+  }
+
+  if (item.includes("병")) return "etc";
+  return "extra";
+}
+
+/** 주류 우선 정렬 (주류 먼저, 부가서비스 뒤로) */
+export function sortByLiquorFirst(includes: string[]): string[] {
+  if (!includes || includes.length === 0) return [];
+  const { liquor, extras } = categorizeLiquor(includes);
+  return [...liquor, ...extras];
+}
+
+/**
+ * 템플릿 이름 자동 생성: "아레나 그레이구스 25만"
+ * [클럽명] [대표주류 브랜드] [시작가 만원단위]
+ */
+export function generateTemplateName(
+  clubName: string,
+  includes: string[],
+  startPrice: number,
+): string {
+  const { liquor } = categorizeLiquor(includes);
+  // 첫 번째 주류에서 브랜드명 추출 ("그레이구스 2병" → "그레이구스")
+  const brandName = liquor.length > 0
+    ? liquor[0].replace(/\s*\d+병$/, "").trim()
+    : null;
+
+  const priceLabel = startPrice >= 10000
+    ? `${Math.round(startPrice / 10000)}만`
+    : startPrice > 0 ? `${startPrice.toLocaleString()}원` : null;
+
+  return [clubName, brandName, priceLabel].filter(Boolean).join(" ");
+}
+
+/** 남은 시간 포맷: seconds → "00:14:30" or "3일 01:17:09" */
+export function formatCountdown(seconds: number): string {
+  if (seconds <= 0) return "00:00:00";
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const time = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  return d > 0 ? `${d}일 ${time}` : time;
+}
+

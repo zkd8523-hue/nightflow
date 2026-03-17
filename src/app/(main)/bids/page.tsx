@@ -1,0 +1,114 @@
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { MyBidsClient } from "@/components/auctions/MyBidsClient";
+import type { BidWithAuction } from "@/components/auctions/MyBidCard";
+import type { WonAuctionData } from "@/components/auctions/MyBidsClient";
+import { logger } from "@/lib/utils/logger";
+
+export const dynamic = "force-dynamic";
+
+interface PageProps {
+    searchParams: Promise<{ tab?: string }>;
+}
+
+export default async function MyBidsPage({ searchParams }: PageProps) {
+    const supabase = await createClient();
+    const params = await searchParams;
+
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) redirect("/login");
+
+    // 1. 입찰 내역 조회 (기존)
+    const { data: bids, error } = await supabase
+        .from("bids")
+        .select(`
+            *,
+            auction:auctions (
+                *,
+                club:clubs (*)
+            )
+        `)
+        .eq("bidder_id", authUser.id)
+        .order("bid_at", { ascending: false });
+
+    if (error) {
+        logger.error("Error fetching bids:", error);
+    }
+
+    // 경매 ID별로 최신 입찰 하나만 필터링
+    const latestBidsByAuction = bids ? Array.from(
+        bids.reduce((map, bid) => {
+            if (!map.has(bid.auction_id)) {
+                map.set(bid.auction_id, bid);
+            }
+            return map;
+        }, new Map()).values()
+    ) : [];
+
+    // 2. 낙찰 데이터 조회 (my-wins 로직 이관)
+    const { data: wonBids, error: wonBidsError } = await supabase
+        .from("bids")
+        .select(`
+            *,
+            auction:auctions (
+                *,
+                club:clubs (*),
+                md:md_id (name, phone, instagram)
+            )
+        `)
+        .eq("bidder_id", authUser.id)
+        .eq("status", "won")
+        .order("bid_at", { ascending: false });
+
+    const { data: winnerAuctions, error: winnerError } = await supabase
+        .from("auctions")
+        .select(`
+            *,
+            club:club_id (*),
+            md:md_id (name, phone, instagram)
+        `)
+        .eq("winner_id", authUser.id)
+        .order("won_at", { ascending: false });
+
+    if (wonBidsError) logger.error("Error fetching won bids:", wonBidsError);
+    if (winnerError) logger.error("Error fetching winner auctions:", winnerError);
+
+    // 이중 소스 병합 (auction_id 기준 중복 제거)
+    const auctionMap = new Map<string, WonAuctionData>();
+
+    if (wonBids) {
+        for (const bid of wonBids) {
+            if (bid.auction && !auctionMap.has(bid.auction_id)) {
+                auctionMap.set(bid.auction_id, bid.auction as WonAuctionData);
+            }
+        }
+    }
+
+    if (winnerAuctions) {
+        for (const auction of winnerAuctions) {
+            if (!auctionMap.has(auction.id)) {
+                auctionMap.set(auction.id, auction as WonAuctionData);
+            }
+        }
+    }
+
+    const allWonAuctions = Array.from(auctionMap.values())
+        .sort((a, b) => new Date(b.won_at || b.updated_at).getTime() - new Date(a.won_at || a.updated_at).getTime());
+
+    // MD 미응답 신고 이력
+    const { data: existingReports } = await supabase
+        .from("md_unresponsive_reports")
+        .select("auction_id")
+        .eq("reporter_id", authUser.id);
+    const reportedAuctionIds = new Set(existingReports?.map(r => r.auction_id) || []);
+
+    return (
+        <MyBidsClient
+            initialBids={latestBidsByAuction as BidWithAuction[]}
+            initialWonAuctions={allWonAuctions}
+            reportedAuctionIds={[...reportedAuctionIds]}
+            userId={authUser.id}
+            initialTab={params.tab}
+        />
+    );
+}

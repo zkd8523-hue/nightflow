@@ -1,0 +1,51 @@
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config({ path: '.env.local' });
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    db: {
+      schema: 'public'
+    }
+  }
+);
+
+async function applyMigration() {
+  console.log('📦 Applying migration 020_effective_end_at.sql...');
+  
+  try {
+    //Step 1: Add column
+    await supabase.rpc('sql', {
+      query: `ALTER TABLE auctions ADD COLUMN IF NOT EXISTS effective_end_at TIMESTAMPTZ GENERATED ALWAYS AS (COALESCE(extended_end_at, auction_end_at)) STORED`
+    });
+    console.log('✅ Step 1: effective_end_at 컬럼 추가 완료');
+  } catch (e) {
+    console.log('Column might already exist or error:', e.message);
+  }
+  
+  try {
+    // Step 2: Create index
+    await supabase.rpc('sql', {
+      query: `CREATE INDEX IF NOT EXISTS idx_auctions_effective_end ON auctions(effective_end_at) WHERE status = 'active'`
+    });
+    console.log('✅ Step 2: 인덱스 생성 완료');
+  } catch (e) {
+    console.log('Index creation error:', e.message);
+  }
+  
+  // Verify
+  const { data, error } = await supabase
+    .from('auctions')
+    .select('id, auction_end_at, extended_end_at, effective_end_at')
+    .limit(1);
+    
+  if (error) {
+    console.log('❌ 검증 실패:', error);
+  } else {
+    console.log('✅ 검증 완료! effective_end_at 컬럼 작동 중');
+    console.log('샘플 데이터:', data);
+  }
+}
+
+applyMigration().catch(console.error);

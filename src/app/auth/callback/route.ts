@@ -1,0 +1,55 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const next = searchParams.get("next") ?? "/";
+  const safeNext = (next.startsWith("/") && !next.startsWith("//")) ? next : "/";
+
+  if (code) {
+    const supabase = await createClient();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (!error) {
+      // 카카오 로그인 성공 - users 테이블에 프로필이 있는지 확인
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("id, role, md_status, deleted_at")
+          .eq("id", user.id)
+          .single();
+
+        // 신규 유저면 회원가입 페이지로 (next 파라미터 유지)
+        if (!profile) {
+          const signupUrl = new URL("/signup", origin);
+          if (safeNext !== "/") {
+            signupUrl.searchParams.set("next", safeNext);
+          }
+          return NextResponse.redirect(signupUrl);
+        }
+
+        // 탈퇴한 유저면 복구 페이지로
+        if (profile.deleted_at) {
+          return NextResponse.redirect(new URL("/recover-account", origin));
+        }
+
+        // 명시적 redirect가 없으면 역할별 자동 라우팅
+        if (safeNext === "/") {
+          if (profile.role === "md" && profile.md_status === "approved") {
+            return NextResponse.redirect(`${origin}/md/dashboard`);
+          }
+        }
+      }
+
+      return NextResponse.redirect(`${origin}${safeNext}`);
+    }
+  }
+
+  // 에러 시 로그인 페이지로 리다이렉트
+  return NextResponse.redirect(`${origin}/login?error=auth_failed`);
+}
