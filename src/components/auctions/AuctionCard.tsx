@@ -95,8 +95,8 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                 )}
               </div>
               {entryText && (
-                <span className="text-[10px] font-medium text-neutral-400 flex items-center gap-1">
-                  {isInstantEntry && <Zap className="w-2.5 h-2.5 fill-green-500 text-green-500" />}
+                <span className="text-[10px] font-medium text-blue-400/90 flex items-center gap-1">
+                  {isInstantEntry && <Zap className="w-2.5 h-2.5 fill-blue-400 text-blue-400" />}
                   {entryText}
                 </span>
               )}
@@ -224,7 +224,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                 <div className="flex items-center gap-1 mt-1.5">
                   {!isInstant && auction.buy_now_price && auction.buy_now_price > 0 && !isWon && (
                     <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">
-                      BIN {formatNumber(auction.buy_now_price)}원
+                      즉시 낙찰 {formatNumber(auction.buy_now_price)}원
                     </span>
                   )}
                   {!isInstant && isUserHighest && (
