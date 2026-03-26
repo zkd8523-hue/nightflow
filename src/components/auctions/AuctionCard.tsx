@@ -53,8 +53,14 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
   return (
     <>
       <Link href={`/auctions/${auction.id}`}>
-        <Card className={`overflow-hidden bg-[#1C1C1E] rounded-2xl transition-all active:scale-[0.98] cursor-pointer ${isWon ? "won-card-border won-card-glow border-transparent" : "border-transparent"} ${auction.status === "unsold" ? "opacity-60" : ""}`}>
+        <Card className={`relative overflow-hidden bg-[#1C1C1E] rounded-2xl transition-all active:scale-[0.98] cursor-pointer ${isWon ? "won-card-border won-card-glow border-transparent" : "border-transparent"} ${auction.status === "unsold" ? "opacity-60" : ""}`}>
           <div className="p-2">
+            {/* 지역 라벨 - 카드 우측 상단 별도 공간 */}
+            {club?.area && (
+              <span className="absolute top-2 right-3 text-[10px] text-neutral-600 font-medium z-10">
+                {club.area}
+              </span>
+            )}
             {/* Top Row: Information */}
             <div className="flex gap-2.5">
               {/* 100x72 Thumbnail */}
@@ -69,11 +75,10 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 min-w-0 flex flex-col justify-between py-0">
+              <div className="flex-1 min-w-0 flex flex-col justify-between py-0 pr-6">
                 <div className="flex items-center justify-between gap-1.5">
                   <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
                     {club?.name}
-                    {club?.area && <span className="text-[11px] text-neutral-500 font-medium ml-1">· {club.area}</span>}
                   </h3>
                   {!isCompleted && !isExpired && (
                     isInstantEntry ? (
