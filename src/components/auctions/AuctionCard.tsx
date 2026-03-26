@@ -55,16 +55,29 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
       <Link href={`/auctions/${auction.id}`}>
         <Card className={`relative overflow-hidden bg-[#1C1C1E] rounded-2xl transition-all active:scale-[0.98] cursor-pointer ${isWon ? "won-card-border won-card-glow border-transparent" : "border-transparent"} ${auction.status === "unsold" ? "opacity-60" : ""}`}>
           <div className="p-2">
-            {/* 지역 라벨 - 카드 우측 상단 별도 공간 */}
+            {/* 지역 정보 & 지도 - 카드 우측 상단 별도 공간 */}
             {club?.area && (
-              <span className="absolute top-2 right-3 text-[10px] text-neutral-600 font-medium z-10">
-                {club.area}
-              </span>
+              <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsMapOpen(true);
+                  }}
+                  className="w-5 h-5 inline-flex items-center justify-center rounded-full bg-neutral-800/40 backdrop-blur-[2px] border border-white/5 hover:bg-neutral-700 transition-colors"
+                  title="지도에서 보기"
+                >
+                  <MapPin className="w-2.5 h-2.5 text-neutral-400" />
+                </button>
+                <span className="text-[10px] text-neutral-500 font-medium">
+                  {club.area}
+                </span>
+              </div>
             )}
             {/* Top Row: Information */}
             <div className="flex gap-2.5">
               {/* 100x72 Thumbnail */}
-              <div className="w-[100px] h-[72px] rounded-lg bg-neutral-900 overflow-hidden flex-shrink-0 relative">
+              <div className="w-[100px] h-[72px] rounded-lg bg-neutral-900 overflow-hidden flex-shrink-0 relative group">
                 {(() => {
                   const imageUrl = getAuctionImageUrl(auction.thumbnail_url, club?.thumbnail_url, auction.includes);
                   if (imageUrl) {
@@ -72,10 +85,16 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                   }
                   return <DrinkPlaceholder includes={auction.includes || []} />;
                 })()}
+                {/* 찜 버튼 - 썸네일 우측 상단 오버레이 */}
+                {club && (
+                  <div className="absolute top-1 right-1 z-10 scale-90 origin-top-right" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                    <FavoriteButton clubId={club.id} />
+                  </div>
+                )}
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 min-w-0 flex flex-col justify-between py-0 pr-6">
+              <div className="flex-1 min-w-0 flex flex-col justify-between py-0 pr-12">
                 <div className="flex items-center justify-between gap-1.5">
                   <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
                     {club?.name}
@@ -197,24 +216,6 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
               </div>
 
               <div className="flex items-center gap-2">
-                {club && (
-                  <>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsMapOpen(true);
-                      }}
-                      className="shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-full bg-neutral-800/80 border border-neutral-700/50 hover:border-neutral-500 active:bg-neutral-700/80 transition-colors"
-                      title="지도에서 보기"
-                    >
-                      <MapPin className="w-3.5 h-3.5 text-neutral-400" />
-                    </button>
-                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                      <FavoriteButton clubId={club.id} />
-                    </div>
-                  </>
-                )}
                 {isScheduled && (
                   <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                     <NotifySubscribeButton auctionId={auction.id} compact />
