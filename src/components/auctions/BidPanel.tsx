@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useCallback, memo, forwardRef, useImperativeHandle } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,12 +25,16 @@ import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
 import { formatNumber } from "@/lib/utils/format";
 
+export interface BidPanelRef {
+  openBinConfirm: () => void;
+}
+
 interface BidPanelProps {
   auction: Auction;
   onBidSuccess: (bidAmount: number) => void;
 }
 
-export const BidPanel = memo(function BidPanel({ auction, onBidSuccess }: BidPanelProps) {
+export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function BidPanel({ auction, onBidSuccess }, ref) {
   const router = useRouter();
   const { user } = useCurrentUser();
   const bids = useAuctionStore((s) => s.bids);
@@ -44,6 +48,10 @@ export const BidPanel = memo(function BidPanel({ auction, onBidSuccess }: BidPan
 
   const hasBin = !!(auction.buy_now_price && auction.buy_now_price > 0 && auction.listing_type === 'auction');
   const binPrice = auction.buy_now_price || 0;
+
+  useImperativeHandle(ref, () => ({
+    openBinConfirm: () => setShowBinConfirm(true),
+  }));
 
   const handleInputFocus = useCallback(() => {
     setTimeout(() => {
@@ -272,17 +280,6 @@ export const BidPanel = memo(function BidPanel({ auction, onBidSuccess }: BidPan
           {getButtonContent()}
         </Button>
 
-        {/* BIN (즉시낙찰) 버튼 */}
-        {hasBin && isActive && (
-          <Button
-            className="w-full h-11 text-sm font-black rounded-xl transition-all active:scale-[0.98] bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.2)] mt-2"
-            onClick={() => setShowBinConfirm(true)}
-            disabled={loading || binLoading}
-          >
-            <Zap className="w-4 h-4 mr-1.5 fill-current" />
-            {formatPrice(binPrice)} 즉시낙찰하기
-          </Button>
-        )}
       </Card>
 
       {/* 확인 시트 */}
@@ -480,7 +477,7 @@ export const BidPanel = memo(function BidPanel({ auction, onBidSuccess }: BidPan
       )}
     </>
   );
-}, (prev, next) => {
+}), (prev, next) => {
   return (
     prev.auction.id === next.auction.id &&
     prev.auction.current_bid === next.auction.current_bid &&

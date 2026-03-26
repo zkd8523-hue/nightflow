@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { AuctionTimer } from "./AuctionTimer";
 import { CurrentBidDisplay } from "./CurrentBidDisplay";
 import { BidHistory } from "./BidHistory";
-import { BidPanel } from "./BidPanel";
+import { BidPanel, type BidPanelRef } from "./BidPanel";
 import { InstantBuyPanel } from "./InstantBuyPanel";
 import { BidCompetitionIndicator } from "./BidCompetitionIndicator";
 import { LastBidIndicator } from "./LastBidIndicator";
@@ -44,6 +44,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const supabase = createClient();
   const { user } = useCurrentUser();
   const { currentAuction, setCurrentAuction, setBids, bids } = useAuctionStore();
+
+  const bidPanelRef = useRef<BidPanelRef>(null);
 
   // VIP CRM 상태 (MD 전용)
   const [vipUserIds, setVipUserIds] = useState<string[]>([]);
@@ -248,16 +250,11 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
           {isInstant && isActive && (
             <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur-md">
-              <Zap className="w-3 h-3 text-black fill-black" />
-              <span className="text-[11px] font-black text-black tracking-wider">즉시구매</span>
+              <span className="text-[11px]">🔥</span>
+              <span className="text-[11px] font-black text-black tracking-wider">오늘특가</span>
             </div>
           )}
-          {isActive ? (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
-              <span className="text-[11px] font-bold text-white tracking-wider">LIVE</span>
-            </div>
-          ) : (
+          {!isActive && (
             <Badge
               variant="secondary"
               className="text-[10px] px-2.5 py-1 uppercase font-medium tracking-wider bg-black/40 backdrop-blur-md text-neutral-300 border border-white/10 rounded-full"
@@ -336,7 +333,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         <Card className="bg-[#1C1C1E] border-neutral-800/50 p-5 space-y-3 shadow-2xl">
           <div className="space-y-1">
             <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">
-              {isInstant ? "즉시구매가" : "현재 최고 입찰가"}
+              {isInstant ? "예약가" : "현재 최고 입찰가"}
             </p>
             <CurrentBidDisplay
               amount={displayAuction.current_bid || displayAuction.start_price}
@@ -512,13 +509,38 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           </div>
         )}
 
-        {/* Footer Actions / Info — 비로그인 시 안내 (sticky CTA는 아래에서 별도 렌더링) */}
-      </div>
+        {/* 입찰/예약 패널 - 스크롤 콘텐츠 하단 배치 */}
+        {isActive && user && (
+          <div className="mt-4">
+            {isInstant ? (
+              <InstantBuyPanel
+                auction={displayAuction}
+                onBuySuccess={handleBidSuccess}
+              />
+            ) : (
+              <BidPanel
+                ref={bidPanelRef}
+                auction={displayAuction}
+                onBidSuccess={handleBidSuccess}
+              />
+            )}
+          </div>
+        )}
 
-      {/* 7-a. 비로그인 sticky CTA */}
-      {isActive && !user && (
-        <div className="bg-[#0A0A0A]/80 backdrop-blur-lg border-t border-neutral-800 pt-4 px-4 pb-20 sticky bottom-0 z-50">
-          <div className="max-w-lg mx-auto">
+        {/* BIN (즉시낙찰) 버튼 - 입찰 패널 아래 배치 */}
+        {!isInstant && isActive && user && displayAuction.buy_now_price && displayAuction.buy_now_price > 0 && (
+          <Button
+            className="w-full h-11 text-sm font-black rounded-xl transition-all active:scale-[0.98] bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.2)] mt-4"
+            onClick={() => bidPanelRef.current?.openBinConfirm()}
+          >
+            <Zap className="w-4 h-4 mr-1.5 fill-current" />
+            {formatPrice(displayAuction.buy_now_price)}에 즉시낙찰하기
+          </Button>
+        )}
+
+        {/* 비로그인 CTA - 스크롤 콘텐츠 하단 배치 */}
+        {isActive && !user && (
+          <div className="mt-4">
             <Button
               onClick={() => router.push("/login")}
               className={`w-full h-12 font-black text-base rounded-xl ${
@@ -527,29 +549,12 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                   : "bg-white text-black hover:bg-neutral-200"
               }`}
             >
-              {isInstant ? "로그인하고 즉시구매하기" : "로그인하고 입찰하기"}
+              {isInstant ? "로그인하고 예약하기" : "로그인하고 입찰하기"}
             </Button>
           </div>
-        </div>
-      )}
-      {/* 7-b. Bid/Buy Panel (Bottom) */}
-      {isActive && user && (
-        <div className="bg-[#0A0A0A]/80 backdrop-blur-lg border-t border-neutral-800 pt-4 px-4 pb-20 mt-8 sticky bottom-0 z-50">
-          <div className="max-w-lg mx-auto">
-            {isInstant ? (
-              <InstantBuyPanel
-                auction={displayAuction}
-                onBuySuccess={handleBidSuccess}
-              />
-            ) : (
-              <BidPanel
-                auction={displayAuction}
-                onBidSuccess={handleBidSuccess}
-              />
-            )}
-          </div>
-        </div>
-      )}
+        )}
+
+      </div>
       {/* 8. Winner Contact MD CTA (Bottom) - Model B: DM + 전화 */}
       {showContactCTA && (
         <div className="bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-neutral-800 pt-4 px-4 pb-20 sticky bottom-0 z-[60] animate-in slide-in-from-bottom duration-500">
