@@ -814,7 +814,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     <Check className="w-4 h-4 text-green-500" />
                     <span>테이블 구성</span>
                 </div>
-                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 pr-4">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-5 px-5">
                     {EXTRAS_OPTIONS.map((item) => (
                         <button
                             key={item}
@@ -844,7 +844,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             </button>
                         ))}
                     {/* 인라인 직접 입력 */}
-                    <div className="flex items-center gap-1 flex-shrink-0 mr-4">
+                    <div className="flex items-center gap-1 flex-shrink-0 pr-10">
                         <input
                             type="text"
                             value={customExtra}
