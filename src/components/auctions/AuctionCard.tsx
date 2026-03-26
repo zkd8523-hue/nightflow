@@ -18,7 +18,7 @@ import { formatNumber, formatTime, formatCountdown, sortByLiquorFirst, categoriz
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES, URGENCY_LABELS } from "@/lib/constants/timer-urgency";
-import { MapPin, ExternalLink, Clock, Gavel } from "lucide-react";
+import { MapPin, ExternalLink, Clock, Gavel, Zap } from "lucide-react";
 import { DrinkPlaceholder, getAuctionImageUrl } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
@@ -39,6 +39,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
   const isWon = ["won", "contacted", "confirmed"].includes(auction.status);
   const endTime = getEffectiveEndTime(auction);
   const currentPrice = isWon && auction.winning_price ? auction.winning_price : (auction.current_bid || auction.start_price);
+  const isInstant = auction.listing_type === 'instant';
   const isInstantEntry = !auction.entry_time;
   const countdown = useCountdown((isActive || isExpired) ? endTime : null);
   const timerStyles = URGENCY_STYLES[countdown.level];
@@ -143,6 +144,12 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
 
                 <div className="flex items-center justify-end mt-1">
 
+                  {isActive && isInstant && (
+                    <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/90">
+                      <Zap className="w-2.5 h-2.5 text-black fill-black" />
+                      <span className="text-[9px] font-black text-black">즉시구매</span>
+                    </div>
+                  )}
                   {isActive && (
                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${timerStyles.bg} ${countdown.level === 'critical' ? timerStyles.glow : ''} ${countdown.level === 'critical' ? 'animate-breathe' : ''}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${countdown.level === 'critical' ? 'bg-red-500 animate-ping' : 'bg-red-500 animate-pulse'}`} />
@@ -186,15 +193,20 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                   {formatNumber(currentPrice)}원
                 </span>
                 <div className="text-[11px] text-neutral-500 flex items-center gap-1 mt-1">
-                  {isWon ? (
-                    <span className="text-amber-500/70">낙찰가 · 입찰 {auction.bid_count}회</span>
+                  {isInstant && !isWon ? (
+                    <span className="text-amber-400 flex items-center gap-0.5">
+                      <Zap className="w-3 h-3 fill-amber-400" />
+                      즉시구매 고정가
+                    </span>
+                  ) : isWon ? (
+                    <span className="text-amber-500/70">{isInstant ? "구매 완료" : `낙찰가 · 입찰 ${auction.bid_count}회`}</span>
                   ) : (
                     <span>입찰 {auction.bid_count}회</span>
                   )}
-                  {isUserHighest && (
-                    <span className="ml-0.5 text-green-400 bg-green-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-green-500/20">1등</span>
+                  {!isInstant && isUserHighest && (
+                    <span className="ml-0.5 text-green-400 bg-green-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-green-500/20">최고입찰</span>
                   )}
-                  {isUserOutbid && (
+                  {!isInstant && isUserOutbid && (
                     <span className="ml-0.5 text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">추월됨</span>
                   )}
                   {(() => {
@@ -219,13 +231,20 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                 <Button
                   size="sm"
                   className={`h-9 px-5 rounded-full font-semibold text-[13px] transition-all ${isActive
-                    ? "bg-white text-black hover:bg-neutral-200"
+                    ? isInstant
+                      ? "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
+                      : "bg-white text-black hover:bg-neutral-200"
                     : isWon
                       ? "bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25"
                       : "bg-neutral-800 text-neutral-400"
                     }`}
                 >
-                  {isActive ? "입찰하기" : isScheduled ? `${formatTime(auction.auction_start_at)} 입찰 시작` : "결과확인"}
+                  {isActive
+                    ? isInstant ? "즉시구매" : "입찰하기"
+                    : isScheduled
+                      ? `${formatTime(auction.auction_start_at)} ${isInstant ? "구매" : "입찰"} 시작`
+                      : "결과확인"
+                  }
                 </Button>
               </div>
             </div>

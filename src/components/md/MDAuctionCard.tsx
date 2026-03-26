@@ -10,7 +10,7 @@ import type { Auction } from "@/types/database";
 import { formatNumber, formatTime, generateTemplateName } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { InlineTimer } from "@/components/auctions/InlineTimer";
-import { Edit2, ExternalLink, MoreVertical, Trash2, Share2, RotateCcw, Bookmark, Phone } from "lucide-react";
+import { Edit2, ExternalLink, MoreVertical, Trash2, Share2, RotateCcw, Bookmark, Phone, Zap } from "lucide-react";
 import { useCountdown } from "@/hooks/useCountdown";
 import { DrinkPlaceholder, getAuctionImageUrl } from "@/components/auctions/DrinkPlaceholder";
 import { toast } from "sonner";
@@ -114,6 +114,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                 body: JSON.stringify({
                     name: defaultName,
                     club_id: auction.club_id,
+                    listing_type: auction.listing_type || 'auction',
                     start_price: auction.start_price,
                     buy_now_price: auction.buy_now_price,
                     includes: auction.includes,
@@ -133,6 +134,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     };
 
     const club = auction.club;
+    const isInstant = auction.listing_type === 'instant';
     const displayStatus = getAuctionDisplayStatus(auction);
     const isActive = displayStatus === 'active';
     const isExpired = displayStatus === 'expired';
@@ -164,6 +166,13 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                     <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                {/* 즉시구매 배지 */}
+                                {isInstant && (
+                                    <Badge className="text-[9px] px-1.5 py-0 h-4 font-black bg-amber-500/20 text-amber-400 border-amber-500/30">
+                                        <Zap className="w-2.5 h-2.5 mr-0.5 fill-amber-400" />
+                                        즉시구매
+                                    </Badge>
+                                )}
                                 {/* 정산 상태 배지 (종료된 경매는 정산 배지만 표시) */}
                                 {auction.status === "contacted" ? (
                                     <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-blue-500 hover:bg-blue-500 border-blue-400">
@@ -231,7 +240,12 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                     <div className="flex items-end justify-between mt-2">
                         <div>
                             <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
-                                {isActive ? "현재가" : ["won", "contacted", "confirmed"].includes(auction.status) ? "낙찰가" : "시작가"}
+                                {isActive
+                                  ? (isInstant ? "판매가" : "현재가")
+                                  : ["won", "contacted", "confirmed"].includes(auction.status)
+                                    ? (isInstant ? "구매가" : "낙찰가")
+                                    : (isInstant ? "판매가" : "시작가")
+                                }
                             </div>
                             <div className="flex items-baseline gap-1">
                                 <span className={`text-[20px] font-black leading-none ${auction.status === "unsold" || auction.status === "cancelled" ? "text-neutral-600" : "text-white"}`}>
@@ -248,7 +262,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                         현황
                                     </div>
                                     <div className="text-[13px] text-neutral-300 font-bold">
-                                        입찰 {auction.bid_count}회
+                                        {isInstant ? "구매 완료" : `입찰 ${auction.bid_count}회`}
                                     </div>
                                 </>
                             ) : !isEnded ? (
@@ -257,7 +271,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                         현황
                                     </div>
                                     <div className="text-[13px] text-neutral-500 font-bold">
-                                        입찰 대기
+                                        {isInstant ? "구매 대기" : "입찰 대기"}
                                     </div>
                                 </>
                             ) : null}

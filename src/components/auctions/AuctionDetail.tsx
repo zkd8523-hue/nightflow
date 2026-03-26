@@ -16,6 +16,7 @@ import { AuctionTimer } from "./AuctionTimer";
 import { CurrentBidDisplay } from "./CurrentBidDisplay";
 import { BidHistory } from "./BidHistory";
 import { BidPanel } from "./BidPanel";
+import { InstantBuyPanel } from "./InstantBuyPanel";
 import { BidCompetitionIndicator } from "./BidCompetitionIndicator";
 import { LastBidIndicator } from "./LastBidIndicator";
 import { useCountdown } from "@/hooks/useCountdown";
@@ -109,6 +110,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
     ? `${formatDate(displayAuction.auction_start_at)} ${formatTime(displayAuction.auction_start_at)} 시작`
     : undefined;
 
+  const isInstant = displayAuction.listing_type === 'instant';
   const isMdOwner = user?.role === "md" && user?.id === displayAuction.md_id;
 
   // 입찰 상태 계산
@@ -244,6 +246,12 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
         {/* Floating Badges */}
         <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
+          {isInstant && isActive && (
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur-md">
+              <Zap className="w-3 h-3 text-black fill-black" />
+              <span className="text-[11px] font-black text-black tracking-wider">즉시구매</span>
+            </div>
+          )}
           {isActive ? (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.6)]" />
@@ -328,7 +336,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         <Card className="bg-[#1C1C1E] border-neutral-800/50 p-5 space-y-3 shadow-2xl">
           <div className="space-y-1">
             <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">
-              현재 최고 입찰가
+              {isInstant ? "즉시구매가" : "현재 최고 입찰가"}
             </p>
             <CurrentBidDisplay
               amount={displayAuction.current_bid || displayAuction.start_price}
@@ -337,22 +345,23 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               isMinimal={true}
               isHighestBidder={isHighestBidder}
               isOutbid={isOutbid}
+              isInstant={isInstant}
             />
             {/* 마지막 입찰 경과 시간 (심리적 트리거) */}
-            {bids.length > 0 && (
+            {!isInstant && bids.length > 0 && (
               <LastBidIndicator lastBidTime={bids[0]?.bid_at} />
             )}
           </div>
 
           <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} />
 
-          {/* 마감 임박 시 연장 안내 */}
-          {isActive && (
+          {/* 마감 임박 시 연장 안내 (경매만) */}
+          {isActive && !isInstant && (
             <ExtensionNotice auction={displayAuction} remaining={remaining} />
           )}
 
-          {/* 입찰 경쟁 상황 표시 (1분 이하 + 3명 이상) */}
-          {isActive && <BidCompetitionIndicator bids={bids} remaining={remaining} />}
+          {/* 입찰 경쟁 상황 표시 (경매만) */}
+          {isActive && !isInstant && <BidCompetitionIndicator bids={bids} remaining={remaining} />}
 
           {/* 알림받기 버튼 (예정 경매만) */}
           {isScheduled && (
@@ -484,22 +493,24 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           </div>
         </Card>
 
-        {/* 6. Bid History (Compact) */}
-        <div className="space-y-3 pt-4">
-          <div className="flex items-center justify-between px-1">
-            <h2 className="text-[16px] font-bold text-white flex items-center gap-2">
-              <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
-              실시간 입찰 기록
-            </h2>
-            <span className="text-[11px] text-neutral-500 font-bold">LIVE</span>
+        {/* 6. Bid History (Compact) - 경매만 표시 */}
+        {!isInstant && (
+          <div className="space-y-3 pt-4">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-[16px] font-bold text-white flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                실시간 입찰 기록
+              </h2>
+              <span className="text-[11px] text-neutral-500 font-bold">LIVE</span>
+            </div>
+            <BidHistory
+              bids={bids}
+              currentBid={displayAuction.current_bid}
+              vipUserIds={isMdOwner ? vipUserIds : undefined}
+              onBidderClick={isMdOwner ? handleBidderClick : undefined}
+            />
           </div>
-          <BidHistory
-            bids={bids}
-            currentBid={displayAuction.current_bid}
-            vipUserIds={isMdOwner ? vipUserIds : undefined}
-            onBidderClick={isMdOwner ? handleBidderClick : undefined}
-          />
-        </div>
+        )}
 
         {/* Footer Actions / Info — 비로그인 시 안내 (sticky CTA는 아래에서 별도 렌더링) */}
       </div>
@@ -510,21 +521,32 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           <div className="max-w-lg mx-auto">
             <Button
               onClick={() => router.push("/login")}
-              className="w-full h-12 bg-white text-black font-black text-base hover:bg-neutral-200 rounded-xl"
+              className={`w-full h-12 font-black text-base rounded-xl ${
+                isInstant
+                  ? "bg-amber-500 hover:bg-amber-400 text-black"
+                  : "bg-white text-black hover:bg-neutral-200"
+              }`}
             >
-              로그인하고 입찰하기
+              {isInstant ? "로그인하고 즉시구매하기" : "로그인하고 입찰하기"}
             </Button>
           </div>
         </div>
       )}
-      {/* 7-b. Bid Panel (Bottom) */}
+      {/* 7-b. Bid/Buy Panel (Bottom) */}
       {isActive && user && (
         <div className="bg-[#0A0A0A]/80 backdrop-blur-lg border-t border-neutral-800 p-4 pb-safe mt-8 sticky bottom-0 z-50">
           <div className="max-w-lg mx-auto">
-            <BidPanel
-              auction={displayAuction}
-              onBidSuccess={handleBidSuccess}
-            />
+            {isInstant ? (
+              <InstantBuyPanel
+                auction={displayAuction}
+                onBuySuccess={handleBidSuccess}
+              />
+            ) : (
+              <BidPanel
+                auction={displayAuction}
+                onBidSuccess={handleBidSuccess}
+              />
+            )}
           </div>
         </div>
       )}
@@ -550,7 +572,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
                   <div className="space-y-1">
                     <p className="text-white text-[13px] font-bold">
-                      {displayAuction.contact_timer_minutes || 15}분 이내에 {md?.name ? `${md.name} MD에게` : "MD에게"} 연락하여 예약을 확정하세요.
+                      {displayAuction.contact_timer_minutes || 10}분 이내에 {md?.name ? `${md.name} MD에게` : "MD에게"} 연락하여 예약을 확정하세요.
                     </p>
                     <p className="text-neutral-400 text-[11px] font-medium leading-relaxed">
                       마감 시간 내 연락이 없으면 낙찰이 취소되며, <span className="text-red-400">노쇼 스트라이크(3일~영구 활동 제한)</span>가 부과됩니다.

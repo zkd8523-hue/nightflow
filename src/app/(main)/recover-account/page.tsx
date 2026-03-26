@@ -52,6 +52,8 @@ export default function RecoverAccountPage() {
     ? Math.max(0, 30 - dayjs().diff(dayjs(deletedAt), "day"))
     : 0;
 
+  const isExpired = daysRemaining === 0;
+
   const purgeDate = deletedAt
     ? dayjs(deletedAt).add(30, "day").format("YYYY년 M월 D일")
     : "";
@@ -119,31 +121,50 @@ export default function RecoverAccountPage() {
           </div>
 
           {/* 남은 기간 */}
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-1">
-            <p className="text-3xl font-black text-amber-400">
-              {daysRemaining}
-              <span className="text-base font-bold">일 남음</span>
-            </p>
-            <p className="text-[12px] text-neutral-500 font-medium">
-              {purgeDate}에 영구 삭제 예정
-            </p>
+          <div className={`${isExpired ? "bg-red-500/10 border-red-500/20" : "bg-amber-500/10 border-amber-500/20"} border rounded-xl p-4 space-y-1`}>
+            {isExpired ? (
+              <>
+                <p className="text-lg font-black text-red-400">
+                  복구 기간이 만료되었습니다
+                </p>
+                <p className="text-[12px] text-neutral-500 font-medium">
+                  데이터가 곧 영구 삭제됩니다
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-3xl font-black text-amber-400">
+                  {daysRemaining}
+                  <span className="text-base font-bold">일 남음</span>
+                </p>
+                <p className="text-[12px] text-neutral-500 font-medium">
+                  {purgeDate}에 영구 삭제 예정
+                </p>
+              </>
+            )}
           </div>
 
           {/* 복구 버튼 */}
           <Button
             onClick={handleRestore}
-            disabled={restoring}
-            className="w-full h-12 bg-green-500 hover:bg-green-600 text-white font-black text-sm rounded-xl transition-colors"
+            disabled={restoring || isExpired}
+            className="w-full h-12 bg-green-500 hover:bg-green-600 text-white font-black text-sm rounded-xl transition-colors disabled:opacity-30"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
-            {restoring ? "복구 중..." : "계정 복구하기"}
+            {isExpired ? "복구 기간 만료" : restoring ? "복구 중..." : "계정 복구하기"}
           </Button>
 
           {/* 안내 텍스트 */}
           <p className="text-[12px] text-neutral-500 font-medium leading-relaxed">
-            복구하면 기존 데이터가 모두 원래대로 돌아옵니다.
-            <br />
-            경고·스트라이크 기록도 유지됩니다.
+            {isExpired ? (
+              "복구 가능 기간(30일)이 지났습니다. 새 계정으로 가입해주세요."
+            ) : (
+              <>
+                복구하면 기존 데이터가 모두 원래대로 돌아옵니다.
+                <br />
+                경고·스트라이크 기록도 유지됩니다.
+              </>
+            )}
           </p>
         </Card>
 

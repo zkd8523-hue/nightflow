@@ -45,11 +45,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 역할 기반 접근 제어 (admin/md 경로)
-  if (user && (pathname.startsWith("/admin/") || pathname.startsWith("/md/"))) {
+  // 보호된 경로: 탈퇴 유저 차단 + 역할 기반 접근 제어
+  if (user && isProtected) {
     const { data: profile, error: profileError } = await supabase
       .from("users")
-      .select("role")
+      .select("role, deleted_at")
       .eq("id", user.id)
       .single();
 
@@ -58,6 +58,11 @@ export async function updateSession(request: NextRequest) {
     if (profileError) {
       console.error(`[Middleware] users 테이블 조회 실패 - userId: ${user.id}, path: ${pathname}, error:`, profileError.message);
       return supabaseResponse;
+    }
+
+    // 탈퇴 유저 차단: /recover-account로 리다이렉트
+    if (profile?.deleted_at) {
+      return NextResponse.redirect(new URL("/recover-account", request.url));
     }
 
     if (pathname.startsWith("/admin/") && profile?.role !== "admin") {

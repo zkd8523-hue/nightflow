@@ -27,9 +27,10 @@ import { TemplateDrawer } from "./TemplateDrawer";
 import { trackEvent } from "@/lib/analytics";
 
 const formSchema = z.object({
+    listing_type: z.enum(["auction", "instant"]).default("auction"),
     club_id: z.string().min(1, "클럽을 선택해주세요."),
     table_info: z.string().min(1, "테이블 정보를 입력해주세요."),
-    start_price: z.number().min(1, "시작가는 0원보다 커야 합니다."),
+    start_price: z.number().min(1, "가격은 0원보다 커야 합니다."),
     entry_time: z.string().nullable(),
     event_date: z.string(),
     auction_start_at: z.string(),
@@ -93,8 +94,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const router = useRouter();
     const supabase = createClient();
     const [auctionMode, setAuctionMode] = useState<"today" | "advance">(
-        initialData ? (dayjs(initialData.event_date).isSame(getClubEventDate(), "day") ? "today" : "advance") : "today"
+        initialData
+            ? (initialData.listing_type === "instant" ? "today" : (dayjs(initialData.event_date).isSame(getClubEventDate(), "day") ? "today" : "advance"))
+            : "today"
     );
+    const isInstantMode = auctionMode === "today";
     const [startPriceDisplay, setStartPriceDisplay] = useState((initialData?.start_price || prefill?.start_price)?.toLocaleString() || "");
     const [instantEntry, setInstantEntry] = useState(
         initialData ? !initialData.entry_time
@@ -127,6 +131,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            listing_type: initialData?.listing_type || "auction",
             club_id: initialData?.club_id || prefill?.club_id || defaultClubId || "",
             table_info: initialData?.table_info || prefill?.table_info || "",
             duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 15,
@@ -169,6 +174,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     // 템플릿/repostFrom 프리셋 적용 공유 함수
     const applyPreset = (source: Partial<{
         club_id: string;
+        listing_type: string;
         includes: string[];
         start_price: number;
         duration_minutes: number;
@@ -180,6 +186,14 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             setStartPriceDisplay(source.start_price.toLocaleString());
         }
         if (source.duration_minutes) setValue("duration_minutes", source.duration_minutes);
+        // listing_type에 따라 모드 토글 자동 전환
+        if (source.listing_type === 'instant') {
+            setAuctionMode("today");
+            setValue("listing_type", "instant");
+        } else if (source.listing_type === 'auction') {
+            setAuctionMode("advance");
+            setValue("listing_type", "auction");
+        }
     };
 
     const handleTemplateApply = (template: AuctionTemplate) => {
@@ -389,6 +403,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             const auctionData: Record<string, any> = {
                 md_id: mdId,
+                listing_type: values.listing_type || "auction",
                 club_id: values.club_id,
                 title: `${clubs.find(c => c.id === values.club_id)?.name} ${values.table_info}`,
                 table_info: values.table_info,
@@ -407,10 +422,16 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 auction_start_at,
                 auction_end_at,
                 duration_minutes: finalDurationMinutes,
-                auto_extend_min: 3,
+                auto_extend_min: isInstantMode ? 0 : 3,
+                max_extensions: isInstantMode ? 0 : 3,
                 status: initialData?.status || "scheduled",
                 bid_increment: getBidIncrement(values.start_price),
             };
+
+            // instant 모드: buy_now_price = start_price (서버에서도 강제하지만 클라이언트도 설정)
+            if (isInstantMode) {
+                auctionData.buy_now_price = values.start_price;
+            }
 
             // 썸네일 처리: 있으면 저장, 수정 모드에서 제거했으면 명시적 null
             if (thumbnailUrl) {
@@ -445,6 +466,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             trackEvent("auction_created", {
                 auction_id: result.id,
+                listing_type: values.listing_type,
                 club_id: values.club_id,
                 start_price: values.start_price,
                 duration_minutes: finalDurationMinutes,
@@ -524,10 +546,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     type="button"
                     onClick={() => {
                         setAuctionMode("today");
+                        setValue("listing_type", "instant");
                         setInstantEntry(false);
                         setValue("entry_time", dayjs().add(1, "hour").format("HH:mm"));
                         setValue("event_date", getClubEventDate());
-                        setValue("duration_minutes", 15);
+                        setValue("duration_minutes", 30);
                     }}
                     className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${auctionMode === "today"
                         ? "bg-amber-500 text-black shadow-sm"
@@ -540,6 +563,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     type="button"
                     onClick={() => {
                         setAuctionMode("advance");
+                        setValue("listing_type", "auction");
                         setInstantEntry(false);
                         setValue("entry_time", "22:00");
                         setValue("duration_minutes", 24 * 60);
@@ -559,6 +583,15 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     📅 얼리버드
                 </button>
             </div>
+
+            {isInstantMode && (
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 space-y-1">
+                    <p className="text-[11px] text-amber-400 font-bold">즉시구매 모드</p>
+                    <p className="text-[10px] text-amber-400/80 leading-relaxed">
+                        설정한 가격으로 첫 구매자가 즉시 낙찰됩니다. 입찰 경쟁 없이 선착순으로 진행됩니다.
+                    </p>
+                </div>
+            )}
 
             {/* 1. 클럽 선택 + 대표 이미지 */}
             <section className="space-y-4">
@@ -845,7 +878,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 </div>
                 <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-6">
                     <div className="space-y-3">
-                        <Label className="text-neutral-400 text-[10px] font-bold uppercase">경매 시작가</Label>
+                        <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매가" : "경매 시작가"}</Label>
                         {hasBids && (
                             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-2">
                                 <p className="text-[12px] text-amber-400 font-bold">🔒 입찰이 있어 경매 조건 변경 불가</p>
@@ -1041,7 +1074,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             if (auctionMode === "today") {
                                 return (
                                     <div className="grid grid-cols-3 gap-2">
-                                        {[{ label: "15분", value: 15 }, { label: "30분", value: 30 }, { label: "1시간", value: 60 }].map((opt) => (
+                                        {(isInstantMode
+                                            ? [{ label: "30분", value: 30 }, { label: "1시간", value: 60 }, { label: "2시간", value: 120 }]
+                                            : [{ label: "15분", value: 15 }, { label: "30분", value: 30 }, { label: "1시간", value: 60 }]
+                                        ).map((opt) => (
                                             <button key={opt.value} type="button" onClick={() => setValue("duration_minutes", opt.value)} className={`h-10 rounded-lg text-xs font-bold transition-all ${watch("duration_minutes") === opt.value ? "bg-neutral-200 text-black" : "bg-neutral-900 text-neutral-500 border border-neutral-800"}`}>
                                                 {opt.label}
                                             </button>
@@ -1085,7 +1121,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent z-50">
                 <div className="max-w-lg mx-auto">
                     <Button disabled={isSubmitting} className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? "경매 정보 수정하기" : "경매 시작하기")}
+                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? "경매 정보 수정하기" : (isInstantMode ? "오늘 특가 등록하기" : "경매 시작하기"))}
                         <ArrowRight className="w-5 h-5" />
                     </Button>
                 </div>

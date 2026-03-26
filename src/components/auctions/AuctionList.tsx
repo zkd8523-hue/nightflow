@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import type { Auction } from "@/types/database";
 import { AuctionCard } from "./AuctionCard";
 import { isAuctionActive, getEffectiveEndTime } from "@/lib/utils/auction";
-import { getClubEventDate, isEarlybird } from "@/lib/utils/date";
+import { getClubEventDate } from "@/lib/utils/date";
 import { DateGroup } from "@/components/ui/DateGroup";
 import { AreaNotifyBanner } from "@/components/home/AreaNotifyBanner";
 import dayjs from "dayjs";
@@ -60,14 +60,10 @@ export function AuctionList({ activeAuctions: initialAuctions, completedAuctions
   });
 
   const todayDate = getClubEventDate();
-  // 오늘 특가: event_date가 오늘이고 당일 등록된 급매만 (얼리버드 제외)
-  const todayAuctions = liveAndUpcoming.filter(a =>
-    a.event_date === todayDate && !isEarlybird(a)
-  );
-  // 얼리버드: 사전 등록 경매 전부 + 미래 날짜 경매
-  const advanceAuctions = liveAndUpcoming.filter(a =>
-    a.event_date !== todayDate || isEarlybird(a)
-  );
+  // 오늘 특가: listing_type === 'instant' (즉시구매)
+  const todayAuctions = liveAndUpcoming.filter(a => a.listing_type === 'instant');
+  // 얼리버드: listing_type === 'auction' (경매)
+  const advanceAuctions = liveAndUpcoming.filter(a => a.listing_type === 'auction');
 
   // 경매가 있는 탭을 기본으로 선택
   const [tab, setTab] = useState<"today" | "advance" | "completed">(() => {
@@ -163,11 +159,11 @@ export function AuctionList({ activeAuctions: initialAuctions, completedAuctions
           {todayAuctions.length === 0 ? (
             <div className="text-center pt-8 pb-16 space-y-6">
               <div className="space-y-2">
-                <p className="text-[15px] font-bold text-neutral-300">오늘 밤 경매가 곧 시작됩니다</p>
+                <p className="text-[15px] font-bold text-neutral-300">오늘 특가가 곧 올라옵니다</p>
                 <p className="text-[12px] text-neutral-500 leading-relaxed">
-                  MD가 클럽 테이블을 올리면 실시간 입찰이 시작돼요.
+                  MD가 즉시구매 가능한 테이블을 올리면
                   <br />
-                  보통 오후 6시 이후 경매가 활발합니다.
+                  선착순으로 구매할 수 있어요.
                 </p>
               </div>
             </div>

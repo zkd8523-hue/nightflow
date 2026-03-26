@@ -20,7 +20,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "NightFlow - 클럽 테이블 경매",
   description: "실시간 클럽 테이블 경매 플랫폼",
-  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -203,7 +203,7 @@ export const BidPanel = memo(function BidPanel({ auction, onBidSuccess }: BidPan
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <p className="text-[11px] text-amber-400/90 font-bold leading-snug">
-              낙찰 시 15분 내 MD 연락 필수 · 미연락 시 활동이 제한돼요
+              낙찰 시 10분 내 MD 연락 필수 · 미연락 시 활동이 제한돼요
             </p>
           </div>
         )}

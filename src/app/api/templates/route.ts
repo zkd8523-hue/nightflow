@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, club_id, start_price, buy_now_price, includes, duration_minutes } = body;
+    const { name, club_id, listing_type, start_price, buy_now_price, includes, duration_minutes } = body;
 
     if (!name?.trim()) {
       return NextResponse.json({ error: "템플릿 이름을 입력해주세요." }, { status: 400 });
@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
         md_id: user.id,
         name: name.trim(),
         club_id: club_id || null,
+        listing_type: listing_type || 'auction',
         start_price: start_price || null,
         buy_now_price: buy_now_price || null,
         includes: includes || [],

@@ -14,6 +14,7 @@ export type AuctionStatus =
 export type BidStatus = "active" | "outbid" | "won" | "cancelled";
 export type Area = "강남" | "홍대" | "이태원" | "건대" | "부산" | "대구" | "인천" | "광주" | "대전" | "울산" | "세종";
 export type TrustLevel = "vip" | "normal" | "caution" | "blocked";
+export type ListingType = "auction" | "instant";
 export type ClubStatus = "pending" | "approved" | "rejected";
 export type NotificationEventType =
   | "auction_started"
@@ -172,6 +173,7 @@ export interface Club {
 
 export interface Auction {
   id: string;
+  listing_type: ListingType;
   md_id: string;
   club_id: string;
 
@@ -212,7 +214,7 @@ export interface Auction {
   won_at: string | null;
   payment_deadline: string | null;
   contact_deadline: string | null; // Model B: MD 연락 마감 시간
-  contact_timer_minutes: number | null; // Model B: 적용된 타이머 분(15분 단일)
+  contact_timer_minutes: number | null; // Model B: 적용된 타이머 분(10분 단일)
   contact_attempted_at: string | null; // 낙찰자 연락 시도 시각 (무과실 판정 근거)
 
   // Post-Auction Journey (Migration 051)
@@ -233,6 +235,7 @@ export interface Auction {
 
 export interface AuctionTemplate {
   id: string;
+  listing_type: ListingType;
   md_id: string;
   name: string;
   club_id: string | null;

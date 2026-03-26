@@ -89,6 +89,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 4-b. instant 모드 서버 측 강제 설정 (클라이언트 조작 방지)
+    if (auctionData.listing_type === 'instant') {
+      auctionData.buy_now_price = auctionData.start_price;
+      auctionData.auto_extend_min = 0;
+      auctionData.max_extensions = 0;
+    }
+
     // 5. 경매 등록 또는 수정
     if (isUpdate && auctionId) {
       // 입찰이 있으면 경매 조건 변경 차단 (서버 측 보호)
@@ -103,6 +110,7 @@ export async function POST(request: NextRequest) {
           "start_price", "duration_minutes",
           "table_info", "includes", "club_id",
           "original_price", "reserve_price", "bid_increment", "auction_end_at",
+          "listing_type", "buy_now_price",
         ];
         for (const field of protectedFields) {
           delete auctionData[field];
