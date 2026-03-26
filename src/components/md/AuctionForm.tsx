@@ -25,6 +25,7 @@ import { uploadImage } from "@/lib/utils/upload";
 import { ShareSuccessSheet } from "./ShareSuccessSheet";
 import { TemplateDrawer } from "./TemplateDrawer";
 import { trackEvent } from "@/lib/analytics";
+import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 
 const formSchema = z.object({
     listing_type: z.enum(["auction", "instant"]).default("auction"),
@@ -147,7 +148,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [templateCount, setTemplateCount] = useState(0);
     const [recentTemplate, setRecentTemplate] = useState<AuctionTemplate | null>(null);
 
-    const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
+    const { register, handleSubmit, setValue, watch, clearErrors, formState: { errors, isSubmitting } } = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
             listing_type: initialData?.listing_type || "instant",
@@ -1058,8 +1059,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 <span className="text-green-500 text-sm font-bold">{isInstantMode ? "구매 후 바로 입장 가능" : "낙찰 후 바로 입장 가능"}</span>
                             </div>
                         ) : auctionMode === "today" ? (
-                            <Input
-                                type="datetime-local"
+                            <DateTimeSheet
+                                label="입장 시간 선택"
                                 value={(() => {
                                     const t = watch("entry_time") || dayjs().add(1, "hour").format("HH:mm");
                                     const d = watch("event_date");
@@ -1078,42 +1079,36 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     const floor = dayjs();
                                     return (end.isAfter(floor) ? end : floor).format("YYYY-MM-DDTHH:mm");
                                 })()}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val) {
-                                        const picked = dayjs(val);
-                                        const pickedTime = picked.format("HH:mm");
-                                        const eventDate = picked.hour() < 4
-                                            ? picked.subtract(1, "day").format("YYYY-MM-DD")
-                                            : picked.format("YYYY-MM-DD");
-                                        setValue("event_date", eventDate);
-                                        setValue("entry_time", pickedTime);
-                                    }
+                                onChange={(val) => {
+                                    const picked = dayjs(val);
+                                    const pickedTime = picked.format("HH:mm");
+                                    const eventDate = picked.hour() < 4
+                                        ? picked.subtract(1, "day").format("YYYY-MM-DD")
+                                        : picked.format("YYYY-MM-DD");
+                                    setValue("event_date", eventDate);
+                                    setValue("entry_time", pickedTime);
+                                    clearErrors("entry_time");
                                 }}
-                                className="bg-neutral-900 border-neutral-800 h-11 text-white [color-scheme:dark]"
                             />
                         ) : (
-                            <Input
-                                type="datetime-local"
+                            <DateTimeSheet
+                                label="입장 시간 선택"
                                 value={(() => {
                                     const t = watch("entry_time") || "22:00";
                                     const d = watch("event_date");
                                     return dayjs(`${d}T${t}`).format("YYYY-MM-DDTHH:mm");
                                 })()}
                                 min={dayjs(getClubEventDate()).add(1, "day").set("hour", 0).set("minute", 0).format("YYYY-MM-DDTHH:mm")}
-                                onChange={(e) => {
-                                    const val = e.target.value;
-                                    if (val) {
-                                        const picked = dayjs(val);
-                                        const pickedTime = picked.format("HH:mm");
-                                        const eventDate = picked.hour() < 4
-                                            ? picked.subtract(1, "day").format("YYYY-MM-DD")
-                                            : picked.format("YYYY-MM-DD");
-                                        setValue("event_date", eventDate);
-                                        setValue("entry_time", pickedTime);
-                                    }
+                                onChange={(val) => {
+                                    const picked = dayjs(val);
+                                    const pickedTime = picked.format("HH:mm");
+                                    const eventDate = picked.hour() < 4
+                                        ? picked.subtract(1, "day").format("YYYY-MM-DD")
+                                        : picked.format("YYYY-MM-DD");
+                                    setValue("event_date", eventDate);
+                                    setValue("entry_time", pickedTime);
+                                    clearErrors("entry_time");
                                 }}
-                                className="bg-neutral-900 border-neutral-800 h-11 text-white [color-scheme:dark]"
                             />
                         )}
                         {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date?.message?.toString()}</p>}
@@ -1146,7 +1141,12 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             </div>
                         ) : (
                             <>
-                                <Input {...register("auction_start_at")} type="datetime-local" min={dayjs().format("YYYY-MM-DDTHH:mm")} className="bg-neutral-900 border-neutral-800 h-11 text-white [color-scheme:dark]" />
+                                <DateTimeSheet
+                                    label={isInstantMode ? "판매 시작 일시" : "경매 시작 일시"}
+                                    value={watch("auction_start_at")}
+                                    min={dayjs().format("YYYY-MM-DDTHH:mm")}
+                                    onChange={(val) => setValue("auction_start_at", val)}
+                                />
                                 {errors.auction_start_at && <p className="text-red-500 text-[11px]">{errors.auction_start_at?.message?.toString()}</p>}
                             </>
                         )}

@@ -3,7 +3,6 @@
 import { useState, memo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,35 +48,64 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
   const isUserHighest = userHasBid && userBidAmount >= (auction.current_bid || 0);
   const isUserOutbid = userHasBid && !isUserHighest && isActive;
 
+  // 가격 컨텍스트 라벨
+  const priceLabel = isWon
+    ? (isInstant ? "구매 완료" : "낙찰가")
+    : isInstant
+      ? "판매가"
+      : auction.bid_count > 0
+        ? "현재 입찰가"
+        : "시작가";
+
+  // 소셜프루프 텍스트
+  const socialProof = !isInstant && !isCompleted && !isExpired && auction.bid_count > 0
+    ? `${auction.bidder_count || auction.bid_count}명 입찰 중`
+    : null;
+
+  // 입장시간 텍스트
+  const hasEntryInfo = !isCompleted && !isExpired;
+  const entryText = hasEntryInfo
+    ? (isInstantEntry ? "즉시 입장" : auction.entry_time ? `${auction.entry_time} 입장` : null)
+    : null;
 
   return (
-    <>
+    <div>
       <Link href={`/auctions/${auction.id}`}>
-        <Card className={`relative overflow-hidden bg-[#1C1C1E] rounded-2xl transition-all active:scale-[0.98] cursor-pointer ${isWon ? "won-card-border won-card-glow border-transparent" : "border-transparent"} ${auction.status === "unsold" ? "opacity-60" : ""}`}>
-          <div className="p-2">
-            {/* 지역 정보 & 지도 - 카드 우측 상단 별도 공간 */}
-            {club?.area && (
-              <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsMapOpen(true);
-                  }}
-                  className="w-5 h-5 inline-flex items-center justify-center rounded-full bg-neutral-800/40 backdrop-blur-[2px] border border-white/5 hover:bg-neutral-700 transition-colors"
-                  title="지도에서 보기"
-                >
-                  <MapPin className="w-2.5 h-2.5 text-neutral-400" />
-                </button>
-                <span className="text-[10px] text-neutral-500 font-medium">
-                  {club.area}
-                </span>
+        <div className={`relative overflow-hidden bg-[#1C1C1E] rounded-2xl p-3 transition-all active:scale-[0.98] cursor-pointer ${isWon ? "won-card-border won-card-glow border border-transparent" : "border border-transparent"} ${auction.status === "unsold" ? "opacity-60" : ""}`}>
+            {/* 우측 상단: 지역·지도 (1행) + 입장시간 (2행) */}
+            <div className="absolute top-2.5 right-2.5 z-10 flex flex-col items-end gap-1">
+              <div className="flex items-center gap-1.5">
+                {club?.area && (
+                  <span className="text-[10px] text-neutral-500 font-medium">
+                    {club.area}
+                  </span>
+                )}
+                {club && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsMapOpen(true);
+                    }}
+                    className="w-5 h-5 inline-flex items-center justify-center rounded-full bg-neutral-800/40 backdrop-blur-[2px] border border-white/5 hover:bg-neutral-700 transition-colors"
+                    title="지도에서 보기"
+                  >
+                    <MapPin className="w-2.5 h-2.5 text-neutral-400" />
+                  </button>
+                )}
               </div>
-            )}
-            {/* Top Row: Information */}
-            <div className="flex gap-2.5">
-              {/* 100x72 Thumbnail */}
-              <div className="w-[100px] h-[72px] rounded-lg bg-neutral-900 overflow-hidden flex-shrink-0 relative group">
+              {entryText && (
+                <span className="text-[10px] font-medium text-neutral-400 flex items-center gap-1">
+                  {isInstantEntry && <Zap className="w-2.5 h-2.5 fill-green-500 text-green-500" />}
+                  {entryText}
+                </span>
+              )}
+            </div>
+
+            {/* Row 1: Image + Info */}
+            <div className="flex gap-3">
+              {/* 110x80 Thumbnail */}
+              <div className="w-[110px] h-[80px] rounded-xl bg-neutral-900 overflow-hidden flex-shrink-0 relative">
                 {(() => {
                   const imageUrl = getAuctionImageUrl(auction.thumbnail_url, club?.thumbnail_url, auction.includes);
                   if (imageUrl) {
@@ -85,7 +113,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                   }
                   return <DrinkPlaceholder includes={auction.includes || []} />;
                 })()}
-                {/* 찜 버튼 - 썸네일 우측 상단 오버레이 */}
+                {/* 찜 버튼 */}
                 {club && (
                   <div className="absolute top-1 right-1 z-10 scale-90 origin-top-right" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                     <FavoriteButton clubId={club.id} />
@@ -94,14 +122,25 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 min-w-0 flex flex-col justify-between py-0 pr-12">
-                {/* 클럽명 */}
-                <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
-                  {club?.name}
-                </h3>
-
-                {/* 포함내역 */}
-                <div className="flex items-center mt-0.5 overflow-hidden">
+              <div className="flex-1 min-w-0 flex flex-col justify-between py-0 pr-10">
+                {/* 상단 그룹: 클럽명 + 포함내역 (밀착) */}
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
+                      {club?.name}
+                    </h3>
+                    {(() => {
+                      const grade = (auction.md as any)?.md_customer_grade as MDCustomerGrade | undefined;
+                      if (!grade || grade === "rookie") return null;
+                      const cfg = MD_GRADE_CONFIG[grade];
+                      return (
+                        <span className={`flex-shrink-0 px-1.5 py-0 rounded text-[9px] font-black ${cfg.color} ${cfg.bgColor}`}>
+                          {cfg.label}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                  <div className="flex items-center mt-1.5 overflow-hidden">
                   {(() => {
                     const filtered = (auction.includes || []).filter(item => item !== "기본 안주");
                     const sorted = sortByLiquorFirst(filtered);
@@ -129,27 +168,15 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                     );
                   })()}
                 </div>
+                </div>
 
-                {/* 입장시간 + 상태 */}
-                <div className="flex items-center justify-between mt-1">
-                  <div className="flex items-center gap-1.5">
-                    {!isCompleted && !isExpired && (
-                      isInstantEntry ? (
-                        <span className="text-[10px] font-semibold text-green-500">
-                          ⚡ 즉시 입장
-                        </span>
-                      ) : auction.entry_time ? (
-                        <span className="text-[10px] text-blue-400 font-medium">
-                          {auction.entry_time}부터 입장가능
-                        </span>
-                      ) : null
-                    )}
-                  </div>
+                {/* 타이머/상태 (좌) + 소셜프루프 (우) */}
+                <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center">
                     {isActive && (
-                      <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${timerStyles.bg} ${countdown.level === 'critical' ? timerStyles.glow : ''} ${countdown.level === 'critical' ? 'animate-breathe' : ''}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${countdown.level === 'critical' ? 'bg-red-500 animate-ping' : 'bg-red-500 animate-pulse'}`} />
-                        <span suppressHydrationWarning className={`text-[11px] font-mono font-bold tabular-nums ${timerStyles.text} ${countdown.shouldFlash ? 'animate-flip' : ''} ${countdown.level === 'critical' ? 'animate-tension' : ''}`}>
+                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full transition-all duration-500 ${timerStyles.bg} ${countdown.level === 'critical' ? timerStyles.glow : ''} ${countdown.level === 'critical' ? 'animate-breathe' : ''}`}>
+                        <span className={`w-2 h-2 rounded-full ${countdown.level === 'critical' ? 'bg-red-500 animate-ping' : 'bg-red-500 animate-pulse'}`} />
+                        <span suppressHydrationWarning className={`text-[13px] font-mono font-bold tabular-nums ${timerStyles.text} ${countdown.shouldFlash ? 'animate-flip' : ''} ${countdown.level === 'critical' ? 'animate-tension' : ''}`}>
                           {formatCountdown(countdown.remaining)}
                         </span>
                       </div>
@@ -176,22 +203,25 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                       </Badge>
                     )}
                   </div>
+                  {socialProof && (
+                    <span className="text-[10px] text-neutral-400">{socialProof}</span>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* Bottom Row: Price + CTA */}
-            <div className="flex items-center justify-between mt-1">
+            {/* Row 3: Price + CTA */}
+            <div className="flex items-end justify-between mt-2">
               <div className="flex flex-col">
+                {/* 가격 컨텍스트 라벨 */}
+                <span className="text-[10px] text-neutral-500 tracking-wider mb-1">
+                  {priceLabel}
+                </span>
                 <span className={`text-[20px] font-bold leading-none tracking-tight ${isWon ? "text-amber-400" : "text-white"}`}>
                   {formatNumber(currentPrice)}원
                 </span>
-                <div className="text-[11px] text-neutral-500 flex items-center gap-1 mt-1 flex-wrap">
-                  {isWon ? (
-                    <span className="text-amber-500/70">{isInstant ? "구매 완료" : `낙찰가 · 입찰 ${auction.bid_count}회`}</span>
-                  ) : !isInstant ? (
-                    <span>입찰 {auction.bid_count}회</span>
-                  ) : null}
+                {/* 하단 메타 - BIN + 유저상태 (최대 2개) */}
+                <div className="flex items-center gap-1 mt-1.5">
                   {!isInstant && auction.buy_now_price && auction.buy_now_price > 0 && !isWon && (
                     <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">
                       BIN {formatNumber(auction.buy_now_price)}원
@@ -203,16 +233,9 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                   {!isInstant && isUserOutbid && (
                     <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">추월됨</span>
                   )}
-                  {(() => {
-                    const grade = (auction.md as any)?.md_customer_grade as MDCustomerGrade | undefined;
-                    if (!grade || grade === "rookie") return null;
-                    const cfg = MD_GRADE_CONFIG[grade];
-                    return (
-                      <span className={`px-1.5 py-0 rounded text-[9px] font-black ${cfg.color} ${cfg.bgColor}`}>
-                        {cfg.label}
-                      </span>
-                    );
-                  })()}
+                  {isWon && !isInstant && (
+                    <span className="text-[10px] text-amber-500/70">입찰 {auction.bid_count}회</span>
+                  )}
                 </div>
               </div>
 
@@ -242,8 +265,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                 </Button>
               </div>
             </div>
-          </div>
-        </Card>
+        </div>
       </Link>
 
       {/* 지도 앱 선택 Sheet */}
@@ -298,6 +320,6 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
           </SheetContent>
         </Sheet>
       )}
-    </>
+    </div>
   );
 });
