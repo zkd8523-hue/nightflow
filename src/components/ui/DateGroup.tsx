@@ -44,7 +44,7 @@ export function DateGroup({ date, children, showCount = false, label: customLabe
         )}
         <div className="flex-1 h-px bg-neutral-800/50" />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-3">
         {children}
       </div>
     </div>

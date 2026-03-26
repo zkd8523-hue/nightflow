@@ -109,44 +109,50 @@ export default function FavoritesPage() {
                   key={fav.id}
                   className="bg-[#1C1C1E] rounded-2xl p-4 flex items-center gap-4"
                 >
-                  {/* 클럽 이미지 */}
-                  <div className="w-14 h-14 rounded-xl bg-neutral-800 overflow-hidden shrink-0 relative">
-                    {club.thumbnail_url ? (
-                      <Image
-                        src={club.thumbnail_url}
-                        alt={club.name}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <span className="text-[18px] font-black text-neutral-600">
-                          {club.name.charAt(0)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 클럽 정보 */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-[15px] font-bold text-white truncate">
-                      {club.name}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      {club.area && (
-                        <span className="flex items-center gap-0.5 text-[12px] text-neutral-500">
-                          <MapPin className="w-3 h-3" />
-                          {club.area}
-                        </span>
-                      )}
-                      {liveCount > 0 && (
-                        <span className="flex items-center gap-0.5 text-[11px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full">
-                          <Gavel className="w-3 h-3" />
-                          경매 {liveCount}건
-                        </span>
+                  {/* 클럽 이미지 + 정보 (클릭 시 클럽 상세 이동) */}
+                  <Link
+                    href={`/clubs/${club.id}`}
+                    className="flex items-center gap-4 flex-1 min-w-0"
+                  >
+                    {/* 클럽 이미지 */}
+                    <div className="w-14 h-14 rounded-xl bg-neutral-800 overflow-hidden shrink-0 relative">
+                      {club.thumbnail_url ? (
+                        <Image
+                          src={club.thumbnail_url}
+                          alt={club.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-[18px] font-black text-neutral-600">
+                            {club.name.charAt(0)}
+                          </span>
+                        </div>
                       )}
                     </div>
-                  </div>
+
+                    {/* 클럽 정보 */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[15px] font-bold text-white truncate">
+                        {club.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {club.area && (
+                          <span className="flex items-center gap-0.5 text-[12px] text-neutral-500">
+                            <MapPin className="w-3 h-3" />
+                            {club.area}
+                          </span>
+                        )}
+                        {liveCount > 0 && (
+                          <span className="flex items-center gap-0.5 text-[11px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full">
+                            <Gavel className="w-3 h-3" />
+                            경매 {liveCount}건
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
 
                   {/* 찜 해제 버튼 */}
                   <button

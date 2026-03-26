@@ -191,7 +191,7 @@ export function AuctionList({ activeAuctions: initialAuctions, completedAuctions
               </div>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {closingToday.length > 0 && (
                 <DateGroup date={todayDate} showCount label="마감임박">
                   {closingToday.map(auction => (
@@ -221,7 +221,7 @@ export function AuctionList({ activeAuctions: initialAuctions, completedAuctions
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {sortedDates.map(date => (
                 <DateGroup key={date} date={date}>
                   {groupedCompleted[date].map(auction => (
