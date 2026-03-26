@@ -260,7 +260,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
             <div className="flex flex-col gap-3 mt-4">
               <button
                 onClick={() => {
-                  const query = encodeURIComponent(`${club.name} ${club.address || ""}`);
+                  const query = encodeURIComponent(club.address || club.name);
                   window.open(`https://map.naver.com/v5/search/${query}`, "_blank");
                   setIsMapOpen(false);
                 }}
@@ -278,7 +278,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
 
               <button
                 onClick={() => {
-                  const query = encodeURIComponent(`${club.name} ${club.address || ""}`);
+                  const query = encodeURIComponent(club.address || club.name);
                   window.open(`https://map.kakao.com/link/search/${query}`, "_blank");
                   setIsMapOpen(false);
                 }}

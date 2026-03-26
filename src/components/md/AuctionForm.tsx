@@ -39,7 +39,7 @@ const formSchema = z.object({
     duration_minutes: z.number().refine(v => v === -1 || v >= 1, "지속 시간을 선택해주세요."),
     includes: z.array(z.string()).min(1, "최소 한 개의 포함 내역을 선택해주세요."),
 }).superRefine((data, ctx) => {
-    if (data.entry_time) {
+    if (data.entry_time && data.listing_type !== "instant") {
         // 실제 방문 캘린더 시각 계산 (새벽 4시 이전 = event_date + 1일)
         const [h, m] = data.entry_time.split(":").map(Number);
         const visitDate = h < 4
@@ -47,7 +47,7 @@ const formSchema = z.object({
             : dayjs(data.event_date);
         const visitDateTime = visitDate.hour(h).minute(m);
 
-        // 입장 시간이 경매 종료 이후인지 체크
+        // 입장 시간이 경매 종료 이후인지 체크 (경매 모드만)
         const auctionStart = data.instant_start
             ? dayjs()
             : dayjs(data.auction_start_at);
@@ -58,7 +58,7 @@ const formSchema = z.object({
         if (visitDateTime.isBefore(auctionEnd)) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: data.listing_type === "instant" ? "입장 시간은 판매 종료 이후여야 합니다." : "입장 시간은 경매 종료 이후여야 합니다.",
+                message: "입장 시간은 경매 종료 이후여야 합니다.",
                 path: ["entry_time"],
             });
         }
@@ -120,6 +120,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [thumbnailUploading, setThumbnailUploading] = useState(false);
     const [isClubImage, setIsClubImage] = useState(false);
     const [localFloorPlanUrls, setLocalFloorPlanUrls] = useState<Record<string, string>>({});
+    const [setAsClubDefault, setSetAsClubDefault] = useState(false);
     const [floorPlanUploading, setFloorPlanUploading] = useState(false);
     const [floorPlanExpanded, setFloorPlanExpanded] = useState(false);
 
@@ -324,6 +325,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         setThumbnailFile(file);
         setThumbnailPreview(URL.createObjectURL(file));
         setIsClubImage(false);
+        setSetAsClubDefault(false);
     };
 
     const uploadThumbnail = async (): Promise<string | null> => {
@@ -454,8 +456,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             // 썸네일 처리: 있으면 저장, 수정 모드에서 제거했으면 명시적 null
             if (thumbnailUrl) {
                 auctionData.thumbnail_url = thumbnailUrl;
-                // 새로 업로드한 이미지면 클럽 대표 이미지도 영구 업데이트
-                if (thumbnailFile) {
+                // "기본으로 설정" 체크 시에만 클럽 대표 이미지 업데이트
+                if (thumbnailFile && setAsClubDefault) {
                     const supabase = createClient();
                     await supabase
                         .from("clubs")
@@ -568,7 +570,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         setInstantEntry(false);
                         setValue("entry_time", dayjs().add(1, "hour").format("HH:mm"));
                         setValue("event_date", getClubEventDate());
-                        setValue("duration_minutes", 30);
+                        setValue("duration_minutes", 60);
                     }}
                     className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${auctionMode === "today"
                         ? "bg-amber-500 text-black shadow-sm"
@@ -652,7 +654,26 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                             : "이미지 미설정"
                                 }
                             </p>
-                            {thumbnailPreview ? (
+                            {thumbnailPreview && thumbnailFile ? (
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <label className="flex items-center gap-1 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={setAsClubDefault}
+                                            onChange={(e) => setSetAsClubDefault(e.target.checked)}
+                                            className="w-3 h-3 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
+                                        />
+                                        <span className="text-[10px] text-neutral-400 font-medium whitespace-nowrap">기본으로 설정</span>
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); setIsClubImage(false); setSetAsClubDefault(false); }}
+                                        className="w-7 h-7 flex items-center justify-center rounded-md text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                    >
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            ) : thumbnailPreview ? (
                                 <button
                                     type="button"
                                     onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); setIsClubImage(false); }}
@@ -1131,7 +1152,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 return (
                                     <div className="grid grid-cols-3 gap-2">
                                         {(isInstantMode
-                                            ? [{ label: "30분", value: 30 }, { label: "1시간", value: 60 }, { label: "2시간", value: 120 }]
+                                            ? [{ label: "1시간", value: 60 }, { label: "2시간", value: 120 }, { label: "3시간", value: 180 }]
                                             : [{ label: "15분", value: 15 }, { label: "30분", value: 30 }, { label: "1시간", value: 60 }]
                                         ).map((opt) => (
                                             <button key={opt.value} type="button" onClick={() => setValue("duration_minutes", opt.value)} className={`h-10 rounded-lg text-xs font-bold transition-all ${watch("duration_minutes") === opt.value ? "bg-neutral-200 text-black" : "bg-neutral-900 text-neutral-500 border border-neutral-800"}`}>
