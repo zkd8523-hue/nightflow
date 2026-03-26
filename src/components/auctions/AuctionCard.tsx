@@ -54,11 +54,11 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
     <>
       <Link href={`/auctions/${auction.id}`}>
         <Card className={`overflow-hidden bg-[#1C1C1E] rounded-2xl transition-all active:scale-[0.98] cursor-pointer ${isWon ? "won-card-border won-card-glow border-transparent" : "border-transparent"} ${auction.status === "unsold" ? "opacity-60" : ""}`}>
-          <div className="p-4">
+          <div className="p-2">
             {/* Top Row: Information */}
-            <div className="flex gap-3">
-              {/* 120x80 Thumbnail */}
-              <div className="w-[120px] h-20 rounded-xl bg-neutral-900 overflow-hidden flex-shrink-0 relative">
+            <div className="flex gap-2.5">
+              {/* 100x72 Thumbnail */}
+              <div className="w-[100px] h-[72px] rounded-lg bg-neutral-900 overflow-hidden flex-shrink-0 relative">
                 {(() => {
                   const imageUrl = getAuctionImageUrl(auction.thumbnail_url, club?.thumbnail_url, auction.includes);
                   if (imageUrl) {
@@ -69,51 +69,28 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <h3 className="font-semibold text-[17px] text-white truncate leading-tight tracking-tight">
-                      {club?.name}
-                    </h3>
-                    {club && (
-                      <>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setIsMapOpen(true);
-                          }}
-                          className="shrink-0 w-5 h-5 inline-flex items-center justify-center rounded-full bg-neutral-800/80 border border-neutral-700/50 hover:border-neutral-500 active:bg-neutral-700/80 transition-colors"
-                          title="지도에서 보기"
-                        >
-                          <MapPin className="w-3 h-3 text-neutral-400" />
-                        </button>
-                        <FavoriteButton clubId={club.id} />
-                      </>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-0.5 shrink-0">
-                    {club?.area && (
-                      <span className="text-[11px] text-neutral-500 font-medium">
-                        {club.area}
-                      </span>
-                    )}
-                    {!isCompleted && !isExpired && (
-                      isInstantEntry ? (
-                        <Badge className="text-[9px] px-1.5 py-0 h-4 font-semibold bg-green-500/15 text-green-500 border-transparent">
-                          ⚡ 즉시 입장 가능
-                        </Badge>
-                      ) : (
-                        <Badge className="text-[9px] px-1.5 py-0 h-4 font-semibold bg-blue-500/15 text-blue-400 border-transparent">
-                          <Clock className="w-2.5 h-2.5 mr-0.5" />
-                          {auction.entry_time}~ 입장
-                        </Badge>
-                      )
-                    )}
-                  </div>
+              <div className="flex-1 min-w-0 flex flex-col justify-between py-0">
+                <div className="flex items-center justify-between gap-1.5">
+                  <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
+                    {club?.name}
+                    {club?.area && <span className="text-[11px] text-neutral-500 font-medium ml-1">· {club.area}</span>}
+                  </h3>
+                  {!isCompleted && !isExpired && (
+                    isInstantEntry ? (
+                      <Badge className="text-[9px] px-1.5 py-0 h-4 font-semibold bg-green-500/15 text-green-500 border-transparent shrink-0">
+                        ⚡ 즉시 입장
+                      </Badge>
+                    ) : auction.entry_time ? (
+                      <Badge className="text-[9px] px-1.5 py-0 h-4 font-semibold bg-blue-500/15 text-blue-400 border-transparent shrink-0">
+                        <Clock className="w-2.5 h-2.5 mr-0.5" />
+                        {auction.entry_time}~
+                      </Badge>
+                    ) : null
+                  )}
                 </div>
 
                 {/* Includes */}
-                <div className="flex items-center mt-1 overflow-hidden">
+                <div className="flex items-center mt-0.5 overflow-hidden">
                   {(() => {
                     const filtered = (auction.includes || []).filter(item => item !== "기본 안주");
                     const sorted = sortByLiquorFirst(filtered);
@@ -122,7 +99,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                     const visible = sorted.slice(0, maxShow);
                     const remaining = sorted.length - maxShow;
                     return (
-                      <span className="text-[12px] truncate">
+                      <span className="text-[11px] truncate text-neutral-500">
                         {visible.map((item, i) => {
                           const isLiquor = liquor.includes(item);
                           return (
@@ -142,7 +119,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                   })()}
                 </div>
 
-                <div className="flex items-center justify-end mt-1">
+                <div className="flex items-center justify-end mt-0.5">
 
 
                   {isActive && (
@@ -179,19 +156,17 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
             </div>
 
             {/* Bottom Row: Price + CTA */}
-            <div className="flex items-center justify-between mt-3.5">
+            <div className="flex items-center justify-between mt-1">
               <div className="flex flex-col">
-                <span className={`text-[22px] font-bold leading-none tracking-tight ${isWon ? "text-amber-400" : "text-white"}`}>
+                <span className={`text-[20px] font-bold leading-none tracking-tight ${isWon ? "text-amber-400" : "text-white"}`}>
                   {formatNumber(currentPrice)}원
                 </span>
                 <div className="text-[11px] text-neutral-500 flex items-center gap-1 mt-1 flex-wrap">
                   {isWon ? (
                     <span className="text-amber-500/70">{isInstant ? "구매 완료" : `낙찰가 · 입찰 ${auction.bid_count}회`}</span>
-                  ) : isInstant ? (
-                    <span className="text-amber-400/70 font-medium">⚡ 고정가</span>
-                  ) : (
+                  ) : !isInstant ? (
                     <span>입찰 {auction.bid_count}회</span>
-                  )}
+                  ) : null}
                   {!isInstant && auction.buy_now_price && auction.buy_now_price > 0 && !isWon && (
                     <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">
                       BIN {formatNumber(auction.buy_now_price)}원
@@ -217,6 +192,24 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
               </div>
 
               <div className="flex items-center gap-2">
+                {club && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsMapOpen(true);
+                      }}
+                      className="shrink-0 w-8 h-8 inline-flex items-center justify-center rounded-full bg-neutral-800/80 border border-neutral-700/50 hover:border-neutral-500 active:bg-neutral-700/80 transition-colors"
+                      title="지도에서 보기"
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-neutral-400" />
+                    </button>
+                    <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                      <FavoriteButton clubId={club.id} />
+                    </div>
+                  </>
+                )}
                 {isScheduled && (
                   <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                     <NotifySubscribeButton auctionId={auction.id} compact />
@@ -224,7 +217,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                 )}
                 <Button
                   size="sm"
-                  className={`h-9 px-5 rounded-full font-semibold text-[13px] transition-all ${isActive
+                  className={`h-[34px] px-5 rounded-full font-semibold text-[13px] transition-all ${isActive
                     ? isInstant
                       ? "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                       : "bg-white text-black hover:bg-neutral-200"

@@ -121,7 +121,7 @@ export function AuctionList({ activeAuctions: initialAuctions, completedAuctions
 
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       <div className="flex gap-2 px-1 overflow-x-auto pb-2 scrollbar-hide">
           <button
             onClick={() => setTab("today")}
@@ -191,7 +191,7 @@ export function AuctionList({ activeAuctions: initialAuctions, completedAuctions
               </div>
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-2">
               {closingToday.length > 0 && (
                 <DateGroup date={todayDate} showCount label="마감임박">
                   {closingToday.map(auction => (
@@ -221,7 +221,7 @@ export function AuctionList({ activeAuctions: initialAuctions, completedAuctions
               </p>
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-2">
               {sortedDates.map(date => (
                 <DateGroup key={date} date={date}>
                   {groupedCompleted[date].map(auction => (

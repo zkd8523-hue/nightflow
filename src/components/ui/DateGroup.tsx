@@ -34,7 +34,7 @@ export function DateGroup({ date, children, showCount = false, label: customLabe
   }, [showCount, children]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center gap-2">
         <span className={`text-[13px] font-bold ${isCustom ? "text-amber-400" : "text-neutral-400"}`}>
           {isCustom && "🔥 "}{label}
@@ -44,7 +44,7 @@ export function DateGroup({ date, children, showCount = false, label: customLabe
         )}
         <div className="flex-1 h-px bg-neutral-800/50" />
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2">
         {children}
       </div>
     </div>
