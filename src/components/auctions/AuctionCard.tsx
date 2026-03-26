@@ -95,8 +95,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                 )}
               </div>
               {entryText && (
-                <span className="text-[10px] font-medium text-blue-400/90 flex items-center gap-1">
-                  {isInstantEntry && <Zap className="w-2.5 h-2.5 fill-blue-400 text-blue-400" />}
+                <span className="text-[10px] font-medium text-blue-400/90">
                   {entryText}
                 </span>
               )}
