@@ -140,10 +140,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            listing_type: initialData?.listing_type || "auction",
+            listing_type: initialData?.listing_type || "instant",
             club_id: initialData?.club_id || prefill?.club_id || defaultClubId || "",
             table_info: initialData?.table_info || prefill?.table_info || "",
-            duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 15,
+            duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 60,
             includes: initialData?.includes || prefill?.includes || ["기본 안주"],
             event_date: initialData?.event_date || getClubEventDate(),
             start_price: initialData?.start_price || prefill?.start_price || 0,
@@ -804,7 +804,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     <Check className="w-4 h-4 text-green-500" />
                     <span>테이블 구성</span>
                 </div>
-                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 pr-4">
                     {EXTRAS_OPTIONS.map((item) => (
                         <button
                             key={item}
@@ -834,7 +834,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             </button>
                         ))}
                     {/* 인라인 직접 입력 */}
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                    <div className="flex items-center gap-1 flex-shrink-0 mr-4">
                         <input
                             type="text"
                             value={customExtra}
@@ -853,8 +853,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             className="w-24 bg-neutral-900 border border-neutral-800 rounded-full px-3 py-1.5 text-[11px] text-white placeholder-neutral-600 focus:outline-none focus:border-green-500/50"
                         />
                     </div>
-                    {/* 우측 여백 확보용 스페이서 */}
-                    <div className="w-12 shrink-0" />
                 </div>
 
                 {/* 주류 변경 안내 */}
