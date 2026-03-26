@@ -832,6 +832,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             className="w-24 bg-neutral-900 border border-neutral-800 rounded-full px-3 py-1.5 text-[11px] text-white placeholder-neutral-600 focus:outline-none focus:border-green-500/50"
                         />
                     </div>
+                    {/* 우측 여백 확보용 스페이서 */}
+                    <div className="w-12 shrink-0" />
                 </div>
 
                 {/* 주류 변경 안내 */}
