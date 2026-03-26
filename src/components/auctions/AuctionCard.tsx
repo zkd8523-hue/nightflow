@@ -95,25 +95,12 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
 
               {/* Content Area */}
               <div className="flex-1 min-w-0 flex flex-col justify-between py-0 pr-12">
-                <div className="flex items-center justify-between gap-1.5">
-                  <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
-                    {club?.name}
-                  </h3>
-                  {!isCompleted && !isExpired && (
-                    isInstantEntry ? (
-                      <Badge className="text-[9px] px-1.5 py-0 h-4 font-semibold bg-green-500/15 text-green-500 border-transparent shrink-0">
-                        ⚡ 즉시 입장
-                      </Badge>
-                    ) : auction.entry_time ? (
-                      <Badge className="text-[9px] px-1.5 py-0 h-4 font-semibold bg-blue-500/15 text-blue-400 border-transparent shrink-0">
-                        <Clock className="w-2.5 h-2.5 mr-0.5" />
-                        {auction.entry_time}~
-                      </Badge>
-                    ) : null
-                  )}
-                </div>
+                {/* 클럽명 */}
+                <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
+                  {club?.name}
+                </h3>
 
-                {/* Includes */}
+                {/* 포함내역 */}
                 <div className="flex items-center mt-0.5 overflow-hidden">
                   {(() => {
                     const filtered = (auction.includes || []).filter(item => item !== "기본 안주");
@@ -143,38 +130,52 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                   })()}
                 </div>
 
-                <div className="flex items-center justify-end mt-0.5">
-
-
-                  {isActive && (
-                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${timerStyles.bg} ${countdown.level === 'critical' ? timerStyles.glow : ''} ${countdown.level === 'critical' ? 'animate-breathe' : ''}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${countdown.level === 'critical' ? 'bg-red-500 animate-ping' : 'bg-red-500 animate-pulse'}`} />
-                      <span suppressHydrationWarning className={`text-[11px] font-mono font-bold tabular-nums ${timerStyles.text} ${countdown.shouldFlash ? 'animate-flip' : ''} ${countdown.level === 'critical' ? 'animate-tension' : ''}`}>
-                        {formatCountdown(countdown.remaining)}
-                      </span>
-                    </div>
-                  )}
-                  {isExpired && (
-                    <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-400 rounded-full border-transparent">
-                      마감
-                    </Badge>
-                  )}
-                  {isWon && (
-                    <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-bold bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">
-                      {isInstant ? <Zap className="w-3 h-3 mr-0.5 fill-amber-400" /> : <Gavel className="w-3 h-3 mr-0.5" />}
-                      {isInstant ? "구매완료" : "낙찰"}
-                    </Badge>
-                  )}
-                  {auction.status === "unsold" && (
-                    <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-500 rounded-full border-transparent">
-                      {isInstant ? "미판매" : "유찰"}
-                    </Badge>
-                  )}
-                  {auction.status === "cancelled" && (
-                    <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-600 rounded-full border-transparent">
-                      취소
-                    </Badge>
-                  )}
+                {/* 입장시간 + 상태 */}
+                <div className="flex items-center justify-between mt-1">
+                  <div className="flex items-center gap-1.5">
+                    {!isCompleted && !isExpired && (
+                      isInstantEntry ? (
+                        <span className="text-[10px] font-semibold text-green-500">
+                          ⚡ 즉시 입장
+                        </span>
+                      ) : auction.entry_time ? (
+                        <span className="text-[10px] text-blue-400 font-medium">
+                          {auction.entry_time}부터 입장가능
+                        </span>
+                      ) : null
+                    )}
+                  </div>
+                  <div className="flex items-center">
+                    {isActive && (
+                      <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${timerStyles.bg} ${countdown.level === 'critical' ? timerStyles.glow : ''} ${countdown.level === 'critical' ? 'animate-breathe' : ''}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${countdown.level === 'critical' ? 'bg-red-500 animate-ping' : 'bg-red-500 animate-pulse'}`} />
+                        <span suppressHydrationWarning className={`text-[11px] font-mono font-bold tabular-nums ${timerStyles.text} ${countdown.shouldFlash ? 'animate-flip' : ''} ${countdown.level === 'critical' ? 'animate-tension' : ''}`}>
+                          {formatCountdown(countdown.remaining)}
+                        </span>
+                      </div>
+                    )}
+                    {isExpired && (
+                      <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-400 rounded-full border-transparent">
+                        마감
+                      </Badge>
+                    )}
+                    {isWon && (
+                      <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-bold bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">
+                        {isInstant ? <Zap className="w-3 h-3 mr-0.5 fill-amber-400" /> : <Gavel className="w-3 h-3 mr-0.5" />}
+                        {isInstant ? "구매완료" : "낙찰"}
+                      </Badge>
+                    )}
+                    {auction.status === "unsold" && (
+                      <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-500 rounded-full border-transparent">
+                        {isInstant ? "미판매" : "유찰"}
+                      </Badge>
+                    )}
+                    {auction.status === "cancelled" && (
+                      <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-600 rounded-full border-transparent">
+                        취소
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
