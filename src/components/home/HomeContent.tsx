@@ -25,7 +25,7 @@ const ONBOARDING_STEPS = [
   },
   {
     title: "2. 구매확정",
-    desc: "즉시구매 또는 입찰 경쟁으로 확정!",
+    desc: "예약 또는 입찰 경쟁으로 확정!",
     icon: <Trophy className="w-5 h-5 text-yellow-500" />,
     color: "bg-yellow-500/10",
   },
@@ -45,12 +45,10 @@ const ONBOARDING_STEPS = [
 
 interface HomeContentProps {
   activeAuctions: Auction[];
-  completedAuctions: Auction[];
 }
 
 export function HomeContent({
   activeAuctions,
-  completedAuctions,
 }: HomeContentProps) {
   const { user } = useCurrentUser();
   const isMD = user?.role === "md" && user?.md_status === "approved";
@@ -83,7 +81,6 @@ export function HomeContent({
 
   const [auctions, setAuctions] = useState({
     active: activeAuctions,
-    completed: completedAuctions,
   });
 
   // 사용자 입찰 상태 (경매별 최고 입찰가)
@@ -116,9 +113,8 @@ export function HomeContent({
   useEffect(() => {
     setAuctions({
       active: activeAuctions,
-      completed: completedAuctions,
     });
-  }, [activeAuctions, completedAuctions]);
+  }, [activeAuctions]);
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
@@ -221,12 +217,11 @@ export function HomeContent({
 
         <AuctionList
           activeAuctions={auctions.active}
-          completedAuctions={auctions.completed}
           selectedArea={selectedArea}
           userBidMap={userBidMap}
         />
 
-        {!user && (auctions.active.length > 0 || auctions.completed.length > 0) && (
+        {!user && auctions.active.length > 0 && (
           <div className="text-center py-6 space-y-3">
             <p className="text-[12px] text-neutral-500">로그인하면 구매에 참여할 수 있어요</p>
             <Link href="/login">

@@ -20,25 +20,10 @@ export default async function HomePage() {
     .order("auction_start_at", { ascending: true })
     .limit(20);
 
-  // 완료된 경매 목록 조회 (최근 순서)
-  const { data: completedAuctions } = await supabase
-    .from("auctions")
-    .select(
-      `
-      *,
-      club:clubs(*),
-      md:users!auctions_md_id_fkey(id, name, profile_image)
-    `
-    )
-    .in("status", ["won", "unsold", "contacted", "confirmed"])
-    .order("auction_end_at", { ascending: false })
-    .limit(20);
-
   return (
     <div className="container mx-auto max-w-lg px-4 py-4 mb-20">
       <HomeContent
         activeAuctions={activeAuctions || []}
-        completedAuctions={completedAuctions || []}
       />
     </div>
   );

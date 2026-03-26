@@ -172,11 +172,11 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                     <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                {/* 즉시구매 배지 */}
+                                {/* 예약 배지 */}
                                 {isInstant && (
                                     <Badge className="text-[9px] px-1.5 py-0 h-4 font-black bg-amber-500/20 text-amber-400 border-amber-500/30">
                                         <Zap className="w-2.5 h-2.5 mr-0.5 fill-amber-400" />
-                                        즉시구매
+                                        예약가격
                                     </Badge>
                                 )}
                                 {/* 정산 상태 배지 (종료된 경매는 정산 배지만 표시) */}
