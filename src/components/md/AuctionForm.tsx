@@ -63,6 +63,16 @@ const formSchema = z.object({
             });
         }
     }
+
+    // 즉시낙찰가(BIN)가 시작가보다 낮은지 체크
+    if (data.listing_type === "auction" && data.buy_now_price && data.buy_now_price < data.start_price) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: "즉시낙찰가는 시작가보다 낮을 수 없습니다.",
+            path: ["buy_now_price"],
+        });
+    }
+
     // 경매 시작 일시가 현재보다 과거인지 체크 — 즉시 시작이면 건너뜀
     if (!data.instant_start && data.auction_start_at && dayjs(data.auction_start_at).isBefore(dayjs())) {
         ctx.addIssue({
@@ -1008,6 +1018,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                             </span>
                                         )}
                                     </p>
+                                    {errors.buy_now_price && <p className="text-red-500 text-[11px] mt-1">{errors.buy_now_price?.message?.toString()}</p>}
                                 </>
                             )}
                         </div>
