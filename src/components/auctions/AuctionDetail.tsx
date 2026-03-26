@@ -131,11 +131,11 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         winning_bid: displayAuction.current_bid,
         club_name: displayAuction.club?.name,
       });
-      toast.success("축하합니다! 낙찰되셨습니다!", {
+      toast.success(displayAuction.listing_type === 'instant' ? "축하합니다! 구매가 완료되었습니다!" : "축하합니다! 낙찰되셨습니다!", {
         description: "MD에게 연락하여 예약을 확정해주세요.",
         duration: 10000,
         action: {
-          label: "내 낙찰 보기",
+          label: displayAuction.listing_type === 'instant' ? "내 구매 보기" : "내 낙찰 보기",
           onClick: () => router.push("/bids?tab=won"),
         },
       });
@@ -262,7 +262,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               variant="secondary"
               className="text-[10px] px-2.5 py-1 uppercase font-medium tracking-wider bg-black/40 backdrop-blur-md text-neutral-300 border border-white/10 rounded-full"
             >
-              {isExpired ? "마감중" : displayAuction.status === "won" ? "낙찰 성공" : displayAuction.status === "contacted" ? "연락 완료" : "종료"}
+              {isExpired ? "마감중" : displayAuction.status === "won" ? (isInstant ? "구매 완료" : "낙찰 성공") : displayAuction.status === "contacted" ? "연락 완료" : "종료"}
             </Badge>
           )}
         </div>
@@ -353,7 +353,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             )}
           </div>
 
-          <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} />
+          <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} isInstant={isInstant} />
 
           {/* 마감 임박 시 연장 안내 (경매만) */}
           {isActive && !isInstant && (
@@ -575,7 +575,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                       {displayAuction.contact_timer_minutes || 10}분 이내에 {md?.name ? `${md.name} MD에게` : "MD에게"} 연락하여 예약을 확정하세요.
                     </p>
                     <p className="text-neutral-400 text-[11px] font-medium leading-relaxed">
-                      마감 시간 내 연락이 없으면 낙찰이 취소되며, <span className="text-red-400">노쇼 스트라이크(3일~영구 활동 제한)</span>가 부과됩니다.
+                      마감 시간 내 연락이 없으면 {isInstant ? "구매가" : "낙찰이"} 취소되며, <span className="text-red-400">노쇼 스트라이크(3일~영구 활동 제한)</span>가 부과됩니다.
                     </p>
                   </div>
 

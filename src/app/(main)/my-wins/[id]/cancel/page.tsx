@@ -20,7 +20,7 @@ export default async function CancelPage({
     .select(
       `
       id, status, winner_id, winning_price, current_bid,
-      event_date, contact_deadline, contact_timer_minutes, won_at,
+      event_date, contact_deadline, contact_timer_minutes, won_at, listing_type,
       club:club_id (name, area)
     `
     )
@@ -48,6 +48,7 @@ export default async function CancelPage({
         winningPrice: auction.winning_price || auction.current_bid || 0,
         contactDeadline: auction.contact_deadline,
         wonAt: auction.won_at,
+        listingType: (auction as any).listing_type || "auction",
       }}
       currentWarnings={userData?.warning_count ?? 0}
     />

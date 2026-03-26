@@ -168,13 +168,13 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                   )}
                   {isWon && (
                     <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-bold bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">
-                      <Gavel className="w-3 h-3 mr-0.5" />
-                      낙찰
+                      {isInstant ? <Zap className="w-3 h-3 mr-0.5 fill-amber-400" /> : <Gavel className="w-3 h-3 mr-0.5" />}
+                      {isInstant ? "구매완료" : "낙찰"}
                     </Badge>
                   )}
                   {auction.status === "unsold" && (
                     <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-500 rounded-full border-transparent">
-                      유찰
+                      {isInstant ? "미판매" : "유찰"}
                     </Badge>
                   )}
                   {auction.status === "cancelled" && (

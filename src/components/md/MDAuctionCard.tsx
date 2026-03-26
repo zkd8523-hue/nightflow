@@ -38,14 +38,18 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     const getDeleteConfirmInfo = () => {
         if (hasBids && isGracePeriod) {
             return {
-                title: "입찰이 있는 경매 삭제",
-                description: `이미 ${auction.bid_count}회의 입찰이 있습니다. 생성 후 5분 내이므로 삭제가 가능하지만, 입찰자들에게 혼란을 줄 수 있습니다. 정말 삭제하시겠습니까?`,
+                title: isInstant ? "구매 관심이 있는 판매 삭제" : "입찰이 있는 경매 삭제",
+                description: isInstant
+                    ? `이미 구매 시도가 있습니다. 생성 후 5분 내이므로 삭제가 가능하지만, 혼란을 줄 수 있습니다. 정말 삭제하시겠습니까?`
+                    : `이미 ${auction.bid_count}회의 입찰이 있습니다. 생성 후 5분 내이므로 삭제가 가능하지만, 입찰자들에게 혼란을 줄 수 있습니다. 정말 삭제하시겠습니까?`,
                 variant: "danger" as const,
             };
         }
         return {
-            title: "경매 삭제",
-            description: "정말 이 경매를 삭제하시겠습니까? 삭제된 경매는 복구할 수 없습니다.",
+            title: isInstant ? "판매 삭제" : "경매 삭제",
+            description: isInstant
+                ? "정말 이 판매를 삭제하시겠습니까? 삭제된 항목은 복구할 수 없습니다."
+                : "정말 이 경매를 삭제하시겠습니까? 삭제된 경매는 복구할 수 없습니다.",
             variant: "danger" as const,
         };
     };
@@ -53,7 +57,9 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     const handleDelete = async () => {
         if (hasBids && !isGracePeriod) {
             toast.error(
-                `입찰이 ${auction.bid_count}회 있어 삭제할 수 없습니다. 생성 후 5분 내에만 입찰이 있어도 삭제 가능합니다.`,
+                isInstant
+                    ? `구매 시도가 있어 삭제할 수 없습니다. 생성 후 5분 내에만 삭제 가능합니다.`
+                    : `입찰이 ${auction.bid_count}회 있어 삭제할 수 없습니다. 생성 후 5분 내에만 입찰이 있어도 삭제 가능합니다.`,
                 {
                     action: {
                         label: "문의하기",
@@ -74,16 +80,16 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
 
             if (!response.ok) {
                 const { error } = await response.json();
-                throw new Error(error || "경매 삭제에 실패했습니다.");
+                throw new Error(error || "삭제에 실패했습니다.");
             }
 
-            toast.success("경매가 삭제되었습니다.");
+            toast.success("삭제되었습니다.");
             onDelete?.();
             router.refresh();
         } catch (error: unknown) {
             const msg = getErrorMessage(error);
             logError(error, 'MDAuctionCard.performDelete');
-            toast.error(msg || "경매 삭제에 실패했습니다.");
+            toast.error(msg || "삭제에 실패했습니다.");
         }
     };
 
@@ -155,7 +161,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                     {(() => {
                         const imageUrl = getAuctionImageUrl(auction.thumbnail_url, club?.thumbnail_url, auction.includes);
                         if (imageUrl) {
-                            return <img src={imageUrl} alt={club?.name || "경매"} className="w-full h-full object-cover" />;
+                            return <img src={imageUrl} alt={club?.name || (isInstant ? "판매" : "경매")} className="w-full h-full object-cover" />;
                         }
                         return <DrinkPlaceholder includes={auction.includes || []} />;
                     })()}
@@ -188,7 +194,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                     </Badge>
                                 ) : auction.status === "unsold" ? (
                                     <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-neutral-800 text-neutral-500 border-neutral-700">
-                                        유찰
+                                        {isInstant ? "미판매" : "유찰"}
                                     </Badge>
                                 ) : auction.status === "cancelled" ? (
                                     <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-neutral-800 text-neutral-600 border-neutral-700">
@@ -277,7 +283,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                             ) : null}
                             {isActive && (
                                 <div className={`text-[12px] font-bold mt-0.5 ${topBidder ? "text-green-500" : "text-neutral-600"}`}>
-                                    {topBidder ? `👤 ${topBidder.bidder_name}` : "아직 입찰 없음"}
+                                    {topBidder ? `👤 ${topBidder.bidder_name}` : (isInstant ? "아직 구매 없음" : "아직 입찰 없음")}
                                 </div>
                             )}
                         </div>

@@ -43,6 +43,7 @@ export interface WonAuctionData {
   entry_time: string | null;
   table_info: string | null;
   winner_id: string | null;
+  listing_type?: "auction" | "instant";
   club: { name: string; area: string } | null;
   md: {
     name: string | null;
@@ -76,11 +77,11 @@ function saveDismissedIds(ids: Set<string>) {
   localStorage.setItem(DISMISSED_KEY, JSON.stringify([...ids]));
 }
 
-function getWonStatusConfig(status: string) {
+function getWonStatusConfig(status: string, isInstant = false) {
   switch (status) {
     case "won":
       return {
-        label: "낙찰! MD에게 연락하세요",
+        label: isInstant ? "구매 완료! MD에게 연락하세요" : "낙찰! MD에게 연락하세요",
         className:
           "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse",
         icon: Phone,
@@ -111,7 +112,7 @@ function getWonStatusConfig(status: string) {
       };
     default:
       return {
-        label: "낙찰",
+        label: isInstant ? "구매완료" : "낙찰",
         className: "bg-amber-500/10 text-amber-500 border-amber-500/20",
         icon: PartyPopper,
       };
@@ -411,10 +412,10 @@ export function MyBidsClient({
       <div className="max-w-lg mx-auto px-4">
         <header className="py-8 space-y-2">
           <h1 className="text-3xl font-black text-white tracking-tighter">
-            내 경매
+            내 활동
           </h1>
           <p className="text-neutral-500 font-medium">
-            입찰, 낙찰, 종료된 경매를 한곳에서 확인하세요.
+            입찰, 구매, 종료된 내역을 한곳에서 확인하세요.
           </p>
         </header>
 
@@ -431,7 +432,7 @@ export function MyBidsClient({
               className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500 relative"
             >
               <span className={hasUrgentWon ? "text-amber-500 data-[state=active]:text-black" : ""}>
-                낙찰
+                낙찰/구매
                 {activeWonAuctions.length > 0 &&
                   ` (${activeWonAuctions.length})`}
               </span>
@@ -528,8 +529,9 @@ function WonAuctionCard({
     !!auction.contact_deadline &&
     new Date(auction.contact_deadline).getTime() <= Date.now();
 
+  const isInstant = auction.listing_type === "instant";
   const effectiveStatus = isContactExpired ? "expired" : auction.status;
-  const config = getWonStatusConfig(effectiveStatus);
+  const config = getWonStatusConfig(effectiveStatus, isInstant);
   const StatusIcon = config.icon;
   const isWonWaiting = effectiveStatus === "won";
   const isTerminal = ["expired", "cancelled", "unsold"].includes(
@@ -570,7 +572,7 @@ function WonAuctionCard({
         {/* Price Info */}
         <div className="bg-neutral-900/50 rounded-2xl p-4 border border-neutral-800/50">
           <div className="flex justify-between items-center">
-            <span className="text-neutral-500 text-sm font-bold">낙찰가</span>
+            <span className="text-neutral-500 text-sm font-bold">{isInstant ? "구매가" : "낙찰가"}</span>
             <span className="text-2xl font-black text-white">
               {formatPrice(auction.winning_price || auction.current_bid)}
             </span>
@@ -588,7 +590,7 @@ function WonAuctionCard({
           <div className="bg-red-500/5 border border-red-500/10 rounded-lg p-3 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
             <p className="text-[11px] text-red-500/80 font-bold leading-tight">
-              연락 시간이 만료되어 낙찰이 취소되었습니다.
+              연락 시간이 만료되어 {isInstant ? "구매가" : "낙찰이"} 취소되었습니다.
             </p>
           </div>
         )}
@@ -634,7 +636,7 @@ function WonAuctionCard({
             >
               <XCircle className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300 transition-colors" />
               <span className="text-xs text-neutral-500 font-medium group-hover:text-neutral-300 transition-colors">
-                낙찰 포기
+                {isInstant ? "구매 포기" : "낙찰 포기"}
               </span>
             </Link>
             <ReportMDButton
@@ -657,14 +659,14 @@ function EmptyActive() {
         <Gavel className="w-8 h-8 text-neutral-700" />
       </div>
       <p className="text-neutral-500 font-medium">
-        현재 진행 중인 입찰이 없습니다.
+        진행 중인 내역이 없습니다.
       </p>
       <Link href="/">
         <Button
           variant="link"
           className="text-neutral-400 font-bold underline"
         >
-          지금 진행 중인 경매 보러가기
+          지금 진행 중인 테이블 보러가기
         </Button>
       </Link>
     </div>
@@ -678,14 +680,14 @@ function EmptyWon() {
         <Trophy className="w-8 h-8 text-neutral-700" />
       </div>
       <p className="text-neutral-500 font-medium">
-        아직 낙찰된 내역이 없습니다.
+        아직 확정된 내역이 없습니다.
       </p>
       <Link href="/">
         <Button
           variant="link"
           className="text-neutral-400 font-bold underline"
         >
-          지금 진행 중인 경매 보러가기
+          지금 진행 중인 테이블 보러가기
         </Button>
       </Link>
     </div>
@@ -699,7 +701,7 @@ function EmptyEnded() {
         <Clock className="w-8 h-8 text-neutral-700" />
       </div>
       <p className="text-neutral-500 font-medium">
-        종료된 경매 내역이 없습니다.
+        종료된 내역이 없습니다.
       </p>
     </div>
   );

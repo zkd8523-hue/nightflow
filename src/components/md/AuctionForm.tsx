@@ -57,7 +57,7 @@ const formSchema = z.object({
         if (visitDateTime.isBefore(auctionEnd)) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: "입장 시간은 경매 종료 이후여야 합니다.",
+                message: data.listing_type === "instant" ? "입장 시간은 판매 종료 이후여야 합니다." : "입장 시간은 경매 종료 이후여야 합니다.",
                 path: ["entry_time"],
             });
         }
@@ -66,7 +66,7 @@ const formSchema = z.object({
     if (!data.instant_start && data.auction_start_at && dayjs(data.auction_start_at).isBefore(dayjs())) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: "경매 시작 일시는 현재 시각 이후여야 합니다.",
+            message: data.listing_type === "instant" ? "시작 일시는 현재 시각 이후여야 합니다." : "경매 시작 일시는 현재 시각 이후여야 합니다.",
             path: ["auction_start_at"],
         });
     }
@@ -461,7 +461,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             const result = await res.json();
             if (!res.ok) {
-                throw new Error(result.error || "경매 등록에 실패했습니다.");
+                throw new Error(result.error || "등록에 실패했습니다.");
             }
 
             trackEvent("auction_created", {
@@ -475,7 +475,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             if (initialData) {
                 // 수정: 기존 동작 유지
-                toast.success("경매 정보가 수정되었습니다!");
+                toast.success(isInstantMode ? "판매 정보가 수정되었습니다!" : "경매 정보가 수정되었습니다!");
                 setTimeout(() => {
                     router.push("/md/dashboard");
                 }, 300);
@@ -588,7 +588,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 space-y-1">
                     <p className="text-[11px] text-amber-400 font-bold">즉시구매 모드</p>
                     <p className="text-[10px] text-amber-400/80 leading-relaxed">
-                        설정한 가격으로 첫 구매자가 즉시 낙찰됩니다. 입찰 경쟁 없이 선착순으로 진행됩니다.
+                        설정한 가격으로 첫 구매자가 즉시 구매합니다. 입찰 경쟁 없이 선착순으로 진행됩니다.
                     </p>
                 </div>
             )}
@@ -842,7 +842,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 space-y-1">
                     <p className="text-[11px] text-amber-500 font-bold">주류 변경 안내</p>
                     <p className="text-[10px] text-amber-500/80">• 현장에서 동급 브랜드 변경 가능</p>
-                    <p className="text-[10px] text-amber-500/80">• 낙찰가 이하 환불 불가</p>
+                    <p className="text-[10px] text-amber-500/80">• {isInstantMode ? "구매가" : "낙찰가"} 이하 환불 불가</p>
                 </div>
                 {errors.includes && <p className="text-red-500 text-[11px]">{errors.includes?.message?.toString()}</p>}
             </section>
@@ -881,8 +881,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매가" : "경매 시작가"}</Label>
                         {hasBids && (
                             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-2">
-                                <p className="text-[12px] text-amber-400 font-bold">🔒 입찰이 있어 경매 조건 변경 불가</p>
-                                <p className="text-[10px] text-amber-400/80 mt-1">이미 {initialData.bid_count}회 입찰이 있어 가격, 주류, 테이블, 지속시간을 변경할 수 없습니다.</p>
+                                <p className="text-[12px] text-amber-400 font-bold">🔒 {isInstantMode ? "구매 시도가 있어 조건 변경 불가" : "입찰이 있어 경매 조건 변경 불가"}</p>
+                                <p className="text-[10px] text-amber-400/80 mt-1">{isInstantMode ? "이미 구매 시도가 있어" : `이미 ${initialData.bid_count}회 입찰이 있어`} 가격, 주류, 테이블, 지속시간을 변경할 수 없습니다.</p>
                             </div>
                         )}
                         <Input
@@ -969,7 +969,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         </div>
                         {instantEntry ? (
                             <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
-                                <span className="text-green-500 text-sm font-bold">낙찰 후 바로 입장 가능</span>
+                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "구매 후 바로 입장 가능" : "낙찰 후 바로 입장 가능"}</span>
                             </div>
                         ) : auctionMode === "today" ? (
                             <Input
@@ -1036,7 +1036,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     {!initialData && (
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <Label className="text-neutral-400 text-[10px] font-bold uppercase">경매 시작 일시</Label>
+                            <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매 시작 일시" : "경매 시작 일시"}</Label>
                             <label className="flex items-center gap-1.5 cursor-pointer">
                                 <input
                                     type="checkbox"
@@ -1056,7 +1056,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         </div>
                         {instantStart ? (
                             <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
-                                <span className="text-green-500 text-sm font-bold">등록 즉시 경매가 시작됩니다</span>
+                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "등록 즉시 판매가 시작됩니다" : "등록 즉시 경매가 시작됩니다"}</span>
                             </div>
                         ) : (
                             <>
@@ -1067,7 +1067,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     </div>
                     )}
                     <div className={`space-y-3 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <Label className="text-neutral-400 text-[10px] font-bold uppercase">경매 지속 시간</Label>
+                        <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매 지속 시간" : "경매 지속 시간"}</Label>
                         {(() => {
                             const eventDate = watch("event_date");
 
@@ -1121,7 +1121,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent z-50">
                 <div className="max-w-lg mx-auto">
                     <Button disabled={isSubmitting} className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? "경매 정보 수정하기" : (isInstantMode ? "오늘 특가 등록하기" : "경매 시작하기"))}
+                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "경매 정보 수정하기") : (isInstantMode ? "오늘 특가 등록하기" : "경매 시작하기"))}
                         <ArrowRight className="w-5 h-5" />
                     </Button>
                 </div>

@@ -18,14 +18,14 @@ const GUIDE_DISMISSED_KEY = "nightflow_guide_dismissed";
 
 const ONBOARDING_STEPS = [
   {
-    title: "1. 입찰하기",
-    desc: "원하는 클럽과 테이블에 입찰하세요.",
+    title: "1. 구매하기",
+    desc: "원하는 클럽 테이블을 선택하세요.",
     icon: <Zap className="w-5 h-5 text-amber-500" />,
     color: "bg-amber-500/10",
   },
   {
-    title: "2. 낙찰성공",
-    desc: "마감 시 최고가면 낙찰됩니다.",
+    title: "2. 구매확정",
+    desc: "즉시구매 또는 입찰 경쟁으로 확정!",
     icon: <Trophy className="w-5 h-5 text-yellow-500" />,
     color: "bg-yellow-500/10",
   },
@@ -248,7 +248,7 @@ export function HomeContent({
 
         {!user && (auctions.active.length > 0 || auctions.completed.length > 0) && (
           <div className="text-center py-6 space-y-3">
-            <p className="text-[12px] text-neutral-500">로그인하면 입찰에 참여할 수 있어요</p>
+            <p className="text-[12px] text-neutral-500">로그인하면 구매에 참여할 수 있어요</p>
             <Link href="/login">
               <Button className="h-10 px-8 bg-white text-black font-bold text-sm rounded-full hover:bg-neutral-200">
                 로그인하기
@@ -284,7 +284,7 @@ export function HomeContent({
             <SheetDescription className="text-neutral-400 text-sm leading-relaxed mt-2">
               NightFlow 파트너로 승인되었습니다.
               <br />
-              지금 바로 경매를 등록하고 첫 매출을 만들어보세요.
+              지금 바로 테이블을 등록하고 첫 매출을 만들어보세요.
             </SheetDescription>
           </SheetHeader>
 
@@ -292,19 +292,19 @@ export function HomeContent({
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">1</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                대시보드에서 <span className="text-white font-bold">경매 등록</span>
+                대시보드에서 <span className="text-white font-bold">테이블 등록</span>
               </p>
             </div>
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">2</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                유저들이 <span className="text-white font-bold">실시간 입찰 경쟁</span>
+                유저들이 <span className="text-white font-bold">실시간 경쟁 구매</span>
               </p>
             </div>
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">3</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                낙찰 성공 시 <span className="text-white font-bold">매출 확정</span>
+                구매 확정 시 <span className="text-white font-bold">매출 확정</span>
               </p>
             </div>
           </div>
