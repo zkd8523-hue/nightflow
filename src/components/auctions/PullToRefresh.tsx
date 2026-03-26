@@ -11,10 +11,18 @@ interface PullToRefreshProps {
 export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const documentRef = useRef<Document | null>(null);
   const startYRef = useRef(0);
+  const pullDistanceRef = useRef(0);
+  const isRefreshingRef = useRef(false);
+  const touchActiveRef = useRef(false);
+  const onRefreshRef = useRef(onRefresh);
 
-  const THRESHOLD = 80; // 새로고침 트리거 거리
+  const THRESHOLD = 80;
+
+  // Keep refs in sync
+  useEffect(() => { pullDistanceRef.current = pullDistance; }, [pullDistance]);
+  useEffect(() => { isRefreshingRef.current = isRefreshing; }, [isRefreshing]);
+  useEffect(() => { onRefreshRef.current = onRefresh; }, [onRefresh]);
 
   // 브라우저 네이티브 pull-to-refresh 충돌 방지
   useEffect(() => {
@@ -25,63 +33,57 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
   }, []);
 
   useEffect(() => {
-    // 클라이언트 환경에서만 실행
-    if (typeof document === "undefined") return;
-    documentRef.current = document;
-
-    let currentTouchId: number | null = null;
-
     const handleTouchStart = (e: TouchEvent) => {
-      // 페이지 최상단에서만 활성화
-      if (window.scrollY === 0 && e.touches.length > 0) {
+      if (isRefreshingRef.current) return;
+      // 스크롤이 최상단일 때만 활성화 (소수점 오차 허용)
+      if (window.scrollY <= 1 && e.touches.length > 0) {
         startYRef.current = e.touches[0].clientY;
-        currentTouchId = e.touches[0].identifier;
+        touchActiveRef.current = true;
       }
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      if (
-        window.scrollY !== 0 ||
-        isRefreshing ||
-        currentTouchId === null ||
-        e.touches.length === 0
-      ) {
+      if (!touchActiveRef.current || isRefreshingRef.current) return;
+      if (window.scrollY > 1) {
+        touchActiveRef.current = false;
+        setPullDistance(0);
         return;
       }
 
-      // 같은 터치 포인트 확인
-      const touch = Array.from(e.touches).find(
-        (t) => t.identifier === currentTouchId
-      );
+      const touch = e.touches[0];
       if (!touch) return;
 
       const distance = touch.clientY - startYRef.current;
 
       if (distance > 0) {
         e.preventDefault();
-        setPullDistance(Math.min(distance, THRESHOLD * 1.5));
+        const clamped = Math.min(distance, THRESHOLD * 1.5);
+        pullDistanceRef.current = clamped;
+        setPullDistance(clamped);
       }
     };
 
-    const handleTouchEnd = async (e: TouchEvent) => {
-      if (pullDistance >= THRESHOLD && !isRefreshing) {
+    const handleTouchEnd = async () => {
+      if (!touchActiveRef.current) return;
+      touchActiveRef.current = false;
+
+      const dist = pullDistanceRef.current;
+      if (dist >= THRESHOLD && !isRefreshingRef.current) {
         setIsRefreshing(true);
+        isRefreshingRef.current = true;
         try {
-          await onRefresh();
+          await onRefreshRef.current();
         } finally {
           setIsRefreshing(false);
+          isRefreshingRef.current = false;
         }
       }
+      pullDistanceRef.current = 0;
       setPullDistance(0);
-      currentTouchId = null;
     };
 
-    document.addEventListener("touchstart", handleTouchStart, {
-      passive: true,
-    });
-    document.addEventListener("touchmove", handleTouchMove, {
-      passive: false,
-    });
+    document.addEventListener("touchstart", handleTouchStart, { passive: true });
+    document.addEventListener("touchmove", handleTouchMove, { passive: false });
     document.addEventListener("touchend", handleTouchEnd, { passive: true });
 
     return () => {
@@ -89,7 +91,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
     };
-  }, [pullDistance, isRefreshing, onRefresh]);
+  }, []); // 빈 dependency — 리스너 한 번만 등록, ref로 최신값 참조
 
   const refreshProgress = Math.min(pullDistance / THRESHOLD, 1);
 
@@ -107,9 +109,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
         >
           <RefreshCw
             size={16}
-            className={`transition-transform ${
-              isRefreshing ? "animate-spin" : ""
-            }`}
+            className={`transition-transform ${isRefreshing ? "animate-spin" : ""}`}
             style={{
               transform: `rotate(${refreshProgress * 180}deg)`,
             }}
@@ -119,7 +119,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
               ? "새로고침 중..."
               : pullDistance >= THRESHOLD
                 ? "손을 놓아 새로고침"
-                : "위로 당겨 새로고침"}
+                : "당겨서 새로고침"}
           </span>
         </div>
       )}
