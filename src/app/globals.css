@@ -131,6 +131,15 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /* 스크롤바 숨기기 (overflow-x-auto와 함께 사용) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* 숫자 flip 애니메이션 (10초 단위) */
   @keyframes flip {
     0% {
