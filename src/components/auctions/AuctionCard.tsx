@@ -144,12 +144,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
 
                 <div className="flex items-center justify-end mt-1">
 
-                  {isActive && isInstant && (
-                    <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/90">
-                      <Zap className="w-2.5 h-2.5 text-black fill-black" />
-                      <span className="text-[9px] font-black text-black">즉시구매</span>
-                    </div>
-                  )}
+
                   {isActive && (
                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${timerStyles.bg} ${countdown.level === 'critical' ? timerStyles.glow : ''} ${countdown.level === 'critical' ? 'animate-breathe' : ''}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${countdown.level === 'critical' ? 'bg-red-500 animate-ping' : 'bg-red-500 animate-pulse'}`} />
@@ -193,15 +188,10 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                   {formatNumber(currentPrice)}원
                 </span>
                 <div className="text-[11px] text-neutral-500 flex items-center gap-1 mt-1">
-                  {isInstant && !isWon ? (
-                    <span className="text-amber-400 flex items-center gap-0.5">
-                      <Zap className="w-3 h-3 fill-amber-400" />
-                      즉시구매 고정가
-                    </span>
-                  ) : isWon ? (
+                  {isWon ? (
                     <span className="text-amber-500/70">{isInstant ? "구매 완료" : `낙찰가 · 입찰 ${auction.bid_count}회`}</span>
                   ) : (
-                    <span>입찰 {auction.bid_count}회</span>
+                    !isInstant && <span>입찰 {auction.bid_count}회</span>
                   )}
                   {!isInstant && isUserHighest && (
                     <span className="ml-0.5 text-green-400 bg-green-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-green-500/20">최고입찰</span>
