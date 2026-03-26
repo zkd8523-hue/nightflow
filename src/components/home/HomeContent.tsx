@@ -112,6 +112,14 @@ export function HomeContent({
     fetchUserBids();
   }, [user, auctions.active, supabase]);
 
+  // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
+  useEffect(() => {
+    setAuctions({
+      active: activeAuctions,
+      completed: completedAuctions,
+    });
+  }, [activeAuctions, completedAuctions]);
+
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -125,39 +133,11 @@ export function HomeContent({
     localStorage.setItem(GUIDE_DISMISSED_KEY, "1");
   };
 
-  const handleRefresh = async () => {
-    try {
-      const response = await fetch("/api/auctions/refresh", {
-        method: "POST",
-      });
 
-      if (!response.ok) throw new Error("새로고침 실패");
-
-      const data = await response.json();
-      setAuctions({
-        active: data.activeAuctions || [],
-        completed: data.completedAuctions || [],
-      });
-
-      // 성공 피드백
-      const event = new CustomEvent("refreshSuccess");
-      window.dispatchEvent(event);
-    } catch (error) {
-      logger.error("Refresh error:", error);
-    }
-  };
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
-      <div className="space-y-8">
-        <div className="space-y-1 px-1">
-          <h1 className="text-[20px] font-black text-white tracking-tighter leading-none">
-            NIGHTFLOW
-          </h1>
-          <p className="text-[12px] text-neutral-500 font-bold tracking-widest">
-            내가 부른 가격, 내가 부른 밤
-          </p>
-        </div>
+    <>
+      <div className="space-y-4">
 
         {/* 지역 필터 바 */}
         <div className="sticky top-14 z-40 bg-[#0A0A0A]/95 backdrop-blur-sm py-2.5 -mx-4 px-4 border-b border-neutral-800/50">
@@ -325,6 +305,6 @@ export function HomeContent({
           </div>
         </SheetContent>
       </Sheet>
-    </PullToRefresh>
+    </>
   );
 }

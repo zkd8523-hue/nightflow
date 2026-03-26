@@ -517,7 +517,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
       {/* 7-a. 비로그인 sticky CTA */}
       {isActive && !user && (
-        <div className="bg-[#0A0A0A]/80 backdrop-blur-lg border-t border-neutral-800 p-4 pb-safe sticky bottom-0 z-50">
+        <div className="bg-[#0A0A0A]/80 backdrop-blur-lg border-t border-neutral-800 pt-4 px-4 pb-20 sticky bottom-0 z-50">
           <div className="max-w-lg mx-auto">
             <Button
               onClick={() => router.push("/login")}
@@ -534,7 +534,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
       )}
       {/* 7-b. Bid/Buy Panel (Bottom) */}
       {isActive && user && (
-        <div className="bg-[#0A0A0A]/80 backdrop-blur-lg border-t border-neutral-800 p-4 pb-safe mt-8 sticky bottom-0 z-50">
+        <div className="bg-[#0A0A0A]/80 backdrop-blur-lg border-t border-neutral-800 pt-4 px-4 pb-20 mt-8 sticky bottom-0 z-50">
           <div className="max-w-lg mx-auto">
             {isInstant ? (
               <InstantBuyPanel
@@ -552,7 +552,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
       )}
       {/* 8. Winner Contact MD CTA (Bottom) - Model B: DM + 전화 */}
       {showContactCTA && (
-        <div className="bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-neutral-800 p-4 pb-safe sticky bottom-0 z-[60] animate-in slide-in-from-bottom duration-500">
+        <div className="bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-neutral-800 pt-4 px-4 pb-20 sticky bottom-0 z-[60] animate-in slide-in-from-bottom duration-500">
           <div className="max-w-lg mx-auto space-y-3">
             {contactRemaining > 0 ? (
               <>

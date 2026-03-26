@@ -98,7 +98,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
       {/* 풀 투 리프레시 인디케이터 */}
       {(pullDistance > 0 || isRefreshing) && (
         <div
-          className="fixed top-0 left-0 right-0 flex items-center justify-center gap-2 text-neutral-400 transition-all z-40"
+          className="fixed top-0 left-0 right-0 flex items-center justify-center gap-2 text-neutral-400 transition-all z-[60]"
           style={{
             height: `${pullDistance}px`,
             opacity: Math.min(pullDistance / THRESHOLD, 1),

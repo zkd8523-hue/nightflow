@@ -19,10 +19,11 @@ import { useAuctionStore } from "@/stores/useAuctionStore";
 import type { Auction } from "@/types/database";
 import { formatPrice } from "@/lib/utils/format";
 import { getMinBidAmount, getBidPresets, isAuctionActive, isAuctionExpired, getRemainingSeconds } from "@/lib/utils/auction";
-import { Crown, ShieldCheck, Timer, AlertCircle } from "lucide-react";
+import { Crown, ShieldCheck, Timer, AlertCircle, Zap } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
+import { formatNumber } from "@/lib/utils/format";
 
 interface BidPanelProps {
   auction: Auction;
@@ -37,7 +38,12 @@ export const BidPanel = memo(function BidPanel({ auction, onBidSuccess }: BidPan
   const [bidAmount, setBidAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showBinConfirm, setShowBinConfirm] = useState(false);
+  const [binLoading, setBinLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const hasBin = !!(auction.buy_now_price && auction.buy_now_price > 0 && auction.listing_type === 'auction');
+  const binPrice = auction.buy_now_price || 0;
 
   const handleInputFocus = useCallback(() => {
     setTimeout(() => {
@@ -265,6 +271,18 @@ export const BidPanel = memo(function BidPanel({ auction, onBidSuccess }: BidPan
         >
           {getButtonContent()}
         </Button>
+
+        {/* BIN (즉시낙찰) 버튼 */}
+        {hasBin && isActive && (
+          <Button
+            className="w-full h-11 text-sm font-black rounded-xl transition-all active:scale-[0.98] bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.2)] mt-2"
+            onClick={() => setShowBinConfirm(true)}
+            disabled={loading || binLoading}
+          >
+            <Zap className="w-4 h-4 mr-1.5 fill-current" />
+            {formatPrice(binPrice)} 즉시낙찰하기
+          </Button>
+        )}
       </Card>
 
       {/* 확인 시트 */}
@@ -347,6 +365,119 @@ export const BidPanel = memo(function BidPanel({ auction, onBidSuccess }: BidPan
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* BIN 확인 시트 */}
+      {hasBin && (
+        <Sheet open={showBinConfirm} onOpenChange={setShowBinConfirm}>
+          <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl">
+            <SheetHeader className="text-left">
+              <SheetTitle className="text-white font-black text-xl flex items-center gap-2">
+                <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
+                즉시낙찰 확인
+              </SheetTitle>
+              <SheetDescription className="text-neutral-400">
+                {`${formatPrice(binPrice)}에 즉시 낙찰하시겠습니까?`}
+              </SheetDescription>
+            </SheetHeader>
+            <div className="space-y-4 mt-6">
+              <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-500 text-sm font-bold">경매 상품</span>
+                  <span className="font-bold text-white text-right max-w-[200px] truncate">{auction.title}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-500 text-sm font-bold">즉시낙찰가</span>
+                  <span className="font-black text-2xl text-amber-400">
+                    {formatPrice(binPrice)}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-500 text-sm font-bold">현재 최고가</span>
+                  <span className="font-bold text-neutral-300">
+                    {auction.current_bid > 0 ? formatPrice(auction.current_bid) : "입찰 없음"}
+                  </span>
+                </div>
+                <div className="h-px bg-neutral-800/30" />
+                <div className="flex items-start gap-2 pt-1">
+                  <ShieldCheck className="w-4 h-4 text-neutral-400 mt-0.5" />
+                  <p className="text-[11px] text-neutral-400 leading-relaxed font-medium">
+                    즉시낙찰 시 경매가 즉시 종료되며, 다른 입찰자에게 알림이 발송됩니다.
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-neutral-500 text-center">
+                낙찰 시 방문 필수 · 노쇼 시 이용이 제한됩니다
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 pb-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowBinConfirm(false)}
+                  className="h-14 rounded-2xl border-neutral-800 text-neutral-400 font-bold"
+                >
+                  취소
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!user) {
+                      toast.error("로그인이 필요합니다");
+                      return;
+                    }
+                    setBinLoading(true);
+                    try {
+                      const { data: result, error } = await supabase.rpc("place_bid", {
+                        p_auction_id: auction.id,
+                        p_bidder_id: user.id,
+                        p_bid_amount: binPrice,
+                      });
+                      if (error) throw error;
+
+                      if (result?.previous_bidder_id && result.previous_bidder_id !== user.id) {
+                        fetch("/api/notifications/outbid", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            auctionId: auction.id,
+                            outbidUserId: result.previous_bidder_id,
+                          }),
+                        }).catch(logger.error);
+                      }
+
+                      trackEvent("bin_purchase", {
+                        auction_id: auction.id,
+                        bin_price: binPrice,
+                        club_name: auction.club?.name,
+                      });
+
+                      setShowBinConfirm(false);
+                      onBidSuccess(binPrice);
+                      toast.success("즉시낙찰 완료! MD에게 연락해주세요 🎉", { duration: 5000 });
+                    } catch (error: unknown) {
+                      const msg = getErrorMessage(error);
+                      logError(error, 'BidPanel.handleBin');
+                      if (msg.includes("자신의 경매")) {
+                        toast.error("자신의 경매에 입찰할 수 없습니다.");
+                      } else if (msg.includes("already won") || msg.includes("종료되었습니다")) {
+                        toast.error("이미 다른 사용자가 낙찰받은 경매입니다.");
+                        router.refresh();
+                      } else {
+                        toast.error("처리 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+                      }
+                    } finally {
+                      setBinLoading(false);
+                    }
+                  }}
+                  disabled={binLoading}
+                  className="h-14 rounded-2xl font-black text-lg text-black bg-amber-500 hover:bg-amber-400"
+                >
+                  {binLoading ? "처리 중..." : "즉시낙찰"}
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      )}
     </>
   );
 }, (prev, next) => {
@@ -355,6 +486,7 @@ export const BidPanel = memo(function BidPanel({ auction, onBidSuccess }: BidPan
     prev.auction.current_bid === next.auction.current_bid &&
     prev.auction.bid_count === next.auction.bid_count &&
     prev.auction.status === next.auction.status &&
+    prev.auction.buy_now_price === next.auction.buy_now_price &&
     prev.auction.extended_end_at === next.auction.extended_end_at &&
     prev.onBidSuccess === next.onBidSuccess
   );

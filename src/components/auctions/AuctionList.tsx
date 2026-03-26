@@ -62,7 +62,7 @@ export function AuctionList({ activeAuctions: initialAuctions, completedAuctions
   const todayDate = getClubEventDate();
   // 오늘 특가: listing_type === 'instant' (즉시구매)
   const todayAuctions = liveAndUpcoming.filter(a => a.listing_type === 'instant');
-  // 얼리버드: listing_type === 'auction' (경매)
+  // 얼리버드 경매: listing_type === 'auction' (경매)
   const advanceAuctions = liveAndUpcoming.filter(a => a.listing_type === 'auction');
 
   // 경매가 있는 탭을 기본으로 선택
@@ -140,7 +140,7 @@ export function AuctionList({ activeAuctions: initialAuctions, completedAuctions
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
           >
-            📅 얼리버드 {advanceAuctions.length > 0 && `(${advanceAuctions.length})`}
+            📅 얼리버드 경매 {advanceAuctions.length > 0 && `(${advanceAuctions.length})`}
           </button>
 
           <button

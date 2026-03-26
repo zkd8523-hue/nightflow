@@ -148,9 +148,6 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                   {isActive && (
                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full transition-all duration-500 ${timerStyles.bg} ${countdown.level === 'critical' ? timerStyles.glow : ''} ${countdown.level === 'critical' ? 'animate-breathe' : ''}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${countdown.level === 'critical' ? 'bg-red-500 animate-ping' : 'bg-red-500 animate-pulse'}`} />
-                      <span className={`text-[9px] font-bold tracking-wide ${timerStyles.text}`}>
-                        {URGENCY_LABELS[countdown.level]}
-                      </span>
                       <span suppressHydrationWarning className={`text-[11px] font-mono font-bold tabular-nums ${timerStyles.text} ${countdown.shouldFlash ? 'animate-flip' : ''} ${countdown.level === 'critical' ? 'animate-tension' : ''}`}>
                         {formatCountdown(countdown.remaining)}
                       </span>
@@ -187,24 +184,31 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                 <span className={`text-[22px] font-bold leading-none tracking-tight ${isWon ? "text-amber-400" : "text-white"}`}>
                   {formatNumber(currentPrice)}원
                 </span>
-                <div className="text-[11px] text-neutral-500 flex items-center gap-1 mt-1">
+                <div className="text-[11px] text-neutral-500 flex items-center gap-1 mt-1 flex-wrap">
                   {isWon ? (
                     <span className="text-amber-500/70">{isInstant ? "구매 완료" : `낙찰가 · 입찰 ${auction.bid_count}회`}</span>
+                  ) : isInstant ? (
+                    <span className="text-amber-400/70 font-medium">⚡ 고정가</span>
                   ) : (
-                    !isInstant && <span>입찰 {auction.bid_count}회</span>
+                    <span>입찰 {auction.bid_count}회</span>
+                  )}
+                  {!isInstant && auction.buy_now_price && auction.buy_now_price > 0 && !isWon && (
+                    <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">
+                      BIN {formatNumber(auction.buy_now_price)}원
+                    </span>
                   )}
                   {!isInstant && isUserHighest && (
-                    <span className="ml-0.5 text-green-400 bg-green-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-green-500/20">최고입찰</span>
+                    <span className="text-green-400 bg-green-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-green-500/20">최고입찰</span>
                   )}
                   {!isInstant && isUserOutbid && (
-                    <span className="ml-0.5 text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">추월됨</span>
+                    <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">추월됨</span>
                   )}
                   {(() => {
                     const grade = (auction.md as any)?.md_customer_grade as MDCustomerGrade | undefined;
                     if (!grade || grade === "rookie") return null;
                     const cfg = MD_GRADE_CONFIG[grade];
                     return (
-                      <span className={`ml-1 px-1.5 py-0 rounded text-[9px] font-black ${cfg.color} ${cfg.bgColor}`}>
+                      <span className={`px-1.5 py-0 rounded text-[9px] font-black ${cfg.color} ${cfg.bgColor}`}>
                         {cfg.label}
                       </span>
                     );

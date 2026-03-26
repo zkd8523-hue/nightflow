@@ -31,6 +31,7 @@ const formSchema = z.object({
     club_id: z.string().min(1, "클럽을 선택해주세요."),
     table_info: z.string().min(1, "테이블 정보를 입력해주세요."),
     start_price: z.number().min(1, "가격은 0원보다 커야 합니다."),
+    buy_now_price: z.number().optional(),
     entry_time: z.string().nullable(),
     event_date: z.string(),
     auction_start_at: z.string(),
@@ -100,6 +101,13 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     );
     const isInstantMode = auctionMode === "today";
     const [startPriceDisplay, setStartPriceDisplay] = useState((initialData?.start_price || prefill?.start_price)?.toLocaleString() || "");
+    const [binPriceDisplay, setBinPriceDisplay] = useState(
+        (initialData?.buy_now_price || prefill?.buy_now_price)?.toLocaleString() || ""
+    );
+    const [binEnabled, setBinEnabled] = useState(
+        !!(initialData?.buy_now_price && initialData.listing_type === 'auction') ||
+        !!(prefill?.buy_now_price && prefill.listing_type === 'auction')
+    );
     const [instantEntry, setInstantEntry] = useState(
         initialData ? !initialData.entry_time
         : prefill ? !prefill.entry_time
@@ -138,6 +146,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             includes: initialData?.includes || prefill?.includes || ["기본 안주"],
             event_date: initialData?.event_date || getClubEventDate(),
             start_price: initialData?.start_price || prefill?.start_price || 0,
+            buy_now_price: (initialData?.buy_now_price && initialData.listing_type === 'auction')
+                ? initialData.buy_now_price
+                : (prefill?.buy_now_price && prefill.listing_type === 'auction')
+                    ? prefill.buy_now_price
+                    : undefined,
             entry_time: initialData
                 ? (initialData.entry_time ?? null)
                 : (prefill?.entry_time ?? dayjs().add(1, "hour").format("HH:mm")),
@@ -431,6 +444,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             // instant 모드: buy_now_price = start_price (서버에서도 강제하지만 클라이언트도 설정)
             if (isInstantMode) {
                 auctionData.buy_now_price = values.start_price;
+            } else if (binEnabled && values.buy_now_price && values.buy_now_price > 0) {
+                // 얼리버드 경매: MD가 설정한 BIN 가격
+                auctionData.buy_now_price = values.buy_now_price;
+            } else {
+                auctionData.buy_now_price = null;
             }
 
             // 썸네일 처리: 있으면 저장, 수정 모드에서 제거했으면 명시적 null
@@ -580,18 +598,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         : "text-neutral-500 hover:text-white"
                         }`}
                 >
-                    📅 얼리버드
+                    📅 얼리버드 경매
                 </button>
             </div>
 
-            {isInstantMode && (
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 space-y-1">
-                    <p className="text-[11px] text-amber-400 font-bold">즉시구매 모드</p>
-                    <p className="text-[10px] text-amber-400/80 leading-relaxed">
-                        설정한 가격으로 첫 구매자가 즉시 구매합니다. 입찰 경쟁 없이 선착순으로 진행됩니다.
-                    </p>
-                </div>
-            )}
+
 
             {/* 1. 클럽 선택 + 대표 이미지 */}
             <section className="space-y-4">
@@ -682,10 +693,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
                 <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
                     {hasFloorPlan && !floorPlanExpanded && (
-                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => setFloorPlanExpanded(true)}>
-                            <img src={floorPlanUrl!} alt="플로어맵" className="w-20 h-14 object-cover rounded-lg border border-neutral-800" />
-                            <span className="text-xs text-neutral-500">탭하여 플로어맵 확인</span>
-                        </div>
+                        <button type="button" onClick={() => setFloorPlanExpanded(true)} className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-green-400 transition-colors py-1">
+                            <MapPin className="w-3.5 h-3.5 text-green-500" />
+                            <span>플로어맵 보기</span>
+                            <ChevronDown className="w-3 h-3" />
+                        </button>
                     )}
                     {hasFloorPlan && floorPlanExpanded && (
                         <div className="space-y-2">
@@ -766,45 +778,43 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             />
 
             {/* 테이블 구성 */}
-            <section className={`space-y-4 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
-                <div className="flex items-center gap-2 text-white font-bold mb-2">
+            <section className={`space-y-3 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className="flex items-center gap-2 text-white font-bold mb-1">
                     <Check className="w-4 h-4 text-green-500" />
                     <span>테이블 구성</span>
                 </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                        {EXTRAS_OPTIONS.map((item) => (
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+                    {EXTRAS_OPTIONS.map((item) => (
+                        <button
+                            key={item}
+                            type="button"
+                            onClick={() => toggleInclude(item)}
+                            className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap flex items-center gap-1 transition-all flex-shrink-0 ${selectedIncludes.includes(item)
+                                ? "bg-green-500 text-black"
+                                : "bg-neutral-900 text-neutral-500 border border-neutral-800"
+                                }`}
+                        >
+                            {selectedIncludes.includes(item) && <Check className="w-3 h-3" />}
+                            {item}
+                        </button>
+                    ))}
+                    {/* 직접 추가된 커스텀 항목 */}
+                    {selectedIncludes
+                        .filter((item: string) => !EXTRAS_OPTIONS.includes(item) && !LIQUOR_KEYWORDS.some(kw => item.includes(kw)))
+                        .map((item: string) => (
                             <button
                                 key={item}
                                 type="button"
                                 onClick={() => toggleInclude(item)}
-                                className={`px-3 py-2 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all ${selectedIncludes.includes(item)
-                                    ? "bg-green-500 text-black"
-                                    : "bg-neutral-900 text-neutral-500 border border-neutral-800"
-                                    }`}
+                                className="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap flex items-center gap-1 transition-all flex-shrink-0 bg-green-500 text-black"
                             >
-                                {selectedIncludes.includes(item) && <Check className="w-3 h-3" />}
+                                <X className="w-3 h-3" />
                                 {item}
                             </button>
                         ))}
-                        {/* 직접 입력으로 추가된 커스텀 항목 */}
-                        {selectedIncludes
-                            .filter((item: string) => !EXTRAS_OPTIONS.includes(item) && !LIQUOR_KEYWORDS.some(kw => item.includes(kw)))
-                            .map((item: string) => (
-                                <button
-                                    key={item}
-                                    type="button"
-                                    onClick={() => toggleInclude(item)}
-                                    className="px-3 py-2 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all bg-green-500 text-black"
-                                >
-                                    <X className="w-3 h-3" />
-                                    {item}
-                                </button>
-                            ))}
-                    </div>
-                    {/* 직접 입력 */}
-                    <div className="flex gap-2">
-                        <Input
+                    {/* 인라인 직접 입력 */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                        <input
                             type="text"
                             value={customExtra}
                             onChange={(e) => setCustomExtra(e.target.value)}
@@ -818,23 +828,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     }
                                 }
                             }}
-                            placeholder="직접 입력 (예: 스파클러 서비스)"
-                            className="flex-1 bg-neutral-900 border-neutral-800 h-9 rounded-lg text-white text-[12px]"
+                            placeholder="+ 직접 입력"
+                            className="w-24 bg-neutral-900 border border-neutral-800 rounded-full px-3 py-1.5 text-[11px] text-white placeholder-neutral-600 focus:outline-none focus:border-green-500/50"
                         />
-                        <Button
-                            type="button"
-                            onClick={() => {
-                                const trimmed = customExtra.trim();
-                                if (trimmed && !selectedIncludes.includes(trimmed)) {
-                                    setValue("includes", [...selectedIncludes, trimmed]);
-                                    setCustomExtra("");
-                                }
-                            }}
-                            disabled={!customExtra.trim()}
-                            className="h-9 px-3 bg-green-500 hover:bg-green-600 text-black font-bold text-xs rounded-lg disabled:opacity-30"
-                        >
-                            <Plus className="w-4 h-4" />
-                        </Button>
                     </div>
                 </div>
 
@@ -848,8 +844,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             </section>
 
 
-            {/* Smart Pricing 추천 — 충분한 데이터(3건+)가 있을 때만 토글 표시 */}
-            {selectedClubId && priceRec?.sufficient_data && (
+            {/* Smart Pricing 추천 — 충분한 데이터(3건+)가 있을 때만 토글 표시 (경매 모드에서만) */}
+            {!isInstantMode && selectedClubId && priceRec?.sufficient_data && (
                 <div>
                     <button
                         type="button"
@@ -913,7 +909,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 ? currentStartPrice > 0 && currentStartPrice < recommendedPrice * 0.7
                                 : currentStartPrice > 0 && currentStartPrice < ABSOLUTE_MIN;
 
-                            if (!isTooLow) return null;
+                            if (isInstantMode || !isTooLow) return null;
 
                             return (
                                 <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 space-y-1">
@@ -937,6 +933,64 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
                         {errors.start_price && currentStartPrice < 1 && <p className="text-red-500 text-[11px]">{errors.start_price?.message?.toString()}</p>}
                     </div>
+
+                    {/* 즉시낙찰가 (BIN) — 얼리버드 경매 전용 */}
+                    {!isInstantMode && (
+                        <div className="space-y-3 border-t border-neutral-800/50 pt-5">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-neutral-400 text-[10px] font-bold uppercase">즉시낙찰가 (선택)</Label>
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={binEnabled}
+                                        disabled={!isTermsEditable}
+                                        onChange={(e) => {
+                                            const checked = e.target.checked;
+                                            setBinEnabled(checked);
+                                            if (!checked) {
+                                                setValue("buy_now_price", undefined);
+                                                setBinPriceDisplay("");
+                                            } else {
+                                                // 자동 추천: 시작가의 2배
+                                                const suggested = currentStartPrice * 2;
+                                                if (suggested > 0) {
+                                                    setValue("buy_now_price", suggested);
+                                                    setBinPriceDisplay(suggested.toLocaleString());
+                                                }
+                                            }
+                                        }}
+                                        className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
+                                    />
+                                    <span className="text-[10px] text-white font-bold">사용</span>
+                                </label>
+                            </div>
+                            {binEnabled && (
+                                <>
+                                    <Input
+                                        type="text"
+                                        value={binPriceDisplay}
+                                        disabled={!isTermsEditable}
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/[^0-9]/g, "");
+                                            const numValue = value === "" ? 0 : parseInt(value, 10);
+                                            setValue("buy_now_price", numValue);
+                                            setBinPriceDisplay(value === "" ? "" : numValue.toLocaleString());
+                                        }}
+                                        placeholder={`추천: ${(currentStartPrice * 2).toLocaleString()}원 (시작가의 2배)`}
+                                        className={`bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-green-500 ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    />
+                                    <p className="text-[10px] text-neutral-500 leading-relaxed">
+                                        이 가격에 입찰하면 경매가 즉시 종료되고, 해당 유저에게 낙찰됩니다.
+                                        {currentStartPrice > 0 && watch("buy_now_price") && watch("buy_now_price")! < currentStartPrice * 1.5 && (
+                                            <span className="text-amber-400 font-bold block mt-1">
+                                                ⚠️ 시작가의 1.5배 이상을 권장합니다 (최소 {(currentStartPrice * 1.5).toLocaleString()}원)
+                                            </span>
+                                        )}
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                    )}
 
                 </div>
             </section>
@@ -1118,7 +1172,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 </div>
             </section>
 
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black to-transparent z-50">
+            <div className="mt-12 px-1">
                 <div className="max-w-lg mx-auto">
                     <Button disabled={isSubmitting} className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
                         {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "경매 정보 수정하기") : (isInstantMode ? "오늘 특가 등록하기" : "경매 시작하기"))}
