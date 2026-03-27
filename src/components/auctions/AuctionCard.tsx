@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/sheet";
 import type { Auction, MDCustomerGrade } from "@/types/database";
 import { MD_GRADE_CONFIG } from "@/types/database";
-import { formatNumber, formatTime, formatCountdown, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
+import { formatNumber, formatTime, formatCountdown, formatEntryTime, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES, URGENCY_LABELS } from "@/lib/constants/timer-urgency";
@@ -39,7 +39,6 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
   const endTime = getEffectiveEndTime(auction);
   const currentPrice = isWon && auction.winning_price ? auction.winning_price : (auction.current_bid || auction.start_price);
   const isInstant = auction.listing_type === 'instant';
-  const isInstantEntry = !auction.entry_time;
   const countdown = useCountdown((isActive || isExpired) ? endTime : null);
   const timerStyles = URGENCY_STYLES[countdown.level];
 
@@ -65,7 +64,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
   // 입장시간 텍스트
   const hasEntryInfo = !isCompleted && !isExpired;
   const entryText = hasEntryInfo
-    ? (isInstantEntry ? "즉시 입장" : auction.entry_time ? `${auction.entry_time} 입장` : null)
+    ? formatEntryTime(auction.entry_time, auction.event_date)
     : null;
 
   return (

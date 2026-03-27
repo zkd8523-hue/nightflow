@@ -12,7 +12,7 @@ import { MyBidCardContact } from "./MyBidCardContact";
 import { ReportMDButton } from "./ReportMDButton";
 import { useMyBidsRealtime, type AuctionUpdate } from "@/hooks/useMyBidsRealtime";
 import { isAuctionActive, isAuctionExpired } from "@/lib/utils/auction";
-import { formatPrice, formatEventDate } from "@/lib/utils/format";
+import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import type { Auction } from "@/types/database";
 import {
   Gavel,
@@ -557,7 +557,7 @@ function WonAuctionCard({
         </div>
 
         {/* Club Info */}
-        <div className="space-y-1">
+        <div className="space-y-1.5">
           <h2 className={`text-xl font-black tracking-tight ${isTerminal ? "text-white" : "text-amber-400"}`}>
             {auction.club?.name}
           </h2>
@@ -566,6 +566,12 @@ function WonAuctionCard({
             <span>·</span>
             <Calendar className="w-3 h-3" />{" "}
             {formatEventDate(auction.event_date)}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Clock className="w-3 h-3 text-blue-400" />
+            <span className="text-xs font-bold text-blue-400">
+              {formatEntryTime(auction.entry_time, auction.event_date)}
+            </span>
           </div>
         </div>
 

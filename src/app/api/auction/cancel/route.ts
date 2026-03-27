@@ -1,11 +1,10 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { cancelPayment } from "@/lib/payments/toss";
 import { NextResponse } from "next/server";
 
-const IMMEDIATE_CANCEL_MS = 2 * 60 * 1000; // 2분
+const GRACE_CANCEL_MS = 5 * 60 * 1000; // 5분
 
-// 낙찰자 자발적 취소 (시간 기반 3구간: immediate/grace/late)
+// 낙찰자 자발적 취소 (시간 기반 2구간: grace/late)
 export async function POST(req: Request) {
   try {
     const { auctionId, reason } = await req.json();
@@ -46,48 +45,34 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3단계 cancel_type 판정
+    // 2단계 cancel_type 판정 (Grace 5분 / Late)
     const now = new Date();
     const wonAt = new Date(auction.won_at || now.toISOString());
     const elapsedMs = now.getTime() - wonAt.getTime();
 
-    let cancelType: "user_immediate" | "user_grace" | "user_late";
+    let cancelType: "user_grace" | "user_late";
     let warningPoints: number;
 
-    if (elapsedMs <= IMMEDIATE_CANCEL_MS) {
-      cancelType = "user_immediate";
-      warningPoints = 0;
-    } else if (auction.contact_deadline) {
-      // deadline이 존재할 때만 grace 구간 판정 가능
-      const deadline = new Date(auction.contact_deadline);
-      const totalMs = deadline.getTime() - wonAt.getTime();
-      if (totalMs > 0 && elapsedMs < totalMs * 0.5) {
-        cancelType = "user_grace";
-        warningPoints = 1;
-      } else {
-        cancelType = "user_late";
-        warningPoints = 2;
-      }
+    if (elapsedMs <= GRACE_CANCEL_MS) {
+      cancelType = "user_grace";
+      warningPoints = 1;
     } else {
-      // contacted 상태 (deadline null) → 2분 경과했으므로 late
       cancelType = "user_late";
       warningPoints = 2;
     }
 
-    // 경고 부과 (immediate가 아닌 경우만)
+    // 경고 부과 (모든 취소에 경고 부과)
     let warningResult = null;
-    if (warningPoints > 0) {
-      try {
-        const { data } = await supabaseAdmin.rpc("apply_cancel_warning", {
-          p_user_id: user.id,
-          p_auction_id: auctionId,
-          p_warning_points: warningPoints,
-          p_cancel_type: cancelType,
-        });
-        warningResult = data;
-      } catch {
-        // 경고 부과 실패해도 취소는 진행
-      }
+    try {
+      const { data } = await supabaseAdmin.rpc("apply_cancel_warning", {
+        p_user_id: user.id,
+        p_auction_id: auctionId,
+        p_warning_points: warningPoints,
+        p_cancel_type: cancelType,
+      });
+      warningResult = data;
+    } catch {
+      // 경고 부과 실패해도 취소는 진행
     }
 
     // 차순위 낙찰 시도 (status='won' 상태에서 호출해야 RPC가 작동)
@@ -115,30 +100,27 @@ export async function POST(req: Request) {
         .in("status", ["won", "contacted"]);
     }
 
-    // 보증금 환불 (모든 취소 구간에서 전액 환불)
+    // 보증금 몰수 (낙찰 후 취소 = 비환불)
     try {
       const { data: deposit } = await supabaseAdmin
         .from("deposits")
-        .select("id, payment_key, amount, status")
+        .select("id, status")
         .eq("auction_id", auctionId)
         .eq("user_id", user.id)
         .in("status", ["paid", "held"])
         .single();
 
-      if (deposit?.payment_key) {
-        await cancelPayment(deposit.payment_key, `낙찰 취소 (${cancelType})`, deposit.amount);
+      if (deposit) {
         await supabaseAdmin
           .from("deposits")
           .update({
-            status: "refunded",
-            refunded_at: new Date().toISOString(),
-            refund_amount: deposit.amount,
-            refund_reason: `낙찰 취소 (${cancelType})`,
+            status: "forfeited",
+            forfeited_at: new Date().toISOString(),
           })
           .eq("id", deposit.id);
       }
     } catch {
-      // 보증금 환불 실패해도 취소 진행 (수동 환불 처리)
+      // 몰수 처리 실패해도 취소 진행
     }
 
     // MD에게 인앱 알림 발송
@@ -165,7 +147,6 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       cancelType,
-      isImmediate: cancelType === "user_immediate",
       isGrace: cancelType === "user_grace",
       warningPoints,
       warningResult,

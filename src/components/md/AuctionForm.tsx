@@ -1068,7 +1068,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             </div>
                             <div className="flex items-center gap-2">
                                 <ArrowRight className="w-3 h-3 text-green-400" />
-                                <span className="text-[11px] text-neutral-300">취소/미낙찰 시 고객에게 전액 환불</span>
+                                <span className="text-[11px] text-neutral-300">미낙찰 시 전액 환불 · 낙찰 취소/노쇼 시 몰수</span>
                             </div>
                         </div>
                     )}

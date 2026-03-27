@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import type { Auction } from "@/types/database";
-import { formatEventDate } from "./format";
+import { formatEventDate, formatEntryTime } from "./format";
 import { logger } from "./logger";
 import { trackEvent } from "@/lib/analytics";
 
@@ -8,6 +8,7 @@ interface ShareAuctionParams {
   auctionId: string;
   clubName: string;
   eventDate: string;
+  entryTime?: string | null;
   startPrice: number;
   tableInfo?: string;
 }
@@ -21,12 +22,14 @@ export async function shareAuction({
   auctionId,
   clubName,
   eventDate,
+  entryTime,
   startPrice,
   tableInfo,
 }: ShareAuctionParams): Promise<boolean> {
   const url = `${window.location.origin}/auctions/${auctionId}`;
   const tableText = tableInfo ? ` ${tableInfo}` : "";
-  const text = `🎉 ${clubName}${tableText} 테이블 경매 시작!\n${formatEventDate(eventDate)}\n시작가 ₩${startPrice.toLocaleString()}\n\n지금 입찰하세요 👉`;
+  const entry = formatEntryTime(entryTime ?? null, eventDate);
+  const text = `🎉 ${clubName}${tableText} 테이블 경매 시작!\n${formatEventDate(eventDate)} ${entry}\n시작가 ₩${startPrice.toLocaleString()}\n\n지금 입찰하세요 👉`;
 
   // Web Share API 지원 확인
   if (navigator.share) {
@@ -78,6 +81,7 @@ export function getShareParams(auction: Auction): ShareAuctionParams {
     auctionId: auction.id,
     clubName: auction.club?.name || "클럽",
     eventDate: auction.event_date,
+    entryTime: auction.entry_time,
     startPrice: auction.start_price,
     tableInfo: auction.table_info,
   };

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Calendar, Clock, Users, ShieldAlert, Zap } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Clock, Users, ShieldAlert, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +28,8 @@ interface CancelClientProps {
     contactDeadline: string | null;
     wonAt: string | null;
     listingType?: "auction" | "instant";
+    depositRequired: boolean;
+    depositAmount: number;
   };
   currentWarnings: number;
 }
@@ -38,7 +40,7 @@ function formatTimer(seconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-const IMMEDIATE_MS = 2 * 60 * 1000; // 2분
+const GRACE_MS = 5 * 60 * 1000; // 5분
 
 // isInstant에 따라 동적으로 생성
 function getCancelReasons(isInstant: boolean) {
@@ -52,7 +54,7 @@ function getCancelReasons(isInstant: boolean) {
   ] as const;
 }
 
-type CancelZone = "immediate" | "grace" | "late";
+type CancelZone = "grace" | "late";
 
 export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
   const router = useRouter();
@@ -76,19 +78,18 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
 
   const { remaining, level } = useCountdown(auction.contactDeadline);
 
-  // 3구간 판정: immediate / grace / late
+  // 2구간 판정: grace (5분) / late
   const { cancelZone, progressPercent } = useMemo(() => {
     if (!auction.wonAt) {
-      return { cancelZone: "immediate" as CancelZone, progressPercent: 0 };
+      return { cancelZone: "grace" as CancelZone, progressPercent: 0 };
     }
 
-    // contacted 상태: contactDeadline이 null → grace 구간 계산 불가
-    // 서버(cancel/route.ts)와 동일하게 immediate(2분) 또는 late로 판정
+    // contacted 상태: contactDeadline이 null → Grace(5분) 또는 late
     if (!auction.contactDeadline) {
       const wonAt = new Date(auction.wonAt).getTime();
       const elapsedMs = Date.now() - wonAt;
-      if (elapsedMs <= IMMEDIATE_MS) {
-        return { cancelZone: "immediate" as CancelZone, progressPercent: 0 };
+      if (elapsedMs <= GRACE_MS) {
+        return { cancelZone: "grace" as CancelZone, progressPercent: 0 };
       }
       return { cancelZone: "late" as CancelZone, progressPercent: 100 };
     }
@@ -101,14 +102,7 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
     const now = Date.now();
     const elapsedMs = now - wonAt;
 
-    let zone: CancelZone;
-    if (elapsedMs <= IMMEDIATE_MS) {
-      zone = "immediate";
-    } else if (elapsedMs < totalMs * 0.5) {
-      zone = "grace";
-    } else {
-      zone = "late";
-    }
+    const zone: CancelZone = elapsedMs <= GRACE_MS ? "grace" : "late";
 
     return {
       cancelZone: zone,
@@ -119,16 +113,12 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
   const isExpired = remaining <= 0 && !!auction.contactDeadline;
 
   // 이 취소로 부과될 경고점
-  const pendingWarningPoints = cancelZone === "immediate" ? 0 : cancelZone === "grace" ? 1 : 2;
+  const pendingWarningPoints = cancelZone === "grace" ? 1 : 2;
   const warningsAfterCancel = currentWarnings + pendingWarningPoints;
   const willTriggerStrike = warningsAfterCancel >= 3;
 
   // 프로그레스 바 색상
-  const barColor = cancelZone === "immediate"
-    ? "bg-green-500"
-    : cancelZone === "grace"
-      ? "bg-amber-500"
-      : "bg-red-500";
+  const barColor = cancelZone === "grace" ? "bg-amber-500" : "bg-red-500";
 
   const handleCancel = async () => {
     setLoading(true);
@@ -152,11 +142,7 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
       }
 
       const cancelMsg = isInstant ? "구매가 취소되었습니다" : "낙찰이 취소되었습니다";
-      if (data.isImmediate) {
-        toast.success(cancelMsg, {
-          description: "2분 이내 취소로 패널티가 없습니다.",
-        });
-      } else if (data.warningResult?.strike_triggered) {
+      if (data.warningResult?.strike_triggered) {
         toast.error(cancelMsg, {
           description: "경고 누적으로 스트라이크가 부과되었습니다.",
         });
@@ -210,25 +196,20 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
 
           {/* Timer Status */}
           <Card className={`gap-0 p-5 space-y-3 border ${
-            cancelZone === "immediate"
-              ? "bg-green-500/5 border-green-500/20"
-              : cancelZone === "grace"
-                ? "bg-amber-500/5 border-amber-500/20"
-                : "bg-red-500/5 border-red-500/20"
+            cancelZone === "grace"
+              ? "bg-amber-500/5 border-amber-500/20"
+              : "bg-red-500/5 border-red-500/20"
           }`}>
-            {/* Progress Bar - 3구간 */}
+            {/* Progress Bar - 2구간 */}
             <div className="space-y-2">
               <div className="h-2 bg-neutral-800 rounded-full relative overflow-hidden">
                 <div
                   className={`absolute left-0 top-0 h-full rounded-full transition-all duration-1000 ${barColor}`}
                   style={{ width: `${isExpired ? 100 : progressPercent}%` }}
                 />
-                {/* 구분선: 즉시(~약 10%) | Grace(~50%) | Late */}
-                <div className="absolute left-1/2 top-0 w-0.5 h-full bg-neutral-600 -translate-x-0.5" />
               </div>
               <div className="flex justify-between text-[10px] font-bold text-neutral-600">
-                <span className={cancelZone === "immediate" ? "text-green-400" : ""}>즉시</span>
-                <span>Grace</span>
+                <span className={cancelZone === "grace" ? "text-amber-400" : ""}>Grace (5분)</span>
                 <span className={cancelZone === "late" ? "text-red-400" : ""}>Late</span>
               </div>
             </div>
@@ -272,33 +253,33 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
             <ul className="space-y-2.5">
               {/* 구간별 패널티 안내 */}
               <li className="flex items-start gap-2.5">
-                {cancelZone === "immediate" ? (
-                  <Zap className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
-                ) : (
-                  <ShieldAlert className={`w-4 h-4 mt-0.5 shrink-0 ${
-                    willTriggerStrike ? "text-red-500" : "text-amber-500"
-                  }`} />
-                )}
+                <ShieldAlert className={`w-4 h-4 mt-0.5 shrink-0 ${
+                  willTriggerStrike ? "text-red-500" : "text-amber-500"
+                }`} />
                 <span className="text-[13px] font-medium leading-relaxed">
-                  {cancelZone === "immediate" ? (
-                    <span className="text-green-400">
-                      {isInstant ? "구매" : "낙찰"} 2분 이내 취소 — <span className="font-bold">패널티 없음</span>
-                    </span>
-                  ) : (
-                    <span className={willTriggerStrike ? "text-red-400" : "text-amber-400"}>
-                      경고 <span className="text-white font-bold">+{pendingWarningPoints}점</span> 부과
-                      <span className="text-neutral-500"> (현재 {currentWarnings}/3점)</span>
-                    </span>
-                  )}
+                  <span className={willTriggerStrike ? "text-red-400" : "text-amber-400"}>
+                    경고 <span className="text-white font-bold">+{pendingWarningPoints}점</span> 부과
+                    <span className="text-neutral-500"> (현재 {currentWarnings}/3점)</span>
+                  </span>
                 </span>
               </li>
 
               {/* 스트라이크 임계 경고 */}
-              {willTriggerStrike && cancelZone !== "immediate" && (
+              {willTriggerStrike && (
                 <li className="flex items-start gap-2.5">
                   <ShieldAlert className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                   <span className="text-[13px] text-red-400 font-bold leading-relaxed">
                     이 취소 시 스트라이크 1회가 부과됩니다!
+                  </span>
+                </li>
+              )}
+
+              {/* 보증금 몰수 안내 */}
+              {auction.depositRequired && (
+                <li className="flex items-start gap-2.5">
+                  <Shield className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+                  <span className="text-[13px] text-red-400 font-bold leading-relaxed">
+                    보증금 {formatPrice(auction.depositAmount || 30000)}은 환불되지 않습니다
                   </span>
                 </li>
               )}
@@ -397,29 +378,24 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
 
             {/* 구간별 경고점 표시 */}
             <div className={`rounded-xl p-3.5 space-y-1 ${
-              cancelZone === "immediate"
-                ? "bg-green-500/10 border border-green-500/20"
-                : willTriggerStrike
-                  ? "bg-red-500/10 border border-red-500/20"
-                  : "bg-amber-500/10 border border-amber-500/20"
+              willTriggerStrike
+                ? "bg-red-500/10 border border-red-500/20"
+                : "bg-amber-500/10 border border-amber-500/20"
             }`}>
               <p className={`text-[13px] font-black ${
-                cancelZone === "immediate"
-                  ? "text-green-400"
-                  : willTriggerStrike
-                    ? "text-red-400"
-                    : "text-amber-400"
+                willTriggerStrike ? "text-red-400" : "text-amber-400"
               }`}>
-                {cancelZone === "immediate"
-                  ? "2분 이내 취소 — 패널티 없음"
-                  : willTriggerStrike
-                    ? `경고 +${pendingWarningPoints}점 → 스트라이크 1회 부과!`
-                    : `경고 +${pendingWarningPoints}점 (${currentWarnings}점 → ${warningsAfterCancel}점 / 3점)`
+                {willTriggerStrike
+                  ? `경고 +${pendingWarningPoints}점 → 스트라이크 1회 부과!`
+                  : `경고 +${pendingWarningPoints}점 (${currentWarnings}점 → ${warningsAfterCancel}점 / 3점)`
                 }
               </p>
-              {cancelZone !== "immediate" && (
-                <p className="text-[12px] text-neutral-500 font-medium">
-                  3경고 누적 시 스트라이크 1회로 전환됩니다
+              <p className="text-[12px] text-neutral-500 font-medium">
+                3경고 누적 시 스트라이크 1회로 전환됩니다
+              </p>
+              {auction.depositRequired && (
+                <p className="text-[12px] text-red-400 font-bold mt-1">
+                  보증금 {formatPrice(auction.depositAmount || 30000)} 환불 불가
                 </p>
               )}
             </div>

@@ -21,7 +21,7 @@ import { BidCompetitionIndicator } from "./BidCompetitionIndicator";
 import { LastBidIndicator } from "./LastBidIndicator";
 import { useCountdown } from "@/hooks/useCountdown";
 import { BidderProfile } from "@/components/md/BidderProfile";
-import { formatDate, formatTime, formatPrice, formatEventDate, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
+import { formatDate, formatTime, formatPrice, formatEventDate, formatEntryTime, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { ContactButton } from "./ContactButton";
 import { ExtensionNotice } from "./ExtensionNotice";
@@ -398,7 +398,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               {displayAuction.entry_time ? (
                 <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
                   <Clock className="w-3 h-3 text-blue-400" />
-                  <span className="text-[11px] font-bold text-blue-400">{displayAuction.entry_time} 입장</span>
+                  <span className="text-[11px] font-bold text-blue-400">{formatEntryTime(displayAuction.entry_time, displayAuction.event_date)}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
@@ -626,6 +626,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                         currentBid={displayAuction.current_bid}
                         eventDate={displayAuction.event_date}
                         entryTime={displayAuction.entry_time}
+                        depositRequired={displayAuction.deposit_required}
+                        depositAmount={displayAuction.deposit_amount}
                         onContact={() => setContactAttempted(true)}
                       />
                     )}
@@ -678,6 +680,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                       currentBid={displayAuction.current_bid}
                       eventDate={displayAuction.event_date}
                       entryTime={displayAuction.entry_time}
+                      depositRequired={displayAuction.deposit_required}
+                      depositAmount={displayAuction.deposit_amount}
                     />
                   )}
                   {md?.phone && (

@@ -1,8 +1,8 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { formatPrice, formatEventDate } from "@/lib/utils/format";
-import { CheckCircle2, Calendar, MapPin, Ticket } from "lucide-react";
+import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
+import { CheckCircle2, Calendar, MapPin, Ticket, Shield } from "lucide-react";
 
 interface MatchPageProps {
   params: Promise<{ id: string }>;
@@ -15,7 +15,7 @@ async function getAuctionData(auctionId: string) {
     .from("auctions")
     .select(`
       id, title, table_info, event_date, entry_time, winning_price, current_bid, status,
-      winner_id, won_at, includes,
+      winner_id, won_at, includes, deposit_required, deposit_amount,
       club:club_id (name, area),
       winner:winner_id (name)
     `)
@@ -106,12 +106,28 @@ export default async function MatchPage({ params }: MatchPageProps) {
               </div>
             </div>
 
+            {/* Deposit Info */}
+            <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30 flex items-center gap-3">
+              <Shield className="w-4 h-4 text-neutral-500" />
+              <div>
+                <p className="text-[9px] text-neutral-500 font-bold uppercase">보증금</p>
+                {auction.deposit_required ? (
+                  <p className="text-sm font-bold text-green-400">
+                    {formatPrice(auction.deposit_amount || 30000)} 결제 완료 · 잔금 {formatPrice(price - (auction.deposit_amount || 30000))}
+                  </p>
+                ) : (
+                  <p className="text-sm font-bold text-neutral-400">없음 · 현장 결제</p>
+                )}
+              </div>
+            </div>
+
             {/* Event Date */}
             <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30 flex items-center gap-3">
               <Calendar className="w-4 h-4 text-neutral-500" />
               <div>
                 <p className="text-[9px] text-neutral-500 font-bold uppercase">방문 일정</p>
                 <p className="text-sm font-bold text-white">{formatEventDate(auction.event_date)}</p>
+                <p className="text-xs font-bold text-blue-400 mt-0.5">{formatEntryTime(auction.entry_time, auction.event_date)}</p>
               </div>
             </div>
 

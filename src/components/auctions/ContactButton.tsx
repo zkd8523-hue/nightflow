@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Phone, Instagram } from "lucide-react";
 import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
-import { formatPrice, formatEventDate } from "@/lib/utils/format";
+import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import { trackEvent } from "@/lib/analytics";
 
 interface ContactButtonProps {
@@ -16,23 +16,29 @@ interface ContactButtonProps {
   currentBid?: number;
   eventDate?: string;
   entryTime?: string;
+  depositRequired?: boolean;
+  depositAmount?: number | null;
   onContact?: () => void;
 }
 
-function buildCopyMessage(auctionId: string, clubName?: string, tableInfo?: string, currentBid?: number, eventDate?: string, entryTime?: string): string | null {
+function buildCopyMessage(auctionId: string, clubName?: string, tableInfo?: string, currentBid?: number, eventDate?: string, entryTime?: string, depositRequired?: boolean, depositAmount?: number | null): string | null {
   if (!clubName || !currentBid) return null;
   const matchUrl = `${window.location.origin}/match/${auctionId}`;
-  const entry = entryTime ? `${entryTime} 입장` : "즉시 입장";
+  const entry = eventDate ? formatEntryTime(entryTime ?? null, eventDate) : (entryTime ? `${entryTime} 입장` : "즉시 입장");
+  const depositLine = depositRequired
+    ? `보증금 ${formatPrice(depositAmount || 30000)} 결제 완료 · 잔금 ${formatPrice(currentBid - (depositAmount || 30000))}`
+    : `보증금 없음 · 현장 ${formatPrice(currentBid)} 결제`;
   return [
     `[NightFlow 낙찰 확인]`,
     `${clubName}${tableInfo ? ` · ${tableInfo}` : ""}`,
     `${formatPrice(currentBid)} · ${eventDate ? formatEventDate(eventDate) : ""} ${entry}`,
+    depositLine,
     ``,
     matchUrl,
   ].join("\n");
 }
 
-export function ContactButton({ auctionId, type, url, clubName, tableInfo, currentBid, eventDate, entryTime, onContact }: ContactButtonProps) {
+export function ContactButton({ auctionId, type, url, clubName, tableInfo, currentBid, eventDate, entryTime, depositRequired, depositAmount, onContact }: ContactButtonProps) {
   const handleClick = async () => {
     // 연락 시도 기록 (fire-and-forget)
     fetch("/api/auction/contact-attempt", {
@@ -46,7 +52,7 @@ export function ContactButton({ auctionId, type, url, clubName, tableInfo, curre
 
     // DM: 구조화된 메시지 복사 후 이동
     if (type === "dm" && clubName && currentBid) {
-      const message = buildCopyMessage(auctionId, clubName, tableInfo, currentBid, eventDate, entryTime);
+      const message = buildCopyMessage(auctionId, clubName, tableInfo, currentBid, eventDate, entryTime, depositRequired, depositAmount);
       if (message) {
         try {
           await navigator.clipboard.writeText(message);

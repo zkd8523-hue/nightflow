@@ -127,13 +127,13 @@ export function DepositSheet({
               <div className="flex items-start gap-2">
                 <ArrowRight className="w-3.5 h-3.5 text-green-400 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-neutral-300 leading-relaxed font-medium">
-                  미낙찰/취소 시 <span className="text-green-400 font-bold">전액 환불</span>됩니다
+                  미낙찰 시 <span className="text-green-400 font-bold">전액 환불</span>됩니다
                 </p>
               </div>
               <div className="flex items-start gap-2">
-                <ArrowRight className="w-3.5 h-3.5 text-amber-400 mt-0.5 shrink-0" />
+                <ArrowRight className="w-3.5 h-3.5 text-red-400 mt-0.5 shrink-0" />
                 <p className="text-[11px] text-neutral-300 leading-relaxed font-medium">
-                  노쇼 시 보증금이 <span className="text-amber-400 font-bold">환불되지 않습니다</span>
+                  낙찰 취소 · 노쇼 시 보증금이 <span className="text-red-400 font-bold">환불되지 않습니다</span>
                 </p>
               </div>
             </div>

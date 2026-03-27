@@ -27,18 +27,28 @@ export function formatDate(date: string): string {
   return dayjs(date).format("M월 D일 (ddd)");
 }
 
-/**
- * 방문 날짜 포맷 (클럽 나이트라이프 기준)
- * 오버나이트 표기: "3/13 (금) ~ 3/14 (토)"
- * 정확한 입장 시간은 entry_time 배지에서 별도 표시
- */
+/** 방문 날짜 포맷: "2026-03-28" → "3/28 (토)" */
 export function formatEventDate(eventDate: string): string {
   const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
   const event = dayjs(eventDate);
-  const nextDay = event.add(1, "day");
-  const dow1 = DAYS[event.day()];
-  const dow2 = DAYS[nextDay.day()];
-  return `${event.format("M/D")} (${dow1}) ~ ${nextDay.format("M/D")} (${dow2})`;
+  return `${event.format("M/D")} (${DAYS[event.day()]})`;
+}
+
+/**
+ * 입장 시간 포맷 (심야 새벽 시간대는 실제 캘린더 날짜 표시)
+ * "22:00" → "22:00 입장"
+ * "01:00" (hour<4) → "3/29 (일) 01:00 입장"
+ * null → "즉시 입장"
+ */
+export function formatEntryTime(entryTime: string | null, eventDate: string): string {
+  if (!entryTime) return "즉시 입장";
+  const [h] = entryTime.split(":").map(Number);
+  if (h < 4) {
+    const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
+    const nextDay = dayjs(eventDate).add(1, "day");
+    return `${nextDay.format("M/D")} (${DAYS[nextDay.day()]}) ${entryTime} 입장`;
+  }
+  return `${entryTime} 입장`;
 }
 
 /** 시간 포맷: "2026-02-18T20:00:00" → "오후 8:00" */

@@ -52,14 +52,26 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
   const inputRef = useRef<HTMLInputElement>(null);
 
   // 보증금 상태
-  const { needsDeposit, depositStatus, refresh: refreshDeposit } = useDepositStatus(auction.id, user?.id);
+  const { needsDeposit, depositStatus, error: depositError, refresh: refreshDeposit } = useDepositStatus(auction.id, user?.id);
   const depositAmount = auction.deposit_amount || 30000;
 
   const hasBin = !!(auction.buy_now_price && auction.buy_now_price > 0 && auction.listing_type === 'auction');
   const binPrice = auction.buy_now_price || 0;
 
   useImperativeHandle(ref, () => ({
-    openBinConfirm: () => setShowBinConfirm(true),
+    openBinConfirm: () => {
+      if (auction.deposit_required && depositError) {
+        toast.error("보증금 상태를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.");
+        refreshDeposit();
+        return;
+      }
+      if (needsDeposit) {
+        setPendingAction("bin");
+        setShowDeposit(true);
+      } else {
+        setShowBinConfirm(true);
+      }
+    },
   }));
 
   const handleInputFocus = useCallback(() => {
@@ -290,8 +302,18 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
           </div>
         )}
 
+        {/* 보증금 에러 배지 */}
+        {auction.deposit_required && isActive && depositError && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20">
+            <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+            <p className="text-[11px] text-red-400/90 font-bold leading-snug">
+              보증금 상태 확인 실패 · 새로고침 후 다시 시도해주세요
+            </p>
+          </div>
+        )}
+
         {/* 보증금 안내 배지 */}
-        {auction.deposit_required && isActive && (
+        {auction.deposit_required && isActive && !depositError && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
             <Shield className="w-3.5 h-3.5 text-green-400 shrink-0" />
             <p className="text-[11px] text-green-400/90 font-bold leading-snug">
@@ -304,6 +326,11 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
         <Button
           className={`w-full h-12 text-base font-black rounded-xl transition-all active:scale-[0.98] ${getButtonStyle()}`}
           onClick={() => {
+            if (auction.deposit_required && depositError) {
+              toast.error("보증금 상태를 확인할 수 없습니다. 새로고침 후 다시 시도해주세요.");
+              refreshDeposit();
+              return;
+            }
             if (needsDeposit) {
               setPendingAction("bid");
               setShowDeposit(true);
@@ -493,6 +520,14 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                         p_bid_amount: binPrice,
                       });
                       if (error) throw error;
+
+                      if (result && !result.success && result.error === "deposit_required") {
+                        toast.error("보증금 결제가 필요합니다");
+                        setPendingAction("bin");
+                        setShowBinConfirm(false);
+                        setShowDeposit(true);
+                        return;
+                      }
 
                       if (result?.previous_bidder_id && result.previous_bidder_id !== user.id) {
                         fetch("/api/notifications/outbid", {

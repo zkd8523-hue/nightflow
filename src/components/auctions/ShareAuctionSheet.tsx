@@ -12,7 +12,7 @@ import { MessageCircle, Instagram, Link2, Share2 } from "lucide-react";
 
 import { shareAuction, shareToInstagram, copyAuctionLink } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
-import { formatEventDate } from "@/lib/utils/format";
+import { formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import type { Auction } from "@/types/database";
 
 interface ShareAuctionSheetProps {
@@ -113,6 +113,7 @@ export function ShareAuctionSheet({
         auctionId: auction.id,
         clubName,
         eventDate: auction.event_date,
+        entryTime: auction.entry_time,
         startPrice: auction.start_price,
         tableInfo,
       });
@@ -170,7 +171,7 @@ export function ShareAuctionSheet({
             이 경매를 공유하세요
           </DrawerTitle>
           <DrawerDescription className="text-neutral-500 text-[13px] font-medium">
-            {clubName} · {tableInfo} · {formatEventDate(auction.event_date)}
+            {clubName} · {tableInfo} · {formatEventDate(auction.event_date)} {formatEntryTime(auction.entry_time, auction.event_date)}
           </DrawerDescription>
         </DrawerHeader>
 

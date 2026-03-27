@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,10 @@ import {
   ShieldAlert,
   Clock,
   ChevronRight,
+  Gavel,
+  Trophy,
+  CheckCircle2,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";

@@ -32,6 +32,7 @@ import {
   HelpCircle,
   MessageCircle,
   Heart,
+  TrendingUp,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -61,6 +62,8 @@ function getNotificationIcon(type: InAppNotification["type"]) {
       return <XCircle className="w-4 h-4 text-amber-500 shrink-0" />;
     case "md_winner_noshow":
       return <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />;
+    case "md_new_bid":
+      return <TrendingUp className="w-4 h-4 text-green-500 shrink-0" />;
     default:
       return <Bell className="w-4 h-4 text-neutral-500 shrink-0" />;
   }
@@ -180,25 +183,23 @@ export function Header() {
                         </span>
                       )}
                     </div>
-                    {notifications.length > 0 && (
-                      <div className="flex items-center gap-2">
-                        {unreadCount > 0 && (
-                          <button
-                            onClick={markAllAsRead}
-                            className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
-                          >
-                            모두 읽음
-                          </button>
-                        )}
+                    <div className="flex items-center gap-2">
+                      {notifications.length > 0 && unreadCount > 0 && (
                         <button
-                          onClick={deleteAllNotifications}
-                          className="text-[11px] text-red-500/70 hover:text-red-400 transition-colors flex items-center gap-1"
+                          onClick={markAllAsRead}
+                          className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
                         >
-                          <Trash2 className="w-3 h-3" />
-                          모두 삭제
+                          모두 읽음
                         </button>
-                      </div>
-                    )}
+                      )}
+                      <Link
+                        href="/notifications"
+                        onClick={() => setMenuOpen(false)}
+                        className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
+                      >
+                        전체 보기
+                      </Link>
+                    </div>
                   </div>
 
                   {notifications.length === 0 ? (

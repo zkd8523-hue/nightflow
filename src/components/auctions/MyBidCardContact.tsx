@@ -15,6 +15,8 @@ interface MyBidCardContactProps {
     current_bid: number;
     event_date: string;
     entry_time: string | null;
+    deposit_required?: boolean;
+    deposit_amount?: number | null;
     club: { name: string } | null;
     md: {
       name: string | null;
@@ -64,6 +66,8 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
               currentBid={auction.current_bid}
               eventDate={auction.event_date}
               entryTime={auction.entry_time}
+              depositRequired={auction.deposit_required}
+              depositAmount={auction.deposit_amount}
             />
           )}
           {md?.phone && (
@@ -123,6 +127,8 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
           currentBid={auction.current_bid}
           eventDate={auction.event_date}
           entryTime={auction.entry_time}
+          depositRequired={auction.deposit_required}
+          depositAmount={auction.deposit_amount}
           onContact={() => setContactAttempted(true)}
         />
       )}
