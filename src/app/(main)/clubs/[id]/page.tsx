@@ -55,23 +55,10 @@ export default async function ClubDetailPage({ params }: PageProps) {
     .order("auction_start_at", { ascending: true })
     .limit(20);
 
-  const { data: completedAuctions } = await supabase
-    .from("auctions")
-    .select(`
-      *,
-      club:clubs(*),
-      md:users!auctions_md_id_fkey(id, name, profile_image)
-    `)
-    .eq("club_id", id)
-    .in("status", ["won", "unsold", "contacted", "confirmed"])
-    .order("auction_end_at", { ascending: false })
-    .limit(20);
-
   return (
     <ClubDetailContent
       club={club}
       activeAuctions={activeAuctions || []}
-      completedAuctions={completedAuctions || []}
     />
   );
 }

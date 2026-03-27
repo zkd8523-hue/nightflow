@@ -32,6 +32,11 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "kakao",
       options: {
+        // ✅ Kakao OAuth Redirect URI 쿼리 파라미터 처리
+        // - 카카오 개발자 콘솔 등록 URI: http://localhost:3000/auth/callback (쿼리 제외)
+        // - 실제 요청 URI: http://localhost:3000/auth/callback?next=%2F
+        // - 카카오는 scheme/host/port/path만 검증하므로 쿼리 파라미터는 안전
+        // - next 파라미터는 /auth/callback에서 로그인 후 리다이렉트에 사용
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
         scopes: "profile_nickname profile_image",
         skipBrowserRedirect: false,

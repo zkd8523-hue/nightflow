@@ -19,13 +19,11 @@ import type { Club, Auction } from "@/types/database";
 interface ClubDetailContentProps {
   club: Club;
   activeAuctions: Auction[];
-  completedAuctions: Auction[];
 }
 
 export function ClubDetailContent({
   club,
   activeAuctions,
-  completedAuctions,
 }: ClubDetailContentProps) {
   const router = useRouter();
   const { user } = useCurrentUser();
@@ -114,7 +112,6 @@ export function ClubDetailContent({
       {/* 경매 목록 */}
       <AuctionList
         activeAuctions={activeAuctions}
-        completedAuctions={completedAuctions}
         userBidMap={userBidMap}
       />
 
