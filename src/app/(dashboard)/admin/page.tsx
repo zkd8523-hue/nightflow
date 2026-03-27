@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Store,
   CheckCircle,
+  Banknote,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -115,6 +116,14 @@ export default async function AdminDashboardPage() {
       color: "text-red-500",
       bgColor: "bg-red-500/10",
       href: "/admin/users",
+    },
+    {
+      label: "보증금 정산",
+      value: "관리",
+      icon: Banknote,
+      color: "text-cyan-500",
+      bgColor: "bg-cyan-500/10",
+      href: "/admin/settlements",
     },
   ];
 

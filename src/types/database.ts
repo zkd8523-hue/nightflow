@@ -31,7 +31,8 @@ export type NotificationEventType =
   | "cancellation_confirmed"
   | "new_auction_in_area";
 export type NotificationStatus = "pending" | "sent" | "failed";
-export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow";
+export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid";
+export type DepositStatus = "pending" | "paid" | "held" | "refunded" | "forfeited" | "settled" | "failed";
 export type TableType = "Standard" | "VIP" | "Premium";
 
 export interface TablePosition {
@@ -208,6 +209,10 @@ export interface Auction {
 
   buy_now_price: number | null;
 
+  // 보증금 (Migration 075)
+  deposit_required: boolean;
+  deposit_amount: number | null;
+
   // 낙찰
   winner_id: string | null;
   winning_price: number | null;
@@ -244,7 +249,30 @@ export interface AuctionTemplate {
   buy_now_price: number | null;
   includes: string[];
   duration_minutes: number;
+  deposit_required: boolean;
   last_used_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Deposit {
+  id: string;
+  auction_id: string;
+  user_id: string;
+  md_id: string;
+  amount: number;
+  payment_key: string | null;
+  order_id: string;
+  payment_method: string | null;
+  status: DepositStatus;
+  paid_at: string | null;
+  held_at: string | null;
+  refunded_at: string | null;
+  forfeited_at: string | null;
+  settled_at: string | null;
+  refund_amount: number | null;
+  refund_reason: string | null;
+  settlement_id: string | null;
   created_at: string;
   updated_at: string;
 }

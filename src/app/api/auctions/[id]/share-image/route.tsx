@@ -55,7 +55,7 @@ export async function GET(
             backgroundColor: '#0A0A0A',
             color: 'white',
             fontFamily: 'Pretendard',
-            padding: '80px',
+            padding: '260px 80px',
             position: 'relative',
           }}
         >
@@ -87,7 +87,7 @@ export async function GET(
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            marginBottom: '100px',
+            marginBottom: '60px',
             fontSize: '56px',
             fontWeight: 'bold',
             letterSpacing: '-2px',
@@ -140,7 +140,7 @@ export async function GET(
 
           {/* Footer CTA */}
           <div style={{
-            marginTop: '120px',
+            marginTop: '60px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',

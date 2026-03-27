@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import type { Auction } from "@/types/database";
 import { formatEventDate } from "./format";
 import { logger } from "./logger";
+import { trackEvent } from "@/lib/analytics";
 
 interface ShareAuctionParams {
   auctionId: string;
@@ -83,14 +84,25 @@ export function getShareParams(auction: Auction): ShareAuctionParams {
 }
 
 /**
- * 인스타그램 공유: 미리 fetch된 이미지 Blob으로 네이티브 공유 시트 → 인스타 스토리
+ * 인스타그램 스토리 공유: 이미지 + 링크 자동 복사 + 스토리 가이드
  * imageBlob은 User Gesture 만료 방지를 위해 미리 준비된 것을 인자로 받음
+ * auctionUrl을 전달하면 공유 전 클립보드에 자동 복사 (링크 스티커 붙여넣기용)
  */
 export async function shareToInstagram(
   auctionId: string,
   imageBlob: Blob | null,
-  clubName: string
+  clubName: string,
+  auctionUrl?: string
 ): Promise<boolean> {
+  const url = auctionUrl || `${window.location.origin}/auctions/${auctionId}`;
+
+  // 공유 전 경매 링크를 클립보드에 복사 (스토리 링크 스티커용)
+  try {
+    await navigator.clipboard.writeText(url);
+  } catch {
+    // 클립보드 실패해도 공유는 계속 진행
+  }
+
   // 이미지 Blob + navigator.share files 지원 시 → 이미지 파일로 공유
   if (imageBlob && navigator.share) {
     try {
@@ -102,6 +114,11 @@ export async function shareToInstagram(
         await navigator.share({
           files: [file],
           title: `${clubName} 테이블 경매`,
+        });
+        trackEvent("auction_shared", { platform: "instagram", auction_id: auctionId, method: "web_share_api" });
+        toast.success("스토리에 '링크 스티커'를 추가하세요!", {
+          description: "경매 링크가 복사되어 있어요. 붙여넣기하면 고객이 바로 입찰할 수 있습니다.",
+          duration: 6000,
         });
         return true;
       }
@@ -116,16 +133,18 @@ export async function shareToInstagram(
   // Fallback: 이미지 다운로드
   if (imageBlob) {
     try {
-      const url = URL.createObjectURL(imageBlob);
+      const blobUrl = URL.createObjectURL(imageBlob);
       const a = document.createElement("a");
-      a.href = url;
+      a.href = blobUrl;
       a.download = `${clubName}-auction.png`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      toast.success("이미지를 저장했습니다! 인스타 스토리에서 사용하세요", {
-        duration: 3000,
+      URL.revokeObjectURL(blobUrl);
+      trackEvent("auction_shared", { platform: "instagram", auction_id: auctionId, method: "download" });
+      toast.success("이미지 저장 완료! 인스타 스토리에 올려보세요", {
+        description: "경매 링크가 복사되어 있어요. 스토리 '링크 스티커'에 붙여넣기하세요.",
+        duration: 6000,
       });
       return true;
     } catch {
@@ -134,6 +153,7 @@ export async function shareToInstagram(
   }
 
   // 최종 Fallback: 링크 복사
+  trackEvent("auction_shared", { platform: "instagram", auction_id: auctionId, method: "clipboard" });
   await copyAuctionLink(auctionId);
   return false;
 }

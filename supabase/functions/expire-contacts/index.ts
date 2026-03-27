@@ -77,6 +77,27 @@ Deno.serve(async (req: Request) => {
         const clubName = (auction.club as unknown as { name: string })?.name || "클럽";
         const price = new Intl.NumberFormat("ko-KR").format(auction.winning_price || 0);
 
+        // 1.5. 보증금 몰수 (deposit_required인 경우)
+        try {
+          const { data: deposit } = await supabase
+            .from("deposits")
+            .select("id, payment_key, amount")
+            .eq("auction_id", auction.id)
+            .eq("user_id", winnerId)
+            .in("status", ["paid", "held"])
+            .single();
+
+          if (deposit) {
+            await supabase
+              .from("deposits")
+              .update({ status: "forfeited", forfeited_at: now })
+              .eq("id", deposit.id);
+            console.log(`💰 보증금 몰수: 경매 ${auction.id}, deposit ${deposit.id}`);
+          }
+        } catch (depositErr) {
+          console.error(`⚠️ 보증금 몰수 처리 실패 (${auction.id}):`, depositErr);
+        }
+
         // 2. 노쇼 스트라이크 적용
         // (소비자가 연락했으면 이미 contacted → 여기 안 걸림)
         console.log(`⚠️ 노쇼 스트라이크 적용: 경매 ${auction.id}, 유저 ${winnerId}`);

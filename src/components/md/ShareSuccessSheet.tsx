@@ -157,7 +157,7 @@ export function ShareSuccessSheet({
   const handleInstagramShare = async () => {
     setSharing("instagram");
     try {
-      await shareToInstagram(auctionId, imageBlob, clubName);
+      await shareToInstagram(auctionId, imageBlob, clubName, auctionUrl);
     } finally {
       setSharing(null);
     }

@@ -26,9 +26,11 @@ import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auctio
 import { ContactButton } from "./ContactButton";
 import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
-import { Calendar, ShieldCheck, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Phone } from "lucide-react";
+import { Calendar, ShieldCheck, Shield, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Phone, Share2 } from "lucide-react";
+import { calculateRemainingAmount } from "@/lib/payments/deposit-helpers";
 import { toast } from "sonner";
 import { DrinkPlaceholder, getAuctionImageUrl } from "@/components/auctions/DrinkPlaceholder";
+import { ShareAuctionSheet } from "./ShareAuctionSheet";
 import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
 import { TableDetailsCard } from "./TableDetailsCard";
 import { trackEvent } from "@/lib/analytics";
@@ -46,6 +48,9 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const { currentAuction, setCurrentAuction, setBids, bids } = useAuctionStore();
 
   const bidPanelRef = useRef<BidPanelRef>(null);
+
+  // 공유 Sheet 상태
+  const [shareSheetOpen, setShareSheetOpen] = useState(false);
 
   // VIP CRM 상태 (MD 전용)
   const [vipUserIds, setVipUserIds] = useState<string[]>([]);
@@ -248,6 +253,12 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
         {/* Floating Badges */}
         <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
+          <button
+            onClick={() => setShareSheetOpen(true)}
+            className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+          >
+            <Share2 className="w-4 h-4 text-white" />
+          </button>
           {isInstant && isActive && (
             <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur-md">
               <span className="text-[11px]">🔥</span>
@@ -359,6 +370,16 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
           {/* 입찰 경쟁 상황 표시 (경매만) */}
           {isActive && !isInstant && <BidCompetitionIndicator bids={bids} remaining={remaining} />}
+
+          {/* 보증금 안내 배지 */}
+          {displayAuction.deposit_required && (isActive || isScheduled) && (
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
+              <Shield className="w-3.5 h-3.5 text-green-400 shrink-0" />
+              <p className="text-[11px] text-green-400/90 font-bold leading-snug">
+                보증금 {formatPrice(displayAuction.deposit_amount || 30000)} 결제 필요 · 낙찰가에서 차감
+              </p>
+            </div>
+          )}
 
           {/* 알림받기 버튼 (예정 경매만) */}
           {isScheduled && (
@@ -584,6 +605,16 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                     </p>
                   </div>
 
+                  {/* 보증금 차감 안내 */}
+                  {displayAuction.deposit_required && displayAuction.winning_price && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
+                      <Shield className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                      <p className="text-[11px] text-green-400/90 font-bold leading-snug">
+                        보증금 {formatPrice(displayAuction.deposit_amount || 30000)} 차감 · 현장 잔금 {formatPrice(calculateRemainingAmount(displayAuction.winning_price, displayAuction.deposit_amount || 30000))}
+                      </p>
+                    </div>
+                  )}
+
                   <div className="pt-1 space-y-2">
                     {md?.instagram && (
                       <ContactButton
@@ -669,7 +700,14 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         </div>
       )}
 
-      {/* 9. Bidder Profile Modal (MD 전용) */}
+      {/* 9. Share Sheet */}
+      <ShareAuctionSheet
+        isOpen={shareSheetOpen}
+        onOpenChange={setShareSheetOpen}
+        auction={displayAuction}
+      />
+
+      {/* 10. Bidder Profile Modal (MD 전용) */}
       {isMdOwner && (
         <BidderProfile
           isOpen={profileModalOpen}

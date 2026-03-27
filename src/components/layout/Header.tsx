@@ -279,15 +279,6 @@ export function Header() {
                     <span className="text-[15px] font-bold">찜한 클럽</span>
                   </Link>
 
-                  <Link
-                    href="/settings/notifications"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                  >
-                    <Bell className="w-5 h-5 text-neutral-500" />
-                    <span className="text-[15px] font-bold">알림 설정</span>
-                  </Link>
-
                   {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
                     <Link
                       href="/md/dashboard"
@@ -295,7 +286,7 @@ export function Header() {
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
                       <LayoutDashboard className="w-5 h-5 text-blue-500" />
-                      <span className="text-[15px] font-bold">내 클럽 관리하기</span>
+                      <span className="text-[15px] font-bold">클럽 관리</span>
                     </Link>
                   )}
 
@@ -328,6 +319,15 @@ export function Header() {
                   >
                     <MessageCircle className="w-5 h-5 text-neutral-500" />
                     <span className="text-[15px] font-bold">고객 문의</span>
+                  </Link>
+
+                  <Link
+                    href="/settings/notifications"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                  >
+                    <Bell className="w-5 h-5 text-neutral-500" />
+                    <span className="text-[15px] font-bold">알림 설정</span>
                   </Link>
 
                   <div className="h-px bg-neutral-800/50 my-2" />

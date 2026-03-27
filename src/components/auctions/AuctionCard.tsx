@@ -17,7 +17,7 @@ import { formatNumber, formatTime, formatCountdown, sortByLiquorFirst, categoriz
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES, URGENCY_LABELS } from "@/lib/constants/timer-urgency";
-import { MapPin, ExternalLink, Clock, Gavel, Zap } from "lucide-react";
+import { MapPin, ExternalLink, Clock, Gavel, Zap, Shield } from "lucide-react";
 import { DrinkPlaceholder, getAuctionImageUrl } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
@@ -223,6 +223,11 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount }:
                 {!isInstant && auction.buy_now_price && auction.buy_now_price > 0 && !isWon && (
                   <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20 whitespace-nowrap">
                     즉시 낙찰 가능
+                  </span>
+                )}
+                {auction.deposit_required && !isWon && (
+                  <span className="text-green-400 bg-green-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-green-500/20 whitespace-nowrap flex items-center gap-0.5">
+                    <Shield className="w-2.5 h-2.5" />보증금
                   </span>
                 )}
               </div>

@@ -17,9 +17,12 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import type { Auction } from "@/types/database";
 import { formatPrice, formatNumber } from "@/lib/utils/format";
 import { isAuctionActive } from "@/lib/utils/auction";
-import { ShieldCheck, AlertCircle } from "lucide-react";
+import { ShieldCheck, Shield, AlertCircle } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { trackEvent } from "@/lib/analytics";
+import { useDepositStatus } from "@/hooks/useDepositStatus";
+import { DepositSheet } from "./DepositSheet";
+import { calculateRemainingAmount } from "@/lib/payments/deposit-helpers";
 
 interface InstantBuyPanelProps {
   auction: Auction;
@@ -32,6 +35,10 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({ auction, onBuySuc
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showDeposit, setShowDeposit] = useState(false);
+
+  const { needsDeposit, depositStatus, refresh: refreshDeposit } = useDepositStatus(auction.id, user?.id);
+  const depositAmount = auction.deposit_amount || 30000;
 
   const isActive = isAuctionActive(auction);
   const price = auction.start_price;
@@ -54,6 +61,14 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({ auction, onBuySuc
       });
 
       if (error) throw error;
+
+      // 보증금 미결제 에러 처리
+      if (result && !result.success && result.error === "deposit_required") {
+        toast.error("보증금 결제가 필요합니다");
+        setShowConfirm(false);
+        setShowDeposit(true);
+        return;
+      }
 
       trackEvent("instant_buy", {
         auction_id: auction.id,
@@ -108,6 +123,17 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({ auction, onBuySuc
           </div>
         </div>
 
+        {/* 보증금 안내 배지 */}
+        {auction.deposit_required && isActive && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
+            <Shield className="w-3.5 h-3.5 text-green-400 shrink-0" />
+            <p className="text-[11px] text-green-400/90 font-bold leading-snug">
+              보증금 {formatPrice(depositAmount)} 결제 필요
+              {depositStatus?.paid && " · 결제 완료"}
+            </p>
+          </div>
+        )}
+
         {/* 예약 버튼 */}
         <Button
           className={`w-full h-12 text-base font-black rounded-xl transition-all active:scale-[0.98] ${
@@ -115,7 +141,13 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({ auction, onBuySuc
               ? "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_20px_rgba(245,158,11,0.3)]"
               : "bg-neutral-800 text-neutral-500 shadow-none cursor-not-allowed"
           }`}
-          onClick={() => setShowConfirm(true)}
+          onClick={() => {
+            if (needsDeposit) {
+              setShowDeposit(true);
+            } else {
+              setShowConfirm(true);
+            }
+          }}
           disabled={!isActive || loading}
         >
           {isActive ? "예약하기" : "판매 종료"}
@@ -126,7 +158,9 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({ auction, onBuySuc
           <div className="flex items-center justify-center gap-1.5 pt-0.5">
             <ShieldCheck className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
             <p className="text-[11px] text-neutral-500 font-medium">
-              보증금 3만원 발생, 나머지는 MD에게 직접 결제
+              {auction.deposit_required
+                ? `보증금 ${formatPrice(depositAmount)} 결제 후, 잔금 ${formatPrice(calculateRemainingAmount(price, depositAmount))}은 MD에게 직접 결제`
+                : "매장에서 MD에게 직접 결제합니다"}
             </p>
           </div>
         )}
@@ -155,11 +189,27 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({ auction, onBuySuc
                   {formatPrice(price)}
                 </span>
               </div>
+              {auction.deposit_required && depositStatus?.paid && (
+                <>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 text-sm font-bold">보증금 차감</span>
+                    <span className="font-bold text-green-400">-{formatPrice(depositAmount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 text-sm font-bold">현장 잔금</span>
+                    <span className="font-bold text-white">
+                      {formatPrice(calculateRemainingAmount(price, depositAmount))}
+                    </span>
+                  </div>
+                </>
+              )}
               <div className="h-px bg-neutral-800/30" />
               <div className="flex items-start gap-2 pt-1">
                 <ShieldCheck className="w-4 h-4 text-neutral-400 mt-0.5" />
                 <p className="text-[11px] text-neutral-400 leading-relaxed font-medium">
-                  본 금액은 나이트플로우 결제 없이 **매장에서 MD에게 직접 지불**합니다.
+                  {auction.deposit_required
+                    ? "보증금은 낙찰가에서 차감되며, 잔금은 매장에서 MD에게 직접 지불합니다."
+                    : "본 금액은 나이트플로우 결제 없이 **매장에서 MD에게 직접 지불**합니다."}
                 </p>
               </div>
             </div>
@@ -187,6 +237,19 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({ auction, onBuySuc
           </div>
         </SheetContent>
       </Sheet>
+      {/* 보증금 결제 시트 */}
+      <DepositSheet
+        open={showDeposit}
+        onOpenChange={setShowDeposit}
+        auctionId={auction.id}
+        auctionTitle={auction.title}
+        depositAmount={depositAmount}
+        onDepositComplete={() => {
+          setShowDeposit(false);
+          refreshDeposit();
+          setShowConfirm(true);
+        }}
+      />
     </>
   );
 }, (prev, next) => {
@@ -194,6 +257,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({ auction, onBuySuc
     prev.auction.id === next.auction.id &&
     prev.auction.status === next.auction.status &&
     prev.auction.start_price === next.auction.start_price &&
+    prev.auction.deposit_required === next.auction.deposit_required &&
     prev.onBuySuccess === next.onBuySuccess
   );
 });

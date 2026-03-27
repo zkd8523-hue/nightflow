@@ -77,6 +77,26 @@ export function useNotifications(userId: string | undefined) {
                 : undefined,
             });
           }
+
+          // MD 입찰 알림: Toast + 진동
+          if (newNotification.type === "md_new_bid") {
+            if (typeof navigator !== "undefined" && navigator.vibrate) {
+              navigator.vibrate([200, 100, 200]);
+            }
+            toast.success(newNotification.title, {
+              description: newNotification.message,
+              duration: 6000,
+              position: "top-center",
+              action: newNotification.action_url
+                ? {
+                    label: "확인하기",
+                    onClick: () => {
+                      window.location.href = newNotification.action_url!;
+                    },
+                  }
+                : undefined,
+            });
+          }
         }
       )
       .subscribe();

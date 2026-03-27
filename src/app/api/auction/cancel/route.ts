@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { cancelPayment } from "@/lib/payments/toss";
 import { NextResponse } from "next/server";
 
 const IMMEDIATE_CANCEL_MS = 2 * 60 * 1000; // 2분
@@ -112,6 +113,32 @@ export async function POST(req: Request) {
         })
         .eq("id", auctionId)
         .in("status", ["won", "contacted"]);
+    }
+
+    // 보증금 환불 (모든 취소 구간에서 전액 환불)
+    try {
+      const { data: deposit } = await supabaseAdmin
+        .from("deposits")
+        .select("id, payment_key, amount, status")
+        .eq("auction_id", auctionId)
+        .eq("user_id", user.id)
+        .in("status", ["paid", "held"])
+        .single();
+
+      if (deposit?.payment_key) {
+        await cancelPayment(deposit.payment_key, `낙찰 취소 (${cancelType})`, deposit.amount);
+        await supabaseAdmin
+          .from("deposits")
+          .update({
+            status: "refunded",
+            refunded_at: new Date().toISOString(),
+            refund_amount: deposit.amount,
+            refund_reason: `낙찰 취소 (${cancelType})`,
+          })
+          .eq("id", deposit.id);
+      }
+    } catch {
+      // 보증금 환불 실패해도 취소 진행 (수동 환불 처리)
     }
 
     // MD에게 인앱 알림 발송

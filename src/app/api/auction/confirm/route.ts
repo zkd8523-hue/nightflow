@@ -54,6 +54,23 @@ export async function POST(req: Request) {
 
     if (auctionError) throw auctionError;
 
+    // 2.5 보증금 → settled (낙찰자 방문 확인)
+    if (auction.winner_id) {
+      try {
+        await supabaseAdmin
+          .from("deposits")
+          .update({
+            status: "settled",
+            settled_at: new Date().toISOString(),
+          })
+          .eq("auction_id", auctionId)
+          .eq("user_id", auction.winner_id)
+          .eq("status", "held");
+      } catch {
+        // 보증금 미사용 경매는 무시
+      }
+    }
+
     // 3. 낙찰자에게 알림톡 발송
     try {
       if (auction.winner_id) {

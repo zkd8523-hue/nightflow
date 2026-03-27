@@ -145,7 +145,7 @@ export function SignupForm() {
           <div className="text-center">
             <button
               type="button"
-              onClick={() => router.push(`/signup/md${nextParam ? `?next=${encodeURIComponent(nextParam)}` : ""}`)}
+              onClick={() => router.push("/md/apply")}
               className="text-sm text-neutral-400 hover:text-neutral-200 underline"
             >
               MD로 활동하고 싶으신가요?
