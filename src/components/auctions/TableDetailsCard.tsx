@@ -4,10 +4,23 @@ import { ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 interface TableDetailsCardProps {
   includes: string[];
   notes?: string;
+}
+
+const DRINK_CATEGORY_STYLES = {
+  champagne: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/30" },
+  spirit: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/30" },
+  extra: { bg: "bg-neutral-800/50", text: "text-neutral-300", border: "border-neutral-700" },
+};
+
+function getLiquorCategory(item: string) {
+  if (item.includes("샴페인")) return "champagne";
+  if (["보드카", "위스키", "럼", "데킬라", "진"].some(kw => item.includes(kw))) return "spirit";
+  return "extra";
 }
 
 /**
@@ -16,88 +29,67 @@ interface TableDetailsCardProps {
  * - 참고 사항 표시
  */
 export function TableDetailsCard({ includes, notes }: TableDetailsCardProps) {
-  const { liquorItems, extraItems } = useMemo(() => {
-    const liquorKeywords = [
-      "병",
-      "샴페인",
-      "보드카",
-      "위스키",
-      "와인",
-      "럼",
-      "데킬라",
-      "진",
-      "맥주",
-      "소주",
-      "하이볼",
-      "논알콜",
-    ];
-
-    const liquor = includes.filter((item) =>
-      liquorKeywords.some((kw) => item.includes(kw))
-    );
-    const extra = includes.filter(
-      (item) => !liquorKeywords.some((kw) => item.includes(kw))
-    );
-
-    return { liquorItems: liquor, extraItems: extra };
-  }, [includes]);
-
   return (
     <Card className="bg-[#1C1C1E] border-neutral-800/50 p-6 space-y-6">
       <div className="space-y-5">
         {/* 테이블 구성 (주류 포함) */}
         {includes.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-[16px] font-bold text-white flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-green-500" />
+          <div className="space-y-4">
+            <h2 className="text-[18px] font-bold text-white flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-green-500" />
               테이블 구성
             </h2>
-            <div className="flex flex-wrap gap-2">
-              {liquorItems.map((item) => (
-                <Badge
-                  key={item}
-                  variant="secondary"
-                  className="bg-amber-500/10 text-amber-400 border-amber-500/30 px-4 py-2 font-bold text-[14px]"
-                >
-                  {item}
-                </Badge>
-              ))}
-              {extraItems.map((item) => (
-                <Badge
-                  key={item}
-                  variant="secondary"
-                  className="bg-neutral-900/50 text-neutral-400 border-neutral-800 px-4 py-2 font-bold text-[14px]"
-                >
-                  {item}
-                </Badge>
-              ))}
+            <div className="flex flex-wrap gap-2.5">
+              {includes.map((item) => {
+                const category = getLiquorCategory(item);
+                const style = DRINK_CATEGORY_STYLES[category] || DRINK_CATEGORY_STYLES.extra;
+                
+                return (
+                  <Badge
+                    key={item}
+                    variant="secondary"
+                    className={cn(
+                      "px-5 py-2.5 font-bold text-[15px] border transition-colors",
+                      style.bg,
+                      style.text,
+                      style.border
+                    )}
+                  >
+                    {item}
+                  </Badge>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* 주류 변경 안내 */}
-        {liquorItems.length > 0 && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-            <p className="text-[11px] text-amber-500 font-bold">
+        {(includes || []).some(item => getLiquorCategory(item) !== 'extra') && (
+          <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4">
+            <p className="text-[13px] text-orange-500 font-bold mb-2">
               주류 변경 안내
             </p>
-            <p className="text-[10px] text-amber-500/80 mt-1">
-              • 현장에서 동급 브랜드 변경 가능
-            </p>
-            <p className="text-[10px] text-amber-500/80">
-              • 낙찰가 이하 환불 불가
-            </p>
+            <div className="space-y-1">
+              <p className="text-[12px] text-orange-500/70 flex items-start gap-1.5">
+                <span className="mt-1 w-1 h-1 rounded-full bg-orange-500/50 shrink-0" />
+                현장에서 동급 브랜드 변경 가능
+              </p>
+              <p className="text-[12px] text-orange-500/70 flex items-start gap-1.5">
+                <span className="mt-1 w-1 h-1 rounded-full bg-orange-500/50 shrink-0" />
+                낙찰가 이하 환불 불가
+              </p>
+            </div>
           </div>
         )}
       </div>
 
       {/* 참고 사항 */}
       {notes && (
-        <div className="space-y-2 pt-2 border-t border-neutral-800/30">
-          <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">
+        <div className="space-y-3 pt-6 border-t border-neutral-800/50">
+          <p className="text-[12px] text-neutral-500 font-bold uppercase tracking-[0.1em]">
             참고 사항
           </p>
-          <p className="text-[14px] text-neutral-400 font-medium leading-relaxed whitespace-pre-line">
+          <p className="text-[15px] text-neutral-300 font-medium leading-relaxed whitespace-pre-line">
             {notes}
           </p>
         </div>
