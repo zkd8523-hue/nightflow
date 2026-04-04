@@ -22,26 +22,23 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
         redirect("/");
     }
 
-    // MD는 승인 상태여야 경매 등록 가능 (admin은 무조건 허용)
+    // 제재 상태면 경매 등록 차단 (suspended/revoked)
     if (userData.role === "md" && userData.md_status !== "approved") {
-        const isSuspended = userData.md_status === "suspended";
         const isRevoked = userData.md_status === "revoked";
 
         return (
             <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
                 <div className="max-w-md mx-auto p-6 text-center space-y-4">
                     <p className="text-4xl">
-                        {isSuspended ? "\u23F8\uFE0F" : isRevoked ? "\uD83D\uDEAB" : "\u23F3"}
+                        {isRevoked ? "\uD83D\uDEAB" : "\u23F8\uFE0F"}
                     </p>
                     <h1 className="text-xl font-bold text-white">
-                        {isSuspended ? "활동 정지 중" : isRevoked ? "MD 자격 박탈" : "승인 대기 중"}
+                        {isRevoked ? "MD 자격 박탈" : "활동 정지 중"}
                     </h1>
                     <p className="text-neutral-400 text-sm">
-                        {isSuspended
-                            ? "운영 정책 위반으로 활동이 일시 정지되었습니다."
-                            : isRevoked
+                        {isRevoked
                             ? "MD 자격이 박탈되었습니다. 문의사항은 관리자에게 연락해주세요."
-                            : "MD 승인이 완료된 후 경매를 등록할 수 있습니다. 관리자 승인을 기다려주세요."}
+                            : "운영 정책 위반으로 활동이 일시 정지되었습니다."}
                     </p>
                     <Link href={isRevoked ? "/" : "/md/dashboard"} className="inline-block mt-4 px-6 py-3 bg-white text-black font-bold rounded-xl">
                         {isRevoked ? "홈으로 돌아가기" : "대시보드로 돌아가기"}

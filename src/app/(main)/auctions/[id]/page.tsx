@@ -60,17 +60,21 @@ export default async function AuctionDetailPage({ params }: PageProps) {
   const supabase = await createClient();
 
   // 경매 정보 조회
-  const { data: auction } = await supabase
+  const { data: auction, error } = await supabase
     .from("auctions")
     .select(
       `
       *,
       club:clubs(*),
-      md:users!auctions_md_id_fkey(id, name, profile_image, md_unique_slug, instagram, phone)
+      md:users!auctions_md_id_fkey(id, name, profile_image, md_unique_slug, instagram, phone, kakao_open_chat_url, preferred_contact_methods)
     `
     )
     .eq("id", id)
     .single();
+
+  if (error) {
+    console.error("[AuctionDetail] Query error:", error);
+  }
 
   if (!auction) {
     notFound();

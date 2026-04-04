@@ -14,6 +14,8 @@ declare global {
             title: string;
             description: string;
             imageUrl: string;
+            imageWidth?: number;
+            imageHeight?: number;
             link: { mobileWebUrl: string; webUrl: string };
           };
           buttons: Array<{
@@ -96,6 +98,8 @@ export function useKakaoShare(): UseKakaoShareReturn {
             title: `${params.clubName} ${params.tableInfo} 테이블 경매`,
             description: `시작가 ${params.startPrice.toLocaleString()}원 | 지금 입찰하세요!`,
             imageUrl: params.shareImageUrl,
+            imageWidth: 1200,
+            imageHeight: 630,
             link: {
               mobileWebUrl: params.auctionUrl,
               webUrl: params.auctionUrl,

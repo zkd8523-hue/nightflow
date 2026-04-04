@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Phone, Instagram } from "lucide-react";
+import { Phone, Instagram, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
 import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
@@ -9,36 +9,31 @@ import { trackEvent } from "@/lib/analytics";
 
 interface ContactButtonProps {
   auctionId: string;
-  type: "dm" | "phone";
+  type: "dm" | "phone" | "kakao";
   url: string;
   clubName?: string;
   tableInfo?: string;
   currentBid?: number;
   eventDate?: string;
   entryTime?: string;
-  depositRequired?: boolean;
-  depositAmount?: number | null;
   onContact?: () => void;
 }
 
-function buildCopyMessage(auctionId: string, clubName?: string, tableInfo?: string, currentBid?: number, eventDate?: string, entryTime?: string, depositRequired?: boolean, depositAmount?: number | null): string | null {
+function buildCopyMessage(auctionId: string, clubName?: string, tableInfo?: string, currentBid?: number, eventDate?: string, entryTime?: string): string | null {
   if (!clubName || !currentBid) return null;
   const matchUrl = `${window.location.origin}/match/${auctionId}`;
   const entry = eventDate ? formatEntryTime(entryTime ?? null, eventDate) : (entryTime ? `${entryTime} 입장` : "즉시 입장");
-  const depositLine = depositRequired
-    ? `보증금 ${formatPrice(depositAmount || 30000)} 결제 완료 · 잔금 ${formatPrice(currentBid - (depositAmount || 30000))}`
-    : `보증금 없음 · 현장 ${formatPrice(currentBid)} 결제`;
   return [
     `[NightFlow 낙찰 확인]`,
     `${clubName}${tableInfo ? ` · ${tableInfo}` : ""}`,
     `${formatPrice(currentBid)} · ${eventDate ? formatEventDate(eventDate) : ""} ${entry}`,
-    depositLine,
+    `현장 ${formatPrice(currentBid)} 결제`,
     ``,
     matchUrl,
   ].join("\n");
 }
 
-export function ContactButton({ auctionId, type, url, clubName, tableInfo, currentBid, eventDate, entryTime, depositRequired, depositAmount, onContact }: ContactButtonProps) {
+export function ContactButton({ auctionId, type, url, clubName, tableInfo, currentBid, eventDate, entryTime, onContact }: ContactButtonProps) {
   const handleClick = async () => {
     // 연락 시도 기록 (fire-and-forget)
     fetch("/api/auction/contact-attempt", {
@@ -50,9 +45,9 @@ export function ContactButton({ auctionId, type, url, clubName, tableInfo, curre
     onContact?.();
     trackEvent("contact_initiated", { auction_id: auctionId, contact_type: type });
 
-    // DM: 구조화된 메시지 복사 후 이동
-    if (type === "dm" && clubName && currentBid) {
-      const message = buildCopyMessage(auctionId, clubName, tableInfo, currentBid, eventDate, entryTime, depositRequired, depositAmount);
+    // DM / Kakao: 구조화된 메시지 복사 후 이동
+    if ((type === "dm" || type === "kakao") && clubName && currentBid) {
+      const message = buildCopyMessage(auctionId, clubName, tableInfo, currentBid, eventDate, entryTime);
       if (message) {
         try {
           await navigator.clipboard.writeText(message);
@@ -62,7 +57,7 @@ export function ContactButton({ auctionId, type, url, clubName, tableInfo, curre
         }
       }
       window.open(url, "_blank", "noopener,noreferrer");
-    } else if (type === "dm") {
+    } else if (type === "dm" || type === "kakao") {
       window.open(url, "_blank", "noopener,noreferrer");
     } else {
       window.location.href = url;
@@ -80,6 +75,21 @@ export function ContactButton({ auctionId, type, url, clubName, tableInfo, curre
           DM
         </span>
         <span className="text-[11px] font-medium text-white/70">메시지 자동 복사</span>
+      </Button>
+    );
+  }
+
+  if (type === "kakao") {
+    return (
+      <Button
+        onClick={handleClick}
+        className="w-full h-auto py-2.5 bg-[#FEE500] text-[#191919] rounded-xl hover:bg-[#FDD835] flex flex-col items-center gap-0.5"
+      >
+        <span className="flex items-center gap-2 font-black text-sm">
+          <MessageCircle className="w-4 h-4" />
+          카카오톡 오픈채팅
+        </span>
+        <span className="text-[11px] font-medium text-[#191919]/60">메시지 자동 복사</span>
       </Button>
     );
   }

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, MapPin, Calendar, Clock, Users, ShieldAlert, Shield } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Clock, Users, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,8 +28,6 @@ interface CancelClientProps {
     contactDeadline: string | null;
     wonAt: string | null;
     listingType?: "auction" | "instant";
-    depositRequired: boolean;
-    depositAmount: number;
   };
   currentWarnings: number;
 }
@@ -274,16 +272,6 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
                 </li>
               )}
 
-              {/* 보증금 몰수 안내 */}
-              {auction.depositRequired && (
-                <li className="flex items-start gap-2.5">
-                  <Shield className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                  <span className="text-[13px] text-red-400 font-bold leading-relaxed">
-                    보증금 {formatPrice(auction.depositAmount || 30000)}은 환불되지 않습니다
-                  </span>
-                </li>
-              )}
-
               {/* 차순위 낙찰 안내 (경매만 — instant은 차순위 없음) */}
               {!isInstant && (
                 <li className="flex items-start gap-2.5">
@@ -393,11 +381,6 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
               <p className="text-[12px] text-neutral-500 font-medium">
                 3경고 누적 시 스트라이크 1회로 전환됩니다
               </p>
-              {auction.depositRequired && (
-                <p className="text-[12px] text-red-400 font-bold mt-1">
-                  보증금 {formatPrice(auction.depositAmount || 30000)} 환불 불가
-                </p>
-              )}
             </div>
 
             {/* Buttons */}

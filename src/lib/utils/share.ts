@@ -4,6 +4,20 @@ import { formatEventDate, formatEntryTime } from "./format";
 import { logger } from "./logger";
 import { trackEvent } from "@/lib/analytics";
 
+/**
+ * URL에 referral code 파라미터 추가 (바이럴 추적용, 유저에게 비노출)
+ */
+export function appendReferralCode(url: string, referralCode?: string | null): string {
+  if (!referralCode) return url;
+  try {
+    const u = new URL(url);
+    u.searchParams.set('ref', referralCode);
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
 interface ShareAuctionParams {
   auctionId: string;
   clubName: string;
@@ -11,6 +25,7 @@ interface ShareAuctionParams {
   entryTime?: string | null;
   startPrice: number;
   tableInfo?: string;
+  referralCode?: string | null;
 }
 
 /**
@@ -25,8 +40,9 @@ export async function shareAuction({
   entryTime,
   startPrice,
   tableInfo,
+  referralCode,
 }: ShareAuctionParams): Promise<boolean> {
-  const url = `${window.location.origin}/auctions/${auctionId}`;
+  const url = appendReferralCode(`${window.location.origin}/auctions/${auctionId}`, referralCode);
   const tableText = tableInfo ? ` ${tableInfo}` : "";
   const entry = formatEntryTime(entryTime ?? null, eventDate);
   const text = `🎉 ${clubName}${tableText} 테이블 경매 시작!\n${formatEventDate(eventDate)} ${entry}\n시작가 ₩${startPrice.toLocaleString()}\n\n지금 입찰하세요 👉`;
@@ -76,7 +92,7 @@ async function copyToClipboard(text: string, url: string): Promise<void> {
 /**
  * Auction 객체에서 공유 파라미터 추출
  */
-export function getShareParams(auction: Auction): ShareAuctionParams {
+export function getShareParams(auction: Auction, referralCode?: string | null): ShareAuctionParams {
   return {
     auctionId: auction.id,
     clubName: auction.club?.name || "클럽",
@@ -84,6 +100,7 @@ export function getShareParams(auction: Auction): ShareAuctionParams {
     entryTime: auction.entry_time,
     startPrice: auction.start_price,
     tableInfo: auction.table_info,
+    referralCode,
   };
 }
 
@@ -96,9 +113,10 @@ export async function shareToInstagram(
   auctionId: string,
   imageBlob: Blob | null,
   clubName: string,
-  auctionUrl?: string
+  auctionUrl?: string,
+  referralCode?: string | null
 ): Promise<boolean> {
-  const url = auctionUrl || `${window.location.origin}/auctions/${auctionId}`;
+  const url = appendReferralCode(auctionUrl || `${window.location.origin}/auctions/${auctionId}`, referralCode);
 
   // 공유 전 경매 링크를 클립보드에 복사 (스토리 링크 스티커용)
   try {
@@ -165,8 +183,8 @@ export async function shareToInstagram(
 /**
  * 경매 링크만 클립보드에 복사
  */
-export async function copyAuctionLink(auctionId: string): Promise<boolean> {
-  const url = `${window.location.origin}/auctions/${auctionId}`;
+export async function copyAuctionLink(auctionId: string, referralCode?: string | null): Promise<boolean> {
+  const url = appendReferralCode(`${window.location.origin}/auctions/${auctionId}`, referralCode);
   try {
     await navigator.clipboard.writeText(url);
     toast.success("링크가 복사되었습니다!", { duration: 2000 });

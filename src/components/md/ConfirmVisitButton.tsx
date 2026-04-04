@@ -21,11 +21,14 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
     const [showMutualCancel, setShowMutualCancel] = useState(false);
     const router = useRouter();
 
-    // 방문 확인 (contacted → confirmed)
+    const isInstantActive = auctionStatus === "instant_active";
+
+    // 방문 확인 (contacted → confirmed) 또는 거래완료 (instant active → confirmed)
     const handleConfirmVisit = async () => {
         setLoading(true);
         try {
-            const res = await fetch("/api/auction/confirm", {
+            const endpoint = isInstantActive ? "/api/auction/complete" : "/api/auction/confirm";
+            const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ auctionId }),
@@ -36,8 +39,8 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
                 throw new Error(data.error || "처리 중 오류가 발생했습니다.");
             }
 
-            trackEvent("visit_confirmed", { auction_id: auctionId });
-            toast.success("방문 확인 완료!");
+            trackEvent(isInstantActive ? "instant_completed" : "visit_confirmed", { auction_id: auctionId });
+            toast.success(isInstantActive ? "거래완료 처리되었습니다!" : "방문 확인 완료!");
             router.refresh();
         } catch (error: unknown) {
             logger.error("Confirm visit error:", error);
@@ -110,6 +113,22 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
             setLoading(false);
         }
     };
+
+    // instant active: 거래완료 버튼만 표시
+    if (isInstantActive) {
+        return (
+            <div className="space-y-2">
+                <Button
+                    onClick={handleConfirmVisit}
+                    disabled={loading}
+                    className="w-full h-12 bg-green-600 text-white font-bold hover:bg-green-700 rounded-xl flex items-center justify-center gap-2"
+                >
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    거래완료
+                </Button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-2">

@@ -53,7 +53,7 @@ export default async function MyBidsPage({ searchParams }: PageProps) {
             auction:auctions (
                 *,
                 club:clubs (*),
-                md:md_id (name, phone, instagram)
+                md:md_id (name, phone, instagram, kakao_open_chat_url, preferred_contact_methods)
             )
         `)
         .eq("bidder_id", authUser.id)
@@ -65,7 +65,7 @@ export default async function MyBidsPage({ searchParams }: PageProps) {
         .select(`
             *,
             club:club_id (*),
-            md:md_id (name, phone, instagram)
+            md:md_id (name, phone, instagram, kakao_open_chat_url, preferred_contact_methods)
         `)
         .eq("winner_id", authUser.id)
         .order("won_at", { ascending: false });

@@ -13,7 +13,12 @@ import { trackEvent } from "@/lib/analytics";
 
 import type { User as AuthUser } from "@supabase/supabase-js";
 
-export function SignupForm() {
+interface SignupFormProps {
+  referralCode?: string | null;
+  mdReferrer?: string | null;
+}
+
+export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get("next");
@@ -49,6 +54,26 @@ export function SignupForm() {
     setLoading(true);
 
     try {
+      // 추천인 자동 조회 (유저에게 비노출)
+      let referredById: string | null = null;
+      let signupSource = 'direct';
+
+      if (referralCode) {
+        const { data: referrer } = await supabase
+          .from("users")
+          .select("id")
+          .eq("referral_code", referralCode)
+          .is("deleted_at", null)
+          .single();
+        if (referrer && referrer.id !== authUser.id) {
+          referredById = referrer.id;
+          signupSource = 'referral';
+        }
+      } else if (mdReferrer) {
+        referredById = mdReferrer;
+        signupSource = 'md_profile';
+      }
+
       // users 테이블에 프로필 생성
       const { error } = await supabase.from("users").insert({
         id: authUser.id,
@@ -59,11 +84,17 @@ export function SignupForm() {
         role: "user",
         alimtalk_consent: formData.alimtalkConsent,
         alimtalk_consent_at: formData.alimtalkConsent ? new Date().toISOString() : null,
+        referred_by: referredById,
+        signup_source: signupSource,
       });
 
       if (error) throw error;
 
-      trackEvent("signup_completed", { user_type: "user" });
+      trackEvent("signup_completed", {
+        user_type: "user",
+        signup_source: signupSource,
+        has_referrer: !!referredById,
+      });
       toast.success("가입이 완료되었습니다!");
       router.push(redirectAfterSignup);
     } catch (error: unknown) {

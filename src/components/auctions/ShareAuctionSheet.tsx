@@ -10,8 +10,9 @@ import {
 } from "@/components/ui/drawer";
 import { MessageCircle, Instagram, Link2, Share2 } from "lucide-react";
 
-import { shareAuction, shareToInstagram, copyAuctionLink } from "@/lib/utils/share";
+import { shareAuction, shareToInstagram, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
+import { useReferralCode } from "@/hooks/useReferralCode";
 import { formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import type { Auction } from "@/types/database";
 
@@ -27,6 +28,7 @@ export function ShareAuctionSheet({
   auction,
 }: ShareAuctionSheetProps) {
   const { shareToKakao, isAvailable: kakaoAvailable } = useKakaoShare();
+  const referralCode = useReferralCode();
   const [sharing, setSharing] = useState<string | null>(null);
 
   const club = auction.club;
@@ -65,12 +67,17 @@ export function ShareAuctionSheet({
 
   const auctionUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/auctions/${auction.id}`
+      ? appendReferralCode(`${window.location.origin}/auctions/${auction.id}`, referralCode)
       : "";
 
   const shareImageUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/api/auctions/${auction.id}/share-image`
+      : "";
+
+  const kakaoShareImageUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/api/auctions/${auction.id}/share-image?format=kakao`
       : "";
 
   const handleKakaoShare = async () => {
@@ -81,7 +88,7 @@ export function ShareAuctionSheet({
         tableInfo,
         startPrice: auction.start_price,
         auctionUrl,
-        shareImageUrl,
+        shareImageUrl: kakaoShareImageUrl,
       });
     } finally {
       setSharing(null);
@@ -91,7 +98,7 @@ export function ShareAuctionSheet({
   const handleInstagramShare = async () => {
     setSharing("instagram");
     try {
-      await shareToInstagram(auction.id, imageBlob, clubName, auctionUrl);
+      await shareToInstagram(auction.id, imageBlob, clubName, auctionUrl, referralCode);
     } finally {
       setSharing(null);
     }
@@ -100,7 +107,7 @@ export function ShareAuctionSheet({
   const handleCopyLink = async () => {
     setSharing("link");
     try {
-      await copyAuctionLink(auction.id);
+      await copyAuctionLink(auction.id, referralCode);
     } finally {
       setSharing(null);
     }
@@ -116,6 +123,7 @@ export function ShareAuctionSheet({
         entryTime: auction.entry_time,
         startPrice: auction.start_price,
         tableInfo,
+        referralCode,
       });
     } finally {
       setSharing(null);

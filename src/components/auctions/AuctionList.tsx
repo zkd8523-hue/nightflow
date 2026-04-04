@@ -12,9 +12,10 @@ interface AuctionListProps {
   activeAuctions: Auction[];
   selectedArea?: string | null;
   userBidMap?: Map<string, number>;
+  userInterestedSet?: Set<string>;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, selectedArea, userBidMap }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, selectedArea, userBidMap, userInterestedSet }: AuctionListProps) {
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
     return auctions.filter(a => a.club?.area === selectedArea);
@@ -51,6 +52,18 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
     return "today";
   });
 
+  // 오늘특가: 날짜별 그룹핑
+  const { groupedInstant, sortedInstantDates } = useMemo(() => {
+    const grouped = todayAuctions.reduce((groups, auction) => {
+      const date = auction.event_date;
+      if (!groups[date]) groups[date] = [];
+      groups[date].push(auction);
+      return groups;
+    }, {} as Record<string, typeof todayAuctions>);
+    const sorted = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+    return { groupedInstant: grouped, sortedInstantDates: sorted };
+  }, [todayAuctions]);
+
   // 얼리버드: "오늘 마감" + 미래 날짜별 그룹핑
   const { closingToday, groupedAdvance, sortedAdvanceDates } = useMemo(() => {
     // 오늘 마감 (event_date === todayDate인 얼리버드)
@@ -80,7 +93,7 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
           >
-            🔥 오늘 특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
+            ⚡ 오늘 특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
           </button>
 
           <button
@@ -109,9 +122,13 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
               </div>
             </div>
           ) : (
-            <div className="flex flex-col gap-4">
-              {todayAuctions.map((auction) => (
-                <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} />
+            <div className="flex flex-col gap-6">
+              {sortedInstantDates.map(date => (
+                <DateGroup key={date} date={date} showCount>
+                  {groupedInstant[date].map(auction => (
+                    <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} isUserInterested={userInterestedSet?.has(auction.id)} />
+                  ))}
+                </DateGroup>
               ))}
             </div>
           )}

@@ -5,6 +5,8 @@ import { useCountdown } from "@/hooks/useCountdown";
 import { ContactTimer } from "./ContactTimer";
 import { ContactButton } from "./ContactButton";
 import { AlertCircle, ShieldCheck } from "lucide-react";
+import { getVisibleContactMethods } from "@/lib/utils/contact-methods";
+import type { ContactMethodType } from "@/types/database";
 
 interface MyBidCardContactProps {
   auction: {
@@ -15,13 +17,13 @@ interface MyBidCardContactProps {
     current_bid: number;
     event_date: string;
     entry_time: string | null;
-    deposit_required?: boolean;
-    deposit_amount?: number | null;
     club: { name: string } | null;
     md: {
       name: string | null;
       phone: string | null;
       instagram: string | null;
+      kakao_open_chat_url: string | null;
+      preferred_contact_methods: ContactMethodType[] | null;
     } | null;
   };
 }
@@ -33,6 +35,7 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
   const { remaining } = useCountdown(auction.contact_deadline);
   const isExpired = !auction.contact_deadline || remaining <= 0;
   const md = auction.md;
+  const methods = getVisibleContactMethods(md);
 
   // 연락 완료 상태 (버튼 클릭 후 자동 contacted 전환됨)
   if (contactAttempted) {
@@ -56,7 +59,7 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
               <p className="text-[11px] text-neutral-500">연락이 안 되셨나요? 다시 시도해주세요.</p>
             </div>
           </div>
-          {md?.instagram && (
+          {methods.includes("dm") && md?.instagram && (
             <ContactButton
               auctionId={auction.id}
               type="dm"
@@ -66,11 +69,21 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
               currentBid={auction.current_bid}
               eventDate={auction.event_date}
               entryTime={auction.entry_time}
-              depositRequired={auction.deposit_required}
-              depositAmount={auction.deposit_amount}
             />
           )}
-          {md?.phone && (
+          {methods.includes("kakao") && md?.kakao_open_chat_url && (
+            <ContactButton
+              auctionId={auction.id}
+              type="kakao"
+              url={md.kakao_open_chat_url}
+              clubName={auction.club?.name}
+              tableInfo={auction.table_info}
+              currentBid={auction.current_bid}
+              eventDate={auction.event_date}
+              entryTime={auction.entry_time}
+            />
+          )}
+          {methods.includes("phone") && md?.phone && (
             <ContactButton
               auctionId={auction.id}
               type="phone"
@@ -116,8 +129,8 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
         <ContactTimer deadline={auction.contact_deadline} />
       </div>
 
-      {/* Contact Buttons: DM → 전화 */}
-      {md?.instagram && (
+      {/* Contact Buttons */}
+      {methods.includes("dm") && md?.instagram && (
         <ContactButton
           auctionId={auction.id}
           type="dm"
@@ -127,12 +140,23 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
           currentBid={auction.current_bid}
           eventDate={auction.event_date}
           entryTime={auction.entry_time}
-          depositRequired={auction.deposit_required}
-          depositAmount={auction.deposit_amount}
           onContact={() => setContactAttempted(true)}
         />
       )}
-      {md?.phone && (
+      {methods.includes("kakao") && md?.kakao_open_chat_url && (
+        <ContactButton
+          auctionId={auction.id}
+          type="kakao"
+          url={md.kakao_open_chat_url}
+          clubName={auction.club?.name}
+          tableInfo={auction.table_info}
+          currentBid={auction.current_bid}
+          eventDate={auction.event_date}
+          entryTime={auction.entry_time}
+          onContact={() => setContactAttempted(true)}
+        />
+      )}
+      {methods.includes("phone") && md?.phone && (
         <ContactButton
           auctionId={auction.id}
           type="phone"

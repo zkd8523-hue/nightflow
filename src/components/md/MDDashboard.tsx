@@ -221,22 +221,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                     </div>
                 )}
 
-                {user.md_status !== 'approved' && user.md_status !== 'suspended' && user.role !== 'admin' && (
-                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4">
-                        <div className="flex items-start gap-3">
-                            <span className="text-2xl mt-0.5">&#9203;</span>
-                            <div className="flex-1 space-y-1">
-                                <p className="text-sm font-bold text-amber-500">MD 승인 대기 중입니다</p>
-                                <p className="text-xs text-amber-500/80 leading-relaxed">
-                                    현재 상태: <span className="font-semibold">{user.md_status === 'pending' ? '검토 중' : '미등록'}</span> · 일반적으로 1-2일 소요됩니다
-                                </p>
-                                <p className="text-xs text-amber-500/70 mt-2">
-                                    &#10003; 경매 등록은 승인 후 가능합니다
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* pending 배너 제거됨 — MD 가입 즉시 approved */}
             </div>
 
             {/* Auction Tabs + Register Button */}

@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest) {
 
     // 3. 요청 데이터 파싱 + 허용 필드만 추출
     const body = await request.json();
-    const { name, phone, instagram } = body;
+    const { name, phone, instagram, kakao_open_chat_url, preferred_contact_methods } = body;
 
     // 4. 서버사이드 유효성 검증
     if (!name || typeof name !== "string" || name.trim().length < 2) {
@@ -91,6 +91,25 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // 카카오 오픈채팅 URL 검증 (선택)
+    const cleanKakaoUrl = kakao_open_chat_url?.trim() || null;
+    if (cleanKakaoUrl && !/^https:\/\/open\.kakao\.com\//.test(cleanKakaoUrl)) {
+      return NextResponse.json(
+        { error: "카카오톡 오픈채팅 URL 형식이 올바르지 않습니다." },
+        { status: 400 }
+      );
+    }
+
+    // preferred_contact_methods 검증 (선택)
+    const validMethods = ["dm", "kakao", "phone"];
+    let cleanPreferred: string[] | null = null;
+    if (Array.isArray(preferred_contact_methods) && preferred_contact_methods.length > 0) {
+      cleanPreferred = preferred_contact_methods.filter((m: unknown) =>
+        typeof m === "string" && validMethods.includes(m)
+      );
+      if (cleanPreferred.length === 0) cleanPreferred = null;
+    }
+
     // 5. 업데이트
     const { error: updateError } = await supabaseAdmin
       .from("users")
@@ -98,6 +117,8 @@ export async function PATCH(request: NextRequest) {
         name: name.trim(),
         phone,
         instagram: cleanInstagram,
+        kakao_open_chat_url: cleanKakaoUrl,
+        preferred_contact_methods: cleanPreferred,
       })
       .eq("id", user.id);
 

@@ -86,6 +86,21 @@ export function HomeContent({
   // 사용자 입찰 상태 (경매별 최고 입찰가)
   const [userBidMap, setUserBidMap] = useState<Map<string, number>>(new Map());
 
+  // 사용자 오늘특가 관심 등록 상태
+  const [userInterestedSet, setUserInterestedSet] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user) { setUserInterestedSet(new Set()); return; }
+    const fetchInterests = async () => {
+      const { data } = await supabase
+        .from("chat_interests")
+        .select("auction_id")
+        .eq("user_id", user.id);
+      if (data) setUserInterestedSet(new Set(data.map((d: { auction_id: string }) => d.auction_id)));
+    };
+    fetchInterests();
+  }, [user, supabase]);
+
   useEffect(() => {
     if (!user || auctions.active.length === 0) {
       setUserBidMap(new Map());
@@ -219,6 +234,7 @@ export function HomeContent({
           activeAuctions={auctions.active}
           selectedArea={selectedArea}
           userBidMap={userBidMap}
+          userInterestedSet={userInterestedSet}
         />
 
         {!user && auctions.active.length > 0 && (

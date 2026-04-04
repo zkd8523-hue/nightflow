@@ -100,29 +100,6 @@ export async function POST(req: Request) {
         .in("status", ["won", "contacted"]);
     }
 
-    // 보증금 몰수 (낙찰 후 취소 = 비환불)
-    try {
-      const { data: deposit } = await supabaseAdmin
-        .from("deposits")
-        .select("id, status")
-        .eq("auction_id", auctionId)
-        .eq("user_id", user.id)
-        .in("status", ["paid", "held"])
-        .single();
-
-      if (deposit) {
-        await supabaseAdmin
-          .from("deposits")
-          .update({
-            status: "forfeited",
-            forfeited_at: new Date().toISOString(),
-          })
-          .eq("id", deposit.id);
-      }
-    } catch {
-      // 몰수 처리 실패해도 취소 진행
-    }
-
     // MD에게 인앱 알림 발송
     if (auction.md_id) {
       try {

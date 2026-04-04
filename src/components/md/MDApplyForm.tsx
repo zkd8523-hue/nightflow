@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowRight, Building2, Smartphone, MapPin, ChevronDown, Map, Banknote } from "lucide-react";
+import { ArrowRight, Building2, Smartphone, MapPin, ChevronDown, Map, Banknote, MessageCircle } from "lucide-react";
 import type { User } from "@/types/database";
 import dynamic from "next/dynamic";
 
@@ -25,6 +25,11 @@ const formSchema = z.object({
         .min(1, "인스타그램 아이디를 입력해주세요")
         .max(30, "인스타그램 아이디는 30자 이하입니다")
         .regex(/^[a-zA-Z0-9._]+$/, "영문, 숫자, 마침표(.), 밑줄(_)만 가능합니다"),
+    kakao_open_chat_url: z.string()
+        .url("올바른 URL을 입력해주세요")
+        .regex(/^https:\/\/open\.kakao\.com\//, "카카오톡 오픈채팅 URL만 가능합니다")
+        .or(z.literal(""))
+        .optional(),
     area: z.string().min(1, "활동 지역을 선택해주세요"),
     club_name: z.string().min(2, "클럽명을 입력해주세요"),
     club_address: z.string().min(5, "클럽 주소를 검색해주세요"),
@@ -160,6 +165,23 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                             <p className="text-neutral-600 text-[10px]">본인 인증 및 연락 수단으로 사용됩니다 (필수)</p>
                             {form.formState.errors.instagram && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.instagram?.message?.toString()}</p>
+                            )}
+                        </div>
+
+                        {/* Kakao Open Chat (Optional) */}
+                        <div className="space-y-2">
+                            <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
+                                <MessageCircle className="w-3.5 h-3.5" />
+                                카카오톡 오픈채팅 (선택)
+                            </Label>
+                            <Input
+                                {...form.register("kakao_open_chat_url")}
+                                placeholder="https://open.kakao.com/o/..."
+                                className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
+                            />
+                            <p className="text-neutral-600 text-[10px]">낙찰자에게 추가 연락 수단으로 표시됩니다</p>
+                            {form.formState.errors.kakao_open_chat_url && (
+                                <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.kakao_open_chat_url?.message?.toString()}</p>
                             )}
                         </div>
 

@@ -1,30 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
 } from "@/components/ui/dialog";
-import { createClient } from "@/lib/supabase/client";
-import { toast } from "sonner";
 import {
     Building2,
     MapPin,
-    CheckCircle2,
-    XCircle,
     ExternalLink,
     Clock,
-    AlertTriangle,
     Instagram,
-    Image,
     ChevronDown,
     ChevronUp,
     Eye,
@@ -38,7 +26,6 @@ import { MDMonitorList } from "./MDMonitorList";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ko";
-import { getErrorMessage, logError } from "@/lib/utils/error";
 
 dayjs.extend(relativeTime);
 dayjs.locale("ko");
@@ -63,162 +50,12 @@ export function MDManagement({
     const users = externalUsers ?? internalUsers;
     const setUsers = externalSetUsers ?? setInternalUsers;
 
-    const [loadingId, setLoadingId] = useState<string | null>(null);
-    const [rejectTarget, setRejectTarget] = useState<UserWithClub | null>(null);
-    const [rejectReason, setRejectReason] = useState("");
     const [previewImage, setPreviewImage] = useState<string | null>(null);
-    const supabase = createClient();
 
-    const pendingUsers = users.filter(u => u.md_status === "pending");
     const approvedUsers = users.filter(u => u.md_status === "approved");
-    const rejectedUsers = users.filter(u => u.md_status === "rejected");
-
-    const handleApprove = async (userId: string) => {
-        setLoadingId(userId);
-        try {
-            const { data, error } = await supabase
-                .from("users")
-                .update({ md_status: "approved", role: "md" })
-                .eq("id", userId)
-                .select();
-
-            if (error) throw error;
-            if (!data || data.length === 0) {
-                throw new Error("업데이트 권한이 없습니다. 관리자 계정을 확인해주세요.");
-            }
-
-            // MD의 소속 클럽도 함께 승인
-            const targetUser = users.find(u => u.id === userId);
-            const club = targetUser?.default_club;
-            let clubApproved = false;
-
-            if (club && club.status === "pending") {
-                const { error: clubError } = await supabase
-                    .from("clubs")
-                    .update({
-                        status: "approved",
-                        approved_at: new Date().toISOString(),
-                    })
-                    .eq("id", club.id)
-                    .eq("status", "pending");
-
-                if (clubError) {
-                    toast.warning("MD는 승인되었지만 클럽 승인에 실패했습니다. 클럽 관리에서 수동 승인해주세요.");
-                } else {
-                    clubApproved = true;
-                }
-            }
-
-            toast.success(
-                clubApproved
-                    ? `MD 승인 완료! 소속 클럽 "${club?.name}"도 함께 승인되었습니다.`
-                    : "MD 승인이 완료되었습니다!",
-                { duration: 4000 }
-            );
-
-            setUsers(prev => prev.map(u => {
-                if (u.id !== userId) return u;
-                return {
-                    ...u,
-                    md_status: "approved" as const,
-                    role: "md" as const,
-                    default_club: clubApproved && u.default_club
-                        ? { ...u.default_club, status: "approved" as const }
-                        : u.default_club,
-                };
-            }));
-        } catch (error: unknown) {
-            const msg = getErrorMessage(error);
-            logError(error, 'MDManagement.handleApprove');
-            toast.error(msg || "작업 중 오류가 발생했습니다.");
-        } finally {
-            setLoadingId(null);
-        }
-    };
-
-    const handleReject = async () => {
-        if (!rejectTarget) return;
-        if (!rejectReason.trim()) {
-            toast.error("반려 사유를 입력해주세요.");
-            return;
-        }
-
-        setLoadingId(rejectTarget.id);
-        try {
-            const { data, error } = await supabase
-                .from("users")
-                .update({
-                    md_status: "rejected",
-                    md_rejection_reason: rejectReason.trim(),
-                })
-                .eq("id", rejectTarget.id)
-                .select();
-
-            if (error) throw error;
-            if (!data || data.length === 0) {
-                throw new Error("업데이트 권한이 없습니다. 관리자 계정을 확인해주세요.");
-            }
-
-            toast.success("반려 처리되었습니다.");
-            setUsers(prev => prev.map(u =>
-                u.id === rejectTarget.id
-                    ? { ...u, md_status: "rejected" as const, md_rejection_reason: rejectReason.trim() }
-                    : u
-            ));
-            setRejectTarget(null);
-            setRejectReason("");
-        } catch (error: unknown) {
-            const msg = getErrorMessage(error);
-            logError(error, 'MDManagement.handleReject');
-            toast.error(msg || "작업 중 오류가 발생했습니다.");
-        } finally {
-            setLoadingId(null);
-        }
-    };
 
     return (
         <div className="space-y-6">
-            {/* 반려 사유 입력 다이얼로그 */}
-            <Dialog open={!!rejectTarget} onOpenChange={(open) => {
-                if (!open) {
-                    setRejectTarget(null);
-                    setRejectReason("");
-                }
-            }}>
-                <DialogContent className="bg-[#1C1C1E] border-neutral-800 text-white" showCloseButton={false}>
-                    <DialogHeader>
-                        <DialogTitle className="text-white font-black text-xl">
-                            MD 신청 반려
-                        </DialogTitle>
-                        <DialogDescription className="text-neutral-400">
-                            <span className="text-white font-bold">{rejectTarget?.name}</span>님의 신청을 반려합니다. 사유를 입력해주세요.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <textarea
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        placeholder="반려 사유를 입력해주세요 (예: 본인 인증 서류 미제출)"
-                        className="w-full h-28 bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-sm text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
-                    />
-                    <DialogFooter className="gap-2">
-                        <Button
-                            variant="outline"
-                            onClick={() => { setRejectTarget(null); setRejectReason(""); }}
-                            className="border-neutral-800 text-neutral-400 hover:bg-neutral-900 rounded-xl"
-                        >
-                            취소
-                        </Button>
-                        <Button
-                            onClick={handleReject}
-                            disabled={!rejectReason.trim() || loadingId === rejectTarget?.id}
-                            className="bg-red-500 text-white font-bold hover:bg-red-600 rounded-xl"
-                        >
-                            {loadingId === rejectTarget?.id ? "처리중..." : "반려 확정"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
             {/* 이미지 미리보기 다이얼로그 */}
             <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
                 <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-2xl p-2" showCloseButton={false}>
@@ -228,60 +65,19 @@ export function MDManagement({
                 </DialogContent>
             </Dialog>
 
-            <Tabs defaultValue="pending" className="w-full">
-                <TabsList className="bg-neutral-900 border border-neutral-800 p-1 h-12 rounded-xl">
-                    <TabsTrigger value="pending" className="flex-1 rounded-lg font-bold data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white">
-                        심사 대기 ({pendingUsers.length})
-                    </TabsTrigger>
-                    <TabsTrigger value="approved" className="flex-1 rounded-lg font-bold data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white">
-                        활동 모니터링 ({approvedUsers.length})
-                    </TabsTrigger>
-                    <TabsTrigger value="rejected" className="flex-1 rounded-lg font-bold data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white">
-                        반려 내역 ({rejectedUsers.length})
-                    </TabsTrigger>
-                </TabsList>
-
-                <div className="mt-8">
-                    <TabsContent value="pending" className="m-0 space-y-4">
-                        {pendingUsers.length > 0 ? (
-                            pendingUsers.map(u => (
-                                <MDApplicationCard
-                                    key={u.id}
-                                    user={u}
-                                    onApprove={() => handleApprove(u.id)}
-                                    onReject={() => setRejectTarget(u)}
-                                    loading={loadingId === u.id}
-                                    onPreviewImage={setPreviewImage}
-                                />
-                            ))
-                        ) : (
-                            <EmptyAdminState label="심사 대기 명단이 없습니다." />
-                        )}
-                    </TabsContent>
-
-                    <TabsContent value="approved" className="m-0">
-                        {healthScores && healthScores.length > 0 ? (
-                            <MDMonitorList mds={healthScores} />
-                        ) : approvedUsers.length > 0 ? (
-                            approvedUsers.map(u => (
-                                <MDApplicationCard key={u.id} user={u} isSimple onPreviewImage={setPreviewImage} />
-                            ))
-                        ) : (
-                            <EmptyAdminState label="활동 중인 MD가 없습니다." />
-                        )}
-                    </TabsContent>
-
-                    <TabsContent value="rejected" className="m-0 space-y-4">
-                        {rejectedUsers.length > 0 ? (
-                            rejectedUsers.map(u => (
-                                <MDApplicationCard key={u.id} user={u} isSimple showRejectionReason onPreviewImage={setPreviewImage} />
-                            ))
-                        ) : (
-                            <EmptyAdminState label="반려 내역이 없습니다." />
-                        )}
-                    </TabsContent>
-                </div>
-            </Tabs>
+            {/* MD 활동 모니터링 (승인 게이트 제거됨) */}
+            <div className="space-y-4">
+                <h2 className="text-lg font-bold text-white">활동 모니터링 ({approvedUsers.length})</h2>
+                {healthScores && healthScores.length > 0 ? (
+                    <MDMonitorList mds={healthScores} />
+                ) : approvedUsers.length > 0 ? (
+                    approvedUsers.map(u => (
+                        <MDApplicationCard key={u.id} user={u} isSimple onPreviewImage={setPreviewImage} />
+                    ))
+                ) : (
+                    <EmptyAdminState label="활동 중인 MD가 없습니다." />
+                )}
+            </div>
         </div>
     );
 }
@@ -317,19 +113,11 @@ function ImagePreview({
 
 function MDApplicationCard({
     user,
-    onApprove,
-    onReject,
-    loading,
     isSimple = false,
-    showRejectionReason = false,
     onPreviewImage,
 }: {
     user: UserWithClub;
-    onApprove?: () => void;
-    onReject?: () => void;
-    loading?: boolean;
     isSimple?: boolean;
-    showRejectionReason?: boolean;
     onPreviewImage: (url: string) => void;
 }) {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -387,33 +175,6 @@ function MDApplicationCard({
                             </div>
                         </div>
                     </div>
-
-                    {/* 우측: 액션 버튼 */}
-                    {!isSimple && onApprove && onReject && (
-                        <div className="flex gap-2 shrink-0">
-                            <Button
-                                variant="outline"
-                                onClick={onReject}
-                                disabled={loading}
-                                className="h-12 border-neutral-800 text-neutral-500 hover:bg-red-500/10 hover:text-red-500 rounded-xl px-4 font-bold"
-                            >
-                                <XCircle className="w-4 h-4 mr-2" />
-                                반려
-                            </Button>
-                            <Button
-                                onClick={onApprove}
-                                disabled={loading}
-                                className="h-12 bg-white text-black font-black hover:bg-neutral-200 rounded-xl px-6"
-                            >
-                                {loading ? "작업중.." : (
-                                    <>
-                                        <CheckCircle2 className="w-4 h-4 mr-2" />
-                                        활동 승인
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    )}
 
                     {isSimple && (
                         <div className="flex items-center gap-4 shrink-0">
@@ -519,16 +280,6 @@ function MDApplicationCard({
                     </div>
                 )}
 
-                {/* 반려 사유 표시 */}
-                {showRejectionReason && user.md_rejection_reason && (
-                    <div className="mt-4 flex items-start gap-2 bg-red-500/5 border border-red-500/10 rounded-xl p-4">
-                        <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
-                        <div>
-                            <p className="text-[10px] text-red-400 font-bold uppercase tracking-wider mb-1">반려 사유</p>
-                            <p className="text-sm text-neutral-300">{user.md_rejection_reason}</p>
-                        </div>
-                    </div>
-                )}
             </div>
         </Card>
     );

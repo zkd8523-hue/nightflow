@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // 3. 요청 데이터 파싱
     const body = await request.json();
     const {
-      name, phone, area, instagram, business_card_url,
+      name, phone, area, instagram, kakao_open_chat_url, business_card_url,
       club_name, club_address, club_address_detail, club_postal_code,
       club_latitude, club_longitude, club_phone, club_thumbnail_url,
       bank_name, bank_account,
@@ -68,6 +68,15 @@ export async function POST(request: NextRequest) {
     if (!/^[a-zA-Z0-9._]{1,30}$/.test(cleanInstagram)) {
       return NextResponse.json(
         { error: "인스타그램 아이디 형식이 올바르지 않습니다." },
+        { status: 400 }
+      );
+    }
+
+    // 카카오 오픈채팅 URL 검증 (선택)
+    const cleanKakaoUrl = kakao_open_chat_url?.trim() || null;
+    if (cleanKakaoUrl && !/^https:\/\/open\.kakao\.com\//.test(cleanKakaoUrl)) {
+      return NextResponse.json(
+        { error: "카카오톡 오픈채팅 URL 형식이 올바르지 않습니다." },
         { status: 400 }
       );
     }
@@ -110,50 +119,34 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // ✅ pending 중복 신청 차단
-      if (existingClub.status === "pending") {
+      // pending 또는 rejected → 정보 업데이트 후 즉시 approved
+      const { error: clubError } = await supabaseAdmin
+        .from("clubs")
+        .update({
+          name: club_name,
+          area,
+          address: club_address,
+          address_detail: club_address_detail || null,
+          postal_code: club_postal_code || null,
+          latitude: club_latitude,
+          longitude: club_longitude,
+          phone: club_phone || null,
+          thumbnail_url: club_thumbnail_url || null,
+          status: "approved",
+          rejected_at: null,
+          rejected_reason: null,
+          rejected_by: null,
+        })
+        .eq("id", existingClub.id);
+
+      if (clubError) {
+        logger.error("Club update error:", clubError);
         return NextResponse.json(
-          { error: "이미 심사 대기 중인 신청이 있습니다." },
-          { status: 409 }
+          { error: `클럽 정보 업데이트에 실패했습니다. (${clubError.code}: ${clubError.message})` },
+          { status: 500 }
         );
       }
-
-      // rejected만 UPDATE 허용 (재신청)
-      if (existingClub.status === "rejected") {
-        const { error: clubError } = await supabaseAdmin
-          .from("clubs")
-          .update({
-            name: club_name,
-            area,
-            address: club_address,
-            address_detail: club_address_detail || null,
-            postal_code: club_postal_code || null,
-            latitude: club_latitude,
-            longitude: club_longitude,
-            phone: club_phone || null,
-            thumbnail_url: club_thumbnail_url || null,
-            status: "pending",  // 재신청 시 pending으로 초기화
-            rejected_at: null,
-            rejected_reason: null,
-            rejected_by: null,
-          })
-          .eq("id", existingClub.id);
-
-        if (clubError) {
-          logger.error("Club update error:", clubError);
-          return NextResponse.json(
-            { error: `클럽 정보 업데이트에 실패했습니다. (${clubError.code}: ${clubError.message})` },
-            { status: 500 }
-          );
-        }
-        clubId = existingClub.id;
-      } else {
-        // 예상치 못한 상태
-        return NextResponse.json(
-          { error: "클럽 상태가 올바르지 않습니다." },
-          { status: 400 }
-        );
-      }
+      clubId = existingClub.id;
     } else {
       // 새 클럽 생성
       const { data: newClub, error: clubError } = await supabaseAdmin
@@ -169,7 +162,7 @@ export async function POST(request: NextRequest) {
           longitude: club_longitude,
           phone: club_phone || null,
           thumbnail_url: club_thumbnail_url || null,
-          status: "pending",  // ⚠️ 명시적으로 pending
+          status: "approved",
         })
         .select("id")
         .single();
@@ -192,11 +185,13 @@ export async function POST(request: NextRequest) {
         phone,
         area,
         instagram: cleanInstagram,
+        ...(cleanKakaoUrl ? { kakao_open_chat_url: cleanKakaoUrl } : {}),
         verification_club_name: club_name,
         ...(bank_name ? { bank_name } : {}),
         ...(bank_account ? { bank_account } : {}),
         md_unique_slug: generatedSlug,
-        md_status: "pending",
+        md_status: "approved",
+        role: "md",
         default_club_id: clubId,
         ...(floor_plan_url ? { floor_plan_url } : {}),
         ...(business_card_url ? { business_card_url } : {}),

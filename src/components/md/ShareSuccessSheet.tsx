@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PartyPopper, MessageCircle, Instagram, Link2, Share2, ArrowRight, Bookmark, RotateCcw } from "lucide-react";
 
-import { shareAuction, shareToInstagram, copyAuctionLink } from "@/lib/utils/share";
+import { shareAuction, shareToInstagram, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
+import { useReferralCode } from "@/hooks/useReferralCode";
 import { generateTemplateName } from "@/lib/utils/format";
 
 interface TemplateFormValues {
@@ -51,6 +52,7 @@ export function ShareSuccessSheet({
 }: ShareSuccessSheetProps) {
   const router = useRouter();
   const { shareToKakao, isAvailable: kakaoAvailable } = useKakaoShare();
+  const referralCode = useReferralCode();
   const [sharing, setSharing] = useState<string | null>(null);
 
   // 템플릿 저장
@@ -129,11 +131,15 @@ export function ShareSuccessSheet({
   }, [isOpen, auctionId]);
 
   const auctionUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/auctions/${auctionId}`
+    ? appendReferralCode(`${window.location.origin}/auctions/${auctionId}`, referralCode)
     : "";
 
   const shareImageUrl = typeof window !== "undefined"
     ? `${window.location.origin}/api/auctions/${auctionId}/share-image`
+    : "";
+
+  const kakaoShareImageUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/api/auctions/${auctionId}/share-image?format=kakao`
     : "";
 
   const handleKakaoShare = async () => {
@@ -144,7 +150,7 @@ export function ShareSuccessSheet({
         tableInfo,
         startPrice,
         auctionUrl,
-        shareImageUrl,
+        shareImageUrl: kakaoShareImageUrl,
       });
       if (!success) {
         toast.error("카카오톡 공유에 실패했습니다");
@@ -157,7 +163,7 @@ export function ShareSuccessSheet({
   const handleInstagramShare = async () => {
     setSharing("instagram");
     try {
-      await shareToInstagram(auctionId, imageBlob, clubName, auctionUrl);
+      await shareToInstagram(auctionId, imageBlob, clubName, auctionUrl, referralCode);
     } finally {
       setSharing(null);
     }
@@ -166,7 +172,7 @@ export function ShareSuccessSheet({
   const handleCopyLink = async () => {
     setSharing("link");
     try {
-      await copyAuctionLink(auctionId);
+      await copyAuctionLink(auctionId, referralCode);
     } finally {
       setSharing(null);
     }
@@ -181,6 +187,7 @@ export function ShareSuccessSheet({
         eventDate,
         startPrice,
         tableInfo,
+        referralCode,
       });
     } finally {
       setSharing(null);

@@ -14,12 +14,14 @@ import Link from "next/link";
 export interface TransactionItem {
     auctionId: string;
     auctionStatus: string;
+    listingType?: string;
     clubName: string | undefined;
     eventDate: string;
     winner: { name?: string; phone?: string; noshow_count?: number; strike_count?: number } | null;
     contactDeadline: string | null;
     createdAt: string;
     winningPrice: number | null;
+    chatInterestCount?: number;
 }
 
 type ActiveSortKey = "urgency" | "event_date" | "winning_price";
@@ -39,8 +41,9 @@ const HISTORY_SORT_OPTIONS: { key: HistorySortKey; label: string }[] = [
 const STATUS_CONFIG: Record<string, { bg: string; text: string; border: string; label: string; pulse?: boolean }> = {
     won: { bg: "bg-amber-500/10", text: "text-amber-500", border: "border-amber-500/20", label: "연락 대기", pulse: true },
     contacted: { bg: "bg-blue-500/10", text: "text-blue-500", border: "border-blue-500/20", label: "연락 완료" },
-    confirmed: { bg: "bg-green-500/10", text: "text-green-500", border: "border-green-500/20", label: "방문 완료" },
+    confirmed: { bg: "bg-green-500/10", text: "text-green-500", border: "border-green-500/20", label: "거래완료" },
     cancelled: { bg: "bg-neutral-500/10", text: "text-neutral-500", border: "border-neutral-700/30", label: "취소" },
+    instant_active: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20", label: "대화중", pulse: true },
 };
 
 interface TransactionListProps {
@@ -52,7 +55,10 @@ export function TransactionList({ items }: TransactionListProps) {
     const [historySortKey, setHistorySortKey] = useState<HistorySortKey>("latest");
     const [showOlder, setShowOlder] = useState(false);
 
-    const activeItems = useMemo(() => items.filter(i => ["won", "contacted"].includes(i.auctionStatus)), [items]);
+    const activeItems = useMemo(() => items.filter(i =>
+        ["won", "contacted"].includes(i.auctionStatus) ||
+        (i.listingType === "instant" && i.auctionStatus === "active" && (i.chatInterestCount || 0) > 0)
+    ), [items]);
     const historyItems = useMemo(() => items.filter(i => ["confirmed", "cancelled"].includes(i.auctionStatus)), [items]);
 
     // 진행중 정렬
@@ -256,8 +262,11 @@ function SortChips<T extends string>({ options, selected, onSelect }: {
 function TransactionCard({ item }: { item: TransactionItem }) {
     const winner = item.winner;
     const strikeCount = winner?.strike_count || 0;
-    const config = STATUS_CONFIG[item.auctionStatus] || STATUS_CONFIG.cancelled;
-    const isActive = ["won", "contacted"].includes(item.auctionStatus);
+    const isInstantActive = item.listingType === "instant" && item.auctionStatus === "active";
+    const config = isInstantActive
+        ? STATUS_CONFIG.instant_active
+        : (STATUS_CONFIG[item.auctionStatus] || STATUS_CONFIG.cancelled);
+    const isActive = ["won", "contacted"].includes(item.auctionStatus) || isInstantActive;
 
     return (
         <Card className="bg-[#1C1C1E] border-neutral-800/50 overflow-hidden shadow-xl">
@@ -277,20 +286,24 @@ function TransactionCard({ item }: { item: TransactionItem }) {
                     )}
                 </div>
 
-                {/* Row 2: Event date + Winner */}
+                {/* Row 2: Event date + Winner / Chat count */}
                 <div className="flex items-center justify-between text-[13px]">
                     <span className="text-neutral-400 font-medium">{formatEventDate(item.eventDate)}</span>
-                    {winner && (
+                    {isInstantActive ? (
+                        <span className="text-blue-400 font-bold text-[12px]">
+                            💬 {item.chatInterestCount || 0}명이 관심
+                        </span>
+                    ) : winner ? (
                         <div className="flex items-center gap-1.5 text-neutral-300">
                             <User className="w-3 h-3 text-neutral-500" />
                             <span className="font-bold">{winner.name}</span>
-                            {isActive && <span className="text-neutral-500 text-[11px]">{winner.phone}</span>}
+                            {["won", "contacted"].includes(item.auctionStatus) && <span className="text-neutral-500 text-[11px]">{winner.phone}</span>}
                         </div>
-                    )}
+                    ) : null}
                 </div>
 
-                {/* 3-Step Flow Guide */}
-                {isActive && (
+                {/* 3-Step Flow Guide (경매 낙찰만) */}
+                {!isInstantActive && ["won", "contacted"].includes(item.auctionStatus) && (
                     <div className="flex items-center gap-1 bg-neutral-900/50 rounded-xl px-3 py-2 border border-neutral-800/50">
                         <StepItem icon={<Phone className="w-3 h-3" />} label="고객 연락" active={item.auctionStatus === "won"} done={item.auctionStatus === "contacted"} />
                         <div className={`flex-1 h-px ${item.auctionStatus === "contacted" ? "bg-green-500/40" : "bg-neutral-700"}`} />
@@ -300,8 +313,8 @@ function TransactionCard({ item }: { item: TransactionItem }) {
                     </div>
                 )}
 
-                {/* Contact Timer (won only) */}
-                {item.auctionStatus === "won" && item.contactDeadline && (
+                {/* Contact Timer (won only, 경매만) */}
+                {item.auctionStatus === "won" && item.contactDeadline && !isInstantActive && (
                     <ContactTimer deadline={item.contactDeadline} />
                 )}
 
@@ -315,14 +328,16 @@ function TransactionCard({ item }: { item: TransactionItem }) {
                     </div>
                 )}
 
-                {/* Action Buttons (active only) */}
-                {isActive && (
+                {/* Action Buttons */}
+                {isInstantActive ? (
+                    <ConfirmVisitButton auctionId={item.auctionId} auctionStatus="instant_active" />
+                ) : isActive ? (
                     <ConfirmVisitButton auctionId={item.auctionId} auctionStatus={item.auctionStatus} />
-                )}
+                ) : null}
 
                 {/* Completed status indicator */}
                 {item.auctionStatus === "confirmed" && (
-                    <div className="text-center py-1 text-[12px] font-bold text-green-500/70">방문 확인 완료</div>
+                    <div className="text-center py-1 text-[12px] font-bold text-green-500/70">거래완료</div>
                 )}
                 {item.auctionStatus === "cancelled" && (
                     <div className="text-center py-1 text-[12px] font-bold text-neutral-500">취소됨</div>

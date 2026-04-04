@@ -39,12 +39,13 @@ Deno.serve(async (req: Request) => {
 
     console.log("🔍 연락 마감 초과 경매 검색...");
 
-    // 1. status='won' + contact_deadline이 지난 경매 조회
+    // 1. status='won' + contact_deadline이 지난 경매 조회 (instant 제외 — instant은 노쇼 타이머 없음)
     const now = new Date().toISOString();
     const { data: expiredContacts, error: fetchError } = await supabase
       .from("auctions")
-      .select("id, winner_id, winning_price, contact_timer_minutes, md_id, club:clubs(name)")
+      .select("id, winner_id, winning_price, contact_timer_minutes, md_id, listing_type, club:clubs(name)")
       .eq("status", "won")
+      .neq("listing_type", "instant")
       .not("contact_deadline", "is", null)
       .lt("contact_deadline", now);
 

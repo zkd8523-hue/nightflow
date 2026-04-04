@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -93,6 +93,39 @@ export function Header() {
   const router = useRouter();
   const supabase = createClient();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchEnd - touchStart;
+    const isRightSwipe = distance > minSwipeDistance;
+    if (isRightSwipe) {
+      setMenuOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (menuOpen) {
+      document.body.style.overscrollBehavior = 'none';
+    } else {
+      document.body.style.overscrollBehavior = '';
+    }
+    return () => {
+      document.body.style.overscrollBehavior = '';
+    };
+  }, [menuOpen]);
 
   const handleLogout = async () => {
     setMenuOpen(false);
@@ -161,186 +194,197 @@ export function Header() {
             </div>
 
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-              <SheetContent side="right" className="w-[280px] bg-[#0A0A0A] border-neutral-800 p-0">
-                <SheetHeader className="p-6 pb-2 border-b border-neutral-800/50">
-                  <SheetTitle className="text-white text-left font-black">
-                    {user.name || "사용자"}
-                  </SheetTitle>
-                  <p className="text-[12px] text-neutral-500 text-left">
-                    {user.role === "md" ? "MD 파트너" : user.role === "admin" ? "관리자" : "일반 회원"}
-                  </p>
+              <SheetContent
+                side="right"
+                className="w-[280px] bg-[#0A0A0A] border-neutral-800 p-0 flex flex-col h-full"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
+              >
+                <SheetHeader className="p-6 pb-2 border-b border-neutral-800/50 shrink-0">
+                  <div className="text-left">
+                    <SheetTitle className="text-white font-black">
+                      {user.name || "사용자"}
+                    </SheetTitle>
+                    <p className="text-[12px] text-neutral-500">
+                      {user.role === "md" ? "MD 파트너" : user.role === "admin" ? "관리자" : "일반 회원"}
+                    </p>
+                  </div>
                 </SheetHeader>
 
-                {/* 알림 섹션 */}
-                <div className="p-4 border-b border-neutral-800/50">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Bell className="w-4 h-4 text-neutral-400" />
-                      <span className="text-[13px] font-bold text-neutral-300">알림</span>
-                      {unreadCount > 0 && (
-                        <span className="text-[11px] font-bold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-full">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {notifications.length > 0 && unreadCount > 0 && (
-                        <button
-                          onClick={markAllAsRead}
-                          className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
+                {/* 스크롤 가능한 영역 */}
+                <div className="flex-1 overflow-y-auto overscroll-none">
+                  {/* 알림 섹션 */}
+                  <div className="p-4 border-b border-neutral-800/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-4 h-4 text-neutral-400" />
+                        <span className="text-[13px] font-bold text-neutral-300">알림</span>
+                        {unreadCount > 0 && (
+                          <span className="text-[11px] font-bold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-full">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {notifications.length > 0 && unreadCount > 0 && (
+                          <button
+                            onClick={markAllAsRead}
+                            className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
+                          >
+                            모두 읽음
+                          </button>
+                        )}
+                        <Link
+                          href="/notifications"
+                          onClick={() => setMenuOpen(false)}
+                          className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
                         >
-                          모두 읽음
-                        </button>
-                      )}
-                      <Link
-                        href="/notifications"
-                        onClick={() => setMenuOpen(false)}
-                        className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
-                      >
-                        전체 보기
-                      </Link>
+                          전체 보기
+                        </Link>
+                      </div>
                     </div>
+
+                    {notifications.length === 0 ? (
+                      <p className="text-[12px] text-neutral-600 py-3 text-center">
+                        새로운 알림이 없습니다
+                      </p>
+                    ) : (
+                      <div className="space-y-1">
+                        {notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className="relative group"
+                          >
+                            <button
+                              onClick={() => handleNotificationClick(notification)}
+                              className={`w-full flex items-start gap-2.5 p-2.5 rounded-lg text-left transition-colors ${
+                                notification.is_read
+                                  ? "opacity-50 hover:opacity-70"
+                                  : "bg-neutral-800/30 hover:bg-neutral-800/50"
+                              }`}
+                            >
+                              <div className="mt-0.5">
+                                {getNotificationIcon(notification.type)}
+                              </div>
+                              <div className="flex-1 min-w-0 pr-6">
+                                <p className="text-[12px] font-bold text-neutral-200 truncate">
+                                  {notification.title}
+                                </p>
+                                <p className="text-[11px] text-neutral-500 line-clamp-2 mt-0.5">
+                                  {notification.message}
+                                </p>
+                                <p className="text-[10px] text-neutral-600 mt-1">
+                                  {timeAgo(notification.created_at)}
+                                </p>
+                              </div>
+                              {!notification.is_read && (
+                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 shrink-0" />
+                              )}
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteNotification(e, notification.id)}
+                              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-md bg-neutral-900/80 hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                              aria-label="알림 삭제"
+                            >
+                              <X className="w-3.5 h-3.5 text-neutral-400 hover:text-red-400" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  {notifications.length === 0 ? (
-                    <p className="text-[12px] text-neutral-600 py-3 text-center">
-                      새로운 알림이 없습니다
-                    </p>
-                  ) : (
-                    <div className="space-y-1 max-h-[200px] overflow-y-auto">
-                      {notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className="relative group"
-                        >
-                          <button
-                            onClick={() => handleNotificationClick(notification)}
-                            className={`w-full flex items-start gap-2.5 p-2.5 rounded-lg text-left transition-colors ${
-                              notification.is_read
-                                ? "opacity-50 hover:opacity-70"
-                                : "bg-neutral-800/30 hover:bg-neutral-800/50"
-                            }`}
-                          >
-                            <div className="mt-0.5">
-                              {getNotificationIcon(notification.type)}
-                            </div>
-                            <div className="flex-1 min-w-0 pr-6">
-                              <p className="text-[12px] font-bold text-neutral-200 truncate">
-                                {notification.title}
-                              </p>
-                              <p className="text-[11px] text-neutral-500 line-clamp-2 mt-0.5">
-                                {notification.message}
-                              </p>
-                              <p className="text-[10px] text-neutral-600 mt-1">
-                                {timeAgo(notification.created_at)}
-                              </p>
-                            </div>
-                            {!notification.is_read && (
-                              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 shrink-0" />
-                            )}
-                          </button>
-                          <button
-                            onClick={(e) => handleDeleteNotification(e, notification.id)}
-                            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-md bg-neutral-900/80 hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100"
-                            aria-label="알림 삭제"
-                          >
-                            <X className="w-3.5 h-3.5 text-neutral-400 hover:text-red-400" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <nav className="flex flex-col p-4 gap-1 pb-8">
+                    <Link
+                      href="/bids"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <Gavel className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">내 경매</span>
+                    </Link>
+
+                    <Link
+                      href="/profile"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <User className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">내 프로필</span>
+                    </Link>
+
+                    <Link
+                      href="/favorites"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <Heart className="w-5 h-5 text-red-500" />
+                      <span className="text-[15px] font-bold">찜한 클럽</span>
+                    </Link>
+
+                    {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
+                      <Link
+                        href="/md/dashboard"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                      >
+                        <LayoutDashboard className="w-5 h-5 text-blue-500" />
+                        <span className="text-[15px] font-bold">클럽 관리</span>
+                      </Link>
+                    )}
+
+                    {user.role === "admin" && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                      >
+                        <ShieldCheck className="w-5 h-5 text-green-500" />
+                        <span className="text-[15px] font-bold">Admin</span>
+                      </Link>
+                    )}
+
+                    <div className="h-px bg-neutral-800/50 my-2" />
+
+                    <Link
+                      href="/faq"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <HelpCircle className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">도움말</span>
+                    </Link>
+
+                    <Link
+                      href="/contact"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <MessageCircle className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">고객 문의</span>
+                    </Link>
+
+                    <Link
+                      href="/settings/notifications"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <Bell className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">알림 설정</span>
+                    </Link>
+
+                    <div className="h-px bg-neutral-800/50 my-2" />
+
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-500 hover:bg-neutral-800/50 hover:text-red-400 transition-colors"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      <span className="text-[15px] font-bold">로그아웃</span>
+                    </button>
+                  </nav>
                 </div>
-
-                <nav className="flex flex-col p-4 gap-1">
-                  <Link
-                    href="/bids"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                  >
-                    <Gavel className="w-5 h-5 text-neutral-500" />
-                    <span className="text-[15px] font-bold">내 경매</span>
-                  </Link>
-
-                  <Link
-                    href="/profile"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                  >
-                    <User className="w-5 h-5 text-neutral-500" />
-                    <span className="text-[15px] font-bold">내 프로필</span>
-                  </Link>
-
-                  <Link
-                    href="/favorites"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                  >
-                    <Heart className="w-5 h-5 text-red-500" />
-                    <span className="text-[15px] font-bold">찜한 클럽</span>
-                  </Link>
-
-                  {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
-                    <Link
-                      href="/md/dashboard"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                    >
-                      <LayoutDashboard className="w-5 h-5 text-blue-500" />
-                      <span className="text-[15px] font-bold">클럽 관리</span>
-                    </Link>
-                  )}
-
-                  {user.role === "admin" && (
-                    <Link
-                      href="/admin"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                    >
-                      <ShieldCheck className="w-5 h-5 text-green-500" />
-                      <span className="text-[15px] font-bold">Admin</span>
-                    </Link>
-                  )}
-
-                  <div className="h-px bg-neutral-800/50 my-2" />
-
-                  <Link
-                    href="/faq"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                  >
-                    <HelpCircle className="w-5 h-5 text-neutral-500" />
-                    <span className="text-[15px] font-bold">도움말</span>
-                  </Link>
-
-                  <Link
-                    href="/contact"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                  >
-                    <MessageCircle className="w-5 h-5 text-neutral-500" />
-                    <span className="text-[15px] font-bold">고객 문의</span>
-                  </Link>
-
-                  <Link
-                    href="/settings/notifications"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                  >
-                    <Bell className="w-5 h-5 text-neutral-500" />
-                    <span className="text-[15px] font-bold">알림 설정</span>
-                  </Link>
-
-                  <div className="h-px bg-neutral-800/50 my-2" />
-
-                  <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-500 hover:bg-neutral-800/50 hover:text-red-400 transition-colors"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    <span className="text-[15px] font-bold">로그아웃</span>
-                  </button>
-                </nav>
               </SheetContent>
             </Sheet>
           </>

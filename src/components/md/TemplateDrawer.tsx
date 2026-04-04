@@ -19,12 +19,14 @@ interface TemplateDrawerProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onApply: (template: AuctionTemplate) => void;
+  currentListingType: "instant" | "auction";
 }
 
-export function TemplateDrawer({ isOpen, onOpenChange, onApply }: TemplateDrawerProps) {
+export function TemplateDrawer({ isOpen, onOpenChange, onApply, currentListingType }: TemplateDrawerProps) {
   const [templates, setTemplates] = useState<(AuctionTemplate & { club?: { name: string; area: string } | null })[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
 
   // 인라인 이름 편집
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -46,8 +48,15 @@ export function TemplateDrawer({ isOpen, onOpenChange, onApply }: TemplateDrawer
   }, []);
 
   useEffect(() => {
-    if (isOpen) fetchTemplates();
+    if (isOpen) {
+      setShowAll(false);
+      fetchTemplates();
+    }
   }, [isOpen, fetchTemplates]);
+
+  const visibleTemplates = showAll
+    ? templates
+    : templates.filter(t => t.listing_type === currentListingType);
 
   const handleDelete = async (id: string) => {
     setDeletingId(id);
@@ -126,7 +135,7 @@ export function TemplateDrawer({ isOpen, onOpenChange, onApply }: TemplateDrawer
       <DrawerContent className="bg-[#1C1C1E] border-neutral-800 outline-none px-4 pb-8 max-h-[80svh]">
         <DrawerHeader className="text-left px-2">
           <DrawerTitle className="text-white font-black text-lg">
-            내 템플릿
+            {showAll ? "내 템플릿" : currentListingType === "instant" ? "🔥 오늘 특가 템플릿" : "📅 얼리버드 템플릿"}
           </DrawerTitle>
           <DrawerDescription className="text-neutral-500 text-[12px]">
             저장된 설정을 선택하면 폼에 자동 적용됩니다
@@ -153,8 +162,21 @@ export function TemplateDrawer({ isOpen, onOpenChange, onApply }: TemplateDrawer
                 </p>
               </div>
             </div>
+          ) : visibleTemplates.length === 0 ? (
+            <div className="text-center py-10 space-y-3">
+              <p className="text-neutral-400 font-bold text-sm">
+                {currentListingType === "instant" ? "🔥 오늘 특가" : "📅 얼리버드"} 템플릿이 없어요.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAll(true)}
+                className="text-[12px] text-neutral-500 hover:text-white underline transition-colors"
+              >
+                다른 유형 템플릿 보기 ({templates.length})
+              </button>
+            </div>
           ) : (
-            templates.map((template) => (
+            visibleTemplates.map((template) => (
               <div
                 key={template.id}
                 className="bg-neutral-900/80 border border-neutral-800/50 rounded-xl p-4 space-y-3"
@@ -190,6 +212,15 @@ export function TemplateDrawer({ isOpen, onOpenChange, onApply }: TemplateDrawer
                   ) : (
                     <>
                       <p className="text-white font-bold text-[14px] truncate flex-1 min-w-0">
+                        {showAll && (
+                          <span className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-full mr-1.5 align-middle ${
+                            template.listing_type === "instant"
+                              ? "bg-amber-500/20 text-amber-400"
+                              : "bg-neutral-700 text-neutral-300"
+                          }`}>
+                            {template.listing_type === "instant" ? "🔥 특가" : "📅 얼리버드"}
+                          </span>
+                        )}
                         {template.name}
                       </p>
                       <button
@@ -244,6 +275,26 @@ export function TemplateDrawer({ isOpen, onOpenChange, onApply }: TemplateDrawer
                 </div>
               </div>
             ))
+          )}
+
+          {/* 유형 토글 버튼 */}
+          {!loading && templates.length > 0 && !showAll && templates.length > visibleTemplates.length && (
+            <button
+              type="button"
+              onClick={() => setShowAll(true)}
+              className="w-full text-center text-[11px] text-neutral-500 hover:text-white transition-colors py-2 mt-1"
+            >
+              다른 유형 템플릿 보기 ({templates.length - visibleTemplates.length})
+            </button>
+          )}
+          {!loading && showAll && templates.some(t => t.listing_type !== currentListingType) && (
+            <button
+              type="button"
+              onClick={() => setShowAll(false)}
+              className="w-full text-center text-[11px] text-neutral-500 hover:text-white transition-colors py-2 mt-1"
+            >
+              현재 모드 템플릿만 보기
+            </button>
           )}
         </div>
       </DrawerContent>

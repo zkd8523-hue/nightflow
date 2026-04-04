@@ -24,11 +24,10 @@ import { BidderProfile } from "@/components/md/BidderProfile";
 import { formatDate, formatTime, formatPrice, formatEventDate, formatEntryTime, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { ContactButton } from "./ContactButton";
+import { getVisibleContactMethods } from "@/lib/utils/contact-methods";
 import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
-import { Calendar, ShieldCheck, Shield, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Phone, Share2 } from "lucide-react";
-import { calculateRemainingAmount } from "@/lib/payments/deposit-helpers";
-import { toast } from "sonner";
+import { Calendar, ShieldCheck, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Share2, X } from "lucide-react";
 import { DrinkPlaceholder, getAuctionImageUrl } from "@/components/auctions/DrinkPlaceholder";
 import { ShareAuctionSheet } from "./ShareAuctionSheet";
 import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
@@ -57,6 +56,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const [vipIdMap, setVipIdMap] = useState<Record<string, string>>({});
   const [selectedBidderScore, setSelectedBidderScore] = useState<UserTrustScore | null>(null);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [hideContactSticky, setHideContactSticky] = useState(false);
 
   // 초기 데이터 설정 + 언마운트 시 stale 방지
   useEffect(() => {
@@ -87,6 +87,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const displayAuction = (currentAuction?.id === auction.id) ? currentAuction : auction;
   const club = displayAuction.club;
   const md = displayAuction.md;
+  const visibleMethods = getVisibleContactMethods(md as any);
   const displayStatus = getAuctionDisplayStatus(displayAuction);
   const isActive = displayStatus === 'active';
   const isExpired = displayStatus === 'expired';
@@ -120,6 +121,23 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const isInstant = displayAuction.listing_type === 'instant';
   const isMdOwner = user?.role === "md" && user?.id === displayAuction.md_id;
 
+  // instant: 관심 등록 여부 + 대화중 카운트
+  const [alreadyInterested, setAlreadyInterested] = useState(false);
+  const chatCount = displayAuction.chat_interest_count || 0;
+
+  useEffect(() => {
+    if (!isInstant || !user) return;
+    supabase
+      .from("chat_interests")
+      .select("id")
+      .eq("auction_id", auction.id)
+      .eq("user_id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setAlreadyInterested(true);
+      });
+  }, [isInstant, user, auction.id, supabase]);
+
   // 입찰 상태 계산
   const userHasBid = !!user && bids.some(b => b.bidder_id === user.id);
   const isHighestBidder = !!user && bids.length > 0 && bids[0]?.bidder_id === user.id;
@@ -127,9 +145,10 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
   const isWinner = user && (displayAuction.winner_id === user.id || (displayAuction.status === "won" && bids.find(b => b.bidder_id === user.id && b.status === "won")));
   const isWonStatus = displayAuction.status === "won" || displayAuction.status === "contacted";
-  const showContactCTA = isWonStatus && isWinner;
+  // instant 경매는 sticky 연락 CTA 비활성 (InstantBuyPanel에서 처리)
+  const showContactCTA = !isInstant && isWonStatus && isWinner && !hideContactSticky;
 
-  // 낙찰 알림 Toast + 진동
+  // 낙찰 이벤트 트래킹 (토스트는 useWinNotification에서 처리)
   const prevStatusRef = useRef(displayAuction.status);
   useEffect(() => {
     if (prevStatusRef.current !== "won" && displayAuction.status === "won" && isWinner) {
@@ -138,17 +157,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         winning_bid: displayAuction.current_bid,
         club_name: displayAuction.club?.name,
       });
-      toast.success(displayAuction.listing_type === 'instant' ? "축하합니다! 구매가 완료되었습니다!" : "축하합니다! 낙찰되셨습니다!", {
-        description: "MD에게 연락하여 예약을 확정해주세요.",
-        duration: 10000,
-        action: {
-          label: displayAuction.listing_type === 'instant' ? "내 구매 보기" : "내 낙찰 보기",
-          onClick: () => router.push("/bids?tab=won"),
-        },
-      });
-      if (navigator.vibrate) {
-        navigator.vibrate([200, 100, 200, 100, 200]);
-      }
+      // useWinNotification 훅에서 토스트 처리하므로 여기서는 제거
     }
     prevStatusRef.current = displayAuction.status;
   }, [displayAuction.status, isWinner]);
@@ -260,9 +269,17 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             <Share2 className="w-4 h-4 text-white" />
           </button>
           {isInstant && isActive && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur-md">
-              <span className="text-[11px]">🔥</span>
-              <span className="text-[11px] font-black text-black tracking-wider">오늘특가</span>
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur-md">
+                <span className="text-[11px]">🔥</span>
+                <span className="text-[11px] font-black text-black tracking-wider">오늘특가</span>
+              </div>
+              {chatCount > 0 && (
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+                  <MessageCircle className="w-3 h-3 text-white" />
+                  <span className="text-[11px] font-bold text-white">{chatCount}명이 대화중</span>
+                </div>
+              )}
             </div>
           )}
           {!isActive && (
@@ -270,7 +287,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               variant="secondary"
               className="text-[10px] px-2.5 py-1 uppercase font-medium tracking-wider bg-black/40 backdrop-blur-md text-neutral-300 border border-white/10 rounded-full"
             >
-              {isExpired ? "마감중" : displayAuction.status === "won" ? (isInstant ? "구매 완료" : "낙찰 성공") : displayAuction.status === "contacted" ? "연락 완료" : "종료"}
+              {isExpired ? "마감중" : displayAuction.status === "confirmed" && isInstant ? "거래완료" : displayAuction.status === "won" ? (isInstant ? "구매 완료" : "낙찰 성공") : displayAuction.status === "contacted" ? "연락 완료" : "종료"}
             </Badge>
           )}
         </div>
@@ -371,16 +388,6 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           {/* 입찰 경쟁 상황 표시 (경매만) */}
           {isActive && !isInstant && <BidCompetitionIndicator bids={bids} remaining={remaining} />}
 
-          {/* 보증금 안내 배지 */}
-          {displayAuction.deposit_required && (isActive || isScheduled) && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
-              <Shield className="w-3.5 h-3.5 text-green-400 shrink-0" />
-              <p className="text-[11px] text-green-400/90 font-bold leading-snug">
-                보증금 {formatPrice(displayAuction.deposit_amount || 30000)} 결제 필요 · 낙찰가에서 차감
-              </p>
-            </div>
-          )}
-
           {/* 알림받기 버튼 (예정 경매만) */}
           {isScheduled && (
             <NotifySubscribeButton auctionId={displayAuction.id} />
@@ -389,25 +396,24 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
         {/* 3. Event Summary */}
         <div className="px-1">
-          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-2">
+          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-2.5">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[11px] text-neutral-500 font-bold tracking-wider">방문 일정</span>
+            </div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-neutral-500" />
-                <span className="text-[11px] text-neutral-500 font-bold tracking-wider">방문 일정</span>
-              </div>
+              <p className="text-[16px] text-white font-bold">{formatEventDate(displayAuction.event_date)}</p>
               {displayAuction.entry_time ? (
                 <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
                   <Clock className="w-3 h-3 text-blue-400" />
                   <span className="text-[11px] font-bold text-blue-400">{formatEntryTime(displayAuction.entry_time, displayAuction.event_date)}</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
-                  <Zap className="w-3 h-3 text-green-500 fill-green-500" />
-                  <span className="text-[11px] font-bold text-green-500">즉시 입장</span>
+                <div className="flex items-center bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
+                  <span className="text-[11px] font-bold text-green-500">바로 입장 가능</span>
                 </div>
               )}
             </div>
-            <p className="text-[16px] text-white font-bold">{formatEventDate(displayAuction.event_date)}</p>
           </div>
         </div>
 
@@ -536,7 +542,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             {isInstant ? (
               <InstantBuyPanel
                 auction={displayAuction}
-                onBuySuccess={handleBidSuccess}
+                alreadyInterested={alreadyInterested}
+                onInterestRegistered={() => setAlreadyInterested(true)}
               />
             ) : (
               <BidPanel
@@ -579,6 +586,13 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
       {/* 8. Winner Contact MD CTA (Bottom) - Model B: DM + 전화 */}
       {showContactCTA && (
         <div className="bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-neutral-800 pt-4 px-4 pb-20 sticky bottom-0 z-[60] animate-in slide-in-from-bottom duration-500">
+          <button
+            onClick={() => setHideContactSticky(true)}
+            className="absolute top-2 right-2 p-2 rounded-full hover:bg-neutral-800 transition-colors z-[70]"
+            aria-label="닫기"
+          >
+            <X className="w-5 h-5 text-neutral-500" />
+          </button>
           <div className="max-w-lg mx-auto space-y-3">
             {contactRemaining > 0 ? (
               <>
@@ -605,18 +619,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                     </p>
                   </div>
 
-                  {/* 보증금 차감 안내 */}
-                  {displayAuction.deposit_required && displayAuction.winning_price && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-500/10 border border-green-500/20">
-                      <Shield className="w-3.5 h-3.5 text-green-400 shrink-0" />
-                      <p className="text-[11px] text-green-400/90 font-bold leading-snug">
-                        보증금 {formatPrice(displayAuction.deposit_amount || 30000)} 차감 · 현장 잔금 {formatPrice(calculateRemainingAmount(displayAuction.winning_price, displayAuction.deposit_amount || 30000))}
-                      </p>
-                    </div>
-                  )}
-
                   <div className="pt-1 space-y-2">
-                    {md?.instagram && (
+                    {visibleMethods.includes("dm") && md?.instagram && (
                       <ContactButton
                         auctionId={displayAuction.id}
                         type="dm"
@@ -626,12 +630,23 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                         currentBid={displayAuction.current_bid}
                         eventDate={displayAuction.event_date}
                         entryTime={displayAuction.entry_time}
-                        depositRequired={displayAuction.deposit_required}
-                        depositAmount={displayAuction.deposit_amount}
                         onContact={() => setContactAttempted(true)}
                       />
                     )}
-                    {md?.phone && (
+                    {visibleMethods.includes("kakao") && (md as any)?.kakao_open_chat_url && (
+                      <ContactButton
+                        auctionId={displayAuction.id}
+                        type="kakao"
+                        url={(md as any).kakao_open_chat_url}
+                        clubName={club?.name}
+                        tableInfo={displayAuction.table_info}
+                        currentBid={displayAuction.current_bid}
+                        eventDate={displayAuction.event_date}
+                        entryTime={displayAuction.entry_time}
+                        onContact={() => setContactAttempted(true)}
+                      />
+                    )}
+                    {visibleMethods.includes("phone") && md?.phone && (
                       <ContactButton
                         auctionId={displayAuction.id}
                         type="phone"
@@ -640,15 +655,6 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                       />
                     )}
                   </div>
-
-                  {/* 연락하러 가기 */}
-                  <button
-                    onClick={() => router.push("/bids?tab=won")}
-                    className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-xs text-amber-400 font-bold">연락하러 가기</span>
-                  </button>
                 </div>
 
                 {/* No-Show Warning */}
@@ -670,7 +676,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 </div>
                 <div className="bg-neutral-900/80 border border-neutral-700 rounded-2xl p-4 space-y-3">
                   <p className="text-neutral-400 text-xs font-bold">연락이 안 되셨나요? 다시 시도해주세요.</p>
-                  {md?.instagram && (
+                  {visibleMethods.includes("dm") && md?.instagram && (
                     <ContactButton
                       auctionId={displayAuction.id}
                       type="dm"
@@ -680,11 +686,21 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                       currentBid={displayAuction.current_bid}
                       eventDate={displayAuction.event_date}
                       entryTime={displayAuction.entry_time}
-                      depositRequired={displayAuction.deposit_required}
-                      depositAmount={displayAuction.deposit_amount}
                     />
                   )}
-                  {md?.phone && (
+                  {visibleMethods.includes("kakao") && (md as any)?.kakao_open_chat_url && (
+                    <ContactButton
+                      auctionId={displayAuction.id}
+                      type="kakao"
+                      url={(md as any).kakao_open_chat_url}
+                      clubName={club?.name}
+                      tableInfo={displayAuction.table_info}
+                      currentBid={displayAuction.current_bid}
+                      eventDate={displayAuction.event_date}
+                      entryTime={displayAuction.entry_time}
+                    />
+                  )}
+                  {visibleMethods.includes("phone") && md?.phone && (
                     <ContactButton
                       auctionId={displayAuction.id}
                       type="phone"

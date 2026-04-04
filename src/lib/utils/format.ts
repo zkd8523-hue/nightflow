@@ -41,14 +41,14 @@ export function formatEventDate(eventDate: string): string {
  * null → "즉시 입장"
  */
 export function formatEntryTime(entryTime: string | null, eventDate: string): string {
-  if (!entryTime) return "즉시 입장";
+  if (!entryTime) return "바로 입장 가능";
   const [h] = entryTime.split(":").map(Number);
   if (h < 4) {
     const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
     const nextDay = dayjs(eventDate).add(1, "day");
-    return `${nextDay.format("M/D")} (${DAYS[nextDay.day()]}) ${entryTime} 입장`;
+    return `${nextDay.format("M/D")} (${DAYS[nextDay.day()]}) ${entryTime}~ 입장`;
   }
-  return `${entryTime} 입장`;
+  return `${entryTime}~ 입장`;
 }
 
 /** 시간 포맷: "2026-02-18T20:00:00" → "오후 8:00" */
@@ -67,14 +67,16 @@ export function categorizeLiquor(includes: string[]): {
   extras: string[];
 } {
   const keywords = [
-    "병", "샴페인", "보드카", "위스키", "와인", "럼", "데킬라", "진",
-    "모엣", "그레이구스", "잭다니엘", "발렌타인", "맥켈란", "돔 페리뇽",
-    "헨네시", "파트론", "봄베이", "바카디", "벨베디어", "조니워커",
-    "로얄살루트", "글렌피딕", "시바스", "크뤽", "뵈브", "엔젤",
+    "병", "하드", "샴페인", "보드카", "위스키", "와인", "럼", "데킬라", "진",
+    "모엣", "그레이구스", "잭다니엘", "발렌타인", "맥캘란", "맥켈란", "돔 페리뇽",
+    "꼬냑", "헤네시", "헨네시", "레미마틴", "마르텔", "루이 13세", "까뮈",
+    "패트론", "봄베이", "바카디", "벨베디어", "조니워커", "벨루가",
+    "로얄살루트", "글렌피딕", "시바스", "뵈브", "크리스탈",
     "스노우레퍼드", "시록", "앱솔루트", "스미노프",
-    "호세", "돈 훌리오", "카사미고스", "캡틴모건", "핸드릭스",
-    "탱커레이", "고든스", "비피터", "말리부", "하바나",
-    "맥주", "소주", "하이볼", "논알콜", "Mumm", "G.H.",
+    "호세", "돈 훌리오", "카사미고스", "올메카", "클라세",
+    "짐빔", "핀란디아", "케텔원",
+    "캡틴모건", "핸드릭스", "탱커레이", "고든스", "말리부", "하바나",
+    "맥주", "소주", "하이볼", "논알콜",
   ];
 
   return {
@@ -108,6 +110,7 @@ export const DRINK_CATEGORY_STYLES: Record<string, { bg: string; text: string; b
   vodka:     { bg: "bg-sky-500/15",    text: "text-sky-300",    border: "border-sky-500/20" },
   whisky:    { bg: "bg-amber-600/15",  text: "text-amber-400",  border: "border-amber-600/20" },
   tequila:   { bg: "bg-lime-500/15",   text: "text-lime-300",   border: "border-lime-500/20" },
+  cognac:    { bg: "bg-orange-700/15", text: "text-orange-300", border: "border-orange-700/20" },
   wine:      { bg: "bg-rose-500/15",   text: "text-rose-300",   border: "border-rose-500/20" },
   rum:       { bg: "bg-orange-500/15", text: "text-orange-300", border: "border-orange-500/20" },
   gin:       { bg: "bg-teal-500/15",   text: "text-teal-300",   border: "border-teal-500/20" },
@@ -118,13 +121,18 @@ export const DRINK_CATEGORY_STYLES: Record<string, { bg: string; text: string; b
 /** 아이템에서 주류 카테고리 판별 */
 export function getLiquorCategory(item: string): string {
   const categories: [string, string[]][] = [
-    ["champagne", ["샴페인", "모엣", "돔 페리뇽", "Mumm", "G.H.", "엔젤", "아르망", "크뤽", "뵈브", "페리에", "볼랭저"]],
-    ["vodka", ["보드카", "그레이구스", "벨베디어", "스노우레퍼드", "시록", "앱솔루트", "스미노프", "핀란디아", "케텔원"]],
-    ["whisky", ["위스키", "잭다니엘", "발렌타인", "맥켈란", "조니워커", "로얄살루트", "글렌피딕", "시바스", "헨네시"]],
-    ["tequila", ["데킬라", "호세", "파트론", "돈 훌리오", "카사미고스", "에라두라"]],
+    // "하드" 통합: 보드카 + 데킬라 + 진 → vodka 스타일 사용
+    ["vodka", [
+      "하드", "보드카",
+      "그레이구스", "벨베디어", "스노우레퍼드", "시록", "앱솔루트", "스미노프", "핀란디아", "케텔원", "벨루가",
+      "데킬라", "호세", "패트론", "돈 훌리오", "카사미고스", "에라두라", "올메카", "클라세", "1800",
+      "봄베이", "핸드릭스", "탱커레이", "고든스",
+    ]],
+    ["champagne", ["샴페인", "모엣", "돔 페리뇽", "아르망", "크리스탈", "뵈브", "페리에", "볼랭저"]],
+    ["whisky", ["위스키", "잭다니엘", "짐빔", "발렌타인", "맥캘란", "맥켈란", "조니워커", "로얄살루트", "글렌피딕", "시바스"]],
+    ["cognac", ["꼬냑", "헤네시", "헨네시", "레미마틴", "마르텔", "루이 13세", "까뮈"]],
     ["wine", ["와인", "레드와인", "화이트와인", "로제와인", "스파클링"]],
     ["rum", ["럼", "바카디", "캡틴모건", "하바나", "말리부"]],
-    ["gin", ["봄베이", "핸드릭스", "탱커레이", "고든스", "비피터"]],
     ["etc", ["맥주", "소주", "하이볼", "논알콜"]],
   ];
 
@@ -168,11 +176,9 @@ export function generateTemplateName(
 /** 남은 시간 포맷: seconds → "00:14:30" or "3일 01:17:09" */
 export function formatCountdown(seconds: number): string {
   if (seconds <= 0) return "00:00:00";
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
+  const totalHours = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
-  const time = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  return d > 0 ? `${d}일 ${time}` : time;
+  return `${totalHours.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
 }
 

@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction, PriceRecommendation, AuctionTemplate } from "@/types/database";
 import { SmartPricingCard } from "./SmartPricingCard";
-import { Calendar, Wine, Check, ArrowRight, ImageIcon, Sparkles, ChevronDown, MapPin, Plus, X, RefreshCw, Building2, Bookmark, Shield } from "lucide-react";
+import { Calendar, Wine, Check, ArrowRight, ImageIcon, Sparkles, ChevronDown, MapPin, Plus, X, RefreshCw, Building2, Bookmark } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 dayjs.locale("ko");
@@ -33,7 +33,6 @@ const formSchema = z.object({
     table_info: z.string().min(1, "테이블 정보를 입력해주세요."),
     start_price: z.number().min(1, "가격은 0원보다 커야 합니다."),
     buy_now_price: z.number().optional(),
-    deposit_required: z.boolean().default(false),
     entry_time: z.string().nullable(),
     event_date: z.string(),
     auction_start_at: z.string(),
@@ -136,6 +135,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [floorPlanUploading, setFloorPlanUploading] = useState(false);
     const [floorPlanExpanded, setFloorPlanExpanded] = useState(false);
 
+
     // Dialog States
     const [priceConfirmInfo, setPriceConfirmInfo] = useState<{ isOpen: boolean, title: string, description: string } | null>(null);
     const [pendingSubmission, setPendingSubmission] = useState<{ values: FormValues } | null>(null);
@@ -146,8 +146,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
     // Template Drawer state
     const [showTemplateDrawer, setShowTemplateDrawer] = useState(false);
-    const [templateCount, setTemplateCount] = useState(0);
-    const [recentTemplate, setRecentTemplate] = useState<AuctionTemplate | null>(null);
+    const [allTemplates, setAllTemplates] = useState<AuctionTemplate[]>([]);
+    const currentListingType = isInstantMode ? "instant" : "auction";
+    const filteredTemplates = allTemplates.filter(t => t.listing_type === currentListingType);
+    const recentTemplate = filteredTemplates[0] ?? null;
+    const templateCount = filteredTemplates.length;
 
     const { register, handleSubmit, setValue, watch, clearErrors, formState: { errors, isSubmitting } } = useForm({
         resolver: zodResolver(formSchema),
@@ -164,7 +167,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 : (prefill?.buy_now_price && prefill.listing_type === 'auction')
                     ? prefill.buy_now_price
                     : undefined,
-            deposit_required: initialData?.deposit_required || prefill?.deposit_required || false,
             entry_time: initialData
                 ? (initialData.entry_time ?? null)
                 : (prefill?.entry_time ?? dayjs().add(1, "hour").format("HH:mm")),
@@ -192,8 +194,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             .then(res => res.ok ? res.json() : [])
             .then(data => {
                 if (!Array.isArray(data)) return;
-                setTemplateCount(data.length);
-                if (data.length > 0) setRecentTemplate(data[0]); // last_used_at DESC 정렬
+                setAllTemplates(data);
             })
             .catch(() => {});
     }, [initialData, repostFrom]);
@@ -454,8 +455,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 max_extensions: isInstantMode ? 0 : 3,
                 status: initialData?.status || "scheduled",
                 bid_increment: getBidIncrement(values.start_price),
-                deposit_required: values.deposit_required || false,
-                deposit_amount: values.deposit_required ? 30000 : null,
             };
 
             // instant 모드: buy_now_price = start_price (서버에서도 강제하지만 클라이언트도 설정)
@@ -550,6 +549,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             className="w-full flex items-center gap-3 py-3 px-4 rounded-xl bg-neutral-800/50 border border-neutral-700/50 hover:border-green-500/30 transition-colors"
                         >
                             <Bookmark className="w-4 h-4 text-green-500 shrink-0" />
+                            <span className="text-xs shrink-0">{recentTemplate.listing_type === "instant" ? "🔥" : "📅"}</span>
                             <span className="text-sm font-bold text-white truncate">{recentTemplate.name}</span>
                             <span className="ml-auto text-xs font-bold text-green-500 bg-green-500/10 px-2.5 py-1 rounded-full shrink-0">적용</span>
                         </button>
@@ -721,7 +721,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     <span className="text-white font-bold">테이블 위치</span>
                     {hasFloorPlan && (
                         <>
-                            <span className="text-xs text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">등록됨</span>
+                            <span className="text-xs text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">플로어맵 등록됨</span>
                             <ChevronDown className={`w-4 h-4 text-neutral-400 ml-auto transition-transform ${floorPlanExpanded ? 'rotate-180' : ''}`} />
                         </>
                     )}
@@ -1032,49 +1032,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 </div>
             </section>
 
-            {/* 5.5. 예약 보증금 토글 */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Shield className="w-4 h-4 text-green-500" />
-                    <span>예약 보증금</span>
-                </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5">
-                    <div className="flex items-center justify-between">
-                        <div className="space-y-1">
-                            <p className="text-white text-sm font-bold">보증금 요구</p>
-                            <p className="text-neutral-500 text-[11px]">
-                                입찰 전 3만원 결제 · 낙찰가에서 차감 · 노쇼 시 MD 지급
-                            </p>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                                type="checkbox"
-                                className="sr-only peer"
-                                checked={watch("deposit_required")}
-                                onChange={(e) => setValue("deposit_required", e.target.checked)}
-                            />
-                            <div className="w-11 h-6 bg-neutral-700 peer-focus:ring-2 peer-focus:ring-green-500/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                        </label>
-                    </div>
-                    {watch("deposit_required") && (
-                        <div className="mt-3 pt-3 border-t border-neutral-800/50 space-y-1.5">
-                            <div className="flex items-center gap-2">
-                                <ArrowRight className="w-3 h-3 text-green-400" />
-                                <span className="text-[11px] text-neutral-300">보증금 ₩30,000 (고정)</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <ArrowRight className="w-3 h-3 text-green-400" />
-                                <span className="text-[11px] text-neutral-300">노쇼 시 ~₩28,950 정산 (PG 수수료 차감)</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <ArrowRight className="w-3 h-3 text-green-400" />
-                                <span className="text-[11px] text-neutral-300">미낙찰 시 전액 환불 · 낙찰 취소/노쇼 시 몰수</span>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            </section>
-
             {/* 6. 일정 설정 */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 text-white font-bold mb-2">
@@ -1308,6 +1265,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             isOpen={showTemplateDrawer}
             onOpenChange={setShowTemplateDrawer}
             onApply={handleTemplateApply}
+            currentListingType={currentListingType}
         />
         </div>
     );

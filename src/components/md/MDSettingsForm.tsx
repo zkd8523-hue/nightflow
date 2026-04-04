@@ -6,13 +6,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Link from "next/link";
-import { ArrowLeft, Smartphone, Instagram, Check } from "lucide-react";
+import { ArrowLeft, Smartphone, Instagram, MessageCircle, Phone, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { getErrorMessage, logError } from "@/lib/utils/error";
-import type { User } from "@/types/database";
+import type { User, ContactMethodType } from "@/types/database";
 
 const formSchema = z.object({
   name: z.string().min(2, "이름은 2자 이상 입력해주세요"),
@@ -22,13 +22,29 @@ const formSchema = z.object({
     .min(1, "인스타그램 아이디를 입력해주세요")
     .max(30, "인스타그램 아이디는 30자 이하입니다")
     .regex(/^[a-zA-Z0-9._]+$/, "영문, 숫자, 마침표(.), 밑줄(_)만 가능합니다"),
+  kakao_open_chat_url: z
+    .string()
+    .url("올바른 URL을 입력해주세요")
+    .regex(/^https:\/\/open\.kakao\.com\//, "카카오톡 오픈채팅 URL만 가능합니다")
+    .or(z.literal(""))
+    .optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
+const CONTACT_METHOD_OPTIONS: { value: ContactMethodType; label: string; icon: typeof Instagram }[] = [
+  { value: "dm", label: "인스타 DM", icon: Instagram },
+  { value: "kakao", label: "오픈채팅", icon: MessageCircle },
+  { value: "phone", label: "전화", icon: Phone },
+];
+
 export function MDSettingsForm({ user }: { user: User }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [preferredMethods, setPreferredMethods] = useState<ContactMethodType[]>(
+    user.preferred_contact_methods || []
+  );
+  const [methodsDirty, setMethodsDirty] = useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -37,10 +53,11 @@ export function MDSettingsForm({ user }: { user: User }) {
       name: user.name || "",
       phone: user.phone || "",
       instagram: user.instagram || "",
+      kakao_open_chat_url: user.kakao_open_chat_url || "",
     },
   });
 
-  const isDirty = form.formState.isDirty;
+  const isDirty = form.formState.isDirty || methodsDirty;
 
   async function onSubmit(values: FormValues) {
     setLoading(true);
@@ -48,7 +65,10 @@ export function MDSettingsForm({ user }: { user: User }) {
       const res = await fetch("/api/md/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          ...values,
+          preferred_contact_methods: preferredMethods.length > 0 ? preferredMethods : null,
+        }),
       });
       const result = await res.json();
       if (!res.ok) {
@@ -56,6 +76,7 @@ export function MDSettingsForm({ user }: { user: User }) {
       }
       toast.success("프로필이 저장되었습니다");
       form.reset(values);
+      setMethodsDirty(false);
       router.refresh();
     } catch (error: unknown) {
       logError(error, "MDSettingsForm");
@@ -160,6 +181,69 @@ export function MDSettingsForm({ user }: { user: User }) {
                 {form.formState.errors.instagram?.message?.toString()}
               </p>
             )}
+          </div>
+
+          {/* Kakao Open Chat */}
+          <div className="space-y-2">
+            <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5" />
+              카카오톡 오픈채팅 (선택)
+            </Label>
+            <Input
+              {...form.register("kakao_open_chat_url")}
+              placeholder="https://open.kakao.com/o/..."
+              className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
+            />
+            <p className="text-neutral-600 text-[10px]">낙찰자에게 추가 연락 수단으로 표시됩니다</p>
+            {form.formState.errors.kakao_open_chat_url && (
+              <p className="text-red-500 text-[10px] font-bold">
+                {form.formState.errors.kakao_open_chat_url?.message?.toString()}
+              </p>
+            )}
+          </div>
+
+          {/* 선호 연락 수단 */}
+          <div className="space-y-3">
+            <Label className="text-neutral-500 text-xs font-bold uppercase">
+              낙찰자에게 표시할 연락 수단
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {CONTACT_METHOD_OPTIONS.map(({ value, label, icon: Icon }) => {
+                const isSelected = preferredMethods.includes(value);
+                const isDisabled = value === "kakao" && !form.watch("kakao_open_chat_url");
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    disabled={isDisabled}
+                    onClick={() => {
+                      setPreferredMethods((prev) => {
+                        const next = isSelected
+                          ? prev.filter((m) => m !== value)
+                          : [...prev, value];
+                        setMethodsDirty(true);
+                        return next;
+                      });
+                    }}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all ${
+                      isDisabled
+                        ? "bg-neutral-900 text-neutral-700 cursor-not-allowed"
+                        : isSelected
+                          ? "bg-white text-black"
+                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-neutral-600 text-[10px]">
+              {preferredMethods.length === 0
+                ? "미선택 시 모든 연락 수단이 표시됩니다"
+                : "선택한 수단만 낙찰자에게 표시됩니다"}
+            </p>
           </div>
         </div>
       </form>

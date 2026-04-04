@@ -48,20 +48,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Winner not found" }, { status: 404 });
         }
 
-        // 1.5 보증금 → forfeited (노쇼 몰수)
-        try {
-            await supabaseAdmin
-                .from("deposits")
-                .update({
-                    status: "forfeited",
-                    forfeited_at: new Date().toISOString(),
-                })
-                .eq("auction_id", auctionId)
-                .eq("user_id", winnerId)
-                .eq("status", "held");
-        } catch {
-            // 보증금 미사용 경매는 무시
-        }
 
         // 2. 유저 패널티 부여 (apply_noshow_strike RPC 호출)
         const { data: strikeResult, error: strikeError } = await supabaseAdmin.rpc(

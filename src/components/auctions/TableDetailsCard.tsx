@@ -45,40 +45,28 @@ export function TableDetailsCard({ includes, notes }: TableDetailsCardProps) {
   return (
     <Card className="bg-[#1C1C1E] border-neutral-800/50 p-6 space-y-6">
       <div className="space-y-5">
-        {/* 주류 패키지 */}
-        {liquorItems.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-[16px] font-bold text-white flex items-center gap-2">
-              주류 패키지
-            </h2>
-            <div className="space-y-2">
-              {liquorItems.map((item) => (
-                <div
-                  key={item}
-                  className="flex items-center gap-3 rounded-xl px-4 py-3 border bg-amber-500/10 border-amber-500/30"
-                >
-                  <span className="text-[14px] font-bold text-amber-400">
-                    {item}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 테이블 구성 */}
-        {extraItems.length > 0 && (
+        {/* 테이블 구성 (주류 포함) */}
+        {includes.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-[16px] font-bold text-white flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-green-500" />
               테이블 구성
             </h2>
             <div className="flex flex-wrap gap-2">
+              {liquorItems.map((item) => (
+                <Badge
+                  key={item}
+                  variant="secondary"
+                  className="bg-amber-500/10 text-amber-400 border-amber-500/30 px-4 py-2 font-bold text-[14px]"
+                >
+                  {item}
+                </Badge>
+              ))}
               {extraItems.map((item) => (
                 <Badge
                   key={item}
                   variant="secondary"
-                  className="bg-neutral-900/50 text-neutral-400 border-neutral-800 px-3 py-1 font-bold text-[11px]"
+                  className="bg-neutral-900/50 text-neutral-400 border-neutral-800 px-4 py-2 font-bold text-[14px]"
                 >
                   {item}
                 </Badge>

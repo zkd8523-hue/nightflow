@@ -15,7 +15,7 @@ async function getAuctionData(auctionId: string) {
     .from("auctions")
     .select(`
       id, title, table_info, event_date, entry_time, winning_price, current_bid, status,
-      winner_id, won_at, includes, deposit_required, deposit_amount,
+      winner_id, won_at, includes,
       club:club_id (name, area),
       winner:winner_id (name)
     `)
@@ -106,18 +106,12 @@ export default async function MatchPage({ params }: MatchPageProps) {
               </div>
             </div>
 
-            {/* Deposit Info */}
+            {/* 결제 안내 */}
             <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30 flex items-center gap-3">
               <Shield className="w-4 h-4 text-neutral-500" />
               <div>
-                <p className="text-[9px] text-neutral-500 font-bold uppercase">보증금</p>
-                {auction.deposit_required ? (
-                  <p className="text-sm font-bold text-green-400">
-                    {formatPrice(auction.deposit_amount || 30000)} 결제 완료 · 잔금 {formatPrice(price - (auction.deposit_amount || 30000))}
-                  </p>
-                ) : (
-                  <p className="text-sm font-bold text-neutral-400">없음 · 현장 결제</p>
-                )}
+                <p className="text-[9px] text-neutral-500 font-bold uppercase">결제</p>
+                <p className="text-sm font-bold text-neutral-400">현장에서 MD에게 직접 결제</p>
               </div>
             </div>
 

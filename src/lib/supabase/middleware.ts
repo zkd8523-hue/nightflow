@@ -35,6 +35,17 @@ export async function updateSession(request: NextRequest) {
   // 세션 갱신 (IMPORTANT: getUser()로 서버 검증)
   const { data: { user } } = await supabase.auth.getUser();
 
+  // ?ref= 파라미터 → 쿠키 저장 (30일, 바이럴 추적용)
+  const refCode = request.nextUrl.searchParams.get('ref');
+  if (refCode) {
+    supabaseResponse.cookies.set('referral_code', refCode, {
+      maxAge: 60 * 60 * 24 * 30,
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+    });
+  }
+
   // 보호된 경로 접근 시 로그인 확인
   const pathname = request.nextUrl.pathname;
   const isProtected = PROTECTED_PREFIXES.some(prefix => pathname.startsWith(prefix));

@@ -31,6 +31,24 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const [activityStats, setActivityStats] = useState<{
+    total_bids: number;
+    won_bids: number;
+    win_rate: number;
+    confirmed_visits: number;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_trust_scores")
+      .select("total_bids, won_bids, win_rate, confirmed_visits")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) setActivityStats(data);
+      });
+  }, [user]);
 
   if (isLoading) {
     return (
@@ -184,40 +202,74 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 제재 현황 카드 */}
+        {/* 나의 경매 활동 */}
         <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-          <h2 className="text-[15px] font-bold text-white mb-4">이용 현황</h2>
+          <h2 className="text-[15px] font-bold text-white mb-4">나의 경매 활동</h2>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-[11px] text-neutral-400">경고</span>
+          {activityStats && activityStats.total_bids > 0 ? (
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <Gavel className="w-3.5 h-3.5 text-neutral-400" />
+                  <span className="text-[11px] text-neutral-400">총 입찰</span>
+                </div>
+                <p className="text-xl font-black text-white">{activityStats.total_bids}<span className="text-[11px] text-neutral-500 font-normal">회</span></p>
               </div>
-              <p className="text-xl font-black text-white">{user.warning_count || 0}<span className="text-[11px] text-neutral-500 font-normal">/3</span></p>
-              <p className="text-[10px] text-neutral-500 mt-0.5">3경고 = 1스트라이크</p>
-            </div>
 
-            <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
-              <div className="flex items-center justify-center gap-1.5 mb-1">
-                <ShieldAlert className="w-3.5 h-3.5 text-red-500" />
-                <span className="text-[11px] text-neutral-400">스트라이크</span>
+              <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <Trophy className="w-3.5 h-3.5 text-green-500" />
+                  <span className="text-[11px] text-neutral-400">낙찰 성공</span>
+                </div>
+                <p className="text-xl font-black text-green-400">{activityStats.won_bids}<span className="text-[11px] text-neutral-500 font-normal">회</span></p>
               </div>
-              <p className={`text-xl font-black ${(user.strike_count || 0) > 0 ? "text-red-400" : "text-white"}`}>
-                {user.strike_count || 0}
-              </p>
-              <p className="text-[10px] text-neutral-500 mt-0.5">
-                {user.strike_count === 0 && "양호"}
-                {user.strike_count === 1 && "1회: 3일 정지"}
-                {user.strike_count === 2 && "2회: 14일 정지"}
-                {user.strike_count === 3 && "3회: 60일 정지"}
-                {(user.strike_count || 0) >= 4 && "영구 차단"}
+
+              <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                  <span className="text-[11px] text-neutral-400">방문 완료</span>
+                </div>
+                <p className="text-xl font-black text-green-400">{activityStats.confirmed_visits}<span className="text-[11px] text-neutral-500 font-normal">회</span></p>
+              </div>
+
+              <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
+                <div className="flex items-center justify-center gap-1.5 mb-1">
+                  <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-[11px] text-neutral-400">낙찰률</span>
+                </div>
+                <p className="text-xl font-black text-amber-400">{activityStats.win_rate || 0}<span className="text-[11px] text-neutral-500 font-normal">%</span></p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-[13px] text-neutral-500 mb-3">아직 경매에 참여한 기록이 없습니다</p>
+              <Link
+                href="/"
+                className="inline-flex items-center gap-1 text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
+              >
+                진행 중인 경매 보기
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+
+          {/* 제재 정보: 경고 또는 스트라이크 > 0일 때만 표시 */}
+          {((user.warning_count || 0) > 0 || (user.strike_count || 0) > 0) && (
+            <div className="flex items-center gap-2 mt-3 p-2.5 bg-neutral-800/50 rounded-lg">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <p className="text-[12px] text-neutral-400">
+                경고 <span className="text-amber-400 font-bold">{user.warning_count || 0}</span>/3
+                {(user.strike_count || 0) > 0 && (
+                  <span className="ml-2">
+                    스트라이크 <span className="text-red-400 font-bold">{user.strike_count}</span>
+                  </span>
+                )}
               </p>
             </div>
-          </div>
+          )}
 
           {isBanned && !isBlocked && (
-            <div className="flex items-center gap-2 mt-3 p-2.5 bg-amber-500/5 rounded-lg">
+            <div className="flex items-center gap-2 mt-2 p-2.5 bg-amber-500/5 rounded-lg">
               <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <p className="text-[12px] text-amber-400">
                 정지 해제: {dayjs(user.banned_until).format("YYYY.MM.DD HH:mm")}

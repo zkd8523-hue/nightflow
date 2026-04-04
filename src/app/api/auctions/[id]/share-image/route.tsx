@@ -8,7 +8,7 @@ export const runtime = 'edge';
 // Font loading helper
 async function loadFont() {
   const response = await fetch(
-    new URL('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/Pretendard-Bold.otf', 'https://nightflow.com')
+    'https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/public/static/Pretendard-Bold.otf'
   );
   return response.arrayBuffer();
 }
@@ -18,6 +18,8 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const { searchParams } = new URL(request.url);
+  const format = searchParams.get('format');
 
   try {
     const supabase = createAdminClient();
@@ -27,7 +29,8 @@ export async function GET(
                 *,
                 club:clubs (
                     name,
-                    area
+                    area,
+                    thumbnail_url
                 )
             `)
       .eq('id', id)
@@ -42,6 +45,200 @@ export async function GET(
 
     const club = auction.club as any;
 
+    // KakaoTalk용 1200x630 가로형 이미지
+    if (format === 'kakao') {
+      const photoUrl = auction.thumbnail_url || club?.thumbnail_url || null;
+
+      return new ImageResponse(
+        (
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              position: 'relative',
+              backgroundColor: '#0A0A0A',
+              fontFamily: 'Pretendard',
+            }}
+          >
+            {/* 배경 사진 */}
+            {photoUrl ? (
+              <img
+                src={photoUrl}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                }}
+              />
+            ) : (
+              <>
+                <div style={{
+                  position: 'absolute',
+                  top: '-60px',
+                  right: '-60px',
+                  width: '500px',
+                  height: '500px',
+                  background: 'radial-gradient(circle, rgba(74, 222, 128, 0.15) 0%, transparent 70%)',
+                  borderRadius: '50%',
+                  display: 'flex',
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-80px',
+                  left: '-80px',
+                  width: '600px',
+                  height: '600px',
+                  background: 'radial-gradient(circle, rgba(236, 72, 153, 0.1) 0%, transparent 70%)',
+                  borderRadius: '50%',
+                  display: 'flex',
+                }} />
+              </>
+            )}
+
+            {/* 다크 오버레이 */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                background: photoUrl
+                  ? 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.55) 100%)'
+                  : 'transparent',
+                display: 'flex',
+              }}
+            />
+
+            {/* NightFlow 브랜딩 - 좌상단 */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '32px',
+                left: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                letterSpacing: '-1px',
+                color: 'white',
+                opacity: 0.9,
+              }}
+            >
+              <span style={{ color: '#4ADE80' }}>Night</span>
+              <span>Flow</span>
+            </div>
+
+            {/* 메인 콘텐츠 - 좌하단 */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                padding: '0 40px 40px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+              }}
+            >
+              {/* 지역 태그 */}
+              <div style={{ display: 'flex' }}>
+                <div
+                  style={{
+                    fontSize: '16px',
+                    color: 'rgba(255,255,255,0.6)',
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    padding: '4px 12px',
+                    borderRadius: '100px',
+                    display: 'flex',
+                  }}
+                >
+                  {club?.area || 'SEOUL'}
+                </div>
+              </div>
+
+              {/* 클럽명 */}
+              <div
+                style={{
+                  fontSize: '48px',
+                  fontWeight: 'bold',
+                  color: 'white',
+                  lineHeight: 1.1,
+                  display: 'flex',
+                }}
+              >
+                {club?.name || 'CLUB'}
+              </div>
+
+              {/* 테이블 정보 + 날짜 */}
+              <div
+                style={{
+                  fontSize: '20px',
+                  color: 'rgba(255,255,255,0.7)',
+                  display: 'flex',
+                  gap: '8px',
+                }}
+              >
+                <span>{auction.table_info}</span>
+                <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
+                <span>{dayjs(auction.event_date).locale('ko').format('M월 D일 (dd)')}</span>
+              </div>
+
+              {/* 구분선 + 시작가 */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: '12px',
+                  paddingTop: '16px',
+                  borderTop: '1px solid rgba(255,255,255,0.15)',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>시작가</div>
+                  <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#4ADE80', display: 'flex' }}>
+                    ₩{auction.start_price.toLocaleString()}
+                  </div>
+                </div>
+                <div
+                  style={{
+                    padding: '12px 28px',
+                    backgroundColor: '#4ADE80',
+                    color: 'black',
+                    borderRadius: '100px',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                  }}
+                >
+                  입찰하기
+                </div>
+              </div>
+            </div>
+          </div>
+        ),
+        {
+          width: 1200,
+          height: 630,
+          fonts: [
+            {
+              name: 'Pretendard',
+              data: fontData,
+              style: 'normal',
+            },
+          ],
+        }
+      );
+    }
+
+    // 기본: 인스타그램/기타용 1080x1920 세로형 이미지
     return new ImageResponse(
       (
         <div

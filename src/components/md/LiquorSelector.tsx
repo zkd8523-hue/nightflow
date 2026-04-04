@@ -99,24 +99,58 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
       <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
         {/* 카테고리 버튼 */}
         <div className="flex flex-wrap gap-2">
-          {LIQUOR_CATEGORIES.map(({ key, label, emoji }) => (
+          {LIQUOR_CATEGORIES.map((cat) => (
             <button
-              key={key}
+              key={cat.key}
               type="button"
               onClick={() => {
-                setActiveCategory(activeCategory === key ? null : key);
+                setActiveCategory(activeCategory === cat.key ? null : cat.key);
                 setSearchQuery("");
               }}
               className={`px-3 py-2 rounded-lg text-[11px] font-bold transition-all ${
-                activeCategory === key
+                activeCategory === cat.key
                   ? "bg-white text-black"
                   : "bg-neutral-900 text-neutral-500 border border-neutral-800"
               }`}
             >
-              {emoji} {label}
+              {cat.emoji} {cat.label}
+              {"sublabel" in cat && activeCategory === cat.key && (
+                <span className="text-neutral-400 text-[9px] ml-1">{cat.sublabel}</span>
+              )}
             </button>
           ))}
         </div>
+
+        {/* 빠른 선택 (브랜드 미지정) — 하드, 샴페인 */}
+        {(activeCategory === "hard" || activeCategory === "champagne") && (
+          <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-3 space-y-2">
+            <p className="text-neutral-400 text-[10px] font-bold">브랜드 미지정 빠른 선택</p>
+            <div className="flex gap-2">
+              {[1, 2, 3].map((qty) => {
+                const label = activeCategory === "hard" ? "하드" : "샴페인";
+                const item = `${label} ${qty}병`;
+                const isSelected = selectedBrandSet.has(item);
+                return (
+                  <button
+                    key={qty}
+                    type="button"
+                    onClick={() => isSelected ? removeLiquor(item) : onSelect([...selected, item])}
+                    className={`flex-1 py-2.5 rounded-lg text-[12px] font-bold transition-all ${
+                      isSelected
+                        ? "bg-amber-500 text-black"
+                        : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                    }`}
+                  >
+                    {label} {qty}병
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-neutral-600 text-[10px]">
+              손님이 브랜드를 물으면 그때 안내하세요
+            </p>
+          </div>
+        )}
 
         {/* 검색 입력 */}
         <div className="relative">

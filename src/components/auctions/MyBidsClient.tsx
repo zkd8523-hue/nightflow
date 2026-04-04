@@ -49,6 +49,8 @@ export interface WonAuctionData {
     name: string | null;
     phone: string | null;
     instagram: string | null;
+    kakao_open_chat_url: string | null;
+    preferred_contact_methods: ("dm" | "kakao" | "phone")[] | null;
   } | null;
   [key: string]: unknown;
 }
@@ -190,7 +192,7 @@ export function MyBidsClient({
     const { data: wonBids } = await supabase
       .from("bids")
       .select(
-        `*, auction:auctions (*, club:clubs(*), md:md_id(name, phone, instagram))`
+        `*, auction:auctions (*, club:clubs(*), md:md_id(name, phone, instagram, kakao_open_chat_url, preferred_contact_methods))`
       )
       .eq("bidder_id", user.id)
       .eq("status", "won")
@@ -199,7 +201,7 @@ export function MyBidsClient({
     const { data: winnerAuctions } = await supabase
       .from("auctions")
       .select(
-        `*, club:club_id(*), md:md_id(name, phone, instagram)`
+        `*, club:club_id(*), md:md_id(name, phone, instagram, kakao_open_chat_url, preferred_contact_methods)`
       )
       .eq("winner_id", user.id)
       .order("won_at", { ascending: false });

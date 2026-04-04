@@ -9,6 +9,7 @@ export const DRINK_CATEGORY_IMAGES: Record<string, string> = {
   vodka: "/drinks/vodka.webp",
   whisky: "/drinks/whisky.webp",
   tequila: "/drinks/tequila.webp",
+  cognac: "/drinks/cognac.webp",
   wine: "/drinks/wine.webp",
   rum: "/drinks/rum.webp",
   gin: "/drinks/gin.webp",
@@ -22,7 +23,7 @@ export const DRINK_CATEGORY_IMAGES: Record<string, string> = {
 export function getDrinkCategoryImage(includes: string[]): string | null {
   if (!includes || includes.length === 0) return null;
 
-  const priority = ["champagne", "whisky", "vodka", "tequila", "wine", "rum", "gin", "etc"];
+  const priority = ["champagne", "whisky", "cognac", "vodka", "tequila", "wine", "rum", "gin", "etc"];
 
   for (const item of includes) {
     const cat = getLiquorCategory(item);
