@@ -49,9 +49,8 @@ export function useKakaoShare(): UseKakaoShareReturn {
     if (initAttempted.current) return;
     initAttempted.current = true;
 
-    const kakaoKey =
-      process.env.NEXT_PUBLIC_KAKAO_JS_KEY ||
-      process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID;
+    const rawKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY || process.env.NEXT_PUBLIC_KAKAO_CLIENT_ID || "";
+    const kakaoKey = rawKey.replace(/\\n/g, '').replace(/\n/g, '').replace(/[\r\n"']/g, '').trim();
 
     if (!kakaoKey) return;
 
