@@ -13,6 +13,7 @@ import { MessageCircle, Instagram, Link2, Share2 } from "lucide-react";
 import { shareAuction, shareToInstagram, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { useReferralCode } from "@/hooks/useReferralCode";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import type { Auction } from "@/types/database";
 
@@ -29,6 +30,8 @@ export function ShareAuctionSheet({
 }: ShareAuctionSheetProps) {
   const { shareToKakao, isAvailable: kakaoAvailable } = useKakaoShare();
   const referralCode = useReferralCode();
+  const currentUser = useAuthStore((s) => s.user);
+  const isFromMD = currentUser?.id === auction.md_id;
   const [sharing, setSharing] = useState<string | null>(null);
 
   const club = auction.club;
@@ -75,11 +78,6 @@ export function ShareAuctionSheet({
       ? `${window.location.origin}/api/auctions/${auction.id}/share-image`
       : "";
 
-  const kakaoShareImageUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/api/auctions/${auction.id}/share-image?format=kakao`
-      : "";
-
   const handleKakaoShare = async () => {
     setSharing("kakao");
     try {
@@ -88,7 +86,10 @@ export function ShareAuctionSheet({
         tableInfo,
         startPrice: auction.start_price,
         auctionUrl,
-        shareImageUrl: kakaoShareImageUrl,
+        thumbnailUrl: auction.thumbnail_url || club?.thumbnail_url || undefined,
+        listingType: auction.listing_type || "auction",
+        isFromMD,
+        eventDate: auction.event_date,
       });
     } finally {
       setSharing(null);

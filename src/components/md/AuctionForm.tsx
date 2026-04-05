@@ -707,6 +707,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         </div>
                     )}
                 </div>
+                <p className="text-neutral-600 text-[11px] mt-1">카카오톡 공유 시 이미지로 사용됩니다. 가로형 사진을 권장해요.</p>
                 {errors.club_id && <p className="text-red-500 text-xs">{errors.club_id?.message?.toString()}</p>}
             </section>
 

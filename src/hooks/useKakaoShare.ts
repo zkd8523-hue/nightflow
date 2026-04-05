@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
+import dayjs from "dayjs";
+import "dayjs/locale/ko";
 
 declare global {
   interface Window {
@@ -28,14 +30,19 @@ declare global {
   }
 }
 
+interface KakaoShareParams {
+  clubName: string;
+  tableInfo: string;
+  startPrice: number;
+  auctionUrl: string;
+  thumbnailUrl?: string;
+  listingType?: "auction" | "instant";
+  isFromMD?: boolean;
+  eventDate?: string;
+}
+
 interface UseKakaoShareReturn {
-  shareToKakao: (params: {
-    clubName: string;
-    tableInfo: string;
-    startPrice: number;
-    auctionUrl: string;
-    shareImageUrl: string;
-  }) => Promise<boolean>;
+  shareToKakao: (params: KakaoShareParams) => Promise<boolean>;
   isLoading: boolean;
   isAvailable: boolean;
 }
@@ -80,25 +87,42 @@ export function useKakaoShare(): UseKakaoShareReturn {
   }, []);
 
   const shareToKakao = useCallback(
-    async (params: {
-      clubName: string;
-      tableInfo: string;
-      startPrice: number;
-      auctionUrl: string;
-      shareImageUrl: string;
-    }): Promise<boolean> => {
+    async (params: KakaoShareParams): Promise<boolean> => {
       if (!window.Kakao || !window.Kakao.isInitialized()) return false;
+
+      const isInstant = params.listingType === "instant";
+      const isMD = params.isFromMD === true;
+      const price = params.startPrice.toLocaleString();
+      const fallbackImage = typeof window !== "undefined"
+        ? `${window.location.origin}/nightflow-share-fallback.svg`
+        : "";
+
+      const dateStr = params.eventDate
+        ? dayjs(params.eventDate).locale("ko").format("M/D(dd)")
+        : "";
+
+      const title = isMD
+        ? `${params.clubName} ${isInstant ? "오늘특가" : "테이블 경매"}`
+        : isInstant
+          ? `${params.clubName} 특가 떴다!`
+          : `${dateStr} ${params.clubName} 같이 갈래?`;
+
+      const description = isInstant
+        ? (isMD ? `${price}원 | 지금 바로 예약 가능!` : `${price}원 | 이 가격에 오늘 바로!`)
+        : (isMD ? `시작가 ${price}원 | 지금 입찰하세요!` : `시작가 ${price}원 | 입찰 진행 중!`);
+
+      const buttonTitle = isInstant
+        ? (isMD ? "예약하러 가기" : "예약 보러 가기")
+        : (isMD ? "입찰하러 가기" : "경매 보러 가기");
 
       setIsLoading(true);
       try {
         window.Kakao.Share.sendDefault({
           objectType: "feed",
           content: {
-            title: `${params.clubName} ${params.tableInfo} 테이블 경매`,
-            description: `시작가 ${params.startPrice.toLocaleString()}원 | 지금 입찰하세요!`,
-            imageUrl: params.shareImageUrl,
-            imageWidth: 1200,
-            imageHeight: 630,
+            title,
+            description,
+            imageUrl: params.thumbnailUrl || fallbackImage,
             link: {
               mobileWebUrl: params.auctionUrl,
               webUrl: params.auctionUrl,
@@ -106,7 +130,7 @@ export function useKakaoShare(): UseKakaoShareReturn {
           },
           buttons: [
             {
-              title: "경매 참여하기",
+              title: buttonTitle,
               link: {
                 mobileWebUrl: params.auctionUrl,
                 webUrl: params.auctionUrl,

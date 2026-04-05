@@ -36,6 +36,8 @@ interface ShareSuccessSheetProps {
   formValues?: TemplateFormValues;
   clubName2?: string;
   onContinue?: () => void;
+  thumbnailUrl?: string;
+  listingType?: "auction" | "instant";
 }
 
 export function ShareSuccessSheet({
@@ -49,6 +51,8 @@ export function ShareSuccessSheet({
   formValues,
   clubName2,
   onContinue,
+  thumbnailUrl,
+  listingType,
 }: ShareSuccessSheetProps) {
   const router = useRouter();
   const { shareToKakao, isAvailable: kakaoAvailable } = useKakaoShare();
@@ -138,10 +142,6 @@ export function ShareSuccessSheet({
     ? `${window.location.origin}/api/auctions/${auctionId}/share-image`
     : "";
 
-  const kakaoShareImageUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/api/auctions/${auctionId}/share-image?format=kakao`
-    : "";
-
   const handleKakaoShare = async () => {
     setSharing("kakao");
     try {
@@ -150,7 +150,9 @@ export function ShareSuccessSheet({
         tableInfo,
         startPrice,
         auctionUrl,
-        shareImageUrl: kakaoShareImageUrl,
+        thumbnailUrl,
+        listingType: listingType || "auction",
+        isFromMD: true,
       });
       if (!success) {
         toast.error("카카오톡 공유에 실패했습니다");
