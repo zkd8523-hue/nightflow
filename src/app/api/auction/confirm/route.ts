@@ -54,8 +54,6 @@ export async function POST(req: Request) {
 
     if (auctionError) throw auctionError;
 
-    }
-
     // 3. 낙찰자에게 알림톡 발송
     try {
       if (auction.winner_id) {
