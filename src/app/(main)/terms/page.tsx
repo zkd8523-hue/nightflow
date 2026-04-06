@@ -112,8 +112,8 @@ export default function TermsPage() {
                             <p className="pl-4">3. 금전 거래에 관한 분쟁은 당사자 간에 해결하며, 회사는 분쟁 조정을 지원할 수 있습니다.</p>
 
                             <p className="text-white font-bold mt-4">② 플랫폼 수수료</p>
-                            <p className="pl-4">1. 현재 베타 기간 중 MD 수수료는 0%입니다.</p>
-                            <p className="pl-4">2. 정식 서비스 전환 시 수수료 정책이 변경될 수 있으며, 사전에 공지합니다.</p>
+                            <p className="pl-4">1. 현재 NightFlow 이용에 별도 수수료는 없습니다.</p>
+                            <p className="pl-4">2. 향후 수수료 정책 변경 시 사전에 공지합니다.</p>
 
                         </div>
                     </section>

@@ -177,7 +177,6 @@ export default function DeleteAccountPage() {
                     ? [
                         "등록한 경매 및 거래 기록",
                         "VIP 고객 목록 및 메모",
-                        "경매 템플릿",
                       ]
                     : []),
                 ].map((item) => (

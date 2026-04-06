@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     // 2. Auction 상태 업데이트 (confirmed_at은 트리거가 자동 설정)
     const { error: auctionError } = await supabaseAdmin
       .from("auctions")
-      .update({ status: "confirmed", contact_deadline: null })
+      .update({ status: "confirmed", contact_deadline: null, confirmed_by: user.id })
       .eq("id", auctionId)
       .in("status", ["won", "contacted"]); // won 또는 contacted에서 전환
 

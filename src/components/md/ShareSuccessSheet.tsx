@@ -11,19 +11,12 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { PartyPopper, MessageCircle, Instagram, Link2, Share2, ArrowRight, Bookmark, RotateCcw } from "lucide-react";
+import { PartyPopper, MessageCircle, Instagram, Link2, Share2, ArrowRight, RotateCcw } from "lucide-react";
 
 import { shareAuction, shareToInstagram, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { useReferralCode } from "@/hooks/useReferralCode";
-import { generateTemplateName } from "@/lib/utils/format";
 
-interface TemplateFormValues {
-  club_id: string;
-  includes: string[];
-  start_price: number;
-  duration_minutes: number;
-}
 
 interface ShareSuccessSheetProps {
   isOpen: boolean;
@@ -33,8 +26,6 @@ interface ShareSuccessSheetProps {
   tableInfo: string;
   eventDate: string;
   startPrice: number;
-  formValues?: TemplateFormValues;
-  clubName2?: string;
   onContinue?: () => void;
   thumbnailUrl?: string;
   listingType?: "auction" | "instant";
@@ -48,8 +39,6 @@ export function ShareSuccessSheet({
   tableInfo,
   eventDate,
   startPrice,
-  formValues,
-  clubName2,
   onContinue,
   thumbnailUrl,
   listingType,
@@ -58,51 +47,6 @@ export function ShareSuccessSheet({
   const { shareToKakao, isAvailable: kakaoAvailable } = useKakaoShare();
   const referralCode = useReferralCode();
   const [sharing, setSharing] = useState<string | null>(null);
-
-  // 템플릿 저장
-  const [templateSaved, setTemplateSaved] = useState(false);
-  const [templateSaving, setTemplateSaving] = useState(false);
-  const autoName = formValues
-    ? generateTemplateName(clubName2 || clubName, formValues.includes, formValues.start_price)
-    : clubName2 || clubName;
-  const [templateName, setTemplateName] = useState(autoName);
-
-  // 시트가 열릴 때마다 초기화
-  useEffect(() => {
-    if (isOpen) {
-      setTemplateSaved(false);
-      setTemplateName(
-        formValues
-          ? generateTemplateName(clubName2 || clubName, formValues.includes, formValues.start_price)
-          : clubName2 || clubName
-      );
-    }
-  }, [isOpen, clubName, clubName2, formValues]);
-
-  const handleSaveTemplate = async () => {
-    if (!formValues || templateSaved || templateSaving) return;
-    setTemplateSaving(true);
-    try {
-      const res = await fetch("/api/templates", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: templateName.trim() || autoName,
-          ...formValues,
-        }),
-      });
-      if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error || "저장 실패");
-      }
-      setTemplateSaved(true);
-      toast.success("템플릿이 저장되었습니다!");
-    } catch (error: any) {
-      toast.error(error?.message || "템플릿 저장에 실패했습니다.");
-    } finally {
-      setTemplateSaving(false);
-    }
-  };
 
   // User Gesture 만료 방어: 마운트 즉시 이미지 prefetch → Blob state 보관
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
@@ -288,32 +232,6 @@ export function ShareSuccessSheet({
             );
           })}
         </div>
-
-        {/* 템플릿 저장 */}
-        {formValues && (
-          <div className="border-t border-neutral-800 pt-4 mt-4 space-y-2">
-            {!templateSaved ? (
-              <button
-                onClick={handleSaveTemplate}
-                disabled={templateSaving}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-neutral-800 text-neutral-300 hover:text-white transition-colors"
-              >
-                <Bookmark className="w-4 h-4" />
-                <span className="text-sm font-bold">
-                  {templateSaving ? "저장 중..." : "이 설정을 템플릿으로 저장"}
-                </span>
-              </button>
-            ) : (
-              <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-green-500/10 text-green-400">
-                <Bookmark className="w-4 h-4" />
-                <span className="text-sm font-bold">템플릿 저장됨</span>
-              </div>
-            )}
-            <p className="text-[10px] text-neutral-600 text-center">
-              다음에 한 번에 불러올 수 있어요
-            </p>
-          </div>
-        )}
 
         {/* 하단 버튼 */}
         <div className="mt-4 space-y-2">

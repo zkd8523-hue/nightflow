@@ -34,28 +34,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only instant listings supported" }, { status: 400 });
     }
 
-    if (auction.status !== "active") {
+    if (!["active", "scheduled"].includes(auction.status)) {
       return NextResponse.json(
         { error: `현재 상태(${auction.status})에서는 거래완료 처리할 수 없습니다.` },
         { status: 400 }
       );
     }
 
-    // active → confirmed
+    // active/scheduled → confirmed
     const { error: updateError } = await supabaseAdmin
       .from("auctions")
-      .update({
-        status: "confirmed",
-        confirmed_at: new Date().toISOString(),
-      })
-      .eq("id", auctionId)
-      .eq("status", "active");
+      .update({ status: "confirmed" })
+      .eq("id", auctionId);
 
     if (updateError) throw updateError;
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("[API complete] Error:", error);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+  } catch (error: any) {
+    console.error("[API complete] Error:", error?.message || error);
+    return NextResponse.json({ error: error?.message || "Internal error" }, { status: 500 });
   }
 }

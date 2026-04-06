@@ -10,9 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import type { Club, Auction, PriceRecommendation, AuctionTemplate } from "@/types/database";
+import type { Club, Auction, PriceRecommendation } from "@/types/database";
 import { SmartPricingCard } from "./SmartPricingCard";
-import { Calendar, Wine, Check, ArrowRight, ImageIcon, Sparkles, ChevronDown, MapPin, Plus, X, RefreshCw, Building2, Bookmark } from "lucide-react";
+import { Calendar, Wine, Check, ArrowRight, ImageIcon, Sparkles, ChevronDown, MapPin, Plus, X, RefreshCw, Building2 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 dayjs.locale("ko");
@@ -23,7 +23,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { uploadImage } from "@/lib/utils/upload";
 import { ShareSuccessSheet } from "./ShareSuccessSheet";
-import { TemplateDrawer } from "./TemplateDrawer";
+
 import { trackEvent } from "@/lib/analytics";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 
@@ -144,14 +144,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [showShareSheet, setShowShareSheet] = useState(false);
     const [createdAuctionId, setCreatedAuctionId] = useState<string | null>(null);
 
-    // Template Drawer state
-    const [showTemplateDrawer, setShowTemplateDrawer] = useState(false);
-    const [allTemplates, setAllTemplates] = useState<AuctionTemplate[]>([]);
-    const currentListingType = isInstantMode ? "instant" : "auction";
-    const filteredTemplates = allTemplates.filter(t => t.listing_type === currentListingType);
-    const recentTemplate = filteredTemplates[0] ?? null;
-    const templateCount = filteredTemplates.length;
-
     const { register, handleSubmit, setValue, watch, clearErrors, formState: { errors, isSubmitting } } = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -184,22 +176,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const currentStartPrice = watch("start_price") || 0;
 
     // 입찰 보호: 입찰이 있으면 경매 조건 수정 불가
-    const hasBids = initialData && initialData.bid_count > 0;
+    const hasBids = initialData && (initialData.bid_count > 0 || (initialData.chat_interest_count ?? 0) > 0);
     const isTermsEditable = !hasBids;
 
-    // 템플릿 로드 (신규 등록 시에만) — 개수 + 최근 사용 템플릿
-    useEffect(() => {
-        if (initialData || repostFrom) return;
-        fetch("/api/templates")
-            .then(res => res.ok ? res.json() : [])
-            .then(data => {
-                if (!Array.isArray(data)) return;
-                setAllTemplates(data);
-            })
-            .catch(() => {});
-    }, [initialData, repostFrom]);
-
-    // 템플릿/repostFrom 프리셋 적용 공유 함수
+    // repostFrom 프리셋 적용 공유 함수
     const applyPreset = (source: Partial<{
         club_id: string;
         listing_type: string;
@@ -222,12 +202,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             setAuctionMode("advance");
             setValue("listing_type", "auction");
         }
-    };
-
-    const handleTemplateApply = (template: AuctionTemplate) => {
-        applyPreset(template);
-        navigator.vibrate?.(50);
-        toast.success(`${template.name} 설정 적용됨`);
     };
 
     // 플로어맵 즉시 업로드
@@ -537,44 +511,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     return (
         <div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-12">
-            {/* 템플릿 버튼 (신규 등록 + 재등록이 아닐 때만) */}
-            {!initialData && !repostFrom && (
-                recentTemplate ? (
-                    <div className="space-y-1.5">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                handleTemplateApply(recentTemplate);
-                            }}
-                            className="w-full flex items-center gap-3 py-3 px-4 rounded-xl bg-neutral-800/50 border border-neutral-700/50 hover:border-green-500/30 transition-colors"
-                        >
-                            <Bookmark className="w-4 h-4 text-green-500 shrink-0" />
-                            <span className="text-xs shrink-0">{recentTemplate.listing_type === "instant" ? "🔥" : "📅"}</span>
-                            <span className="text-sm font-bold text-white truncate">{recentTemplate.name}</span>
-                            <span className="ml-auto text-xs font-bold text-green-500 bg-green-500/10 px-2.5 py-1 rounded-full shrink-0">적용</span>
-                        </button>
-                        {templateCount > 1 && (
-                            <button
-                                type="button"
-                                onClick={() => setShowTemplateDrawer(true)}
-                                className="w-full text-center text-[11px] text-neutral-500 hover:text-white transition-colors py-1"
-                            >
-                                다른 템플릿 보기 ({templateCount - 1})
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <button
-                        type="button"
-                        onClick={() => setShowTemplateDrawer(true)}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-neutral-800/50 border border-neutral-700/50 text-neutral-400 hover:text-white transition-colors"
-                    >
-                        <Bookmark className="w-4 h-4" />
-                        <span className="text-sm font-bold">내 템플릿 만들기</span>
-                    </button>
-                )
-            )}
-
             {/* Top Toggle: Today vs Advance */}
             <div className="flex bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800">
                 <button
@@ -661,12 +597,12 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             </div>
                             <p className="flex-1 min-w-0 text-[11px] text-neutral-500 truncate">
                                 {thumbnailPreview
-                                    ? "커스텀 이미지 적용 중"
+                                    ? "대표이미지 · 커스텀 적용 중"
                                     : selectedClub.thumbnail_url
-                                        ? "대표 이미지 적용"
+                                        ? "대표이미지 · 클럽 기본"
                                         : getDrinkCategoryImage(selectedIncludes)
-                                            ? "주류 기본 이미지"
-                                            : "이미지 미설정"
+                                            ? "대표이미지 · 주류 기본"
+                                            : "대표이미지 · 미설정"
                                 }
                             </p>
                             {thumbnailPreview && thumbnailFile ? (
@@ -701,13 +637,13 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     htmlFor="thumbnail-upload"
                                     className="text-[11px] text-neutral-500 font-medium px-2.5 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 cursor-pointer transition-colors shrink-0"
                                 >
-                                    변경
+                                    {selectedClub.thumbnail_url || getDrinkCategoryImage(selectedIncludes) ? "변경" : "등록"}
                                 </label>
                             )}
                         </div>
                     )}
                 </div>
-                <p className="text-neutral-600 text-[11px] mt-1">카카오톡 공유 시 이미지로 사용됩니다. 가로형 사진을 권장해요.</p>
+                <p className="text-neutral-600 text-[11px] mt-1">경매 카드 및 공유 링크에 표시됩니다. 가로형 사진을 권장해요.</p>
                 {errors.club_id && <p className="text-red-500 text-xs">{errors.club_id?.message?.toString()}</p>}
             </section>
 
@@ -1242,13 +1178,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 tableInfo={watch("table_info")}
                 eventDate={watch("event_date")}
                 startPrice={watch("start_price")}
-                formValues={{
-                    club_id: watch("club_id"),
-                    includes: watch("includes"),
-                    start_price: watch("start_price"),
-                    duration_minutes: watch("duration_minutes"),
-                }}
-                clubName2={selectedClub?.name}
                 onContinue={() => {
                     setCreatedAuctionId(null);
                     setShowShareSheet(false);
@@ -1261,13 +1190,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             />
         )}
 
-        {/* 템플릿 Drawer */}
-        <TemplateDrawer
-            isOpen={showTemplateDrawer}
-            onOpenChange={setShowTemplateDrawer}
-            onApply={handleTemplateApply}
-            currentListingType={currentListingType}
-        />
         </div>
     );
 }

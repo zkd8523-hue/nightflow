@@ -70,23 +70,19 @@ export async function DELETE(
       );
     }
 
-    // 입찰 보호: 5분 유예 기간 체크
-    const minutesSinceCreated = (Date.now() - new Date(auction.created_at).getTime()) / (1000 * 60);
-    const isGracePeriod = minutesSinceCreated < 5;
-    const hasBids = auction.bid_count > 0;
-
-    if (hasBids && !isGracePeriod) {
+    // 입찰 보호: 진행/예정 중인 경매는 입찰이 있으면 삭제 불가
+    const endedStatuses = ["won", "unsold", "contacted", "confirmed", "cancelled"];
+    const isEnded = endedStatuses.includes(auction.status);
+    if (!isEnded && auction.bid_count > 0) {
       return NextResponse.json(
-        {
-          error: `입찰이 ${auction.bid_count}회 있어 삭제할 수 없습니다.\n\n생성 후 5분 내에만 입찰이 있어도 삭제 가능합니다.\n문제가 있다면 Admin에게 문의해주세요.`
-        },
+        { error: "입찰이 있는 진행 중 경매는 삭제할 수 없습니다." },
         { status: 400 }
       );
     }
 
     // 3. 연관 데이터 삭제 (FK 제약조건)
     await supabaseAdmin.from("bids").delete().eq("auction_id", id);
-    await supabaseAdmin.from("transactions").delete().eq("auction_id", id);
+    await supabaseAdmin.from("chat_interests").delete().eq("auction_id", id);
 
     // 4. 경매 삭제
     const { error: deleteError } = await supabaseAdmin

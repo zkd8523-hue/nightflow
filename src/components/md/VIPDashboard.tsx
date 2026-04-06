@@ -99,7 +99,7 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
     );
 
     const filteredBidders = trustScores.filter(s =>
-        !searchQuery || s.bidder_name?.includes(searchQuery)
+        !searchQuery || s.name?.includes(searchQuery)
     );
 
     return (
@@ -180,7 +180,7 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                         </div>
                     ) : (
                         filteredBidders.map((score, idx) => (
-                            <Card key={score.bidder_id} className="bg-[#1C1C1E] border-neutral-800/50 p-4">
+                            <Card key={score.id} className="bg-[#1C1C1E] border-neutral-800/50 p-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-black text-neutral-400">
@@ -188,7 +188,7 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <p className="text-white font-bold text-sm">{score.bidder_name}</p>
+                                                <p className="text-white font-bold text-sm">{score.name}</p>
                                                 <Badge className={`text-[10px] px-1.5 py-0 border ${getTrustLevelColor(score.trust_level)}`}>
                                                     {getTrustLevelLabel(score.trust_level)}
                                                 </Badge>
@@ -198,10 +198,10 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                                                     입찰 {score.total_bids}회
                                                 </span>
                                                 <span className="text-[11px] text-green-500">
-                                                    낙찰 {score.won_auctions}건
+                                                    낙찰 {score.won_bids}건
                                                 </span>
                                                 <span className="text-[11px] text-neutral-500">
-                                                    결제율 {Math.round(score.payment_rate * 100)}%
+                                                    방문완료 {score.confirmed_visits}회
                                                 </span>
                                             </div>
                                         </div>
@@ -209,14 +209,14 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() => handleAddVip(score.bidder_id, score.bidder_name)}
-                                        disabled={vipUserIds.has(score.bidder_id)}
-                                        className={vipUserIds.has(score.bidder_id)
+                                        onClick={() => handleAddVip(score.id, score.name)}
+                                        disabled={vipUserIds.has(score.id)}
+                                        className={vipUserIds.has(score.id)
                                             ? "text-amber-500"
                                             : "text-neutral-500 hover:text-amber-500 hover:bg-amber-500/10"
                                         }
                                     >
-                                        <Star className={`w-4 h-4 ${vipUserIds.has(score.bidder_id) ? "fill-amber-500" : ""}`} />
+                                        <Star className={`w-4 h-4 ${vipUserIds.has(score.id) ? "fill-amber-500" : ""}`} />
                                     </Button>
                                 </div>
                             </Card>

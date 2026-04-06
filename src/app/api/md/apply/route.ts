@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
       name, phone, area, instagram, kakao_open_chat_url, business_card_url,
       club_name, club_address, club_address_detail, club_postal_code,
       club_latitude, club_longitude, club_phone, club_thumbnail_url,
-      bank_name, bank_account,
       floor_plan_url,
     } = body;
 
@@ -187,8 +186,6 @@ export async function POST(request: NextRequest) {
         instagram: cleanInstagram,
         ...(cleanKakaoUrl ? { kakao_open_chat_url: cleanKakaoUrl } : {}),
         verification_club_name: club_name,
-        ...(bank_name ? { bank_name } : {}),
-        ...(bank_account ? { bank_account } : {}),
         md_unique_slug: generatedSlug,
         md_status: "approved",
         role: "md",

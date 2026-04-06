@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MyBidCard, type BidWithAuction } from "./MyBidCard";
+import { ChatInterestCard, type ChatInterestWithAuction } from "./ChatInterestCard";
 import { MyBidCardContact } from "./MyBidCardContact";
 import { ReportMDButton } from "./ReportMDButton";
 import { useMyBidsRealtime, type AuctionUpdate } from "@/hooks/useMyBidsRealtime";
@@ -27,6 +28,7 @@ import {
   Star,
   Phone,
   PartyPopper,
+  MessageCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -55,9 +57,12 @@ export interface WonAuctionData {
   [key: string]: unknown;
 }
 
+export type { ChatInterestWithAuction };
+
 interface MyBidsClientProps {
   initialBids: BidWithAuction[];
   initialWonAuctions?: WonAuctionData[];
+  initialChatInterests?: ChatInterestWithAuction[];
   reportedAuctionIds?: string[];
   userId: string;
   initialTab?: string;
@@ -124,6 +129,7 @@ function getWonStatusConfig(status: string, isInstant = false) {
 export function MyBidsClient({
   initialBids,
   initialWonAuctions = [],
+  initialChatInterests = [],
   reportedAuctionIds = [],
   userId,
   initialTab,
@@ -131,6 +137,8 @@ export function MyBidsClient({
   const [bids, setBids] = useState<BidWithAuction[]>(initialBids);
   const [wonAuctions, setWonAuctions] =
     useState<WonAuctionData[]>(initialWonAuctions);
+  const [chatInterests, setChatInterests] =
+    useState<ChatInterestWithAuction[]>(initialChatInterests);
   const [dismissedIds, setDismissedIds] =
     useState<Set<string>>(loadDismissedIds);
   const reportedSet = useMemo(
@@ -138,7 +146,7 @@ export function MyBidsClient({
     [reportedAuctionIds]
   );
 
-  const defaultTab = initialTab === "won" ? "won" : initialTab === "ended" ? "ended" : "active";
+  const defaultTab = initialTab === "chat" ? "chat" : initialTab === "ended" ? "ended" : "active";
 
   const fetchBids = useCallback(async () => {
     const supabase = createClient();
@@ -233,17 +241,33 @@ export function MyBidsClient({
     setWonAuctions(sorted);
   }, []);
 
+  const fetchChatInterests = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("chat_interests")
+      .select(`*, auction:auctions (*, club:clubs (*))`)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (data) setChatInterests(data as ChatInterestWithAuction[]);
+  }, []);
+
   useEffect(() => {
     fetchBids();
     fetchWonAuctions();
+    fetchChatInterests();
 
     const handleFocus = () => {
       fetchBids();
       fetchWonAuctions();
+      fetchChatInterests();
     };
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
-  }, [fetchBids, fetchWonAuctions]);
+  }, [fetchBids, fetchWonAuctions, fetchChatInterests]);
 
   // active 경매 ID 추출 (만료됐지만 아직 close 안된 경매도 포함 → 상태 변경 폴링)
   const activeAuctionIds = useMemo(
@@ -374,7 +398,25 @@ export function MyBidsClient({
     [wonAuctions]
   );
 
-  // 삭제된 항목 + 낙찰 경매 필터링 (낙찰탭에 이미 표시되므로 종료탭에서 제외)
+  // 대화중 탭: chat_interests 분류
+  const { activeInterests, endedInterests } = useMemo(() => {
+    const active: ChatInterestWithAuction[] = [];
+    const ended: ChatInterestWithAuction[] = [];
+
+    for (const interest of chatInterests) {
+      if (wonAuctionIds.has(interest.auction_id)) continue;
+      if (dismissedIds.has(interest.auction_id)) continue;
+      const auctionIsActive = interest.auction.status === "active" && isAuctionActive(interest.auction);
+      if (auctionIsActive) {
+        active.push(interest);
+      } else {
+        ended.push(interest);
+      }
+    }
+    return { activeInterests: active, endedInterests: ended };
+  }, [chatInterests, wonAuctionIds, dismissedIds]);
+
+  // 삭제된 항목 + 낙찰 경매 필터링 (낙찰/종료탭에 이미 표시되므로 제외)
   const visibleEndedBids = useMemo(
     () => endedBids.filter(
       (b) => !dismissedIds.has(b.auction_id) && !wonAuctionIds.has(b.auction_id)
@@ -417,42 +459,55 @@ export function MyBidsClient({
             내 활동
           </h1>
           <p className="text-neutral-500 font-medium">
-            입찰, 구매, 종료된 내역을 한곳에서 확인하세요.
+            입찰, 예약, 구매, 종료된 내역을 한곳에서 확인하세요.
           </p>
         </header>
 
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="w-full bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800">
             <TabsTrigger
+              value="chat"
+              className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
+            >
+              대화중{activeInterests.length > 0 && ` (${activeInterests.length})`}
+            </TabsTrigger>
+            <TabsTrigger
               value="active"
               className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
             >
-              진행 중{activeBids.length > 0 && ` (${activeBids.length})`}
+              입찰중{activeBids.length > 0 && ` (${activeBids.length})`}
             </TabsTrigger>
             <TabsTrigger
-              value="won"
+              value="ended"
               className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500 relative"
             >
               <span className={hasUrgentWon ? "text-amber-500 data-[state=active]:text-black" : ""}>
-                낙찰/구매
-                {activeWonAuctions.length > 0 &&
-                  ` (${activeWonAuctions.length})`}
+                낙찰/종료
               </span>
               {hasUrgentWon && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
               )}
             </TabsTrigger>
-            <TabsTrigger
-              value="ended"
-              className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
-            >
-              종료
-              {(visibleEndedBids.length + completedWonAuctions.length) > 0 &&
-                ` (${visibleEndedBids.length + completedWonAuctions.length})`}
-            </TabsTrigger>
           </TabsList>
 
-          {/* 진행 중 탭 */}
+          {/* 대화중 탭 */}
+          <TabsContent value="chat" className="mt-4">
+            <div className="space-y-4">
+              {activeInterests.length > 0 ? (
+                activeInterests.map((interest) => (
+                  <ChatInterestCard
+                    key={interest.id}
+                    interest={interest}
+                    isEnded={false}
+                  />
+                ))
+              ) : (
+                <EmptyChat />
+              )}
+            </div>
+          </TabsContent>
+
+          {/* 입찰중 탭 */}
           <TabsContent value="active" className="mt-4">
             <div className="space-y-4">
               {activeBids.length > 0 ? (
@@ -470,32 +525,32 @@ export function MyBidsClient({
             </div>
           </TabsContent>
 
-          {/* 낙찰 탭 */}
-          <TabsContent value="won" className="mt-4">
-            <div className="space-y-4">
-              {activeWonAuctions.length > 0 ? (
-                activeWonAuctions.map((auction) => (
-                  <WonAuctionCard
-                    key={auction.id}
-                    auction={auction}
-                    reportedSet={reportedSet}
-                  />
-                ))
-              ) : (
-                <EmptyWon />
-              )}
-            </div>
-          </TabsContent>
-
-          {/* 종료 탭 */}
+          {/* 낙찰/종료 탭 */}
           <TabsContent value="ended" className="mt-4">
             <div className="space-y-4">
+              {/* 긴급: 액션 필요한 낙찰 (won, contacted) */}
+              {activeWonAuctions.map((auction) => (
+                <WonAuctionCard
+                  key={`urgent-${auction.id}`}
+                  auction={auction}
+                  reportedSet={reportedSet}
+                />
+              ))}
               {/* 완료된 낙찰 (confirmed, expired, cancelled) */}
               {completedWonAuctions.map((auction) => (
                 <WonAuctionCard
                   key={`won-${auction.id}`}
                   auction={auction}
                   reportedSet={reportedSet}
+                />
+              ))}
+              {/* 종료된 대화 (오늘특가) */}
+              {endedInterests.map((interest) => (
+                <ChatInterestCard
+                  key={`interest-${interest.id}`}
+                  interest={interest}
+                  isEnded={true}
+                  onDismiss={handleDismiss}
                 />
               ))}
               {/* 일반 종료 입찰 */}
@@ -508,7 +563,9 @@ export function MyBidsClient({
                   onDismiss={handleDismiss}
                 />
               ))}
-              {completedWonAuctions.length === 0 &&
+              {activeWonAuctions.length === 0 &&
+                completedWonAuctions.length === 0 &&
+                endedInterests.length === 0 &&
                 visibleEndedBids.length === 0 && <EmptyEnded />}
             </div>
           </TabsContent>
@@ -660,6 +717,27 @@ function WonAuctionCard({
   );
 }
 
+function EmptyChat() {
+  return (
+    <div className="py-24 text-center space-y-4">
+      <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto">
+        <MessageCircle className="w-8 h-8 text-neutral-700" />
+      </div>
+      <p className="text-neutral-500 font-medium">
+        대화중인 내역이 없습니다.
+      </p>
+      <Link href="/">
+        <Button
+          variant="link"
+          className="text-neutral-400 font-bold underline"
+        >
+          오늘특가 보러가기
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
 function EmptyActive() {
   return (
     <div className="py-24 text-center space-y-4">
@@ -667,28 +745,7 @@ function EmptyActive() {
         <Gavel className="w-8 h-8 text-neutral-700" />
       </div>
       <p className="text-neutral-500 font-medium">
-        진행 중인 내역이 없습니다.
-      </p>
-      <Link href="/">
-        <Button
-          variant="link"
-          className="text-neutral-400 font-bold underline"
-        >
-          지금 진행 중인 테이블 보러가기
-        </Button>
-      </Link>
-    </div>
-  );
-}
-
-function EmptyWon() {
-  return (
-    <div className="py-24 text-center space-y-4">
-      <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto">
-        <Trophy className="w-8 h-8 text-neutral-700" />
-      </div>
-      <p className="text-neutral-500 font-medium">
-        아직 확정된 내역이 없습니다.
+        입찰중인 내역이 없습니다.
       </p>
       <Link href="/">
         <Button
@@ -709,7 +766,7 @@ function EmptyEnded() {
         <Clock className="w-8 h-8 text-neutral-700" />
       </div>
       <p className="text-neutral-500 font-medium">
-        종료된 내역이 없습니다.
+        낙찰/종료된 내역이 없습니다.
       </p>
     </div>
   );

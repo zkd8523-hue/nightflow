@@ -252,7 +252,7 @@ export function NotifySubscribeButton({ auctionId, compact = false }: NotifySubs
                 className="mt-1 w-5 h-5 rounded border-neutral-700 bg-neutral-900 accent-neutral-400"
               />
               <span className="text-sm text-neutral-400 leading-relaxed">
-                카카오 알림톡 수신에 동의합니다. 경매 시작, 낙찰, 결제 등
+                카카오 알림톡 수신에 동의합니다. 경매 시작, 낙찰 등
                 거래 관련 알림이 발송됩니다.
               </span>
             </label>

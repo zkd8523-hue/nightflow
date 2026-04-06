@@ -243,22 +243,6 @@ export interface Auction {
   md?: User;
 }
 
-export interface AuctionTemplate {
-  id: string;
-  listing_type: ListingType;
-  md_id: string;
-  name: string;
-  club_id: string | null;
-  table_info: string | null;
-  start_price: number | null;
-  buy_now_price: number | null;
-  includes: string[];
-  duration_minutes: number;
-  last_used_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
 export interface MDVipUser {
   id: string;
   md_id: string;
@@ -395,6 +379,14 @@ export interface UserFavoriteClub {
   club_id: string;
   created_at: string;
   club?: Club;
+}
+
+export interface UserFavoriteMd {
+  id: string;
+  user_id: string;
+  md_id: string;
+  created_at: string;
+  md?: Pick<User, "id" | "name" | "profile_image" | "md_unique_slug">;
 }
 
 export interface ChatInterest {

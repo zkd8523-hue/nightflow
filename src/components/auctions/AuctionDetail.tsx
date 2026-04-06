@@ -27,7 +27,8 @@ import { ContactButton } from "./ContactButton";
 import { getVisibleContactMethods } from "@/lib/utils/contact-methods";
 import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
-import { Calendar, ShieldCheck, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Share2, X } from "lucide-react";
+import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
+import { Calendar, ShieldCheck, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Share2, X, Phone } from "lucide-react";
 import { DrinkPlaceholder, getAuctionImageUrl } from "@/components/auctions/DrinkPlaceholder";
 import { ShareAuctionSheet } from "./ShareAuctionSheet";
 import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
@@ -485,34 +486,41 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                       );
                     })()}
                   </div>
-                  {md?.instagram && (
-                    <a
-                      href={`https://instagram.com/${md.instagram}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-[12px] text-neutral-400 font-bold hover:text-white transition-colors mt-0.5"
-                    >
-                      <Instagram className="w-3 h-3" />
-                      @{md.instagram}
-                    </a>
-                  )}
+                  <div className="flex flex-wrap items-center gap-3 mt-1">
+                    {md?.instagram && (
+                      <a
+                        href={`https://instagram.com/${md.instagram}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[12px] text-neutral-400 font-bold hover:text-white transition-colors"
+                      >
+                        <Instagram className="w-3.5 h-3.5" />
+                        @{md.instagram}
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
-              {md?.instagram ? (
-                <a
-                  href={`https://instagram.com/${md.instagram}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+              <div className="flex items-center gap-2">
+                {!isMdOwner && md && (
+                  <MdFavoriteButton mdId={md.id} />
+                )}
+                {md?.instagram ? (
+                  <a
+                    href={`https://instagram.com/${md.instagram}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button size="icon" variant="ghost" className="rounded-full text-neutral-500 hover:text-white hover:bg-neutral-800">
+                      <Instagram className="w-5 h-5" />
+                    </Button>
+                  </a>
+                ) : (
                   <Button size="icon" variant="ghost" className="rounded-full text-neutral-500 hover:text-white hover:bg-neutral-800">
-                    <Instagram className="w-5 h-5" />
+                    <MessageSquare className="w-5 h-5" />
                   </Button>
-                </a>
-              ) : (
-                <Button size="icon" variant="ghost" className="rounded-full text-neutral-500 hover:text-white hover:bg-neutral-800">
-                  <MessageSquare className="w-5 h-5" />
-                </Button>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </Card>

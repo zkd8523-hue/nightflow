@@ -111,29 +111,8 @@ serve(async (req: Request) => {
                         result: resultData?.result,
                     });
 
-                    // 낙찰 시 처리
+                    // 낙찰 시 알림톡 발송
                     if (resultData?.result === "won") {
-                        // 낙찰자 보증금 held 전환
-                        try {
-                            const { data: wonAuction } = await supabase
-                                .from("auctions")
-                                .select("winner_id, deposit_required")
-                                .eq("id", auction.id)
-                                .single();
-
-                            if (wonAuction?.deposit_required && wonAuction.winner_id) {
-                                await supabase
-                                    .from("deposits")
-                                    .update({ status: "held", held_at: new Date().toISOString() })
-                                    .eq("auction_id", auction.id)
-                                    .eq("user_id", wonAuction.winner_id)
-                                    .eq("status", "paid");
-                                console.log(`💰 낙찰자 보증금 held: ${auction.id}`);
-                            }
-                        } catch (depositErr) {
-                            console.error(`⚠️ 보증금 held 처리 실패 (${auction.id}):`, depositErr);
-                        }
-
                         // 알림톡 발송
                         try {
                             await sendWonNotification(supabase, auction.id);

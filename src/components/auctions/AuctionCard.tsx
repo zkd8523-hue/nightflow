@@ -206,8 +206,9 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                   {formatNumber(currentPrice)}원
                 </span>
                 {!isInstant && auction.buy_now_price && auction.buy_now_price > 0 && !isWon && (
-                  <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20 whitespace-nowrap">
-                    즉낙
+                  <span className="text-amber-400 text-[10px] font-bold whitespace-nowrap flex items-center gap-0.5">
+                    <Zap className="w-3 h-3 fill-amber-400" />
+                    {formatNumber(auction.buy_now_price)}원 즉낙
                   </span>
                 )}
               </div>

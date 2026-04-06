@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowRight, Building2, Smartphone, MapPin, ChevronDown, Map, Banknote, MessageCircle } from "lucide-react";
-import type { User } from "@/types/database";
+import { ArrowRight, Building2, Smartphone, MapPin, ChevronDown, Map, MessageCircle, Instagram, Phone } from "lucide-react";
+import type { User, ContactMethodType } from "@/types/database";
 import dynamic from "next/dynamic";
 
 const AddressSearchModal = dynamic(() => import("./AddressSearchModal").then(m => ({ default: m.AddressSearchModal })), { ssr: false });
@@ -37,8 +37,6 @@ const formSchema = z.object({
     club_postal_code: z.string().optional().default(""),
     club_latitude: z.number({ error: "주소 검색으로 위치를 설정해주세요" }),
     club_longitude: z.number({ error: "주소 검색으로 위치를 설정해주세요" }),
-    bank_name: z.string().min(1, "정산 은행을 선택해주세요"),
-    bank_account: z.string().min(5, "계좌번호를 입력해주세요"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -47,6 +45,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+    const [preferredMethods, setPreferredMethods] = useState<ContactMethodType[]>([]);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema) as any,
@@ -62,8 +61,6 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
             club_postal_code: "",
             club_latitude: null,
             club_longitude: null,
-            bank_name: initialUser.bank_name || "",
-            bank_account: initialUser.bank_account || "",
         },
     });
 
@@ -77,7 +74,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
             const res = await fetch("/api/md/apply", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
+                body: JSON.stringify({ ...values, preferred_contact_methods: preferredMethods }),
             });
             const result = await res.json();
             if (!res.ok) {
@@ -179,10 +176,48 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                 placeholder="https://open.kakao.com/o/..."
                                 className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
                             />
-                            <p className="text-neutral-600 text-[10px]">낙찰자에게 추가 연락 수단으로 표시됩니다</p>
+                            <p className="text-neutral-600 text-[10px]">구매자에게 추가 연락 수단으로 표시됩니다</p>
                             {form.formState.errors.kakao_open_chat_url && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.kakao_open_chat_url?.message?.toString()}</p>
                             )}
+                        </div>
+
+                        {/* 연락 수단 선택 */}
+                        <div className="space-y-3">
+                            <Label className="text-neutral-500 text-xs font-bold uppercase">구매자에게 표시할 연락 수단</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {([
+                                    { value: "dm" as ContactMethodType, label: "인스타 DM", icon: Instagram },
+                                    { value: "kakao" as ContactMethodType, label: "오픈채팅", icon: MessageCircle },
+                                    { value: "phone" as ContactMethodType, label: "전화", icon: Phone },
+                                ]).map(({ value, label, icon: Icon }) => {
+                                    const isSelected = preferredMethods.includes(value);
+                                    const isDisabled = value === "kakao" && !form.watch("kakao_open_chat_url");
+                                    return (
+                                        <button
+                                            key={value}
+                                            type="button"
+                                            disabled={isDisabled}
+                                            onClick={() => setPreferredMethods(prev =>
+                                                isSelected ? prev.filter(m => m !== value) : [...prev, value]
+                                            )}
+                                            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all ${
+                                                isDisabled
+                                                    ? "bg-neutral-900 text-neutral-700 cursor-not-allowed"
+                                                    : isSelected
+                                                        ? "bg-white text-black"
+                                                        : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                                            }`}
+                                        >
+                                            <Icon className="w-3.5 h-3.5" />
+                                            {label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <p className="text-neutral-600 text-[10px]">
+                                {preferredMethods.length === 0 ? "미선택 시 모든 연락 수단이 표시됩니다" : "선택한 수단만 구매자에게 표시됩니다"}
+                            </p>
                         </div>
 
                     </div>
@@ -303,53 +338,6 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                         </div>
                     </div>
 
-                    {/* 4. 정산 계좌 */}
-                    <div className="space-y-4">
-                        <h3 className="text-white font-bold flex items-center gap-2">
-                            <Banknote className="w-4 h-4 text-neutral-500" />
-                            정산 계좌
-                        </h3>
-                        <p className="text-neutral-600 text-[10px]">보증금 정산 시 사용됩니다. 본인 명의 계좌만 등록 가능합니다.</p>
-
-                        <div className="space-y-2">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">은행 *</Label>
-                            <div className="relative">
-                                <select
-                                    {...form.register("bank_name")}
-                                    className="w-full h-12 bg-neutral-900 border border-neutral-800 text-white rounded-md px-3 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-white"
-                                >
-                                    <option value="">선택하세요</option>
-                                    <option value="KB국민은행">KB국민은행</option>
-                                    <option value="신한은행">신한은행</option>
-                                    <option value="우리은행">우리은행</option>
-                                    <option value="하나은행">하나은행</option>
-                                    <option value="NH농협은행">NH농협은행</option>
-                                    <option value="IBK기업은행">IBK기업은행</option>
-                                    <option value="SC제일은행">SC제일은행</option>
-                                    <option value="카카오뱅크">카카오뱅크</option>
-                                    <option value="토스뱅크">토스뱅크</option>
-                                    <option value="케이뱅크">케이뱅크</option>
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
-                            </div>
-                            {form.formState.errors.bank_name && (
-                                <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.bank_name?.message?.toString()}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">계좌번호 *</Label>
-                            <Input
-                                {...form.register("bank_account")}
-                                inputMode="numeric"
-                                placeholder="'-' 없이 숫자만 입력"
-                                className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
-                            />
-                            {form.formState.errors.bank_account && (
-                                <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.bank_account?.message?.toString()}</p>
-                            )}
-                        </div>
-                    </div>
                 </div>
             </form>
 

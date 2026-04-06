@@ -116,7 +116,6 @@ export default function PrivacyPage() {
 
                             <p className="text-white font-bold mt-4">② 법령에 따른 보관 (전자상거래법)</p>
                             <p className="pl-4">- <span className="text-amber-500 font-bold">계약 또는 청약철회 기록:</span> 5년</p>
-                            <p className="pl-4">- <span className="text-amber-500 font-bold">대금결제 및 재화 공급 기록:</span> 5년</p>
                             <p className="pl-4">- <span className="text-amber-500 font-bold">소비자 불만 또는 분쟁 처리 기록:</span> 3년</p>
                             <p className="pl-4">- <span className="text-amber-500 font-bold">표시·광고 기록:</span> 6개월</p>
 

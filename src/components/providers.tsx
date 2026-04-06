@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect } from "react";
 import { useWinNotification } from "@/hooks/useWinNotification";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useFavoriteClubs } from "@/hooks/useFavoriteClubs";
+import { useFavoriteMds } from "@/hooks/useFavoriteMds";
 import { initAnalytics, identifyUser } from "@/lib/analytics";
 import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
 
@@ -32,7 +33,7 @@ function MixpanelInit() {
   return null;
 }
 
-// 찜 기능 Context — 앱 전체에서 한 번만 API 호출
+// 클럽 찜 Context — 앱 전체에서 한 번만 API 호출
 type FavoritesContextType = ReturnType<typeof useFavoriteClubs>;
 
 const FavoritesContext = createContext<FavoritesContextType | null>(null);
@@ -40,7 +41,6 @@ const FavoritesContext = createContext<FavoritesContextType | null>(null);
 export function useFavoritesContext() {
   const ctx = useContext(FavoritesContext);
   if (!ctx) {
-    // Context 외부에서 호출 시 빈 상태 반환 (fallback)
     return {
       favorites: [],
       isLoading: false,
@@ -51,13 +51,34 @@ export function useFavoritesContext() {
   return ctx;
 }
 
+// MD 찜 Context — 앱 전체에서 한 번만 API 호출
+type MdFavoritesContextType = ReturnType<typeof useFavoriteMds>;
+
+const MdFavoritesContext = createContext<MdFavoritesContextType | null>(null);
+
+export function useMdFavoritesContext() {
+  const ctx = useContext(MdFavoritesContext);
+  if (!ctx) {
+    return {
+      favoriteMds: [],
+      isLoading: false,
+      isFavoritedMd: () => false,
+      toggleFavoriteMd: async () => {},
+    } as MdFavoritesContextType;
+  }
+  return ctx;
+}
+
 function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useCurrentUser();
   const favoritesValue = useFavoriteClubs(user?.id);
+  const mdFavoritesValue = useFavoriteMds(user?.id);
 
   return (
     <FavoritesContext.Provider value={favoritesValue}>
-      {children}
+      <MdFavoritesContext.Provider value={mdFavoritesValue}>
+        {children}
+      </MdFavoritesContext.Provider>
     </FavoritesContext.Provider>
   );
 }

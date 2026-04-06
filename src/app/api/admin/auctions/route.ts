@@ -78,13 +78,6 @@ export async function PATCH(req: Request) {
       .eq("auction_id", auctionId)
       .in("status", ["active", "outbid"]);
 
-    // 3. 대기 중 거래 만료 처리 (엣지 케이스)
-    await admin
-      .from("transactions")
-      .update({ payment_status: "expired" })
-      .eq("auction_id", auctionId)
-      .eq("payment_status", "pending");
-
     logger.log(
       `[Admin] Auction ${auctionId} ("${auction.title}") force-cancelled by ${result.user!.id}. Reason: ${reason.trim()}`
     );

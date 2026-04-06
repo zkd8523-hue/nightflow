@@ -141,11 +141,11 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
 
       const { error } = initialData
         ? await supabase.from("clubs").update(clubData).eq("id", initialData.id)
-        : await supabase.from("clubs").insert({ ...clubData, status: "pending" });
+        : await supabase.from("clubs").insert({ ...clubData, status: "approved" });
 
       if (error) throw error;
 
-      toast.success(initialData ? "클럽 정보가 수정되었습니다!" : "클럽 신청이 완료되었습니다! 관리자 승인 후 사용 가능합니다.");
+      toast.success(initialData ? "클럽 정보가 수정되었습니다!" : "클럽이 등록되었습니다!");
       router.push("/md/clubs");
       router.refresh();
     } catch (error: unknown) {
@@ -244,7 +244,7 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
               placeholder="예: 02-1234-5678"
               className="bg-[#1C1C1E] border-neutral-800 h-12 text-white placeholder-neutral-600 rounded-xl"
             />
-            <p className="text-neutral-600 text-[11px]">클럽 확인용 연락처입니다.</p>
+            <p className="text-neutral-600 text-[11px]">클럽 대표 연락처입니다.</p>
           </div>
         </section>
 

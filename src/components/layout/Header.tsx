@@ -80,7 +80,7 @@ function timeAgo(dateStr: string): string {
   return `${days}일 전`;
 }
 
-export function Header() {
+export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = {}) {
   const { user, isLoading } = useCurrentUser();
   const {
     notifications,
@@ -163,7 +163,7 @@ export function Header() {
         ) : user ? (
           <>
             <div className="flex items-center gap-1">
-              {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
+              {!hideDashboardLink && ((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
                 <Link
                   href="/md/dashboard"
                   className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
@@ -302,7 +302,7 @@ export function Header() {
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
                       <Gavel className="w-5 h-5 text-neutral-500" />
-                      <span className="text-[15px] font-bold">내 경매</span>
+                      <span className="text-[15px] font-bold">내 활동</span>
                     </Link>
 
                     <Link
@@ -320,19 +320,8 @@ export function Header() {
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
                       <Heart className="w-5 h-5 text-red-500" />
-                      <span className="text-[15px] font-bold">찜한 클럽</span>
+                      <span className="text-[15px] font-bold">찜 목록</span>
                     </Link>
-
-                    {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
-                      <Link
-                        href="/md/dashboard"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                      >
-                        <LayoutDashboard className="w-5 h-5 text-blue-500" />
-                        <span className="text-[15px] font-bold">클럽 관리</span>
-                      </Link>
-                    )}
 
                     {user.role === "admin" && (
                       <Link
@@ -346,6 +335,17 @@ export function Header() {
                     )}
 
                     <div className="h-px bg-neutral-800/50 my-2" />
+
+                    {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
+                      <Link
+                        href="/md/dashboard"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                      >
+                        <LayoutDashboard className="w-5 h-5 text-blue-500" />
+                        <span className="text-[15px] font-bold">MD 대시보드</span>
+                      </Link>
+                    )}
 
                     <Link
                       href="/faq"

@@ -151,28 +151,6 @@ export function sortByLiquorFirst(includes: string[]): string[] {
   return [...liquor, ...extras];
 }
 
-/**
- * 템플릿 이름 자동 생성: "아레나 그레이구스 25만"
- * [클럽명] [대표주류 브랜드] [시작가 만원단위]
- */
-export function generateTemplateName(
-  clubName: string,
-  includes: string[],
-  startPrice: number,
-): string {
-  const { liquor } = categorizeLiquor(includes);
-  // 첫 번째 주류에서 브랜드명 추출 ("그레이구스 2병" → "그레이구스")
-  const brandName = liquor.length > 0
-    ? liquor[0].replace(/\s*\d+병$/, "").trim()
-    : null;
-
-  const priceLabel = startPrice >= 10000
-    ? `${Math.round(startPrice / 10000)}만`
-    : startPrice > 0 ? `${startPrice.toLocaleString()}원` : null;
-
-  return [clubName, brandName, priceLabel].filter(Boolean).join(" ");
-}
-
 /** 남은 시간 포맷: seconds → "00:14:30" or "3일 01:17:09" */
 export function formatCountdown(seconds: number): string {
   if (seconds <= 0) return "00:00:00";

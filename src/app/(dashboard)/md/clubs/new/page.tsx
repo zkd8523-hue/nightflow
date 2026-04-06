@@ -33,7 +33,7 @@ export default async function NewClubPage() {
             <span className="text-sm font-medium">뒤로</span>
           </Link>
           <h1 className="text-2xl font-black text-white tracking-tight">클럽 추가 등록</h1>
-          <p className="text-neutral-500 text-sm mt-1">클럽 정보를 입력해주세요. 관리자 승인 후 사용 가능합니다.</p>
+          <p className="text-neutral-500 text-sm mt-1">클럽 정보를 입력해주세요.</p>
         </div>
 
         {/* Form */}

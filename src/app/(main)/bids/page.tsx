@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MyBidsClient } from "@/components/auctions/MyBidsClient";
 import type { BidWithAuction } from "@/components/auctions/MyBidCard";
-import type { WonAuctionData } from "@/components/auctions/MyBidsClient";
+import type { WonAuctionData, ChatInterestWithAuction } from "@/components/auctions/MyBidsClient";
 import { logger } from "@/lib/utils/logger";
 
 export const dynamic = "force-dynamic";
@@ -95,6 +95,23 @@ export default async function MyBidsPage({ searchParams }: PageProps) {
     const allWonAuctions = Array.from(auctionMap.values())
         .sort((a, b) => new Date(b.won_at || b.updated_at).getTime() - new Date(a.won_at || a.updated_at).getTime());
 
+    // 3. 오늘특가 대화 내역 조회
+    const { data: chatInterests, error: interestError } = await supabase
+        .from("chat_interests")
+        .select(`
+            *,
+            auction:auctions (
+                *,
+                club:clubs (*)
+            )
+        `)
+        .eq("user_id", authUser.id)
+        .order("created_at", { ascending: false });
+
+    if (interestError) {
+        logger.error("Error fetching chat interests:", interestError);
+    }
+
     // MD 미응답 신고 이력
     const { data: existingReports } = await supabase
         .from("md_unresponsive_reports")
@@ -106,6 +123,7 @@ export default async function MyBidsPage({ searchParams }: PageProps) {
         <MyBidsClient
             initialBids={latestBidsByAuction as BidWithAuction[]}
             initialWonAuctions={allWonAuctions}
+            initialChatInterests={(chatInterests || []) as ChatInterestWithAuction[]}
             reportedAuctionIds={[...reportedAuctionIds]}
             userId={authUser.id}
             initialTab={params.tab}
