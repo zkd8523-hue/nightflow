@@ -107,12 +107,34 @@ export function useNotifications(userId: string | undefined) {
     fetchNotifications(false);
 
     // 2. 30초마다 폴링 (Polling)
-    const intervalId = setInterval(() => {
+    let intervalId: ReturnType<typeof setInterval> | null = setInterval(() => {
       fetchNotifications(true);
     }, 30000);
 
+    // 3. Page Visibility API: 비활성 탭에서 폴링 중지
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        // 탭 복귀 시 즉시 1회 조회 + 폴링 재시작
+        fetchNotifications(true);
+        if (!intervalId) {
+          intervalId = setInterval(() => {
+            fetchNotifications(true);
+          }, 30000);
+        }
+      } else {
+        // 비활성 탭: 폴링 중지
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
-      clearInterval(intervalId);
+      if (intervalId) clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
   }, [userId]);
 
