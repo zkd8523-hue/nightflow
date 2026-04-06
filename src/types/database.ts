@@ -227,6 +227,7 @@ export interface Auction {
 
   // Post-Auction Journey (Migration 051)
   confirmed_at: string | null;
+  d_day_checked_in: boolean | null; // 얼리버드 당일 방문 재확인 완료 여부
   cancel_type: CancellationType | null;
   cancel_reason: string | null;
   is_bin_win: boolean;

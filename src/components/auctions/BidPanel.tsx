@@ -19,7 +19,8 @@ import { useAuctionStore } from "@/stores/useAuctionStore";
 import type { Auction } from "@/types/database";
 import { formatPrice } from "@/lib/utils/format";
 import { getMinBidAmount, getBidPresets, isAuctionActive, isAuctionExpired, getRemainingSeconds } from "@/lib/utils/auction";
-import { Crown, ShieldCheck, Timer, AlertCircle, Zap } from "lucide-react";
+import { isEarlybird } from "@/lib/utils/date";
+import { Crown, ShieldCheck, Timer, AlertCircle, Zap, CalendarCheck } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
@@ -214,12 +215,12 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
   return (
     <>
       <Card className="p-3 space-y-2.5 bg-[#1C1C1E] border-neutral-800/50">
-        {/* 낙찰 시 연락 의무 안내 배너 */}
-        {isActive && (
+        {/* 얼리버드 경매: 방문 당일 재확인 안내 */}
+        {isActive && isEarlybird(auction) && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <CalendarCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <p className="text-[11px] text-amber-400/90 font-bold leading-snug">
-              낙찰 시 10분 내 MD 연락 필수 · 미연락 시 활동이 제한돼요
+              방문 당일 확인이 필요해요 · 미확인 시 자동 취소돼요
             </p>
           </div>
         )}
