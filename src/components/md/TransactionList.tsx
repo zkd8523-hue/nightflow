@@ -8,7 +8,7 @@ import { DateGroup } from "@/components/ui/DateGroup";
 import { ConfirmVisitButton } from "@/components/md/ConfirmVisitButton";
 import { ContactTimer } from "@/components/auctions/ContactTimer";
 import { formatEventDate, formatPrice } from "@/lib/utils/format";
-import { ChevronLeft, ChevronDown, Ticket, User, AlertCircle, Phone, CheckCircle2, UserCheck } from "lucide-react";
+import { ChevronLeft, ChevronDown, Ticket, User, AlertCircle, Phone, UserCheck } from "lucide-react";
 import Link from "next/link";
 
 export interface TransactionItem {
@@ -40,7 +40,6 @@ const HISTORY_SORT_OPTIONS: { key: HistorySortKey; label: string }[] = [
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; border: string; label: string; pulse?: boolean }> = {
     won: { bg: "bg-amber-500/10", text: "text-amber-500", border: "border-amber-500/20", label: "연락 대기", pulse: true },
-    contacted: { bg: "bg-blue-500/10", text: "text-blue-500", border: "border-blue-500/20", label: "연락 완료" },
     confirmed: { bg: "bg-green-500/10", text: "text-green-500", border: "border-green-500/20", label: "거래완료" },
     cancelled: { bg: "bg-neutral-500/10", text: "text-neutral-500", border: "border-neutral-700/30", label: "취소" },
     instant_active: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20", label: "대화중", pulse: true },
@@ -56,7 +55,7 @@ export function TransactionList({ items }: TransactionListProps) {
     const [showOlder, setShowOlder] = useState(false);
 
     const activeItems = useMemo(() => items.filter(i =>
-        ["won", "contacted"].includes(i.auctionStatus) ||
+        i.auctionStatus === "won" ||
         (i.listingType === "instant" && i.auctionStatus === "active" && (i.chatInterestCount || 0) > 0)
     ), [items]);
     const historyItems = useMemo(() => items.filter(i => ["confirmed", "cancelled"].includes(i.auctionStatus)), [items]);
@@ -266,7 +265,7 @@ function TransactionCard({ item }: { item: TransactionItem }) {
     const config = isInstantActive
         ? STATUS_CONFIG.instant_active
         : (STATUS_CONFIG[item.auctionStatus] || STATUS_CONFIG.cancelled);
-    const isActive = ["won", "contacted"].includes(item.auctionStatus) || isInstantActive;
+    const isActive = item.auctionStatus === "won" || isInstantActive;
 
     return (
         <Card className="bg-[#1C1C1E] border-neutral-800/50 overflow-hidden shadow-xl">
@@ -297,19 +296,17 @@ function TransactionCard({ item }: { item: TransactionItem }) {
                         <div className="flex items-center gap-1.5 text-neutral-300">
                             <User className="w-3 h-3 text-neutral-500" />
                             <span className="font-bold">{winner.name}</span>
-                            {["won", "contacted"].includes(item.auctionStatus) && <span className="text-neutral-500 text-[11px]">{winner.phone}</span>}
+                            {item.auctionStatus === "won" && <span className="text-neutral-500 text-[11px]">{winner.phone}</span>}
                         </div>
                     ) : null}
                 </div>
 
-                {/* 3-Step Flow Guide (경매 낙찰만) */}
-                {!isInstantActive && ["won", "contacted"].includes(item.auctionStatus) && (
+                {/* 2-Step Flow Guide (경매 낙찰만): 고객 연락 → 방문 확인 */}
+                {!isInstantActive && item.auctionStatus === "won" && (
                     <div className="flex items-center gap-1 bg-neutral-900/50 rounded-xl px-3 py-2 border border-neutral-800/50">
-                        <StepItem icon={<Phone className="w-3 h-3" />} label="고객 연락" active={item.auctionStatus === "won"} done={item.auctionStatus === "contacted"} />
-                        <div className={`flex-1 h-px ${item.auctionStatus === "contacted" ? "bg-green-500/40" : "bg-neutral-700"}`} />
-                        <StepItem icon={<CheckCircle2 className="w-3 h-3" />} label="연락 완료" active={false} done={item.auctionStatus === "contacted"} />
+                        <StepItem icon={<Phone className="w-3 h-3" />} label="고객 연락" active={true} done={false} />
                         <div className="flex-1 h-px bg-neutral-700" />
-                        <StepItem icon={<UserCheck className="w-3 h-3" />} label="방문 확인" active={item.auctionStatus === "contacted"} done={false} />
+                        <StepItem icon={<UserCheck className="w-3 h-3" />} label="방문 확인" active={false} done={false} />
                     </div>
                 )}
 

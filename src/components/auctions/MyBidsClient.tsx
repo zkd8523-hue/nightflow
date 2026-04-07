@@ -93,12 +93,6 @@ function getWonStatusConfig(status: string, isInstant = false) {
           "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse",
         icon: Phone,
       };
-    case "contacted":
-      return {
-        label: "연락 완료",
-        className: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-        icon: CheckCircle2,
-      };
     case "confirmed":
       return {
         label: "방문 확인 완료",
@@ -374,12 +368,10 @@ export function MyBidsClient({
     return a.status;
   }, []);
 
-  // 낙찰 탭: 긴급 액션 필요한 낙찰 (won, contacted) — 만료된 것 제외
+  // 낙찰 탭: 긴급 액션 필요한 낙찰 (won) — 만료된 것 제외
   const activeWonAuctions = useMemo(
     () =>
-      wonAuctions.filter((a) =>
-        ["won", "contacted"].includes(getEffectiveStatus(a))
-      ),
+      wonAuctions.filter((a) => getEffectiveStatus(a) === "won"),
     [wonAuctions, getEffectiveStatus]
   );
 
@@ -528,7 +520,7 @@ export function MyBidsClient({
           {/* 낙찰/종료 탭 */}
           <TabsContent value="ended" className="mt-4">
             <div className="space-y-4">
-              {/* 긴급: 액션 필요한 낙찰 (won, contacted) */}
+              {/* 긴급: 액션 필요한 낙찰 (won) */}
               {activeWonAuctions.map((auction) => (
                 <WonAuctionCard
                   key={`urgent-${auction.id}`}
@@ -602,14 +594,12 @@ function WonAuctionCard({
       <div className="p-5 space-y-4">
         {/* Status & ID */}
         <div className="flex justify-between items-center">
-          {effectiveStatus !== "contacted" && (
-            <Badge
-              className={`${config.className} font-black text-xs px-2.5 py-1 rounded-lg border flex items-center gap-1.5`}
-            >
-              <StatusIcon className="w-3.5 h-3.5" />
-              {config.label}
-            </Badge>
-          )}
+          <Badge
+            className={`${config.className} font-black text-xs px-2.5 py-1 rounded-lg border flex items-center gap-1.5`}
+          >
+            <StatusIcon className="w-3.5 h-3.5" />
+            {config.label}
+          </Badge>
           <span className="text-xs text-neutral-600 font-bold uppercase tracking-wider ml-auto">
             {auction.id.slice(0, 8).toUpperCase()}
           </span>
@@ -647,8 +637,8 @@ function WonAuctionCard({
           </p>
         </div>
 
-        {/* Won/Contacted: Contact CTA */}
-        {(isWonWaiting || auction.status === "contacted") && <MyBidCardContact auction={auction} />}
+        {/* Won: Contact CTA */}
+        {isWonWaiting && <MyBidCardContact auction={auction} />}
 
         {/* Expired: Warning */}
         {(auction.status === "expired" || isContactExpired) && (
@@ -693,7 +683,7 @@ function WonAuctionCard({
         </Link>
 
         {/* 낙찰 포기 / MD 미응답 신고 */}
-        {(isWonWaiting || effectiveStatus === "contacted") && (
+        {isWonWaiting && (
           <div className="flex items-center justify-between pt-1 border-t border-neutral-800/50">
             <Link
               href={`/my-wins/${auction.id}/cancel`}

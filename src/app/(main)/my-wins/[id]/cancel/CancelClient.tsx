@@ -82,7 +82,7 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
       return { cancelZone: "grace" as CancelZone, progressPercent: 0 };
     }
 
-    // contacted 상태: contactDeadline이 null → Grace(5분) 또는 late
+    // 연락 시도 후: contactDeadline이 null → Grace(5분) 또는 late
     if (!auction.contactDeadline) {
       const wonAt = new Date(auction.wonAt).getTime();
       const elapsedMs = Date.now() - wonAt;

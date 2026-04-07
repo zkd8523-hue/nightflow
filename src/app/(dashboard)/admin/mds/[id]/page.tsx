@@ -137,7 +137,6 @@ export default async function MDDetailPage({
     cancelled: { label: "취소", color: "text-red-500" },
     scheduled: { label: "예정", color: "text-amber-500" },
     draft: { label: "초안", color: "text-neutral-600" },
-    contacted: { label: "연락완료", color: "text-green-500" },
     confirmed: { label: "방문확인", color: "text-green-500" },
   };
 

@@ -3,7 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 // 낙찰자가 MD 연락 버튼(DM/전화) 클릭 시 호출
-// → contact_attempted_at 기록 + 자동 contacted 전환 + contact_deadline 해제
+// → contact_attempted_at 기록 + contact_deadline 해제 (노쇼 타이머 정지)
+// 상태는 'won'을 유지한다. 방문 확인은 MD가 수동으로 confirmed 처리.
 export async function POST(req: Request) {
   try {
     const { auctionId } = await req.json();
@@ -39,12 +40,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, alreadyRecorded: true });
     }
 
-    // contact_attempted_at 기록 + 자동 contacted 전환 + 타이머 정지
+    // contact_attempted_at 기록 + 노쇼 타이머 정지 (status는 won 유지)
     const { data, error } = await supabaseAdmin
       .from("auctions")
       .update({
         contact_attempted_at: new Date().toISOString(),
-        status: "contacted",
         contact_deadline: null,
       })
       .eq("id", auctionId)
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, alreadyProcessed: true });
     }
 
-    return NextResponse.json({ success: true, contacted: true });
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }

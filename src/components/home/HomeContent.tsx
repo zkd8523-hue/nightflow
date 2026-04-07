@@ -283,19 +283,19 @@ export function HomeContent({
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">1</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                대시보드에서 <span className="text-white font-bold">테이블 등록</span>
+                대시보드에서 <span className="text-white font-bold">1분 만에 테이블을 등록</span>해보세요
               </p>
             </div>
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">2</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                유저들이 <span className="text-white font-bold">실시간 경쟁 구매</span>
+                유저들이 테이블을 <span className="text-white font-bold">예약 및 입찰</span>합니다
               </p>
             </div>
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">3</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                구매 확정 시 <span className="text-white font-bold">매출 확정</span>
+                남는 테이블 없이 <span className="text-white font-bold">매출을 극대화</span> 해보세요
               </p>
             </div>
           </div>

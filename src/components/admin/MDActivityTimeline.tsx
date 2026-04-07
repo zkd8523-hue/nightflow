@@ -37,11 +37,6 @@ const STATUS_CONFIG: Record<
   },
   scheduled: { label: "예정", dot: "bg-amber-500", text: "text-amber-500" },
   won: { label: "낙찰", dot: "bg-green-500", text: "text-green-500" },
-  contacted: {
-    label: "연락 확인",
-    dot: "bg-green-500",
-    text: "text-green-500",
-  },
   confirmed: {
     label: "방문 확인",
     dot: "bg-green-500",
@@ -55,9 +50,7 @@ const STATUS_CONFIG: Record<
 
 function getEventTime(auction: AuctionActivity): string {
   if (
-    (auction.status === "won" ||
-      auction.status === "contacted" ||
-      auction.status === "confirmed") &&
+    (auction.status === "won" || auction.status === "confirmed") &&
     auction.won_at
   ) {
     return dayjs(auction.won_at).fromNow();
@@ -70,7 +63,7 @@ function getEventDescription(auction: AuctionActivity): string {
   if (status === "active") {
     return `시작가 ${formatPrice(auction.start_price)}${auction.current_bid > 0 ? ` · 현재 ${formatPrice(auction.current_bid)}` : ""}`;
   }
-  if (status === "won" || status === "contacted" || status === "confirmed") {
+  if (status === "won" || status === "confirmed") {
     return `${formatPrice(auction.current_bid)}에 낙찰 · 입찰 ${auction.bid_count || 0}건`;
   }
   if (status === "unsold" || status === "expired") {

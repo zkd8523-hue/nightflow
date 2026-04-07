@@ -192,7 +192,7 @@ export default function FAQPage() {
 
                                 <p className="mt-3 font-bold text-white">매출 확인:</p>
                                 <p>• MD 대시보드에서 낙찰 내역을 실시간으로 확인할 수 있습니다.</p>
-                                <p>• 낙찰자 연락 완료 → 현장 방문 확인 순으로 거래가 완료됩니다.</p>
+                                <p>• 낙찰자가 MD에게 연락 → 현장 방문 확인 순으로 거래가 완료됩니다.</p>
 
                                 <p className="mt-3 text-amber-500">💡 MD 대시보드 → 매출/정산에서 거래 현황을 확인할 수 있습니다.</p>
                             </AccordionContent>

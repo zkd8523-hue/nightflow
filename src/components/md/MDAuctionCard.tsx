@@ -18,7 +18,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useCountdown } from "@/hooks/useCountdown";
-import { DrinkPlaceholder, getAuctionImageUrl } from "@/components/auctions/DrinkPlaceholder";
+import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import { shareAuction } from "@/lib/utils/share";
@@ -130,7 +130,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     const isActive = displayStatus === 'active';
     const isExpired = displayStatus === 'expired';
     const isScheduled = displayStatus === 'scheduled';
-    const isEnded = ["won", "unsold", "contacted", "confirmed"].includes(auction.status);
+    const isEnded = ["won", "unsold", "confirmed"].includes(auction.status);
     const endTime = getEffectiveEndTime(auction);
     const currentPrice = auction.current_bid || auction.start_price;
 
@@ -143,13 +143,12 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
             <div className="flex gap-3">
                 {/* Thumbnail — 클릭 시 상세 */}
                 <Link href={`/auctions/${auction.id}`} className="w-16 h-16 rounded-lg bg-neutral-900 overflow-hidden flex-shrink-0 relative border border-neutral-800">
-                    {(() => {
-                        const imageUrl = getAuctionImageUrl(auction.thumbnail_url, club?.thumbnail_url, auction.includes);
-                        if (imageUrl) {
-                            return <img src={imageUrl} alt={club?.name || (isInstant ? "판매" : "경매")} className="w-full h-full object-cover" />;
-                        }
-                        return <DrinkPlaceholder includes={auction.includes || []} />;
-                    })()}
+                    <AuctionImage
+                        auctionThumbnail={auction.thumbnail_url}
+                        clubThumbnail={club?.thumbnail_url}
+                        includes={auction.includes}
+                        alt={club?.name || (isInstant ? "판매" : "경매")}
+                    />
                 </Link>
 
                 {/* Content Area */}
@@ -158,11 +157,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                 {/* 정산 상태 배지 (종료된 경매만 표시) */}
-                                {auction.status === "contacted" ? (
-                                    <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-blue-500 hover:bg-blue-500 border-blue-400">
-                                        ⚠️ 확인필요
-                                    </Badge>
-                                ) : auction.status === "won" ? (
+                                {auction.status === "won" ? (
                                     <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-amber-500/20 text-amber-400 border-amber-500/30">
                                         📞 연락대기
                                     </Badge>
@@ -223,7 +218,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                             <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
                                 {isActive
                                   ? (isInstant ? "판매가" : "현재가")
-                                  : ["won", "contacted", "confirmed"].includes(auction.status)
+                                  : ["won", "confirmed"].includes(auction.status)
                                     ? (isInstant ? "구매가" : "낙찰가")
                                     : (isInstant ? "판매가" : "시작가")
                                 }

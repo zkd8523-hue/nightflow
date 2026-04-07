@@ -20,7 +20,7 @@ async function getAuctionData(auctionId: string) {
       winner:winner_id (name)
     `)
     .eq("id", auctionId)
-    .in("status", ["won", "contacted", "confirmed"])
+    .in("status", ["won", "confirmed"])
     .single();
 
   return auction;

@@ -32,24 +32,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    if (!["won", "contacted"].includes(auction.status)) {
+    if (auction.status !== "won") {
       return NextResponse.json(
         { error: `현재 상태(${auction.status})에서는 합의 취소할 수 없습니다.` },
         { status: 400 }
       );
     }
 
-    // 차순위 낙찰 시도 (won 상태에서만 가능 — contacted는 MD가 이미 연락 확인했으므로 fallback 불가)
+    // 차순위 낙찰 시도
     let fallbackResult = null;
-    if (auction.status === "won") {
-      try {
-        const { data } = await supabaseAdmin.rpc("fallback_to_next_bidder", {
-          p_auction_id: auctionId,
-        });
-        fallbackResult = data;
-      } catch {
-        // fallback 실패 무시
-      }
+    try {
+      const { data } = await supabaseAdmin.rpc("fallback_to_next_bidder", {
+        p_auction_id: auctionId,
+      });
+      fallbackResult = data;
+    } catch {
+      // fallback 실패 무시
     }
 
     // fallback이 성공하지 않은 경우에만 cancelled로 전환
@@ -63,7 +61,7 @@ export async function POST(req: Request) {
           cancel_reason: reason || null,
         })
         .eq("id", auctionId)
-        .in("status", ["won", "contacted"]);
+        .eq("status", "won");
     }
 
     return NextResponse.json({

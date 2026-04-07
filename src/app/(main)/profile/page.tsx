@@ -91,7 +91,7 @@ export default function ProfilePage() {
     setSaving(false);
   };
 
-  const isBanned = user.banned_until && new Date(user.banned_until) > new Date();
+  const isBanned = user.blocked_until && new Date(user.blocked_until) > new Date();
   const isBlocked = user.is_blocked;
 
   return (
@@ -119,7 +119,7 @@ export default function ProfilePage() {
             </div>
             {isBanned && !isBlocked && (
               <p className="text-[12px] text-neutral-400 ml-6">
-                정지 해제: {dayjs(user.banned_until).format("YYYY년 M월 D일 HH:mm")}
+                정지 해제: {dayjs(user.blocked_until).format("YYYY년 M월 D일 HH:mm")}
               </p>
             )}
           </div>
@@ -272,7 +272,7 @@ export default function ProfilePage() {
             <div className="flex items-center gap-2 mt-2 p-2.5 bg-amber-500/5 rounded-lg">
               <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <p className="text-[12px] text-amber-400">
-                정지 해제: {dayjs(user.banned_until).format("YYYY.MM.DD HH:mm")}
+                정지 해제: {dayjs(user.blocked_until).format("YYYY.MM.DD HH:mm")}
               </p>
             </div>
           )}

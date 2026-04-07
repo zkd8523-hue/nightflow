@@ -386,12 +386,12 @@ export function UserManagement({ users }: UserManagementProps) {
                 )}
 
                 {/* 차단 상태 경고 */}
-                {(selectedUser.is_blocked || (selectedUser.banned_until && dayjs(selectedUser.banned_until).isAfter(dayjs()))) && (
+                {(selectedUser.is_blocked || (selectedUser.blocked_until && dayjs(selectedUser.blocked_until).isAfter(dayjs()))) && (
                   <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">
                     ⛔ {selectedUser.is_blocked ? "영구 차단됨" : "이용 정지 중"}
-                    {selectedUser.banned_until && dayjs(selectedUser.banned_until).isAfter(dayjs()) && (
+                    {selectedUser.blocked_until && dayjs(selectedUser.blocked_until).isAfter(dayjs()) && (
                       <p className="text-xs mt-1">
-                        해제: {dayjs(selectedUser.banned_until).format("YYYY-MM-DD HH:mm")}
+                        해제: {dayjs(selectedUser.blocked_until).format("YYYY-MM-DD HH:mm")}
                       </p>
                     )}
                   </div>

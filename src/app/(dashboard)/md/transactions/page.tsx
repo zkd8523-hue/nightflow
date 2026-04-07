@@ -17,7 +17,7 @@ export default async function MDTransactionsPage() {
 
     if (userData?.role !== "md" && userData?.role !== "admin") redirect("/");
 
-    // 2. 낙찰건 조회 (won | contacted | confirmed | cancelled)
+    // 2. 낙찰건 조회 (won | confirmed | cancelled)
     const { data: wonAuctions, error: wonError } = await supabase
         .from("auctions")
         .select(`
@@ -26,7 +26,7 @@ export default async function MDTransactionsPage() {
             winner:winner_id (name, phone, noshow_count, strike_count)
         `)
         .eq("md_id", user.id)
-        .in("status", ["won", "contacted", "confirmed", "cancelled"])
+        .in("status", ["won", "confirmed", "cancelled"])
         .order("created_at", { ascending: false })
         .limit(100);
 

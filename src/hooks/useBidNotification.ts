@@ -1,61 +1,133 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { formatPrice } from "@/lib/utils/format";
+import { logger } from "@/lib/utils/logger";
 
+const BID_POLL_INTERVAL = 30000; // 30초
+const NOTIFIED_BIDS_KEY = "nf_notified_md_bids";
+
+/** 이미 알림을 보낸 in_app_notifications id 목록 (localStorage 기반) */
+function getNotifiedIds(): Set<string> {
+  try {
+    const raw = localStorage.getItem(NOTIFIED_BIDS_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function addNotifiedId(notificationId: string) {
+  try {
+    const ids = getNotifiedIds();
+    ids.add(notificationId);
+    // 최대 100개만 유지
+    const arr = Array.from(ids).slice(-100);
+    localStorage.setItem(NOTIFIED_BIDS_KEY, JSON.stringify(arr));
+  } catch {
+    // localStorage 실패 시 무시
+  }
+}
+
+/**
+ * MD 새 입찰 알림 훅
+ *
+ * MD 대시보드에서 본인 경매에 새 입찰이 들어오면 toast + 진동으로 알림.
+ *
+ * 구현 방식 (2026-04-07 변경):
+ * 기존: Supabase Realtime postgres_changes로 bids INSERT 구독
+ *      → place_bid()가 SECURITY DEFINER로 실행되어 Realtime 이벤트 미수신 가능성
+ * 신규: place_bid()가 트랜잭션 내에서 생성하는 in_app_notifications.md_new_bid 폴링
+ *      → DB 트랜잭션 보장, MD 인앱 알림과 동일 소스
+ *
+ * 인터페이스는 유지: (auctionIds, enabled) → MDDashboard.tsx 변경 불필요
+ */
 export function useBidNotification(auctionIds: string[], enabled: boolean = true) {
+    const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    // 의존성 안정화: auctionIds 배열을 join한 문자열 키
+    const auctionIdsKey = auctionIds.join(",");
+
     useEffect(() => {
         if (!enabled || auctionIds.length === 0) return;
 
         const supabase = createClient();
-        const subscribeToAuctions = async () => {
-            // 여러 경매를 하나의 채널에서 구독하기엔 filter(or) 조건이 한계가 있을 수 있으므로
-            // IN 필터 처리가 가능하면 IN, 아니면 별도 채널
-            // 여기서는 MVP 단계이므로, 각 auction_id마다 채널을 생성하여 구독
+        const actionUrls = auctionIds.map(id => `/auctions/${id}`);
+        // 폴링 시작 시점 이전 알림은 무시 (마운트 직후 과거 알림 폭격 방지)
+        const startedAt = new Date().toISOString();
 
-            const channels = auctionIds.map(auctionId => {
-                return supabase.channel(`bid-notify-${auctionId}`)
-                    .on(
-                        "postgres_changes",
-                        {
-                            event: "INSERT",
-                            schema: "public",
-                            table: "bids",
-                            filter: `auction_id=eq.${auctionId}`
-                        },
-                        (payload) => {
-                            const newBid = payload.new;
-                            // 진동 API (모바일 지원시)
-                            if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
-                                window.navigator.vibrate([200, 100, 200]);
-                            }
+        const poll = async () => {
+            try {
+                if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
 
-                            toast.success(`새로운 입찰이 들어왔습니다: ${formatPrice(newBid.bid_amount)}`, {
-                                description: "가장 높은 금액으로 입찰되었습니다.",
-                                duration: 5000,
-                                position: "top-center"
-                            });
-                        }
-                    )
-                    .subscribe();
-            });
+                const { data: notifications, error } = await supabase
+                    .from("in_app_notifications")
+                    .select("id, message, action_url, created_at")
+                    .eq("type", "md_new_bid")
+                    .in("action_url", actionUrls)
+                    .gte("created_at", startedAt)
+                    .order("created_at", { ascending: false })
+                    .limit(20);
 
-            return () => {
-                channels.forEach(channel => supabase.removeChannel(channel));
-            };
+                if (error) {
+                    logger.error("[BidNotification] poll error:", error);
+                    return;
+                }
+
+                if (!notifications || notifications.length === 0) return;
+
+                const notified = getNotifiedIds();
+
+                for (const n of notifications) {
+                    if (notified.has(n.id)) continue;
+                    addNotifiedId(n.id);
+
+                    // 진동
+                    if (typeof window !== "undefined" && window.navigator?.vibrate) {
+                        window.navigator.vibrate([200, 100, 200]);
+                    }
+
+                    toast.success("새 입찰이 들어왔습니다", {
+                        description: n.message,
+                        duration: 5000,
+                        position: "top-center",
+                    });
+                }
+            } catch (err) {
+                logger.error("[BidNotification] unexpected error:", err);
+            }
         };
 
-        let cleanupFn: (() => void) | undefined;
+        const startPolling = () => {
+            if (pollingRef.current) return;
+            poll();
+            pollingRef.current = setInterval(poll, BID_POLL_INTERVAL);
+        };
 
-        subscribeToAuctions().then(fn => {
-            cleanupFn = fn;
-        });
+        const stopPolling = () => {
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+            }
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                startPolling();
+            } else {
+                stopPolling();
+            }
+        };
+
+        if (typeof document !== "undefined" && document.visibilityState === "visible") {
+            startPolling();
+        }
+        document.addEventListener("visibilitychange", handleVisibilityChange);
 
         return () => {
-            if (cleanupFn) cleanupFn();
+            stopPolling();
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
         };
-
-    }, [auctionIds.join(","), enabled]); // auctionIds 배열이 바뀔 때만 재구독
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [auctionIdsKey, enabled]);
 }

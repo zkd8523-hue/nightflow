@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import type { Auction, Bid, User, UserTrustScore, MDCustomerGrade } from "@/types/database";
 import { MD_GRADE_CONFIG } from "@/types/database";
 import { useAuctionStore } from "@/stores/useAuctionStore";
@@ -29,7 +28,7 @@ import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
 import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
 import { Calendar, ShieldCheck, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Share2, X, Phone } from "lucide-react";
-import { DrinkPlaceholder, getAuctionImageUrl } from "@/components/auctions/DrinkPlaceholder";
+import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { ShareAuctionSheet } from "./ShareAuctionSheet";
 import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
 import { TableDetailsCard } from "./TableDetailsCard";
@@ -146,7 +145,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const isOutbid = userHasBid && !isHighestBidder && isActive;
 
   const isWinner = user && (displayAuction.winner_id === user.id || (displayAuction.status === "won" && bids.find(b => b.bidder_id === user.id && b.status === "won")));
-  const isWonStatus = displayAuction.status === "won" || displayAuction.status === "contacted";
+  const isWonStatus = displayAuction.status === "won";
   // instant 경매는 sticky 연락 CTA 비활성 (InstantBuyPanel에서 처리)
   const showContactCTA = !isInstant && isWonStatus && isWinner && !hideContactSticky;
 
@@ -227,7 +226,9 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
     // Optimistic: 입찰 기록도 즉시 추가 (Realtime 미작동 대비)
     if (user) {
       state.addBid({
-        id: crypto.randomUUID(),
+        id: (typeof crypto !== "undefined" && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : `optimistic-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
         auction_id: displayAuction.id,
         bidder_id: user.id,
         bid_amount: bidAmount,
@@ -246,13 +247,14 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
     <div className="min-h-screen bg-[#0A0A0A] pb-32 max-w-lg mx-auto">
       {/* 1. Hero Image Section */}
       <div className="relative h-[220px] w-full overflow-hidden">
-        {(() => {
-          const imageUrl = getAuctionImageUrl(displayAuction.thumbnail_url, club?.thumbnail_url, displayAuction.includes);
-          if (imageUrl) {
-            return <Image src={imageUrl} alt={club?.name || "경매"} fill className="object-cover" priority />;
-          }
-          return <DrinkPlaceholder includes={displayAuction.includes || []} className="text-5xl" />;
-        })()}
+        <AuctionImage
+          auctionThumbnail={displayAuction.thumbnail_url}
+          clubThumbnail={club?.thumbnail_url}
+          includes={displayAuction.includes}
+          alt={club?.name || "경매"}
+          priority
+          placeholderClassName="text-5xl"
+        />
         {/* Overlay Gradients */}
         <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/70 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/40 to-transparent" />
@@ -284,7 +286,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               variant="secondary"
               className="text-[10px] px-2.5 py-1 uppercase font-medium tracking-wider bg-black/40 backdrop-blur-md text-neutral-300 border border-white/10 rounded-full"
             >
-              {isExpired ? "마감중" : displayAuction.status === "confirmed" && isInstant ? "거래완료" : displayAuction.status === "won" ? (isInstant ? "구매 완료" : "낙찰 성공") : displayAuction.status === "contacted" ? "연락 완료" : "종료"}
+              {isExpired ? "마감중" : displayAuction.status === "confirmed" && isInstant ? "거래완료" : displayAuction.status === "won" ? (isInstant ? "구매 완료" : "낙찰 성공") : "종료"}
             </Badge>
           )}
         </div>

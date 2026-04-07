@@ -27,7 +27,7 @@ export default async function CancelPage({
     .eq("id", auctionId)
     .single();
 
-  if (!auction || auction.winner_id !== user.id || !["won", "contacted"].includes(auction.status)) {
+  if (!auction || auction.winner_id !== user.id || auction.status !== "won") {
     redirect("/my-wins");
   }
 

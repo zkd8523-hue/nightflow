@@ -7,7 +7,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
 
-const WIN_POLL_INTERVAL = 10000; // 10초
+const WIN_POLL_INTERVAL = 30000; // 30초 (Migration 082 동반 최적화: 10s → 30s)
 const NOTIFIED_WINS_KEY = "nf_notified_wins";
 
 /** 이미 알림을 보낸 낙찰 ID 목록 (localStorage 기반) */
@@ -37,6 +37,11 @@ function addNotifiedWin(auctionId: string) {
  *
  * 어느 페이지에 있든 내가 낙찰되면 토스트 + 진동 + "내 낙찰 보기" 바로가기를 표시합니다.
  * 경매 상세 페이지(`/auctions/[id]`)에서는 AuctionDetail 자체 토스트가 있으므로 중복 방지합니다.
+ *
+ * 최적화 (2026-04-07):
+ * - 폴링 주기 10초 → 30초 완화
+ * - document.visibilityState === "visible"일 때만 폴링
+ * - visibilitychange 이벤트로 백그라운드 진입 시 정지, 복귀 시 재시작
  */
 export function useWinNotification() {
   const router = useRouter();
@@ -50,6 +55,9 @@ export function useWinNotification() {
 
     const poll = async () => {
       try {
+        // 백그라운드 탭이면 스킵
+        if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+
         // 현재 경매 상세 페이지에 있으면 스킵 (AuctionDetail 자체 알림 사용)
         if (window.location.pathname.startsWith("/auctions/")) return;
 
@@ -71,7 +79,7 @@ export function useWinNotification() {
           // 새 낙찰 발견!
           addNotifiedWin(auction.id);
 
-          const clubName = (auction.club as any)?.name || "클럽";
+          const clubName = (auction.club as unknown as { name: string } | null)?.name || "클럽";
 
           // 진동
           if (navigator.vibrate) {
@@ -93,15 +101,37 @@ export function useWinNotification() {
       }
     };
 
-    // 첫 로드 시 1회 + 주기적 폴링
-    poll();
-    pollingRef.current = setInterval(poll, WIN_POLL_INTERVAL);
+    const startPolling = () => {
+      if (pollingRef.current) return; // 이미 실행 중
+      poll(); // 즉시 1회
+      pollingRef.current = setInterval(poll, WIN_POLL_INTERVAL);
+    };
 
-    return () => {
+    const stopPolling = () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    // 초기 시작 (포그라운드일 때만)
+    if (typeof document !== "undefined" && document.visibilityState === "visible") {
+      startPolling();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [user, router]);
 }

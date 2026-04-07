@@ -23,7 +23,7 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
 
     const isInstantActive = auctionStatus === "instant_active";
 
-    // 방문 확인 (contacted → confirmed) 또는 거래완료 (instant active → confirmed)
+    // 방문 확인 (won → confirmed) 또는 거래완료 (instant active → confirmed)
     const handleConfirmVisit = async () => {
         setLoading(true);
         try {
@@ -132,8 +132,8 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
 
     return (
         <div className="space-y-2">
-            {/* Primary action: contacted 상태에서만 방문 확인 */}
-            {auctionStatus === "contacted" && (
+            {/* Primary action: won 상태에서 방문 확인 */}
+            {auctionStatus === "won" && (
                 <Button
                     onClick={handleConfirmVisit}
                     disabled={loading}
@@ -145,7 +145,7 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
             )}
 
             {/* Secondary actions: 노쇼 신고 + 합의 취소 (가로 배치) */}
-            {["won", "contacted"].includes(auctionStatus) && (
+            {auctionStatus === "won" && (
                 <>
                     <div className="flex gap-2">
                         <Button

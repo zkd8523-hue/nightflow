@@ -2,7 +2,6 @@
 
 import { useState, memo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +17,7 @@ import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auctio
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES, URGENCY_LABELS } from "@/lib/constants/timer-urgency";
 import { MapPin, ExternalLink, Clock, Gavel, Zap } from "lucide-react";
-import { DrinkPlaceholder, getAuctionImageUrl } from "@/components/auctions/DrinkPlaceholder";
+import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 
@@ -35,8 +34,8 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
   const isActive = displayStatus === 'active';
   const isScheduled = displayStatus === 'scheduled';
   const isExpired = displayStatus === 'expired';
-  const isCompleted = ["won", "unsold", "contacted", "confirmed", "cancelled"].includes(auction.status);
-  const isWon = ["won", "contacted", "confirmed"].includes(auction.status);
+  const isCompleted = ["won", "unsold", "confirmed", "cancelled"].includes(auction.status);
+  const isWon = ["won", "confirmed"].includes(auction.status);
   const endTime = getEffectiveEndTime(auction);
   const currentPrice = isWon && auction.winning_price ? auction.winning_price : (auction.current_bid || auction.start_price);
   const isInstant = auction.listing_type === 'instant';
@@ -94,13 +93,12 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
           <div className="flex gap-3">
             {/* 110x80 Thumbnail */}
             <div className="w-[110px] h-[64px] rounded-xl bg-neutral-900 overflow-hidden flex-shrink-0 relative">
-              {(() => {
-                const imageUrl = getAuctionImageUrl(auction.thumbnail_url, club?.thumbnail_url, auction.includes);
-                if (imageUrl) {
-                  return <Image src={imageUrl} alt={club?.name || "경매"} fill className="object-cover" />;
-                }
-                return <DrinkPlaceholder includes={auction.includes || []} />;
-              })()}
+              <AuctionImage
+                auctionThumbnail={auction.thumbnail_url}
+                clubThumbnail={club?.thumbnail_url}
+                includes={auction.includes}
+                alt={club?.name || "경매"}
+              />
               {/* 찜 버튼 */}
               {club && (
                 <div className="absolute top-1 right-1 z-10 scale-90 origin-top-right" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>

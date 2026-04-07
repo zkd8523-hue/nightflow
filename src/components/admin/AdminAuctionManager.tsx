@@ -58,7 +58,6 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   active: { label: "진행중", className: "bg-red-500/10 text-red-500 border-red-500/20" },
   scheduled: { label: "예정", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
   won: { label: "낙찰", className: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-  contacted: { label: "연락완료", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
   confirmed: { label: "확인완료", className: "bg-green-500/10 text-green-500 border-green-500/20" },
   unsold: { label: "유찰", className: "bg-neutral-500/10 text-neutral-500 border-neutral-500/20" },
   cancelled: { label: "취소", className: "bg-neutral-500/10 text-neutral-500 border-neutral-500/20" },
@@ -80,7 +79,7 @@ function getDisplayStatus(a: AuctionItem): string {
   return a.status;
 }
 
-const ENDED_DB_STATUSES: AuctionStatus[] = ["won", "contacted", "confirmed", "unsold", "cancelled", "expired"];
+const ENDED_DB_STATUSES: AuctionStatus[] = ["won", "confirmed", "unsold", "cancelled", "expired"];
 
 function getAuctionTab(a: AuctionItem): "scheduled" | "active" | "ended" {
   const now = dayjs();

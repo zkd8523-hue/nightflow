@@ -31,7 +31,7 @@ export async function POST() {
         md:users!auctions_md_id_fkey(id, name, profile_image)
       `
       )
-      .in("status", ["won", "unsold", "contacted", "confirmed"])
+      .in("status", ["won", "unsold", "confirmed"])
       .order("auction_end_at", { ascending: false })
       .limit(20);
 

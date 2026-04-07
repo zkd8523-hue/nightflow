@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     // 유저 차단 확인
     const { data: userData } = await supabaseAdmin
       .from("users")
-      .select("is_blocked, banned_until")
+      .select("is_blocked, blocked_until")
       .eq("id", user.id)
       .single();
 
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "차단된 계정입니다." }, { status: 403 });
     }
 
-    if (userData?.banned_until && new Date(userData.banned_until) > new Date()) {
+    if (userData?.blocked_until && new Date(userData.blocked_until) > new Date()) {
       return NextResponse.json({ error: "이용이 정지된 계정입니다." }, { status: 403 });
     }
 

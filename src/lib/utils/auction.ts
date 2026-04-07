@@ -90,10 +90,10 @@ export function isAuctionExpired(auction: Auction | null): boolean {
  */
 export type AuctionDisplayStatus =
   | 'active' | 'scheduled' | 'expired'
-  | 'won' | 'unsold' | 'contacted' | 'confirmed' | 'cancelled';
+  | 'won' | 'unsold' | 'confirmed' | 'cancelled';
 
 export function getAuctionDisplayStatus(auction: Auction): AuctionDisplayStatus {
-  if (['won', 'unsold', 'contacted', 'confirmed', 'cancelled'].includes(auction.status)) {
+  if (['won', 'unsold', 'confirmed', 'cancelled'].includes(auction.status)) {
     return auction.status as AuctionDisplayStatus;
   }
 

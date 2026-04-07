@@ -37,10 +37,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // 상태 가드: won 또는 contacted에서만 confirmed로 전환 가능
-    if (!["won", "contacted"].includes(auction.status)) {
+    // 상태 가드: won 상태에서만 confirmed로 전환 가능
+    if (auction.status !== "won") {
       return NextResponse.json(
-        { error: `현재 상태(${auction.status})에서는 확인할 수 없습니다. 낙찰(won) 또는 연락완료(contacted) 상태만 확인 가능합니다.` },
+        { error: `현재 상태(${auction.status})에서는 확인할 수 없습니다. 낙찰(won) 상태만 확인 가능합니다.` },
         { status: 400 }
       );
     }
@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       .from("auctions")
       .update({ status: "confirmed", contact_deadline: null, confirmed_by: user.id })
       .eq("id", auctionId)
-      .in("status", ["won", "contacted"]); // won 또는 contacted에서 전환
+      .eq("status", "won");
 
     if (auctionError) throw auctionError;
 

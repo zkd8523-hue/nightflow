@@ -52,7 +52,7 @@ export default async function AdminDashboardPage() {
       .select("id, auction_end_at, extended_end_at")
       .in("status", ["active", "scheduled"])
       .lte("auction_start_at", now),
-    supabase.from("auctions").select("*", { count: "exact", head: true }).in("status", ["won", "contacted", "confirmed"]),
+    supabase.from("auctions").select("*", { count: "exact", head: true }).in("status", ["won", "confirmed"]),
     supabase.from("users").select("*", { count: "exact", head: true }).gt("strike_count", 0),
     supabase.from("clubs").select("*", { count: "exact", head: true }),
     supabase.from("clubs").select("*", { count: "exact", head: true }).eq("status", "pending"),

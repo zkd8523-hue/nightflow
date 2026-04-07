@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "낙찰자만 취소할 수 있습니다." }, { status: 403 });
     }
 
-    if (!["won", "contacted"].includes(auction.status)) {
+    if (auction.status !== "won") {
       return NextResponse.json(
         { error: `현재 상태(${auction.status})에서는 취소할 수 없습니다.` },
         { status: 400 }
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
           cancel_reason: reason || null,
         })
         .eq("id", auctionId)
-        .in("status", ["won", "contacted"]);
+        .eq("status", "won");
     }
 
     // MD에게 인앱 알림 발송

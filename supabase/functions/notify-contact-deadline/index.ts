@@ -3,15 +3,12 @@
 // status='won' + contact_deadline이 3~7분 남은 경매 → 낙찰자에게 알림톡 발송
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { solapiSendAlimtalk } from "../_shared/solapi.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// SOLAPI
-const SOLAPI_API_KEY = Deno.env.get("SOLAPI_API_KEY");
-const SOLAPI_API_SECRET = Deno.env.get("SOLAPI_API_SECRET") || "";
-const SOLAPI_SENDER = Deno.env.get("SOLAPI_SENDER_NUMBER");
-const SOLAPI_PFID = Deno.env.get("SOLAPI_PFID");
+// 알림톡 템플릿 (SOLAPI 자체 환경변수는 _shared/solapi.ts에서 처리)
 const TPL_CONTACT_DEADLINE = Deno.env.get("ALIMTALK_TPL_CONTACT_DEADLINE_WARNING");
 const APP_URL = Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co";
 
@@ -109,8 +106,8 @@ Deno.serve(async (req: Request) => {
       }
 
       // 알림톡 발송
-      if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !TPL_CONTACT_DEADLINE) {
-        console.log("⚠️ SOLAPI 또는 템플릿 미설정, 알림톡 건너뜀");
+      if (!TPL_CONTACT_DEADLINE) {
+        console.log("⚠️ 알림톡 템플릿 미설정, 건너뜀");
         continue;
       }
 
@@ -160,59 +157,3 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-// ---- SOLAPI REST API (Deno 호환) ----
-
-async function solapiSendAlimtalk(
-  to: string,
-  templateId: string,
-  vars: Record<string, string>
-): Promise<void> {
-  const timestamp = Date.now().toString();
-  const salt = crypto.randomUUID();
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(SOLAPI_API_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const data = encoder.encode(timestamp + salt);
-  const sig = await crypto.subtle.sign("HMAC", key, data);
-  const signature = Array.from(new Uint8Array(sig))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  const formattedVars: Record<string, string> = {};
-  for (const [k, v] of Object.entries(vars)) {
-    formattedVars[`#{${k}}`] = v;
-  }
-
-  const res = await fetch("https://api.solapi.com/messages/v4/send-many", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `HMAC-SHA256 apiKey=${SOLAPI_API_KEY}, date=${timestamp}, salt=${salt}, signature=${signature}`,
-    },
-    body: JSON.stringify({
-      messages: [
-        {
-          to: to.replace(/[^0-9]/g, ""),
-          from: SOLAPI_SENDER!.replace(/[^0-9]/g, ""),
-          kakaoOptions: {
-            pfId: SOLAPI_PFID,
-            templateId,
-            variables: formattedVars,
-            disableSms: true,
-          },
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`SOLAPI error ${res.status}: ${body}`);
-  }
-}

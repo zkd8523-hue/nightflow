@@ -35,8 +35,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
-        // 상태 가드: won 또는 contacted 상태에서만 노쇼 처리 가능
-        if (!["won", "contacted"].includes(auction.status)) {
+        // 상태 가드: won 상태에서만 노쇼 처리 가능
+        if (auction.status !== "won") {
             return NextResponse.json(
                 { error: `현재 상태(${auction.status})에서는 노쇼 처리할 수 없습니다.` },
                 { status: 400 }
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
                 .from("auctions")
                 .update({ status: "cancelled", cancel_type: "noshow_md" })
                 .eq("id", auctionId)
-                .in("status", ["won", "contacted"]);
+                .eq("status", "won");
         }
 
         // 5. 알림 발송 (유저에게 정지 안내)

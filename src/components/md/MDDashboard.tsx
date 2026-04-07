@@ -139,7 +139,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
     };
 
     // 3탭 분류: 오늘특가 / 얼리버드 / 종료 (listing_type 기준)
-    const completedStatuses = ["won", "unsold", "contacted", "confirmed", "cancelled"];
+    const completedStatuses = ["won", "unsold", "confirmed", "cancelled"];
 
     const todayAuctions = auctions.filter(a =>
         a.listing_type === "instant" &&
@@ -180,12 +180,11 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
     // 스마트 정렬: 액션 우선순위
     const getPriority = (status: string) => {
         switch (status) {
-            case "contacted": return 1;  // ⚠️ 현장 확인 필요
-            case "won": return 2;       // 💰 정산 대기
-            case "confirmed": return 3; // ✅ 완료
-            case "unsold": return 4;    // ⚪ 유찰
-            case "cancelled": return 5; // 🔴 취소
-            default: return 6;
+            case "won": return 1;       // 💰 정산/방문 대기
+            case "confirmed": return 2; // ✅ 완료
+            case "unsold": return 3;    // ⚪ 유찰
+            case "cancelled": return 4; // 🔴 취소
+            default: return 5;
         }
     };
 
@@ -555,7 +554,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                 <span className="text-[10px] font-bold uppercase tracking-wider">낙찰건</span>
                             </div>
                             <p className="text-[24px] font-black text-amber-500 leading-none">
-                                {auctions.filter(a => ["won", "contacted", "confirmed"].includes(a.status)).length}<span className="text-[12px] text-neutral-500 ml-0.5">건</span>
+                                {auctions.filter(a => ["won", "confirmed"].includes(a.status)).length}<span className="text-[12px] text-neutral-500 ml-0.5">건</span>
                             </p>
                         </div>
                         <div className="space-y-1.5 pt-1 border-t border-neutral-800/50">

@@ -42,7 +42,6 @@ export async function POST(req: Request) {
       updateData.strike_count = 0;
       updateData.strike_updated_at = null;
       updateData.blocked_until = null;
-      updateData.banned_until = null;
       updateData.is_blocked = false;  // 스트라이크로 인한 차단 해제
     }
 

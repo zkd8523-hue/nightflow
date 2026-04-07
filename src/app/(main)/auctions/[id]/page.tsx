@@ -85,7 +85,7 @@ export default async function AuctionDetailPage({ params }: PageProps) {
     .from("auctions")
     .select("id", { count: "exact", head: true })
     .eq("md_id", auction.md_id)
-    .in("status", ["confirmed", "contacted", "won"]);
+    .in("status", ["confirmed", "won"]);
 
   // 입찰 히스토리 조회
   const { data: bids } = await supabase

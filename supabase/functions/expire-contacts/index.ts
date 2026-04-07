@@ -1,21 +1,18 @@
 // Deno Edge Function: 연락 마감 자동 노쇼 처리
 // Cron: 매 1분 (* * * * *)
 // status='won' + contact_deadline < now → 전부 노쇼
-// (소비자가 연락했으면 이미 contacted로 전환되어 여기 안 걸림)
+// (소비자가 연락 버튼을 누르면 contact_deadline이 NULL로 비워져서 여기 안 걸림)
 // 1) 노쇼 스트라이크 적용 (apply_noshow_strike)
 // 2) 차순위 입찰자에게 낙찰 전환 (fallback_to_next_bidder)
 // 3) 알림톡 발송: 노쇼 유저(NOSHOW_BANNED) + 차순위 낙찰자(FALLBACK_WON)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { solapiSendAlimtalk } from "../_shared/solapi.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// SOLAPI
-const SOLAPI_API_KEY = Deno.env.get("SOLAPI_API_KEY");
-const SOLAPI_API_SECRET = Deno.env.get("SOLAPI_API_SECRET") || "";
-const SOLAPI_SENDER = Deno.env.get("SOLAPI_SENDER_NUMBER");
-const SOLAPI_PFID = Deno.env.get("SOLAPI_PFID");
+// 알림톡 템플릿 ID (SOLAPI 자체 환경변수는 _shared/solapi.ts 내부에서 읽음)
 const TPL_NOSHOW_BANNED = Deno.env.get("ALIMTALK_TPL_NOSHOW_BANNED");
 const TPL_FALLBACK_WON = Deno.env.get("ALIMTALK_TPL_FALLBACK_WON");
 const TPL_AUCTION_WON = Deno.env.get("ALIMTALK_TPL_AUCTION_WON");
@@ -78,29 +75,8 @@ Deno.serve(async (req: Request) => {
         const clubName = (auction.club as unknown as { name: string })?.name || "클럽";
         const price = new Intl.NumberFormat("ko-KR").format(auction.winning_price || 0);
 
-        // 1.5. 보증금 몰수 (deposit_required인 경우)
-        try {
-          const { data: deposit } = await supabase
-            .from("deposits")
-            .select("id, payment_key, amount")
-            .eq("auction_id", auction.id)
-            .eq("user_id", winnerId)
-            .in("status", ["paid", "held"])
-            .single();
-
-          if (deposit) {
-            await supabase
-              .from("deposits")
-              .update({ status: "forfeited", forfeited_at: now })
-              .eq("id", deposit.id);
-            console.log(`💰 보증금 몰수: 경매 ${auction.id}, deposit ${deposit.id}`);
-          }
-        } catch (depositErr) {
-          console.error(`⚠️ 보증금 몰수 처리 실패 (${auction.id}):`, depositErr);
-        }
-
         // 2. 노쇼 스트라이크 적용
-        // (소비자가 연락했으면 이미 contacted → 여기 안 걸림)
+        // (소비자가 연락 버튼을 눌렀다면 contact_deadline이 NULL → 여기 안 걸림)
         console.log(`⚠️ 노쇼 스트라이크 적용: 경매 ${auction.id}, 유저 ${winnerId}`);
         const { data: strikeResult, error: strikeError } = await supabase.rpc(
           "apply_noshow_strike",
@@ -224,9 +200,9 @@ Deno.serve(async (req: Request) => {
 async function sendNoshowNotification(
   supabase: ReturnType<typeof createClient>,
   userId: string,
-  strikeResult: unknown
+  _strikeResult: unknown
 ): Promise<void> {
-  if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !TPL_NOSHOW_BANNED) return;
+  if (!TPL_NOSHOW_BANNED) return;
 
   const { data: user } = await supabase
     .from("users")
@@ -276,7 +252,7 @@ async function sendFallbackWonNotification(
 ): Promise<void> {
   // FALLBACK_WON 템플릿이 있으면 사용, 없으면 AUCTION_WON으로 대체
   const templateId = TPL_FALLBACK_WON || TPL_AUCTION_WON;
-  if (!SOLAPI_API_KEY || !SOLAPI_API_SECRET || !templateId) return;
+  if (!templateId) return;
 
   const { data: winner } = await supabase
     .from("users")
@@ -337,59 +313,3 @@ async function createInAppNotification(
   }
 }
 
-// ---- SOLAPI REST API (Deno 호환) ----
-
-async function solapiSendAlimtalk(
-  to: string,
-  templateId: string,
-  vars: Record<string, string>
-): Promise<void> {
-  const timestamp = Date.now().toString();
-  const salt = crypto.randomUUID();
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(SOLAPI_API_SECRET),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const data = encoder.encode(timestamp + salt);
-  const sig = await crypto.subtle.sign("HMAC", key, data);
-  const signature = Array.from(new Uint8Array(sig))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  const formattedVars: Record<string, string> = {};
-  for (const [k, v] of Object.entries(vars)) {
-    formattedVars[`#{${k}}`] = v;
-  }
-
-  const res = await fetch("https://api.solapi.com/messages/v4/send-many", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `HMAC-SHA256 apiKey=${SOLAPI_API_KEY}, date=${timestamp}, salt=${salt}, signature=${signature}`,
-    },
-    body: JSON.stringify({
-      messages: [
-        {
-          to: to.replace(/[^0-9]/g, ""),
-          from: SOLAPI_SENDER!.replace(/[^0-9]/g, ""),
-          kakaoOptions: {
-            pfId: SOLAPI_PFID,
-            templateId,
-            variables: formattedVars,
-            disableSms: true,
-          },
-        },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`SOLAPI error ${res.status}: ${body}`);
-  }
-}

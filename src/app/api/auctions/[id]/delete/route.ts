@@ -71,7 +71,7 @@ export async function DELETE(
     }
 
     // 입찰 보호: 진행/예정 중인 경매는 입찰이 있으면 삭제 불가
-    const endedStatuses = ["won", "unsold", "contacted", "confirmed", "cancelled"];
+    const endedStatuses = ["won", "unsold", "confirmed", "cancelled"];
     const isEnded = endedStatuses.includes(auction.status);
     if (!isEnded && auction.bid_count > 0) {
       return NextResponse.json(

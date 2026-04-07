@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Image from "next/image";
 import { getLiquorCategory } from "@/lib/utils/format";
 import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
 
@@ -70,4 +72,47 @@ export function getAuctionImageUrl(
     if (drinkImage) return drinkImage;
 
     return null;
+}
+
+interface AuctionImageProps {
+    auctionThumbnail: string | null | undefined;
+    clubThumbnail: string | null | undefined;
+    includes: string[] | null | undefined;
+    alt: string;
+    sizes?: string;
+    priority?: boolean;
+    placeholderClassName?: string;
+}
+
+/**
+ * 경매 이미지 렌더링 + onError 자동 fallback
+ * URL 로드 실패 시 DrinkPlaceholder(그라디언트+이모지)로 자동 전환
+ */
+export function AuctionImage({
+    auctionThumbnail,
+    clubThumbnail,
+    includes,
+    alt,
+    sizes,
+    priority,
+    placeholderClassName,
+}: AuctionImageProps) {
+    const url = getAuctionImageUrl(auctionThumbnail, clubThumbnail, includes || undefined);
+    const [errored, setErrored] = useState(false);
+
+    if (!url || errored) {
+        return <DrinkPlaceholder includes={includes || []} className={placeholderClassName} />;
+    }
+
+    return (
+        <Image
+            src={url}
+            alt={alt}
+            fill
+            className="object-cover"
+            sizes={sizes}
+            priority={priority}
+            onError={() => setErrored(true)}
+        />
+    );
 }

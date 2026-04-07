@@ -10,8 +10,7 @@ export type AuctionStatus =
   | "unsold"
   | "confirmed"
   | "cancelled"
-  | "expired"
-  | "contacted";
+  | "expired";
 export type BidStatus = "active" | "outbid" | "won" | "cancelled";
 export type Area = "강남" | "홍대" | "이태원" | "건대" | "부산" | "대구" | "인천" | "광주" | "대전" | "울산" | "세종";
 export type TrustLevel = "vip" | "normal" | "caution" | "blocked";
@@ -87,10 +86,8 @@ export interface User {
   /** @deprecated Model A 레거시 필드 (결제 중개 폐지) - 읽기 전용, 사용하지 마세요 */
   no_pay_count: number;
   is_blocked: boolean;
-  /** @deprecated Model A 필드 - blocked_until 대신 banned_until 사용 권장 */
-  blocked_until: string | null;
   /** Model B 활성 필드 - 이용 정지 종료일 (스트라이크 제재) */
-  banned_until: string | null;
+  blocked_until: string | null;
   /** Model B 활성 필드 - 마지막 스트라이크 날짜 */
   last_strike_at: string | null;
   md_suspended_until: string | null; // MD 정지 만료일
@@ -227,6 +224,7 @@ export interface Auction {
 
   // Post-Auction Journey (Migration 051)
   confirmed_at: string | null;
+  confirmed_by: string | null; // 현장 확인 처리한 MD ID
   d_day_checked_in: boolean | null; // 얼리버드 당일 방문 재확인 완료 여부
   cancel_type: CancellationType | null;
   cancel_reason: string | null;

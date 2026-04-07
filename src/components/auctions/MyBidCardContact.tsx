@@ -8,6 +8,10 @@ import { AlertCircle, ShieldCheck } from "lucide-react";
 import { getVisibleContactMethods } from "@/lib/utils/contact-methods";
 import type { ContactMethodType } from "@/types/database";
 
+// 'connected' UI removed (Migration 086): once the user clicks a contact
+// button, contact_deadline is cleared but the auction stays in 'won'. The
+// timer simply disappears — no "연락 완료" badge.
+
 interface MyBidCardContactProps {
   auction: {
     id: string;
@@ -33,67 +37,11 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
     !!auction.contact_attempted_at
   );
   const { remaining } = useCountdown(auction.contact_deadline);
-  const isExpired = !auction.contact_deadline || remaining <= 0;
+  // 한 번이라도 연락을 시도했다면 노쇼 타이머는 정지된 상태.
+  // 그렇지 않은데 deadline이 지났다면 만료.
+  const isExpired = !contactAttempted && (!auction.contact_deadline || remaining <= 0);
   const md = auction.md;
   const methods = getVisibleContactMethods(md);
-
-  // 연락 완료 상태 (버튼 클릭 후 자동 contacted 전환됨)
-  if (contactAttempted) {
-    return (
-      <div className="space-y-3">
-        <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-3 flex items-center gap-3">
-          <ShieldCheck className="w-5 h-5 text-green-500 shrink-0" />
-          <div>
-            <p className="text-green-400 font-bold text-sm">연락 완료</p>
-            <p className="text-neutral-500 text-[11px]">방문 시간에 맞춰 클럽을 방문해주세요.</p>
-          </div>
-        </div>
-
-        <div className="bg-neutral-900/50 border border-neutral-800/50 rounded-2xl p-4 space-y-3">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-neutral-700 border border-neutral-600 flex items-center justify-center text-xs font-bold text-neutral-400">
-              {md?.name?.substring(0, 1) || "M"}
-            </div>
-            <div>
-              <span className="text-white font-bold text-sm">{md?.name || "담당 MD"}</span>
-              <p className="text-[11px] text-neutral-500">연락이 안 되셨나요? 다시 시도해주세요.</p>
-            </div>
-          </div>
-          {methods.includes("dm") && md?.instagram && (
-            <ContactButton
-              auctionId={auction.id}
-              type="dm"
-              url={`https://instagram.com/${md.instagram}`}
-              clubName={auction.club?.name}
-              tableInfo={auction.table_info}
-              currentBid={auction.current_bid}
-              eventDate={auction.event_date}
-              entryTime={auction.entry_time}
-            />
-          )}
-          {methods.includes("kakao") && md?.kakao_open_chat_url && (
-            <ContactButton
-              auctionId={auction.id}
-              type="kakao"
-              url={md.kakao_open_chat_url}
-              clubName={auction.club?.name}
-              tableInfo={auction.table_info}
-              currentBid={auction.current_bid}
-              eventDate={auction.event_date}
-              entryTime={auction.entry_time}
-            />
-          )}
-          {methods.includes("phone") && md?.phone && (
-            <ContactButton
-              auctionId={auction.id}
-              type="phone"
-              url={`tel:${md.phone}`}
-            />
-          )}
-        </div>
-      </div>
-    );
-  }
 
   // 연락 시간 만료 (연락 시도 없이 타이머 끝남)
   if (isExpired) {
@@ -126,7 +74,7 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
             )}
           </div>
         </div>
-        <ContactTimer deadline={auction.contact_deadline} />
+        {!contactAttempted && <ContactTimer deadline={auction.contact_deadline} />}
       </div>
 
       {/* Contact Buttons */}
