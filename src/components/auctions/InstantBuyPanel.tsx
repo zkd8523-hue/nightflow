@@ -184,13 +184,13 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
         <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl">
           <SheetHeader className="text-left">
             <SheetTitle className="text-white font-black text-xl">
-              예약 확인
+              MD 연락처 확인
             </SheetTitle>
             <SheetDescription className="text-neutral-400">
-              MD 연락처를 확인하시겠습니까?
+              테이블을 자세히 안내받고 일정을 편하게 조율해 보세요.
             </SheetDescription>
           </SheetHeader>
-          <div className="space-y-4 mt-6">
+          <div className="space-y-4">
             <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
               <div className="flex justify-between items-center">
                 <span className="text-neutral-500 text-sm font-bold">상품</span>
@@ -206,7 +206,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
               <div className="flex items-start gap-2 pt-1">
                 <ShieldCheck className="w-4 h-4 text-neutral-400 mt-0.5" />
                 <p className="text-[11px] text-neutral-400 leading-relaxed font-medium">
-                  예약하기를 누르면 MD 연락처가 표시됩니다. MD에게 직접 연락하여 방문을 확정하세요.
+                  계속하기를 누르면 MD 연락처가 표시됩니다.
                 </p>
               </div>
             </div>
@@ -224,7 +224,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
                 disabled={loading}
                 className="h-14 rounded-2xl font-black text-lg text-black bg-amber-500 hover:bg-amber-400"
               >
-                {loading ? "처리 중..." : "예약하기"}
+                {loading ? "처리 중..." : "계속하기"}
               </Button>
             </div>
           </div>
@@ -242,7 +242,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
               MD에게 직접 연락하여 방문을 확정하세요
             </SheetDescription>
           </SheetHeader>
-          <div className="space-y-3 mt-6 pb-8">
+          <div className="space-y-3 pb-8">
             {visibleMethods.includes("dm") && mdContact?.instagram && (
               <Button
                 onClick={() => {
