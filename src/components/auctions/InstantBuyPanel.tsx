@@ -19,6 +19,7 @@ import { getVisibleContactMethods } from "@/lib/utils/contact-methods";
 import { ShieldCheck, MessageCircle, Instagram, Phone } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { trackEvent } from "@/lib/analytics";
+import { ContactButton } from "@/components/auctions/ContactButton";
 
 interface MDContactInfo {
   name: string | null;
@@ -244,47 +245,40 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
           </SheetHeader>
           <div className="space-y-3 pb-8">
             {visibleMethods.includes("dm") && mdContact?.instagram && (
-              <Button
-                onClick={() => {
-                  trackEvent("instant_contact", { auction_id: auction.id, contact_type: "dm" });
-                  window.open(`https://instagram.com/${mdContact.instagram}`, "_blank", "noopener,noreferrer");
-                }}
-                className="w-full h-auto py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90 flex flex-col items-center gap-0.5"
-              >
-                <span className="flex items-center gap-2 font-black text-sm">
-                  <Instagram className="w-4 h-4" />
-                  인스타그램 DM
-                </span>
-                <span className="text-[11px] font-medium text-white/70">@{mdContact.instagram}</span>
-              </Button>
+              <ContactButton
+                auctionId={auction.id}
+                type="dm"
+                url={`https://instagram.com/${mdContact.instagram}`}
+                clubName={auction.club?.name}
+                tableInfo={auction.table_info}
+                currentBid={price}
+                eventDate={auction.event_date}
+                entryTime={auction.entry_time}
+                onContact={() => trackEvent("instant_contact", { auction_id: auction.id, contact_type: "dm" })}
+              />
             )}
 
             {visibleMethods.includes("kakao") && mdContact?.kakao_open_chat_url && (
-              <Button
-                onClick={() => {
-                  trackEvent("instant_contact", { auction_id: auction.id, contact_type: "kakao" });
-                  window.open(mdContact.kakao_open_chat_url!, "_blank", "noopener,noreferrer");
-                }}
-                className="w-full h-auto py-3 bg-[#FEE500] text-[#191919] rounded-xl hover:bg-[#FDD835] flex flex-col items-center gap-0.5"
-              >
-                <span className="flex items-center gap-2 font-black text-sm">
-                  <MessageCircle className="w-4 h-4" />
-                  카카오톡 오픈채팅
-                </span>
-              </Button>
+              <ContactButton
+                auctionId={auction.id}
+                type="kakao"
+                url={mdContact.kakao_open_chat_url}
+                clubName={auction.club?.name}
+                tableInfo={auction.table_info}
+                currentBid={price}
+                eventDate={auction.event_date}
+                entryTime={auction.entry_time}
+                onContact={() => trackEvent("instant_contact", { auction_id: auction.id, contact_type: "kakao" })}
+              />
             )}
 
             {visibleMethods.includes("phone") && mdContact?.phone && (
-              <Button
-                onClick={() => {
-                  trackEvent("instant_contact", { auction_id: auction.id, contact_type: "phone" });
-                  window.location.href = `tel:${mdContact.phone}`;
-                }}
-                className="w-full h-11 bg-white text-black font-black text-sm rounded-xl flex items-center justify-center gap-2"
-              >
-                <Phone className="w-4 h-4" />
-                전화
-              </Button>
+              <ContactButton
+                auctionId={auction.id}
+                type="phone"
+                url={`tel:${mdContact.phone}`}
+                onContact={() => trackEvent("instant_contact", { auction_id: auction.id, contact_type: "phone" })}
+              />
             )}
 
             {visibleMethods.length === 0 && (

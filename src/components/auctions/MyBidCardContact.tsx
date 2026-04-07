@@ -11,6 +11,10 @@ import type { ContactMethodType } from "@/types/database";
 // 'connected' UI removed (Migration 086): once the user clicks a contact
 // button, contact_deadline is cleared but the auction stays in 'won'. The
 // timer simply disappears — no "연락 완료" badge.
+//
+// Migration 087: contact_deadline is now set dynamically by event proximity
+// (3h for events 2+ days away, 30m for today/tomorrow). NULL deadline means
+// "no timer applies" — never treat NULL as expired.
 
 interface MyBidCardContactProps {
   auction: {
@@ -37,9 +41,12 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
     !!auction.contact_attempted_at
   );
   const { remaining } = useCountdown(auction.contact_deadline);
-  // 한 번이라도 연락을 시도했다면 노쇼 타이머는 정지된 상태.
-  // 그렇지 않은데 deadline이 지났다면 만료.
-  const isExpired = !contactAttempted && (!auction.contact_deadline || remaining <= 0);
+  // deadline이 없으면 시한 없음(만료 아님). 있으면서 0 이하일 때만 만료.
+  // 단, 유저가 연락 버튼을 눌러 deadline이 nulled되었더라도 만료 처리하지 않음.
+  const isExpired =
+    !contactAttempted &&
+    !!auction.contact_deadline &&
+    remaining <= 0;
   const md = auction.md;
   const methods = getVisibleContactMethods(md);
 

@@ -180,7 +180,9 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                 <Link href="/md/transactions" className="inline-flex items-center gap-1.5 bg-red-500/15 border border-red-500/30 px-2 py-1 rounded-full mb-1 animate-pulse">
                                     <Phone className="w-3 h-3 text-red-400" />
                                     <span className="text-[11px] font-black text-red-400 tabular-nums">
-                                        연락 대기 {Math.floor(contactRemaining / 60)}:{(contactRemaining % 60).toString().padStart(2, "0")}
+                                        연락 대기 {contactRemaining >= 3600
+                                            ? `${Math.floor(contactRemaining / 3600)}시간 ${Math.floor((contactRemaining % 3600) / 60).toString().padStart(2, "0")}분`
+                                            : `${Math.floor(contactRemaining / 60)}:${(contactRemaining % 60).toString().padStart(2, "0")}`}
                                     </span>
                                 </Link>
                             )}

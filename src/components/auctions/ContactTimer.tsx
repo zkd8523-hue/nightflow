@@ -4,6 +4,12 @@ import { useCountdown } from "@/hooks/useCountdown";
 import { Clock } from "lucide-react";
 
 function formatTime(seconds: number): string {
+  // 1시간 이상이면 "H시간 MM분", 미만이면 "MM:SS"
+  if (seconds >= 3600) {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    return `${h}시간 ${String(m).padStart(2, "0")}분`;
+  }
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
