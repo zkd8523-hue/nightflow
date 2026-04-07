@@ -18,26 +18,26 @@ const GUIDE_DISMISSED_KEY = "nightflow_guide_dismissed";
 
 const ONBOARDING_STEPS = [
   {
-    title: "1. 구매하기",
-    desc: "원하는 클럽 테이블을 선택하세요.",
+    title: "1. 테이블 선택",
+    desc: "원하는 클럽과 테이블을 찾아보세요.",
     icon: <Zap className="w-5 h-5 text-amber-500" />,
     color: "bg-amber-500/10",
   },
   {
-    title: "2. 구매확정",
-    desc: "예약 또는 입찰 경쟁으로 확정!",
+    title: "2. 예약 및 입찰",
+    desc: "오늘특가로 즉시 예약하거나, 얼리버드 경매에 참여해 보세요!",
     icon: <Trophy className="w-5 h-5 text-yellow-500" />,
     color: "bg-yellow-500/10",
   },
   {
     title: "3. MD 연락",
-    desc: "제한 시간 내에 MD에게 연락하세요.",
+    desc: "안내에 따라 담당 MD에게 연락하세요.",
     icon: <Phone className="w-5 h-5 text-emerald-500" />,
     color: "bg-emerald-500/10",
   },
   {
-    title: "4. 방문확정",
-    desc: "현장에서 MD에게 확인받으세요.",
+    title: "4. 현장 결제 및 방문",
+    desc: "별도 사전 결제 없이 현장에서 MD에게 결제하면 끝!",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },

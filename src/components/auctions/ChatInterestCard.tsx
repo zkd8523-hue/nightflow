@@ -8,6 +8,7 @@ import { formatPrice, formatTime, formatCountdown } from "@/lib/utils/format";
 import { getEffectiveEndTime, isAuctionActive } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { MessageCircle, ChevronRight, X } from "lucide-react";
+import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import type { Auction, Club } from "@/types/database";
 
 export interface ChatInterestWithAuction {
@@ -114,17 +115,15 @@ export function ChatInterestCard({ interest, isEnded, onDismiss }: ChatInterestC
 
         {/* Club Info */}
         <div className="flex items-center gap-3">
-          {(auction.thumbnail_url || auction.club?.thumbnail_url) ? (
-            <img
-              src={auction.thumbnail_url || auction.club?.thumbnail_url || ""}
-              alt={auction.club?.name || ""}
-              className="w-10 h-10 rounded-lg object-cover"
+          <div className="w-10 h-10 rounded-lg overflow-hidden relative flex-shrink-0 bg-neutral-900">
+            <AuctionImage
+              auctionThumbnail={auction.thumbnail_url}
+              clubThumbnail={auction.club?.thumbnail_url}
+              includes={auction.includes}
+              alt={auction.club?.name || "클럽"}
+              sizes="40px"
             />
-          ) : (
-            <div className="w-10 h-10 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-neutral-600 text-sm">
-              {auction.club?.name?.substring(0, 1)}
-            </div>
-          )}
+          </div>
           <div>
             <h2 className="text-white font-bold leading-tight">{auction.club?.name}</h2>
             <p className="text-xs text-neutral-500">{auction.club?.area}</p>
