@@ -21,16 +21,17 @@ interface ContactButtonProps {
 
 function buildCopyMessage(auctionId: string, clubName?: string, tableInfo?: string, currentBid?: number, eventDate?: string, entryTime?: string): string | null {
   if (!clubName || !currentBid) return null;
-  const matchUrl = `${window.location.origin}/match/${auctionId}`;
+  const postUrl = `${window.location.origin}/auctions/${auctionId}`;
   const entry = eventDate ? formatEntryTime(entryTime ?? null, eventDate) : (entryTime ? `${entryTime} 입장` : "즉시 입장");
   return [
-    `[NightFlow 예약 문의] ${clubName}${tableInfo ? ` · ${tableInfo}` : ""}`,
+    `[NightFlow 예약 문의] ${clubName} · ${tableInfo}`,
     `해당 테이블 예약 가능한지 문의드립니다!`,
     ``,
     `📅 방문일정: ${eventDate ? formatEventDate(eventDate) : "오늘"} ${entry}`,
     `💰 안내가: ${formatPrice(currentBid)}`,
+    `👥 인원: _명`,
     ``,
-    `🔗 링크: ${matchUrl}`,
+    postUrl,
   ].join("\n");
 }
 

@@ -88,7 +88,7 @@ function getWonStatusConfig(status: string, isInstant = false) {
   switch (status) {
     case "won":
       return {
-        label: isInstant ? "구매 완료! MD에게 연락하세요" : "낙찰! MD에게 연락하세요",
+        label: isInstant ? "예약 가능! MD에게 연락하세요" : "매칭 성공! MD에게 연락하세요",
         className:
           "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse",
         icon: Phone,
@@ -627,7 +627,7 @@ function WonAuctionCard({
         {/* Price Info */}
         <div className="bg-neutral-900/50 rounded-2xl p-4 border border-neutral-800/50">
           <div className="flex justify-between items-center">
-            <span className="text-neutral-500 text-sm font-bold">{isInstant ? "구매가" : "낙찰가"}</span>
+            <span className="text-neutral-500 text-sm font-bold">안내가</span>
             <span className="text-2xl font-black text-white">
               {formatPrice(auction.winning_price || auction.current_bid)}
             </span>
@@ -645,7 +645,7 @@ function WonAuctionCard({
           <div className="bg-red-500/5 border border-red-500/10 rounded-lg p-3 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
             <p className="text-[11px] text-red-500/80 font-bold leading-tight">
-              연락 시간이 만료되어 {isInstant ? "구매가" : "낙찰이"} 취소되었습니다.
+              연락 시간이 만료되어 매칭이 취소되었습니다.
             </p>
           </div>
         )}
@@ -691,7 +691,7 @@ function WonAuctionCard({
             >
               <XCircle className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300 transition-colors" />
               <span className="text-xs text-neutral-500 font-medium group-hover:text-neutral-300 transition-colors">
-                {isInstant ? "구매 포기" : "낙찰 포기"}
+                예약 취소
               </span>
             </Link>
             <ReportMDButton

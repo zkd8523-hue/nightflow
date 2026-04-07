@@ -606,7 +606,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                   </>
                 ) : (
                   <p className="text-white text-[13px] font-bold">
-                    낙찰을 축하합니다! 매장 방문을 위해 즉시 연락해 주세요.
+                    매칭이 완료되었습니다! 방문 확정을 위해 즉시 연락해 주세요.
                   </p>
                 )}
               </div>
