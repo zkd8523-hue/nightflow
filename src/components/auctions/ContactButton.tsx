@@ -74,7 +74,7 @@ export function ContactButton({ auctionId, type, url, clubName, tableInfo, curre
           <Instagram className="w-4 h-4" />
           DM
         </span>
-        <span className="text-[11px] font-medium text-white/70">메시지 자동 복사</span>
+        <span className="text-[11px] font-medium text-white/70">복사된 메시지를 채팅창에 붙여넣으세요</span>
       </Button>
     );
   }
@@ -89,7 +89,7 @@ export function ContactButton({ auctionId, type, url, clubName, tableInfo, curre
           <MessageCircle className="w-4 h-4" />
           카카오톡 오픈채팅
         </span>
-        <span className="text-[11px] font-medium text-[#191919]/60">메시지 자동 복사</span>
+        <span className="text-[11px] font-medium text-[#191919]/60">복사된 메시지를 채팅창에 붙여넣으세요</span>
       </Button>
     );
   }

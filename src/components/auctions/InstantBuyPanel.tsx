@@ -137,9 +137,9 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
   return (
     <>
       <Card className="p-3 space-y-2.5 bg-[#1C1C1E] border-neutral-800/50">
-        {/* 판매가 */}
+        {/* 예약가 */}
         <div className="px-1">
-          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">판매가</p>
+          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">예약가</p>
           <div className="flex items-baseline font-black text-white tracking-tighter leading-none mt-1">
             <span className="text-[32px]">{formatNumber(price)}</span>
             <span className="text-[18px] ml-0.5 font-bold">원</span>
@@ -164,16 +164,16 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
             onClick={() => setShowConfirm(true)}
             disabled={!isActive || loading}
           >
-            {isActive ? "예약하기" : "판매 종료"}
+            {isActive ? "MD 연락처 확인하기" : "판매 종료"}
           </Button>
         )}
 
         {/* 신뢰 + 안내 */}
         {isActive && (
-          <div className="flex items-center justify-center gap-1.5 pt-0.5">
+          <div className="flex items-center justify-center gap-1.5 -mt-5">
             <ShieldCheck className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
-            <p className="text-[11px] text-neutral-500 font-medium">
-              매장에서 MD에게 직접 결제합니다
+            <p className="text-[11px] text-neutral-500 font-medium tracking-tight">
+              결제는 MD와 직접 진행합니다
             </p>
           </div>
         )}
@@ -197,7 +197,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
                 <span className="font-bold text-white text-right max-w-[200px] truncate">{auction.title}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-sm font-bold">판매가</span>
+                <span className="text-neutral-500 text-sm font-bold">예약가</span>
                 <span className="font-black text-2xl text-amber-400">
                   {formatPrice(price)}
                 </span>
@@ -296,7 +296,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
             <div className="flex items-center justify-center gap-1.5 pt-2">
               <ShieldCheck className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
               <p className="text-[11px] text-neutral-500 font-medium">
-                매장에서 MD에게 직접 결제합니다
+                결제는 MD와 직접 진행합니다
               </p>
             </div>
           </div>

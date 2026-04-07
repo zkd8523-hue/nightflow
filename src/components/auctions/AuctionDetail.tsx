@@ -503,21 +503,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 {!isMdOwner && md && (
                   <MdFavoriteButton mdId={md.id} />
                 )}
-                {md?.instagram ? (
-                  <a
-                    href={`https://instagram.com/${md.instagram}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Button size="icon" variant="ghost" className="rounded-full text-neutral-500 hover:text-white hover:bg-neutral-800">
-                      <Instagram className="w-5 h-5" />
-                    </Button>
-                  </a>
-                ) : (
-                  <Button size="icon" variant="ghost" className="rounded-full text-neutral-500 hover:text-white hover:bg-neutral-800">
-                    <MessageSquare className="w-5 h-5" />
-                  </Button>
-                )}
+
               </div>
             </div>
           </div>

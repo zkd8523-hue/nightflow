@@ -236,7 +236,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 )}
                 <Button
                   size="sm"
-                  className={`h-[34px] px-5 rounded-full font-semibold text-[13px] transition-all ${isActive
+                  className={`h-8 px-4 rounded-full font-bold text-xs tracking-tight transition-all ${isActive
                     ? "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                     : isWon
                       ? "bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25"

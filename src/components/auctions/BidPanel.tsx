@@ -312,7 +312,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               <div className="flex items-start gap-2 pt-1">
                 <ShieldCheck className="w-4 h-4 text-neutral-400 mt-0.5" />
                 <p className="text-[11px] text-neutral-400 leading-relaxed font-medium">
-                  본 금액은 나이트플로우 결제 없이 **매장에서 MD에게 직접 지불**합니다.
+                  본 금액은 나이트플로우를 거치지 않고 <span className="text-white font-bold">MD와 직접 결제</span>합니다.
                 </p>
               </div>
             </div>

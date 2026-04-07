@@ -72,9 +72,9 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
             });
             if (!res.ok) {
                 const { error } = await res.json();
-                throw new Error(error || "거래완료 처리에 실패했습니다.");
+                throw new Error(error || "판매완료 처리에 실패했습니다.");
             }
-            toast.success("거래완료 처리되었습니다.");
+            toast.success("판매완료 처리되었습니다.");
             onDelete?.();
             router.refresh();
         } catch (error: unknown) {
@@ -288,7 +288,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                             disabled={completing}
                             className="h-8 px-3 rounded-lg bg-green-500 text-black font-black hover:bg-green-400"
                         >
-                            거래완료
+                            판매완료
                         </Button>
                     )}
                     {auction.status === "unsold" && (
@@ -314,9 +314,9 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                 isOpen={showCompleteConfirm}
                 onOpenChange={setShowCompleteConfirm}
                 onConfirm={performComplete}
-                title="거래완료 처리"
-                description="이 판매를 거래완료로 처리하시겠습니까? 완료 후에는 되돌릴 수 없습니다."
-                confirmText="거래완료"
+                title="판매완료 처리"
+                description="이 판매를 판매완료로 처리하시겠습니까? 완료 후에는 되돌릴 수 없습니다."
+                confirmText="판매완료"
                 variant="default"
             />
             <ConfirmDialog

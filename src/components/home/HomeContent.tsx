@@ -24,7 +24,7 @@ const ONBOARDING_STEPS = [
     color: "bg-amber-500/10",
   },
   {
-    title: "2. 예약 및 입찰",
+    title: "2. 예약·입찰",
     desc: "오늘특가로 즉시 예약하거나, 얼리버드 경매에 참여해 보세요!",
     icon: <Trophy className="w-5 h-5 text-yellow-500" />,
     color: "bg-yellow-500/10",
@@ -289,7 +289,7 @@ export function HomeContent({
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">2</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                유저들이 테이블을 <span className="text-white font-bold">예약 및 입찰</span>합니다
+                유저들이 테이블을 <span className="text-white font-bold">예약·입찰</span>합니다
               </p>
             </div>
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
