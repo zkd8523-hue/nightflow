@@ -2,8 +2,6 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-const GRACE_CANCEL_MS = 5 * 60 * 1000; // 5분
-
 // 낙찰자 자발적 취소 (시간 기반 2구간: grace/late)
 export async function POST(req: Request) {
   try {
@@ -45,15 +43,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2단계 cancel_type 판정 (Grace 5분 / Late)
+    // 2단계 cancel_type 판정 (Grace = 타이머 전반 50% / Late = 후반 50%)
+    // contact_timer_minutes가 null이면 연락 버튼을 이미 눌러 타이머가 정지된 상태
+    // → won_at 기준 2분을 grace로 처리
     const now = new Date();
     const wonAt = new Date(auction.won_at || now.toISOString());
     const elapsedMs = now.getTime() - wonAt.getTime();
 
+    const timerMs = auction.contact_timer_minutes
+      ? auction.contact_timer_minutes * 60 * 1000
+      : 2 * 60 * 1000; // null이면 2분 grace
+    const graceCutoffMs = timerMs * 0.5;
+
     let cancelType: "user_grace" | "user_late";
     let warningPoints: number;
 
-    if (elapsedMs <= GRACE_CANCEL_MS) {
+    if (elapsedMs <= graceCutoffMs) {
       cancelType = "user_grace";
       warningPoints = 1;
     } else {

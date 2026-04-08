@@ -38,8 +38,6 @@ function formatTimer(seconds: number): string {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-const GRACE_MS = 5 * 60 * 1000; // 5분
-
 // isInstant에 따라 동적으로 생성
 function getCancelReasons(isInstant: boolean) {
   return [
@@ -76,31 +74,31 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
 
   const { remaining, level } = useCountdown(auction.contactDeadline);
 
-  // 2구간 판정: grace (5분) / late
+  // 2구간 판정: grace (타이머 전반 50%) / late (후반 50%)
+  // contactDeadline이 null이면 연락 버튼을 이미 눌러 타이머 정지된 상태 → won_at 기준 2분 grace
   const { cancelZone, progressPercent } = useMemo(() => {
     if (!auction.wonAt) {
       return { cancelZone: "grace" as CancelZone, progressPercent: 0 };
     }
 
-    // 연락 시도 후: contactDeadline이 null → Grace(5분) 또는 late
+    const wonAt = new Date(auction.wonAt).getTime();
+    const elapsedMs = Date.now() - wonAt;
+
     if (!auction.contactDeadline) {
-      const wonAt = new Date(auction.wonAt).getTime();
-      const elapsedMs = Date.now() - wonAt;
-      if (elapsedMs <= GRACE_MS) {
-        return { cancelZone: "grace" as CancelZone, progressPercent: 0 };
-      }
-      return { cancelZone: "late" as CancelZone, progressPercent: 100 };
+      // 연락 버튼 이미 누름 → 2분 grace
+      const graceCutoffMs = 2 * 60 * 1000;
+      return {
+        cancelZone: (elapsedMs <= graceCutoffMs ? "grace" : "late") as CancelZone,
+        progressPercent: elapsedMs <= graceCutoffMs ? 0 : 100,
+      };
     }
 
-    const wonAt = new Date(auction.wonAt).getTime();
     const deadline = new Date(auction.contactDeadline).getTime();
     const totalMs = deadline - wonAt;
     if (totalMs <= 0) return { cancelZone: "late" as CancelZone, progressPercent: 100 };
 
-    const now = Date.now();
-    const elapsedMs = now - wonAt;
-
-    const zone: CancelZone = elapsedMs <= GRACE_MS ? "grace" : "late";
+    const graceCutoffMs = totalMs * 0.5; // 전반 50%
+    const zone: CancelZone = elapsedMs <= graceCutoffMs ? "grace" : "late";
 
     return {
       cancelZone: zone,
@@ -207,8 +205,8 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
                 />
               </div>
               <div className="flex justify-between text-[10px] font-bold text-neutral-600">
-                <span className={cancelZone === "grace" ? "text-amber-400" : ""}>Grace (5분)</span>
-                <span className={cancelZone === "late" ? "text-red-400" : ""}>Late</span>
+                <span className={cancelZone === "grace" ? "text-amber-400" : ""}>Grace (전반 50%)</span>
+                <span className={cancelZone === "late" ? "text-red-400" : ""}>Late (후반 50%)</span>
               </div>
             </div>
 
