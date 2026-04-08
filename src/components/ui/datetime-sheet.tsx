@@ -17,6 +17,7 @@ dayjs.locale("ko");
 interface DateTimeSheetProps {
   value: string; // YYYY-MM-DDTHH:mm
   min?: string;
+  max?: string;
   onChange: (value: string) => void;
   label?: string;
   placeholder?: string;
@@ -25,6 +26,7 @@ interface DateTimeSheetProps {
 export function DateTimeSheet({
   value,
   min,
+  max,
   onChange,
   label = "날짜 및 시간 선택",
   placeholder = "날짜와 시간을 선택하세요",
@@ -82,6 +84,7 @@ export function DateTimeSheet({
               type="datetime-local"
               value={tempValue}
               min={min}
+              max={max}
               onChange={(e) => setTempValue(e.target.value)}
               className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base [color-scheme:dark] w-full focus:outline-none focus:border-green-500/50"
             />

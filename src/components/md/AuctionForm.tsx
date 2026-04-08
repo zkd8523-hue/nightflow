@@ -17,7 +17,13 @@ import dayjs from "dayjs";
 import "dayjs/locale/ko";
 dayjs.locale("ko");
 import { getClubEventDate } from "@/lib/utils/date";
-import { getBidIncrement } from "@/lib/utils/auction";
+import {
+    getBidIncrement,
+    isEarlybirdEndValid,
+    isEventDateWithinWindow,
+    getEarlybirdEndDateOptions,
+    EARLYBIRD_MAX_EVENT_DAYS_AHEAD,
+} from "@/lib/utils/auction";
 import { shareAuction } from "@/lib/utils/share";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getErrorMessage, logError } from "@/lib/utils/error";
@@ -37,9 +43,37 @@ const formSchema = z.object({
     event_date: z.string(),
     auction_start_at: z.string(),
     instant_start: z.boolean().optional(),
-    duration_minutes: z.number().refine(v => v === -1 || v >= 1, "지속 시간을 선택해주세요."),
+    duration_minutes: z.number().min(1, "지속 시간을 선택해주세요."),
+    // 얼리버드에서는 auction_end_at을 직접 지정. instant에서는 duration_minutes 사용.
+    auction_end_at: z.string().optional(),
     includes: z.array(z.string()).min(1, "최소 한 개의 포함 내역을 선택해주세요."),
 }).superRefine((data, ctx) => {
+    // 얼리버드 (listing_type='auction'): 이벤트일 윈도우 + 마감 시각 규칙 강제
+    if (data.listing_type === "auction") {
+        // 이벤트일은 오늘 ~ +7일 이내
+        if (data.event_date && !isEventDateWithinWindow(data.event_date)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `이벤트는 오늘부터 ${EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내여야 합니다.`,
+                path: ["event_date"],
+            });
+        }
+
+        if (!data.auction_end_at) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "마감 시각을 선택해주세요.",
+                path: ["auction_end_at"],
+            });
+        } else if (!isEarlybirdEndValid(data.event_date, data.auction_end_at)) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "마감은 이벤트 -2일 이전 21:00이어야 합니다.",
+                path: ["auction_end_at"],
+            });
+        }
+    }
+
     if (data.entry_time && data.listing_type !== "instant") {
         // 실제 방문 캘린더 시각 계산 (새벽 4시 이전 = event_date + 1일)
         const [h, m] = data.entry_time.split(":").map(Number);
@@ -48,21 +82,8 @@ const formSchema = z.object({
             : dayjs(data.event_date);
         const visitDateTime = visitDate.hour(h).minute(m);
 
-        // 입장 시간이 경매 종료 이후인지 체크 (경매 모드만)
-        const auctionStart = data.instant_start
-            ? dayjs()
-            : dayjs(data.auction_start_at);
-        const auctionEnd = data.duration_minutes === -1
-            ? dayjs(data.event_date).hour(18).minute(0)
-            : auctionStart.add(data.duration_minutes, "minute");
-
-        if (visitDateTime.isBefore(auctionEnd)) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: "입장 시간은 경매 종료 이후여야 합니다.",
-                path: ["entry_time"],
-            });
-        }
+        // 얼리버드: 마감은 이벤트 -2일이므로 입장과 비교 불필요(항상 안전)
+        // 이 체크는 instant 모드에서만 의미 있지만 instant는 위 블록에서 이미 스킵됨
     }
 
     // 즉시낙찰가(BIN)가 시작가보다 낮은지 체크
@@ -74,11 +95,11 @@ const formSchema = z.object({
         });
     }
 
-    // 경매 시작 일시가 현재보다 과거인지 체크 — 즉시 시작이면 건너뜀
-    if (!data.instant_start && data.auction_start_at && dayjs(data.auction_start_at).isBefore(dayjs())) {
+    // 오늘특가: 시작 일시가 현재보다 과거인지 체크 — 즉시 시작이면 건너뜀
+    if (data.listing_type === "instant" && !data.instant_start && data.auction_start_at && dayjs(data.auction_start_at).isBefore(dayjs())) {
         ctx.addIssue({
             code: z.ZodIssueCode.custom,
-            message: data.listing_type === "instant" ? "시작 일시는 현재 시각 이후여야 합니다." : "경매 시작 일시는 현재 시각 이후여야 합니다.",
+            message: "시작 일시는 현재 시각 이후여야 합니다.",
             path: ["auction_start_at"],
         });
     }
@@ -134,6 +155,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [setAsClubDefault, setSetAsClubDefault] = useState(false);
     const [floorPlanUploading, setFloorPlanUploading] = useState(false);
     const [floorPlanExpanded, setFloorPlanExpanded] = useState(false);
+    // 얼리버드 마감 옵션 토글 (기본은 -2일 카드만, 클릭 시 -3/-4일 펼침)
+    const [showAllEndOptions, setShowAllEndOptions] = useState(false);
 
 
     // Dialog States
@@ -144,6 +167,12 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [showShareSheet, setShowShareSheet] = useState(false);
     const [createdAuctionId, setCreatedAuctionId] = useState<string | null>(null);
 
+    // 얼리버드 기본 event_date: 오늘 + 3일 (→ 마감 옵션 최소 1개 보장)
+    const defaultEarlybirdEventDate = dayjs().add(3, "day").format("YYYY-MM-DD");
+    const initialEventDate = initialData?.event_date
+        || (prefill?.event_date)
+        || (initialData?.listing_type === "auction" ? defaultEarlybirdEventDate : getClubEventDate());
+
     const { register, handleSubmit, setValue, watch, clearErrors, formState: { errors, isSubmitting } } = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -152,7 +181,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             table_info: initialData?.table_info || prefill?.table_info || "",
             duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 60,
             includes: initialData?.includes || prefill?.includes || ["기본 안주"],
-            event_date: initialData?.event_date || getClubEventDate(),
+            event_date: initialEventDate,
             start_price: initialData?.start_price || prefill?.start_price || 0,
             buy_now_price: (initialData?.buy_now_price && initialData.listing_type === 'auction')
                 ? initialData.buy_now_price
@@ -163,6 +192,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 ? (initialData.entry_time ?? null)
                 : (prefill?.entry_time ?? dayjs().add(1, "hour").format("HH:mm")),
             auction_start_at: initialData?.auction_start_at ? dayjs(initialData.auction_start_at).format("YYYY-MM-DDTHH:mm") : dayjs().format("YYYY-MM-DDTHH:mm"),
+            auction_end_at: initialData?.auction_end_at || undefined,
             instant_start: true,
         }
     });
@@ -274,20 +304,33 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         setIsClubImage(false);
     }, [selectedClubId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Watch auction mode to auto-reset duration minutes and prevent invalid states
+    // Watch auction mode to auto-reset fields when switching between modes
     useEffect(() => {
         const isToday = auctionMode === "today";
         const currentDuration = watch("duration_minutes");
 
         if (isToday) {
-            // If they switched back to today and the current selection is a "future" option (or vice versa), reset to 15m.
-            if (![15, 30, 60].includes(currentDuration)) {
-                setValue("duration_minutes", 15);
+            // 오늘특가로 전환 — duration_minutes 기본값 복원 (4시간)
+            if (![60, 120, 240].includes(currentDuration)) {
+                setValue("duration_minutes", 240);
             }
+            setValue("listing_type", "instant");
         } else {
-            // If they switched to a future date, and had a short duration selected, reset to 24h
-            if (![24 * 60, 48 * 60, -1].includes(currentDuration)) {
-                setValue("duration_minutes", 24 * 60);
+            // 얼리버드로 전환
+            setValue("listing_type", "auction");
+            // event_date가 너무 가까우면 기본값으로 보정
+            const eventDate = watch("event_date");
+            const daysAway = dayjs(eventDate).diff(dayjs().startOf("day"), "day");
+            if (daysAway < 2) {
+                setValue("event_date", dayjs().add(3, "day").format("YYYY-MM-DD"));
+            }
+            // auction_end_at 자동 설정: 선택 가능한 가장 늦은 마감(= -2일 21:00)
+            const targetEvent = watch("event_date");
+            const options = getEarlybirdEndDateOptions(targetEvent);
+            if (options.length > 0) {
+                // 기본값: 가장 가까운 마감 = -2일 (daysBefore가 가장 작은 것)
+                const nearest = options.reduce((a, b) => (a.daysBefore < b.daysBefore ? a : b));
+                setValue("auction_end_at", nearest.endAtISO);
             }
             // 얼리버드에서는 즉시 입장 불가 — 해제
             if (instantEntry) {
@@ -295,7 +338,25 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 setValue("entry_time", "22:00");
             }
         }
-    }, [auctionMode, setValue]);
+    }, [auctionMode, setValue]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 얼리버드 모드에서 event_date 변경 시 auction_end_at 자동 재계산
+    const watchedEventDate = watch("event_date");
+    useEffect(() => {
+        if (auctionMode !== "advance") return;
+        const options = getEarlybirdEndDateOptions(watchedEventDate);
+        if (options.length === 0) {
+            setValue("auction_end_at", undefined);
+            return;
+        }
+        // 현재 선택된 값이 새 옵션 목록에 없으면 기본값(가장 가까운 마감)으로 보정
+        const currentEnd = watch("auction_end_at");
+        const match = options.find(o => o.endAtISO === currentEnd);
+        if (!match) {
+            const nearest = options.reduce((a, b) => (a.daysBefore < b.daysBefore ? a : b));
+            setValue("auction_end_at", nearest.endAtISO);
+        }
+    }, [watchedEventDate, auctionMode, setValue]);  // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleApplyRecommendation = (price: number) => {
         setValue("start_price", price);
@@ -375,32 +436,36 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             if (initialData) {
                 // 수정 모드: 원본 시작 시간 유지
                 auction_start_at = initialData.auction_start_at;
+            } else if (values.listing_type === "auction") {
+                // 얼리버드: 등록 즉시 시작 (규칙 고정)
+                auction_start_at = new Date().toISOString();
             } else if (instantStart) {
-                // 즉시 시작: 제출 시점의 시각 사용
+                // 오늘특가 즉시 시작
                 auction_start_at = new Date().toISOString();
             } else {
                 auction_start_at = new Date(values.auction_start_at).toISOString();
-                // 안전 폴백: Zod에서 차단하지만 방어적으로 유지
                 if (dayjs(auction_start_at).isBefore(dayjs())) {
                     auction_start_at = new Date().toISOString();
                 }
             }
 
-            let auction_end_at;
+            let auction_end_at: string;
             let finalDurationMinutes = values.duration_minutes;
 
-            if (values.duration_minutes === -1) {
-                // 당일 18:00 마감
-                const targetEndDate = dayjs(values.event_date).hour(18).minute(0).second(0);
-                auction_end_at = targetEndDate.toISOString();
-
-                // 역으로 실제 duration_minutes 계산 (통계용)
-                finalDurationMinutes = targetEndDate.diff(dayjs(auction_start_at), 'minute');
+            if (values.listing_type === "auction") {
+                // 얼리버드: 사용자가 선택한 auction_end_at 사용
+                if (!values.auction_end_at) {
+                    toast.error("마감 시각을 선택해주세요.");
+                    return;
+                }
+                auction_end_at = values.auction_end_at;
+                finalDurationMinutes = dayjs(auction_end_at).diff(dayjs(auction_start_at), "minute");
                 if (finalDurationMinutes <= 0) {
-                    toast.error("마감 시간이 시작 시간보다 빠를 수 없습니다.");
+                    toast.error("마감 시각이 시작 시각보다 빠를 수 없습니다.");
                     return;
                 }
             } else {
+                // 오늘특가: duration_minutes 기반
                 auction_end_at = dayjs(auction_start_at).add(values.duration_minutes, "minute").toISOString();
             }
 
@@ -521,7 +586,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         setInstantEntry(false);
                         setValue("entry_time", dayjs().add(1, "hour").format("HH:mm"));
                         setValue("event_date", getClubEventDate());
-                        setValue("duration_minutes", 60);
+                        setValue("duration_minutes", 240);
                     }}
                     className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${auctionMode === "today"
                         ? "bg-amber-500 text-black shadow-sm"
@@ -1032,25 +1097,31 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 }}
                             />
                         ) : (
-                            <DateTimeSheet
-                                label="입장 시간 선택"
-                                value={(() => {
-                                    const t = watch("entry_time") || "22:00";
-                                    const d = watch("event_date");
-                                    return dayjs(`${d}T${t}`).format("YYYY-MM-DDTHH:mm");
-                                })()}
-                                min={dayjs(getClubEventDate()).add(1, "day").set("hour", 0).set("minute", 0).format("YYYY-MM-DDTHH:mm")}
-                                onChange={(val) => {
-                                    const picked = dayjs(val);
-                                    const pickedTime = picked.format("HH:mm");
-                                    const eventDate = picked.hour() < 4
-                                        ? picked.subtract(1, "day").format("YYYY-MM-DD")
-                                        : picked.format("YYYY-MM-DD");
-                                    setValue("event_date", eventDate);
-                                    setValue("entry_time", pickedTime);
-                                    clearErrors("entry_time");
-                                }}
-                            />
+                            <>
+                                <DateTimeSheet
+                                    label="입장 시간 선택"
+                                    value={(() => {
+                                        const t = watch("entry_time") || "22:00";
+                                        const d = watch("event_date");
+                                        return dayjs(`${d}T${t}`).format("YYYY-MM-DDTHH:mm");
+                                    })()}
+                                    min={dayjs().add(2, "day").set("hour", 0).set("minute", 0).format("YYYY-MM-DDTHH:mm")}
+                                    max={dayjs().add(EARLYBIRD_MAX_EVENT_DAYS_AHEAD, "day").set("hour", 23).set("minute", 59).format("YYYY-MM-DDTHH:mm")}
+                                    onChange={(val) => {
+                                        const picked = dayjs(val);
+                                        const pickedTime = picked.format("HH:mm");
+                                        const eventDate = picked.hour() < 4
+                                            ? picked.subtract(1, "day").format("YYYY-MM-DD")
+                                            : picked.format("YYYY-MM-DD");
+                                        setValue("event_date", eventDate);
+                                        setValue("entry_time", pickedTime);
+                                        clearErrors("entry_time");
+                                    }}
+                                />
+                                <p className="text-[10px] text-neutral-500 font-medium">
+                                    오늘부터 {EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내 이벤트만 등록할 수 있어요
+                                </p>
+                            </>
                         )}
                         {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date?.message?.toString()}</p>}
                         {errors.entry_time && <p className="text-red-500 text-[11px]">{errors.entry_time?.message?.toString()}</p>}
@@ -1094,17 +1165,16 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     </div>
                     )}
                     <div className={`space-y-3 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매 지속 시간" : "경매 지속 시간"}</Label>
+                        <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매 지속 시간" : "경매 마감"}</Label>
                         {(() => {
-                            const eventDate = watch("event_date");
-
                             if (auctionMode === "today") {
                                 return (
                                     <div className="grid grid-cols-3 gap-2">
-                                        {(isInstantMode
-                                            ? [{ label: "1시간", value: 60 }, { label: "2시간", value: 120 }, { label: "3시간", value: 180 }]
-                                            : [{ label: "15분", value: 15 }, { label: "30분", value: 30 }, { label: "1시간", value: 60 }]
-                                        ).map((opt) => (
+                                        {[
+                                            { label: "4시간", value: 240 },
+                                            { label: "2시간", value: 120 },
+                                            { label: "1시간", value: 60 },
+                                        ].map((opt) => (
                                             <button key={opt.value} type="button" onClick={() => setValue("duration_minutes", opt.value)} className={`h-10 rounded-lg text-xs font-bold transition-all ${watch("duration_minutes") === opt.value ? "bg-neutral-200 text-black" : "bg-neutral-900 text-neutral-500 border border-neutral-800"}`}>
                                                 {opt.label}
                                             </button>
@@ -1112,35 +1182,77 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     </div>
                                 );
                             } else {
-                                // 내일 이후
-                                const futureOptions = [
-                                    { label: "24시간", value: 24 * 60 },
-                                    { label: "48시간", value: 48 * 60 },
-                                    { label: "방문일 18:00 마감", value: -1 } // 특수 플래그
-                                ];
+                                // 얼리버드: 마감 날짜 선택 (이벤트 -2일 ~ -4일, 21:00 KST 고정)
+                                const eventDate = watch("event_date");
+                                const options = getEarlybirdEndDateOptions(eventDate);
+                                const currentEnd = watch("auction_end_at");
+
+                                if (options.length === 0) {
+                                    return (
+                                        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3">
+                                            <p className="text-red-400 text-xs font-bold">
+                                                선택 가능한 마감 시각이 없습니다. 이벤트 날짜를 더 뒤로 설정해주세요.
+                                            </p>
+                                        </div>
+                                    );
+                                }
+
+                                // -2일이 가장 가까운 마감 (daysBefore가 가장 작은 값)
+                                const defaultOption = options.reduce((a, b) => (a.daysBefore < b.daysBefore ? a : b));
+                                const otherOptions = options.filter(o => o.endAtISO !== defaultOption.endAtISO);
+                                const isDefaultSelected = currentEnd === defaultOption.endAtISO;
 
                                 return (
-                                    <div className="grid grid-cols-1 gap-2">
-                                        {futureOptions.map((opt) => (
-                                            <button
-                                                key={opt.label}
-                                                type="button"
-                                                onClick={() => setValue("duration_minutes", opt.value)}
-                                                className={`h-10 rounded-lg text-xs font-bold transition-all ${watch("duration_minutes") === opt.value ? "bg-neutral-200 text-black" : "bg-neutral-900 text-neutral-500 border border-neutral-800"}`}
-                                            >
-                                                {opt.label}
-                                                {opt.value === -1 && (
-                                                    <span className="ml-2 text-[10px] font-normal text-green-500">
-                                                        ({dayjs(eventDate).format('M/D')} 18:00 자동 종료)
-                                                    </span>
+                                    <div className="space-y-2">
+                                        <p className="text-[11px] text-neutral-500 font-medium">
+                                            마감은 항상 21:00. 이벤트일 최소 2일 전.
+                                        </p>
+
+                                        {/* 기본 카드 (큰 사이즈) */}
+                                        <button
+                                            type="button"
+                                            onClick={() => setValue("auction_end_at", defaultOption.endAtISO)}
+                                            className={`w-full h-14 rounded-xl text-sm font-black transition-all px-4 text-left flex flex-col justify-center ${isDefaultSelected ? "bg-neutral-200 text-black" : "bg-neutral-900 text-neutral-300 border border-neutral-800"}`}
+                                        >
+                                            <span>{defaultOption.label}</span>
+                                            <span className={`text-[10px] font-medium mt-0.5 ${isDefaultSelected ? "text-neutral-600" : "text-neutral-500"}`}>
+                                                기본 추천 (가장 긴 노출)
+                                            </span>
+                                        </button>
+
+                                        {/* "다른 시각" 토글 */}
+                                        {otherOptions.length > 0 && (
+                                            <>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowAllEndOptions(v => !v)}
+                                                    className="w-full text-[11px] text-neutral-500 font-bold py-1.5 hover:text-neutral-300 transition-colors"
+                                                >
+                                                    {showAllEndOptions ? "접기 ▲" : "다른 시각으로 ▼"}
+                                                </button>
+
+                                                {showAllEndOptions && (
+                                                    <div className="grid grid-cols-1 gap-2">
+                                                        {otherOptions.map((opt) => (
+                                                            <button
+                                                                key={opt.endAtISO}
+                                                                type="button"
+                                                                onClick={() => setValue("auction_end_at", opt.endAtISO)}
+                                                                className={`h-11 rounded-lg text-xs font-bold transition-all px-4 text-left ${currentEnd === opt.endAtISO ? "bg-neutral-200 text-black" : "bg-neutral-900 text-neutral-400 border border-neutral-800"}`}
+                                                            >
+                                                                {opt.label}
+                                                            </button>
+                                                        ))}
+                                                    </div>
                                                 )}
-                                            </button>
-                                        ))}
+                                            </>
+                                        )}
                                     </div>
                                 );
                             }
                         })()}
                         {errors.duration_minutes && <p className="text-red-500 text-[11px] mt-2">{errors.duration_minutes?.message?.toString()}</p>}
+                        {errors.auction_end_at && <p className="text-red-500 text-[11px] mt-2">{errors.auction_end_at?.message?.toString()}</p>}
                     </div>
                 </div>
             </section>

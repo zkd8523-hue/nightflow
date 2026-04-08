@@ -5,6 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
 import { sendAlimtalkAndLog } from "@/lib/notifications/send-and-log";
 import { ALIMTALK_TEMPLATES } from "@/lib/notifications/alimtalk";
+import {
+  isEarlybirdEndValid,
+  isEventDateWithinWindow,
+  EARLYBIRD_MAX_EVENT_DAYS_AHEAD,
+} from "@/lib/utils/auction";
 
 export async function POST(request: NextRequest) {
   try {
@@ -94,6 +99,37 @@ export async function POST(request: NextRequest) {
       auctionData.buy_now_price = auctionData.start_price;
       auctionData.auto_extend_min = 0;
       auctionData.max_extensions = 0;
+    }
+
+    // 4-c. 얼리버드 타이밍 규칙 강제 (Migration 089)
+    //      - event_date = 오늘 + 7일 이내 (슬라이딩 윈도우)
+    //      - auction_end_at = KST 21:00 고정, 이벤트 -2일 이상 이전
+    //      - auction_start_at = now() 서버 강제 (신규 등록만)
+    if (auctionData.listing_type === 'auction') {
+      if (!auctionData.event_date || !auctionData.auction_end_at) {
+        return NextResponse.json(
+          { error: "얼리버드 경매는 이벤트 날짜와 마감 시각이 필요합니다." },
+          { status: 400 }
+        );
+      }
+      // 신규 등록만 7일 윈도우 검증 (수정 시 기존 event_date는 보호됨)
+      if (!isUpdate && !isEventDateWithinWindow(auctionData.event_date)) {
+        return NextResponse.json(
+          { error: `이벤트는 오늘부터 ${EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내여야 합니다.` },
+          { status: 400 }
+        );
+      }
+      if (!isEarlybirdEndValid(auctionData.event_date, auctionData.auction_end_at)) {
+        return NextResponse.json(
+          { error: "마감은 이벤트 -2일 이전 21:00이어야 합니다." },
+          { status: 400 }
+        );
+      }
+      // 신규 등록 시에만 auction_start_at을 서버 시각으로 강제
+      // (수정 모드에서는 아래 protectedFields에서 auction_end_at가 이미 빠지므로 별도 처리 불필요)
+      if (!isUpdate) {
+        auctionData.auction_start_at = new Date().toISOString();
+      }
     }
 
     // 5. 경매 등록 또는 수정
