@@ -1,10 +1,14 @@
 // Deno Edge Function: 연락 마감 자동 노쇼 처리
 // Cron: 매 1분 (* * * * *)
-// status='won' + contact_deadline < now → 전부 노쇼
-// (소비자가 연락 버튼을 누르면 contact_deadline이 NULL로 비워져서 여기 안 걸림)
-// 1) 노쇼 스트라이크 적용 (apply_noshow_strike)
-// 2) 차순위 입찰자에게 낙찰 전환 (fallback_to_next_bidder)
-// 3) 알림톡 발송: 노쇼 유저(NOSHOW_BANNED) + 차순위 낙찰자(FALLBACK_WON)
+//
+// [Case 1] status='won' + contact_deadline < now → 노쇼 처리
+//   (소비자가 연락 버튼을 누르면 contact_deadline이 NULL로 비워져서 여기 안 걸림)
+//   1) 노쇼 스트라이크 적용 (apply_noshow_strike)
+//   2) 차순위에게 opt-in 제안 (fallback_to_next_bidder) — 즉시 낙찰 아님
+//   3) 알림톡 발송: 노쇼 유저(NOSHOW_BANNED)
+//
+// [Case 2] fallback_deadline < now (차순위 수락 시간 만료) → 다음 차순위 탐색
+//   패널티 없음, fallback_to_next_bidder() 재호출
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { solapiSendAlimtalk } from "../_shared/solapi.ts";
@@ -14,9 +18,9 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // 알림톡 템플릿 ID (SOLAPI 자체 환경변수는 _shared/solapi.ts 내부에서 읽음)
 const TPL_NOSHOW_BANNED = Deno.env.get("ALIMTALK_TPL_NOSHOW_BANNED");
-const TPL_FALLBACK_WON = Deno.env.get("ALIMTALK_TPL_FALLBACK_WON");
-const TPL_AUCTION_WON = Deno.env.get("ALIMTALK_TPL_AUCTION_WON");
-const APP_URL = Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co";
+// TPL_FALLBACK_WON, TPL_AUCTION_WON: 알림톡 시스템 구축 후 활성화 예정
+// const TPL_FALLBACK_WON = Deno.env.get("ALIMTALK_TPL_FALLBACK_WON");
+// const TPL_AUCTION_WON = Deno.env.get("ALIMTALK_TPL_AUCTION_WON");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -34,10 +38,12 @@ Deno.serve(async (req: Request) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    console.log("🔍 연락 마감 초과 경매 검색...");
+    console.log("🔍 연락 마감 / 차순위 수락 마감 초과 경매 검색...");
 
-    // 1. status='won' + contact_deadline이 지난 경매 조회 (instant 제외 — instant은 노쇼 타이머 없음)
     const now = new Date().toISOString();
+
+    // ── Case 1: status='won' + contact_deadline 만료 (노쇼) ──────────────────
+    // instant는 연락 타이머 없음
     const { data: expiredContacts, error: fetchError } = await supabase
       .from("auctions")
       .select("id, winner_id, winning_price, contact_timer_minutes, md_id, listing_type, club:clubs(name)")
@@ -51,32 +57,46 @@ Deno.serve(async (req: Request) => {
       throw fetchError;
     }
 
-    if (!expiredContacts || expiredContacts.length === 0) {
-      console.log("✅ 연락 마감 초과 경매 없음");
+    // ── Case 2: fallback_deadline 만료 (차순위 수락 시간 초과) ───────────────
+    const { data: expiredFallbacks, error: fbFetchError } = await supabase
+      .from("auctions")
+      .select("id, fallback_offered_to, md_id, club:clubs(name)")
+      .not("fallback_offered_to", "is", null)
+      .not("fallback_deadline", "is", null)
+      .lt("fallback_deadline", now);
+
+    if (fbFetchError) {
+      console.error("❌ fallback 만료 경매 조회 실패:", fbFetchError);
+    }
+
+    const totalItems = (expiredContacts?.length || 0) + (expiredFallbacks?.length || 0);
+
+    if (totalItems === 0) {
+      console.log("✅ 처리할 만료 경매 없음");
       return new Response(
         JSON.stringify({ success: true, count: 0 }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`📦 연락 마감 초과 경매 ${expiredContacts.length}개 발견`);
+    console.log(`📦 노쇼 ${expiredContacts?.length || 0}건, fallback 만료 ${expiredFallbacks?.length || 0}건`);
 
     const results = {
-      total: expiredContacts.length,
+      total: totalItems,
       strikes: 0,
-      fallbacks: 0,
+      fallback_offers: 0,
+      fallback_expired_next: 0,
       unsold: 0,
       errors: [] as string[],
     };
 
-    for (const auction of expiredContacts) {
+    // ── Case 1 처리: 노쇼 ────────────────────────────────────────────────────
+    for (const auction of (expiredContacts || [])) {
       try {
         const winnerId = auction.winner_id;
         const clubName = (auction.club as unknown as { name: string })?.name || "클럽";
-        const price = new Intl.NumberFormat("ko-KR").format(auction.winning_price || 0);
 
-        // 2. 노쇼 스트라이크 적용
-        // (소비자가 연락 버튼을 눌렀다면 contact_deadline이 NULL → 여기 안 걸림)
+        // 노쇼 스트라이크 적용
         console.log(`⚠️ 노쇼 스트라이크 적용: 경매 ${auction.id}, 유저 ${winnerId}`);
         const { data: strikeResult, error: strikeError } = await supabase.rpc(
           "apply_noshow_strike",
@@ -88,10 +108,7 @@ Deno.serve(async (req: Request) => {
           results.errors.push(`strike:${auction.id}:${strikeError.message}`);
         } else {
           results.strikes++;
-
-          // 노쇼 유저에게 알림톡 발송
           await sendNoshowNotification(supabase, winnerId, strikeResult);
-          // 노쇼 유저에게 인앱 알림
           await createInAppNotification(supabase, winnerId, {
             type: "noshow_penalty",
             title: "노쇼 스트라이크가 부과되었습니다",
@@ -100,64 +117,37 @@ Deno.serve(async (req: Request) => {
           });
         }
 
-        // 3. 차순위 낙찰 시도
-        console.log(`🔄 차순위 낙찰 시도: 경매 ${auction.id}`);
+        // 차순위에게 opt-in 제안 (즉시 낙찰 아님)
+        console.log(`🔄 차순위 opt-in 제안: 경매 ${auction.id}`);
         const { data: fallbackResult, error: fallbackError } = await supabase.rpc(
           "fallback_to_next_bidder",
           { p_auction_id: auction.id }
         );
 
         if (fallbackError) {
-          console.error(`❌ 차순위 낙찰 실패 (${auction.id}):`, fallbackError.message);
+          console.error(`❌ 차순위 제안 실패 (${auction.id}):`, fallbackError.message);
           results.errors.push(`fallback:${auction.id}:${fallbackError.message}`);
-          // fallback 실패 시 경매를 취소 상태로 전환 (재처리 방지)
           await supabase.from("auctions")
             .update({ status: "cancelled", cancel_type: "noshow_auto" })
             .eq("id", auction.id);
           continue;
         }
 
-        const fbResult = fallbackResult as unknown as {
-          result: string;
-          winner_id?: string;
-          winning_price?: number;
-        };
+        const fbResult = fallbackResult as unknown as { result: string; offered_to?: string };
 
-        if (fbResult?.result === "fallback_won" && fbResult.winner_id) {
-          results.fallbacks++;
-          console.log(`✅ 차순위 낙찰 성공: 경매 ${auction.id} → ${fbResult.winner_id}`);
+        if (fbResult?.result === "fallback_offered" && fbResult.offered_to) {
+          results.fallback_offers++;
+          console.log(`✅ 차순위 제안 완료: 경매 ${auction.id} → ${fbResult.offered_to} (1시간 수락 대기)`);
 
-          // 차순위 낙찰자에게 알림톡 + 인앱 알림
-          const newPrice = new Intl.NumberFormat("ko-KR").format(fbResult.winning_price || 0);
+          // 알림톡은 알림톡 시스템 구축 후 추가 예정
+          // TODO: sendFallbackOfferNotification(supabase, auction.id, fbResult.offered_to, ...)
 
-          // 새 경매의 contact_timer 조회
-          const { data: updatedAuction } = await supabase
-            .from("auctions")
-            .select("contact_timer_minutes")
-            .eq("id", auction.id)
-            .single();
-          const timerMinutes = updatedAuction?.contact_timer_minutes || 15;
-
-          await sendFallbackWonNotification(supabase, auction.id, fbResult.winner_id, {
-            clubName,
-            winningPrice: `${newPrice}원`,
-            contactDeadline: `${timerMinutes}분`,
-            auctionUrl: `${APP_URL}/auctions/${auction.id}`,
-          });
-
-          await createInAppNotification(supabase, fbResult.winner_id, {
-            type: "fallback_won",
-            title: "차순위 낙찰 안내",
-            message: `${clubName} 경매에서 ${newPrice}원에 낙찰되었습니다. MD에게 연락하세요!`,
-            action_url: `/auctions/${auction.id}`,
-          });
-
-          // MD에게 노쇼 + 차순위 낙찰 알림
+          // MD에게 노쇼 + 차순위 제안 알림
           if (auction.md_id) {
             await createInAppNotification(supabase, auction.md_id, {
               type: "md_winner_noshow",
-              title: "낙찰자 노쇼 → 차순위 낙찰",
-              message: `${clubName} 경매 낙찰자의 연락 시간이 만료되어 노쇼 처리되었습니다. 2순위 입찰자에게 낙찰이 넘어갔습니다.`,
+              title: "낙찰자 노쇼 → 차순위 제안",
+              message: `${clubName} 경매 낙찰자의 연락 시간이 만료되어 노쇼 처리되었습니다. 차순위 입찰자에게 수락 제안을 보냈습니다.`,
               action_url: `/md/transactions`,
             });
           }
@@ -165,7 +155,6 @@ Deno.serve(async (req: Request) => {
           results.unsold++;
           console.log(`📭 차순위 입찰자 없음 → unsold: 경매 ${auction.id}`);
 
-          // MD에게 노쇼 + 유찰 알림
           if (auction.md_id) {
             await createInAppNotification(supabase, auction.md_id, {
               type: "md_winner_noshow",
@@ -178,6 +167,78 @@ Deno.serve(async (req: Request) => {
       } catch (err) {
         console.error(`❌ 경매 ${auction.id} 처리 중 예외:`, err);
         results.errors.push(`${auction.id}:${String(err)}`);
+      }
+    }
+
+    // ── Case 2 처리: fallback 수락 시간 만료 ────────────────────────────────
+    for (const auction of (expiredFallbacks || [])) {
+      try {
+        const clubName = (auction.club as unknown as { name: string })?.name || "클럽";
+        console.log(`⏰ fallback 수락 만료: 경매 ${auction.id}, 대상 ${auction.fallback_offered_to}`);
+
+        // 패널티 없이 다음 차순위 탐색
+        // decline_fallback과 유사하지만 bid를 cancelled로 전환하지 않음 (미응답이므로)
+        // → fallback_offered_to 초기화 후 fallback_to_next_bidder() 재호출
+
+        // 미응답자 bid를 cancelled 처리 (재등장 방지)
+        await supabase.from("bids")
+          .update({ status: "cancelled" })
+          .eq("auction_id", auction.id)
+          .eq("bidder_id", auction.fallback_offered_to)
+          .eq("status", "outbid");
+
+        // fallback 초기화
+        await supabase.from("auctions")
+          .update({
+            fallback_offered_to: null,
+            fallback_offered_at: null,
+            fallback_deadline: null,
+          })
+          .eq("id", auction.id);
+
+        // 다음 차순위 탐색
+        const { data: nextFbResult, error: nextFbError } = await supabase.rpc(
+          "fallback_to_next_bidder",
+          { p_auction_id: auction.id }
+        );
+
+        if (nextFbError) {
+          console.error(`❌ 다음 차순위 탐색 실패 (${auction.id}):`, nextFbError.message);
+          results.errors.push(`next_fallback:${auction.id}:${nextFbError.message}`);
+          continue;
+        }
+
+        const nextResult = nextFbResult as unknown as { result: string; offered_to?: string };
+
+        if (nextResult?.result === "fallback_offered") {
+          results.fallback_expired_next++;
+          console.log(`✅ 다음 차순위 제안: 경매 ${auction.id} → ${nextResult.offered_to}`);
+        } else {
+          results.unsold++;
+          console.log(`📭 더 이상 차순위 없음 → unsold: 경매 ${auction.id}`);
+
+          if (auction.md_id) {
+            await createInAppNotification(supabase, auction.md_id, {
+              type: "md_winner_noshow",
+              title: "차순위 모두 만료 → 유찰",
+              message: `${clubName} 경매의 모든 차순위 입찰자가 수락하지 않아 유찰되었습니다.`,
+              action_url: `/md/transactions`,
+            });
+          }
+        }
+
+        // 미응답 차순위에게 인앱 알림 (참고용, 패널티 없음)
+        if (auction.fallback_offered_to) {
+          await createInAppNotification(supabase, auction.fallback_offered_to, {
+            type: "contact_expired_no_fault",
+            title: "차순위 낙찰 제안이 만료되었습니다",
+            message: `${clubName} 경매의 차순위 수락 시간이 지나 다음 순위자에게 넘어갔습니다. 패널티는 없습니다.`,
+            action_url: `/my-bids`,
+          });
+        }
+      } catch (err) {
+        console.error(`❌ fallback 만료 경매 ${auction.id} 처리 중 예외:`, err);
+        results.errors.push(`fb_expire:${auction.id}:${String(err)}`);
       }
     }
 
@@ -242,59 +303,7 @@ async function sendNoshowNotification(
   }
 }
 
-// ---- 차순위 낙찰 알림톡 발송 ----
-
-async function sendFallbackWonNotification(
-  supabase: ReturnType<typeof createClient>,
-  auctionId: string,
-  newWinnerId: string,
-  vars: { clubName: string; winningPrice: string; contactDeadline: string; auctionUrl: string }
-): Promise<void> {
-  // FALLBACK_WON 템플릿이 있으면 사용, 없으면 AUCTION_WON으로 대체
-  const templateId = TPL_FALLBACK_WON || TPL_AUCTION_WON;
-  if (!templateId) return;
-
-  const { data: winner } = await supabase
-    .from("users")
-    .select("phone, name")
-    .eq("id", newWinnerId)
-    .single();
-
-  if (!winner?.phone) return;
-
-  try {
-    if (TPL_FALLBACK_WON) {
-      await solapiSendAlimtalk(winner.phone, TPL_FALLBACK_WON, {
-        clubName: vars.clubName,
-        userName: winner.name || "회원",
-        winningPrice: vars.winningPrice,
-        contactDeadline: vars.contactDeadline,
-        auctionUrl: vars.auctionUrl,
-      });
-    } else {
-      // FALLBACK_WON 템플릿 미등록 시 AUCTION_WON으로 대체
-      await solapiSendAlimtalk(winner.phone, TPL_AUCTION_WON!, {
-        clubName: vars.clubName,
-        winningPrice: vars.winningPrice,
-        contactDeadline: vars.contactDeadline,
-        auctionUrl: vars.auctionUrl,
-      });
-    }
-
-    await supabase.from("notification_logs").insert({
-      event_type: "fallback_won",
-      auction_id: auctionId,
-      recipient_user_id: newWinnerId,
-      recipient_phone: winner.phone,
-      template_id: templateId,
-      status: "sent",
-    });
-
-    console.log(`📨 차순위 낙찰 알림 발송: ${auctionId} → ${winner.phone}`);
-  } catch (err) {
-    console.error(`❌ 차순위 낙찰 알림톡 발송 실패 (${newWinnerId}):`, err);
-  }
-}
+// TODO: sendFallbackOfferNotification() — 알림톡 시스템(사업자 등록) 완료 후 구현
 
 // ---- 인앱 알림 생성 ----
 

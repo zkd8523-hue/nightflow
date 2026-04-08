@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { MyBidCard, type BidWithAuction } from "./MyBidCard";
 import { ChatInterestCard, type ChatInterestWithAuction } from "./ChatInterestCard";
 import { MyBidCardContact } from "./MyBidCardContact";
+import { FallbackOfferCard } from "./FallbackOfferCard";
 import { ReportMDButton } from "./ReportMDButton";
 import { useMyBidsRealtime, type AuctionUpdate } from "@/hooks/useMyBidsRealtime";
 import { isAuctionActive, isAuctionExpired } from "@/lib/utils/auction";
@@ -46,6 +47,9 @@ export interface WonAuctionData {
   table_info: string | null;
   winner_id: string | null;
   listing_type?: "auction" | "instant";
+  // opt-in fallback 필드 (Migration 088)
+  fallback_offered_to?: string | null;
+  fallback_deadline?: string | null;
   club: { name: string; area: string } | null;
   md: {
     name: string | null;
@@ -208,6 +212,16 @@ export function MyBidsClient({
       .eq("winner_id", user.id)
       .order("won_at", { ascending: false });
 
+    // fallback 제안 받은 경매 (winner_id가 없지만 fallback_offered_to가 내 ID)
+    const { data: fallbackAuctions } = await supabase
+      .from("auctions")
+      .select(
+        `*, club:club_id(*), md:md_id(name, phone, instagram, kakao_open_chat_url, preferred_contact_methods)`
+      )
+      .eq("fallback_offered_to", user.id)
+      .not("fallback_deadline", "is", null)
+      .order("fallback_offered_at", { ascending: false });
+
     const auctionMap = new Map<string, WonAuctionData>();
 
     if (wonBids) {
@@ -220,6 +234,15 @@ export function MyBidsClient({
 
     if (winnerAuctions) {
       for (const auction of winnerAuctions) {
+        if (!auctionMap.has(auction.id)) {
+          auctionMap.set(auction.id, auction as WonAuctionData);
+        }
+      }
+    }
+
+    // fallback 제안 받은 경매 병합
+    if (fallbackAuctions) {
+      for (const auction of fallbackAuctions) {
         if (!auctionMap.has(auction.id)) {
           auctionMap.set(auction.id, auction as WonAuctionData);
         }
@@ -368,10 +391,26 @@ export function MyBidsClient({
     return a.status;
   }, []);
 
-  // 낙찰 탭: 긴급 액션 필요한 낙찰 (won) — 만료된 것 제외
+  // fallback 제안 받은 경매 (수락 대기 중, 아직 만료 안 됨)
+  const fallbackOfferAuctions = useMemo(
+    () =>
+      wonAuctions.filter(
+        (a) =>
+          a.fallback_offered_to &&
+          a.fallback_deadline &&
+          new Date(a.fallback_deadline).getTime() > Date.now()
+      ),
+    [wonAuctions]
+  );
+
+  // 낙찰 탭: 긴급 액션 필요한 낙찰 (won) — 만료된 것 제외, fallback 제안 중인 것 제외
   const activeWonAuctions = useMemo(
     () =>
-      wonAuctions.filter((a) => getEffectiveStatus(a) === "won"),
+      wonAuctions.filter(
+        (a) =>
+          getEffectiveStatus(a) === "won" &&
+          !a.fallback_offered_to
+      ),
     [wonAuctions, getEffectiveStatus]
   );
 
@@ -440,8 +479,8 @@ export function MyBidsClient({
     });
   }, []);
 
-  // 낙찰 탭에 긴급 카드가 있으면 배지 펄스
-  const hasUrgentWon = activeWonAuctions.some((a) => a.status === "won");
+  // 낙찰 탭에 긴급 카드가 있으면 배지 펄스 (fallback 제안 포함)
+  const hasUrgentWon = activeWonAuctions.some((a) => a.status === "won") || fallbackOfferAuctions.length > 0;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] pt-16 pb-32">
@@ -520,6 +559,24 @@ export function MyBidsClient({
           {/* 낙찰/종료 탭 */}
           <TabsContent value="ended" className="mt-4">
             <div className="space-y-4">
+              {/* 최우선: 차순위 낙찰 제안 (수락/거절 필요) */}
+              {fallbackOfferAuctions.map((auction) => (
+                <FallbackOfferCard
+                  key={`fallback-${auction.id}`}
+                  auction={{
+                    id: auction.id,
+                    fallback_deadline: auction.fallback_deadline!,
+                    winning_price: auction.winning_price,
+                    current_bid: auction.current_bid,
+                    event_date: auction.event_date,
+                    entry_time: auction.entry_time,
+                    table_info: auction.table_info,
+                    club: auction.club,
+                  }}
+                  onAccepted={fetchWonAuctions}
+                  onDeclined={fetchWonAuctions}
+                />
+              ))}
               {/* 긴급: 액션 필요한 낙찰 (won) */}
               {activeWonAuctions.map((auction) => (
                 <WonAuctionCard
