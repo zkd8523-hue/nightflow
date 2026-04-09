@@ -19,7 +19,15 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "NightFlow - 클럽 테이블 경매",
-  description: "실시간 클럽 테이블 경매 플랫폼",
+  description: "강남·홍대 클럽 테이블을 실시간 경매로",
+  openGraph: {
+    title: "NightFlow - 클럽 테이블 경매",
+    description: "강남·홍대 클럽 테이블을 실시간 경매로",
+    url: "https://nightflow-black.vercel.app",
+    siteName: "NightFlow",
+    locale: "ko_KR",
+    type: "website",
+  },
   other: {
     "google-adsense-account": "ca-pub-6936468170635504",
   },
