@@ -693,7 +693,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             <div className="flex items-start gap-2 px-1">
               <AlertCircle className="w-4 h-4 text-neutral-500 mt-0.5 shrink-0" />
               <p className="text-[10px] text-neutral-500 font-medium leading-normal">
-                미연락 또는 예약금 노쇼 시 추후 서비스 이용이 영구 제한될 수 있습니다. 신중한 예약을 부탁드립니다.
+                미연락 또는 노쇼 시 스트라이크가 부과되며 서비스 이용이 제한될 수 있습니다. 신중한 입찰을 부탁드립니다.
               </p>
             </div>
           </div>

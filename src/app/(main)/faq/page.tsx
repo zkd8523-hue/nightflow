@@ -102,10 +102,11 @@ export default function FAQPage() {
 
                         <AccordionItem value="item-5b" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
                             <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                노쇼 시 불이익이 있나요?
+                                미연락·노쇼 시 불이익이 있나요?
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>연락 타이머가 만료되면 <span className="text-red-500 font-bold">즉시 스트라이크 1회</span>가 부과됩니다.</p>
+                                <p><span className="text-white font-bold">미연락</span> (연락 타이머 만료 시): <span className="text-red-500 font-bold">즉시 스트라이크 1회</span> 부과</p>
+                                <p className="mt-1"><span className="text-white font-bold">노쇼</span> (연락 후 방문하지 않은 경우): MD 신고 시 <span className="text-red-500 font-bold">즉시 스트라이크 1회</span> 부과</p>
                                 <p className="mt-2 font-bold text-white">스트라이크 제재:</p>
                                 <p>• <span className="text-amber-500 font-bold">1회:</span> 3일간 서비스 이용 정지</p>
                                 <p>• <span className="text-amber-500 font-bold">2회:</span> 14일간 서비스 이용 정지</p>

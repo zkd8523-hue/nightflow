@@ -111,7 +111,7 @@ Deno.serve(async (req: Request) => {
           await sendNoshowNotification(supabase, winnerId, strikeResult);
           await createInAppNotification(supabase, winnerId, {
             type: "noshow_penalty",
-            title: "노쇼 스트라이크가 부과되었습니다",
+            title: "미연락 스트라이크가 부과되었습니다",
             message: `${clubName} 경매 낙찰 후 연락 시간이 만료되어 스트라이크가 부과되었습니다.`,
             action_url: `/my-bids`,
           });

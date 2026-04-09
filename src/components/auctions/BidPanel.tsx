@@ -344,7 +344,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
             })()}
 
             <p className="text-[11px] text-neutral-500 text-center">
-              낙찰 시 방문 필수 · 노쇼 시 이용이 제한됩니다
+              낙찰 시 방문 필수 · 미연락·노쇼 시 이용이 제한됩니다
             </p>
 
             <div className="grid grid-cols-2 gap-3 pb-8">
@@ -408,7 +408,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               </div>
 
               <p className="text-[11px] text-neutral-500 text-center">
-                낙찰 시 방문 필수 · 노쇼 시 이용이 제한됩니다
+                낙찰 시 방문 필수 · 미연락·노쇼 시 이용이 제한됩니다
               </p>
 
               <div className="grid grid-cols-2 gap-3 pb-8">

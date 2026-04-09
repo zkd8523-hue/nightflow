@@ -56,7 +56,7 @@
 #{clubName} 경매에서 #{winningPrice}에 낙찰되었습니다.
 
 연락 마감: #{contactDeadline}
-※ 마감 시간 내 MD에게 연락하지 않으면 노쇼 스트라이크가 부과됩니다.
+※ 마감 시간 내 MD에게 연락하지 않으면 미연락 스트라이크가 부과됩니다.
 ```
 
 ---
@@ -74,12 +74,12 @@
 #{clubName} 경매 낙찰 연락 마감까지 #{remainingMinutes}분 남았습니다.
 
 지금 바로 MD에게 연락하여 예약을 확정하세요.
-※ 미연락 시 노쇼 스트라이크가 부과됩니다.
+※ 미연락 시 스트라이크가 부과됩니다.
 ```
 
 ---
 
-## 5. 노쇼 알림 (NOSHOW_BANNED) — 신규
+## 5. 미연락 제재 알림 (NOSHOW_BANNED) — 신규
 
 **환경변수**: `ALIMTALK_TPL_NOSHOW_BANNED`
 **변수**: `#{userName}`, `#{strikeCount}`, `#{penaltyStatus}`
@@ -87,9 +87,9 @@
 **동의 필요**: NO (거래 관련 정보)
 
 ```
-[NightFlow] 노쇼 알림
+[NightFlow] 미연락 제재 안내
 
-#{userName}님, 낙찰 후 연락 시간이 만료되어 노쇼 스트라이크가 부과되었습니다.
+#{userName}님, 낙찰 후 연락 시간이 만료되어 미연락 스트라이크가 부과되었습니다.
 
 현재 스트라이크: #{strikeCount}회
 #{penaltyStatus}
@@ -190,7 +190,7 @@
 
 1. **AUCTION_WON** (낙찰) — 핵심 플로우
 2. **CONTACT_DEADLINE_WARNING** (연락 마감 경고) — 노쇼 방지
-3. **NOSHOW_BANNED** (노쇼 알림) — 유저 고지
+3. **NOSHOW_BANNED** (미연락 제재 알림) — 유저 고지
 4. **FALLBACK_WON** (차순위 낙찰) — 유저 전환
 5. **OUTBID** (입찰 역전) — 재참여 유도
 6. **AUCTION_STARTED** (경매 시작) — 구독자 알림
