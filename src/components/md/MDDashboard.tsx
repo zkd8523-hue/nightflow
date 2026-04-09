@@ -324,7 +324,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                             <span className="text-[13px] text-neutral-500">클럽을 선택해주세요</span>
                         )}
                         <div className="flex items-center gap-1 ml-auto shrink-0">
-                            {defaultClubId && <span className="text-[11px] text-neutral-600 font-medium">기본으로 선택된 클럽</span>}
+                            {defaultClubId && <span className="text-[11px] text-neutral-600 font-medium">기본 클럽</span>}
                             <ChevronDown className="w-4 h-4 text-neutral-500" />
                         </div>
                     </button>
@@ -337,10 +337,10 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">
                             <TabsTrigger value="today" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200">
-                                오늘특가 {sortedTodayAuctions.length > 0 && <span className="ml-1 text-amber-500">{sortedTodayAuctions.length}</span>}
+                                🔥 오늘특가 {sortedTodayAuctions.length > 0 && <span className="ml-1 text-amber-500">{sortedTodayAuctions.length}</span>}
                             </TabsTrigger>
                             <TabsTrigger value="earlybird" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200">
-                                얼리버드 {sortedEarlyBirdAuctions.length > 0 && <span className="ml-1 text-amber-500">{sortedEarlyBirdAuctions.length}</span>}
+                                📅 얼리버드 {sortedEarlyBirdAuctions.length > 0 && <span className="ml-1 text-amber-500">{sortedEarlyBirdAuctions.length}</span>}
                             </TabsTrigger>
                             <TabsTrigger value="completed" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200">
                                 종료 {completedAuctions.length > 0 && <span className="ml-1 text-neutral-500">{completedAuctions.length}</span>}
@@ -574,7 +574,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
             <Sheet open={clubSheetOpen} onOpenChange={setClubSheetOpen}>
                 <SheetContent side="bottom" className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl max-h-[60vh]">
                     <SheetHeader className="pb-4">
-                        <SheetTitle className="text-white font-black text-lg">기본으로 선택된 클럽</SheetTitle>
+                        <SheetTitle className="text-white font-black text-lg">내 클럽 목록</SheetTitle>
                     </SheetHeader>
                     <div className="space-y-2 overflow-y-auto pb-6">
                         {clubs.filter(c => c.status === "approved").map((club) => {
@@ -584,7 +584,6 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                     key={club.id}
                                     onClick={() => {
                                         handleSetDefaultClub(isDefault ? null : club.id);
-                                        setClubSheetOpen(false);
                                     }}
                                     disabled={loading}
                                     className={`w-full flex items-center gap-3 p-4 rounded-xl transition-colors text-left ${
@@ -601,7 +600,10 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                         </p>
                                     </div>
                                     {isDefault && (
-                                        <CheckCircle className="w-5 h-5 text-amber-500 shrink-0" />
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <span className="text-[11px] text-amber-500 font-medium">기본 클럽</span>
+                                            <CheckCircle className="w-5 h-5 text-amber-500" />
+                                        </div>
                                     )}
                                 </button>
                             );

@@ -75,7 +75,7 @@ export function getEarlybirdEndDateOptions(
       date: endKst.format("YYYY-MM-DD"),
       daysBefore: d,
       endAtISO: endKst.toISOString(),
-      label: `${d}일 전 (${endKst.format("M/D")} ${weekday} ${EARLYBIRD_END_HOUR_KST}:00)`,
+      label: `${endKst.format("M/D")} (${weekday}) ${EARLYBIRD_END_HOUR_KST}:00`,
     });
   }
 

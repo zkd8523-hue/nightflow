@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Calendar as CalendarIcon, Clock } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -10,17 +10,43 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 dayjs.locale("ko");
 
 interface DateTimeSheetProps {
-  value: string; // YYYY-MM-DDTHH:mm
+  /** "YYYY-MM-DDTHH:mm" 형식 */
+  value: string;
+  /** "YYYY-MM-DDTHH:mm" (포함). 이 값보다 이전 날짜/시간은 비활성 */
   min?: string;
+  /** "YYYY-MM-DDTHH:mm" (포함). 이 값보다 이후 날짜는 비활성 */
   max?: string;
   onChange: (value: string) => void;
   label?: string;
   placeholder?: string;
+  /** "datetime" (기본): 달력+시간 / "time-only": 시간만 (날짜 고정) / "date-2": 2개 버튼으로 날짜 선택+시간 */
+  mode?: "datetime" | "time-only" | "date-2";
+  /** time-only 모드에서 고정할 날짜 (YYYY-MM-DD) */
+  fixedDate?: string;
+  /** date-2 모드에서 보여줄 날짜 옵션 2개 */
+  dateOptions?: { label: string; value: string; minTime?: string; maxTime?: string; defaultTime?: string }[];
+}
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+function parseDatePart(value: string | undefined): Date | undefined {
+  if (!value) return undefined;
+  const d = dayjs(value);
+  if (!d.isValid()) return undefined;
+  return d.startOf("day").toDate();
+}
+
+function parseTimePart(value: string | undefined, fallback: string): string {
+  if (!value) return fallback;
+  const d = dayjs(value);
+  if (!d.isValid()) return fallback;
+  return d.format("HH:mm");
 }
 
 export function DateTimeSheet({
@@ -30,46 +56,98 @@ export function DateTimeSheet({
   onChange,
   label = "날짜 및 시간 선택",
   placeholder = "날짜와 시간을 선택하세요",
+  mode = "datetime",
+  fixedDate,
+  dateOptions,
 }: DateTimeSheetProps) {
+  const isTimeOnly = mode === "time-only";
+  const isDate2 = mode === "date-2";
   const [open, setOpen] = useState(false);
-  const [tempValue, setTempValue] = useState(value);
 
-  const handleOpen = () => {
-    setTempValue(value);
-    setOpen(true);
+  const [tempDate, setTempDate] = useState<Date | undefined>(() =>
+    parseDatePart(value)
+  );
+  const [tempTime, setTempTime] = useState<string>(() =>
+    parseTimePart(value, "22:00")
+  );
+
+  const [tempDateStr, setTempDateStr] = useState<string>(() =>
+    parseDatePart(value) ? dayjs(value).format("YYYY-MM-DD") : (dateOptions?.[0]?.value ?? "")
+  );
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setTempDate(
+        isTimeOnly && fixedDate
+          ? dayjs(fixedDate).startOf("day").toDate()
+          : parseDatePart(value)
+      );
+      const initDateStr = parseDatePart(value) ? dayjs(value).format("YYYY-MM-DD") : (dateOptions?.[0]?.value ?? "");
+      setTempDateStr(initDateStr);
+      const matchedOpt = dateOptions?.find(o => o.value === initDateStr);
+      setTempTime(parseTimePart(value, matchedOpt?.defaultTime ?? "22:00"));
+    }
+    setOpen(next);
   };
 
+  const minDate = useMemo(
+    () => (min ? dayjs(min).startOf("day").toDate() : undefined),
+    [min]
+  );
+  const maxDate = useMemo(
+    () => (max ? dayjs(max).startOf("day").toDate() : undefined),
+    [max]
+  );
+
+  const disabledDays = useMemo(() => {
+    const rules: Parameters<typeof Calendar>[0]["disabled"] = [];
+    if (minDate) (rules as Array<unknown>).push({ before: minDate });
+    if (maxDate) (rules as Array<unknown>).push({ after: maxDate });
+    return rules && (rules as Array<unknown>).length > 0 ? rules : undefined;
+  }, [minDate, maxDate]);
+
   const handleConfirm = () => {
-    if (tempValue) {
-      onChange(tempValue);
+    if (isDate2) {
+      if (!tempDateStr || !TIME_RE.test(tempTime)) return;
+      onChange(`${tempDateStr}T${tempTime}`);
+      setOpen(false);
+      return;
     }
+    if (!tempDate || !TIME_RE.test(tempTime)) return;
+    const combined = `${dayjs(tempDate).format("YYYY-MM-DD")}T${tempTime}`;
+    onChange(combined);
     setOpen(false);
   };
 
+  const canConfirm = isDate2
+    ? Boolean(tempDateStr) && TIME_RE.test(tempTime)
+    : Boolean(tempDate) && TIME_RE.test(tempTime);
+
   const displayText = value
-    ? dayjs(value).format("YYYY. MM. DD. a h:mm")
+    ? dayjs(value).format("YYYY. MM. DD. (ddd) a h:mm")
     : placeholder;
 
   return (
     <>
       <button
         type="button"
-        onClick={handleOpen}
+        onClick={() => handleOpenChange(true)}
         className="w-full bg-neutral-900 border border-neutral-800 h-11 rounded-md px-3 text-left text-white text-sm flex items-center justify-between hover:border-neutral-700 transition-colors"
       >
         <span className={value ? "text-white" : "text-neutral-500"}>
           {displayText}
         </span>
-        <Calendar className="w-4 h-4 text-neutral-500" />
+        <CalendarIcon className="w-4 h-4 text-neutral-500" />
       </button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
+      <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-8 pt-4"
+          className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-8 pt-4 max-h-[92vh] overflow-y-auto"
         >
-          <SheetHeader className="p-0 mb-4">
+         <div className="max-w-sm mx-auto w-full">
+          <SheetHeader className="p-0 mb-3">
             <div className="w-10 h-1 bg-neutral-700 rounded-full mx-auto mb-3" />
             <SheetTitle className="text-white text-base font-bold text-center">
               {label}
@@ -79,24 +157,77 @@ export function DateTimeSheet({
             </SheetDescription>
           </SheetHeader>
 
-          <div className="flex justify-center py-4">
-            <input
-              type="datetime-local"
-              value={tempValue}
-              min={min}
-              max={max}
-              onChange={(e) => setTempValue(e.target.value)}
-              className="bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base [color-scheme:dark] w-full focus:outline-none focus:border-green-500/50"
-            />
+          {/* 날짜 2버튼 (date-2 모드) */}
+          {isDate2 && dateOptions && (
+            <div className="flex gap-2 mb-2">
+              {dateOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setTempDateStr(opt.value);
+                    // 범위 벗어나면 defaultTime → minTime 순으로 폴백
+                    const inRange = (!opt.minTime || tempTime >= opt.minTime) && (!opt.maxTime || tempTime <= opt.maxTime);
+                    if (!inRange) setTempTime(opt.defaultTime ?? opt.minTime ?? "22:00");
+                  }}
+                  className={`flex-1 h-11 rounded-xl text-[13px] font-bold transition-all ${
+                    tempDateStr === opt.value
+                      ? "bg-white text-black"
+                      : "bg-neutral-900 text-neutral-400 border border-neutral-800"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* 달력 (datetime 모드에서만) */}
+          {!isTimeOnly && !isDate2 && (
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-2">
+              <Calendar
+                mode="single"
+                selected={tempDate}
+                onSelect={setTempDate}
+                disabled={disabledDays}
+                defaultMonth={tempDate ?? minDate ?? new Date()}
+                startMonth={minDate}
+                endMonth={maxDate}
+              />
+            </div>
+          )}
+
+          {/* 시간 선택 */}
+          <div className="mt-4">
+            <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-bold uppercase mb-2">
+              <Clock className="w-3.5 h-3.5" />
+              입장 시간
+            </div>
+
+            {(() => {
+              const activeOpt = isDate2 ? dateOptions?.find(o => o.value === tempDateStr) : undefined;
+              return (
+                <input
+                  type="time"
+                  value={tempTime}
+                  min={activeOpt?.minTime}
+                  max={activeOpt?.maxTime}
+                  onChange={(e) => setTempTime(e.target.value)}
+                  className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base [color-scheme:dark] focus:outline-none focus:border-green-500/50"
+                />
+              );
+            })()}
           </div>
 
           <Button
             type="button"
             onClick={handleConfirm}
-            className="w-full h-12 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 mt-2"
+            disabled={!canConfirm}
+            className="w-full h-12 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed mt-5"
           >
             확인
           </Button>
+         </div>
         </SheetContent>
       </Sheet>
     </>

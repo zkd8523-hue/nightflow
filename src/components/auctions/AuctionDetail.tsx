@@ -27,9 +27,11 @@ import { getVisibleContactMethods } from "@/lib/utils/contact-methods";
 import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
 import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
-import { Calendar, ShieldCheck, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Share2, X, Phone } from "lucide-react";
+import { Calendar, ShieldCheck, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Share2, X, Phone, Edit2, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { ShareAuctionSheet } from "./ShareAuctionSheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
 import { TableDetailsCard } from "./TableDetailsCard";
 import { trackEvent } from "@/lib/analytics";
@@ -51,6 +53,28 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
   // 공유 Sheet 상태
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
+
+  // MD 삭제 상태
+  const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/auctions/${displayAuction.id}/delete`, { method: "DELETE" });
+      if (!res.ok) {
+        const { error } = await res.json();
+        throw new Error(error || "삭제에 실패했습니다.");
+      }
+      router.push("/md");
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "삭제에 실패했습니다.";
+      alert(msg);
+    } finally {
+      setDeleting(false);
+      setDeleteSheetOpen(false);
+    }
+  };
 
   // VIP CRM 상태 (MD 전용)
   const [vipUserIds, setVipUserIds] = useState<string[]>([]);
@@ -157,6 +181,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         auction_id: displayAuction.id,
         winning_bid: displayAuction.current_bid,
         club_name: displayAuction.club?.name,
+        area: displayAuction.club?.area,
       });
       // useWinNotification 훅에서 토스트 처리하므로 여기서는 제거
     }
@@ -261,12 +286,30 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
         {/* Floating Badges */}
         <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
-          <button
-            onClick={() => setShareSheetOpen(true)}
-            className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
-          >
-            <Share2 className="w-4 h-4 text-white" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {isMdOwner && (
+              <>
+                <Link
+                  href={`/md/auctions/${displayAuction.id}/edit`}
+                  className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+                >
+                  <Edit2 className="w-3.5 h-3.5 text-white" />
+                </Link>
+                <button
+                  onClick={() => setDeleteSheetOpen(true)}
+                  className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+                >
+                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                </button>
+              </>
+            )}
+            <button
+              onClick={() => setShareSheetOpen(true)}
+              className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+            >
+              <Share2 className="w-4 h-4 text-white" />
+            </button>
+          </div>
           {isInstant && isActive && (
             <div className="flex flex-col items-end gap-1.5">
               <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur-md">
@@ -664,7 +707,35 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         auction={displayAuction}
       />
 
-      {/* 10. Bidder Profile Modal (MD 전용) */}
+      {/* 10. 삭제 확인 Sheet (MD 전용) */}
+      <Sheet open={deleteSheetOpen} onOpenChange={setDeleteSheetOpen}>
+        <SheetContent side="bottom" className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pb-8 pt-4">
+          <div className="max-w-sm mx-auto w-full">
+            <SheetHeader className="p-0 mb-6">
+              <div className="w-10 h-1 bg-neutral-700 rounded-full mx-auto mb-3" />
+              <SheetTitle className="text-white font-black text-lg text-center">경매를 삭제할까요?</SheetTitle>
+              <p className="text-neutral-500 text-[13px] text-center mt-1">삭제 후 복구할 수 없습니다.</p>
+            </SheetHeader>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="w-full h-12 rounded-2xl bg-red-500 text-white font-black text-base disabled:opacity-50"
+              >
+                {deleting ? "삭제 중..." : "삭제하기"}
+              </button>
+              <button
+                onClick={() => setDeleteSheetOpen(false)}
+                className="w-full h-12 rounded-2xl bg-neutral-900 text-neutral-400 font-bold text-base"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* 11. Bidder Profile Modal (MD 전용) */}
       {isMdOwner && (
         <BidderProfile
           isOpen={profileModalOpen}

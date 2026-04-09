@@ -11,6 +11,7 @@ import { formatNumber, formatTime } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { InlineTimer } from "@/components/auctions/InlineTimer";
 import { Edit2, ExternalLink, MoreVertical, Trash2, Share2, RotateCcw, Phone } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -36,6 +37,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
 
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
+    const [saleChannel, setSaleChannel] = useState<"nightflow" | "other" | null>(null);
     const [completing, setCompleting] = useState(false);
 
     const createdAt = auction.created_at;
@@ -62,13 +64,13 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
         };
     };
 
-    const performComplete = async () => {
+    const performComplete = async (channel: "nightflow" | "other") => {
         setCompleting(true);
         try {
             const res = await fetch("/api/auction/complete", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ auctionId: auction.id }),
+                body: JSON.stringify({ auctionId: auction.id, saleChannel: channel }),
             });
             if (!res.ok) {
                 const { error } = await res.json();
@@ -81,6 +83,8 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
             toast.error(getErrorMessage(error));
         } finally {
             setCompleting(false);
+            setShowCompleteConfirm(false);
+            setSaleChannel(null);
         }
     };
 
@@ -105,7 +109,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
 
             toast.success("삭제되었습니다.");
             onDelete?.();
-            router.refresh();
+            router.push("/md");
         } catch (error: unknown) {
             const msg = getErrorMessage(error);
             logError(error, 'MDAuctionCard.performDelete');
@@ -312,15 +316,56 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                 </div>
             </div>
 
-            <ConfirmDialog
-                isOpen={showCompleteConfirm}
-                onOpenChange={setShowCompleteConfirm}
-                onConfirm={performComplete}
-                title="판매완료 처리"
-                description="이 판매를 판매완료로 처리하시겠습니까? 완료 후에는 되돌릴 수 없습니다."
-                confirmText="판매완료"
-                variant="default"
-            />
+            {/* 판매완료 — 경로 선택 Sheet */}
+            <Sheet open={showCompleteConfirm} onOpenChange={(o) => { setShowCompleteConfirm(o); if (!o) setSaleChannel(null); }}>
+                <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-12 outline-none">
+                  <div className="flex flex-col">
+                    <div className="w-10 h-1 bg-neutral-700 rounded-full mx-auto mb-3" />
+                    <SheetHeader className="text-left p-0 gap-0.5 mb-3">
+                        <SheetTitle className="text-white font-black text-xl">판매완료</SheetTitle>
+                        <SheetDescription className="text-neutral-500 text-sm">판매 경로를 선택해주세요</SheetDescription>
+                    </SheetHeader>
+                    {/* 경로 선택 */}
+                    <div className="space-y-2 mb-3">
+                        {([
+                            { value: "nightflow", label: "NightFlow" },
+                            { value: "other", label: "다른 경로" },
+                        ] as const).map(({ value, label }) => (
+                            <button
+                                key={value}
+                                type="button"
+                                onClick={() => setSaleChannel(value)}
+                                className={`w-full h-14 rounded-2xl font-bold text-base transition-all text-left px-5 border ${
+                                    saleChannel === value
+                                        ? "bg-white text-black border-white"
+                                        : "bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-600 hover:text-white"
+                                }`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* 액션 버튼 */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => { setShowCompleteConfirm(false); setSaleChannel(null); }}
+                            className="h-12 rounded-2xl border-neutral-800 bg-neutral-900/50 text-neutral-400 font-bold hover:bg-neutral-800"
+                        >
+                            취소
+                        </Button>
+                        <Button
+                            disabled={!saleChannel || completing}
+                            onClick={() => saleChannel && performComplete(saleChannel)}
+                            className="h-12 rounded-2xl font-black text-base bg-white hover:bg-neutral-200 text-black disabled:opacity-30"
+                        >
+                            판매완료
+                        </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+            </Sheet>
             <ConfirmDialog
                 isOpen={showDeleteConfirm}
                 onOpenChange={setShowDeleteConfirm}

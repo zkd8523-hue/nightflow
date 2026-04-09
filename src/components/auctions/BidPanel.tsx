@@ -166,6 +166,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
         auction_id: auction.id,
         bid_amount: bidAmount,
         club_name: auction.club?.name,
+        area: auction.club?.area,
       });
 
       setShowConfirm(false);
@@ -448,6 +449,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                         auction_id: auction.id,
                         bin_price: binPrice,
                         club_name: auction.club?.name,
+                        area: auction.club?.area,
                       });
 
                       setShowBinConfirm(false);

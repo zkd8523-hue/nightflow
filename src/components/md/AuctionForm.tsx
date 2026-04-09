@@ -11,8 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction, PriceRecommendation } from "@/types/database";
-import { SmartPricingCard } from "./SmartPricingCard";
-import { Calendar, Wine, Check, ArrowRight, ImageIcon, Sparkles, ChevronDown, MapPin, Plus, X, RefreshCw, Building2 } from "lucide-react";
+import { Calendar, Wine, Check, ArrowRight, ImageIcon, ChevronDown, MapPin, X, RefreshCw, Building2 } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 dayjs.locale("ko");
@@ -24,7 +23,6 @@ import {
     getEarlybirdEndDateOptions,
     EARLYBIRD_MAX_EVENT_DAYS_AHEAD,
 } from "@/lib/utils/auction";
-import { shareAuction } from "@/lib/utils/share";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { uploadImage } from "@/lib/utils/upload";
@@ -72,18 +70,6 @@ const formSchema = z.object({
                 path: ["auction_end_at"],
             });
         }
-    }
-
-    if (data.entry_time && data.listing_type !== "instant") {
-        // 실제 방문 캘린더 시각 계산 (새벽 4시 이전 = event_date + 1일)
-        const [h, m] = data.entry_time.split(":").map(Number);
-        const visitDate = h < 4
-            ? dayjs(data.event_date).add(1, "day")
-            : dayjs(data.event_date);
-        const visitDateTime = visitDate.hour(h).minute(m);
-
-        // 얼리버드: 마감은 이벤트 -2일이므로 입장과 비교 불필요(항상 안전)
-        // 이 체크는 instant 모드에서만 의미 있지만 instant는 위 블록에서 이미 스킵됨
     }
 
     // 즉시낙찰가(BIN)가 시작가보다 낮은지 체크
@@ -145,11 +131,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         : prefill ? !prefill.entry_time
         : false
     );
-    const [instantStart, setInstantStart] = useState(true);
+
     const [customExtra, setCustomExtra] = useState("");
     const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(initialData?.thumbnail_url || null);
-    const [thumbnailUploading, setThumbnailUploading] = useState(false);
     const [isClubImage, setIsClubImage] = useState(false);
     const [localFloorPlanUrls, setLocalFloorPlanUrls] = useState<Record<string, string>>({});
     const [setAsClubDefault, setSetAsClubDefault] = useState(false);
@@ -179,7 +164,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             listing_type: initialData?.listing_type || "instant",
             club_id: initialData?.club_id || prefill?.club_id || defaultClubId || "",
             table_info: initialData?.table_info || prefill?.table_info || "",
-            duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 60,
+            duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 240,
             includes: initialData?.includes || prefill?.includes || ["기본 안주"],
             event_date: initialEventDate,
             start_price: initialData?.start_price || prefill?.start_price || 0,
@@ -190,7 +175,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     : undefined,
             entry_time: initialData
                 ? (initialData.entry_time ?? null)
-                : (prefill?.entry_time ?? dayjs().add(1, "hour").format("HH:mm")),
+                : (prefill?.entry_time ?? "22:00"),
             auction_start_at: initialData?.auction_start_at ? dayjs(initialData.auction_start_at).format("YYYY-MM-DDTHH:mm") : dayjs().format("YYYY-MM-DDTHH:mm"),
             auction_end_at: initialData?.auction_end_at || undefined,
             instant_start: true,
@@ -208,31 +193,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     // 입찰 보호: 입찰이 있으면 경매 조건 수정 불가
     const hasBids = initialData && (initialData.bid_count > 0 || (initialData.chat_interest_count ?? 0) > 0);
     const isTermsEditable = !hasBids;
-
-    // repostFrom 프리셋 적용 공유 함수
-    const applyPreset = (source: Partial<{
-        club_id: string;
-        listing_type: string;
-        includes: string[];
-        start_price: number;
-        duration_minutes: number;
-    }>) => {
-        if (source.club_id) setValue("club_id", source.club_id);
-        if (source.includes) setValue("includes", source.includes);
-        if (source.start_price) {
-            setValue("start_price", source.start_price);
-            setStartPriceDisplay(source.start_price.toLocaleString());
-        }
-        if (source.duration_minutes) setValue("duration_minutes", source.duration_minutes);
-        // listing_type에 따라 모드 토글 자동 전환
-        if (source.listing_type === 'instant') {
-            setAuctionMode("today");
-            setValue("listing_type", "instant");
-        } else if (source.listing_type === 'auction') {
-            setAuctionMode("advance");
-            setValue("listing_type", "auction");
-        }
-    };
 
     // 플로어맵 즉시 업로드
     const handleFloorPlanUpload = async (file: File) => {
@@ -263,15 +223,12 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
     // Smart Pricing
     const [priceRec, setPriceRec] = useState<PriceRecommendation | null>(null);
-    const [priceRecLoading, setPriceRecLoading] = useState(false);
-    const [showSmartPricing, setShowSmartPricing] = useState(false);
 
     useEffect(() => {
         if (!selectedClubId) {
             setPriceRec(null);
             return;
         }
-        setPriceRecLoading(true);
         const timer = setTimeout(async () => {
             try {
                 const { data, error } = await supabase.rpc("get_price_recommendation", {
@@ -282,8 +239,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 setPriceRec(data as PriceRecommendation);
             } catch {
                 setPriceRec(null);
-            } finally {
-                setPriceRecLoading(false);
             }
         }, 300);
         return () => clearTimeout(timer);
@@ -358,12 +313,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         }
     }, [watchedEventDate, auctionMode, setValue]);  // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleApplyRecommendation = (price: number) => {
-        setValue("start_price", price);
-        setStartPriceDisplay(price.toLocaleString());
-        toast.success("추천 시작가가 적용되었습니다!");
-    };
-
     const handleThumbnailSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -382,16 +331,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             if (isClubImage) return null; // 클럽 이미지는 저장 안 함 (폴백으로 표시)
             return thumbnailPreview; // 기존 URL 유지 (수정 시)
         }
-        setThumbnailUploading(true);
-        try {
-            const publicUrl = await uploadImage(thumbnailFile, `auctions/${mdId}`, {
-                upsert: true,
-                maxWidth: 1920,
-            });
-            return publicUrl;
-        } finally {
-            setThumbnailUploading(false);
-        }
+        const publicUrl = await uploadImage(thumbnailFile, `auctions/${mdId}`, {
+            upsert: true,
+            maxWidth: 1920,
+        });
+        return publicUrl;
     };
 
     const onSubmit = async (values: FormValues) => {
@@ -439,14 +383,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             } else if (values.listing_type === "auction") {
                 // 얼리버드: 등록 즉시 시작 (규칙 고정)
                 auction_start_at = new Date().toISOString();
-            } else if (instantStart) {
-                // 오늘특가 즉시 시작
-                auction_start_at = new Date().toISOString();
             } else {
-                auction_start_at = new Date(values.auction_start_at).toISOString();
-                if (dayjs(auction_start_at).isBefore(dayjs())) {
-                    auction_start_at = new Date().toISOString();
-                }
+                // 오늘특가: 등록 즉시 시작
+                auction_start_at = new Date().toISOString();
             }
 
             let auction_end_at: string;
@@ -541,6 +480,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 auction_id: result.id,
                 listing_type: values.listing_type,
                 club_id: values.club_id,
+                area: clubs.find(c => c.id === values.club_id)?.area,
                 start_price: values.start_price,
                 duration_minutes: finalDurationMinutes,
                 is_update: !!initialData,
@@ -584,7 +524,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         setAuctionMode("today");
                         setValue("listing_type", "instant");
                         setInstantEntry(false);
-                        setValue("entry_time", dayjs().add(1, "hour").format("HH:mm"));
+                        setValue("entry_time", "22:00");
                         setValue("event_date", getClubEventDate());
                         setValue("duration_minutes", 240);
                     }}
@@ -593,7 +533,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         : "text-neutral-500 hover:text-white"
                         }`}
                 >
-                    🔥 오늘 특가 (타임세일)
+                    🔥 오늘특가 (타임세일)
                 </button>
                 <button
                     type="button"
@@ -708,37 +648,30 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         </div>
                     )}
                 </div>
-                <p className="text-neutral-600 text-[11px] mt-1">경매 카드 및 공유 링크에 표시됩니다. 가로형 사진을 권장해요.</p>
                 {errors.club_id && <p className="text-red-500 text-xs">{errors.club_id?.message?.toString()}</p>}
             </section>
 
             {/* 2. 테이블 위치 */}
             <section className="space-y-4">
-                <button
-                    type="button"
-                    onClick={() => hasFloorPlan && setFloorPlanExpanded(!floorPlanExpanded)}
-                    className="flex items-center gap-2 w-full mb-2"
-                >
+                <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4 text-green-500" />
                     <span className="text-white font-bold">테이블 위치</span>
-                    {hasFloorPlan && (
-                        <>
-                            <span className="text-xs text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">플로어맵 등록됨</span>
-                            <ChevronDown className={`w-4 h-4 text-neutral-400 ml-auto transition-transform ${floorPlanExpanded ? 'rotate-180' : ''}`} />
-                        </>
-                    )}
-                </button>
+                </div>
 
                 <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
                     {hasFloorPlan && !floorPlanExpanded && (
                         <button type="button" onClick={() => setFloorPlanExpanded(true)} className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-green-400 transition-colors py-1">
-                            <MapPin className="w-3.5 h-3.5 text-green-500" />
-                            <span>플로어맵 보기</span>
+                            <span>등록된 플로어맵</span>
                             <ChevronDown className="w-3 h-3" />
                         </button>
                     )}
                     {hasFloorPlan && floorPlanExpanded && (
                         <div className="space-y-2">
+                            <button type="button" onClick={() => setFloorPlanExpanded(false)} className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-green-400 transition-colors py-1">
+                                <MapPin className="w-3.5 h-3.5 text-green-500" />
+                                <span>플로어맵 닫기</span>
+                                <ChevronDown className="w-3 h-3 rotate-180" />
+                            </button>
                             <div className="rounded-xl overflow-hidden border border-neutral-800">
                                 <img
                                     src={floorPlanUrl!}
@@ -882,37 +815,16 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             </section>
 
 
-            {/* Smart Pricing 추천 — 충분한 데이터(3건+)가 있을 때만 토글 표시 (경매 모드에서만) */}
-            {!isInstantMode && selectedClubId && priceRec?.sufficient_data && (
-                <div>
-                    <button
-                        type="button"
-                        onClick={() => setShowSmartPricing(prev => !prev)}
-                        className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors py-2"
-                    >
-                        <Sparkles className="w-3.5 h-3.5 text-green-500" />
-                        <span>AI 추천 시작가 {showSmartPricing ? "접기" : "보기"}</span>
-                        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showSmartPricing ? "rotate-180" : ""}`} />
-                    </button>
-                    {showSmartPricing && (
-                        <SmartPricingCard
-                            recommendation={priceRec}
-                            loading={priceRecLoading}
-                            onApply={handleApplyRecommendation}
-                        />
-                    )}
-                </div>
-            )}
+            {/* Smart Pricing 추천 — 숨김 처리 */}
 
             {/* 4. 가격 설정 */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 text-white font-bold mb-2">
                     <Wine className="w-4 h-4 text-amber-500" />
-                    <span>가격 설정</span>
+                    <span>{isInstantMode ? "판매가" : "경매 시작가"}</span>
                 </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-6">
+                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
                     <div className="space-y-3">
-                        <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매가" : "경매 시작가"}</Label>
                         {hasBids && (
                             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-2">
                                 <p className="text-[12px] text-amber-400 font-bold">🔒 {isInstantMode ? "구매 시도가 있어 조건 변경 불가" : "입찰이 있어 경매 조건 변경 불가"}</p>
@@ -933,9 +845,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             className={`bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-green-500 ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
                         <div className="flex gap-2">
-                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 10000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+1만</Button>
-                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 50000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+5만</Button>
                             <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 100000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+10만</Button>
+                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 50000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+5만</Button>
+                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 10000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+1만</Button>
                         </div>
 
                         {/* 가격 경고 */}
@@ -974,7 +886,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
                     {/* 즉시낙찰가 (BIN) — 얼리버드 경매 전용 */}
                     {!isInstantMode && (
-                        <div className="space-y-3 border-t border-neutral-800/50 pt-5">
+                        <div className="space-y-3 border-t border-neutral-800/50 pt-4">
                             <div className="flex items-center justify-between">
                                 <Label className="text-neutral-400 text-[10px] font-bold uppercase">즉시낙찰가 (선택)</Label>
                                 <label className="flex items-center gap-1.5 cursor-pointer">
@@ -1043,7 +955,14 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-6">
                     <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                            <Label className="text-neutral-400 text-[10px] font-bold uppercase">입장 시간</Label>
+                            <div className="flex flex-col gap-0.5">
+                                <Label className="text-neutral-400 text-[10px] font-bold uppercase">입장 일시</Label>
+                                {auctionMode !== "today" && (
+                                    <span className="text-[9px] text-neutral-600">
+                                        오늘부터 {EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내 이벤트만 등록할 수 있어요
+                                    </span>
+                                )}
+                            </div>
                             {auctionMode === "today" && (
                             <label className="flex items-center gap-1.5 cursor-pointer">
                                 <input
@@ -1052,7 +971,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     onChange={(e) => {
                                         const checked = e.target.checked;
                                         setInstantEntry(checked);
-                                        setValue("entry_time", checked ? null : dayjs().add(1, "hour").format("HH:mm"));
+                                        setValue("entry_time", checked ? null : "22:00");
                                     }}
                                     className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
                                 />
@@ -1066,40 +985,24 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             </div>
                         ) : auctionMode === "today" ? (
                             <DateTimeSheet
-                                label="입장 시간 선택"
-                                value={(() => {
-                                    const t = watch("entry_time") || dayjs().add(1, "hour").format("HH:mm");
-                                    const d = watch("event_date");
-                                    const combined = dayjs(`${d}T${t}`);
-                                    if (combined.isBefore(dayjs())) {
-                                        return combined.add(1, "day").format("YYYY-MM-DDTHH:mm");
-                                    }
-                                    return combined.format("YYYY-MM-DDTHH:mm");
-                                })()}
-                                min={(() => {
-                                    const start = instantStart ? dayjs() : dayjs(watch("auction_start_at"));
-                                    const dur = watch("duration_minutes");
-                                    const end = dur === -1
-                                        ? dayjs(watch("event_date")).hour(18).minute(0)
-                                        : start.add(dur, "minute");
-                                    const floor = dayjs();
-                                    return (end.isAfter(floor) ? end : floor).format("YYYY-MM-DDTHH:mm");
-                                })()}
+                                label="입장 일시 선택"
+                                mode="date-2"
+                                dateOptions={[
+                                    { label: `${dayjs(getClubEventDate()).format("M/D (ddd)")} 저녁`, value: getClubEventDate(), minTime: "18:00", maxTime: "23:59", defaultTime: "22:00" },
+                                    { label: `${dayjs(getClubEventDate()).add(1, "day").format("M/D (ddd)")} 새벽`, value: dayjs(getClubEventDate()).add(1, "day").format("YYYY-MM-DD"), minTime: "00:00", maxTime: "05:59", defaultTime: "01:00" },
+                                ]}
+                                value={`${watch("event_date")}T${watch("entry_time") || "22:00"}`}
                                 onChange={(val) => {
                                     const picked = dayjs(val);
-                                    const pickedTime = picked.format("HH:mm");
-                                    const eventDate = picked.hour() < 4
-                                        ? picked.subtract(1, "day").format("YYYY-MM-DD")
-                                        : picked.format("YYYY-MM-DD");
-                                    setValue("event_date", eventDate);
-                                    setValue("entry_time", pickedTime);
+                                    setValue("event_date", picked.format("YYYY-MM-DD"));
+                                    setValue("entry_time", picked.format("HH:mm"));
                                     clearErrors("entry_time");
                                 }}
                             />
                         ) : (
                             <>
                                 <DateTimeSheet
-                                    label="입장 시간 선택"
+                                    label="입장 일시 선택"
                                     value={(() => {
                                         const t = watch("entry_time") || "22:00";
                                         const d = watch("event_date");
@@ -1118,54 +1021,18 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                         clearErrors("entry_time");
                                     }}
                                 />
-                                <p className="text-[10px] text-neutral-500 font-medium">
-                                    오늘부터 {EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내 이벤트만 등록할 수 있어요
-                                </p>
                             </>
                         )}
                         {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date?.message?.toString()}</p>}
                         {errors.entry_time && <p className="text-red-500 text-[11px]">{errors.entry_time?.message?.toString()}</p>}
                     </div>
-                    {!initialData && (
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매 시작 일시" : "경매 시작 일시"}</Label>
-                            <label className="flex items-center gap-1.5 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={instantStart}
-                                    onChange={(e) => {
-                                        const checked = e.target.checked;
-                                        setInstantStart(checked);
-                                        setValue("instant_start", checked);
-                                        if (!checked) {
-                                            setValue("auction_start_at", dayjs().format("YYYY-MM-DDTHH:mm"));
-                                        }
-                                    }}
-                                    className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
-                                />
-                                <span className="text-[10px] text-white font-bold">즉시 시작</span>
-                            </label>
-                        </div>
-                        {instantStart ? (
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
-                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "등록 즉시 판매가 시작됩니다" : "등록 즉시 경매가 시작됩니다"}</span>
-                            </div>
-                        ) : (
-                            <>
-                                <DateTimeSheet
-                                    label={isInstantMode ? "판매 시작 일시" : "경매 시작 일시"}
-                                    value={watch("auction_start_at")}
-                                    min={dayjs().format("YYYY-MM-DDTHH:mm")}
-                                    onChange={(val) => setValue("auction_start_at", val)}
-                                />
-                                {errors.auction_start_at && <p className="text-red-500 text-[11px]">{errors.auction_start_at?.message?.toString()}</p>}
-                            </>
-                        )}
-                    </div>
-                    )}
                     <div className={`space-y-3 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매 지속 시간" : "경매 마감"}</Label>
+                        <div className="flex flex-col gap-0.5">
+                            <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매 지속 시간" : "경매 마감"}</Label>
+                            {auctionMode === "advance" && (
+                                <span className="text-[9px] text-neutral-600">마감은 항상 21:00. 이벤트일 최소 2일 전.</span>
+                            )}
+                        </div>
                         {(() => {
                             if (auctionMode === "today") {
                                 return (
@@ -1204,10 +1071,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
                                 return (
                                     <div className="space-y-2">
-                                        <p className="text-[11px] text-neutral-500 font-medium">
-                                            마감은 항상 21:00. 이벤트일 최소 2일 전.
-                                        </p>
-
                                         {/* 기본 카드 (큰 사이즈) */}
                                         <button
                                             type="button"
@@ -1216,7 +1079,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                         >
                                             <span>{defaultOption.label}</span>
                                             <span className={`text-[10px] font-medium mt-0.5 ${isDefaultSelected ? "text-neutral-600" : "text-neutral-500"}`}>
-                                                기본 추천 (가장 긴 노출)
+                                                가장 긴 노출
                                             </span>
                                         </button>
 
@@ -1228,7 +1091,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                                     onClick={() => setShowAllEndOptions(v => !v)}
                                                     className="w-full text-[11px] text-neutral-500 font-bold py-1.5 hover:text-neutral-300 transition-colors"
                                                 >
-                                                    {showAllEndOptions ? "접기 ▲" : "다른 시각으로 ▼"}
+                                                    {showAllEndOptions ? "접기 ▲" : "더 빠른 마감 ▼"}
                                                 </button>
 
                                                 {showAllEndOptions && (
@@ -1260,7 +1123,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             <div className="mt-12 px-1">
                 <div className="max-w-lg mx-auto">
                     <Button disabled={isSubmitting} className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "경매 정보 수정하기") : (isInstantMode ? "오늘 특가 등록하기" : "경매 시작하기"))}
+                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "경매 정보 수정하기") : (isInstantMode ? "오늘특가 등록하기" : "경매 시작하기"))}
                         <ArrowRight className="w-5 h-5" />
                     </Button>
                 </div>

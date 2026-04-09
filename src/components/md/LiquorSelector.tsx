@@ -141,7 +141,7 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
                         : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
                     }`}
                   >
-                    {label} {qty}병
+                    {qty}
                   </button>
                 );
               })}
@@ -237,7 +237,7 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
         )}
 
         {/* 직접 입력 */}
-        <div className="pt-3 border-t border-neutral-800/50 space-y-2">
+        <div className="border-t border-neutral-800/50 space-y-2">
           <p className="text-neutral-500 text-[10px] font-bold">
             목록에 없으면 직접 입력
           </p>

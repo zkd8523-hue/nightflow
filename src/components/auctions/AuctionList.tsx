@@ -40,7 +40,7 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
   });
 
   const todayDate = getClubEventDate();
-  // 오늘 특가: listing_type === 'instant' (예약가)
+  // 오늘특가: listing_type === 'instant' (예약가)
   const todayAuctions = liveAndUpcoming.filter(a => a.listing_type === 'instant');
   // 얼리버드 경매: listing_type === 'auction' (경매)
   const advanceAuctions = liveAndUpcoming.filter(a => a.listing_type === 'auction');
@@ -93,7 +93,7 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
           >
-            ⚡ 오늘 특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
+            🔥 오늘특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
           </button>
 
           <button
@@ -113,7 +113,7 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
           {todayAuctions.length === 0 ? (
             <div className="text-center pt-8 pb-16 space-y-6">
               <div className="space-y-2">
-                <p className="text-[15px] font-bold text-neutral-300">오늘 특가가 곧 올라옵니다</p>
+                <p className="text-[15px] font-bold text-neutral-300">오늘특가가 곧 올라옵니다</p>
                 <p className="text-[12px] text-neutral-500 leading-relaxed">
                   MD가 예약가격 테이블을 올리면
                   <br />

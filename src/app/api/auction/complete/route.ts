@@ -6,9 +6,12 @@ import { NextResponse } from "next/server";
 // active → confirmed (MD 수동)
 export async function POST(req: Request) {
   try {
-    const { auctionId } = await req.json();
+    const { auctionId, saleChannel } = await req.json();
     if (!auctionId) {
       return NextResponse.json({ error: "Missing auctionId" }, { status: 400 });
+    }
+    if (!saleChannel || !["nightflow", "other"].includes(saleChannel)) {
+      return NextResponse.json({ error: "Missing saleChannel" }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
     // active/scheduled → confirmed
     const { error: updateError } = await supabaseAdmin
       .from("auctions")
-      .update({ status: "confirmed" })
+      .update({ status: "confirmed", sale_channel: saleChannel })
       .eq("id", auctionId);
 
     if (updateError) throw updateError;
