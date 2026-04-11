@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Store,
   CheckCircle,
+  Flag,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -64,6 +65,65 @@ export default async function AdminDashboardPage() {
     return new Date(end) > new Date(now);
   }).length;
 
+  // 지역별 통계: clubs.area 기준 집계
+  const { data: areaRaw } = await supabase
+    .from("auctions")
+    .select("id, chat_interest_count, club:clubs(area)");
+
+  const { data: bidsRaw } = await supabase
+    .from("bids")
+    .select("auction_id");
+
+  const { data: mdsRaw } = await supabase
+    .from("users")
+    .select("area")
+    .eq("role", "md")
+    .eq("md_status", "approved");
+
+  const { data: clubsRaw } = await supabase
+    .from("clubs")
+    .select("area")
+    .eq("status", "approved");
+
+  // 지역별 집계
+  type AreaStat = { clubs: number; mds: number; auctions: number; totalBids: number; totalInterest: number };
+  const areaMap: Record<string, AreaStat> = {};
+
+  const ensureArea = (area: string) => {
+    if (!areaMap[area]) areaMap[area] = { clubs: 0, mds: 0, auctions: 0, totalBids: 0, totalInterest: 0 };
+  };
+
+  (clubsRaw || []).forEach((c) => { if (c.area) { ensureArea(c.area); areaMap[c.area].clubs++; } });
+  (mdsRaw || []).forEach((m) => { if (m.area) { ensureArea(m.area); areaMap[m.area].mds++; } });
+
+  const bidCountMap: Record<string, number> = {};
+  (bidsRaw || []).forEach((b) => { bidCountMap[b.auction_id] = (bidCountMap[b.auction_id] || 0) + 1; });
+
+  (areaRaw || []).forEach((a) => {
+    const area = (a.club as unknown as { area: string } | null)?.area;
+    if (!area) return;
+    ensureArea(area);
+    areaMap[area].auctions++;
+    areaMap[area].totalBids += bidCountMap[a.id] || 0;
+    areaMap[area].totalInterest += a.chat_interest_count || 0;
+  });
+
+  const areaStats = Object.entries(areaMap)
+    .map(([area, s]) => ({
+      area,
+      clubs: s.clubs,
+      mds: s.mds,
+      auctions: s.auctions,
+      avgBids: s.auctions > 0 ? (s.totalBids / s.auctions).toFixed(1) : "0",
+      avgInterest: s.auctions > 0 ? (s.totalInterest / s.auctions).toFixed(1) : "0",
+    }))
+    .sort((a, b) => b.auctions - a.auctions);
+
+  // 신고 수 조회
+  const { count: reportCount } = await supabase
+    .from("auction_reports")
+    .select("id", { count: "exact", head: true });
+
   const stats = [
     {
       label: "전체 유저",
@@ -116,6 +176,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-red-500/10",
       href: "/admin/users",
     },
+    {
+      label: "게시글 신고",
+      value: `${reportCount || 0}건`,
+      icon: Flag,
+      color: "text-orange-500",
+      bgColor: "bg-orange-500/10",
+      badge: reportCount ? `${reportCount}건` : null,
+      href: "/admin/reports",
+    },
   ];
 
   return (
@@ -131,6 +200,39 @@ export default async function AdminDashboardPage() {
           </Link>
           <h1 className="text-4xl font-black text-white mb-2">Admin Dashboard</h1>
           <p className="text-neutral-500">NightFlow 플랫폼 관리</p>
+        </div>
+
+        {/* 지역별 현황 */}
+        <div className="mb-8">
+          <h2 className="text-lg font-black text-white mb-3">지역별 현황</h2>
+          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-neutral-800">
+                  <th className="text-left px-5 py-3 text-neutral-500 font-bold">지역</th>
+                  <th className="text-right px-4 py-3 text-neutral-500 font-bold">클럽</th>
+                  <th className="text-right px-4 py-3 text-neutral-500 font-bold">MD</th>
+                  <th className="text-right px-4 py-3 text-neutral-500 font-bold">경매</th>
+                  <th className="text-right px-5 py-3 text-neutral-500 font-bold">평균 입찰</th>
+                  <th className="text-right px-5 py-3 text-neutral-500 font-bold">평균 관심</th>
+                </tr>
+              </thead>
+              <tbody>
+                {areaStats.length === 0 ? (
+                  <tr><td colSpan={6} className="text-center py-8 text-neutral-600">데이터 없음</td></tr>
+                ) : areaStats.map((s, i) => (
+                  <tr key={s.area} className={i < areaStats.length - 1 ? "border-b border-neutral-800/50" : ""}>
+                    <td className="px-5 py-3.5 font-bold text-white">{s.area}</td>
+                    <td className="px-4 py-3.5 text-right text-neutral-300">{s.clubs}</td>
+                    <td className="px-4 py-3.5 text-right text-neutral-300">{s.mds}</td>
+                    <td className="px-4 py-3.5 text-right text-neutral-300">{s.auctions}</td>
+                    <td className="px-5 py-3.5 text-right font-bold text-amber-400">{s.avgBids}</td>
+                    <td className="px-5 py-3.5 text-right font-bold text-green-400">{s.avgInterest}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* 통계 카드 */}
