@@ -47,5 +47,24 @@ export function useCurrentUser() {
     return () => subscription.unsubscribe();
   }, [setUser, setLoading, refetch]);
 
+  // [통합 분석] 유저 식별 연동
+  useEffect(() => {
+    if (user) {
+      // 분석 유틸리티 로드 및 유저 식별 실행
+      import("@/lib/analytics/events").then(({ identifyUser }) => {
+        identifyUser(user.id, {
+          name: user.name,
+          role: user.role,
+          md_status: user.md_status,
+        });
+      });
+    } else {
+      // 로그아웃 시 식별 정보 초기화
+      import("@/lib/analytics/events").then(({ resetUser }) => {
+        resetUser();
+      });
+    }
+  }, [user?.id]);
+
   return { user, isLoading, refetch };
 }
