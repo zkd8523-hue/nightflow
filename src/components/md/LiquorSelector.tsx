@@ -152,7 +152,7 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
                         : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
                     }`}
                   >
-                    {qty}
+                    {qty}병
                   </button>
                 );
               })}

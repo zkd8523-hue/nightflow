@@ -38,6 +38,9 @@ export async function POST(req: Request) {
     const price = new Intl.NumberFormat("ko-KR").format(
       auction.winning_price || 0
     );
+    const matchUrl = `${APP_URL}/match/${auctionId}`;
+    const tableInfo = auction.table_info || "테이블";
+
     // ─── 1. MD 알림 (먼저 발송) ───
     if (auction.md_id) {
       // MD 인앱 알림

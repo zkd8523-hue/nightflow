@@ -141,7 +141,7 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
 
       const { error } = initialData
         ? await supabase.from("clubs").update(clubData).eq("id", initialData.id)
-        : await supabase.from("clubs").insert({ ...clubData, status: "approved" });
+        : await supabase.from("clubs").insert({ ...clubData, status: "pending" });
 
       if (error) throw error;
 
