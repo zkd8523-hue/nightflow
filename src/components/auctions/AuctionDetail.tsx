@@ -26,15 +26,17 @@ import { ContactButton } from "./ContactButton";
 import { getVisibleContactMethods } from "@/lib/utils/contact-methods";
 import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
+import { FallbackOfferCard } from "./FallbackOfferCard";
 import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
-import { Calendar, ShieldCheck, MessageSquare, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, MessageCircle, Copy, Check as CheckIcon, Share2, X, Phone, Edit2, Trash2 } from "lucide-react";
+import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, Share2, X, Edit2, Trash2, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { ShareAuctionSheet } from "./ShareAuctionSheet";
+import { ReportAuctionButton } from "./ReportAuctionButton";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
 import { TableDetailsCard } from "./TableDetailsCard";
-import { trackEvent } from "@/lib/analytics";
+import { trackViewAuction, trackEvent } from "@/lib/analytics/events";
 import { isEarlybird } from "@/lib/utils/date";
 
 interface AuctionDetailProps {
@@ -51,8 +53,9 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
   const bidPanelRef = useRef<BidPanelRef>(null);
 
-  // 공유 Sheet 상태
+  // 공유/지도 Sheet 상태
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false);
 
   // MD 삭제 상태
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
@@ -93,18 +96,30 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
     };
   }, [auction, initialBids, setCurrentAuction, setBids]);
 
-  // Mixpanel: 경매 상세 조회
+  // [통합 분석] 경매 상세 조회 트래킹
   useEffect(() => {
-    trackEvent("auction_viewed", {
-      auction_id: auction.id,
-      club_name: auction.club?.name,
-      area: auction.club?.area,
-      table_info: auction.table_info,
-      start_price: auction.start_price,
-      current_bid: auction.current_bid,
-      status: auction.status,
+    trackViewAuction({
+      id: auction.id,
+      clubName: auction.club?.name || "알수없음",
+      area: auction.club?.area || "전체",
+      listingType: auction.listing_type || "auction",
+      price: auction.current_bid || auction.start_price || 0,
     });
   }, [auction.id]);
+
+  // 조회수 기록 (유저당 경매당 1회, UNIQUE 제약으로 중복 무시)
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("auction_views")
+      .upsert(
+        { auction_id: auction.id, user_id: user.id },
+        { onConflict: "auction_id,user_id", ignoreDuplicates: true }
+      )
+      .then(({ error }) => {
+        if (error) console.warn("[AuctionDetail] View count error:", error.message);
+      });
+  }, [auction.id, user?.id]);
 
   // Realtime 구독 (내부에서 Outbid 알림도 처리)
   useAuctionRealtime(auction.id, user?.id);
@@ -146,9 +161,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const isInstant = displayAuction.listing_type === 'instant';
   const isMdOwner = user?.role === "md" && user?.id === displayAuction.md_id;
 
-  // instant: 관심 등록 여부 + 대화중 카운트
+  // instant: 관심 등록 여부
   const [alreadyInterested, setAlreadyInterested] = useState(false);
-  const chatCount = displayAuction.chat_interest_count || 0;
 
   useEffect(() => {
     if (!isInstant || !user) return;
@@ -173,7 +187,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   // instant 경매는 sticky 연락 CTA 비활성 (InstantBuyPanel에서 처리)
   const showContactCTA = !isInstant && isWonStatus && isWinner && !hideContactSticky;
 
-  // 낙찰 이벤트 트래킹 (토스트는 useWinNotification에서 처리)
+  // [통합 분석] 낙찰 이벤트 트래킹
   const prevStatusRef = useRef(displayAuction.status);
   useEffect(() => {
     if (prevStatusRef.current !== "won" && displayAuction.status === "won" && isWinner) {
@@ -182,8 +196,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         winning_bid: displayAuction.current_bid,
         club_name: displayAuction.club?.name,
         area: displayAuction.club?.area,
+        listing_type: displayAuction.listing_type,
       });
-      // useWinNotification 훅에서 토스트 처리하므로 여기서는 제거
     }
     prevStatusRef.current = displayAuction.status;
   }, [displayAuction.status, isWinner]);
@@ -291,37 +305,29 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               <>
                 <Link
                   href={`/md/auctions/${displayAuction.id}/edit`}
-                  className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+                  className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
                 >
-                  <Edit2 className="w-3.5 h-3.5 text-white" />
+                  <Edit2 className="w-4 h-4 text-white" />
                 </Link>
                 <button
                   onClick={() => setDeleteSheetOpen(true)}
-                  className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+                  className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
                 >
-                  <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                  <Trash2 className="w-4 h-4 text-red-400" />
                 </button>
               </>
             )}
             <button
               onClick={() => setShareSheetOpen(true)}
-              className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+              className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
             >
-              <Share2 className="w-4 h-4 text-white" />
+              <Share2 className="w-5 h-5 text-white" />
             </button>
           </div>
           {isInstant && isActive && (
-            <div className="flex flex-col items-end gap-1.5">
-              <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur-md">
-                <span className="text-[11px]">🔥</span>
-                <span className="text-[11px] font-black text-black tracking-wider">오늘특가</span>
-              </div>
-              {chatCount > 0 && (
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
-                  <MessageCircle className="w-3 h-3 text-white" />
-                  <span className="text-[11px] font-bold text-white">{chatCount}명이 대화중</span>
-                </div>
-              )}
+            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/90 backdrop-blur-md">
+              <span className="text-[11px]">🔥</span>
+              <span className="text-[11px] font-black text-black tracking-wider">오늘특가</span>
             </div>
           )}
           {!isActive && (
@@ -399,6 +405,26 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
       </div>
 
       <div className="px-4 -mt-8 space-y-3 relative z-10 max-w-lg mx-auto">
+        {/* Fallback 차순위 낙찰 제안 */}
+        {user && displayAuction.fallback_offered_to === user.id &&
+         displayAuction.fallback_deadline &&
+         new Date(displayAuction.fallback_deadline).getTime() > Date.now() && (
+          <FallbackOfferCard
+            auction={{
+              id: displayAuction.id,
+              fallback_deadline: displayAuction.fallback_deadline,
+              winning_price: displayAuction.winning_price,
+              current_bid: displayAuction.current_bid,
+              event_date: displayAuction.event_date,
+              entry_time: displayAuction.entry_time,
+              table_info: displayAuction.table_info,
+              club: club ? { name: club.name, area: club.area } : null,
+            }}
+            onAccepted={() => router.refresh()}
+            onDeclined={() => router.refresh()}
+          />
+        )}
+
         {/* 2. Current Bid Status Card (High Urgency) */}
         <Card className="bg-[#1C1C1E] border-neutral-800/50 p-5 space-y-3 shadow-2xl">
           <div className="space-y-1">
@@ -452,7 +478,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 </div>
               ) : (
                 <div className="flex items-center bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
-                  <span className="text-[11px] font-bold text-green-500">바로 입장 가능</span>
+                  <span className="text-[11px] font-bold text-green-500">즉시 입장 가능</span>
                 </div>
               )}
             </div>
@@ -571,8 +597,42 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           </div>
         )}
 
-        {/* 입찰/예약 패널 - 스크롤 콘텐츠 하단 배치 */}
-        {isActive && user && (
+        {/* 8. 클럽 위치 미니맵 */}
+        {club && club.latitude && club.longitude && (
+          <div className="px-1">
+            <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-neutral-500" />
+                  <h2 className="text-[14px] font-bold text-white">클럽 위치</h2>
+                </div>
+                <button
+                  onClick={() => setIsMapOpen(true)}
+                  className="flex items-center justify-center p-2 -m-2 rounded-lg text-[12px] text-neutral-400 font-bold hover:text-white transition-colors active:bg-neutral-800"
+                >
+                  지도앱으로 열기 →
+                </button>
+              </div>
+              <div
+                onClick={() => setIsMapOpen(true)}
+                className="relative rounded-xl overflow-hidden border border-neutral-800 w-full cursor-pointer"
+              >
+                <iframe
+                  src={`https://maps.google.com/maps?q=${club.latitude},${club.longitude}&z=16&output=embed&hl=ko`}
+                  className="w-full h-[130px] pointer-events-none"
+                  loading="lazy"
+                  title={`${club.name} 위치`}
+                />
+              </div>
+              {club.address && (
+                <p className="text-[12px] text-neutral-500 leading-relaxed">{club.address}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 입찰/예약 패널 - 스크롤 콘텐츠 하단 배치 (비로그인 시에도 노출하여 탐색 유도) */}
+        {isActive && (
           <div className="mt-4">
             {isInstant ? (
               <InstantBuyPanel
@@ -601,20 +661,10 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           </Button>
         )}
 
-        {/* 비로그인 CTA - 스크롤 콘텐츠 하단 배치 */}
-        {isActive && !user && (
-          <div className="mt-4">
-            <Button
-              onClick={() => router.push("/login")}
-              className={`w-full h-12 font-black text-base rounded-xl ${
-                isInstant
-                  ? "bg-amber-500 hover:bg-amber-400 text-black"
-                  : "bg-white text-black hover:bg-neutral-200"
-              }`}
-            >
-              {isInstant ? "로그인하고 예약하기" : "로그인하고 입찰하기"}
-            </Button>
-          </div>
+
+        {/* 게시글 신고 */}
+        {user && !isMdOwner && (
+          <ReportAuctionButton auctionId={displayAuction.id} />
         )}
 
       </div>
@@ -746,6 +796,58 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           vipId={selectedBidderScore ? vipIdMap[selectedBidderScore.id] : undefined}
           onVipChange={handleVipChange}
         />
+      )}
+
+      {/* 12. 지도 앱 선택 Sheet */}
+      {club && (
+        <Sheet open={isMapOpen} onOpenChange={setIsMapOpen}>
+          <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-8">
+            <SheetHeader className="pb-2">
+              <SheetTitle className="text-white text-[16px]">
+                {club.name} 위치 확인
+              </SheetTitle>
+              {club.address && (
+                <p className="text-[13px] text-neutral-400">{club.address}</p>
+              )}
+            </SheetHeader>
+            <div className="flex flex-col gap-3 mt-4">
+              <button
+                onClick={() => {
+                  const query = encodeURIComponent(club.address || club.name);
+                  window.open(`https://map.naver.com/v5/search/${query}`, "_blank");
+                  setIsMapOpen(false);
+                }}
+                className="flex items-center gap-3 p-4 bg-[#0A0A0A] rounded-2xl border border-neutral-800 hover:border-green-500/50 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[18px] font-bold text-green-500">N</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-[15px] font-bold text-white">네이버지도</p>
+                  <p className="text-[12px] text-neutral-400">네이버지도에서 열기</p>
+                </div>
+                <ExternalLink className="w-4 h-4 text-neutral-500" />
+              </button>
+              <button
+                onClick={() => {
+                  const query = encodeURIComponent(club.address || club.name);
+                  window.open(`https://map.kakao.com/link/search/${query}`, "_blank");
+                  setIsMapOpen(false);
+                }}
+                className="flex items-center gap-3 p-4 bg-[#0A0A0A] rounded-2xl border border-neutral-800 hover:border-yellow-500/50 transition-colors"
+              >
+                <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                  <span className="text-[18px] font-bold text-yellow-500">K</span>
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-[15px] font-bold text-white">카카오맵</p>
+                  <p className="text-[12px] text-neutral-400">카카오맵에서 열기</p>
+                </div>
+                <ExternalLink className="w-4 h-4 text-neutral-500" />
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
       )}
     </div>
   );

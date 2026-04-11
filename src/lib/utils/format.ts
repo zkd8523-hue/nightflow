@@ -2,12 +2,12 @@ import dayjs from "dayjs";
 
 /** 가격 포맷: 230000 → "230,000원" */
 export function formatPrice(price: number): string {
-  return `${price.toLocaleString("ko-KR")}원`;
+  return `${price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}원`;
 }
 
 /** 가격 포맷 (원 제외): 230000 → "230,000" */
 export function formatNumber(num: number): string {
-  return num ? num.toLocaleString("ko-KR") : "0";
+  return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
 }
 
 /** 
@@ -24,7 +24,9 @@ export function formatIncludes(includes: string[], maxItems = 2): string {
 
 /** 날짜 포맷: "2026-02-18" → "2월 18일 (수)" */
 export function formatDate(date: string): string {
-  return dayjs(date).format("M월 D일 (ddd)");
+  const DAYS = ["일", "월", "화", "수", "목", "금", "토"];
+  const d = dayjs(date);
+  return `${d.format("M월 D일")} (${DAYS[d.day()]})`;
 }
 
 /** 방문 날짜 포맷: "2026-03-28" → "3/28 (토)" */
@@ -41,7 +43,7 @@ export function formatEventDate(eventDate: string): string {
  * null → "즉시 입장"
  */
 export function formatEntryTime(entryTime: string | null, eventDate: string): string {
-  if (!entryTime) return "바로 입장 가능";
+  if (!entryTime) return "즉시 입장 가능";
   const [h] = entryTime.split(":").map(Number);
   if (h < 4) {
     const DAYS = ["일", "월", "화", "수", "목", "금", "토"];

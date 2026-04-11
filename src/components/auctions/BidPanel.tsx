@@ -23,7 +23,7 @@ import { isEarlybird } from "@/lib/utils/date";
 import { Crown, ShieldCheck, Timer, AlertCircle, Zap, CalendarCheck } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { logger } from "@/lib/utils/logger";
-import { trackEvent } from "@/lib/analytics";
+import { trackBid } from "@/lib/analytics/events";
 import { formatNumber } from "@/lib/utils/format";
 
 export interface BidPanelRef {
@@ -162,11 +162,11 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
         }),
       }).catch(logger.error);
 
-      trackEvent("bid_placed", {
-        auction_id: auction.id,
-        bid_amount: bidAmount,
-        club_name: auction.club?.name,
-        area: auction.club?.area,
+      // [통합 분석] 입찰 완료 트래킹
+      trackBid('complete', {
+        id: auction.id,
+        clubName: auction.club?.name || "알수없음",
+        amount: bidAmount,
       });
 
       setShowConfirm(false);
@@ -256,7 +256,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
             type="text"
             inputMode="numeric"
             placeholder={`최소 ${formatPrice(minBid)}`}
-            value={bidAmount ? bidAmount.toLocaleString("ko-KR") : ""}
+            value={bidAmount ? bidAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""}
             onChange={(e) => {
               const raw = e.target.value.replace(/,/g, "");
               setBidAmount(parseInt(raw) || 0);
@@ -276,13 +276,37 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
           </div>
         )}
 
-        <Button
-          className={`w-full h-12 text-base font-black rounded-xl transition-all active:scale-[0.98] ${getButtonStyle()}`}
-          onClick={() => setShowConfirm(true)}
-          disabled={!isActive || bidAmount < minBid || loading || isHighestBidder}
-        >
-          {getButtonContent()}
-        </Button>
+        {!user ? (
+          <Button
+            onClick={() => {
+              // 분석용 이벤트 기록 후 로그인 이동
+              trackBid('start', {
+                id: auction.id,
+                clubName: auction.club?.name || "알수없음",
+                is_guest: true
+              });
+              router.push("/login");
+            }}
+            className="w-full h-12 text-base font-black rounded-xl bg-white text-black hover:bg-neutral-200 shadow-xl animate-pulse"
+          >
+            로그인하고 입찰하기
+          </Button>
+        ) : (
+          <Button
+            className={`w-full h-12 text-base font-black rounded-xl transition-all active:scale-[0.98] ${getButtonStyle()}`}
+            onClick={() => {
+              setShowConfirm(true);
+              // [통합 분석] 입찰 시도(시작) 트래킹
+              trackBid('start', {
+                id: auction.id,
+                clubName: auction.club?.name || "알수없음",
+              });
+            }}
+            disabled={!isActive || bidAmount < minBid || loading || isHighestBidder}
+          >
+            {getButtonContent()}
+          </Button>
+        )}
 
       </Card>
 
@@ -445,11 +469,11 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                         }).catch(logger.error);
                       }
 
-                      trackEvent("bin_purchase", {
-                        auction_id: auction.id,
-                        bin_price: binPrice,
-                        club_name: auction.club?.name,
-                        area: auction.club?.area,
+                      // [통합 분석] 즉시낙찰 완료 트래킹
+                      trackBid('complete', {
+                        id: auction.id,
+                        clubName: auction.club?.name || "알수없음",
+                        amount: binPrice,
                       });
 
                       setShowBinConfirm(false);
