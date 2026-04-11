@@ -408,7 +408,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 auction_end_at = dayjs(auction_start_at).add(values.duration_minutes, "minute").toISOString();
             }
 
-            const auctionData: Record<string, any> = {
+            const auctionData: Record<string, unknown> = {
                 md_id: mdId,
                 listing_type: values.listing_type || "auction",
                 club_id: values.club_id,

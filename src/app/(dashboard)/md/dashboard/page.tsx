@@ -84,7 +84,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
 
     // 5. 활성 경매의 최고 입찰자 조회
     const activeIds = (auctions || []).filter(a => a.status === "active").map(a => a.id);
-    let topBids: Record<string, { bidder_name: string; bid_amount: number }> = {};
+    const topBids: Record<string, { bidder_name: string; bid_amount: number }> = {};
 
     if (activeIds.length > 0) {
         const { data: bids } = await supabase

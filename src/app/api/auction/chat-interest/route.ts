@@ -73,7 +73,13 @@ export async function POST(req: Request) {
     }
 
     // MD 연락처 정보 반환
-    const md = auction.md as any;
+    const md = auction.md as {
+      name?: string | null;
+      instagram?: string | null;
+      phone?: string | null;
+      kakao_open_chat_url?: string | null;
+      preferred_contact_methods?: string[] | null;
+    } | null;
 
     return NextResponse.json({
       success: true,

@@ -5,7 +5,7 @@ import { logger } from '@/lib/utils/logger';
 
 // Google Analytics gtag 함수 타입 정의
 type GtagFunction = (
-  command: 'event' | 'config' | 'js',
+  command: 'event' | 'config' | 'js' | 'set',
   ...args: unknown[]
 ) => void;
 

@@ -43,7 +43,7 @@ export async function GET(
 
     const fontData = await loadFont();
 
-    const club = auction.club as any;
+    const club = auction.club as { name?: string; area?: string; thumbnail_url?: string | null } | null;
 
     // KakaoTalk용 1200x630 가로형 이미지
     if (format === 'kakao') {

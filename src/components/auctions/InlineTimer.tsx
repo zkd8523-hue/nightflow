@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { useCountdown, type UrgencyLevel } from "@/hooks/useCountdown";
+import { useCountdown } from "@/hooks/useCountdown";
 import { formatCountdown } from "@/lib/utils/format";
 import { URGENCY_STYLES_COMPACT, URGENCY_FONT_SIZES } from "@/lib/constants/timer-urgency";
 import { Clock, AlertTriangle, Zap } from "lucide-react";
@@ -10,13 +10,6 @@ import { cn } from "@/lib/utils";
 interface InlineTimerProps {
     endTime: string;
     status: "active" | "ended" | "scheduled";
-}
-
-/** 레벨별 아이콘 선택 */
-function getIcon(level: UrgencyLevel) {
-  if (level === 'normal') return Clock;
-  if (level === 'warning') return AlertTriangle;
-  return Zap; // critical
 }
 
 export const InlineTimer = memo(function InlineTimer({ endTime, status }: InlineTimerProps) {
@@ -28,7 +21,7 @@ export const InlineTimer = memo(function InlineTimer({ endTime, status }: Inline
 
     const styles = URGENCY_STYLES_COMPACT[level];
     const fontSize = URGENCY_FONT_SIZES[level];
-    const Icon = getIcon(level);
+    const iconClassName = cn("w-5 h-5 transition-all", styles.text);
 
     return (
         <div
@@ -39,12 +32,9 @@ export const InlineTimer = memo(function InlineTimer({ endTime, status }: Inline
                 styles.glow
             )}
         >
-            <Icon
-                className={cn(
-                    "w-5 h-5 transition-all",
-                    styles.text
-                )}
-            />
+            {level === 'normal' && <Clock className={iconClassName} />}
+            {level === 'warning' && <AlertTriangle className={iconClassName} />}
+            {level === 'critical' && <Zap className={iconClassName} />}
             <span
                 suppressHydrationWarning
                 className={cn(

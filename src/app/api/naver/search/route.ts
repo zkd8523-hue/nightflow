@@ -49,7 +49,14 @@ export async function POST(request: NextRequest) {
       return await searchByKeyword(query, kakaoKey);
     }
 
-    const results = data.documents.map((doc: any) => ({
+    interface KakaoAddressDoc {
+      address?: { address_name?: string };
+      address_name?: string;
+      road_address?: { address_name?: string; zone_no?: string };
+      x: string;
+      y: string;
+    }
+    const results = (data.documents as KakaoAddressDoc[]).map((doc) => ({
       address: doc.address?.address_name || doc.address_name,
       roadAddress: doc.road_address?.address_name || doc.address_name,
       zipcode: doc.road_address?.zone_no || "",
@@ -91,7 +98,13 @@ async function searchByKeyword(query: string, kakaoKey: string) {
     return NextResponse.json([]);
   }
 
-  const results = data.documents.map((doc: any) => ({
+  interface KakaoKeywordDoc {
+    address_name?: string;
+    road_address_name?: string;
+    x: string;
+    y: string;
+  }
+  const results = (data.documents as KakaoKeywordDoc[]).map((doc) => ({
     address: doc.address_name,
     roadAddress: doc.road_address_name || doc.address_name,
     zipcode: "",

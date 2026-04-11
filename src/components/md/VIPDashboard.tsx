@@ -14,8 +14,8 @@ import { getErrorMessage, logError } from "@/lib/utils/error";
 
 interface VIPDashboardProps {
     mdId: string;
-    initialVipList: any[];
-    trustScores: any[];
+    initialVipList: MDVipUser[];
+    trustScores: UserTrustScore[];
 }
 
 export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboardProps) {
@@ -31,7 +31,7 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
         try {
             const { data, error } = await supabase
                 .from("md_vip_users")
-                .insert({ md_id: mdId, user_id: userId, notes: note })
+                .insert({ md_id: mdId, user_id: userId, note })
                 .select("*, user:users(id, name)")
                 .single();
 
@@ -154,8 +154,8 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                                     </div>
                                     <div>
                                         <p className="text-white font-bold text-sm">{vip.user?.name || "알 수 없음"}</p>
-                                        {vip.notes && (
-                                            <p className="text-xs text-neutral-500 mt-0.5">{vip.notes}</p>
+                                        {vip.note && (
+                                            <p className="text-xs text-neutral-500 mt-0.5">{vip.note}</p>
                                         )}
                                     </div>
                                 </div>

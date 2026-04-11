@@ -56,7 +56,7 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema) as unknown as Parameters<typeof useForm<FormValues>>[0]["resolver"],
     defaultValues: {
       name: initialData?.name || "",
       area: (initialData?.area as Area) || "강남",

@@ -38,7 +38,7 @@ export default function LoginPage() {
         // - 카카오는 scheme/host/port/path만 검증하므로 쿼리 파라미터는 안전
         // - next 파라미터는 /auth/callback에서 로그인 후 리다이렉트에 사용
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
-        scopes: "profile_nickname profile_image",
+        scopes: "profile_nickname profile_image account_email phone_number birthday birthyear gender",
         skipBrowserRedirect: false,
       },
     });
@@ -118,7 +118,7 @@ export default function LoginPage() {
         {/* 세션 만료 안내 */}
         {redirectPath !== "/" && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
-            <p className="text-[13px] text-amber-400 font-bold">세션이 만료되었습니다. 다시 로그인해주세요.</p>
+            <p className="text-[13px] text-amber-400 font-bold">로그인 후 이용할 수 있습니다.</p>
           </div>
         )}
 

@@ -29,6 +29,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
+    birthday: "",
+    gender: "",
     alimtalkConsent: false,
   });
 
@@ -41,9 +43,24 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       }
       setAuthUser(user);
       // 카카오 프로필에서 이름 가져오기
-      const kakaoName =
-        user.user_metadata?.full_name || user.user_metadata?.name || "";
-      setFormData((prev) => ({ ...prev, name: kakaoName }));
+      const meta = user.user_metadata ?? {};
+      const kakaoName = meta.full_name || meta.name || "";
+
+      // 카카오 phone_number 형식: "+82 10-1234-5678" → "01012345678"
+      const phone = meta.phone_number
+        ? meta.phone_number.replace(/^\+82\s?/, "0").replace(/\D/g, "")
+        : "";
+
+      // 카카오 birthyear: "2000", birthday: "0714" (MMDD) → "2000-07-14"
+      const birthday =
+        meta.birthyear && meta.birthday
+          ? `${meta.birthyear}-${String(meta.birthday).slice(0, 2)}-${String(meta.birthday).slice(2, 4)}`
+          : "";
+
+      // 카카오 gender: "male" | "female"
+      const gender = meta.gender ?? "";
+
+      setFormData((prev) => ({ ...prev, name: kakaoName, phone, birthday, gender }));
     });
   }, [router, supabase]);
 
@@ -52,6 +69,29 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     if (!authUser) return;
 
     setLoading(true);
+
+    // 성인 게이트 (청소년보호법: 만 19세 이상)
+    if (!formData.birthday) {
+      toast.error("생년월일 정보가 필요합니다. 카카오 동의 항목에서 생년월일을 허용해주세요.");
+      setLoading(false);
+      return;
+    }
+    const birthYear = parseInt(formData.birthday.slice(0, 4));
+    const birthMonth = parseInt(formData.birthday.slice(5, 7));
+    const birthDay = parseInt(formData.birthday.slice(8, 10));
+    const today = new Date();
+    let age = today.getFullYear() - birthYear;
+    if (
+      today.getMonth() + 1 < birthMonth ||
+      (today.getMonth() + 1 === birthMonth && today.getDate() < birthDay)
+    ) {
+      age--;
+    }
+    if (age < 19) {
+      toast.error("NightFlow는 만 19세 이상만 이용할 수 있습니다.");
+      setLoading(false);
+      return;
+    }
 
     try {
       // 추천인 자동 조회 (유저에게 비노출)
@@ -82,6 +122,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         phone: formData.phone,
         profile_image: authUser.user_metadata?.avatar_url || null,
         role: "user",
+        birthday: formData.birthday || null,
+        gender: formData.gender || null,
+        age_verified_at: formData.birthday ? new Date().toISOString() : null,
         alimtalk_consent: formData.alimtalkConsent,
         alimtalk_consent_at: formData.alimtalkConsent ? new Date().toISOString() : null,
         referred_by: referredById,

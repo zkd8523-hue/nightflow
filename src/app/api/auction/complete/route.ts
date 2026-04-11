@@ -62,8 +62,9 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("[API complete] Error:", error?.message || error);
-    return NextResponse.json({ error: error?.message || "Internal error" }, { status: 500 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Internal error";
+    console.error("[API complete] Error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

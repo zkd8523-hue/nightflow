@@ -127,7 +127,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const displayAuction = (currentAuction?.id === auction.id) ? currentAuction : auction;
   const club = displayAuction.club;
   const md = displayAuction.md;
-  const visibleMethods = getVisibleContactMethods(md as any);
+  const visibleMethods = getVisibleContactMethods(md as unknown as Parameters<typeof getVisibleContactMethods>[0]);
   const displayStatus = getAuctionDisplayStatus(displayAuction);
   const isActive = displayStatus === 'active';
   const isExpired = displayStatus === 'expired';
@@ -543,7 +543,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                       </span>
                     )}
                     {(() => {
-                      const grade = (md as any)?.md_customer_grade as MDCustomerGrade | undefined;
+                      const grade = (md as { md_customer_grade?: MDCustomerGrade } | null)?.md_customer_grade;
                       if (!grade || grade === "rookie") return null;
                       const cfg = MD_GRADE_CONFIG[grade];
                       return (
@@ -717,11 +717,11 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                     entryTime={displayAuction.entry_time}
                   />
                 )}
-                {visibleMethods.includes("kakao") && (md as any)?.kakao_open_chat_url && (
+                {visibleMethods.includes("kakao") && (md as { kakao_open_chat_url?: string } | null)?.kakao_open_chat_url && (
                   <ContactButton
                     auctionId={displayAuction.id}
                     type="kakao"
-                    url={(md as any).kakao_open_chat_url}
+                    url={(md as { kakao_open_chat_url: string }).kakao_open_chat_url}
                     clubName={club?.name}
                     tableInfo={displayAuction.table_info}
                     currentBid={displayAuction.current_bid}

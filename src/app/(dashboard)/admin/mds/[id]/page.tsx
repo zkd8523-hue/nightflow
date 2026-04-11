@@ -243,7 +243,15 @@ export default async function MDDetailPage({
           <h2 className="text-lg font-black">경매 내역</h2>
           {auctions && auctions.length > 0 ? (
             <div className="space-y-2">
-              {auctions.map((a: any) => {
+              {(auctions as Array<{
+                id: string;
+                status: string;
+                current_bid?: number;
+                start_price?: number;
+                auction_date?: string;
+                created_at?: string;
+                bid_count?: number;
+              }>).map((a) => {
                 const s = statusMap[a.status] || {
                   label: a.status,
                   color: "text-neutral-500",
@@ -260,9 +268,9 @@ export default async function MDDetailPage({
                         )}
                       </div>
                       <div className="text-sm text-white">
-                        시작가 {formatPrice(a.start_price)}
-                        {a.current_bid > 0 &&
-                          ` → ${formatPrice(a.current_bid)}`}
+                        시작가 {formatPrice(a.start_price || 0)}
+                        {(a.current_bid || 0) > 0 &&
+                          ` → ${formatPrice(a.current_bid!)}`}
                       </div>
                     </div>
                     <div className="text-right">

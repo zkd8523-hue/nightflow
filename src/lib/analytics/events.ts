@@ -1,11 +1,11 @@
 'use client';
 
-import { trackEvent as trackMixpanel } from "@/lib/analytics";
+import { trackEvent as trackMixpanel, identifyUser as identifyMixpanel, resetAnalytics } from "@/lib/analytics";
 
 /**
  * GA4 및 Mixpanel 통합 이벤트 추적을 위한 유틸리티 함수
  */
-export const trackEvent = (eventName: string, params: Record<string, any> = {}) => {
+export const trackEvent = (eventName: string, params: Record<string, unknown> = {}) => {
   // 1. GA4 추적
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('event', eventName, {
@@ -66,20 +66,23 @@ export const trackBid = (action: 'start' | 'complete', params: {
   id: string;
   clubName: string;
   amount?: number;
+  [key: string]: unknown;
 }) => {
+  const { id, clubName, amount, ...rest } = params;
   const eventName = action === 'start' ? 'begin_bid' : 'complete_bid';
   trackEvent(eventName, {
-    auction_id: params.id,
-    club_name: params.clubName,
-    value: params.amount,
+    auction_id: id,
+    club_name: clubName,
+    value: amount,
     currency: 'KRW',
+    ...rest,
   });
 };
 
 /**
  * 유저를 식별하기 위한 함수 (ID와 프로퍼티 설정)
  */
-export const identifyUser = (userId: string, params: Record<string, any> = {}) => {
+export const identifyUser = (userId: string, params: Record<string, unknown> = {}) => {
   // 1. GA4 User ID 설정
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('config', process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID!, {
@@ -88,7 +91,6 @@ export const identifyUser = (userId: string, params: Record<string, any> = {}) =
   }
 
   // 2. Mixpanel 유저 식별 및 프로퍼티 설정
-  const { identifyUser: identifyMixpanel } = require("@/lib/analytics");
   identifyMixpanel(userId, params);
 
   if (process.env.NODE_ENV === 'development') {
@@ -103,10 +105,9 @@ export const resetUser = () => {
   if (typeof window !== 'undefined' && window.gtag) {
     window.gtag('set', 'user_id', null);
   }
-  
-  const { resetAnalytics } = require("@/lib/analytics");
+
   resetAnalytics();
-  
+
   if (process.env.NODE_ENV === 'development') {
     console.log(`[Analytics Reset] User identity cleared`);
   }

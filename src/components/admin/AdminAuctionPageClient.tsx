@@ -4,9 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdminAuctionManager } from "./AdminAuctionManager";
 import { BidMonitor } from "./BidMonitor";
 import { Gavel, Radio } from "lucide-react";
+import type { ComponentProps } from "react";
 
 interface AdminAuctionPageClientProps {
-  auctions: any[];
+  auctions: ComponentProps<typeof AdminAuctionManager>["auctions"];
 }
 
 export function AdminAuctionPageClient({ auctions }: AdminAuctionPageClientProps) {

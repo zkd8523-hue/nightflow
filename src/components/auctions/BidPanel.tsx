@@ -285,7 +285,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                 clubName: auction.club?.name || "알수없음",
                 is_guest: true
               });
-              router.push("/login");
+              router.push(`/login?redirect=/auctions/${auction.id}`);
             }}
             className="w-full h-12 text-base font-black rounded-xl bg-white text-black hover:bg-neutral-200 shadow-xl animate-pulse"
           >

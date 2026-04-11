@@ -111,7 +111,11 @@ export default async function AdminReportsPage() {
         ) : (
           <div className="space-y-3">
             {reports.map((report) => {
-              const auction = auctionMap.get(report.auction_id) as any;
+              const auction = auctionMap.get(report.auction_id) as {
+                title?: string;
+                club?: { name?: string } | null;
+                md?: { name?: string } | null;
+              } | undefined;
               const reporter = reporterMap.get(report.reporter_id);
 
               return (
@@ -146,8 +150,8 @@ export default async function AdminReportsPage() {
                       {auction?.title || "경매 정보 없음"}
                     </Link>
                     <div className="flex items-center gap-2 text-[12px] text-neutral-500">
-                      <span>클럽: {(auction?.club as any)?.name || "-"}</span>
-                      <span>MD: {(auction?.md as any)?.name || "-"}</span>
+                      <span>클럽: {auction?.club?.name || "-"}</span>
+                      <span>MD: {auction?.md?.name || "-"}</span>
                     </div>
                   </div>
 

@@ -47,7 +47,12 @@ export function useActiveWins(): UseActiveWinsResult {
           .gt("contact_deadline", new Date().toISOString())
           .order("contact_deadline", { ascending: true });
 
-        const wins: ActiveWin[] = (data || []).map((d: any) => ({
+        interface WinRow {
+          id: string;
+          contact_deadline: string;
+          club: unknown;
+        }
+        const wins: ActiveWin[] = ((data || []) as unknown as WinRow[]).map((d) => ({
           id: d.id,
           contact_deadline: d.contact_deadline,
           club: Array.isArray(d.club) ? d.club[0] ?? null : d.club ?? null,

@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Zap, Trophy, Phone, CheckCircle2, ChevronRight, HelpCircle, X, PartyPopper } from "lucide-react";
 import type { Auction } from "@/types/database";
 import { logger } from "@/lib/utils/logger";
+import { isAuctionExpired } from "@/lib/utils/auction";
+import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 
 const GUIDE_DISMISSED_KEY = "nightflow_guide_dismissed";
 
@@ -130,6 +132,26 @@ export function HomeContent({
       active: activeAuctions,
     });
   }, [activeAuctions]);
+
+  // Gap 9.2: 홈 카드에 보이는 만료 경매 즉시 종료 (cron 5분 대기 없이 클라이언트 트리거)
+  useEffect(() => {
+    const checkExpired = async () => {
+      const expired = auctions.active
+        .filter((a) => a.status === "active" && isAuctionExpired(a))
+        .map((a) => a.id);
+      if (expired.length === 0) return;
+
+      const supabase = createClient();
+      const closedIds = await closeExpiredAuctions(expired, supabase);
+      if (closedIds.length > 0) {
+        router.refresh(); // ISR 재검증 → 리스트에서 제거
+      }
+    };
+
+    checkExpired(); // 즉시 1회
+    const id = setInterval(checkExpired, 5000); // 5초 주기
+    return () => clearInterval(id);
+  }, [auctions.active, router]);
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);

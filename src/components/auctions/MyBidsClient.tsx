@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -330,36 +331,21 @@ export function MyBidsClient({
     }
   });
 
-  // 만료 경매 즉시 close_auction() 호출 (cron 대기 없이 즉시 처리)
-  const closedAuctionsRef = useRef<Set<string>>(new Set());
-
+  // Gap 9.2: 만료 경매 즉시 close_auction() 호출 (cron 대기 없이)
+  // 모듈 전역 Set으로 탭 세션 전체 dedupe (closeExpiredAuctions 내부 처리)
   useEffect(() => {
-    const expiredActive = bids.filter(
-      (b) =>
-        b.auction.status === "active" &&
-        isAuctionExpired(b.auction) &&
-        !closedAuctionsRef.current.has(b.auction_id)
-    );
+    const expired = bids
+      .filter((b) => b.auction.status === "active" && isAuctionExpired(b.auction))
+      .map((b) => b.auction_id);
 
-    if (expiredActive.length === 0) return;
+    if (expired.length === 0) return;
 
     const supabase = createClient();
-
-    for (const bid of expiredActive) {
-      closedAuctionsRef.current.add(bid.auction_id);
-
-      supabase
-        .rpc("close_auction", { p_auction_id: bid.auction_id })
-        .then(({ error }) => {
-          if (error) {
-            // cron이 먼저 처리한 경우 "이미 종료된 경매입니다" → 정상
-            console.debug(`[close_auction] ${bid.auction_id}: ${error.message}`);
-          }
-          // 성공/실패 모두 refetch (cron이 먼저 처리했어도 최신 데이터 필요)
-          fetchBids();
-          fetchWonAuctions();
-        });
-    }
+    closeExpiredAuctions(expired, supabase).then(() => {
+      // 성공/실패 모두 refetch (cron이 먼저 처리했어도 최신 데이터 필요)
+      fetchBids();
+      fetchWonAuctions();
+    });
   }, [bids, fetchBids, fetchWonAuctions]);
 
   // 탭별 분류

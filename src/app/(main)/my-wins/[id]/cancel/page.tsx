@@ -42,13 +42,13 @@ export default async function CancelPage({
     <CancelClient
       auction={{
         id: auction.id,
-        clubName: (auction.club as any)?.name || "클럽",
-        clubArea: (auction.club as any)?.area || "",
+        clubName: (auction.club as { name?: string } | null)?.name || "클럽",
+        clubArea: (auction.club as { area?: string } | null)?.area || "",
         eventDate: auction.event_date,
         winningPrice: auction.winning_price || auction.current_bid || 0,
         contactDeadline: auction.contact_deadline,
         wonAt: auction.won_at,
-        listingType: (auction as any).listing_type || "auction",
+        listingType: ((auction as { listing_type?: "instant" | "auction" }).listing_type || "auction") as "instant" | "auction",
       }}
       currentWarnings={userData?.warning_count ?? 0}
     />

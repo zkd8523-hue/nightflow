@@ -98,7 +98,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                     </span>
                   )}
                   {(() => {
-                    const grade = (auction.md as any)?.md_customer_grade as MDCustomerGrade | undefined;
+                    const grade = (auction.md as { md_customer_grade?: MDCustomerGrade } | null)?.md_customer_grade;
                     if (!grade || grade === "rookie") return null;
                     const cfg = MD_GRADE_CONFIG[grade];
                     return (

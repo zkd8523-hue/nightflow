@@ -9,6 +9,7 @@ import dayjs from "dayjs";
 
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils/format";
+import { closeExpiredAuction } from "@/lib/utils/closeExpiredAuction";
 
 /**
  * 경매 상세 페이지 실시간 동기화 훅
@@ -80,6 +81,16 @@ export function useAuctionRealtime(auctionId: string, userId?: string) {
 
         // 경매 상태 업데이트
         updateAuctionRef.current(auction);
+
+        // Gap 9.2: 만료됐는데 DB status가 아직 active → 즉시 close_auction
+        // cron(5분 주기)을 기다리지 않고 클라이언트가 직접 트리거
+        if (auction.status === "active") {
+          const endTime = auction.extended_end_at || auction.auction_end_at;
+          if (dayjs(endTime).diff(dayjs(), "second") <= 0) {
+            closeExpiredAuction(auction.id, supabase);
+            // 다음 poll(POLL_INACTIVE=15초)이 최신 상태(won/unsold)를 반영
+          }
+        }
 
         // 2. bid_count가 변했을 때만 입찰 기록 조회
         if (auction.bid_count !== prevBidCount) {

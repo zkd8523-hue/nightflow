@@ -55,7 +55,16 @@ export function BidMonitor() {
         .limit(50);
 
       if (data) {
-        const items: BidFeedItem[] = data.map((b: any) => ({
+        interface BidRow {
+          id: string;
+          auction_id: string;
+          bidder_id: string;
+          bid_amount: number;
+          bid_at: string;
+          auction?: { title?: string; club?: { name?: string } | null } | null;
+          bidder?: { name?: string } | null;
+        }
+        const items: BidFeedItem[] = (data as unknown as BidRow[]).map((b) => ({
           id: b.id,
           auction_id: b.auction_id,
           bidder_id: b.bidder_id,

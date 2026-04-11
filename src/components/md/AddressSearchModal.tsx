@@ -28,12 +28,19 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  interface AddressResult {
+    address?: string;
+    roadAddress?: string;
+    zipcode?: string;
+    x?: string;
+    y?: string;
+  }
+  const [searchResults, setSearchResults] = useState<AddressResult[]>([]);
   const [mapReady, setMapReady] = useState(false);
   const [mapVisible, setMapVisible] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const mapRef = useRef<unknown>(null);
+  const markerRef = useRef<unknown>(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -102,23 +109,24 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
     }
   };
 
-  const handleSelectAddress = async (result: any) => {
+  const handleSelectAddress = async (result: AddressResult) => {
     try {
       setIsGeocoding(true);
 
-      const lat = result.y;
-      const lng = result.x;
+      const latNum = parseFloat(result.y || "0");
+      const lngNum = parseFloat(result.x || "0");
 
       if (mapRef.current && window.naver?.maps) {
-        mapRef.current.setCenter(new window.naver.maps.LatLng(lat, lng));
-        mapRef.current.setZoom(15);
+        const map = mapRef.current as { setCenter: (latLng: unknown) => void; setZoom: (z: number) => void };
+        map.setCenter(new window.naver.maps.LatLng(latNum, lngNum));
+        map.setZoom(15);
 
         if (markerRef.current) {
-          markerRef.current.setMap(null);
+          (markerRef.current as { setMap: (m: unknown) => void }).setMap(null);
         }
 
         markerRef.current = new window.naver.maps.Marker({
-          position: new window.naver.maps.LatLng(lat, lng),
+          position: new window.naver.maps.LatLng(latNum, lngNum),
           map: mapRef.current,
           title: result.address,
         });
@@ -128,8 +136,8 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
         address: result.roadAddress || result.address || "",
         addressDetail: "",
         postalCode: result.zipcode || "",
-        latitude: parseFloat(lat),
-        longitude: parseFloat(lng),
+        latitude: latNum,
+        longitude: lngNum,
       });
 
       toast.success("주소가 선택되었습니다.");
@@ -244,7 +252,15 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
 /**
  * 서버사이드 API를 통해 주소 검색 (Kakao Local API)
  */
-async function searchAddresses(query: string): Promise<any[]> {
+interface NaverSearchItem {
+  address?: string;
+  roadAddress?: string;
+  zipcode?: string;
+  x?: string;
+  y?: string;
+}
+
+async function searchAddresses(query: string): Promise<NaverSearchItem[]> {
   const response = await fetch("/api/naver/search", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -257,7 +273,7 @@ async function searchAddresses(query: string): Promise<any[]> {
 
   const data = await response.json();
 
-  return data.map((item: any) => ({
+  return (data as NaverSearchItem[]).map((item) => ({
     address: item.address,
     roadAddress: item.roadAddress,
     zipcode: item.zipcode,

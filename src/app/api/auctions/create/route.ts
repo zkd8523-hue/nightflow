@@ -1,5 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
@@ -205,9 +205,8 @@ export async function POST(request: NextRequest) {
 }
 
 // ── 지역 구독자 알림 발송 (fire-and-forget) ──
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function sendAreaNotifications(
-  supabase: { from: (table: string) => any },
+  supabase: SupabaseClient,
   auctionId: string,
   clubId: string,
   auctionTitle: string,

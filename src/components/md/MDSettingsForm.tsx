@@ -47,7 +47,7 @@ export function MDSettingsForm({ user }: { user: User }) {
   const [methodsDirty, setMethodsDirty] = useState(false);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema) as any,
+    resolver: zodResolver(formSchema) as unknown as Parameters<typeof useForm<FormValues>>[0]["resolver"],
     mode: "onBlur",
     defaultValues: {
       name: user.name || "",

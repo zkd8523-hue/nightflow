@@ -31,8 +31,8 @@ export function ClubSearchMap({
   );
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
+  const mapInstanceRef = useRef<unknown>(null);
+  const markerRef = useRef<unknown>(null);
 
   // 검색 함수
   const handleSearch = async (e: React.FormEvent) => {
@@ -60,13 +60,14 @@ export function ClubSearchMap({
 
       // 지도 업데이트
       if (mapInstanceRef.current && window.naver?.maps) {
-        mapInstanceRef.current.setCenter(
+        const mapInstance = mapInstanceRef.current as { setCenter: (latLng: unknown) => void };
+        mapInstance.setCenter(
           new window.naver.maps.LatLng(data.lat, data.lng)
         );
 
         // 기존 마커 제거
         if (markerRef.current) {
-          markerRef.current.setMap(null);
+          (markerRef.current as { setMap: (m: unknown) => void }).setMap(null);
         }
 
         // 새 마커 추가

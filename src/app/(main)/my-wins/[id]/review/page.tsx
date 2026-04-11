@@ -12,8 +12,16 @@ export default function ReviewPage() {
   const router = useRouter();
   const auctionId = params.id as string;
 
-  const [auction, setAuction] = useState<any>(null);
-  const [existingReview, setExistingReview] = useState<any>(null);
+  interface AuctionDetails {
+    status: string;
+    club?: { name?: string } | null;
+  }
+  interface ReviewDetails {
+    rating?: number;
+    comment?: string;
+  }
+  const [auction, setAuction] = useState<AuctionDetails | null>(null);
+  const [existingReview, setExistingReview] = useState<ReviewDetails | null>(null);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");

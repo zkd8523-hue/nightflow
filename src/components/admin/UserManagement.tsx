@@ -34,7 +34,7 @@ import { getErrorMessage, logError } from "@/lib/utils/error";
 
 interface UserManagementProps {
   users: User[];
-  bidStats: any[];
+  bidStats: Record<string, unknown>[];
 }
 
 export function UserManagement({ users }: UserManagementProps) {

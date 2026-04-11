@@ -100,6 +100,11 @@ export interface User {
   /** 경고 시스템 - 미소진 경고점 합계 (3점 = 1스트라이크) */
   warning_count: number;
 
+  // 신원 정보 (Kakao L2 Scope, Migration 080)
+  birthday: string | null;          // "YYYY-MM-DD"
+  gender: "male" | "female" | null;
+  age_verified_at: string | null;   // 성인 인증 완료 시각 (L3 연동 시 갱신)
+
   // 알림톡
   alimtalk_consent: boolean;
   alimtalk_consent_at: string | null;
@@ -450,10 +455,10 @@ declare global {
   interface Window {
     naver: {
       maps: {
-        Map: any;
-        LatLng: any;
-        Marker: any;
-        LatLngBounds: any;
+        Map: new (element: HTMLElement, options?: Record<string, unknown>) => unknown;
+        LatLng: new (lat: number, lng: number) => unknown;
+        Marker: new (options: Record<string, unknown>) => unknown;
+        LatLngBounds: new (sw: unknown, ne: unknown) => unknown;
         Position: Record<string, number>;
       };
     };

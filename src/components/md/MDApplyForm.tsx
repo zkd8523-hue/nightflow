@@ -48,7 +48,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
     const [preferredMethods, setPreferredMethods] = useState<ContactMethodType[]>([]);
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema) as any,
+        resolver: zodResolver(formSchema) as unknown as Parameters<typeof useForm<FormValues>>[0]["resolver"],
         mode: "onBlur",
         defaultValues: {
             name: initialUser.name || "",
@@ -64,7 +64,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
         },
     });
 
-    async function onSubmit(values: any) {
+    async function onSubmit(values: FormValues) {
         if (!values.club_latitude || !values.club_longitude) {
             toast.error("클럽 주소를 검색하여 정확한 위치를 설정해주세요.");
             return;
