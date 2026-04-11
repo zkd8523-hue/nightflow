@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/drawer";
 import { MessageCircle, Instagram, Link2, Share2 } from "lucide-react";
 
-import { shareAuction, shareToInstagram, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
+import { shareAuction, shareToInstagram, shareToInstagramDM, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { useReferralCode } from "@/hooks/useReferralCode";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -90,6 +90,7 @@ export function ShareAuctionSheet({
         listingType: auction.listing_type || "auction",
         isFromMD,
         eventDate: auction.event_date,
+        area: club?.area,
       });
     } finally {
       setSharing(null);
@@ -99,7 +100,19 @@ export function ShareAuctionSheet({
   const handleInstagramShare = async () => {
     setSharing("instagram");
     try {
-      await shareToInstagram(auction.id, imageBlob, clubName, auctionUrl, referralCode);
+      if (isFromMD) {
+        // MD: 화려한 스토리 포스터 홍보
+        await shareToInstagram(auction.id, imageBlob, clubName, auctionUrl, referralCode);
+      } else {
+        // 유저: 친구에게 보낼 DM 초대장
+        await shareToInstagramDM({
+          auctionId: auction.id,
+          clubName,
+          tableInfo,
+          eventDate: auction.event_date,
+          referralCode,
+        });
+      }
     } finally {
       setSharing(null);
     }
@@ -143,7 +156,7 @@ export function ShareAuctionSheet({
     },
     {
       id: "instagram",
-      label: "인스타그램",
+      label: isFromMD ? "스토리 홍보" : "인스타 DM 초대",
       icon: Instagram,
       iconColor: "text-pink-400",
       bgColor: "bg-pink-500/10 border-pink-500/20",

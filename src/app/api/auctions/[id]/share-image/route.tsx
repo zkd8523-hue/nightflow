@@ -238,7 +238,10 @@ export async function GET(
       );
     }
 
-    // 기본: 인스타그램/기타용 1080x1920 세로형 이미지
+    // 기본: 인스타그램/기타용 1080x1920 세로형 이미지 (Premium Digital Ticket Style)
+    const photoUrl = auction.thumbnail_url || club?.thumbnail_url || null;
+    const isInstant = auction.listing_type === 'instant';
+
     return new ImageResponse(
       (
         <div
@@ -247,115 +250,187 @@ export async function GET(
             width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#0A0A0A',
+            backgroundColor: '#050505',
             color: 'white',
             fontFamily: 'Pretendard',
-            padding: '260px 80px',
             position: 'relative',
           }}
         >
-          {/* Background Decoration */}
-          <div style={{
-            position: 'absolute',
-            top: '-100px',
-            right: '-100px',
-            width: '800px',
-            height: '800px',
-            background: 'radial-gradient(circle, rgba(74, 222, 128, 0.12) 0%, transparent 70%)',
-            borderRadius: '50%',
-            display: 'flex',
-          }} />
+          {/* 1. 풀 스크린 배경 이미지 (Full-bleed Photo) */}
+          {photoUrl && (
+            <img
+              src={photoUrl}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                opacity: 0.7,
+              }}
+            />
+          )}
 
-          <div style={{
-            position: 'absolute',
-            bottom: '-150px',
-            left: '-150px',
-            width: '1000px',
-            height: '1000px',
-            background: 'radial-gradient(circle, rgba(236, 72, 153, 0.08) 0%, transparent 70%)',
-            borderRadius: '50%',
-            display: 'flex',
-          }} />
+          {/* 2. 다크 그라데이션 오버레이 (가독성 확보) */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 40%, rgba(0,0,0,0.6) 100%)',
+              display: 'flex',
+            }}
+          />
 
-          {/* Header Branding */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            marginBottom: '60px',
-            fontSize: '56px',
-            fontWeight: 'bold',
-            letterSpacing: '-2px',
-          }}>
-            <span style={{ color: '#4ADE80' }}>Night</span>
-            <span>Flow</span>
+          {/* 3. 상단 브랜딩 & 상태 배지 (Glassmorphism Header) */}
+          <div
+            style={{
+              padding: '80px 60px 0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              zIndex: 10,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '32px', fontWeight: 'bold' }}>
+              <span style={{ color: isInstant ? '#F59E0B' : '#4ADE80' }}>Night</span>
+              <span>Flow</span>
+            </div>
+            <div
+              style={{
+                backgroundColor: isInstant ? 'rgba(245, 158, 11, 0.2)' : 'rgba(74, 222, 128, 0.2)',
+                border: `1px solid ${isInstant ? 'rgba(245, 158, 11, 0.4)' : 'rgba(74, 222, 128, 0.4)'}`,
+                padding: '10px 24px',
+                borderRadius: '100px',
+                fontSize: '20px',
+                fontWeight: 'bold',
+                color: isInstant ? '#F59E0B' : '#4ADE80',
+                display: 'flex',
+              }}
+            >
+              {isInstant ? '● FLASH DEAL' : '● BIDDING OPEN'}
+            </div>
           </div>
 
-          {/* Main Card */}
-          <div style={{
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            backgroundColor: '#1C1C21',
-            borderRadius: '64px',
-            padding: '80px',
-            border: '1px solid #333',
-            boxShadow: '0 40px 100px rgba(0,0,0,0.8)',
-          }}>
-            <div style={{ fontSize: '36px', color: '#888', marginBottom: '20px', display: 'flex' }}>
+          {/* 4. 중앙 메인 티켓 영역 (Ticket Body) */}
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              padding: '0 60px',
+              zIndex: 10,
+            }}
+          >
+            {/* 지역 & 클럽명 */}
+            <div style={{ fontSize: '24px', color: 'rgba(255,255,255,0.6)', marginBottom: '16px', display: 'flex' }}>
               {club?.area || 'SEOUL'}
             </div>
-            <div style={{ fontSize: '84px', fontWeight: 'bold', marginBottom: '48px', lineHeight: 1.1, display: 'flex' }}>
-              {club?.name || 'CLUB NAME'}
+            <div
+              style={{
+                fontSize: '110px',
+                fontWeight: 'black',
+                lineHeight: 1,
+                marginBottom: '40px',
+                display: 'flex',
+                letterSpacing: '-4px',
+                textTransform: 'uppercase',
+              }}
+            >
+              {club?.name || 'CLUB'}
             </div>
 
-            <div style={{ height: '6px', width: '100px', backgroundColor: '#4ADE80', marginBottom: '60px', display: 'flex' }} />
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+            {/* 테이블 정보 (Glassmorphism 스타일) */}
+            <div
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                backdropFilter: 'blur(20px)',
+                borderRadius: '40px',
+                padding: '48px',
+                border: '1px solid rgba(255,255,255,0.12)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '32px',
+              }}
+            >
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ fontSize: '32px', color: '#888', marginBottom: '12px', display: 'flex' }}>테이블 정보</div>
-                <div style={{ fontSize: '64px', fontWeight: 'bold', display: 'flex' }}>{auction.table_info}</div>
+                <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'flex' }}>LOCATION</div>
+                <div style={{ fontSize: '48px', fontWeight: 'bold', display: 'flex' }}>{auction.table_info}</div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ fontSize: '32px', color: '#888', marginBottom: '12px', display: 'flex' }}>날짜</div>
-                <div style={{ fontSize: '64px', fontWeight: 'bold', display: 'flex' }}>
-                  {dayjs(auction.event_date).locale('ko').format('YYYY년 MM월 DD일')}
+                <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.5)', marginBottom: '6px', display: 'flex' }}>DATE</div>
+                <div style={{ fontSize: '48px', fontWeight: 'bold', display: 'flex' }}>
+                  {dayjs(auction.event_date).locale('ko').format('M월 D일 (dd)')}
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', marginTop: '40px', borderTop: '1px solid #333', paddingTop: '40px' }}>
-                <div style={{ fontSize: '32px', color: '#888', marginBottom: '12px', display: 'flex' }}>시작가</div>
-                <div style={{ fontSize: '100px', fontWeight: 'bold', color: '#4ADE80', display: 'flex' }}>
-                  ₩{auction.start_price.toLocaleString()}
+              {/* 가격 섹션 (강조) */}
+              <div
+                style={{
+                  marginTop: '16px',
+                  paddingTop: '32px',
+                  borderTop: '1px dashed rgba(255,255,255,0.2)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-end',
+                }}
+              >
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.5)', marginBottom: '4px', display: 'flex' }}>
+                    {isInstant ? 'PRICE' : 'START PRICE'}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: '72px',
+                      fontWeight: 'black',
+                      color: isInstant ? '#F59E0B' : '#4ADE80',
+                      display: 'flex',
+                    }}
+                  >
+                    ₩{auction.start_price.toLocaleString()}
+                  </div>
+                </div>
+                <div style={{ marginBottom: '14px', fontSize: '24px', fontWeight: 'bold', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>
+                  #{auction.id.slice(0, 6).toUpperCase()}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Footer CTA */}
-          <div style={{
-            marginTop: '60px',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '30px',
-          }}>
-            <div style={{
-              padding: '32px 80px',
-              backgroundColor: '#4ADE80',
-              color: 'black',
-              borderRadius: '100px',
-              fontSize: '48px',
-              fontWeight: 'bold',
+          {/* 5. 푸터 (CTA & Guide) */}
+          <div
+            style={{
+              padding: '0 60px 80px',
               display: 'flex',
-            }}>
-              지금 입찰하기 →
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '24px',
+              zIndex: 10,
+            }}
+          >
+            <div
+              style={{
+                width: '100%',
+                padding: '24px',
+                backgroundColor: isInstant ? '#F59E0B' : '#4ADE80',
+                color: 'black',
+                borderRadius: '100px',
+                fontSize: '32px',
+                fontWeight: 'bold',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              LINK IN STORY →
             </div>
-            <div style={{ fontSize: '32px', color: '#666', marginTop: '20px', display: 'flex' }}>
-              밤의 흐름을 바꾸는 최고의 테이블 경매, 나이트플로우
+            <div style={{ fontSize: '20px', color: 'rgba(255,255,255,0.4)', display: 'flex', textAlign: 'center' }}>
+              @NightFlow.co · 공식 티켓 인증 완료
             </div>
           </div>
         </div>

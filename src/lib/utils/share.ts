@@ -3,6 +3,8 @@ import type { Auction } from "@/types/database";
 import { formatEventDate, formatEntryTime } from "./format";
 import { logger } from "./logger";
 import { trackEvent } from "@/lib/analytics";
+import dayjs from "dayjs";
+import "dayjs/locale/ko";
 
 /**
  * URL에 referral code 파라미터 추가 (바이럴 추적용, 유저에게 비노출)
@@ -42,7 +44,16 @@ export async function shareAuction({
   tableInfo,
   referralCode,
 }: ShareAuctionParams): Promise<boolean> {
-  const url = appendReferralCode(`${window.location.origin}/auctions/${auctionId}`, referralCode);
+  const baseUrl = `${window.location.origin}/auctions/${auctionId}`;
+  let url = appendReferralCode(baseUrl, referralCode);
+
+  try {
+    const u = new URL(url);
+    u.searchParams.set('utm_source', 'share_sheet');
+    u.searchParams.set('utm_medium', 'share');
+    url = u.toString();
+  } catch {}
+
   const tableText = tableInfo ? ` ${tableInfo}` : "";
   const entry = formatEntryTime(entryTime ?? null, eventDate);
   const text = `🎉 ${clubName}${tableText} 테이블 경매 시작!\n${formatEventDate(eventDate)} ${entry}\n시작가 ₩${startPrice.toLocaleString()}\n\n지금 입찰하세요 👉`;
@@ -116,7 +127,15 @@ export async function shareToInstagram(
   auctionUrl?: string,
   referralCode?: string | null
 ): Promise<boolean> {
-  const url = appendReferralCode(auctionUrl || `${window.location.origin}/auctions/${auctionId}`, referralCode);
+  const baseUrl = auctionUrl || `${window.location.origin}/auctions/${auctionId}`;
+  let url = appendReferralCode(baseUrl, referralCode);
+
+  try {
+    const u = new URL(url);
+    u.searchParams.set('utm_source', 'instagram_story');
+    u.searchParams.set('utm_medium', 'share');
+    url = u.toString();
+  } catch {}
 
   // 공유 전 경매 링크를 클립보드에 복사 (스토리 링크 스티커용)
   try {
@@ -181,10 +200,70 @@ export async function shareToInstagram(
 }
 
 /**
+ * 인스타그램 DM 초대 (유저용): 초대 메시지 구성 + 링크 복사 + 앱 이동
+ */
+export async function shareToInstagramDM(params: {
+  auctionId: string;
+  clubName: string;
+  tableInfo?: string;
+  eventDate: string;
+  referralCode?: string | null;
+}): Promise<void> {
+  const baseUrl = `${window.location.origin}/auctions/${params.auctionId}`;
+  let url = appendReferralCode(baseUrl, params.referralCode);
+
+  try {
+    const u = new URL(url);
+    u.searchParams.set('utm_source', 'instagram_dm');
+    u.searchParams.set('utm_medium', 'share');
+    url = u.toString();
+  } catch {}
+
+  const dateStr = dayjs(params.eventDate).locale('ko').format('M월 D일 (dd)');
+  const inviteMessage = `🎉 ${params.clubName} 같이 갈래?\n\n📍 위치: ${params.tableInfo || '좋은 자리'}\n📅 일정: ${dateStr}\n\n지금 입찰 중이야! 같이 가고 싶으면 여기서 확인해 봐 👇\n${url}`;
+
+  try {
+    // 1. 메시지 복사
+    await navigator.clipboard.writeText(inviteMessage);
+    
+    // 2. 인스타그램 앱 또는 웹으로 이동 (DM 목록)
+    toast.success("초대 메시지가 복사되었습니다!", {
+      description: "인스타에서 친구에게 바로 붙여넣기 하세요.",
+      duration: 4000,
+    });
+
+    // 약간의 딜레이 후 인스타그램 이동
+    setTimeout(() => {
+      window.location.href = "instagram://sharesheet?text=" + encodeURIComponent(inviteMessage);
+      // fallback for web
+      setTimeout(() => {
+        if (!document.hidden) {
+          window.open("https://www.instagram.com/direct/inbox/", "_blank");
+        }
+      }, 1000);
+    }, 1000);
+
+    trackEvent("auction_shared", { platform: "instagram", auction_id: params.auctionId, method: "dm_invite" });
+  } catch (err) {
+    logger.error("Instagram DM share failed:", err);
+    toast.error("공유에 실패했습니다");
+  }
+}
+
+/**
  * 경매 링크만 클립보드에 복사
  */
 export async function copyAuctionLink(auctionId: string, referralCode?: string | null): Promise<boolean> {
-  const url = appendReferralCode(`${window.location.origin}/auctions/${auctionId}`, referralCode);
+  const baseUrl = `${window.location.origin}/auctions/${auctionId}`;
+  let url = appendReferralCode(baseUrl, referralCode);
+  
+  try {
+    const u = new URL(url);
+    u.searchParams.set('utm_source', 'copy');
+    u.searchParams.set('utm_medium', 'share');
+    url = u.toString();
+  } catch {}
+
   try {
     await navigator.clipboard.writeText(url);
     toast.success("링크가 복사되었습니다!", { duration: 2000 });
