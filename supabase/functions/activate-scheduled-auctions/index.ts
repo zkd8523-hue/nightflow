@@ -14,7 +14,7 @@ const SOLAPI_API_SECRET = Deno.env.get("SOLAPI_API_SECRET");
 const SOLAPI_SENDER = Deno.env.get("SOLAPI_SENDER_NUMBER");
 const SOLAPI_PFID = Deno.env.get("SOLAPI_PFID");
 const TPL_AUCTION_STARTED = Deno.env.get("ALIMTALK_TPL_AUCTION_STARTED");
-const APP_URL = Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co";
+const APP_URL = (Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co").replace(/^https?:\/\//, "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -39,6 +39,7 @@ interface KakaoShareParams {
   listingType?: "auction" | "instant";
   isFromMD?: boolean;
   eventDate?: string;
+  area?: string;
 }
 
 interface UseKakaoShareReturn {
@@ -102,18 +103,30 @@ export function useKakaoShare(): UseKakaoShareReturn {
         : "";
 
       const title = isMD
-        ? `${params.clubName} ${isInstant ? "오늘특가" : "테이블 경매"}`
+        ? `${params.area ? `[${params.area}] ` : ""}${!isInstant && dateStr ? `${dateStr} ` : ""}${params.clubName} ${isInstant ? "오늘특가" : "테이블 경매"}`
         : isInstant
-          ? `${params.clubName} 특가 떴다!`
+          ? `오늘 ${params.clubName} 어때?`
           : `${dateStr} ${params.clubName} 같이 갈래?`;
 
       const description = isInstant
-        ? (isMD ? `${price}원 | 지금 바로 예약 가능!` : `${price}원 | 이 가격에 오늘 바로!`)
-        : (isMD ? `시작가 ${price}원 | 지금 입찰하세요!` : `시작가 ${price}원 | 입찰 진행 중!`);
+        ? (isMD ? `${price}원 | 지금 바로 예약 가능!` : `${price}원 | 나플 특가! 웨이팅 없이 바로 고?`)
+        : (isMD ? `시작가 ${price}원 | 경매 시작! 최저가 선점에 도전하세요.` : `${price}원 | 남들보다 싸게 잡을 기회! 지금 비딩 같이 가보자.`);
 
       const buttonTitle = isInstant
-        ? (isMD ? "예약하러 가기" : "예약 보러 가기")
-        : (isMD ? "입찰하러 가기" : "경매 보러 가기");
+        ? (isMD ? "예약하러 가기" : "예약 정보 확인")
+        : (isMD ? "테이블 쟁탈전 참여" : "경매 보러 가기");
+
+      // 유입 경로 추적을 위한 UTM 파라미터 추가
+      let trackingUrl = params.auctionUrl;
+      try {
+        const url = new URL(params.auctionUrl);
+        url.searchParams.set("utm_source", "kakao");
+        url.searchParams.set("utm_medium", "share");
+        url.searchParams.set("utm_campaign", isInstant ? "instant_deal" : "earlybird_auction");
+        trackingUrl = url.toString();
+      } catch (e) {
+        console.error("URL parsing error:", e);
+      }
 
       setIsLoading(true);
       try {
@@ -124,20 +137,29 @@ export function useKakaoShare(): UseKakaoShareReturn {
             description,
             imageUrl: params.thumbnailUrl || fallbackImage,
             link: {
-              mobileWebUrl: params.auctionUrl,
-              webUrl: params.auctionUrl,
+              mobileWebUrl: trackingUrl,
+              webUrl: trackingUrl,
             },
           },
           buttons: [
             {
               title: buttonTitle,
               link: {
-                mobileWebUrl: params.auctionUrl,
-                webUrl: params.auctionUrl,
+                mobileWebUrl: trackingUrl,
+                webUrl: trackingUrl,
               },
             },
           ],
         });
+
+        // GA4 이벤트 추적
+        const { trackShareKakao } = await import("@/lib/analytics/events");
+        trackShareKakao({
+          id: params.clubName, // 혹은 auctionId가 params에 있다면 그것을 사용
+          clubName: params.clubName,
+          listingType: params.listingType || (isInstant ? "instant" : "auction"),
+        });
+
         return true;
       } catch {
         return false;

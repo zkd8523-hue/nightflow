@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://nightflow.co";
+    const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://nightflow.co").replace(/^https?:\/\//, "");
     const clubName =
       (auction.club as unknown as { name: string })?.name || "클럽";
     const price = new Intl.NumberFormat("ko-KR").format(

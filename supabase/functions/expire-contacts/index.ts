@@ -15,12 +15,29 @@ import { solapiSendAlimtalk } from "../_shared/solapi.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const MIXPANEL_TOKEN = Deno.env.get("NEXT_PUBLIC_MIXPANEL_TOKEN");
+
+async function trackMixpanelEvent(eventName: string, props: Record<string, unknown>) {
+  if (!MIXPANEL_TOKEN) return;
+  try {
+    const payload = [{
+      event: eventName,
+      properties: {
+        token: MIXPANEL_TOKEN,
+        distinct_id: (props.md_id as string) || "server",
+        time: Math.floor(Date.now() / 1000),
+        ...props,
+      },
+    }];
+    const encoded = btoa(JSON.stringify(payload));
+    await fetch(`https://api.mixpanel.com/track?data=${encodeURIComponent(encoded)}`);
+  } catch { /* 무시 */ }
+}
 
 // 알림톡 템플릿 ID (SOLAPI 자체 환경변수는 _shared/solapi.ts 내부에서 읽음)
 const TPL_NOSHOW_BANNED = Deno.env.get("ALIMTALK_TPL_NOSHOW_BANNED");
-// TPL_FALLBACK_WON, TPL_AUCTION_WON: 알림톡 시스템 구축 후 활성화 예정
-// const TPL_FALLBACK_WON = Deno.env.get("ALIMTALK_TPL_FALLBACK_WON");
-// const TPL_AUCTION_WON = Deno.env.get("ALIMTALK_TPL_AUCTION_WON");
+const TPL_FALLBACK_WON = Deno.env.get("ALIMTALK_TPL_FALLBACK_WON");
+const APP_URL = (Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co").replace(/^https?:\/\//, "");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -117,6 +134,13 @@ Deno.serve(async (req: Request) => {
           });
         }
 
+        // Mixpanel: 연락 만료 자동 노쇼 처리
+        await trackMixpanelEvent("auction_completed", {
+          auction_id: auction.id,
+          sale_channel: "noshow_auto",
+          md_id: auction.md_id,
+        });
+
         // 차순위에게 opt-in 제안 (즉시 낙찰 아님)
         console.log(`🔄 차순위 opt-in 제안: 경매 ${auction.id}`);
         const { data: fallbackResult, error: fallbackError } = await supabase.rpc(
@@ -137,10 +161,14 @@ Deno.serve(async (req: Request) => {
 
         if (fbResult?.result === "fallback_offered" && fbResult.offered_to) {
           results.fallback_offers++;
-          console.log(`✅ 차순위 제안 완료: 경매 ${auction.id} → ${fbResult.offered_to} (1시간 수락 대기)`);
+          console.log(`✅ 차순위 제안 완료: 경매 ${auction.id} → ${fbResult.offered_to} (15분 수락 대기)`);
 
-          // 알림톡은 알림톡 시스템 구축 후 추가 예정
-          // TODO: sendFallbackOfferNotification(supabase, auction.id, fbResult.offered_to, ...)
+          // 차순위에게 FALLBACK_WON 알림톡 발송
+          try {
+            await sendFallbackOfferNotification(supabase, auction.id, fbResult.offered_to, clubName);
+          } catch (notifyErr) {
+            console.error(`⚠️ 차순위 알림톡 발송 실패 (${auction.id}):`, notifyErr);
+          }
 
           // MD에게 노쇼 + 차순위 제안 알림
           if (auction.md_id) {
@@ -303,7 +331,71 @@ async function sendNoshowNotification(
   }
 }
 
-// TODO: sendFallbackOfferNotification() — 알림톡 시스템(사업자 등록) 완료 후 구현
+// ---- 차순위 제안 알림톡 발송 ----
+
+async function sendFallbackOfferNotification(
+  supabase: ReturnType<typeof createClient>,
+  auctionId: string,
+  offeredToUserId: string,
+  clubName: string
+): Promise<void> {
+  if (!TPL_FALLBACK_WON) {
+    console.log("⚠️ FALLBACK_WON 템플릿 미설정, 건너뜀");
+    return;
+  }
+
+  const { data: user } = await supabase
+    .from("users")
+    .select("phone, name")
+    .eq("id", offeredToUserId)
+    .single();
+
+  if (!user?.phone) return;
+
+  // 제안된 입찰 금액 조회
+  const { data: bid } = await supabase
+    .from("bids")
+    .select("bid_amount")
+    .eq("auction_id", auctionId)
+    .eq("bidder_id", offeredToUserId)
+    .eq("status", "outbid")
+    .order("bid_amount", { ascending: false })
+    .limit(1)
+    .single();
+
+  const price = bid ? new Intl.NumberFormat("ko-KR").format(bid.bid_amount) + "원" : "";
+
+  try {
+    await solapiSendAlimtalk(user.phone, TPL_FALLBACK_WON, {
+      clubName,
+      userName: user.name || "회원",
+      winningPrice: price,
+      contactDeadline: "15분",
+      auctionUrl: `${APP_URL}/my-bids?tab=ended`,
+    });
+
+    await supabase.from("notification_logs").insert({
+      event_type: "fallback_offer",
+      auction_id: auctionId,
+      recipient_user_id: offeredToUserId,
+      recipient_phone: user.phone,
+      template_id: TPL_FALLBACK_WON,
+      status: "sent",
+    });
+    console.log(`📨 차순위 알림톡 발송: 경매 ${auctionId} → ${user.phone}`);
+  } catch (err) {
+    console.error(`❌ 차순위 알림톡 발송 실패 (${auctionId}):`, err);
+    await supabase.from("notification_logs").insert({
+      event_type: "fallback_offer",
+      auction_id: auctionId,
+      recipient_user_id: offeredToUserId,
+      recipient_phone: user.phone,
+      template_id: TPL_FALLBACK_WON,
+      status: "failed",
+      error_message: String(err),
+    });
+  }
+}
 
 // ---- 인앱 알림 생성 ----
 

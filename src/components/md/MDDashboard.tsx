@@ -368,7 +368,10 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                     <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} topBidder={topBids[auction.id]} />
                                 ))
                             ) : (
-                                <EmptyState label="얼리버드 경매가 없습니다." />
+                                <EmptyState 
+                                    label="얼리버드 경매가 없습니다." 
+                                    description={<>오래 노출될수록 입찰 경쟁은 뜨거워집니다.<br/>주요 일정을 미리 올려 더 높은 낙찰가를 확보해 보세요.</>}
+                                />
                             )}
                         </TabsContent>
 
@@ -623,15 +626,17 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
     );
 }
 
-function EmptyState({ label }: { label: string }) {
+function EmptyState({ label, description }: { label: string, description?: React.ReactNode }) {
     return (
         <div className="py-16 text-center space-y-4 bg-[#1C1C1E]/30 rounded-3xl border border-dashed border-neutral-800/50">
             <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto">
                 <TrendingUp className="w-8 h-8 text-neutral-700" />
             </div>
             <p className="text-neutral-500 font-medium text-sm">{label}</p>
-            <p className="text-neutral-600 text-xs px-8">
-                지금 경매를 등록하면 평균 45분 내에 첫 입찰이 들어옵니다
+            <p className="text-neutral-600 text-xs px-10 leading-relaxed">
+                {description || (
+                    <>번거로운 홍보 없이 등록만으로 수많은 유저들에게<br/>MD님의 상품을 알려보세요</>
+                )}
             </p>
             <Link href="/md/auctions/new">
                 <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">

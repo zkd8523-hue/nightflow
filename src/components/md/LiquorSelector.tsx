@@ -134,7 +134,18 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
                   <button
                     key={qty}
                     type="button"
-                    onClick={() => isSelected ? removeLiquor(item) : onSelect([...selected, item])}
+                    onClick={() => {
+                      // 같은 카테고리의 다른 빠른선택 항목 제거 후 선택
+                      const otherItems = [1, 2, 3]
+                        .filter((q) => q !== qty)
+                        .map((q) => `${label} ${q}병`);
+                      const filtered = selected.filter((s) => !otherItems.includes(s));
+                      if (isSelected) {
+                        onSelect(filtered.filter((s) => s !== item));
+                      } else {
+                        onSelect([...filtered, item]);
+                      }
+                    }}
                     className={`flex-1 py-2.5 rounded-lg text-[12px] font-bold transition-all ${
                       isSelected
                         ? "bg-amber-500 text-black"

@@ -183,25 +183,6 @@ export function MDSettingsForm({ user }: { user: User }) {
             )}
           </div>
 
-          {/* Kakao Open Chat */}
-          <div className="space-y-2">
-            <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
-              <MessageCircle className="w-3.5 h-3.5" />
-              카카오톡 오픈채팅 (선택)
-            </Label>
-            <Input
-              {...form.register("kakao_open_chat_url")}
-              placeholder="https://open.kakao.com/o/..."
-              className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
-            />
-            <p className="text-neutral-600 text-[10px]">구매자에게 추가 연락 수단으로 표시됩니다</p>
-            {form.formState.errors.kakao_open_chat_url && (
-              <p className="text-red-500 text-[10px] font-bold">
-                {form.formState.errors.kakao_open_chat_url?.message?.toString()}
-              </p>
-            )}
-          </div>
-
           {/* 선호 연락 수단 */}
           <div className="space-y-3">
             <Label className="text-neutral-500 text-xs font-bold uppercase">
@@ -244,6 +225,25 @@ export function MDSettingsForm({ user }: { user: User }) {
                 ? "미선택 시 모든 연락 수단이 표시됩니다"
                 : "선택한 수단만 구매자에게 표시됩니다"}
             </p>
+          </div>
+
+          {/* Kakao Open Chat */}
+          <div className="space-y-2">
+            <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5" />
+              카카오톡 오픈채팅 (선택)
+            </Label>
+            <Input
+              {...form.register("kakao_open_chat_url")}
+              placeholder="https://open.kakao.com/o/..."
+              className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
+            />
+            <p className="text-neutral-600 text-[10px]">구매자에게 추가 연락 수단으로 표시됩니다</p>
+            {form.formState.errors.kakao_open_chat_url && (
+              <p className="text-red-500 text-[10px] font-bold">
+                {form.formState.errors.kakao_open_chat_url?.message?.toString()}
+              </p>
+            )}
           </div>
         </div>
       </form>

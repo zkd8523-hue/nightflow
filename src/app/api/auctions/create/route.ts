@@ -247,7 +247,7 @@ async function sendAreaNotifications(
   const recentPhones = new Set(recentLogs?.map((l) => l.recipient_phone) || []);
 
   // 4. 쿨다운 통과한 구독자에게만 발송
-  const auctionUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "https://nightflow.kr"}/auctions/${auctionId}`;
+  const auctionUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://nightflow.co").replace(/^https?:\/\//, "");
 
   const sendPromises = subscribers
     .filter((s) => !recentPhones.has(s.phone))

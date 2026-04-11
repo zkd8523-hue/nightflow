@@ -257,6 +257,11 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                     </div>
                                 </>
                             ) : null}
+                            {auction.view_count > 0 && (
+                                <div className="text-[11px] text-neutral-500 font-medium mt-0.5">
+                                    👀 {auction.view_count}회 조회
+                                </div>
+                            )}
                             {isActive && (
                                 <div className={`text-[12px] font-bold mt-0.5 ${topBidder ? "text-green-500" : "text-neutral-600"}`}>
                                     {topBidder ? `👤 ${topBidder.bidder_name}` : (isInstant ? "아직 구매 없음" : "아직 입찰 없음")}

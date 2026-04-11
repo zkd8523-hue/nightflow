@@ -235,9 +235,10 @@ export interface Auction {
   // Opt-in fallback (Migration 088)
   fallback_offered_to: string | null;   // 현재 제안 받은 차순위 유저 ID
   fallback_offered_at: string | null;   // 제안 시각
-  fallback_deadline: string | null;     // 수락 마감 (제안 시각 + 1시간)
+  fallback_deadline: string | null;     // 수락 마감 (제안 시각 + 15분)
 
   chat_interest_count: number;
+  view_count: number;
 
   created_at: string;
   updated_at: string;

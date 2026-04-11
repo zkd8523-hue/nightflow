@@ -1,22 +1,16 @@
 "use client";
 
-import { useState, memo } from "react";
+import { memo } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import type { Auction, MDCustomerGrade } from "@/types/database";
 import { MD_GRADE_CONFIG } from "@/types/database";
 import { formatNumber, formatTime, formatCountdown, formatEntryTime, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES, URGENCY_LABELS } from "@/lib/constants/timer-urgency";
-import { MapPin, ExternalLink, Clock, Gavel, Zap } from "lucide-react";
+import { Clock, Gavel, Zap } from "lucide-react";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
@@ -28,7 +22,6 @@ interface AuctionCardProps {
 }
 
 export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, isUserInterested }: AuctionCardProps) {
-  const [isMapOpen, setIsMapOpen] = useState(false);
   const club = auction.club;
   const displayStatus = getAuctionDisplayStatus(auction);
   const isActive = displayStatus === 'active';
@@ -65,23 +58,13 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
     <div>
       <Link href={`/auctions/${auction.id}`}>
         <div className={`relative overflow-hidden bg-[#1C1C1E] rounded-2xl p-3 transition-all active:scale-[0.98] cursor-pointer ${isWon ? "won-card-border won-card-glow border border-transparent" : "border border-transparent"} ${auction.status === "unsold" ? "opacity-60" : ""}`}>
-          {/* 우측 상단: 지도 (1행) + 입장시간 (2행) */}
+          {/* 우측 상단: 찜 (1행) + 입장시간 (2행) */}
           <div className="absolute top-2.5 right-2.5 z-10 flex flex-col items-end gap-1">
-            <div className="flex items-center gap-1.5">
-              {club && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsMapOpen(true);
-                  }}
-                  className="w-5 h-5 inline-flex items-center justify-center rounded-full bg-neutral-800/40 backdrop-blur-[2px] border border-white/5 hover:bg-neutral-700 transition-colors"
-                  title="지도에서 보기"
-                >
-                  <MapPin className="w-2.5 h-2.5 text-neutral-400" />
-                </button>
-              )}
-            </div>
+            {club && (
+              <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                <FavoriteButton clubId={club.id} />
+              </div>
+            )}
             {entryText && (
               <span className="text-[10px] font-medium text-blue-400/90">
                 {entryText}
@@ -99,12 +82,6 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 includes={auction.includes}
                 alt={club?.name || "경매"}
               />
-              {/* 찜 버튼 */}
-              {club && (
-                <div className="absolute top-1 right-1 z-10 scale-90 origin-top-right" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                  <FavoriteButton clubId={club.id} />
-                </div>
-              )}
             </div>
 
             {/* Content Area */}
@@ -256,58 +233,6 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
         </div>
       </Link>
 
-      {/* 지도 앱 선택 Sheet */}
-      {club && (
-        <Sheet open={isMapOpen} onOpenChange={setIsMapOpen}>
-          <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-8">
-            <SheetHeader className="pb-2">
-              <SheetTitle className="text-white text-[16px]">
-                {club.name} 위치 확인
-              </SheetTitle>
-              {club.address && (
-                <p className="text-[13px] text-neutral-400">{club.address}</p>
-              )}
-            </SheetHeader>
-            <div className="flex flex-col gap-3 mt-4">
-              <button
-                onClick={() => {
-                  const query = encodeURIComponent(club.address || club.name);
-                  window.open(`https://map.naver.com/v5/search/${query}`, "_blank");
-                  setIsMapOpen(false);
-                }}
-                className="flex items-center gap-3 p-4 bg-[#0A0A0A] rounded-2xl border border-neutral-800 hover:border-green-500/50 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[18px] font-bold text-green-500">N</span>
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-[15px] font-bold text-white">네이버지도</p>
-                  <p className="text-[12px] text-neutral-400">네이버지도에서 열기</p>
-                </div>
-                <ExternalLink className="w-4 h-4 text-neutral-500" />
-              </button>
-
-              <button
-                onClick={() => {
-                  const query = encodeURIComponent(club.address || club.name);
-                  window.open(`https://map.kakao.com/link/search/${query}`, "_blank");
-                  setIsMapOpen(false);
-                }}
-                className="flex items-center gap-3 p-4 bg-[#0A0A0A] rounded-2xl border border-neutral-800 hover:border-yellow-500/50 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                  <span className="text-[18px] font-bold text-yellow-500">K</span>
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-[15px] font-bold text-white">카카오맵</p>
-                  <p className="text-[12px] text-neutral-400">카카오맵에서 열기</p>
-                </div>
-                <ExternalLink className="w-4 h-4 text-neutral-500" />
-              </button>
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
     </div>
   );
 });

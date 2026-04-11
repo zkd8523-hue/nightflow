@@ -146,7 +146,7 @@ export function FallbackOfferCard({ auction, onAccepted, onDeclined }: FallbackO
             <span className="text-2xl font-black text-white">{formatPrice(price)}</span>
           </div>
           <p className="text-[11px] text-neutral-600 font-medium text-right mt-1">
-            1순위 낙찰자가 연락하지 않아 기회가 왔습니다
+            이전 낙찰자의 예약이 취소되었습니다
           </p>
         </div>
 

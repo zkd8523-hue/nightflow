@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     }
 
     const supabase = createAdminClient();
-    const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://nightflow.co";
+    const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://nightflow.co").replace(/^https?:\/\//, "");
 
     const { data: auction } = await supabase
       .from("auctions")
@@ -38,9 +38,6 @@ export async function POST(req: Request) {
     const price = new Intl.NumberFormat("ko-KR").format(
       auction.winning_price || 0
     );
-    const matchUrl = `${APP_URL}/match/${auctionId}`;
-    const tableInfo = auction.table_info || "테이블";
-
     // ─── 1. MD 알림 (먼저 발송) ───
     if (auction.md_id) {
       // MD 인앱 알림
@@ -73,9 +70,8 @@ export async function POST(req: Request) {
             templateId: ALIMTALK_TEMPLATES.MD_NEW_MATCH,
             variables: {
               clubName,
-              tableInfo,
               winningPrice: `${price}원`,
-              matchUrl,
+              auctionUrl: `${APP_URL}/auctions/${auctionId}`,
             },
           });
         } catch (mdAlimErr) {

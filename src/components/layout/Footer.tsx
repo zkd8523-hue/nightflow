@@ -1,6 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function Footer() {
+  const { user } = useAuthStore();
+  const isPartner = user?.role === "md" || user?.role === "admin";
+
   return (
     <footer className="border-t border-neutral-800 bg-neutral-950">
       <div className="container mx-auto px-4 py-8">
@@ -19,12 +25,14 @@ export function Footer() {
               고객문의
             </Link>
           </nav>
-          <Link
-            href="/md/apply"
-            className="inline-block rounded-full border border-amber-500 px-5 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
-          >
-            MD 파트너 모집 →
-          </Link>
+          {!isPartner && (
+            <Link
+              href="/md/apply"
+              className="inline-block rounded-full border border-amber-500 px-5 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
+            >
+              MD 파트너 모집 →
+            </Link>
+          )}
           <Link
             href="http://pf.kakao.com/_ilSqX"
             target="_blank"

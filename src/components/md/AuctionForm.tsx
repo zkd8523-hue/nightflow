@@ -981,7 +981,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         </div>
                         {instantEntry ? (
                             <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
-                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "구매 후 바로 입장 가능" : "낙찰 후 바로 입장 가능"}</span>
+                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "구매 후 즉시 입장 가능" : "낙찰 후 즉시 입장 가능"}</span>
                             </div>
                         ) : auctionMode === "today" ? (
                             <DateTimeSheet
@@ -1162,6 +1162,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     window.scrollTo({ top: 0, behavior: "smooth" });
                     toast.success("설정이 유지됩니다. 테이블 위치만 입력하세요!");
                 }}
+                listingType={watch("listing_type")}
+                areaName={selectedClub?.area}
             />
         )}
 

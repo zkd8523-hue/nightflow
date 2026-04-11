@@ -13,7 +13,7 @@ test.describe("홈페이지 / 경매 목록", () => {
   test("1. 비로그인 상태에서 홈 접근 가능 (공개 페이지)", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveURL("/");
-    await expect(page.getByRole("heading", { name: "NIGHTFLOW" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "NightFlow" }).first()).toBeVisible();
   });
 
   // ── 2. 경매 목록 섹션 렌더링 ────────────────────────────────────────
@@ -22,7 +22,7 @@ test.describe("홈페이지 / 경매 목록", () => {
     await page.waitForLoadState("networkidle");
     // AuctionList 또는 빈 상태 메시지가 렌더링되어야 함
     const hasList = (await page.locator("a[href^='/auctions/']").count()) > 0;
-    const hasEmptyText = (await page.getByText(/경매가 없|진행 중인 경매|NIGHTFLOW/).count()) > 0;
+    const hasEmptyText = (await page.getByText(/경매가 없|진행 중인 경매|NightFlow/).count()) > 0;
     expect(hasList || hasEmptyText).toBe(true);
   });
 
@@ -41,10 +41,10 @@ test.describe("홈페이지 / 경매 목록", () => {
       return;
     }
 
-    // 첫 번째 카드에서 가격 정보(₩) 노출 확인
+    // 첫 번째 카드에서 가격 정보(원) 노출 확인
     const firstCard = cards.first();
     await expect(firstCard).toBeVisible();
-    await expect(firstCard.getByText(/₩/)).toBeVisible();
+    await expect(firstCard.getByText(/원/)).toBeVisible();
   });
 
   // ── 4. 경매 카드 클릭 → 상세 이동 ──────────────────────────────────
@@ -64,7 +64,7 @@ test.describe("홈페이지 / 경매 목록", () => {
     await cards.first().click();
     await expect(page).toHaveURL(href!);
     // 경매 상세 페이지 핵심 요소 확인
-    await expect(page.getByText(/₩/)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/원/).first()).toBeVisible({ timeout: 8000 });
   });
 
   // ── 5. 헤더 네비게이션 렌더링 ────────────────────────────────────────
@@ -78,15 +78,17 @@ test.describe("홈페이지 / 경매 목록", () => {
   test("6. 로그인 후 홈 정상 렌더링", async ({ page }) => {
     await devLogin(page, "e2e-user@nightflow.com", "test123456");
     await expect(page).toHaveURL("/");
-    await expect(page.getByRole("heading", { name: "NIGHTFLOW" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "NightFlow" }).first()).toBeVisible();
   });
 
-  // ── 7. 로그인 후 헤더에 MD 파트너 신청 링크 표시 ───────────────────
-  test("7. 로그인 후 헤더에 MD 파트너 신청 링크 표시 (일반 유저)", async ({ page }) => {
+  // ── 7. 로그인 후 헤더 메뉴에서 도움말 링크 확인 ───────────────────
+  test("7. 로그인 후 헤더 메뉴 열기 가능", async ({ page }) => {
     await devLogin(page, "e2e-user@nightflow.com", "test123456");
-    // 일반 유저(role=user)는 헤더에 "MD 파트너 신청" 링크 표시
-    // 단, 이미 pending이면 "심사 중" 표시
-    const mdLink = page.getByRole("link", { name: /MD 파트너 신청|심사 중/ });
-    await expect(mdLink).toBeVisible({ timeout: 5000 });
+    // 메뉴 버튼 클릭
+    const menuBtn = page.getByRole("button", { name: /메뉴/ });
+    await expect(menuBtn).toBeVisible({ timeout: 5000 });
+    await menuBtn.click();
+    // 메뉴 내 도움말 링크 확인 (모든 유저에게 표시)
+    await expect(page.getByText("도움말")).toBeVisible({ timeout: 3000 });
   });
 });

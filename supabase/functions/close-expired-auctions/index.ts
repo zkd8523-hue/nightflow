@@ -14,7 +14,7 @@ const corsHeaders = {
 
 // 알림톡 템플릿 (SOLAPI 자체 환경변수는 _shared/solapi.ts에서 처리)
 const TPL_AUCTION_WON = Deno.env.get("ALIMTALK_TPL_AUCTION_WON");
-const APP_URL = Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co";
+const APP_URL = (Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co").replace(/^https?:\/\//, "");
 
 interface CloseAuctionResult {
     result: "won" | "unsold";
@@ -182,18 +182,9 @@ async function sendWonNotification(
 
 
 
-    // 연락 타이머 조회 (contact_timer_minutes)
-    const { data: auctionTimer } = await supabase
-        .from("auctions")
-        .select("contact_timer_minutes")
-        .eq("id", auctionId)
-        .single();
-    const timerMinutes = auctionTimer?.contact_timer_minutes || 15;
-
     await solapiSendAlimtalk(winner.phone, TPL_AUCTION_WON, {
         clubName,
         winningPrice: `${price}원`,
-        contactDeadline: `${timerMinutes}분`,
         auctionUrl: `${APP_URL}/auctions/${auctionId}`,
     });
 

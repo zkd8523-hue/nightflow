@@ -29,6 +29,7 @@ interface ShareSuccessSheetProps {
   onContinue?: () => void;
   thumbnailUrl?: string;
   listingType?: "auction" | "instant";
+  areaName?: string;
 }
 
 export function ShareSuccessSheet({
@@ -42,6 +43,7 @@ export function ShareSuccessSheet({
   onContinue,
   thumbnailUrl,
   listingType,
+  areaName,
 }: ShareSuccessSheetProps) {
   const router = useRouter();
   const { shareToKakao, isAvailable: kakaoAvailable } = useKakaoShare();
@@ -97,6 +99,8 @@ export function ShareSuccessSheet({
         thumbnailUrl,
         listingType: listingType || "auction",
         isFromMD: true,
+        area: areaName,
+        eventDate,
       });
       if (!success) {
         toast.error("카카오톡 공유에 실패했습니다");

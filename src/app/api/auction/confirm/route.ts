@@ -2,6 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { sendAlimtalkAndLog } from "@/lib/notifications/send-and-log";
 import { ALIMTALK_TEMPLATES } from "@/lib/notifications/alimtalk";
+import { trackServerEvent } from "@/lib/analytics-server";
 import { NextResponse } from "next/server";
 
 // MD가 현장 방문 확인 시 호출 → 상태 업데이트 + 알림톡 발송
@@ -84,6 +85,13 @@ export async function POST(req: Request) {
     } catch (notifyErr) {
       // 알림 실패는 무시
     }
+
+    // Mixpanel: 방문 확인 완료
+    await trackServerEvent("auction_completed", {
+      auction_id: auctionId,
+      sale_channel: "visit_confirmed",
+      md_id: user.id,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

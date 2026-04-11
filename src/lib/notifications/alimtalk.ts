@@ -20,6 +20,7 @@ export const ALIMTALK_TEMPLATES = {
   FALLBACK_WON: process.env.ALIMTALK_TPL_FALLBACK_WON || "",
   MD_NEW_MATCH: process.env.ALIMTALK_TPL_MD_NEW_MATCH || "",
   NEW_AUCTION_IN_AREA: process.env.ALIMTALK_TPL_NEW_AUCTION_IN_AREA || "",
+  EARLYBIRD_DDAY_REMINDER: process.env.ALIMTALK_TPL_EARLYBIRD_DDAY_REMINDER || "",
 } as const;
 
 function getMessageService(): SolapiMessageService {
@@ -91,7 +92,6 @@ export async function sendAuctionWonNotification(
   vars: {
     clubName: string;
     winningPrice: string;
-    contactDeadline: string;
     auctionUrl: string;
   }
 ) {
@@ -164,6 +164,17 @@ export async function sendNewAuctionInAreaNotification(
   return sendAlimtalk({
     to: phone,
     templateId: ALIMTALK_TEMPLATES.NEW_AUCTION_IN_AREA,
+    variables: vars,
+  });
+}
+
+export async function sendEarlybirdDdayReminder(
+  phone: string,
+  vars: { clubName: string; eventTime: string }
+) {
+  return sendAlimtalk({
+    to: phone,
+    templateId: ALIMTALK_TEMPLATES.EARLYBIRD_DDAY_REMINDER,
     variables: vars,
   });
 }

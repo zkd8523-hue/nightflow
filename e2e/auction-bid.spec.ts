@@ -37,8 +37,8 @@ test.describe("경매 상세 페이지 / 입찰 UI", () => {
     await page.goto(url);
     await page.waitForLoadState("networkidle");
 
-    // 현재가(₩) 표시
-    await expect(page.getByText(/₩/).first()).toBeVisible({ timeout: 8000 });
+    // 현재가(원) 표시
+    await expect(page.getByText(/원/).first()).toBeVisible({ timeout: 8000 });
     // 타이머 또는 종료 문구
     const hasTimer = (await page.getByText(/남음|마감|종료|LIVE/).count()) > 0;
     expect(hasTimer).toBe(true);
@@ -55,8 +55,7 @@ test.describe("경매 상세 페이지 / 입찰 UI", () => {
     await page.waitForLoadState("networkidle");
 
     // 입찰 관련 버튼 또는 입력창 존재
-    const bidInput = page.getByInputValue("").filter({ hasText: "" }).locator("input[inputmode='numeric']");
-    const bidBtn = page.getByRole("button", { name: /입찰|얼마에|마감/ });
+    const bidBtn = page.getByRole("button", { name: /입찰|예약|얼마에|마감/ });
     const hasPanel = (await bidBtn.count()) > 0 || (await page.locator("input[inputmode='numeric']").count()) > 0;
     expect(hasPanel).toBe(true);
   });

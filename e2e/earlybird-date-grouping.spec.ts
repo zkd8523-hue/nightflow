@@ -8,7 +8,8 @@ async function devLogin(page: Page, email: string, password: string) {
   await page.waitForURL("/");
 }
 
-test.describe("얼리버드 탭 날짜별 그룹핑", () => {
+// 얼리버드 탭이 HomeContent에서 제거되어 전체 스킵
+test.describe.skip("얼리버드 탭 날짜별 그룹핑", () => {
   // ── 1. 얼리버드 탭 접근 및 렌더링 ─────────────────────────────────────
   test("1. 홈에서 얼리버드 탭 클릭 시 정상 렌더링", async ({ page }) => {
     await page.goto("/");
@@ -298,7 +299,7 @@ test.describe("얼리버드 탭 날짜별 그룹핑", () => {
     await expect(page).toHaveURL(firstCardHref!, { timeout: 5000 });
 
     // 상세 페이지 핵심 요소 확인 (가격 표시)
-    await expect(page.getByText(/₩/)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/원/).first()).toBeVisible({ timeout: 8000 });
   });
 
   // ── 10. 빈 상태 메시지 확인 ─────────────────────────────────────────

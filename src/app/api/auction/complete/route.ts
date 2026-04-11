@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { trackServerEvent } from "@/lib/analytics-server";
 import { NextResponse } from "next/server";
 
 // MD가 오늘특가(instant) 경매의 거래완료 처리
@@ -51,6 +52,14 @@ export async function POST(req: Request) {
       .eq("id", auctionId);
 
     if (updateError) throw updateError;
+
+    // Mixpanel: instant 거래완료 (nightflow / other 채널 구분)
+    await trackServerEvent("auction_completed", {
+      auction_id: auctionId,
+      sale_channel: saleChannel,
+      listing_type: "instant",
+      md_id: user.id,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
