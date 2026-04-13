@@ -49,11 +49,22 @@ export async function POST(req: Request) {
     // 2. Auction 상태 업데이트 (confirmed_at은 트리거가 자동 설정)
     const { error: auctionError } = await supabaseAdmin
       .from("auctions")
-      .update({ status: "confirmed", contact_deadline: null, confirmed_by: user.id })
+      .update({
+        status: "confirmed",
+        contact_deadline: null,
+        confirmed_by: user.id,
+      })
       .eq("id", auctionId)
       .eq("status", "won");
 
     if (auctionError) throw auctionError;
+
+    // contact_attempted_at 소급 기록: API 실패로 미기록된 경우 방어
+    await supabaseAdmin
+      .from("auctions")
+      .update({ contact_attempted_at: new Date().toISOString() })
+      .eq("id", auctionId)
+      .is("contact_attempted_at", null);
 
     // 3. 낙찰자에게 알림톡 발송
     try {

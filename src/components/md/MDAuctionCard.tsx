@@ -10,7 +10,7 @@ import type { Auction } from "@/types/database";
 import { formatNumber, formatTime } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { InlineTimer } from "@/components/auctions/InlineTimer";
-import { Edit2, ExternalLink, MoreVertical, Trash2, Share2, RotateCcw, Phone } from "lucide-react";
+import { Edit2, MoreVertical, Trash2, Share2, RotateCcw, Phone } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
     DropdownMenu,

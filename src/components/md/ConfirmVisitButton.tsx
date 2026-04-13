@@ -134,14 +134,19 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
         <div className="space-y-2">
             {/* Primary action: won 상태에서 방문 확인 */}
             {auctionStatus === "won" && (
-                <Button
-                    onClick={handleConfirmVisit}
-                    disabled={loading}
-                    className="w-full h-12 bg-green-600 text-white font-bold hover:bg-green-700 rounded-xl flex items-center justify-center gap-2"
-                >
-                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    방문 확인
-                </Button>
+                <>
+                    <p className="text-[11px] text-neutral-400 text-center leading-normal px-1">
+                        실제 방문을 확인한 후 눌러주세요. 방문 확인 후에는 노쇼 신고가 불가합니다.
+                    </p>
+                    <Button
+                        onClick={handleConfirmVisit}
+                        disabled={loading}
+                        className="w-full h-12 bg-green-600 text-white font-bold hover:bg-green-700 rounded-xl flex items-center justify-center gap-2"
+                    >
+                        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                        방문 확인
+                    </Button>
+                </>
             )}
 
             {/* Secondary actions: 노쇼 신고 + 합의 취소 (가로 배치) */}
@@ -155,7 +160,7 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
                             className="flex-1 h-10 border-red-500/30 bg-red-500/5 text-red-500 font-bold hover:bg-red-500/10 rounded-xl flex items-center justify-center gap-1.5 text-[13px]"
                         >
                             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-                            노쇼 신고
+                            차순위에게 제안
                         </Button>
 
                         <Button
@@ -173,9 +178,9 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
                         isOpen={showNoShow}
                         onOpenChange={setShowNoShow}
                         onConfirm={handleNoShow}
-                        title="노쇼 신고"
-                        description="낙찰자가 방문하지 않았나요? 노쇼 신고 시 해당 유저에게 스트라이크가 부과됩니다. 이벤트 다음날 정오까지 신고하지 않으면 방문이 자동 확인됩니다."
-                        confirmText="노쇼 신고"
+                        title="차순위에게 제안"
+                        description="낙찰자에게 연락을 못 받으셨나요? 확인 시 낙찰자에게 스트라이크가 부과되고 차순위 입찰자에게 낙찰 제안이 전송됩니다."
+                        confirmText="차순위에게 제안"
                         variant="danger"
                     />
 

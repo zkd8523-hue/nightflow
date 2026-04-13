@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { Phone, Instagram, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
-import { logger } from "@/lib/utils/logger";
 import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import { trackEvent } from "@/lib/analytics";
 
@@ -37,13 +36,6 @@ function buildCopyMessage(auctionId: string, clubName?: string, tableInfo?: stri
 
 export function ContactButton({ auctionId, type, url, clubName, tableInfo, currentBid, eventDate, entryTime, onContact }: ContactButtonProps) {
   const handleClick = async () => {
-    // 연락 시도 기록 (fire-and-forget)
-    fetch("/api/auction/contact-attempt", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ auctionId }),
-    }).catch(logger.error);
-
     onContact?.();
     trackEvent("contact_initiated", { auction_id: auctionId, contact_type: type });
 

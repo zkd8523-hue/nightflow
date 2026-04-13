@@ -97,8 +97,8 @@ Deno.serve(async (req: Request) => {
         await supabase.from("in_app_notifications").insert({
           user_id: auction.winner_id,
           type: "contact_deadline_warning",
-          title: "연락 마감이 임박합니다!",
-          message: `${clubName} 경매 연락 마감까지 ${remainingMinutes}분 남았습니다. 지금 MD에게 연락하세요!`,
+          title: "MD 연락 시간 안내",
+          message: `${clubName} 경매 MD 연락 시간이 ${remainingMinutes}분 남았습니다. 아직 연락 전이라면 지금 연락해보세요.`,
           action_url: `/auctions/${auction.id}`,
         });
       } catch (inAppErr) {

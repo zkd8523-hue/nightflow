@@ -739,6 +739,13 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               </div>
             </div>
 
+            {/* Fallback Warning */}
+            <div className="flex items-start gap-2 px-1">
+              <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-[10px] text-amber-400 font-medium leading-normal">
+                1시간 내 연락하지 않으면 낙찰이 취소되고 차순위 입찰자에게 넘어갈 수 있습니다.
+              </p>
+            </div>
             {/* No-Show Warning */}
             <div className="flex items-start gap-2 px-1">
               <AlertCircle className="w-4 h-4 text-neutral-500 mt-0.5 shrink-0" />

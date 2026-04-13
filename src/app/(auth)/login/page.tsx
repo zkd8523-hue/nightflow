@@ -126,7 +126,7 @@ export default function LoginPage() {
           <Button
             onClick={() => handleKakaoLogin()}
             disabled={loading}
-            className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835]"
+            className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835] cursor-pointer"
           >
             {loading ? "로그인 중..." : "카카오로 시작하기"}
           </Button>
@@ -143,15 +143,6 @@ export default function LoginPage() {
             에 동의하게 됩니다.
           </p>
 
-          <p className="text-xs text-center text-neutral-500">
-            클럽 MD이신가요?{" "}
-            <button
-              onClick={() => handleKakaoLogin("/md/apply")}
-              className="text-amber-500 underline font-medium"
-            >
-              파트너 신청하기
-            </button>
-          </p>
         </div>
 
         {/* 개발용 테스트 로그인 */}

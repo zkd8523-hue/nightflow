@@ -226,7 +226,6 @@ export interface Auction {
   contact_deadline: string | null; // Model B: MD 연락 마감 시간
   contact_timer_minutes: number | null; // Model B: 적용된 타이머 분(10분 단일)
   contact_attempted_at: string | null; // 낙찰자 연락 시도 시각 (무과실 판정 근거)
-  noshow_review_deadline: string | null; // 노쇼 스트라이크 보류 마감 (MD 검토 30분 창)
 
   // Post-Auction Journey (Migration 051)
   confirmed_at: string | null;

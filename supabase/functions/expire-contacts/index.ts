@@ -1,11 +1,8 @@
-// Deno Edge Function: 연락 마감 자동 노쇼 처리
+// Deno Edge Function: 연락 마감 처리
 // Cron: 매 1분 (* * * * *)
 //
-// [Case 1] status='won' + contact_deadline < now → 노쇼 처리
-//   (소비자가 연락 버튼을 누르면 contact_deadline이 NULL로 비워져서 여기 안 걸림)
-//   1) 노쇼 스트라이크 적용 (apply_noshow_strike)
-//   2) 차순위에게 opt-in 제안 (fallback_to_next_bidder) — 즉시 낙찰 아님
-//   3) 알림톡 발송: 노쇼 유저(NOSHOW_BANNED)
+// [Case 1] status='won' + contact_deadline < now → MD에게 "연락받으셨나요?" 알림
+//   스트라이크/차순위는 MD가 명시적으로 노쇼 신고 시에만 부과 (opt-out)
 //
 // [Case 2] fallback_deadline < now (차순위 수락 시간 만료) → 다음 차순위 탐색
 //   패널티 없음, fallback_to_next_bidder() 재호출
@@ -35,8 +32,7 @@ async function trackMixpanelEvent(eventName: string, props: Record<string, unkno
 }
 
 // 알림톡 템플릿 ID (SOLAPI 자체 환경변수는 _shared/solapi.ts 내부에서 읽음)
-const TPL_NOSHOW_BANNED = Deno.env.get("ALIMTALK_TPL_NOSHOW_BANNED");
-const TPL_FALLBACK_WON = Deno.env.get("ALIMTALK_TPL_FALLBACK_WON");
+const TPL_MD_NOSHOW_CHECK = Deno.env.get("ALIMTALK_TPL_MD_NOSHOW_CHECK");
 const APP_URL = (Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co").replace(/^https?:\/\//, "");
 
 const corsHeaders = {
@@ -59,7 +55,7 @@ Deno.serve(async (req: Request) => {
 
     const now = new Date().toISOString();
 
-    // ── Case 1: status='won' + contact_deadline 만료 (노쇼) ──────────────────
+    // ── Case 1: status='won' + contact_deadline 만료 ──
     // instant는 연락 타이머 없음
     const { data: expiredContacts, error: fetchError } = await supabase
       .from("auctions")
@@ -96,102 +92,62 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`📦 노쇼 ${expiredContacts?.length || 0}건, fallback 만료 ${expiredFallbacks?.length || 0}건`);
+    console.log(`📦 연락만료 ${expiredContacts?.length || 0}건, fallback 만료 ${expiredFallbacks?.length || 0}건`);
 
     const results = {
       total: totalItems,
-      strikes: 0,
+      noshow_notified: 0,   // MD에게 "연락받으셨나요?" 알림 발송
       fallback_offers: 0,
       fallback_expired_next: 0,
       unsold: 0,
       errors: [] as string[],
     };
 
-    // ── Case 1 처리: 노쇼 ────────────────────────────────────────────────────
+    // ── Case 1 처리: 연락 타이머 만료 — MD에게 "연락받으셨나요?" 알림 ──
+    // 스트라이크/차순위는 MD가 명시적으로 "노쇼 신고" 클릭 시에만 부과 (opt-out)
     for (const auction of (expiredContacts || [])) {
       try {
-        const winnerId = auction.winner_id;
         const clubName = (auction.club as unknown as { name: string })?.name || "클럽";
 
-        // 노쇼 스트라이크 적용
-        console.log(`⚠️ 노쇼 스트라이크 적용: 경매 ${auction.id}, 유저 ${winnerId}`);
-        const { data: strikeResult, error: strikeError } = await supabase.rpc(
-          "apply_noshow_strike",
-          { p_user_id: winnerId }
-        );
+        // contact_deadline 초기화 (재트리거 방지)
+        await supabase
+          .from("auctions")
+          .update({ contact_deadline: null })
+          .eq("id", auction.id);
 
-        if (strikeError) {
-          console.error(`❌ 스트라이크 적용 실패 (${auction.id}):`, strikeError.message);
-          results.errors.push(`strike:${auction.id}:${strikeError.message}`);
-        } else {
-          results.strikes++;
-          await sendNoshowNotification(supabase, winnerId, strikeResult);
-          await createInAppNotification(supabase, winnerId, {
-            type: "noshow_penalty",
-            title: "미연락 스트라이크가 부과되었습니다",
-            message: `${clubName} 경매 낙찰 후 연락 시간이 만료되어 스트라이크가 부과되었습니다.`,
-            action_url: `/my-bids`,
+        // MD에게 인앱 알림
+        if (auction.md_id) {
+          await createInAppNotification(supabase, auction.md_id, {
+            type: "md_noshow_review",
+            title: "낙찰자에게 연락받으셨나요?",
+            message: `${clubName} 경매 낙찰자의 연락 시간이 만료되었습니다. 연락을 못 받으셨다면 노쇼 신고를 해주세요.`,
+            action_url: `/md/transactions`,
           });
+
+          // MD 알림톡 (템플릿 설정 시)
+          if (TPL_MD_NOSHOW_CHECK) {
+            const { data: mdUser } = await supabase
+              .from("users").select("phone, name").eq("id", auction.md_id).single();
+            if (mdUser?.phone) {
+              try {
+                await solapiSendAlimtalk(mdUser.phone, TPL_MD_NOSHOW_CHECK, {
+                  mdName: mdUser.name || "MD",
+                  clubName,
+                  transactionsUrl: `${APP_URL}/md/transactions`,
+                });
+              } catch (err) {
+                console.error(`⚠️ MD 알림톡 발송 실패 (${auction.id}):`, err);
+              }
+            }
+          }
         }
 
-        // Mixpanel: 연락 만료 자동 노쇼 처리
-        await trackMixpanelEvent("auction_completed", {
+        results.noshow_notified++;
+
+        await trackMixpanelEvent("auction_contact_expired", {
           auction_id: auction.id,
-          sale_channel: "noshow_auto",
           md_id: auction.md_id,
         });
-
-        // 차순위에게 opt-in 제안 (즉시 낙찰 아님)
-        console.log(`🔄 차순위 opt-in 제안: 경매 ${auction.id}`);
-        const { data: fallbackResult, error: fallbackError } = await supabase.rpc(
-          "fallback_to_next_bidder",
-          { p_auction_id: auction.id }
-        );
-
-        if (fallbackError) {
-          console.error(`❌ 차순위 제안 실패 (${auction.id}):`, fallbackError.message);
-          results.errors.push(`fallback:${auction.id}:${fallbackError.message}`);
-          await supabase.from("auctions")
-            .update({ status: "cancelled", cancel_type: "noshow_auto" })
-            .eq("id", auction.id);
-          continue;
-        }
-
-        const fbResult = fallbackResult as unknown as { result: string; offered_to?: string };
-
-        if (fbResult?.result === "fallback_offered" && fbResult.offered_to) {
-          results.fallback_offers++;
-          console.log(`✅ 차순위 제안 완료: 경매 ${auction.id} → ${fbResult.offered_to} (15분 수락 대기)`);
-
-          // 차순위에게 FALLBACK_WON 알림톡 발송
-          try {
-            await sendFallbackOfferNotification(supabase, auction.id, fbResult.offered_to, clubName);
-          } catch (notifyErr) {
-            console.error(`⚠️ 차순위 알림톡 발송 실패 (${auction.id}):`, notifyErr);
-          }
-
-          // MD에게 노쇼 + 차순위 제안 알림
-          if (auction.md_id) {
-            await createInAppNotification(supabase, auction.md_id, {
-              type: "md_winner_noshow",
-              title: "낙찰자 노쇼 → 차순위 제안",
-              message: `${clubName} 경매 낙찰자의 연락 시간이 만료되어 노쇼 처리되었습니다. 차순위 입찰자에게 수락 제안을 보냈습니다.`,
-              action_url: `/md/transactions`,
-            });
-          }
-        } else {
-          results.unsold++;
-          console.log(`📭 차순위 입찰자 없음 → unsold: 경매 ${auction.id}`);
-
-          if (auction.md_id) {
-            await createInAppNotification(supabase, auction.md_id, {
-              type: "md_winner_noshow",
-              title: "낙찰자 노쇼 → 유찰",
-              message: `${clubName} 경매 낙찰자의 연락 시간이 만료되어 노쇼 처리되었습니다. 대기 입찰자가 없어 유찰되었습니다.`,
-              action_url: `/md/transactions`,
-            });
-          }
-        }
       } catch (err) {
         console.error(`❌ 경매 ${auction.id} 처리 중 예외:`, err);
         results.errors.push(`${auction.id}:${String(err)}`);
@@ -283,119 +239,6 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
-
-// ---- 노쇼 알림톡 발송 ----
-
-async function sendNoshowNotification(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-  _strikeResult: unknown
-): Promise<void> {
-  if (!TPL_NOSHOW_BANNED) return;
-
-  const { data: user } = await supabase
-    .from("users")
-    .select("phone, name, strike_count, blocked_until")
-    .eq("id", userId)
-    .single();
-
-  if (!user?.phone) return;
-
-  let penaltyStatus = "";
-  if (user.blocked_until) {
-    const bannedDate = new Date(user.blocked_until).toLocaleDateString("ko-KR");
-    penaltyStatus = `이용 정지: ${bannedDate}까지`;
-  } else if (user.strike_count >= 4) {
-    penaltyStatus = "영구 이용 정지";
-  } else {
-    penaltyStatus = `${user.strike_count}회 누적 (${4 - user.strike_count}회 남음)`;
-  }
-
-  try {
-    await solapiSendAlimtalk(user.phone, TPL_NOSHOW_BANNED, {
-      userName: user.name || "회원",
-      strikeCount: String(user.strike_count),
-      penaltyStatus,
-    });
-
-    await supabase.from("notification_logs").insert({
-      event_type: "noshow_penalty",
-      auction_id: "00000000-0000-0000-0000-000000000000", // no specific auction
-      recipient_user_id: userId,
-      recipient_phone: user.phone,
-      template_id: TPL_NOSHOW_BANNED,
-      status: "sent",
-    });
-  } catch (err) {
-    console.error(`❌ 노쇼 알림톡 발송 실패 (${userId}):`, err);
-  }
-}
-
-// ---- 차순위 제안 알림톡 발송 ----
-
-async function sendFallbackOfferNotification(
-  supabase: ReturnType<typeof createClient>,
-  auctionId: string,
-  offeredToUserId: string,
-  clubName: string
-): Promise<void> {
-  if (!TPL_FALLBACK_WON) {
-    console.log("⚠️ FALLBACK_WON 템플릿 미설정, 건너뜀");
-    return;
-  }
-
-  const { data: user } = await supabase
-    .from("users")
-    .select("phone, name")
-    .eq("id", offeredToUserId)
-    .single();
-
-  if (!user?.phone) return;
-
-  // 제안된 입찰 금액 조회
-  const { data: bid } = await supabase
-    .from("bids")
-    .select("bid_amount")
-    .eq("auction_id", auctionId)
-    .eq("bidder_id", offeredToUserId)
-    .eq("status", "outbid")
-    .order("bid_amount", { ascending: false })
-    .limit(1)
-    .single();
-
-  const price = bid ? new Intl.NumberFormat("ko-KR").format(bid.bid_amount) + "원" : "";
-
-  try {
-    await solapiSendAlimtalk(user.phone, TPL_FALLBACK_WON, {
-      clubName,
-      userName: user.name || "회원",
-      winningPrice: price,
-      contactDeadline: "15분",
-      auctionUrl: `${APP_URL}/my-bids?tab=ended`,
-    });
-
-    await supabase.from("notification_logs").insert({
-      event_type: "fallback_offer",
-      auction_id: auctionId,
-      recipient_user_id: offeredToUserId,
-      recipient_phone: user.phone,
-      template_id: TPL_FALLBACK_WON,
-      status: "sent",
-    });
-    console.log(`📨 차순위 알림톡 발송: 경매 ${auctionId} → ${user.phone}`);
-  } catch (err) {
-    console.error(`❌ 차순위 알림톡 발송 실패 (${auctionId}):`, err);
-    await supabase.from("notification_logs").insert({
-      event_type: "fallback_offer",
-      auction_id: auctionId,
-      recipient_user_id: offeredToUserId,
-      recipient_phone: user.phone,
-      template_id: TPL_FALLBACK_WON,
-      status: "failed",
-      error_message: String(err),
-    });
-  }
-}
 
 // ---- 인앱 알림 생성 ----
 
