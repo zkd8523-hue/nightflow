@@ -1,6 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendAlimtalkAndLog } from "@/lib/notifications/send-and-log";
-import { ALIMTALK_TEMPLATES } from "@/lib/notifications/alimtalk";
+import { sendOutbidNotification } from "@/lib/notifications/alimtalk";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
 
@@ -62,17 +61,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, skipped: !outbidUser?.phone ? "no_phone" : "no_consent" });
     }
 
-    await sendAlimtalkAndLog({
-      eventType: "outbid",
-      auctionId,
-      recipientUserId: outbidUserId,
-      recipientPhone: outbidUser.phone,
-      templateId: ALIMTALK_TEMPLATES.OUTBID,
-      variables: {
-        clubName,
-        newBidAmount: `${price}원`,
-        auctionUrl: `${APP_URL}/auctions/${auctionId}`,
-      },
+    await sendOutbidNotification(outbidUser.phone, {
+      clubName,
+      newBidAmount: `${price}원`,
+      auctionUrl: `${APP_URL}/auctions/${auctionId}`,
     });
 
     return NextResponse.json({ success: true });

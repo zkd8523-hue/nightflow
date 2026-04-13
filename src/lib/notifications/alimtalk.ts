@@ -21,6 +21,7 @@ export const ALIMTALK_TEMPLATES = {
   MD_NEW_MATCH: process.env.ALIMTALK_TPL_MD_NEW_MATCH || "",
   NEW_AUCTION_IN_AREA: process.env.ALIMTALK_TPL_NEW_AUCTION_IN_AREA || "",
   EARLYBIRD_DDAY_REMINDER: process.env.ALIMTALK_TPL_EARLYBIRD_DDAY_REMINDER || "",
+  MD_NOSHOW_CHECK: process.env.ALIMTALK_TPL_MD_NOSHOW_CHECK || "",
 } as const;
 
 function getMessageService(): SolapiMessageService {
@@ -113,15 +114,26 @@ export async function sendVisitConfirmedNotification(
   });
 }
 
+async function sendSms(to: string, text: string) {
+  if (!SOLAPI_SENDER_NUMBER) {
+    throw new Error("SOLAPI sender number is not configured");
+  }
+  const messageService = getMessageService();
+  return messageService.sendOne({
+    to: cleanPhone(to),
+    from: cleanPhone(SOLAPI_SENDER_NUMBER),
+    text,
+  });
+}
+
 export async function sendOutbidNotification(
   phone: string,
   vars: { clubName: string; newBidAmount: string; auctionUrl: string }
 ) {
-  return sendAlimtalk({
-    to: phone,
-    templateId: ALIMTALK_TEMPLATES.OUTBID,
-    variables: vars,
-  });
+  return sendSms(
+    phone,
+    `[NightFlow] ${vars.clubName} 경매에서 더 높은 입찰이 들어왔습니다.\n현재 최고가: ${vars.newBidAmount}\n재입찰: https://${vars.auctionUrl}`
+  );
 }
 
 export async function sendClosingSoonNotification(
@@ -189,9 +201,8 @@ export async function sendFallbackWonNotification(
     auctionUrl: string;
   }
 ) {
-  return sendAlimtalk({
-    to: phone,
-    templateId: ALIMTALK_TEMPLATES.FALLBACK_WON,
-    variables: vars,
-  });
+  return sendSms(
+    phone,
+    `[NightFlow] ${vars.userName}님, ${vars.clubName} 경매에서 차순위 낙찰되셨습니다!\n낙찰가: ${vars.winningPrice}\n연락 마감: ${vars.contactDeadline}\n확인: https://${vars.auctionUrl}`
+  );
 }
