@@ -38,7 +38,7 @@ export default function LoginPage() {
         // - 카카오는 scheme/host/port/path만 검증하므로 쿼리 파라미터는 안전
         // - next 파라미터는 /auth/callback에서 로그인 후 리다이렉트에 사용
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
-        scopes: "profile_nickname profile_image account_email phone_number birthday birthyear gender",
+        scopes: "profile_nickname profile_image",
         skipBrowserRedirect: false,
       },
     });

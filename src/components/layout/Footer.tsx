@@ -15,6 +15,9 @@ export function Footer() {
             NightFlow
           </Link>
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
+            <Link href="/about" className="hover:text-white transition-colors">
+              About Us
+            </Link>
             <Link href="/terms" className="hover:text-white transition-colors">
               이용약관
             </Link>

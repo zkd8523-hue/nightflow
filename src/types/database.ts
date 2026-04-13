@@ -31,7 +31,7 @@ export type NotificationEventType =
   | "cancellation_confirmed"
   | "new_auction_in_area";
 export type NotificationStatus = "pending" | "sent" | "failed";
-export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid";
+export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed";
 export type TableType = "Standard" | "VIP" | "Premium";
 
 export interface TablePosition {
@@ -226,6 +226,7 @@ export interface Auction {
   contact_deadline: string | null; // Model B: MD 연락 마감 시간
   contact_timer_minutes: number | null; // Model B: 적용된 타이머 분(10분 단일)
   contact_attempted_at: string | null; // 낙찰자 연락 시도 시각 (무과실 판정 근거)
+  noshow_review_deadline: string | null; // 노쇼 스트라이크 보류 마감 (MD 검토 30분 창)
 
   // Post-Auction Journey (Migration 051)
   confirmed_at: string | null;

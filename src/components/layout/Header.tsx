@@ -154,9 +154,14 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
   return (
     <header className="border-b border-neutral-800 bg-neutral-950/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto max-w-lg px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="text-lg font-black tracking-tighter text-white">
-          NightFlow
-        </Link>
+        <div className="flex items-baseline gap-2">
+          <Link href="/" className="text-lg font-black tracking-tighter text-white">
+            NightFlow
+          </Link>
+          <Link href="/about" className="text-[10px] text-neutral-600 hover:text-neutral-300 transition-colors uppercase tracking-tighter font-medium">
+            About Us
+          </Link>
+        </div>
 
         {isLoading ? (
           <div className="w-9 h-9 bg-neutral-800 animate-pulse rounded-lg" />
