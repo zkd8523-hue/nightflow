@@ -384,7 +384,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                 disabled={loading}
                 className="h-14 rounded-2xl font-black text-lg text-black bg-white hover:bg-neutral-200"
               >
-                {loading ? "처리 중..." : "확인"}
+                {loading ? "처리 중..." : "입찰하기"}
               </Button>
             </div>
           </div>

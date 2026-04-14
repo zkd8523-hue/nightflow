@@ -109,10 +109,19 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
-      <Card className="w-full max-w-md p-8 space-y-8">
-        <div className="text-center space-y-2">
+      <Card className="w-full max-w-md p-8 space-y-5">
+        <div className="text-center space-y-3">
           <h1 className="text-3xl font-bold">NightFlow</h1>
-          <p className="text-neutral-500">클럽 테이블 경매 플랫폼</p>
+          <p className="text-[15px] text-neutral-300 font-medium leading-relaxed">
+            강남·홍대 인기 클럽<br />테이블을 내 가격에
+          </p>
+          <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500">
+            <span>🔥 실시간 특가</span>
+            <span>·</span>
+            <span>📅 얼리버드 입찰</span>
+            <span>·</span>
+            <span>💰 사전결제 없음</span>
+          </div>
         </div>
 
         {/* 세션 만료 안내 */}
@@ -133,11 +142,11 @@ export default function LoginPage() {
 
           <p className="text-xs text-center text-neutral-500">
             로그인 시{" "}
-            <a href="#" className="underline">
+            <a href="/terms" className="underline">
               서비스 이용약관
             </a>{" "}
             및{" "}
-            <a href="#" className="underline">
+            <a href="/privacy" className="underline">
               개인정보 처리방침
             </a>
             에 동의하게 됩니다.

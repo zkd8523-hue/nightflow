@@ -19,7 +19,6 @@ export const ALIMTALK_TEMPLATES = {
   CONTACT_DEADLINE_WARNING: process.env.ALIMTALK_TPL_CONTACT_DEADLINE_WARNING || "",
   FALLBACK_WON: process.env.ALIMTALK_TPL_FALLBACK_WON || "",
   MD_NEW_MATCH: process.env.ALIMTALK_TPL_MD_NEW_MATCH || "",
-  NEW_AUCTION_IN_AREA: process.env.ALIMTALK_TPL_NEW_AUCTION_IN_AREA || "",
   EARLYBIRD_DDAY_REMINDER: process.env.ALIMTALK_TPL_EARLYBIRD_DDAY_REMINDER || "",
   MD_NOSHOW_CHECK: process.env.ALIMTALK_TPL_MD_NOSHOW_CHECK || "",
 } as const;
@@ -165,17 +164,6 @@ export async function sendNoshowNotification(
   return sendAlimtalk({
     to: phone,
     templateId: ALIMTALK_TEMPLATES.NOSHOW_BANNED,
-    variables: vars,
-  });
-}
-
-export async function sendNewAuctionInAreaNotification(
-  phone: string,
-  vars: { area: string; clubName: string; auctionTitle: string; auctionUrl: string }
-) {
-  return sendAlimtalk({
-    to: phone,
-    templateId: ALIMTALK_TEMPLATES.NEW_AUCTION_IN_AREA,
     variables: vars,
   });
 }

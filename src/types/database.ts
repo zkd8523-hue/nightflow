@@ -28,8 +28,7 @@ export type NotificationEventType =
   | "feedback_request"
   | "md_grade_change"
   | "md_unresponsive_alert"
-  | "cancellation_confirmed"
-  | "new_auction_in_area";
+  | "cancellation_confirmed";
 export type NotificationStatus = "pending" | "sent" | "failed";
 export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed";
 export type TableType = "Standard" | "VIP" | "Premium";
@@ -374,14 +373,6 @@ export interface InAppNotification {
 // ============================================
 // Post-Auction Journey Types (Migration 051)
 // ============================================
-
-export interface AreaNotifySubscription {
-  id: string;
-  user_id: string;
-  area: string;
-  phone: string;
-  created_at: string;
-}
 
 export interface UserFavoriteClub {
   id: string;

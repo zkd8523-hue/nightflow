@@ -2,6 +2,7 @@
 
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { BottomNav } from "@/components/layout/BottomNav";
 import { PullToRefresh } from "@/components/auctions/PullToRefresh";
 import { useRouter } from "next/navigation";
 
@@ -22,8 +23,9 @@ export default function MainLayout({
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-neutral-950 flex flex-col">
         <Header />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 pb-16">{children}</main>
         <Footer />
+        <BottomNav />
       </div>
     </PullToRefresh>
   );

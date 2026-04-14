@@ -145,7 +145,8 @@ export function MyBidsClient({
     [reportedAuctionIds]
   );
 
-  const defaultTab = initialTab === "chat" ? "chat" : initialTab === "ended" ? "ended" : "active";
+  const hasInitialUrgentWon = initialWonAuctions.some(a => a.status === "won" && !a.fallback_offered_to);
+  const defaultTab = initialTab === "chat" ? "chat" : initialTab === "ended" ? "ended" : hasInitialUrgentWon ? "ended" : "active";
 
   const fetchBids = useCallback(async () => {
     const supabase = createClient();

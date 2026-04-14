@@ -6,7 +6,7 @@ import { AuctionCard } from "./AuctionCard";
 import { isAuctionActive, getEffectiveEndTime } from "@/lib/utils/auction";
 import { getClubEventDate } from "@/lib/utils/date";
 import { DateGroup } from "@/components/ui/DateGroup";
-import { AreaNotifyBanner } from "@/components/home/AreaNotifyBanner";
+
 
 interface AuctionListProps {
   activeAuctions: Auction[];
@@ -169,10 +169,6 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
         </div>
       )}
 
-      {((tab === "today" && todayAuctions.length === 0) ||
-        (tab === "advance" && advanceAuctions.length === 0)) && (
-        <AreaNotifyBanner selectedArea={selectedArea ?? null} variant="empty-state" />
-      )}
     </div>
   );
 }
