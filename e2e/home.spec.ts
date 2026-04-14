@@ -1,11 +1,45 @@
 import { test, expect, Page } from "@playwright/test";
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
 async function devLogin(page: Page, email: string, password: string) {
   await page.goto("/login");
   await page.getByRole("textbox", { name: "이메일" }).fill(email);
   await page.getByRole("textbox", { name: "비밀번호 (6자 이상)" }).fill(password);
   await page.getByRole("button", { name: "테스트 로그인" }).click();
   await page.waitForURL("/");
+}
+
+/** 현재 로그인 유저의 role을 Supabase 서비스 키로 직접 변경 */
+async function setCurrentUserRole(page: Page, role: string) {
+  await page.evaluate(
+    async ({ supabaseUrl, serviceKey, role }) => {
+      const cookieVal = document.cookie
+        .split(";")
+        .find((c) => c.trim().includes("auth-token="));
+      if (!cookieVal) throw new Error("No auth cookie");
+
+      const raw = cookieVal.trim().split("auth-token=")[1];
+      const decoded = raw.startsWith("base64-")
+        ? JSON.parse(atob(raw.replace("base64-", "")))
+        : JSON.parse(decodeURIComponent(raw));
+
+      const userId = decoded?.user?.id;
+      if (!userId) throw new Error("No userId in cookie");
+
+      await fetch(`${supabaseUrl}/rest/v1/users?id=eq.${userId}`, {
+        method: "PATCH",
+        headers: {
+          apikey: serviceKey,
+          Authorization: `Bearer ${serviceKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ role }),
+      });
+    },
+    { supabaseUrl: SUPABASE_URL, serviceKey: SUPABASE_SERVICE_KEY, role }
+  );
 }
 
 test.describe("홈페이지 / 경매 목록", () => {
@@ -90,5 +124,52 @@ test.describe("홈페이지 / 경매 목록", () => {
     await menuBtn.click();
     // 메뉴 내 도움말 링크 확인 (모든 유저에게 표시)
     await expect(page.getByText("도움말")).toBeVisible({ timeout: 3000 });
+  });
+
+  // ── 8. 푸터 MD 파트너 모집 버튼 - role 기반 노출 제어 ──────────────
+  test("8. 비로그인 시 푸터에 MD 파트너 모집 버튼 표시", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await expect(
+      page.getByRole("link", { name: /MD 파트너 모집/ })
+    ).toBeVisible();
+  });
+
+  test("8-1. MD role 유저 로그인 시 푸터에 MD 파트너 모집 버튼 숨김", async ({
+    page,
+  }) => {
+    // 로그인 (dev 계정 자동 생성)
+    await devLogin(page, "md@test.com", "123456");
+
+    // role을 'md'로 업데이트
+    await setCurrentUserRole(page, "md");
+
+    // 페이지 새로고침 → auth store 재갱신
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    // MD 파트너 모집 버튼이 없어야 함
+    await expect(
+      page.getByRole("link", { name: /MD 파트너 모집/ })
+    ).not.toBeVisible();
+
+    // 정리: role 원복
+    await setCurrentUserRole(page, "user");
+  });
+
+  test("8-2. admin role 유저 로그인 시 푸터에 MD 파트너 모집 버튼 숨김", async ({
+    page,
+  }) => {
+    await devLogin(page, "admin@test.com", "123456");
+    await setCurrentUserRole(page, "admin");
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+
+    await expect(
+      page.getByRole("link", { name: /MD 파트너 모집/ })
+    ).not.toBeVisible();
+
+    // 정리: role 원복
+    await setCurrentUserRole(page, "user");
   });
 });

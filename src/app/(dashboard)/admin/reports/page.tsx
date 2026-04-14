@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ChevronLeft, AlertTriangle, Flag } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { ReportActions } from "@/components/admin/ReportActions";
 
 const REASON_LABELS: Record<string, string> = {
   fake_listing: "허위매물",
@@ -33,10 +34,15 @@ export default async function AdminReportsPage() {
       memo,
       created_at,
       auction_id,
-      reporter_id
+      reporter_id,
+      status,
+      resolved_at
     `)
     .order("created_at", { ascending: false })
     .limit(100);
+
+  const pendingReports = (reports || []).filter(r => r.status === "pending");
+  const resolvedReports = (reports || []).filter(r => r.status !== "pending");
 
   // 관련 경매/유저 정보 조회
   const auctionIds = [...new Set(reports?.map(r => r.auction_id) || [])];
@@ -84,20 +90,20 @@ export default async function AdminReportsPage() {
         {/* 통계 카드 */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
-            <p className="text-2xl font-black text-white">{reports?.length || 0}</p>
-            <p className="text-[11px] text-neutral-500 font-medium mt-1">전체 신고</p>
+            <p className="text-2xl font-black text-amber-400">{pendingReports.length}</p>
+            <p className="text-[11px] text-neutral-500 font-medium mt-1">미처리</p>
           </Card>
           <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
             <p className="text-2xl font-black text-red-400">
-              {(reports || []).filter(r => r.reason === "fake_listing").length}
+              {resolvedReports.filter(r => r.status === "approved").length}
             </p>
-            <p className="text-[11px] text-neutral-500 font-medium mt-1">허위매물</p>
+            <p className="text-[11px] text-neutral-500 font-medium mt-1">승인됨</p>
           </Card>
           <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
-            <p className="text-2xl font-black text-amber-400">
-              {Object.keys(countByAuction).length}
+            <p className="text-2xl font-black text-green-400">
+              {resolvedReports.filter(r => r.status === "dismissed").length}
             </p>
-            <p className="text-[11px] text-neutral-500 font-medium mt-1">신고된 경매</p>
+            <p className="text-[11px] text-neutral-500 font-medium mt-1">기각됨</p>
           </Card>
         </div>
 
@@ -162,17 +168,20 @@ export default async function AdminReportsPage() {
                     </div>
                   )}
 
-                  {/* 신고자 */}
+                  {/* 신고자 + 액션 */}
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] text-neutral-600">
-                      신고자: {reporter?.name || "알 수 없음"}
-                    </span>
-                    {countByAuction[report.auction_id] > 1 && (
-                      <span className="text-[11px] font-bold text-red-400 flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        이 경매 {countByAuction[report.auction_id]}건 신고
+                    <div className="space-y-1">
+                      <span className="text-[11px] text-neutral-600">
+                        신고자: {reporter?.name || "알 수 없음"}
                       </span>
-                    )}
+                      {countByAuction[report.auction_id] > 1 && (
+                        <span className="text-[11px] font-bold text-red-400 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          이 경매 {countByAuction[report.auction_id]}건 신고
+                        </span>
+                      )}
+                    </div>
+                    <ReportActions reportId={report.id} status={report.status ?? "pending"} />
                   </div>
                 </div>
               );

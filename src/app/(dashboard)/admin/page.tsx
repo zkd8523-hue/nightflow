@@ -119,10 +119,11 @@ export default async function AdminDashboardPage() {
     }))
     .sort((a, b) => b.auctions - a.auctions);
 
-  // 신고 수 조회
-  const { count: reportCount } = await supabase
+  // 신고 수 조회 (미처리만)
+  const { count: pendingReportCount } = await supabase
     .from("auction_reports")
-    .select("id", { count: "exact", head: true });
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending");
 
   const stats = [
     {
@@ -177,12 +178,12 @@ export default async function AdminDashboardPage() {
       href: "/admin/users",
     },
     {
-      label: "게시글 신고",
-      value: `${reportCount || 0}건`,
+      label: "미처리 신고",
+      value: `${pendingReportCount || 0}건`,
       icon: Flag,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
-      badge: reportCount ? `${reportCount}건` : null,
+      badge: pendingReportCount ? `${pendingReportCount}건 대기` : null,
       href: "/admin/reports",
     },
   ];
