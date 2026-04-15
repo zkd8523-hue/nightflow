@@ -22,9 +22,10 @@ function getDDay(eventDate: string): string {
 interface PuzzleListProps {
   puzzles: Puzzle[];
   userRole?: "user" | "md" | "admin";
+  offerCounts?: Record<string, number>;
 }
 
-export function PuzzleList({ puzzles, userRole }: PuzzleListProps) {
+export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
 
@@ -80,6 +81,7 @@ export function PuzzleList({ puzzles, userRole }: PuzzleListProps) {
                         <PuzzleCard
                           puzzle={puzzle}
                           userRole={userRole}
+                          offerCount={offerCounts[puzzle.id] || 0}
                           onJoin={(p) => {
                             setJoinTarget(p);
                           }}

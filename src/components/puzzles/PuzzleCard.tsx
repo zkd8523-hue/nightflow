@@ -1,6 +1,7 @@
 "use client";
 
 import { memo } from "react";
+import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePuzzleFavoritesContext } from "@/components/providers";
@@ -9,6 +10,7 @@ import type { Puzzle, GenderPref, AgePref, VibePref } from "@/types/database";
 interface PuzzleCardProps {
   puzzle: Puzzle;
   userRole?: "user" | "md" | "admin";
+  offerCount?: number;
   onJoin?: (puzzle: Puzzle) => void;
   onUnlock?: (puzzle: Puzzle) => void;
 }
@@ -33,7 +35,7 @@ const VIBE_LABEL: Record<VibePref, string | null> = {
 };
 
 
-function PuzzlePiece({ filled, isLeader, small }: { filled: boolean; isLeader?: boolean; small?: boolean }) {
+export function PuzzlePiece({ filled, isLeader, small }: { filled: boolean; isLeader?: boolean; small?: boolean }) {
   const size = small ? "w-8 h-8" : "w-10 h-10";
   const iconSize = small ? "w-4 h-4" : "w-5 h-5";
 
@@ -57,9 +59,11 @@ function PuzzlePiece({ filled, isLeader, small }: { filled: boolean; isLeader?: 
 export const PuzzleCard = memo(function PuzzleCard({
   puzzle,
   userRole,
+  offerCount = 0,
   onJoin,
   onUnlock,
 }: PuzzleCardProps) {
+  const router = useRouter();
   const totalBudget = puzzle.total_budget ?? (puzzle.budget_per_person * puzzle.target_count);
   const perPersonBudget = puzzle.total_budget
     ? Math.floor(puzzle.total_budget / puzzle.target_count)
@@ -146,6 +150,13 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
       </div>
 
+      {/* MD 제안 현황 */}
+      {offerCount > 0 && (
+        <p className="text-[12px] text-amber-400 font-bold">
+          MD {offerCount}명 제안 중
+        </p>
+      )}
+
       {/* 취향 태그 */}
       {tags.length > 0 && (
         <div className="flex gap-1.5 flex-wrap pt-1">
@@ -168,17 +179,23 @@ export const PuzzleCard = memo(function PuzzleCard({
         >
           제안하기
         </Button>
+      ) : isFull ? (
+        <Button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            router.push("/puzzles/new");
+          }}
+          className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-neutral-800 text-neutral-300 border border-neutral-700 hover:border-neutral-500 hover:text-white"
+        >
+          인원 마감 · 새 퍼즐 만들기
+        </Button>
       ) : (
         <Button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (!isFull) onJoin?.(puzzle); }}
-          disabled={isFull}
-          className={`w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] ${
-            isFull
-              ? "bg-neutral-700 text-neutral-500 cursor-not-allowed"
-              : "bg-white hover:bg-neutral-200 text-black"
-          }`}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin?.(puzzle); }}
+          className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
         >
-          {isFull ? "마감" : "참여하기"}
+          참여하기
         </Button>
       )}
     </div>

@@ -30,7 +30,6 @@ export default function ProfilePage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
 
@@ -107,7 +106,6 @@ export default function ProfilePage() {
 
   const handleEdit = () => {
     setName(user.name || "");
-    setPhone(user.phone || "");
     setIsEditing(true);
   };
 
@@ -120,7 +118,7 @@ export default function ProfilePage() {
     setSaving(true);
     const { error } = await supabase
       .from("users")
-      .update({ name: name.trim(), phone: phone.trim() })
+      .update({ name: name.trim() })
       .eq("id", user.id);
 
     if (error) {
@@ -246,16 +244,8 @@ export default function ProfilePage() {
               <Phone className="w-4 h-4 text-neutral-500 shrink-0" />
               <div className="flex-1">
                 <p className="text-[11px] text-neutral-500">전화번호</p>
-                {isEditing ? (
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-[14px] text-white mt-1 focus:outline-none focus:border-blue-500"
-                  />
-                ) : (
-                  <p className="text-[14px] text-white font-bold">{user.phone || "미설정"}</p>
-                )}
+                <p className="text-[14px] text-white font-bold">{user.phone || "미설정"}</p>
+                <p className="text-[11px] text-neutral-600 mt-0.5">변경은 고객센터로 문의해주세요</p>
               </div>
             </div>
 

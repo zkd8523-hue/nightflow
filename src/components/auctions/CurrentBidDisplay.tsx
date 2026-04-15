@@ -5,7 +5,6 @@ import { formatPrice, formatNumber } from "@/lib/utils/format";
 
 interface CurrentBidDisplayProps {
   amount: number;
-  bidCount: number;
   bidderCount: number;
   isMinimal?: boolean;
   isHighestBidder?: boolean;
@@ -15,7 +14,6 @@ interface CurrentBidDisplayProps {
 
 export const CurrentBidDisplay = memo(function CurrentBidDisplay({
   amount,
-  bidCount,
   bidderCount,
   isMinimal = false,
   isHighestBidder = false,
@@ -37,8 +35,6 @@ export const CurrentBidDisplay = memo(function CurrentBidDisplay({
             {isOutbid && (
               <span className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full text-[11px] font-bold">추월됨</span>
             )}
-            <span className="text-neutral-500">입찰 {bidCount}회</span>
-            <span className="text-neutral-500 opacity-30">·</span>
             <span className="text-neutral-500">참여자 {bidderCount}명</span>
           </div>
         )}
@@ -58,8 +54,6 @@ export const CurrentBidDisplay = memo(function CurrentBidDisplay({
           {isOutbid && (
             <span className="text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full text-[12px] font-bold">추월됨</span>
           )}
-          <span>입찰 {bidCount}회</span>
-          <span>·</span>
           <span>참여자 {bidderCount}명</span>
         </div>
       )}

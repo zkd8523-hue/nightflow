@@ -13,7 +13,7 @@ import type { GenderPref, AgePref, VibePref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 
 // 총 예산 빠른 추가 (만원 단위)
-const BUDGET_PRESETS = [100000, 500000, 1000000];
+const BUDGET_PRESETS = [50000, 100000];
 
 const GENDER_OPTIONS: { value: GenderPref; label: string }[] = [
   { value: "male_only", label: "남성만" },
@@ -312,6 +312,18 @@ export function PuzzleForm({ userId }: { userId: string }) {
                 +{(preset / 10000).toFixed(0)}만
               </Button>
             ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setPerPersonBudget(0);
+                setBudgetInput("");
+              }}
+              className="h-9 px-3 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-xs"
+            >
+              초기화
+            </Button>
           </div>
           {/* 총 예산 계산 표시 */}
           <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-3">

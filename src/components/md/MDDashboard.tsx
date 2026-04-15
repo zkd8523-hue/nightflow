@@ -8,8 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MDAuctionCard } from "./MDAuctionCard";
-import type { Auction, User, Club } from "@/types/database";
-import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart } from "lucide-react";
+import type { Auction, User, Club, PuzzleOffer } from "@/types/database";
+import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { toast } from "sonner";
 
@@ -27,24 +27,35 @@ export interface TopBidInfo {
     bid_amount: number;
 }
 
+interface MDPuzzleOffer extends PuzzleOffer {
+    puzzle?: {
+        id: string;
+        area: string;
+        event_date: string;
+        total_budget: number | null;
+        budget_per_person: number;
+        target_count: number;
+        current_count: number;
+        status: string;
+        kakao_open_chat_url: string;
+        leader?: { name: string };
+    };
+}
+
 interface MDDashboardProps {
     user: User;
     initialAuctions: Auction[];
     initialClubs: Club[];
     initialTopBids?: Record<string, TopBidInfo>;
+    initialPuzzleOffers?: MDPuzzleOffer[];
 }
 
-export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBids = {} }: MDDashboardProps) {
+export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBids = {}, initialPuzzleOffers = [] }: MDDashboardProps) {
     const [auctions, setAuctions] = useState<Auction[]>(initialAuctions);
     const [clubs, setClubs] = useState<Club[]>(initialClubs);
     const [topBids, setTopBids] = useState<Record<string, TopBidInfo>>(initialTopBids);
-    const [showOlder, setShowOlder] = useState(false);
     const [defaultClubId, setDefaultClubId] = useState<string | null>(user.default_club_id);
-    const [statusFilter, setStatusFilter] = useState<"all" | "action" | "done" | "none">("all");
     const [loading, setLoading] = useState(false);
-    const [selectMode, setSelectMode] = useState(false);
-    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-    const [bulkDeleting, setBulkDeleting] = useState(false);
     const [clubSheetOpen, setClubSheetOpen] = useState(false);
     const [favoriteMdCount, setFavoriteMdCount] = useState<number>(0);
     const supabase = createClient();
@@ -75,45 +86,6 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
         setAuctions(auctions.filter(a => a.id !== auctionId));
     };
 
-    const toggleSelectMode = () => {
-        setSelectMode(v => !v);
-        setSelectedIds(new Set());
-    };
-
-    const toggleSelect = (id: string) => {
-        setSelectedIds(prev => {
-            const next = new Set(prev);
-            next.has(id) ? next.delete(id) : next.add(id);
-            return next;
-        });
-    };
-
-    const toggleSelectAll = (ids: string[]) => {
-        if (ids.every(id => selectedIds.has(id))) {
-            setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
-        } else {
-            setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.add(id)); return next; });
-        }
-    };
-
-    const handleBulkDelete = async () => {
-        if (selectedIds.size === 0) return;
-        setBulkDeleting(true);
-        try {
-            await Promise.all([...selectedIds].map(id =>
-                fetch(`/api/auctions/${id}/delete`, { method: "DELETE" })
-            ));
-            setAuctions(prev => prev.filter(a => !selectedIds.has(a.id)));
-            toast.success(`${selectedIds.size}건 삭제되었습니다.`);
-            setSelectedIds(new Set());
-            setSelectMode(false);
-        } catch {
-            toast.error("일부 항목 삭제에 실패했습니다.");
-        } finally {
-            setBulkDeleting(false);
-        }
-    };
-
     const handleSetDefaultClub = async (clubId: string | null) => {
         setLoading(true);
         try {
@@ -138,107 +110,54 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
         }
     };
 
-    // 3탭 분류: 오늘특가 / 얼리버드 / 종료 (listing_type 기준)
+    // 3탭 분류: 오늘특가 / 얼리버드 / 퍼즐 (각 탭이 자기 타입의 종료 경매 포함)
     const completedStatuses = ["won", "unsold", "confirmed", "cancelled"];
-
-    const todayAuctions = auctions.filter(a =>
-        a.listing_type === "instant" &&
-        !completedStatuses.includes(a.status) &&
-        !(a.status === "active" && isAuctionExpired(a))
-    );
-
-    const earlyBirdAuctions = auctions.filter(a =>
-        a.listing_type === "auction" &&
-        !completedStatuses.includes(a.status) &&
-        !(a.status === "active" && isAuctionExpired(a))
-    );
-
-    const completedAuctions = auctions.filter(a =>
+    const isCompleted = (a: Auction) =>
         completedStatuses.includes(a.status) ||
         (a.status === "active" && isAuctionExpired(a)) ||
-        (a.status === "scheduled" && dayjs().isAfter(dayjs(a.auction_end_at)))
+        (a.status === "scheduled" && dayjs().isAfter(dayjs(a.auction_end_at)));
+
+    // 오늘특가: 진행중 + 종료된 instant
+    const activeTodayAuctions = auctions.filter(a =>
+        a.listing_type === "instant" && !isCompleted(a)
+    );
+    const completedTodayAuctions = auctions.filter(a =>
+        a.listing_type === "instant" && isCompleted(a)
+    );
+
+    // 얼리버드: 진행중 + 종료된 auction
+    const activeEarlyBirdAuctions = auctions.filter(a =>
+        a.listing_type === "auction" && !isCompleted(a)
+    );
+    // won/contacted는 상단 리스트에 표시, 나머지만 CompletedSection으로
+    const actionEarlyBirdAuctions = auctions.filter(a =>
+        a.listing_type === "auction" && ["won", "contacted"].includes(a.status)
+    );
+    const archivedEarlyBirdAuctions = auctions.filter(a =>
+        a.listing_type === "auction" && isCompleted(a) && !["won", "contacted"].includes(a.status)
     );
 
     // 오늘특가 정렬: active 먼저 → 마감 임박순
-    const sortedTodayAuctions = [...todayAuctions].sort((a, b) => {
+    const sortedTodayAuctions = [...activeTodayAuctions].sort((a, b) => {
         const aActive = isAuctionActive(a) ? 0 : 1;
         const bActive = isAuctionActive(b) ? 0 : 1;
         if (aActive !== bActive) return aActive - bActive;
         return dayjs(a.extended_end_at || a.auction_end_at).unix() - dayjs(b.extended_end_at || b.auction_end_at).unix();
     });
 
-    // 얼리버드 정렬: active 먼저 → event_date 빠른순 → 시작시간순
-    const sortedEarlyBirdAuctions = [...earlyBirdAuctions].sort((a, b) => {
-        const aActive = isAuctionActive(a) ? 0 : 1;
-        const bActive = isAuctionActive(b) ? 0 : 1;
-        if (aActive !== bActive) return aActive - bActive;
-        const dateDiff = a.event_date.localeCompare(b.event_date);
-        if (dateDiff !== 0) return dateDiff;
-        return dayjs(a.auction_start_at).unix() - dayjs(b.auction_start_at).unix();
-    });
-
-    // 스마트 정렬: 액션 우선순위
-    const getPriority = (status: string) => {
-        switch (status) {
-            case "won": return 1;       // 💰 정산/방문 대기
-            case "confirmed": return 2; // ✅ 완료
-            case "unsold": return 3;    // ⚪ 유찰
-            case "cancelled": return 4; // 🔴 취소
-            default: return 5;
-        }
-    };
-
-    // 필터링 및 그룹핑 메모이제이션 (성능 최적화)
-    const {
-        doneCount,
-        noneCount,
-        filteredCompleted,
-        groupedCompleted,
-        recentDates,
-        olderDates,
-        olderCount
-    } = useMemo(() => {
-        // 필터 칩 카운트
-        const done = completedAuctions.filter(a => a.status === "confirmed").length;
-        const none = completedAuctions.filter(a => ["unsold", "cancelled"].includes(a.status)).length;
-
-        // 필터 적용
-        const filtered = statusFilter === "all"
-            ? completedAuctions
-            : statusFilter === "done"
-                ? completedAuctions.filter(a => a.status === "confirmed")
-                : completedAuctions.filter(a => ["unsold", "cancelled"].includes(a.status));
-
-        // 일별 그룹핑 전에 우선순위 정렬
-        const sorted = [...filtered].sort((a, b) => {
-            const priorityDiff = getPriority(a.status) - getPriority(b.status);
-            if (priorityDiff !== 0) return priorityDiff;
-            return b.event_date.localeCompare(a.event_date);
-        });
-
-        // 일별 그룹핑 (event_date 기준, 최근 날짜 순)
-        const grouped = sorted.reduce((groups, auction) => {
-            const date = auction.event_date;
-            if (!groups[date]) groups[date] = [];
-            groups[date].push(auction);
-            return groups;
-        }, {} as Record<string, Auction[]>);
-
-        const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
-        const recent = dates.slice(0, 7);
-        const older = dates.slice(7);
-        const olderCnt = older.reduce((sum, d) => sum + grouped[d].length, 0);
-
-        return {
-            doneCount: done,
-            noneCount: none,
-            filteredCompleted: filtered,
-            groupedCompleted: grouped,
-            recentDates: recent,
-            olderDates: older,
-            olderCount: olderCnt
+    // 얼리버드 상단: won/contacted → active → scheduled 순
+    const sortedEarlyBirdTop = [...actionEarlyBirdAuctions, ...activeEarlyBirdAuctions].sort((a, b) => {
+        const priority = (s: string) => {
+            if (s === "won") return 0;
+            if (s === "contacted") return 1;
+            if (s === "active") return 2;
+            if (s === "scheduled") return 3;
+            return 4;
         };
-    }, [completedAuctions, statusFilter, getPriority]);
+        const p = priority(a.status) - priority(b.status);
+        if (p !== 0) return p;
+        return a.event_date.localeCompare(b.event_date);
+    });
 
     return (
         <div className="max-w-lg mx-auto pb-24">
@@ -336,21 +255,21 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                 <Tabs defaultValue="today" className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">
-                            <TabsTrigger value="today" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200">
-                                🔥 오늘특가 {sortedTodayAuctions.length > 0 && <span className="ml-1 text-amber-500">{sortedTodayAuctions.length}</span>}
+                            <TabsTrigger value="today" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
+                                🔥 오늘특가 {activeTodayAuctions.length > 0 && <span className="ml-0.5 text-amber-500">{activeTodayAuctions.length}</span>}
                             </TabsTrigger>
-                            <TabsTrigger value="earlybird" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200">
-                                📅 얼리버드 {sortedEarlyBirdAuctions.length > 0 && <span className="ml-1 text-amber-500">{sortedEarlyBirdAuctions.length}</span>}
+                            <TabsTrigger value="earlybird" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
+                                📅 얼리버드 {sortedEarlyBirdTop.length > 0 && <span className="ml-0.5 text-amber-500">{sortedEarlyBirdTop.length}</span>}
                             </TabsTrigger>
-                            <TabsTrigger value="completed" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200">
-                                종료 {completedAuctions.length > 0 && <span className="ml-1 text-neutral-500">{completedAuctions.length}</span>}
+                            <TabsTrigger value="puzzle" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
+                                <PuzzleIcon className="w-3.5 h-3.5 mr-0.5 inline" /> 퍼즐 {initialPuzzleOffers.length > 0 && <span className="ml-0.5 text-purple-400">{initialPuzzleOffers.length}</span>}
                             </TabsTrigger>
                         </TabsList>
 
                     </div>
 
                     <div className="mt-4">
-                        {/* 오늘특가: 현재 진행 중 경매 */}
+                        {/* 오늘특가: 진행중 instant + 하단 종료 instant */}
                         <TabsContent value="today" className="space-y-4 m-0">
                             {sortedTodayAuctions.length > 0 ? (
                                 sortedTodayAuctions.map(auction => (
@@ -359,157 +278,107 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                             ) : (
                                 <EmptyState label="진행 중인 특가 경매가 없습니다." />
                             )}
+                            {completedTodayAuctions.length > 0 && (
+                                <CompletedSection auctions={completedTodayAuctions} onDelete={handleAuctionDelete} />
+                            )}
                         </TabsContent>
 
-                        {/* 얼리버드: 예정된 경매 */}
+                        {/* 얼리버드: won/contacted 상단 + active/scheduled + 하단 종료 */}
                         <TabsContent value="earlybird" className="space-y-4 m-0">
-                            {sortedEarlyBirdAuctions.length > 0 ? (
-                                sortedEarlyBirdAuctions.map(auction => (
+                            {sortedEarlyBirdTop.length > 0 ? (
+                                sortedEarlyBirdTop.map(auction => (
                                     <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} topBidder={topBids[auction.id]} />
                                 ))
                             ) : (
-                                <EmptyState 
-                                    label="얼리버드 경매가 없습니다." 
+                                <EmptyState
+                                    label="얼리버드 경매가 없습니다."
                                     description={<>오래 노출될수록 입찰 경쟁은 뜨거워집니다.<br/>주요 일정을 미리 올려 더 높은 낙찰가를 확보해 보세요.</>}
                                 />
                             )}
+                            {archivedEarlyBirdAuctions.length > 0 && (
+                                <CompletedSection auctions={archivedEarlyBirdAuctions} onDelete={handleAuctionDelete} />
+                            )}
                         </TabsContent>
 
-                        {/* 종료/정산 */}
-                        <TabsContent value="completed" className="space-y-4 m-0">
-                            {completedAuctions.length > 0 && (
-                                <>
-                                    {/* 필터 칩 + 선택 모드 토글 */}
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-1">
-                                            {([
-                                                { key: "all", label: "전체", count: completedAuctions.length, color: "" },
-                                                { key: "done", label: "✅ 판매완료", count: doneCount, color: "text-green-400" },
-                                                { key: "none", label: "유찰", count: noneCount, color: "text-neutral-500" },
-                                            ] as const).map(chip => (
-                                                <button
-                                                    key={chip.key}
-                                                    onClick={() => setStatusFilter(chip.key)}
-                                                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors border ${
-                                                        statusFilter === chip.key
-                                                            ? "bg-white text-black border-white"
-                                                            : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-600"
-                                                    }`}
-                                                >
-                                                    <span className={statusFilter === chip.key ? "" : chip.color}>{chip.label}</span>
-                                                    {chip.count > 0 && (
-                                                        <span className={`ml-1 ${statusFilter === chip.key ? "text-neutral-500" : "text-neutral-600"}`}>
-                                                            {chip.count}
+                        {/* 퍼즐 오퍼 */}
+                        <TabsContent value="puzzle" className="space-y-3 m-0">
+                            {initialPuzzleOffers.length > 0 ? (
+                                initialPuzzleOffers.map(offer => {
+                                    const p = offer.puzzle;
+                                    if (!p) return null;
+                                    const isAccepted = offer.status === "accepted";
+                                    const budget = p.total_budget ?? p.budget_per_person * p.target_count;
+                                    const eventDateStr = (() => {
+                                        const d = new Date(p.event_date + "T00:00:00");
+                                        const days = ["일", "월", "화", "수", "목", "금", "토"];
+                                        return `${d.getMonth() + 1}/${d.getDate()} ${days[d.getDay()]}`;
+                                    })();
+
+                                    return (
+                                        <Link key={offer.id} href={`/puzzles/${p.id}`}>
+                                            <div className={`bg-[#1C1C1E] border rounded-2xl p-4 space-y-3 transition-colors hover:border-neutral-600 ${
+                                                isAccepted ? "border-green-500/30" : "border-neutral-800"
+                                            }`}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                                            isAccepted
+                                                                ? "bg-green-500/20 text-green-400"
+                                                                : "bg-purple-500/20 text-purple-400"
+                                                        }`}>
+                                                            {isAccepted ? "수락됨" : "대기중"}
                                                         </span>
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <button
-                                            onClick={toggleSelectMode}
-                                            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold border transition-colors ${
-                                                selectMode
-                                                    ? "bg-red-500/20 border-red-500/50 text-red-400"
-                                                    : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600"
-                                            }`}
-                                        >
-                                            {selectMode ? "취소" : "선택"}
-                                        </button>
-                                    </div>
+                                                        <span className="text-[13px] text-neutral-400">{p.area} · {eventDateStr}</span>
+                                                    </div>
+                                                    <span className="text-[12px] text-neutral-600">{p.leader?.name || "익명"}</span>
+                                                </div>
 
-                                    {/* 선택 모드 액션 바 */}
-                                    {selectMode && (
-                                        <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-2.5">
-                                            <button
-                                                onClick={() => toggleSelectAll(filteredCompleted.map(a => a.id))}
-                                                className="flex items-center gap-2 text-[13px] font-bold text-neutral-300"
-                                            >
-                                                {filteredCompleted.every(a => selectedIds.has(a.id))
-                                                    ? <CheckSquare className="w-4 h-4 text-white" />
-                                                    : <Square className="w-4 h-4 text-neutral-500" />
-                                                }
-                                                전체선택
-                                            </button>
-                                            <button
-                                                onClick={handleBulkDelete}
-                                                disabled={selectedIds.size === 0 || bulkDeleting}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[12px] font-bold disabled:opacity-40 transition-colors"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                                {bulkDeleting ? "삭제 중..." : `${selectedIds.size}건 삭제`}
-                                            </button>
-                                        </div>
-                                    )}
-                                </>
-                            )}
-
-                            {filteredCompleted.length > 0 ? (
-                                <>
-                                    {recentDates.map(date => (
-                                        <DateGroup key={date} date={date} showCount={true}>
-                                            {groupedCompleted[date].map(auction => (
-                                                <div key={auction.id} className="relative">
-                                                    {selectMode && (
-                                                        <button
-                                                            onClick={() => toggleSelect(auction.id)}
-                                                            className="absolute left-2 top-1/2 -translate-y-1/2 z-10"
-                                                        >
-                                                            {selectedIds.has(auction.id)
-                                                                ? <CheckSquare className="w-5 h-5 text-white" />
-                                                                : <Square className="w-5 h-5 text-neutral-600" />
-                                                            }
-                                                        </button>
-                                                    )}
-                                                    <div className={selectMode ? "pl-8" : ""}>
-                                                        <MDAuctionCard auction={auction} onDelete={() => handleAuctionDelete(auction.id)} />
+                                                <div className="flex items-center justify-between">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[13px] text-neutral-500">내 제안가</p>
+                                                        <p className="text-[18px] font-black text-white">{offer.proposed_price.toLocaleString()}<span className="text-[12px] text-neutral-500">원</span></p>
+                                                    </div>
+                                                    <div className="text-right space-y-1">
+                                                        <p className="text-[13px] text-neutral-500">예산</p>
+                                                        <p className="text-[15px] font-bold text-neutral-300">{budget.toLocaleString()}원 · {p.target_count}명</p>
                                                     </div>
                                                 </div>
-                                            ))}
-                                        </DateGroup>
-                                    ))}
-                                    {olderDates.length > 0 && (
-                                        showOlder ? (
-                                            olderDates.map(date => (
-                                                <DateGroup key={date} date={date} showCount={true}>
-                                                    {groupedCompleted[date].map(auction => (
-                                                        <div key={auction.id} className="relative">
-                                                            {selectMode && (
-                                                                <button
-                                                                    onClick={() => toggleSelect(auction.id)}
-                                                                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10"
-                                                                >
-                                                                    {selectedIds.has(auction.id)
-                                                                        ? <CheckSquare className="w-5 h-5 text-white" />
-                                                                        : <Square className="w-5 h-5 text-neutral-600" />
-                                                                    }
-                                                                </button>
-                                                            )}
-                                                            <div className={selectMode ? "pl-8" : ""}>
-                                                                <MDAuctionCard auction={auction} onDelete={() => handleAuctionDelete(auction.id)} />
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </DateGroup>
-                                            ))
-                                        ) : (
-                                            <button
-                                                onClick={() => setShowOlder(true)}
-                                                className="w-full py-3 flex items-center justify-center gap-1.5 text-[13px] font-bold text-neutral-500 hover:text-neutral-300 bg-neutral-900/50 rounded-xl border border-neutral-800/50 transition-colors"
-                                            >
-                                                이전 경매 {olderCount}건 더보기
-                                                <ChevronDown className="w-4 h-4" />
-                                            </button>
-                                        )
-                                    )}
-                                </>
+
+                                                {isAccepted && (
+                                                    <a
+                                                        href={p.kakao_open_chat_url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#FEE500] text-[#3C1E1E] font-bold text-[13px] rounded-xl hover:bg-[#FDD835] transition-colors"
+                                                    >
+                                                        <ExternalLink className="w-4 h-4" />
+                                                        카카오 오픈채팅 연락하기
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </Link>
+                                    );
+                                })
                             ) : (
-                                <EmptyState label={
-                                    statusFilter === "done" ? "완료된 경매가 없습니다."
-                                        : statusFilter === "none" ? "유찰된 경매가 없습니다."
-                                            : "종료된 경매가 없습니다."
-                                } />
+                                <div className="py-16 text-center space-y-4 bg-[#1C1C1E]/30 rounded-3xl border border-dashed border-neutral-800/50">
+                                    <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto">
+                                        <PuzzleIcon className="w-8 h-8 text-neutral-700" />
+                                    </div>
+                                    <p className="text-neutral-500 font-medium text-sm">보낸 제안이 없습니다</p>
+                                    <p className="text-neutral-600 text-xs px-10 leading-relaxed">
+                                        홈 퍼즐 탭에서 유저들의 요청을 확인하고<br/>제안을 보내보세요
+                                    </p>
+                                    <Link href="/?tab=puzzle">
+                                        <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">
+                                            <PuzzleIcon className="w-4 h-4 mr-1" />
+                                            퍼즐 둘러보기
+                                        </Button>
+                                    </Link>
+                                </div>
                             )}
                         </TabsContent>
+
                     </div>
                 </Tabs>
             </div>
@@ -623,6 +492,218 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                 </SheetContent>
             </Sheet>
         </div>
+    );
+}
+
+function CompletedSection({ auctions, onDelete }: { auctions: Auction[]; onDelete: (id: string) => void }) {
+    const [statusFilter, setStatusFilter] = useState<"all" | "done" | "none">("all");
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [showOlder, setShowOlder] = useState(false);
+
+    const toggleSelectMode = () => {
+        setSelectMode(v => !v);
+        setSelectedIds(new Set());
+    };
+
+    const toggleSelect = (id: string) => {
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            next.has(id) ? next.delete(id) : next.add(id);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = (ids: string[]) => {
+        if (ids.every(id => selectedIds.has(id))) {
+            setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.delete(id)); return next; });
+        } else {
+            setSelectedIds(prev => { const next = new Set(prev); ids.forEach(id => next.add(id)); return next; });
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return;
+        setBulkDeleting(true);
+        try {
+            await Promise.all([...selectedIds].map(id =>
+                fetch(`/api/auctions/${id}/delete`, { method: "DELETE" })
+            ));
+            [...selectedIds].forEach(id => onDelete(id));
+            toast.success(`${selectedIds.size}건 삭제되었습니다.`);
+            setSelectedIds(new Set());
+            setSelectMode(false);
+        } catch {
+            toast.error("일부 항목 삭제에 실패했습니다.");
+        } finally {
+            setBulkDeleting(false);
+        }
+    };
+
+    const getPriority = (status: string) => {
+        switch (status) {
+            case "won": return 1;
+            case "confirmed": return 2;
+            case "unsold": return 3;
+            case "cancelled": return 4;
+            default: return 5;
+        }
+    };
+
+    const doneCount = auctions.filter(a => a.status === "confirmed").length;
+    const noneCount = auctions.filter(a => ["unsold", "cancelled"].includes(a.status)).length;
+
+    const filtered = statusFilter === "all"
+        ? auctions
+        : statusFilter === "done"
+            ? auctions.filter(a => a.status === "confirmed")
+            : auctions.filter(a => ["unsold", "cancelled"].includes(a.status));
+
+    const sorted = [...filtered].sort((a, b) => {
+        const priorityDiff = getPriority(a.status) - getPriority(b.status);
+        if (priorityDiff !== 0) return priorityDiff;
+        return b.event_date.localeCompare(a.event_date);
+    });
+
+    const grouped = sorted.reduce((groups, auction) => {
+        const date = auction.event_date;
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(auction);
+        return groups;
+    }, {} as Record<string, Auction[]>);
+
+    const dates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+    const recentDates = dates.slice(0, 7);
+    const olderDates = dates.slice(7);
+    const olderCount = olderDates.reduce((sum, d) => sum + grouped[d].length, 0);
+
+    const renderAuctionItem = (auction: Auction) => (
+        <div key={auction.id} className="relative">
+            {selectMode && (
+                <button
+                    onClick={() => toggleSelect(auction.id)}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10"
+                >
+                    {selectedIds.has(auction.id)
+                        ? <CheckSquare className="w-5 h-5 text-white" />
+                        : <Square className="w-5 h-5 text-neutral-600" />
+                    }
+                </button>
+            )}
+            <div className={selectMode ? "pl-8" : ""}>
+                <MDAuctionCard auction={auction} onDelete={() => onDelete(auction.id)} />
+            </div>
+        </div>
+    );
+
+    return (
+        <>
+            {/* 구분선 */}
+            <div className="flex items-center gap-3 pt-2">
+                <div className="flex-1 h-px bg-neutral-800" />
+                <span className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider">종료 {auctions.length}건</span>
+                <div className="flex-1 h-px bg-neutral-800" />
+            </div>
+
+            {/* 필터 칩 + 선택 모드 토글 */}
+            <div className="flex items-center gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-1">
+                    {([
+                        { key: "all" as const, label: "전체", count: auctions.length, color: "" },
+                        { key: "done" as const, label: "✅ 판매완료", count: doneCount, color: "text-green-400" },
+                        { key: "none" as const, label: "유찰", count: noneCount, color: "text-neutral-500" },
+                    ]).map(chip => (
+                        <button
+                            key={chip.key}
+                            onClick={() => setStatusFilter(chip.key)}
+                            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors border ${
+                                statusFilter === chip.key
+                                    ? "bg-white text-black border-white"
+                                    : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-600"
+                            }`}
+                        >
+                            <span className={statusFilter === chip.key ? "" : chip.color}>{chip.label}</span>
+                            {chip.count > 0 && (
+                                <span className={`ml-1 ${statusFilter === chip.key ? "text-neutral-500" : "text-neutral-600"}`}>
+                                    {chip.count}
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+                <button
+                    onClick={toggleSelectMode}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold border transition-colors ${
+                        selectMode
+                            ? "bg-red-500/20 border-red-500/50 text-red-400"
+                            : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600"
+                    }`}
+                >
+                    {selectMode ? "취소" : "선택"}
+                </button>
+            </div>
+
+            {/* 선택 모드 액션 바 */}
+            {selectMode && (
+                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-2.5">
+                    <button
+                        onClick={() => toggleSelectAll(filtered.map(a => a.id))}
+                        className="flex items-center gap-2 text-[13px] font-bold text-neutral-300"
+                    >
+                        {filtered.every(a => selectedIds.has(a.id))
+                            ? <CheckSquare className="w-4 h-4 text-white" />
+                            : <Square className="w-4 h-4 text-neutral-500" />
+                        }
+                        전체선택
+                    </button>
+                    <button
+                        onClick={handleBulkDelete}
+                        disabled={selectedIds.size === 0 || bulkDeleting}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-[12px] font-bold disabled:opacity-40 transition-colors"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        {bulkDeleting ? "삭제 중..." : `${selectedIds.size}건 삭제`}
+                    </button>
+                </div>
+            )}
+
+            {/* 일별 그룹핑된 경매 목록 */}
+            {filtered.length > 0 ? (
+                <>
+                    {recentDates.map(date => (
+                        <DateGroup key={date} date={date} showCount={true}>
+                            {grouped[date].map(renderAuctionItem)}
+                        </DateGroup>
+                    ))}
+                    {olderDates.length > 0 && (
+                        showOlder ? (
+                            olderDates.map(date => (
+                                <DateGroup key={date} date={date} showCount={true}>
+                                    {grouped[date].map(renderAuctionItem)}
+                                </DateGroup>
+                            ))
+                        ) : (
+                            <button
+                                onClick={() => setShowOlder(true)}
+                                className="w-full py-3 flex items-center justify-center gap-1.5 text-[13px] font-bold text-neutral-500 hover:text-neutral-300 bg-neutral-900/50 rounded-xl border border-neutral-800/50 transition-colors"
+                            >
+                                이전 경매 {olderCount}건 더보기
+                                <ChevronDown className="w-4 h-4" />
+                            </button>
+                        )
+                    )}
+                </>
+            ) : (
+                <div className="py-8 text-center">
+                    <p className="text-neutral-600 text-sm">
+                        {statusFilter === "done" ? "완료된 경매가 없습니다."
+                            : statusFilter === "none" ? "유찰된 경매가 없습니다."
+                                : "종료된 경매가 없습니다."}
+                    </p>
+                </div>
+            )}
+        </>
     );
 }
 

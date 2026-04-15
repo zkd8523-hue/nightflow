@@ -12,6 +12,7 @@ import { DateGroup } from "@/components/ui/DateGroup";
 interface AuctionListProps {
   activeAuctions: Auction[];
   puzzles?: Puzzle[];
+  puzzleOfferCounts?: Record<string, number>;
   selectedArea?: string | null;
   userBidMap?: Map<string, number>;
   userInterestedSet?: Set<string>;
@@ -20,7 +21,7 @@ interface AuctionListProps {
   onTabChange?: (tab: "today" | "advance" | "puzzle") => void;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], selectedArea, userBidMap, userInterestedSet, userRole, initialTab, onTabChange }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, userBidMap, userInterestedSet, userRole, initialTab, onTabChange }: AuctionListProps) {
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
     return auctions.filter(a => a.club?.area === selectedArea);
@@ -201,6 +202,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], sel
         <PuzzleList
           puzzles={filteredPuzzles}
           userRole={userRole}
+          offerCounts={puzzleOfferCounts}
         />
       )}
 

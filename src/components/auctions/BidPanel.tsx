@@ -221,7 +221,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <CalendarCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
             <p className="text-[11px] text-amber-400/90 font-bold leading-snug">
-              방문 당일 확인이 필요해요 · 미확인 시 자동 취소돼요
+              낙찰 후 1시간 내 MD에게 연락하지 않으면 자동 취소돼요
             </p>
           </div>
         )}
@@ -368,7 +368,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
             })()}
 
             <p className="text-[11px] text-neutral-500 text-center">
-              낙찰 시 방문 필수 · 미연락·노쇼 시 이용이 제한됩니다
+              최종 낙찰 후 미연락·노쇼 시 이용이 제한됩니다.
             </p>
 
             <div className="grid grid-cols-2 gap-3 pb-8">
@@ -432,7 +432,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               </div>
 
               <p className="text-[11px] text-neutral-500 text-center">
-                낙찰 시 방문 필수 · 미연락·노쇼 시 이용이 제한됩니다
+                최종 낙찰 후 미연락·노쇼 시 이용이 제한됩니다.
               </p>
 
               <div className="grid grid-cols-2 gap-3 pb-8">

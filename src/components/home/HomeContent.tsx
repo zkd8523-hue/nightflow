@@ -75,11 +75,13 @@ const PUZZLE_ONBOARDING_STEPS = [
 interface HomeContentProps {
   activeAuctions: Auction[];
   puzzles?: Puzzle[];
+  puzzleOfferCounts?: Record<string, number>;
 }
 
 export function HomeContent({
   activeAuctions,
   puzzles = [],
+  puzzleOfferCounts = {},
 }: HomeContentProps) {
   const { user } = useCurrentUser();
   const router = useRouter();
@@ -308,6 +310,7 @@ export function HomeContent({
         <AuctionList
           activeAuctions={auctions.active}
           puzzles={puzzles}
+          puzzleOfferCounts={puzzleOfferCounts}
           selectedArea={selectedArea}
           userBidMap={userBidMap}
           userInterestedSet={userInterestedSet}

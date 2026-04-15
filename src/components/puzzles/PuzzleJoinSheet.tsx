@@ -88,7 +88,13 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
         </SheetHeader>
 
         <div className="space-y-4">
-          {/* 동행 체크박스 */}
+          {/* 동행 체크박스 (자리 있을 때만) */}
+          {maxGuest === 0 ? (
+            <p className="text-[12px] text-neutral-500 bg-neutral-900/50 rounded-xl px-4 py-3">
+              남은 자리가 1명이라 동행 없이 본인만 참여 가능합니다
+            </p>
+          ) : (
+          <>
           <label className="flex items-center gap-3 cursor-pointer">
             <input
               type="checkbox"
@@ -98,14 +104,10 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
                 if (!e.target.checked) setGuestCount(1);
               }}
               className="w-4 h-4 rounded accent-white"
-              disabled={maxGuest === 0}
             />
             <span className="text-[14px] font-bold text-white">
               동행이 있으신가요?
             </span>
-            {maxGuest === 0 && (
-              <span className="text-[11px] text-neutral-500">(남은 자리 부족)</span>
-            )}
           </label>
 
           {/* 동행 스테퍼 */}
@@ -126,6 +128,8 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
               </button>
             </div>
           )}
+          </>
+          )}
 
           {/* 예산 미리보기 */}
           <div className="bg-neutral-900/80 border border-neutral-700 rounded-xl p-3">
@@ -135,6 +139,9 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
             </p>
           </div>
 
+          <p className="text-[11px] text-neutral-500 text-center">
+            참여하면 멤버들의 오픈채팅에 입장할 수 있어요
+          </p>
           <Button
             onClick={handleJoin}
             disabled={submitting}

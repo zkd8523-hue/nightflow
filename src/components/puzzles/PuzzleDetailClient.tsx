@@ -1,17 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, AlertCircle, CheckCircle2, XCircle, Undo2, Building2 } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2 } from "lucide-react";
 import { maskName } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
+import { PuzzlePiece } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
+import { getPublicIncludes } from "@/lib/utils/liquor";
 
 interface PuzzleDetailClientProps {
   puzzle: Puzzle;
@@ -78,10 +80,27 @@ export function PuzzleDetailClient({
   const [acceptedOffer, setAcceptedOffer] = useState<PuzzleOffer | null>(null);
   const [acceptedKakaoUrl, setAcceptedKakaoUrl] = useState<string | null>(null);
 
+  const handleShare = useCallback(async () => {
+    const url = `${window.location.origin}/puzzles/${puzzle.id}`;
+    const title = puzzle.notes || `${puzzle.area} 퍼즐 모집`;
+    const text = `${puzzle.area} · 인당 ${((puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count) / puzzle.target_count).toLocaleString()}원 · ${puzzle.target_count}명`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+      } catch {
+        // 사용자가 취소한 경우 무시
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success("링크가 복사되었습니다");
+    }
+  }, [puzzle]);
+
   const isLeader = currentUserId === puzzle.leader_id;
   const isMember = members.some((m) => m.user_id === currentUserId);
   const isMd = userRole === "md";
-  const isOpen = puzzle.status === "open";
+  const isFull = puzzle.current_count >= puzzle.target_count;
+  const isOpen = puzzle.status === "open" && !isFull;
   const isAccepted = puzzle.status === "accepted";
   // 하위 호환: V1 퍼즐은 budget_per_person, V2는 total_budget 사용
   const baseBudget = puzzle.total_budget ?? (puzzle.budget_per_person * puzzle.target_count);
@@ -98,7 +117,7 @@ export function PuzzleDetailClient({
   const loadOffers = useCallback(async () => {
     const { data } = await supabase
       .from("puzzle_offers")
-      .select("*, club:clubs(id, name, area), md:users!puzzle_offers_md_id_fkey(id, name, profile_image)")
+      .select("*, club:clubs(id, name, area), md:users!puzzle_offers_md_id_fkey(id, name, profile_image, instagram)")
       .eq("puzzle_id", puzzle.id)
       .order("created_at", { ascending: true });
 
@@ -121,6 +140,15 @@ export function PuzzleDetailClient({
   }, [loadOffers]);
 
   const pendingOffers = offers.filter((o) => o.status === "pending");
+
+  // 비방장용: 브랜드→카테고리 변환된 공개 오퍼 (본인 오퍼 제외)
+  const publicOffers = useMemo(
+    () =>
+      pendingOffers
+        .filter((o) => o.md_id !== currentUserId)
+        .map((o) => ({ ...o, public: getPublicIncludes(o.includes) })),
+    [pendingOffers, currentUserId]
+  );
 
   const handleCancel = async () => {
     if (!confirm("퍼즐을 취소하시겠습니까? 참여자 전원에게 알림이 발송됩니다.")) return;
@@ -236,53 +264,69 @@ export function PuzzleDetailClient({
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <h1 className="text-[17px] font-black text-white flex-1">퍼즐 상세</h1>
-          <span
-            className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
-              puzzle.status === "open"
-                ? "bg-green-500/20 text-green-400"
-                : puzzle.status === "accepted"
-                ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                : puzzle.status === "matched"
-                ? "bg-amber-500/20 text-amber-400"
-                : "bg-neutral-700 text-neutral-400"
-            }`}
-          >
-            {STATUS_LABEL[puzzle.status] || puzzle.status}
-          </span>
+          {!isFull && (
+            <span
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                puzzle.status === "open"
+                  ? "bg-green-500/20 text-green-400"
+                  : puzzle.status === "accepted"
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  : puzzle.status === "matched"
+                  ? "bg-amber-500/20 text-amber-400"
+                  : "bg-neutral-700 text-neutral-400"
+              }`}
+            >
+              {STATUS_LABEL[puzzle.status] || puzzle.status}
+            </span>
+          )}
         </div>
 
         <div className="space-y-5 pb-10">
           {/* 기본 정보 */}
           <section className="bg-[#1C1C1E] rounded-2xl p-5 space-y-4">
-            <div>
-              <p className="text-[22px] font-black text-white">
-                {formatEventDate(puzzle.event_date)}
-              </p>
-              <p className="text-[15px] text-neutral-400 mt-0.5">{puzzle.area}</p>
-            </div>
-
-            {/* 인원 프로그레스 */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-[13px]">
-                <span className="text-neutral-400">{puzzle.current_count}/{puzzle.target_count}명 참여 중</span>
-                <span className="text-neutral-500">{fillRate}%</span>
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-[22px] font-black text-white">
+                  {formatEventDate(puzzle.event_date)}
+                </p>
+                <p className="text-[15px] text-neutral-400 mt-0.5">{puzzle.area}</p>
               </div>
-              <div className="w-full h-2 bg-neutral-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-green-500 rounded-full"
-                  style={{ width: `${fillRate}%` }}
-                />
-              </div>
+              <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mt-1 -mr-1">
+                <Share2 className="w-4.5 h-4.5" />
+              </button>
             </div>
 
             {/* 예산 */}
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-[24px] font-black text-green-400">
-                총 {baseBudget.toLocaleString()}원
+            <div className="space-y-0.5">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-[24px] font-black text-green-400">
+                  현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
+                </span>
+                <span className="text-[13px] text-neutral-500">
+                  / 목표 {baseBudget.toLocaleString()}원
+                </span>
+              </div>
+              <p className="text-[12px] text-neutral-600">
+                인당 {perPersonBudget.toLocaleString()}원
+              </p>
+            </div>
+
+            {/* 인원 퍼즐 조각 */}
+            <div className="space-y-1.5">
+              <span className="text-[13px] text-neutral-400">
+                {puzzle.current_count >= puzzle.target_count
+                  ? "퍼즐 완성!"
+                  : `${puzzle.current_count}/${puzzle.target_count} 조각 모였어요`}
               </span>
-              <span className="text-[13px] text-neutral-500">
-                (인당 {perPersonBudget.toLocaleString()}원)
-              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from({ length: puzzle.target_count }).map((_, i) => (
+                  <PuzzlePiece
+                    key={i}
+                    filled={i < puzzle.current_count}
+                    isLeader={i === 0}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* 취향 태그 */}
@@ -303,7 +347,7 @@ export function PuzzleDetailClient({
             {puzzle.notes && (
               <div className="pt-4 border-t border-neutral-800/50">
                 <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4">
-                  <p className="text-[11px] text-neutral-500 mb-2 font-bold uppercase tracking-wider">남긴 메모</p>
+                  <p className="text-[11px] text-neutral-500 mb-2 font-bold uppercase tracking-wider">방장의 한마디</p>
                   <p className="text-[13px] text-neutral-300 leading-relaxed whitespace-pre-wrap">
                     {puzzle.notes}
                   </p>
@@ -311,6 +355,18 @@ export function PuzzleDetailClient({
               </div>
             )}
           </section>
+
+          {/* 카카오 오픈채팅: 참여자면 항상 표시 */}
+          {(isLeader || isMember) && puzzle.kakao_open_chat_url && (
+            <a
+              href={puzzle.kakao_open_chat_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold text-[13px] rounded-xl hover:bg-[#FDD835] transition-colors animate-in slide-in-from-bottom-4 fade-in duration-500"
+            >
+              카카오 오픈채팅 입장하기
+            </a>
+          )}
 
           {/* 성사 기록 (accepted 상태) */}
           {isAccepted && (
@@ -352,15 +408,6 @@ export function PuzzleDetailClient({
                   : `MD ${offers.filter(o => o.status !== 'expired').length}명이 경쟁, 성사됨`}
               </p>
 
-              {/* 수락 후 방장에게 카카오 링크 재표시 (방장이 이미 알고 있지만 편의용) */}
-              {isLeader && (acceptedKakaoUrl || puzzle.kakao_open_chat_url) && (
-                <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl p-3">
-                  <p className="text-[11px] text-neutral-500 mb-1">MD에게 공개된 오픈채팅 링크</p>
-                  <p className="text-[12px] text-neutral-300 break-all">
-                    {acceptedKakaoUrl || puzzle.kakao_open_chat_url}
-                  </p>
-                </div>
-              )}
             </section>
           )}
 
@@ -394,11 +441,14 @@ export function PuzzleDetailClient({
                           : "bg-[#1C1C1E] border-neutral-800"
                       }`}
                     >
-                      {/* 클럽명 + 테이블타입 (공개) */}
+                      {/* 클럽명 + 지역 + 테이블타입 */}
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="text-[15px] font-black text-white">
-                            {(offer.club as { name?: string } | null)?.name || "클럽"}
+                            {(offer.club as { name?: string; area?: string } | null)?.name || "클럽"}
+                            {(offer.club as { area?: string } | null)?.area && (
+                              <span className="text-neutral-500 font-medium"> · {(offer.club as { area: string }).area}</span>
+                            )}
                           </p>
                           <p className="text-[12px] text-neutral-400">{offer.table_type}</p>
                         </div>
@@ -435,6 +485,33 @@ export function PuzzleDetailClient({
                         )}
                       </div>
 
+                      {/* MD 정보: 이름 + 인스타 (마스킹/전체) */}
+                      {(() => {
+                        const md = offer.md as { name?: string; instagram?: string } | null;
+                        const ig = md?.instagram;
+                        const isAcceptedOffer = offer.status === "accepted";
+                        const maskedIg = ig && ig.length > 3 ? ig.slice(0, 3) + "***" : ig;
+                        return md?.name ? (
+                          <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/60">
+                            <p className="text-[12px] text-neutral-300 font-bold">{md.name}</p>
+                            {ig && (
+                              isAcceptedOffer ? (
+                                <a
+                                  href={`https://instagram.com/${ig}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[12px] text-purple-400 hover:text-purple-300"
+                                >
+                                  @{ig}
+                                </a>
+                              ) : (
+                                <span className="text-[12px] text-neutral-500">@{maskedIg}</span>
+                              )
+                            )}
+                          </div>
+                        ) : null;
+                      })()}
+
                       {/* 수락/거절 버튼 (open 상태일 때만) */}
                       {isOpen && offer.status === "pending" && (
                         <div className="flex gap-2 pt-1">
@@ -462,15 +539,34 @@ export function PuzzleDetailClient({
               </div>
             )}
 
-            {/* 방장 아닌 일반유저/MD (다른 MD): 오퍼 건수만 표시 */}
-            {!isLeader && !isMd && pendingOffers.length > 0 && !isAccepted && (
-              <div className="bg-[#1C1C1E] rounded-2xl border border-neutral-800 p-4">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-neutral-500" />
-                  <p className="text-[13px] text-neutral-400">
-                    현재 <span className="text-white font-bold">MD {pendingOffers.length}명</span>이 방장에게 제안 중입니다.
-                  </p>
-                </div>
+            {/* 비방장: 테이블타입 + 주류 카테고리 + extras 공개 */}
+            {!isLeader && pendingOffers.length > 0 && !isAccepted && (
+              <div className="space-y-3">
+                <p className="text-[13px] text-neutral-400">
+                  현재 <span className="text-white font-bold">MD {pendingOffers.length}명</span>이 제안 중
+                </p>
+                {publicOffers.map((offer) => (
+                  <div
+                    key={offer.id}
+                    className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
+                  >
+                    <p className="text-[14px] font-bold text-white">{offer.table_type} 테이블</p>
+                    {(offer.public.liquorCategories.length > 0 || offer.public.extras.length > 0) && (
+                      <div className="flex flex-wrap gap-1">
+                        {offer.public.liquorCategories.map((cat) => (
+                          <span key={cat} className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
+                            {cat}
+                          </span>
+                        ))}
+                        {offer.public.extras.map((ext) => (
+                          <span key={ext} className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700">
+                            {ext}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             )}
 

@@ -18,7 +18,7 @@ dayjs.extend(timezone);
 export const EARLYBIRD_END_HOUR_KST = 21;
 export const EARLYBIRD_MIN_BUFFER_DAYS = 2;
 export const EARLYBIRD_MAX_DAYS_BEFORE = 4;
-export const EARLYBIRD_MAX_EVENT_DAYS_AHEAD = 7;
+export const EARLYBIRD_MAX_EVENT_DAYS_AHEAD = 9;
 export const CONTACT_TIMER_MINUTES = 60;
 const KST = "Asia/Seoul";
 

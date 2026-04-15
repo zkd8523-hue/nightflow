@@ -41,9 +41,13 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
   const [comment, setComment] = useState("");
 
   const baseBudget = puzzle.total_budget ?? (puzzle.budget_per_person * puzzle.target_count);
-  const maxPrice = Math.ceil(baseBudget * 1.3);
+  const perPersonBudget = puzzle.total_budget
+    ? Math.floor(puzzle.total_budget / puzzle.target_count)
+    : puzzle.budget_per_person;
+  const currentBudget = perPersonBudget * puzzle.current_count;
+  const maxPrice = Math.ceil(currentBudget * 1.3);
   const priceNum = Number(proposedPrice.replace(/,/g, ""));
-  const isPremium = priceNum > baseBudget;
+  const isPremium = priceNum > currentBudget;
   const isPriceValid = priceNum > 0 && priceNum <= maxPrice;
 
   useEffect(() => {
@@ -160,7 +164,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
               {formatDate(puzzle.event_date)} {puzzle.area}
             </p>
             <p className="text-[13px] text-neutral-500">
-              총 예산 {baseBudget.toLocaleString()}원 · {puzzle.current_count}/{puzzle.target_count}명
+              현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원 / 목표 {baseBudget.toLocaleString()}원 · {puzzle.current_count}/{puzzle.target_count}명
             </p>
           </div>
         </SheetHeader>
@@ -244,7 +248,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
                   setProposedPrice(raw ? Number(raw).toLocaleString() : "");
                 }
               }}
-              placeholder={`${baseBudget.toLocaleString()}원`}
+              placeholder={`현재 금액: ${(perPersonBudget * puzzle.current_count).toLocaleString()}원`}
               className={`bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 ${
                 priceNum > maxPrice ? "border-red-500" : ""
               }`}

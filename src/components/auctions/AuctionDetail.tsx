@@ -17,7 +17,6 @@ import { BidHistory } from "./BidHistory";
 import { BidPanel, type BidPanelRef } from "./BidPanel";
 import { InstantBuyPanel } from "./InstantBuyPanel";
 import { BidCompetitionIndicator } from "./BidCompetitionIndicator";
-import { LastBidIndicator } from "./LastBidIndicator";
 import { useCountdown } from "@/hooks/useCountdown";
 import { BidderProfile } from "@/components/md/BidderProfile";
 import { formatDate, formatTime, formatPrice, formatEventDate, formatEntryTime, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
@@ -433,17 +432,12 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             </p>
             <CurrentBidDisplay
               amount={displayAuction.current_bid || displayAuction.start_price}
-              bidCount={displayAuction.bid_count}
               bidderCount={displayAuction.bidder_count}
               isMinimal={true}
               isHighestBidder={isHighestBidder}
               isOutbid={isOutbid}
               isInstant={isInstant}
             />
-            {/* 마지막 입찰 경과 시간 (심리적 트리거) */}
-            {!isInstant && bids.length > 0 && (
-              <LastBidIndicator lastBidTime={bids[0]?.bid_at} />
-            )}
           </div>
 
           <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} isInstant={isInstant} />

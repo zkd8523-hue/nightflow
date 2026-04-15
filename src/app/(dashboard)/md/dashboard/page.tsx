@@ -112,6 +112,21 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         .eq("md_id", userId)
         .order("created_at", { ascending: false });
 
+    // 7. MD의 퍼즐 오퍼 조회 (퍼즐 정보 포함)
+    const { data: puzzleOffers } = await supabase
+        .from("puzzle_offers")
+        .select(`
+            *,
+            puzzle:puzzles (
+                id, area, event_date, total_budget, budget_per_person,
+                target_count, current_count, status, kakao_open_chat_url,
+                leader:users!puzzles_leader_id_fkey (name)
+            )
+        `)
+        .eq("md_id", userId)
+        .in("status", ["pending", "accepted"])
+        .order("created_at", { ascending: false });
+
     // 테스트 모드일 때 경매가 하나도 없으면 샘플 하나 추가 (상태 확인용)
     const displayAuctions = (testMode && (!auctions || auctions.length === 0)) ? [
         {
@@ -133,6 +148,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 initialAuctions={displayAuctions}
                 initialClubs={clubs || []}
                 initialTopBids={topBids}
+                initialPuzzleOffers={puzzleOffers || []}
             />
         </div>
     );

@@ -29,12 +29,29 @@ export default async function HomePage() {
     .order("created_at", { ascending: false })
     .limit(50);
 
+  // 퍼즐별 오퍼 카운트 (pending만)
+  const puzzleIds = (puzzles || []).map((p) => p.id);
+  let offerCountMap: Record<string, number> = {};
+  if (puzzleIds.length > 0) {
+    const { data: offerRows } = await supabase
+      .from("puzzle_offers")
+      .select("puzzle_id")
+      .in("puzzle_id", puzzleIds)
+      .eq("status", "pending");
+    if (offerRows) {
+      offerRows.forEach((r) => {
+        offerCountMap[r.puzzle_id] = (offerCountMap[r.puzzle_id] || 0) + 1;
+      });
+    }
+  }
+
   return (
     <div className="container mx-auto max-w-lg px-4 py-4 mb-20">
       <Suspense fallback={<div className="animate-pulse bg-neutral-900 h-64 rounded-3xl" />}>
         <HomeContent
           activeAuctions={activeAuctions || []}
           puzzles={puzzles || []}
+          puzzleOfferCounts={offerCountMap}
         />
       </Suspense>
     </div>
