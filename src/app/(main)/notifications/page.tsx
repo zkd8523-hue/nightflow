@@ -77,6 +77,20 @@ function getNotificationIcon(type: InAppNotification["type"]) {
       return <TrendingUp className="w-5 h-5 text-green-500 shrink-0" />;
     case "md_grade_change":
       return <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />;
+    case "puzzle_offer_received":
+      return <Building2 className="w-5 h-5 text-amber-500 shrink-0" />;
+    case "puzzle_offer_accepted":
+      return <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />;
+    case "puzzle_offer_rejected":
+      return <XCircle className="w-5 h-5 text-red-500 shrink-0" />;
+    case "puzzle_leader_changed":
+      return <TrendingUp className="w-5 h-5 text-blue-500 shrink-0" />;
+    case "puzzle_seat_adjusted":
+      return <Users className="w-5 h-5 text-amber-500 shrink-0" />;
+    case "puzzle_cancelled":
+      return <XCircle className="w-5 h-5 text-neutral-400 shrink-0" />;
+    case "puzzle_member_joined":
+      return <Users className="w-5 h-5 text-green-500 shrink-0" />;
     default:
       return <Bell className="w-5 h-5 text-neutral-500 shrink-0" />;
   }
