@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Zap, Trophy, Phone, CheckCircle2, ChevronRight, HelpCircle, X, PartyPopper, Puzzle, Users } from "lucide-react";
+import { LayoutDashboard, Zap, Trophy, Phone, CheckCircle2, ChevronRight, HelpCircle, X, PartyPopper, Puzzle as PuzzleIcon, Users } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { logger } from "@/lib/utils/logger";
 import { isAuctionExpired } from "@/lib/utils/auction";
@@ -49,7 +49,7 @@ const PUZZLE_ONBOARDING_STEPS = [
   {
     title: "1. 퍼즐 만들기",
     desc: "날짜·지역·예산을 설정하고 오픈채팅 링크를 등록하세요.",
-    icon: <Puzzle className="w-5 h-5 text-purple-500" />,
+    icon: <PuzzleIcon className="w-5 h-5 text-purple-500" />,
     color: "bg-purple-500/10",
   },
   {
