@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import type { GenderPref, AgePref, VibePref } from "@/types/database";
+import { trackEvent } from "@/lib/analytics/events";
 
 // 총 예산 빠른 추가 (만원 단위)
 const BUDGET_PRESETS = [100000, 500000, 1000000];
@@ -40,7 +41,8 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const [kakaoUrl, setKakaoUrl] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [area, setArea] = useState("");
-  const [totalBudget, setTotalBudget] = useState(400000);
+  const [perPersonBudget, setPerPersonBudget] = useState(0);
+  const [budgetInput, setBudgetInput] = useState("");
   const [targetCount, setTargetCount] = useState(4);
   const [hasGuest, setHasGuest] = useState(false);
   const [guestCount, setGuestCount] = useState(1);
@@ -59,7 +61,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const maxDateStr = maxObj.toISOString().split("T")[0];
   const effectiveGuestCount = hasGuest ? guestCount : 0;
   const initialCount = 1 + effectiveGuestCount;
-  const perPersonBudget = targetCount > 0 ? Math.floor(totalBudget / targetCount) : 0;
+  const totalBudget = perPersonBudget * targetCount;
   const maxOfferPrice = Math.ceil(totalBudget * 1.3);
 
   // expires_at: event_date 당일 21:00 KST = 12:00 UTC
@@ -104,8 +106,8 @@ export function PuzzleForm({ userId }: { userId: string }) {
       toast.error("지역을 선택해주세요");
       return;
     }
-    if (totalBudget < 10000) {
-      toast.error("총 예산은 최소 1만원 이상이어야 합니다");
+    if (perPersonBudget < 10000) {
+      toast.error("인당 예산은 최소 1만원 이상이어야 합니다");
       return;
     }
     if (initialCount > targetCount) {
@@ -148,6 +150,13 @@ export function PuzzleForm({ userId }: { userId: string }) {
         guest_count: effectiveGuestCount,
       });
       if (memberError) console.error("puzzle_members insert error:", memberError);
+
+      trackEvent('puzzle_created', {
+        puzzle_id: puzzle.id,
+        area,
+        total_budget: totalBudget,
+        target_count: targetCount,
+      });
 
       toast.success("퍼즐이 등록되었습니다!");
       router.push(`/puzzles/${puzzle.id}`);
@@ -260,22 +269,30 @@ export function PuzzleForm({ userId }: { userId: string }) {
         </div>
       </section>
 
-      {/* 총 예산 */}
+      {/* 인당 예산 */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">
           <Coins className="w-4 h-4 text-amber-500" />
-          <span>총 예산 (고정)</span>
+          <span>인당 예산</span>
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
           <Input
             type="text"
             inputMode="numeric"
-            value={totalBudget.toLocaleString()}
+            value={budgetInput}
             onChange={(e) => {
-              const num = Number(e.target.value.replace(/,/g, ""));
-              if (!isNaN(num)) setTotalBudget(Math.max(10000, num));
+              const raw = e.target.value.replace(/,/g, "");
+              setBudgetInput(e.target.value);
+              if (raw === "") { setPerPersonBudget(0); return; }
+              const num = Number(raw);
+              if (!isNaN(num)) setPerPersonBudget(num);
             }}
-            placeholder="예: 400,000"
+            onBlur={() => {
+              if (perPersonBudget > 0) {
+                setBudgetInput(perPersonBudget.toLocaleString());
+              }
+            }}
+            placeholder="예: 250,000"
             className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500"
           />
           <div className="flex gap-2">
@@ -285,19 +302,23 @@ export function PuzzleForm({ userId }: { userId: string }) {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setTotalBudget((prev) => prev + preset)}
+                onClick={() => {
+                  const next = (perPersonBudget || 0) + preset;
+                  setPerPersonBudget(next);
+                  setBudgetInput(next.toLocaleString());
+                }}
                 className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-xs"
               >
                 +{(preset / 10000).toFixed(0)}만
               </Button>
             ))}
           </div>
-          {/* N빵 계산 표시 */}
+          {/* 총 예산 계산 표시 */}
           <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-3">
             <p className="text-[12px] text-neutral-400 leading-relaxed">
-              총 <span className="text-amber-400 font-bold">{totalBudget.toLocaleString()}원</span>
-              {" "}÷ {targetCount}명 = 인당{" "}
-              <span className="text-white font-bold">{perPersonBudget.toLocaleString()}원</span>
+              인당 <span className="text-amber-400 font-bold">{perPersonBudget.toLocaleString()}원</span>
+              {" "}× {targetCount}명 = 총{" "}
+              <span className="text-white font-bold">{totalBudget.toLocaleString()}원</span>
             </p>
             <p className="text-[11px] text-neutral-600 mt-1">
               * 프리미엄 제안(최대 +30%)이 올 수 있습니다. (최대 {maxOfferPrice.toLocaleString()}원)

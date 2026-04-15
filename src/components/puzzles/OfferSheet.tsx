@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Check } from "lucide-react";
 import type { Puzzle, Club } from "@/types/database";
+import { trackEvent } from "@/lib/analytics/events";
 import { LiquorSelector } from "@/components/md/LiquorSelector";
 import { EXTRAS_OPTIONS, LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
 
@@ -119,6 +120,12 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
         toast.error(data?.error || "제안에 실패했습니다");
         return;
       }
+
+      trackEvent('puzzle_offer_submitted', {
+        puzzle_id: puzzle.id,
+        proposed_price: priceNum,
+        table_type: tableType,
+      });
 
       toast.success("제안서가 전송되었습니다! 방장의 수락을 기다려주세요.");
       onSubmitted?.();

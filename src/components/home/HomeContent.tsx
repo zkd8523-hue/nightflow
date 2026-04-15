@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Zap, Trophy, Phone, CheckCircle2, ChevronRight, HelpCircle, X, PartyPopper, Puzzle as PuzzleIcon, Users } from "lucide-react";
+import { Zap, Trophy, Phone, CheckCircle2, HelpCircle, X, PartyPopper, Puzzle as PuzzleIcon, Users } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { logger } from "@/lib/utils/logger";
 import { isAuctionExpired } from "@/lib/utils/auction";
@@ -82,7 +82,6 @@ export function HomeContent({
   puzzles = [],
 }: HomeContentProps) {
   const { user } = useCurrentUser();
-  const isMD = user?.role === "md" && user?.md_status === "approved";
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -329,14 +328,6 @@ export function HomeContent({
         )}
       </div>
 
-      {isMD && (
-        <Link
-          href="/md/dashboard"
-          className="fixed bottom-24 right-4 w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-50"
-        >
-          <LayoutDashboard className="w-5 h-5" />
-        </Link>
-      )}
 
       {/* MD 파트너 승인 축하 Sheet (최초 1회) */}
       <Sheet open={showMDWelcome} onOpenChange={(open) => { if (!open) handleDismissMDWelcome(); }}>

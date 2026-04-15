@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
 import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref } from "@/types/database";
+import { trackEvent } from "@/lib/analytics/events";
 
 interface PuzzleDetailClientProps {
   puzzle: Puzzle;
@@ -176,6 +177,11 @@ export function PuzzleDetailClient({
       const { data, error } = await supabase.rpc("accept_offer", { p_offer_id: offerId });
       if (error) throw error;
       if (!data?.success) { toast.error(data?.error || "수락에 실패했습니다"); return; }
+      trackEvent('puzzle_offer_accepted', {
+        puzzle_id: puzzle.id,
+        offer_id: offerId,
+      });
+
       toast.success("제안을 수락했습니다! MD가 곧 연락할 예정입니다.");
       if (data.kakao_open_chat_url) {
         setAcceptedKakaoUrl(data.kakao_open_chat_url);
