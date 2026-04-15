@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { Auction } from "@/types/database";
+import type { Auction, Puzzle } from "@/types/database";
 import { AuctionCard } from "./AuctionCard";
+import { PuzzleList } from "@/components/puzzles/PuzzleList";
 import { isAuctionActive, getEffectiveEndTime } from "@/lib/utils/auction";
 import { getClubEventDate } from "@/lib/utils/date";
 import { DateGroup } from "@/components/ui/DateGroup";
@@ -10,12 +11,16 @@ import { DateGroup } from "@/components/ui/DateGroup";
 
 interface AuctionListProps {
   activeAuctions: Auction[];
+  puzzles?: Puzzle[];
   selectedArea?: string | null;
   userBidMap?: Map<string, number>;
   userInterestedSet?: Set<string>;
+  userRole?: "user" | "md" | "admin";
+  initialTab?: "today" | "advance" | "puzzle";
+  onTabChange?: (tab: "today" | "advance" | "puzzle") => void;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, selectedArea, userBidMap, userInterestedSet }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], selectedArea, userBidMap, userInterestedSet, userRole, initialTab, onTabChange }: AuctionListProps) {
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
     return auctions.filter(a => a.club?.area === selectedArea);
@@ -46,11 +51,22 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
   const advanceAuctions = liveAndUpcoming.filter(a => a.listing_type === 'auction');
 
   // 경매가 있는 탭을 기본으로 선택
-  const [tab, setTab] = useState<"today" | "advance">(() => {
+  const [tab, setTabRaw] = useState<"today" | "advance" | "puzzle">(() => {
+    if (initialTab) return initialTab;
     if (todayAuctions.length > 0) return "today";
     if (advanceAuctions.length > 0) return "advance";
     return "today";
   });
+
+  const setTab = (t: "today" | "advance" | "puzzle") => {
+    setTabRaw(t);
+    onTabChange?.(t);
+  };
+
+  // 퍼즐: 지역 필터 적용
+  const filteredPuzzles = selectedArea
+    ? puzzles.filter((p) => p.area === selectedArea)
+    : puzzles;
 
   // 오늘특가: 날짜별 그룹핑
   const { groupedInstant, sortedInstantDates } = useMemo(() => {
@@ -85,7 +101,8 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
 
   return (
     <div className="space-y-2.5">
-      <div className="flex gap-2 px-1 overflow-x-auto pb-2 scrollbar-hide">
+      <div className="flex items-center gap-2 px-1">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0">
           <button
             onClick={() => setTab("today")}
             className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
@@ -106,7 +123,18 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
             📅 얼리버드 경매 {advanceAuctions.length > 0 && `(${advanceAuctions.length})`}
           </button>
 
+          <button
+            onClick={() => setTab("puzzle")}
+            className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
+              ? "bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]"
+              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+              }`}
+          >
+            🧩 퍼즐 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
+          </button>
         </div>
+
+      </div>
 
       {tab === "today" && (
         <div>
@@ -167,6 +195,13 @@ export function AuctionList({ activeAuctions: initialAuctions, selectedArea, use
             </div>
           )}
         </div>
+      )}
+
+      {tab === "puzzle" && (
+        <PuzzleList
+          puzzles={filteredPuzzles}
+          userRole={userRole}
+        />
       )}
 
     </div>

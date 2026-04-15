@@ -16,7 +16,7 @@ import "dayjs/locale/ko";
 dayjs.locale("ko");
 
 interface DateTimeSheetProps {
-  /** "YYYY-MM-DDTHH:mm" 형식 */
+  /** "YYYY-MM-DDTHH:mm" 형식 (date-only 모드에서는 "YYYY-MM-DD") */
   value: string;
   /** "YYYY-MM-DDTHH:mm" (포함). 이 값보다 이전 날짜/시간은 비활성 */
   min?: string;
@@ -25,8 +25,8 @@ interface DateTimeSheetProps {
   onChange: (value: string) => void;
   label?: string;
   placeholder?: string;
-  /** "datetime" (기본): 달력+시간 / "time-only": 시간만 (날짜 고정) / "date-2": 2개 버튼으로 날짜 선택+시간 */
-  mode?: "datetime" | "time-only" | "date-2";
+  /** "datetime" (기본): 달력+시간 / "time-only": 시간만 (날짜 고정) / "date-2": 2개 버튼으로 날짜 선택+시간 / "date-only": 달력만 */
+  mode?: "datetime" | "time-only" | "date-2" | "date-only";
   /** time-only 모드에서 고정할 날짜 (YYYY-MM-DD) */
   fixedDate?: string;
   /** date-2 모드에서 보여줄 날짜 옵션 2개 */
@@ -62,6 +62,7 @@ export function DateTimeSheet({
 }: DateTimeSheetProps) {
   const isTimeOnly = mode === "time-only";
   const isDate2 = mode === "date-2";
+  const isDateOnly = mode === "date-only";
   const [open, setOpen] = useState(false);
 
   const [tempDate, setTempDate] = useState<Date | undefined>(() =>
@@ -107,6 +108,12 @@ export function DateTimeSheet({
   }, [minDate, maxDate]);
 
   const handleConfirm = () => {
+    if (isDateOnly) {
+      if (!tempDate) return;
+      onChange(dayjs(tempDate).format("YYYY-MM-DD"));
+      setOpen(false);
+      return;
+    }
     if (isDate2) {
       if (!tempDateStr || !TIME_RE.test(tempTime)) return;
       onChange(`${tempDateStr}T${tempTime}`);
@@ -119,12 +126,16 @@ export function DateTimeSheet({
     setOpen(false);
   };
 
-  const canConfirm = isDate2
+  const canConfirm = isDateOnly
+    ? Boolean(tempDate)
+    : isDate2
     ? Boolean(tempDateStr) && TIME_RE.test(tempTime)
     : Boolean(tempDate) && TIME_RE.test(tempTime);
 
   const displayText = value
-    ? dayjs(value).format("YYYY. MM. DD. (ddd) a h:mm")
+    ? isDateOnly
+      ? dayjs(value).format("YYYY. MM. DD. (ddd)")
+      : dayjs(value).format("YYYY. MM. DD. (ddd) a h:mm")
     : placeholder;
 
   return (
@@ -182,13 +193,20 @@ export function DateTimeSheet({
             </div>
           )}
 
-          {/* 달력 (datetime 모드에서만) */}
+          {/* 달력 (datetime / date-only 모드에서) */}
           {!isTimeOnly && !isDate2 && (
             <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-2">
               <Calendar
                 mode="single"
                 selected={tempDate}
-                onSelect={setTempDate}
+                onSelect={(date) => {
+                  setTempDate(date);
+                  // date-only 모드: 날짜 선택 즉시 확인
+                  if (isDateOnly && date) {
+                    onChange(dayjs(date).format("YYYY-MM-DD"));
+                    setOpen(false);
+                  }
+                }}
                 disabled={disabledDays}
                 defaultMonth={tempDate ?? minDate ?? new Date()}
                 startMonth={minDate}
@@ -197,27 +215,29 @@ export function DateTimeSheet({
             </div>
           )}
 
-          {/* 시간 선택 */}
-          <div className="mt-4">
-            <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-bold uppercase mb-2">
-              <Clock className="w-3.5 h-3.5" />
-              입장 시간
-            </div>
+          {/* 시간 선택 (date-only 모드에서는 숨김) */}
+          {!isDateOnly && (
+            <div className="mt-4">
+              <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-bold uppercase mb-2">
+                <Clock className="w-3.5 h-3.5" />
+                입장 시간
+              </div>
 
-            {(() => {
-              const activeOpt = isDate2 ? dateOptions?.find(o => o.value === tempDateStr) : undefined;
-              return (
-                <input
-                  type="time"
-                  value={tempTime}
-                  min={activeOpt?.minTime}
-                  max={activeOpt?.maxTime}
-                  onChange={(e) => setTempTime(e.target.value)}
-                  className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base [color-scheme:dark] focus:outline-none focus:border-green-500/50"
-                />
-              );
-            })()}
-          </div>
+              {(() => {
+                const activeOpt = isDate2 ? dateOptions?.find(o => o.value === tempDateStr) : undefined;
+                return (
+                  <input
+                    type="time"
+                    value={tempTime}
+                    min={activeOpt?.minTime}
+                    max={activeOpt?.maxTime}
+                    onChange={(e) => setTempTime(e.target.value)}
+                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base [color-scheme:dark] focus:outline-none focus:border-green-500/50"
+                  />
+                );
+              })()}
+            </div>
+          )}
 
           <Button
             type="button"

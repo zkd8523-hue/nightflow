@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { HomeContent } from "@/components/home/HomeContent";
 
@@ -20,11 +21,22 @@ export default async function HomePage() {
     .order("auction_start_at", { ascending: true })
     .limit(20);
 
+  // 오픈 퍼즐 목록 조회
+  const { data: puzzles } = await supabase
+    .from("puzzles")
+    .select("*")
+    .eq("status", "open")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
   return (
     <div className="container mx-auto max-w-lg px-4 py-4 mb-20">
-      <HomeContent
-        activeAuctions={activeAuctions || []}
-      />
+      <Suspense fallback={<div className="animate-pulse bg-neutral-900 h-64 rounded-3xl" />}>
+        <HomeContent
+          activeAuctions={activeAuctions || []}
+          puzzles={puzzles || []}
+        />
+      </Suspense>
     </div>
   );
 }

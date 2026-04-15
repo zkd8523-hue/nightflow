@@ -5,6 +5,7 @@ import { useWinNotification } from "@/hooks/useWinNotification";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useFavoriteClubs } from "@/hooks/useFavoriteClubs";
 import { useFavoriteMds } from "@/hooks/useFavoriteMds";
+import { useFavoritePuzzles } from "@/hooks/useFavoritePuzzles";
 import { initAnalytics, identifyUser } from "@/lib/analytics";
 import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
 
@@ -69,15 +70,36 @@ export function useMdFavoritesContext() {
   return ctx;
 }
 
+// 퍼즐 찜 Context
+type PuzzleFavoritesContextType = ReturnType<typeof useFavoritePuzzles>;
+
+const PuzzleFavoritesContext = createContext<PuzzleFavoritesContextType | null>(null);
+
+export function usePuzzleFavoritesContext() {
+  const ctx = useContext(PuzzleFavoritesContext);
+  if (!ctx) {
+    return {
+      favoritePuzzles: [],
+      isLoading: false,
+      isFavoritedPuzzle: () => false,
+      toggleFavoritePuzzle: async () => {},
+    } as PuzzleFavoritesContextType;
+  }
+  return ctx;
+}
+
 function FavoritesProvider({ children }: { children: React.ReactNode }) {
   const { user } = useCurrentUser();
   const favoritesValue = useFavoriteClubs(user?.id);
   const mdFavoritesValue = useFavoriteMds(user?.id);
+  const puzzleFavoritesValue = useFavoritePuzzles(user?.id);
 
   return (
     <FavoritesContext.Provider value={favoritesValue}>
       <MdFavoritesContext.Provider value={mdFavoritesValue}>
-        {children}
+        <PuzzleFavoritesContext.Provider value={puzzleFavoritesValue}>
+          {children}
+        </PuzzleFavoritesContext.Provider>
       </MdFavoritesContext.Provider>
     </FavoritesContext.Provider>
   );

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuctionList } from "@/components/auctions/AuctionList";
 import { PullToRefresh } from "@/components/auctions/PullToRefresh";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -10,8 +10,8 @@ import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Zap, Trophy, Phone, CheckCircle2, ChevronRight, HelpCircle, X, PartyPopper } from "lucide-react";
-import type { Auction } from "@/types/database";
+import { LayoutDashboard, Zap, Trophy, Phone, CheckCircle2, ChevronRight, HelpCircle, X, PartyPopper, Puzzle, Users } from "lucide-react";
+import type { Auction, Puzzle } from "@/types/database";
 import { logger } from "@/lib/utils/logger";
 import { isAuctionExpired } from "@/lib/utils/auction";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
@@ -45,19 +45,74 @@ const ONBOARDING_STEPS = [
   },
 ];
 
+const PUZZLE_ONBOARDING_STEPS = [
+  {
+    title: "1. 퍼즐 만들기",
+    desc: "날짜·지역·예산을 설정하고 오픈채팅 링크를 등록하세요.",
+    icon: <Puzzle className="w-5 h-5 text-purple-500" />,
+    color: "bg-purple-500/10",
+  },
+  {
+    title: "2. 멤버 모집",
+    desc: "다른 유저들이 퍼즐을 보고 참여해요.",
+    icon: <Users className="w-5 h-5 text-green-500" />,
+    color: "bg-green-500/10",
+  },
+  {
+    title: "3. MD 매칭",
+    desc: "MD가 오픈채팅으로 연락해 클럽·테이블을 제안해요.",
+    icon: <Phone className="w-5 h-5 text-emerald-500" />,
+    color: "bg-emerald-500/10",
+  },
+  {
+    title: "4. 함께 방문",
+    desc: "모인 멤버들과 클럽에서 만나면 끝!",
+    icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
+    color: "bg-blue-500/10",
+  },
+];
+
 interface HomeContentProps {
   activeAuctions: Auction[];
+  puzzles?: Puzzle[];
 }
 
 export function HomeContent({
   activeAuctions,
+  puzzles = [],
 }: HomeContentProps) {
   const { user } = useCurrentUser();
   const isMD = user?.role === "md" && user?.md_status === "approved";
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [showMDWelcome, setShowMDWelcome] = useState(false);
+
+  const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
+  
+  // URL에서 탭 상태 읽어오기
+  const [currentTab, setCurrentTab] = useState<"today" | "advance" | "puzzle">(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "advance" || tab === "puzzle") return tab;
+    return "today";
+  });
+
+  // 탭 변경 시 URL 업데이트
+  const handleTabChange = (tab: "today" | "advance" | "puzzle") => {
+    setCurrentTab(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "today" || tab === "advance" || tab === "puzzle") {
+      if (tab !== currentTab) setCurrentTab(tab);
+    }
+  }, [searchParams, currentTab]);
 
   useEffect(() => {
     if (user?.role === "md" && user?.md_status === "approved" && user?.md_welcome_shown === false) {
@@ -153,8 +208,7 @@ export function HomeContent({
     return () => clearInterval(id);
   }, [auctions.active, router]);
 
-  const [selectedArea, setSelectedArea] = useState<string | null>(null);
-  const [showGuide, setShowGuide] = useState(false);
+
 
   useEffect(() => {
     const dismissed = localStorage.getItem(GUIDE_DISMISSED_KEY);
@@ -219,7 +273,7 @@ export function HomeContent({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                {ONBOARDING_STEPS.map((step, idx) => (
+                {(currentTab === "puzzle" ? PUZZLE_ONBOARDING_STEPS : ONBOARDING_STEPS).map((step, idx) => (
                   <div
                     key={idx}
                     className="bg-neutral-900/50 border border-neutral-800/50 rounded-2xl p-4 flex flex-col gap-3 cursor-default"
@@ -254,9 +308,13 @@ export function HomeContent({
 
         <AuctionList
           activeAuctions={auctions.active}
+          puzzles={puzzles}
           selectedArea={selectedArea}
           userBidMap={userBidMap}
           userInterestedSet={userInterestedSet}
+          userRole={user?.role as "user" | "md" | "admin" | undefined}
+          initialTab={currentTab}
+          onTabChange={handleTabChange}
         />
 
         {!user && auctions.active.length > 0 && (

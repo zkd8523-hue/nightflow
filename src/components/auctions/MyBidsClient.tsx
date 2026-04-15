@@ -16,7 +16,7 @@ import { ReportMDButton } from "./ReportMDButton";
 import { useMyBidsRealtime, type AuctionUpdate } from "@/hooks/useMyBidsRealtime";
 import { isAuctionActive, isAuctionExpired } from "@/lib/utils/auction";
 import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
-import type { Auction } from "@/types/database";
+import type { Auction, Puzzle } from "@/types/database";
 import {
   Gavel,
   Clock,
@@ -71,6 +71,7 @@ interface MyBidsClientProps {
   reportedAuctionIds?: string[];
   userId: string;
   initialTab?: string;
+  initialPuzzles?: Puzzle[];
 }
 
 const DISMISSED_KEY = "nightflow_dismissed_bids";
@@ -132,6 +133,7 @@ export function MyBidsClient({
   reportedAuctionIds = [],
   userId,
   initialTab,
+  initialPuzzles = [],
 }: MyBidsClientProps) {
   const [bids, setBids] = useState<BidWithAuction[]>(initialBids);
   const [wonAuctions, setWonAuctions] =
@@ -145,8 +147,10 @@ export function MyBidsClient({
     [reportedAuctionIds]
   );
 
+  const [puzzles] = useState<Puzzle[]>(initialPuzzles);
+
   const hasInitialUrgentWon = initialWonAuctions.some(a => a.status === "won" && !a.fallback_offered_to);
-  const defaultTab = initialTab === "chat" ? "chat" : initialTab === "ended" ? "ended" : hasInitialUrgentWon ? "ended" : "active";
+  const defaultTab = initialTab === "puzzle" ? "puzzle" : initialTab === "chat" ? "chat" : initialTab === "ended" ? "ended" : hasInitialUrgentWon ? "ended" : "active";
 
   const fetchBids = useCallback(async () => {
     const supabase = createClient();
@@ -482,22 +486,22 @@ export function MyBidsClient({
         </header>
 
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="w-full bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800">
+          <TabsList className="w-full bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800 grid grid-cols-4">
             <TabsTrigger
               value="chat"
-              className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
+              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
             >
-              대화중{activeInterests.length > 0 && ` (${activeInterests.length})`}
+              오늘특가
             </TabsTrigger>
             <TabsTrigger
               value="active"
-              className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
+              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
             >
-              입찰중{activeBids.length > 0 && ` (${activeBids.length})`}
+              얼리버드
             </TabsTrigger>
             <TabsTrigger
               value="ended"
-              className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500 relative"
+              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500 relative"
             >
               <span className={hasUrgentWon ? "text-amber-500 data-[state=active]:text-black" : ""}>
                 낙찰/종료
@@ -505,6 +509,12 @@ export function MyBidsClient({
               {hasUrgentWon && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
               )}
+            </TabsTrigger>
+            <TabsTrigger
+              value="puzzle"
+              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-purple-500 data-[state=active]:text-white text-neutral-500"
+            >
+              🧩 퍼즐{puzzles.length > 0 && ` (${puzzles.length})`}
             </TabsTrigger>
           </TabsList>
 
@@ -603,6 +613,18 @@ export function MyBidsClient({
                 completedWonAuctions.length === 0 &&
                 endedInterests.length === 0 &&
                 visibleEndedBids.length === 0 && <EmptyEnded />}
+            </div>
+          </TabsContent>
+          {/* 퍼즐 탭 */}
+          <TabsContent value="puzzle" className="mt-4">
+            <div className="space-y-3">
+              {puzzles.length === 0 ? (
+                <EmptyPuzzle />
+              ) : (
+                puzzles.map((puzzle) => (
+                  <MyPuzzleCard key={puzzle.id} puzzle={puzzle} userId={userId} />
+                ))
+              )}
             </div>
           </TabsContent>
         </Tabs>
@@ -751,6 +773,65 @@ function WonAuctionCard({
   );
 }
 
+function MyPuzzleCard({ puzzle, userId }: { puzzle: Puzzle; userId: string }) {
+  const isLeader = puzzle.leader_id === userId;
+  const isOpen = puzzle.status === "open";
+  const confirmedBudget = puzzle.current_count * puzzle.budget_per_person;
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr + "T00:00:00");
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    return `${m}/${day} ${days[d.getDay()]}`;
+  };
+
+  const statusLabel: Record<string, string> = {
+    open: "모집 중",
+    matched: "마감",
+    cancelled: "취소됨",
+    expired: "만료됨",
+  };
+
+  return (
+    <Link href={`/puzzles/${puzzle.id}`}>
+      <Card className="bg-[#1C1C1E] border-neutral-800 p-4 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-[14px] font-black text-white">
+            {formatDate(puzzle.event_date)} · {puzzle.area}
+          </span>
+          <span
+            className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+              isLeader
+                ? "bg-amber-500/20 text-amber-400"
+                : "bg-purple-500/20 text-purple-400"
+            }`}
+          >
+            {isLeader ? "대표자" : "참여중"}
+          </span>
+        </div>
+        <div className="flex items-center justify-between text-[13px]">
+          <span className="text-neutral-400">
+            {puzzle.current_count}/{puzzle.target_count}명 · 확정 {confirmedBudget.toLocaleString()}원
+          </span>
+          <span
+            className={`font-bold ${
+              isOpen ? "text-green-400" : "text-neutral-500"
+            }`}
+          >
+            {statusLabel[puzzle.status] || puzzle.status}
+          </span>
+        </div>
+        <div className="flex justify-end">
+          <span className="text-[12px] text-neutral-500">
+            {isLeader ? "[관리]" : "[보기]"} →
+          </span>
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
 function EmptyChat() {
   return (
     <div className="py-24 text-center space-y-4">
@@ -802,6 +883,24 @@ function EmptyEnded() {
       <p className="text-neutral-500 font-medium">
         낙찰/종료된 내역이 없습니다.
       </p>
+    </div>
+  );
+}
+
+function EmptyPuzzle() {
+  return (
+    <div className="py-24 text-center space-y-4">
+      <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto">
+        <span className="text-3xl">🧩</span>
+      </div>
+      <p className="text-neutral-500 font-medium">
+        참여 중인 퍼즐이 없습니다.
+      </p>
+      <Link href="/?tab=puzzle">
+        <Button variant="link" className="text-neutral-400 font-bold underline">
+          퍼즐 둘러보기
+        </Button>
+      </Link>
     </div>
   );
 }

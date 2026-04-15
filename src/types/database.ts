@@ -30,7 +30,7 @@ export type NotificationEventType =
   | "md_unresponsive_alert"
   | "cancellation_confirmed";
 export type NotificationStatus = "pending" | "sent" | "failed";
-export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed";
+export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed" | "puzzle_seat_adjusted" | "puzzle_cancelled" | "puzzle_offer_received" | "puzzle_offer_accepted" | "puzzle_offer_rejected" | "puzzle_leader_changed";
 export type TableType = "Standard" | "VIP" | "Premium";
 
 export interface TablePosition {
@@ -438,6 +438,99 @@ export const MD_GRADE_CONFIG: Record<MDCustomerGrade, { label: string; color: st
   gold: { label: "Gold", color: "text-yellow-400", bgColor: "bg-yellow-900" },
   diamond: { label: "Diamond", color: "text-cyan-300", bgColor: "bg-cyan-900" },
 };
+
+// ============================================
+// Puzzle Types (Migration 097)
+// ============================================
+
+export type PuzzleStatus = 'open' | 'matched' | 'cancelled' | 'expired' | 'accepted';
+// matched: 대표자가 수동 마감 (MD 추가 결제 차단, 홈에서 숨김)
+// accepted: 오퍼 수락 완료 (V2 역경매)
+
+export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'expired';
+
+export type GenderPref = 'male_only' | 'female_only' | 'any';
+export type AgePref = 'early_20s' | 'late_20s' | '30s' | 'any';
+export type VibePref = 'chill' | 'active' | 'any';
+
+export interface Puzzle {
+  id: string;
+  leader_id: string;
+  leader?: Pick<User, 'id' | 'name' | 'profile_image'>;
+  area: Area;
+  event_date: string;
+  kakao_open_chat_url: string; // 방장/수락된 MD에게만 노출
+  gender_pref: GenderPref;
+  age_pref: AgePref;
+  vibe_pref: VibePref;
+  /** V1 호환 필드. 신규 퍼즐은 total_budget 사용 (null이면 이 값 사용) */
+  budget_per_person: number;
+  /** V2: 총액 고정 예산 (budget_per_person 대체) */
+  total_budget: number | null;
+  target_count: number;
+  current_count: number;
+  status: PuzzleStatus;
+  notes: string | null;
+  expires_at: string;
+  accepted_offer_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PuzzleOffer {
+  id: string;
+  puzzle_id: string;
+  md_id: string;
+  club_id: string | null;
+  club?: Pick<Club, 'id' | 'name' | 'area'>;
+  md?: Pick<User, 'id' | 'name' | 'profile_image'>;
+  table_type: TableType;
+  /** 방장 + 해당 MD만 열람 가능 */
+  proposed_price: number;
+  /** 방장 + 해당 MD만 열람 가능 */
+  includes: string[];
+  /** 방장 + 해당 MD만 열람 가능 */
+  comment: string | null;
+  status: OfferStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PuzzleMember {
+  id: string;
+  puzzle_id: string;
+  user_id: string;
+  guest_count: number;
+  user?: Pick<User, 'id' | 'name' | 'profile_image' | 'gender' | 'birthday'>;
+  joined_at: string;
+  /** V2: MD가 방문 확인 시 개별 노쇼 체크 */
+  noshow: boolean;
+  visited: boolean | null;
+}
+
+export interface PuzzleContactUnlock {
+  id: string;
+  puzzle_id: string;
+  md_id: string;
+  credits_used: number;
+  created_at: string;
+}
+
+export interface PuzzleInterest {
+  id: string;
+  user_id: string;
+  puzzle_id: string;
+  created_at: string;
+  puzzle?: Puzzle;
+}
+
+export interface PuzzleReport {
+  id: string;
+  puzzle_id: string;
+  reporter_md_id: string;
+  reason: string;
+  created_at: string;
+}
 
 // ============================================
 // Naver Maps API Global Types

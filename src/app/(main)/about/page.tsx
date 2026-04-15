@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageCircle, Mail, Sparkles } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function AboutPage() {
     return (
@@ -28,21 +29,27 @@ export default function AboutPage() {
                     </p>
 
                     <p>
-                        배달시킬 때는 배민, 숙박잡을 때는 여기어때.<br />
+                        배달시킬 때는 배민, 숙박 잡을 때는 여기어때.<br />
                         근데 놀러 나갈 때는 이런 서비스가 없더라고요.<br />
                         그래서 그냥 제가 한 번 만들어 보기로 했습니다.
                     </p>
 
                     <p>
-                        <span className="text-white font-semibold whitespace-nowrap">&ldquo;더 많은 사람들이, 더 똑똑하게 클럽을 즐기도록 돕자&rdquo;</span>는 사명을 갖고 서비스를 꾸려가고 있습니다.
-                    </p>
-
-                    <p>
-                        NightFlow는 단순한 예약 플랫폼을 넘어, 유저와 MD, 그리고 클럽 점주님이 매일 밤마다 더 편해지고, 더 즐거워지는 건강한 대한민국을 꿈꿉니다.
+                        클럽에 가고 싶은 사람은 더 쉽게,<br />
+                        MD는 더 빠르게 손님을 만날 수 있도록.<br />
+                        그 연결을 돕는 게 NightFlow가 하고 싶은 일입니다.
                     </p>
 
                     <p className="text-white font-semibold">
-                        부족한 점이 많습니다. 언제든 여러분의 목소리에 귀 기울이겠습니다.
+                        부족한 점이 많습니다.<br />
+                        언제든 여러분의 목소리에 귀 기울이겠습니다.
+                    </p>
+                </div>
+
+                {/* 서명 */}
+                <div className="flex flex-col items-center pt-6 pb-2">
+                    <p className="text-[32px] text-neutral-400 -rotate-2" style={{ fontFamily: "var(--font-nanum-pen)" }}>
+                        매드다윗
                     </p>
                 </div>
 

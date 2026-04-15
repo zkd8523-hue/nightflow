@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useFavoritesContext, useMdFavoritesContext } from "@/components/providers";
+import { useFavoritesContext, useMdFavoritesContext, usePuzzleFavoritesContext } from "@/components/providers";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -21,6 +21,7 @@ export default function FavoritesPage() {
   const { user, isLoading: userLoading } = useCurrentUser();
   const { favorites, isLoading: favLoading, toggleFavorite } = useFavoritesContext();
   const { favoriteMds, isLoading: mdFavLoading, toggleFavoriteMd } = useMdFavoritesContext();
+  const { favoritePuzzles, isLoading: puzzleFavLoading, toggleFavoritePuzzle } = usePuzzleFavoritesContext();
   const router = useRouter();
   const supabase = createClient();
 
@@ -81,7 +82,7 @@ export default function FavoritesPage() {
     fetchMdCounts();
   }, [favoriteMds, supabase]);
 
-  if (userLoading || favLoading || mdFavLoading) {
+  if (userLoading || favLoading || mdFavLoading || puzzleFavLoading) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
@@ -94,7 +95,7 @@ export default function FavoritesPage() {
     return null;
   }
 
-  const totalCount = favorites.length + favoriteMds.length;
+  const totalCount = favorites.length + favoriteMds.length + favoritePuzzles.length;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
@@ -131,6 +132,15 @@ export default function FavoritesPage() {
               MD
               {favoriteMds.length > 0 && (
                 <span className="ml-1.5 text-[11px] text-neutral-400">{favoriteMds.length}</span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value="puzzles"
+              className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-purple-600 data-[state=active]:text-white text-neutral-500"
+            >
+              퍼즐
+              {favoritePuzzles.length > 0 && (
+                <span className="ml-1.5 text-[11px] text-neutral-400">{favoritePuzzles.length}</span>
               )}
             </TabsTrigger>
           </TabsList>
@@ -292,6 +302,73 @@ export default function FavoritesPage() {
                         onClick={() => toggleFavoriteMd(fav.md_id)}
                         className="w-9 h-9 rounded-full flex items-center justify-center bg-neutral-800/50 hover:bg-red-500/10 transition-colors shrink-0"
                         title="MD 찜 해제"
+                      >
+                        <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* 퍼즐 탭 */}
+          <TabsContent value="puzzles">
+            {favoritePuzzles.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <Heart className="w-12 h-12 text-neutral-700 mb-4" />
+                <p className="text-[15px] text-neutral-400 font-bold mb-2">
+                  아직 찜한 퍼즐이 없습니다
+                </p>
+                <p className="text-[13px] text-neutral-600 mb-6">
+                  퍼즐 카드에서 하트를 눌러 찜해보세요
+                </p>
+                <Link
+                  href="/?tab=puzzle"
+                  className="h-10 px-6 rounded-full bg-purple-500 text-white font-bold text-[14px] inline-flex items-center hover:bg-purple-400 transition-colors"
+                >
+                  퍼즐 둘러보기
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {favoritePuzzles.map((fav) => {
+                  const puzzle = fav.puzzle;
+                  if (!puzzle) return null;
+
+                  const confirmedBudget = puzzle.current_count * puzzle.budget_per_person;
+
+                  return (
+                    <div
+                      key={fav.id}
+                      className="bg-[#1C1C1E] rounded-2xl p-4 flex items-center gap-4"
+                    >
+                      <Link
+                        href={`/puzzles/${puzzle.id}`}
+                        className="flex items-center gap-4 flex-1 min-w-0"
+                      >
+                        <div className="w-14 h-14 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                          <span className="text-[22px]">🧩</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-[15px] font-bold text-white truncate">
+                            {puzzle.area} · {puzzle.budget_per_person.toLocaleString()}원/인
+                          </h3>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[12px] text-neutral-500">
+                              {puzzle.current_count}/{puzzle.target_count}명
+                            </span>
+                            <span className="text-[11px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full">
+                              확정 {confirmedBudget.toLocaleString()}원
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+
+                      <button
+                        onClick={() => toggleFavoritePuzzle(fav.puzzle_id)}
+                        className="w-9 h-9 rounded-full flex items-center justify-center bg-neutral-800/50 hover:bg-red-500/10 transition-colors shrink-0"
+                        title="퍼즐 찜 해제"
                       >
                         <Heart className="w-4 h-4 text-red-500 fill-red-500" />
                       </button>

@@ -153,6 +153,14 @@ export function sortByLiquorFirst(includes: string[]): string[] {
   return [...liquor, ...extras];
 }
 
+/** 이름 마스킹: "김민기" → "김*기", "John" → "J**n" */
+export function maskName(name: string | null | undefined): string {
+  if (!name) return "알 수 없음";
+  if (name.length <= 1) return name;
+  if (name.length === 2) return name[0] + "*";
+  return name[0] + "*".repeat(name.length - 2) + name[name.length - 1];
+}
+
 /** 남은 시간 포맷: seconds → "00:14:30" or "3일 01:17:09" */
 export function formatCountdown(seconds: number): string {
   if (seconds <= 0) return "00:00:00";

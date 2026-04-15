@@ -58,3 +58,15 @@ entrypoint = "./functions/notify-closing-soon/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/payment-reminders/index.ts"
+
+[functions.expire-puzzles]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/expire-puzzles/index.ts"
+
+[functions.notify-puzzle-events]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/notify-puzzle-events/index.ts"
+# 크론: 매 5분 — Dashboard > Edge Functions > notify-puzzle-events > Settings > Cron Schedule
+# schedule = "*/5 * * * *"

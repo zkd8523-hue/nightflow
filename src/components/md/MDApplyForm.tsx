@@ -81,7 +81,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                 throw new Error(result.error || "신청 중 오류가 발생했습니다.");
             }
             toast.success("MD 파트너 신청이 완료되었습니다!");
-            router.refresh();
+            router.push('/');
         } catch (error: unknown) {
             logError(error, "MD Apply Form");
             toast.error(getErrorMessage(error));

@@ -85,17 +85,31 @@ export async function shareAuction({
 }
 
 /**
+ * 클립보드 안전 쓰기 (HTTP 환경에서 navigator.clipboard undefined 대응)
+ */
+async function safeClipboardWrite(text: string): Promise<boolean> {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
  * 클립보드 복사 fallback
  */
 async function copyToClipboard(text: string, url: string): Promise<void> {
   const fullText = `${text}\n${url}`;
-  try {
-    await navigator.clipboard.writeText(fullText);
+  const copied = await safeClipboardWrite(fullText);
+  if (copied) {
     toast.success("링크가 복사되었습니다! 원하는 곳에 붙여넣기하세요", {
       duration: 3000,
     });
-  } catch (err) {
-    logger.error("Clipboard failed:", err);
+  } else {
     toast.error("공유 링크 생성에 실패했습니다");
   }
 }
@@ -138,11 +152,7 @@ export async function shareToInstagram(
   } catch {}
 
   // 공유 전 경매 링크를 클립보드에 복사 (스토리 링크 스티커용)
-  try {
-    await navigator.clipboard.writeText(url);
-  } catch {
-    // 클립보드 실패해도 공유는 계속 진행
-  }
+  await safeClipboardWrite(url);
 
   // 이미지 Blob + navigator.share files 지원 시 → 이미지 파일로 공유
   if (imageBlob && navigator.share) {
@@ -200,9 +210,9 @@ export async function shareToInstagram(
 }
 
 /**
- * 인스타그램 DM 초대 (유저용): 초대 메시지 구성 + 링크 복사 + 앱 이동
+ * 친구 초대 공유 (유저용): Web Share API → 클립보드 fallback
  */
-export async function shareToInstagramDM(params: {
+export async function shareInvite(params: {
   auctionId: string;
   clubName: string;
   tableInfo?: string;
@@ -214,40 +224,44 @@ export async function shareToInstagramDM(params: {
 
   try {
     const u = new URL(url);
-    u.searchParams.set('utm_source', 'instagram_dm');
+    u.searchParams.set('utm_source', 'invite');
     u.searchParams.set('utm_medium', 'share');
     url = u.toString();
   } catch {}
 
   const dateStr = dayjs(params.eventDate).locale('ko').format('M월 D일 (dd)');
-  const inviteMessage = `🎉 ${params.clubName} 같이 갈래?\n\n📍 위치: ${params.tableInfo || '좋은 자리'}\n📅 일정: ${dateStr}\n\n지금 입찰 중이야! 같이 가고 싶으면 여기서 확인해 봐 👇\n${url}`;
+  const inviteText = `🎉 ${params.clubName} 같이 갈래?\n\n📍 위치: ${params.tableInfo || '좋은 자리'}\n📅 일정: ${dateStr}\n\n지금 입찰 중이야! 같이 가고 싶으면 여기서 확인해 봐 👇`;
 
-  try {
-    // 1. 메시지 복사
-    await navigator.clipboard.writeText(inviteMessage);
-    
-    // 2. 인스타그램 앱 또는 웹으로 이동 (DM 목록)
+  // Web Share API 지원 시 → OS 공유 시트 (인스타/카톡/문자 등 유저가 선택)
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `${params.clubName} 같이 갈래?`,
+        text: `${inviteText}\n${url}`,
+        url,
+      });
+      trackEvent("auction_shared", { platform: "invite", auction_id: params.auctionId, method: "web_share_api" });
+      return;
+    } catch (err: unknown) {
+      if (err && typeof err === "object" && "name" in err && err.name === "AbortError") {
+        return; // 유저 취소
+      }
+      logger.error("Share invite failed:", err);
+    }
+  }
+
+  // Fallback: 클립보드 복사 + 토스트 안내
+  const fullMessage = `${inviteText}\n${url}`;
+  const copied = await safeClipboardWrite(fullMessage);
+  if (copied) {
     toast.success("초대 메시지가 복사되었습니다!", {
-      description: "인스타에서 친구에게 바로 붙여넣기 하세요.",
+      description: "원하는 곳에 붙여넣기하세요.",
       duration: 4000,
     });
-
-    // 약간의 딜레이 후 인스타그램 이동
-    setTimeout(() => {
-      window.location.href = "instagram://sharesheet?text=" + encodeURIComponent(inviteMessage);
-      // fallback for web
-      setTimeout(() => {
-        if (!document.hidden) {
-          window.open("https://www.instagram.com/direct/inbox/", "_blank");
-        }
-      }, 1000);
-    }, 1000);
-
-    trackEvent("auction_shared", { platform: "instagram", auction_id: params.auctionId, method: "dm_invite" });
-  } catch (err) {
-    logger.error("Instagram DM share failed:", err);
-    toast.error("공유에 실패했습니다");
+  } else {
+    toast.error("공유에 실패했습니다. 링크를 직접 복사해주세요.");
   }
+  trackEvent("auction_shared", { platform: "invite", auction_id: params.auctionId, method: "clipboard" });
 }
 
 /**
@@ -264,12 +278,11 @@ export async function copyAuctionLink(auctionId: string, referralCode?: string |
     url = u.toString();
   } catch {}
 
-  try {
-    await navigator.clipboard.writeText(url);
+  const copied = await safeClipboardWrite(url);
+  if (copied) {
     toast.success("링크가 복사되었습니다!", { duration: 2000 });
-    return true;
-  } catch {
+  } else {
     toast.error("링크 복사에 실패했습니다");
-    return false;
   }
+  return copied;
 }

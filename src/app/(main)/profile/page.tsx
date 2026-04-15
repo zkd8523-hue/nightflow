@@ -18,6 +18,7 @@ import {
   Trophy,
   CheckCircle2,
   TrendingUp,
+  Camera,
 } from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
@@ -31,6 +32,47 @@ export default function ProfilePage() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("이미지는 2MB 이하만 업로드 가능합니다");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ profile_image: publicUrl })
+        .eq("id", user.id);
+
+      if (updateError) throw updateError;
+
+      toast.success("프로필 사진이 변경되었습니다");
+      refetch();
+    } catch {
+      toast.error("업로드에 실패했습니다");
+    } finally {
+      setUploadingImage(false);
+      e.target.value = "";
+    }
+  };
   const [activityStats, setActivityStats] = useState<{
     total_bids: number;
     won_bids: number;
@@ -127,6 +169,33 @@ export default function ProfilePage() {
 
         {/* 프로필 정보 카드 */}
         <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
+          {/* 프로필 이미지 */}
+          <div className="flex flex-col items-center mb-5">
+            <label className="relative cursor-pointer group">
+              <div className="w-20 h-20 rounded-full overflow-hidden bg-neutral-700 flex items-center justify-center">
+                {user.profile_image ? (
+                  <img src={user.profile_image} alt="프로필" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-2xl font-black text-white">{user.name?.[0] || "?"}</span>
+                )}
+              </div>
+              <div className="absolute bottom-0 right-0 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow group-hover:bg-neutral-200 transition-colors">
+                {uploadingImage
+                  ? <div className="w-3 h-3 border border-neutral-400 border-t-transparent rounded-full animate-spin" />
+                  : <Camera className="w-3 h-3 text-black" />
+                }
+              </div>
+              <input
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp"
+                className="hidden"
+                onChange={handleImageUpload}
+                disabled={uploadingImage}
+              />
+            </label>
+            <p className="text-[11px] text-neutral-500 mt-2">탭하여 사진 변경</p>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[15px] font-bold text-white">기본 정보</h2>
             {!isEditing ? (

@@ -8,9 +8,9 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { MessageCircle, Instagram, Link2, Share2 } from "lucide-react";
+import { MessageCircle, Users, Link2, Share2 } from "lucide-react";
 
-import { shareAuction, shareToInstagram, shareToInstagramDM, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
+import { shareAuction, shareToInstagram, shareInvite, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { useReferralCode } from "@/hooks/useReferralCode";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -104,8 +104,8 @@ export function ShareAuctionSheet({
         // MD: 화려한 스토리 포스터 홍보
         await shareToInstagram(auction.id, imageBlob, clubName, auctionUrl, referralCode);
       } else {
-        // 유저: 친구에게 보낼 DM 초대장
-        await shareToInstagramDM({
+        // 유저: OS 공유 시트로 친구 초대
+        await shareInvite({
           auctionId: auction.id,
           clubName,
           tableInfo,
@@ -156,8 +156,8 @@ export function ShareAuctionSheet({
     },
     {
       id: "instagram",
-      label: isFromMD ? "스토리 홍보" : "인스타 DM 초대",
-      icon: Instagram,
+      label: isFromMD ? "스토리 홍보" : "공유하기",
+      icon: Users,
       iconColor: "text-pink-400",
       bgColor: "bg-pink-500/10 border-pink-500/20",
       handler: handleInstagramShare,

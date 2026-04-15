@@ -40,3 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# supabase CLI local cache
+supabase/.temp/
+
+# playwright test reports
+/playwright-report/

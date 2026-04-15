@@ -91,6 +91,26 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    // 슬러그 재생성 (인스타 기반)
+    const baseSlug = cleanInstagram
+      .toLowerCase()
+      .replace(/[._]+/g, "-")
+      .replace(/^-|-$/g, "");
+
+    let generatedSlug = baseSlug;
+    let attempt = 0;
+    while (true) {
+      const { data: existing } = await supabaseAdmin
+        .from("users")
+        .select("id")
+        .eq("md_unique_slug", generatedSlug)
+        .neq("id", user.id)
+        .maybeSingle();
+      if (!existing) break;
+      attempt++;
+      generatedSlug = `${baseSlug}-${attempt}`;
+    }
+
     // 카카오 오픈채팅 URL 검증 (선택)
     const cleanKakaoUrl = kakao_open_chat_url?.trim() || null;
     if (cleanKakaoUrl && !/^https:\/\/open\.kakao\.com\//.test(cleanKakaoUrl)) {
@@ -117,6 +137,7 @@ export async function PATCH(request: NextRequest) {
         name: name.trim(),
         phone,
         instagram: cleanInstagram,
+        md_unique_slug: generatedSlug,
         kakao_open_chat_url: cleanKakaoUrl,
         preferred_contact_methods: cleanPreferred,
       })

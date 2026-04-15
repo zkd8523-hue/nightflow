@@ -48,7 +48,7 @@ export async function PATCH(req: Request) {
     // 경매 존재 및 상태 확인
     const { data: auction, error: fetchError } = await admin
       .from("auctions")
-      .select("id, status, title")
+      .select("id, status, title, md_id")
       .eq("id", auctionId)
       .single();
 
@@ -82,6 +82,20 @@ export async function PATCH(req: Request) {
       `[Admin] Auction ${auctionId} ("${auction.title}") force-cancelled by ${result.user!.id}. Reason: ${reason.trim()}`
     );
 
+    // MD에게 인앱 알림 발송
+    if (auction.md_id) {
+      const { error: notificationError } = await admin.from("in_app_notifications").insert({
+        user_id: auction.md_id,
+        type: "auction_admin_cancelled",
+        title: "경매가 관리자에 의해 취소되었습니다",
+        message: `"${auction.title}" 경매가 관리자에 의해 강제 취소되었습니다. 사유: ${reason.trim()}`,
+        action_url: "/md/dashboard",
+      });
+      if (notificationError) {
+        logger.error(`[Admin] Failed to send cancellation notification to MD ${auction.md_id}`, notificationError);
+      }
+    }
+
     return NextResponse.json({ success: true, auctionId, action: "cancel" });
   } catch (error) {
     logger.error("[Admin/Auctions] PATCH Error:", error);
@@ -107,7 +121,7 @@ export async function DELETE(req: Request) {
 
     const { data: auction, error: fetchError } = await admin
       .from("auctions")
-      .select("id, status, title")
+      .select("id, status, title, md_id")
       .eq("id", auctionId)
       .single();
 
@@ -129,6 +143,20 @@ export async function DELETE(req: Request) {
     if (deleteError) throw deleteError;
 
     logger.log(`[Admin] Auction ${auctionId} ("${auction.title}") deleted by ${result.user!.id}`);
+
+    // MD에게 인앱 알림 발송
+    if (auction.md_id) {
+      const { error: notificationError } = await admin.from("in_app_notifications").insert({
+        user_id: auction.md_id,
+        type: "auction_admin_deleted",
+        title: "경매 초안이 관리자에 의해 삭제되었습니다",
+        message: `"${auction.title}" 경매 초안이 관리자에 의해 삭제되었습니다.`,
+        action_url: "/md/dashboard",
+      });
+      if (notificationError) {
+        logger.error(`[Admin] Failed to send deletion notification to MD ${auction.md_id}`, notificationError);
+      }
+    }
 
     return NextResponse.json({ success: true, auctionId, action: "delete" });
   } catch (error) {

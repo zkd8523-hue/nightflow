@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { MyBidsClient } from "@/components/auctions/MyBidsClient";
 import type { BidWithAuction } from "@/components/auctions/MyBidCard";
 import type { WonAuctionData, ChatInterestWithAuction } from "@/components/auctions/MyBidsClient";
+import type { Puzzle } from "@/types/database";
 import { logger } from "@/lib/utils/logger";
 
 export const dynamic = "force-dynamic";
@@ -119,6 +120,33 @@ export default async function MyBidsPage({ searchParams }: PageProps) {
         .eq("reporter_id", authUser.id);
     const reportedAuctionIds = new Set(existingReports?.map(r => r.auction_id) || []);
 
+    // 4. 내 퍼즐 조회 (대표자이거나 참여자인 퍼즐)
+    const { data: leaderPuzzles } = await supabase
+        .from("puzzles")
+        .select("*")
+        .eq("leader_id", authUser.id)
+        .order("created_at", { ascending: false });
+
+    const { data: memberPuzzleIds } = await supabase
+        .from("puzzle_members")
+        .select("puzzle_id")
+        .eq("user_id", authUser.id);
+
+    const memberIds = (memberPuzzleIds || []).map(m => m.puzzle_id);
+    const leaderIds = new Set((leaderPuzzles || []).map(p => p.id));
+
+    let memberPuzzles: Puzzle[] = [];
+    if (memberIds.length > 0) {
+        const { data } = await supabase
+            .from("puzzles")
+            .select("*")
+            .in("id", memberIds.filter(id => !leaderIds.has(id)))
+            .order("created_at", { ascending: false });
+        memberPuzzles = (data || []) as Puzzle[];
+    }
+
+    const myPuzzles = [...(leaderPuzzles || []), ...memberPuzzles] as Puzzle[];
+
     return (
         <MyBidsClient
             initialBids={latestBidsByAuction as BidWithAuction[]}
@@ -127,6 +155,7 @@ export default async function MyBidsPage({ searchParams }: PageProps) {
             reportedAuctionIds={[...reportedAuctionIds]}
             userId={authUser.id}
             initialTab={params.tab}
+            initialPuzzles={myPuzzles}
         />
     );
 }

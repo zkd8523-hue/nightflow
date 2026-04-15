@@ -115,7 +115,7 @@ export default function LoginPage() {
           <p className="text-[15px] text-neutral-300 font-medium leading-relaxed">
             강남·홍대 인기 클럽<br />테이블을 내 가격에
           </p>
-          <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500">
+          <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500 whitespace-nowrap">
             <span>🔥 실시간 특가</span>
             <span>·</span>
             <span>📅 얼리버드 입찰</span>

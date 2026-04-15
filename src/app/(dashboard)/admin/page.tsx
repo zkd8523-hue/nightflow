@@ -186,6 +186,14 @@ export default async function AdminDashboardPage() {
       badge: pendingReportCount ? `${pendingReportCount}건 대기` : null,
       href: "/admin/reports",
     },
+    {
+      label: "퍼즐 신고",
+      value: "관리",
+      icon: AlertCircle,
+      color: "text-purple-500",
+      bgColor: "bg-purple-500/10",
+      href: "/admin/puzzles",
+    },
   ];
 
   return (
