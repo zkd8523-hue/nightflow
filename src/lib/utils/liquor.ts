@@ -20,7 +20,7 @@ for (const cat of LIQUOR_CATEGORIES) {
 }
 
 // 카테고리 라벨 Set (이미 카테고리인지 판별)
-const categoryLabels = new Set(LIQUOR_CATEGORIES.map((c) => c.label));
+const categoryLabels = new Set<string>(LIQUOR_CATEGORIES.map((c) => c.label));
 
 /**
  * 주류 아이템에서 브랜드를 카테고리로 변환
