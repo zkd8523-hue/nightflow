@@ -22,7 +22,7 @@ import {
 import type { InAppNotification, InAppNotificationType } from "@/types/database";
 
 function getFallbackUrl(type: InAppNotification["type"]): string | null {
-  if (type.startsWith("puzzle_")) return "/puzzles";
+  if (type.startsWith("puzzle_")) return "/";
   if (type.startsWith("md_")) return "/md/dashboard";
   if (
     type.startsWith("auction_") ||

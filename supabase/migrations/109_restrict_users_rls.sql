@@ -54,6 +54,7 @@ DROP POLICY IF EXISTS "Public user profiles" ON users;
 
 -- 4) MD 예외: 본인 경매에 입찰한/낙찰받은 유저 실명 조회 가능
 -- auctions, bids 테이블만 참조하므로 users 재귀 없음
+DROP POLICY IF EXISTS "MD can read own auction bidders" ON users;
 CREATE POLICY "MD can read own auction bidders" ON users
   FOR SELECT USING (
     EXISTS (
@@ -67,6 +68,7 @@ CREATE POLICY "MD can read own auction bidders" ON users
   );
 
 -- 5) Admin 예외: 모든 유저 조회 가능 (SECURITY DEFINER 함수로 재귀 방지)
+DROP POLICY IF EXISTS "Admin can read all users" ON users;
 CREATE POLICY "Admin can read all users" ON users
   FOR SELECT USING (public.is_admin());
 
