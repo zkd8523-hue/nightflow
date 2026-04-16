@@ -154,7 +154,7 @@ export default function PrivacyPage() {
                             <p className="text-white font-bold mt-4">② 행사 방법</p>
                             <p className="pl-4">- <span className="text-green-500 font-bold">웹사이트:</span> 마이페이지 → 개인정보 관리</p>
                             <p className="pl-4">- <span className="text-green-500 font-bold">이메일:</span> maddawids@gmail.com</p>
-                            <p className="pl-4">- <span className="text-green-500 font-bold">전화:</span> 010-2205-1052 (평일 10:00-18:00)</p>
+                            <p className="pl-4">- <span className="text-green-500 font-bold">전화:</span> 070-7954-7464 (평일 10:00-18:00)</p>
 
                             <p className="text-white font-bold mt-4">③ 처리 기한</p>
                             <p className="pl-4">회사는 정보주체의 요청을 받은 날로부터 <span className="text-amber-500 font-bold">10일 이내</span>에 조치하고 그 결과를 통지합니다.</p>
@@ -197,7 +197,7 @@ export default function PrivacyPage() {
                                 </div>
                                 <div className="pt-3 border-t border-neutral-700">
                                     <p className="text-neutral-400 text-sm">📧 이메일: maddawids@gmail.com</p>
-                                    <p className="text-neutral-400 text-sm mt-1">📞 전화: 010-2205-1052 (평일 10:00-18:00)</p>
+                                    <p className="text-neutral-400 text-sm mt-1">📞 전화: 070-7954-7464 (평일 10:00-18:00)</p>
                                     <p className="text-neutral-400 text-sm mt-1">📍 주소: 부산광역시 연제구 쌍미천로 129번길 21, 4층</p>
                                 </div>
                             </div>
@@ -280,7 +280,7 @@ export default function PrivacyPage() {
                             <p className="text-green-500 text-sm font-bold">🔒 개인정보보호 문의</p>
                             <p className="text-neutral-300 text-sm mt-2">개인정보 처리에 대한 문의사항은 개인정보보호책임자에게 연락 주시기 바랍니다.</p>
                             <p className="text-neutral-400 text-sm mt-1">이메일: maddawids@gmail.com</p>
-                            <p className="text-neutral-400 text-sm">전화: 010-2205-1052 (평일 10:00-18:00)</p>
+                            <p className="text-neutral-400 text-sm">전화: 070-7954-7464 (평일 10:00-18:00)</p>
                         </div>
                     </section>
 

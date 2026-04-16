@@ -235,7 +235,7 @@ export default function TermsPage() {
                             <p className="text-amber-500 text-sm font-bold">📋 고객센터</p>
                             <p className="text-neutral-300 text-sm mt-2">이용약관에 대한 문의사항은 고객센터로 연락 주시기 바랍니다.</p>
                             <p className="text-neutral-400 text-sm mt-1">이메일: maddawids@gmail.com</p>
-                            <p className="text-neutral-400 text-sm">전화: 010-2205-1052 (평일 10:00-18:00)</p>
+                            <p className="text-neutral-400 text-sm">전화: 070-7954-7464 (평일 10:00-18:00)</p>
                         </div>
                     </section>
 

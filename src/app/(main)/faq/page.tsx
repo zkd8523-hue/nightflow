@@ -314,7 +314,7 @@ export default function FAQPage() {
                                 <p className="mt-2">1. <span className="text-white font-bold">현장에서 먼저 MD에게 직접 확인</span>해주세요. 대부분의 경우 즉시 해결됩니다.</p>
                                 <p>2. 해결되지 않으면 고객센터로 연락해주세요.</p>
                                 <p className="pl-4 mt-1 text-sm">- 이메일: <span className="text-blue-400">maddawids@gmail.com</span></p>
-                                <p className="pl-4 text-sm">- 전화: <span className="text-blue-400">010-2205-1052</span></p>
+                                <p className="pl-4 text-sm">- 전화: <span className="text-blue-400">070-7954-7464</span></p>
                                 <p className="mt-2">3. 운영팀이 MD와 사실 확인 후 <span className="text-green-400 font-bold">24시간 내</span> 조치 결과를 안내드립니다.</p>
                                 <p className="mt-2 text-amber-500 font-bold">신고 내역은 해당 MD의 신뢰도 평가에 반영됩니다.</p>
                             </AccordionContent>
@@ -366,7 +366,7 @@ export default function FAQPage() {
                             📧 이메일: <span className="text-blue-500 font-bold">maddawids@gmail.com</span>
                         </p>
                         <p className="text-neutral-300">
-                            📞 전화: <span className="text-blue-500 font-bold">010-2205-1052</span>
+                            📞 전화: <span className="text-blue-500 font-bold">070-7954-7464</span>
                         </p>
                     </div>
                 </section>
