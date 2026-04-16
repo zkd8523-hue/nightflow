@@ -10,6 +10,14 @@ import "dayjs/locale/ko";
 dayjs.extend(relativeTime);
 dayjs.locale("ko");
 
+// 공개 경로에서는 display_name만 존재. MD/Admin 경로는 User(name 포함)일 수 있어 둘 다 지원.
+function getBidderDisplay(bidder: Bid["bidder"]): string {
+  if (!bidder) return "익명 입찰자";
+  if ("display_name" in bidder && bidder.display_name) return bidder.display_name;
+  if ("name" in bidder && bidder.name) return bidder.name;
+  return "익명 입찰자";
+}
+
 interface BidHistoryProps {
   bids: Bid[];
   currentBid?: number;
@@ -48,18 +56,18 @@ export const BidHistory = memo(function BidHistory({ bids, currentBid, vipUserId
                   {bid.bidder?.profile_image ? (
                     <img
                       src={bid.bidder.profile_image}
-                      alt={bid.bidder.name}
+                      alt={getBidderDisplay(bid.bidder)}
                       className="w-full h-full object-cover"
                     />
                   ) : (
                     <span className="text-[10px] font-bold text-neutral-500 uppercase">
-                      {bid.bidder?.name?.substring(0, 1) || "익"}
+                      {getBidderDisplay(bid.bidder).substring(0, 1) || "익"}
                     </span>
                   )}
                 </div>
                 <div>
                   <p className="font-bold text-[14px] text-white flex items-center gap-1.5">
-                    {bid.bidder?.name || "익명 입찰자"}
+                    {getBidderDisplay(bid.bidder)}
                     {isBidderVip && (
                       <span className="text-amber-500 text-[11px]" title="VIP">⭐</span>
                     )}

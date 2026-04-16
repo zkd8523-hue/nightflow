@@ -521,14 +521,14 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500">
-                    {md?.name?.substring(0, 1) || "MD"}
+                    {md?.display_name?.substring(0, 1) || md?.name?.substring(0, 1) || "MD"}
                   </div>
                   <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1E] flex items-center justify-center">
                     <ShieldCheck className="w-2.5 h-2.5 text-white" />
                   </div>
                 </div>
                 <div>
-                  <p className="text-white font-bold">{md?.name || "나이트플로우 매니저"}</p>
+                  <p className="text-white font-bold">{md?.display_name || md?.name || "나이트플로우 매니저"}</p>
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <p className="text-[12px] text-neutral-500 font-medium">NightFlow 공식 인증 파트너</p>
                     {mdConfirmedCount > 0 && (
@@ -677,7 +677,9 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               <div className="flex items-center gap-2">
                 <PartyPopper className="w-5 h-5 text-amber-400" />
                 <span className="text-white font-bold text-sm">
-                  {md?.name ? `${md.name} MD에게 연락하세요` : "MD에게 연락하세요"}
+                  {md?.display_name || md?.name
+                    ? `${md.display_name || md.name} MD에게 연락하세요`
+                    : "MD에게 연락하세요"}
                 </span>
               </div>
 

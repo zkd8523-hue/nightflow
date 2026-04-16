@@ -19,9 +19,10 @@ interface AuctionCardProps {
   auction: Auction;
   userBidAmount?: number;
   isUserInterested?: boolean;
+  priority?: boolean;
 }
 
-export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, isUserInterested }: AuctionCardProps) {
+export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, isUserInterested, priority }: AuctionCardProps) {
   const club = auction.club;
   const displayStatus = getAuctionDisplayStatus(auction);
   const isActive = displayStatus === 'active';
@@ -81,6 +82,8 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 clubThumbnail={club?.thumbnail_url}
                 includes={auction.includes}
                 alt={club?.name || "경매"}
+                priority={priority}
+                sizes="(max-width: 768px) 110px, 140px"
               />
             </div>
 

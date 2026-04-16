@@ -269,13 +269,13 @@ export default function FavoritesPage() {
                           {md.profile_image ? (
                             <Image
                               src={md.profile_image}
-                              alt={md.name}
+                              alt={md.display_name || "MD"}
                               fill
                               className="object-cover"
                             />
                           ) : (
                             <span className="text-[20px] font-black text-neutral-500">
-                              {md.name?.charAt(0) || "M"}
+                              {md.display_name?.charAt(0) || "M"}
                             </span>
                           )}
                         </div>
@@ -283,7 +283,7 @@ export default function FavoritesPage() {
                         {/* MD 정보 */}
                         <div className="flex-1 min-w-0">
                           <h3 className="text-[15px] font-bold text-white truncate">
-                            {md.name}
+                            {md.display_name}
                           </h3>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-[12px] text-neutral-500">NightFlow MD</span>

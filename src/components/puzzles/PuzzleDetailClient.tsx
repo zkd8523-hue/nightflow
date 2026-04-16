@@ -117,7 +117,7 @@ export function PuzzleDetailClient({
   const loadOffers = useCallback(async () => {
     const { data } = await supabase
       .from("puzzle_offers")
-      .select("*, club:clubs(id, name, area), md:users!puzzle_offers_md_id_fkey(id, name, profile_image, instagram)")
+      .select("*, club:clubs(id, name, area), md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, instagram)")
       .eq("puzzle_id", puzzle.id)
       .order("created_at", { ascending: true });
 
@@ -487,13 +487,14 @@ export function PuzzleDetailClient({
 
                       {/* MD 정보: 이름 + 인스타 (마스킹/전체) */}
                       {(() => {
-                        const md = offer.md as { name?: string; instagram?: string } | null;
+                        const md = offer.md as { display_name?: string; name?: string; instagram?: string } | null;
                         const ig = md?.instagram;
                         const isAcceptedOffer = offer.status === "accepted";
                         const maskedIg = ig && ig.length > 3 ? ig.slice(0, 3) + "***" : ig;
-                        return md?.name ? (
+                        const mdLabel = md?.display_name || md?.name;
+                        return mdLabel ? (
                           <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/60">
-                            <p className="text-[12px] text-neutral-300 font-bold">{md.name}</p>
+                            <p className="text-[12px] text-neutral-300 font-bold">{mdLabel}</p>
                             {ig && (
                               isAcceptedOffer ? (
                                 <a

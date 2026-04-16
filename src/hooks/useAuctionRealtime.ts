@@ -96,7 +96,9 @@ export function useAuctionRealtime(auctionId: string, userId?: string) {
         if (auction.bid_count !== prevBidCount) {
           const { data: recentBids } = await supabase
             .from("bids")
-            .select("*, bidder:users(id, name, profile_image)")
+            .select(
+              "*, bidder:public_user_profiles!bids_bidder_id_fkey(id, display_name, profile_image)"
+            )
             .eq("auction_id", auctionId)
             .order("bid_at", { ascending: false })
             .limit(10);

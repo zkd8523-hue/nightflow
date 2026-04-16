@@ -10,6 +10,11 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
+import {
+  isDisplayNameTaken,
+  suggestDisplayName,
+  validateDisplayName,
+} from "@/lib/utils/displayName";
 
 import type { User as AuthUser } from "@supabase/supabase-js";
 
@@ -28,6 +33,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    displayName: "",
     phone: "",
     birthday: "",
     gender: "",
@@ -60,7 +66,25 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       // 카카오 gender: "male" | "female"
       const gender = meta.gender ?? "";
 
-      setFormData((prev) => ({ ...prev, name: kakaoName, phone, birthday, gender }));
+      // 카카오 닉네임을 기본 display_name으로 제안. 실명과 동일하면 랜덤 suffix.
+      const kakaoNickname =
+        typeof meta.nickname === "string" && meta.nickname.trim().length > 0
+          ? meta.nickname.trim()
+          : "";
+      const displayNameSeed =
+        kakaoNickname && kakaoNickname !== kakaoName ? kakaoNickname : kakaoName;
+      const displayName = displayNameSeed
+        ? suggestDisplayName(displayNameSeed).slice(0, 16)
+        : "";
+
+      setFormData((prev) => ({
+        ...prev,
+        name: kakaoName,
+        displayName,
+        phone,
+        birthday,
+        gender,
+      }));
     });
   }, [router, supabase]);
 
@@ -93,6 +117,25 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       return;
     }
 
+    // 닉네임 검증 (공개 노출 필드)
+    const displayNameTrimmed = formData.displayName.trim();
+    const nicknameCheck = validateDisplayName(displayNameTrimmed);
+    if (!nicknameCheck.ok) {
+      toast.error(nicknameCheck.message ?? "닉네임을 확인해주세요.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (await isDisplayNameTaken(supabase, displayNameTrimmed)) {
+        toast.error("이미 사용 중인 닉네임입니다.");
+        setLoading(false);
+        return;
+      }
+    } catch (checkErr) {
+      logger.error("display_name duplicate check failed:", checkErr);
+    }
+
     try {
       // 추천인 자동 조회 (유저에게 비노출)
       let referredById: string | null = null;
@@ -119,6 +162,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         id: authUser.id,
         kakao_id: authUser.user_metadata?.provider_id || authUser.id,
         name: formData.name,
+        display_name: displayNameTrimmed,
         phone: formData.phone,
         profile_image: authUser.user_metadata?.avatar_url || null,
         role: "user",
@@ -168,7 +212,24 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">이름 *</Label>
+            <Label htmlFor="displayName">닉네임 *</Label>
+            <Input
+              id="displayName"
+              value={formData.displayName}
+              onChange={(e) =>
+                setFormData({ ...formData, displayName: e.target.value })
+              }
+              placeholder="2-16자"
+              maxLength={16}
+              required
+            />
+            <p className="text-xs text-neutral-500">
+              경매 입찰 시 다른 사용자에게 표시됩니다.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="name">이름 (실명) *</Label>
             <Input
               id="name"
               value={formData.name}
@@ -178,6 +239,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               placeholder="홍길동"
               required
             />
+            <p className="text-xs text-neutral-500">
+              MD 연락·현장 확인 용도로만 사용되며 다른 사용자에게 공개되지 않습니다.
+            </p>
           </div>
 
           <div className="space-y-2">

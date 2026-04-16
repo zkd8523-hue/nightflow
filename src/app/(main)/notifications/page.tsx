@@ -16,8 +16,25 @@ import {
   Trash2,
   Settings,
   TrendingUp,
+  Building2,
+  Users,
 } from "lucide-react";
 import type { InAppNotification, InAppNotificationType } from "@/types/database";
+
+function getFallbackUrl(type: InAppNotification["type"]): string | null {
+  if (type.startsWith("puzzle_")) return "/puzzles";
+  if (type.startsWith("md_")) return "/md/dashboard";
+  if (
+    type.startsWith("auction_") ||
+    type === "outbid" ||
+    type === "fallback_won" ||
+    type === "contact_deadline_warning" ||
+    type === "contact_expired_no_fault" ||
+    type === "contact_expired_user_attempted" ||
+    type === "cancellation_confirmed"
+  ) return "/notifications";
+  return null;
+}
 
 type FilterTab = "all" | "auction" | "md";
 
@@ -244,9 +261,8 @@ export default function NotificationsPage() {
     if (!notification.is_read) {
       await handleMarkAsRead(notification.id);
     }
-    if (notification.action_url) {
-      router.push(notification.action_url);
-    }
+    const target = notification.action_url || getFallbackUrl(notification.type);
+    if (target) router.push(target);
   };
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;

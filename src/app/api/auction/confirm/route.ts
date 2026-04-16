@@ -66,9 +66,12 @@ export async function POST(req: Request) {
       .eq("id", auctionId)
       .is("contact_attempted_at", null);
 
-    // 3. 낙찰자에게 알림톡 발송
+    // 3. 낙찰자에게 알림톡 발송 + 리뷰 요청 인앱 알림
     try {
       if (auction.winner_id) {
+        const clubName =
+          (auction.club as unknown as { name: string })?.name || "클럽";
+
         const { data: winner } = await supabaseAdmin
           .from("users")
           .select("phone")
@@ -76,9 +79,6 @@ export async function POST(req: Request) {
           .single();
 
         if (winner?.phone) {
-          const clubName =
-            (auction.club as unknown as { name: string })?.name || "클럽";
-
           await sendAlimtalkAndLog({
             eventType: "visit_confirmed",
             auctionId,
@@ -92,6 +92,15 @@ export async function POST(req: Request) {
             },
           });
         }
+
+        // 리뷰 요청 인앱 알림 (전화번호 유무 무관)
+        await supabaseAdmin.from("in_app_notifications").insert({
+          user_id: auction.winner_id,
+          type: "feedback_request",
+          title: "방문은 어떠셨나요?",
+          message: `${clubName} 방문 후기를 남겨주세요. 다른 유저들에게 큰 도움이 됩니다.`,
+          action_url: `/my-wins/${auctionId}/review`,
+        });
       }
     } catch (notifyErr) {
       // 알림 실패는 무시

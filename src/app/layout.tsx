@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Geist, Geist_Mono, Nanum_Pen_Script } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -10,17 +11,21 @@ import { OfflineBanner } from "@/components/layout/OfflineBanner";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const nanumPen = Nanum_Pen_Script({
   weight: "400",
   variable: "--font-nanum-pen",
   subsets: ["latin"],
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -52,17 +57,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="dark">
-      <head>
-        {/* Google AdSense */}
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6936468170635504"
-          crossOrigin="anonymous"
-        ></script>
-      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${nanumPen.variable} antialiased`}
       >
+        {/* Google AdSense - lazy load (LCP 이후 로드) */}
+        <Script
+          id="adsense"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6936468170635504"
+          strategy="lazyOnload"
+          crossOrigin="anonymous"
+        />
         {/* Google Analytics */}
         <GoogleAnalytics />
 

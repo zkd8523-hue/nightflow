@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     // 경매 조회: active + instant만 허용
     const { data: auction } = await supabaseAdmin
       .from("auctions")
-      .select("id, status, listing_type, md_id, md:users!auctions_md_id_fkey(name, instagram, phone, kakao_open_chat_url, preferred_contact_methods)")
+      .select("id, status, listing_type, md_id, md:users!auctions_md_id_fkey(display_name, instagram, phone, kakao_open_chat_url, preferred_contact_methods)")
       .eq("id", auctionId)
       .single();
 
@@ -72,9 +72,9 @@ export async function POST(req: Request) {
       console.warn("[API chat-interest] Insert error (table may not exist):", insertError.message);
     }
 
-    // MD 연락처 정보 반환
+    // MD 연락처 정보 반환 (실명 대신 display_name만 노출)
     const md = auction.md as {
-      name?: string | null;
+      display_name?: string | null;
       instagram?: string | null;
       phone?: string | null;
       kakao_open_chat_url?: string | null;
@@ -84,7 +84,8 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       md: {
-        name: md?.name || null,
+        name: md?.display_name || null,
+        display_name: md?.display_name || null,
         instagram: md?.instagram || null,
         phone: md?.phone || null,
         kakao_open_chat_url: md?.kakao_open_chat_url || null,

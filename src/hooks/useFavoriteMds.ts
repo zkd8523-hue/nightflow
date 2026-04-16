@@ -21,7 +21,7 @@ export function useFavoriteMds(userId: string | undefined) {
     const fetchFavoriteMds = async () => {
       const { data } = await supabase
         .from("user_favorite_mds")
-        .select("*, md:users!user_favorite_mds_md_id_fkey(id, name, profile_image, md_unique_slug)")
+        .select("*, md:public_user_profiles!user_favorite_mds_md_id_fkey(id, display_name, profile_image, md_unique_slug)")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -65,7 +65,7 @@ export function useFavoriteMds(userId: string | undefined) {
           const { data, error } = await supabase
             .from("user_favorite_mds")
             .insert({ user_id: userId, md_id: mdId })
-            .select("*, md:users!user_favorite_mds_md_id_fkey(id, name, profile_image, md_unique_slug)")
+            .select("*, md:public_user_profiles!user_favorite_mds_md_id_fkey(id, display_name, profile_image, md_unique_slug)")
             .single();
 
           if (error) {

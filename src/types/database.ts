@@ -46,6 +46,8 @@ export interface User {
   role: UserRole;
   kakao_id: string;
   name: string;
+  /** 경매 입찰 등 공개 노출용 닉네임. 2-16자, 대소문자 무시 유니크. (Migration 108) */
+  display_name: string;
   phone: string;
   profile_image: string | null;
 
@@ -331,6 +333,25 @@ export interface MDHealthScore {
   flag_dormant: boolean;
 }
 
+/**
+ * public_user_profiles VIEW의 반환 타입 (Migration 109).
+ * 익명/일반 유저가 볼 수 있는 공개 컬럼만 포함. 실명(name), 일반 유저의 phone/생일 등은 제외.
+ * MD 연락처 컬럼은 role='md' 행에서만 값이 채워지고 일반 유저 행에서는 null.
+ */
+export interface PublicUserProfile {
+  id: string;
+  display_name: string;
+  profile_image: string | null;
+  role: UserRole;
+  md_unique_slug: string | null;
+  md_customer_grade: MDCustomerGrade | null;
+  is_reviewer: boolean | null;
+  instagram: string | null;
+  kakao_open_chat_url: string | null;
+  preferred_contact_methods: ContactMethodType[] | null;
+  phone: string | null;
+}
+
 export interface Bid {
   id: string;
   auction_id: string;
@@ -339,8 +360,8 @@ export interface Bid {
   status: BidStatus;
   bid_at: string;
 
-  // JOIN
-  bidder?: User;
+  // JOIN: 공개 경로에서는 PublicUserProfile, MD/Admin 경로에서는 User
+  bidder?: PublicUserProfile | User;
   auction?: Auction;
 }
 
@@ -387,7 +408,7 @@ export interface UserFavoriteMd {
   user_id: string;
   md_id: string;
   created_at: string;
-  md?: Pick<User, "id" | "name" | "profile_image" | "md_unique_slug">;
+  md?: Pick<PublicUserProfile, "id" | "display_name" | "profile_image" | "md_unique_slug">;
 }
 
 export interface ChatInterest {

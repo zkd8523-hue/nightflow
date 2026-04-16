@@ -12,7 +12,7 @@ export async function POST() {
         `
         *,
         club:clubs(*),
-        md:users!auctions_md_id_fkey(id, name, profile_image)
+        md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
       `
       )
       .in("status", ["active", "scheduled"])
@@ -28,7 +28,7 @@ export async function POST() {
         `
         *,
         club:clubs(*),
-        md:users!auctions_md_id_fkey(id, name, profile_image)
+        md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
       `
       )
       .in("status", ["won", "unsold", "confirmed"])

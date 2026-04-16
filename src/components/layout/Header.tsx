@@ -36,6 +36,21 @@ import {
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
+function getFallbackUrl(type: InAppNotification["type"]): string | null {
+  if (type.startsWith("puzzle_")) return "/puzzles";
+  if (type.startsWith("md_")) return "/md/dashboard";
+  if (
+    type.startsWith("auction_") ||
+    type === "outbid" ||
+    type === "fallback_won" ||
+    type === "contact_deadline_warning" ||
+    type === "contact_expired_no_fault" ||
+    type === "contact_expired_user_attempted" ||
+    type === "cancellation_confirmed"
+  ) return "/notifications";
+  return null;
+}
+
 function getNotificationIcon(type: InAppNotification["type"]) {
   switch (type) {
     case "md_approved":
@@ -137,10 +152,9 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
     if (!notification.is_read) {
       await markAsRead(notification.id);
     }
-    if (notification.action_url) {
-      setMenuOpen(false);
-      router.push(notification.action_url);
-    }
+    setMenuOpen(false);
+    const target = notification.action_url || getFallbackUrl(notification.type);
+    if (target) router.push(target);
   };
 
   const handleDeleteNotification = async (

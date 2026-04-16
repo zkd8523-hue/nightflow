@@ -117,8 +117,7 @@ export function HomeContent({
 
   useEffect(() => {
     if (user?.role === "md" && user?.md_status === "approved" && user?.md_welcome_shown === false) {
-      const timer = setTimeout(() => setShowMDWelcome(true), 500);
-      return () => clearTimeout(timer);
+      setShowMDWelcome(true);
     }
   }, [user]);
 
@@ -147,39 +146,38 @@ export function HomeContent({
   // 사용자 오늘특가 관심 등록 상태
   const [userInterestedSet, setUserInterestedSet] = useState<Set<string>>(new Set());
 
+  // 유저 관심/입찰 병렬 fetch (Promise.all 로 RTT 절반 절감)
   useEffect(() => {
-    if (!user) { setUserInterestedSet(new Set()); return; }
-    const fetchInterests = async () => {
-      const { data } = await supabase
-        .from("chat_interests")
-        .select("auction_id")
-        .eq("user_id", user.id);
-      if (data) setUserInterestedSet(new Set(data.map((d: { auction_id: string }) => d.auction_id)));
-    };
-    fetchInterests();
-  }, [user, supabase]);
-
-  useEffect(() => {
-    if (!user || auctions.active.length === 0) {
+    if (!user) {
+      setUserInterestedSet(new Set());
       setUserBidMap(new Map());
       return;
     }
-    const fetchUserBids = async () => {
-      const { data } = await supabase
-        .from("bids")
-        .select("auction_id, bid_amount")
-        .eq("bidder_id", user.id)
-        .in("auction_id", auctions.active.map(a => a.id))
-        .order("bid_amount", { ascending: false });
-      if (data) {
+    const auctionIds = auctions.active.map(a => a.id);
+    const fetchAll = async () => {
+      const [interestsResult, bidsResult] = await Promise.all([
+        supabase.from("chat_interests").select("auction_id").eq("user_id", user.id),
+        auctionIds.length > 0
+          ? supabase
+              .from("bids")
+              .select("auction_id, bid_amount")
+              .eq("bidder_id", user.id)
+              .in("auction_id", auctionIds)
+              .order("bid_amount", { ascending: false })
+          : Promise.resolve({ data: [] as { auction_id: string; bid_amount: number }[] }),
+      ]);
+      if (interestsResult.data) {
+        setUserInterestedSet(new Set(interestsResult.data.map((d: { auction_id: string }) => d.auction_id)));
+      }
+      if (bidsResult.data) {
         const map = new Map<string, number>();
-        for (const bid of data) {
+        for (const bid of bidsResult.data) {
           if (!map.has(bid.auction_id)) map.set(bid.auction_id, bid.bid_amount);
         }
         setUserBidMap(map);
       }
     };
-    fetchUserBids();
+    fetchAll();
   }, [user, auctions.active, supabase]);
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
@@ -190,8 +188,10 @@ export function HomeContent({
   }, [activeAuctions]);
 
   // Gap 9.2: 홈 카드에 보이는 만료 경매 즉시 종료 (cron 5분 대기 없이 클라이언트 트리거)
+  // 백그라운드 탭에서는 폴링 중단 (성능 + 네트워크 절약)
   useEffect(() => {
     const checkExpired = async () => {
+      if (document.hidden) return;
       const expired = auctions.active
         .filter((a) => a.status === "active" && isAuctionExpired(a))
         .map((a) => a.id);
@@ -205,8 +205,15 @@ export function HomeContent({
     };
 
     checkExpired(); // 즉시 1회
-    const id = setInterval(checkExpired, 5000); // 5초 주기
-    return () => clearInterval(id);
+    const id = setInterval(checkExpired, 5000); // 5초 주기 (백그라운드에서는 no-op)
+    const handleVisibility = () => {
+      if (!document.hidden) checkExpired(); // 포그라운드 복귀 시 즉시 체크
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [auctions.active, router]);
 
 

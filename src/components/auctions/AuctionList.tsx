@@ -152,10 +152,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              {sortedInstantDates.map(date => (
+              {sortedInstantDates.map((date, dateIndex) => (
                 <DateGroup key={date} date={date} showCount>
-                  {groupedInstant[date].map(auction => (
-                    <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} isUserInterested={userInterestedSet?.has(auction.id)} />
+                  {groupedInstant[date].map((auction, cardIndex) => (
+                    <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} isUserInterested={userInterestedSet?.has(auction.id)} priority={dateIndex === 0 && cardIndex === 0} />
                   ))}
                 </DateGroup>
               ))}
@@ -181,15 +181,15 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             <div className="flex flex-col gap-6">
               {closingToday.length > 0 && (
                 <DateGroup date={todayDate} showCount label="마감임박">
-                  {closingToday.map(auction => (
-                    <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} />
+                  {closingToday.map((auction, cardIndex) => (
+                    <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} priority={cardIndex === 0} />
                   ))}
                 </DateGroup>
               )}
-              {sortedAdvanceDates.map(date => (
+              {sortedAdvanceDates.map((date, dateIndex) => (
                 <DateGroup key={date} date={date} showCount>
-                  {groupedAdvance[date].map(auction => (
-                    <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} />
+                  {groupedAdvance[date].map((auction, cardIndex) => (
+                    <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} priority={closingToday.length === 0 && dateIndex === 0 && cardIndex === 0} />
                   ))}
                 </DateGroup>
               ))}

@@ -60,13 +60,15 @@ export default async function AuctionDetailPage({ params }: PageProps) {
   const supabase = await createClient();
 
   // 경매 정보 조회
+  // MD 프로필은 public_user_profiles VIEW 경유 (실명 대신 display_name 노출).
+  // MD의 연락처/인스타는 role='md' 조건으로 VIEW에서 자동 허용.
   const { data: auction, error } = await supabase
     .from("auctions")
     .select(
       `
       *,
       club:clubs(*),
-      md:users!auctions_md_id_fkey(id, name, profile_image, md_unique_slug, instagram, phone, kakao_open_chat_url, preferred_contact_methods)
+      md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image, md_unique_slug, instagram, phone, kakao_open_chat_url, preferred_contact_methods)
     `
     )
     .eq("id", id)
@@ -87,13 +89,13 @@ export default async function AuctionDetailPage({ params }: PageProps) {
     .eq("md_id", auction.md_id)
     .in("status", ["confirmed", "won"]);
 
-  // 입찰 히스토리 조회
+  // 입찰 히스토리 조회 (공개 경로: display_name만 노출)
   const { data: bids } = await supabase
     .from("bids")
     .select(
       `
       *,
-      bidder:users!bids_bidder_id_fkey(id, name, profile_image)
+      bidder:public_user_profiles!bids_bidder_id_fkey(id, display_name, profile_image)
     `
     )
     .eq("auction_id", id)
