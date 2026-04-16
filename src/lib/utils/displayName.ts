@@ -14,8 +14,6 @@ const RESERVED = [
   "system",
 ];
 
-const BACKFILL_PATTERN = /^유저[a-f0-9]{6}$/i;
-
 export interface DisplayNameValidation {
   ok: boolean;
   message?: string;
@@ -58,11 +56,6 @@ export async function isDisplayNameTaken(
 
   if (excludeUserId && data[0].id === excludeUserId) return false;
   return true;
-}
-
-export function isBackfillPlaceholder(displayName: string | null | undefined): boolean {
-  if (!displayName) return false;
-  return BACKFILL_PATTERN.test(displayName);
 }
 
 export function suggestDisplayName(baseName: string): string {

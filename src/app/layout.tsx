@@ -67,6 +67,12 @@ export default function RootLayout({
           strategy="lazyOnload"
           crossOrigin="anonymous"
         />
+        {/* PortOne (구 아임포트) 본인인증 SDK */}
+        <Script
+          id="portone-iamport"
+          src="https://cdn.iamport.kr/v1/iamport.js"
+          strategy="afterInteractive"
+        />
         {/* Google Analytics */}
         <GoogleAnalytics />
 

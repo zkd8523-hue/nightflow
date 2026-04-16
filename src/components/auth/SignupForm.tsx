@@ -23,68 +23,15 @@ interface SignupFormProps {
   mdReferrer?: string | null;
 }
 
-interface KakaoProfile {
-  name: string;
-  phone: string;
-  birthday: string;
-  gender: "male" | "female" | "";
-  profileImage: string | null;
-  suggestedNickname: string;
-}
-
-function extractKakaoProfile(meta: Record<string, unknown>): KakaoProfile | null {
-  const fullName =
-    typeof meta.full_name === "string" ? meta.full_name.trim() : "";
-  const fallbackName = typeof meta.name === "string" ? meta.name.trim() : "";
-  const name = fullName || fallbackName;
-
-  // 카카오 phone_number 형식: "+82 10-1234-5678" → "01012345678"
-  const rawPhone = typeof meta.phone_number === "string" ? meta.phone_number : "";
-  const phone = rawPhone
-    ? rawPhone.replace(/^\+82\s?/, "0").replace(/\D/g, "")
-    : "";
-
-  // 카카오 birthyear: "2000", birthday: "0714" (MMDD) → "2000-07-14"
-  const birthyear = typeof meta.birthyear === "string" ? meta.birthyear : "";
-  const birthdayRaw = typeof meta.birthday === "string" ? meta.birthday : "";
-  const birthday =
-    birthyear && birthdayRaw && birthdayRaw.length >= 4
-      ? `${birthyear}-${birthdayRaw.slice(0, 2)}-${birthdayRaw.slice(2, 4)}`
-      : "";
-
-  const gender = meta.gender === "male" || meta.gender === "female" ? meta.gender : "";
-
-  const profileImage =
-    typeof meta.avatar_url === "string" ? meta.avatar_url : null;
-
-  const kakaoNickname =
-    typeof meta.nickname === "string" && meta.nickname.trim().length > 0
-      ? meta.nickname.trim()
-      : "";
-  const nicknameSeed =
-    kakaoNickname && kakaoNickname !== name ? kakaoNickname : name || "유저";
-  const suggestedNickname = suggestDisplayName(nicknameSeed).slice(0, 16);
-
-  if (!name || !phone || !birthday) return null;
-
-  return { name, phone, birthday, gender, profileImage, suggestedNickname };
-}
-
-function formatPhoneDisplay(raw: string): string {
-  if (raw.length !== 11) return raw;
-  return `${raw.slice(0, 3)}-${raw.slice(3, 7)}-${raw.slice(7)}`;
-}
-
 export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get("next");
-  const redirectAfterSignup = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
+  const redirectAfterSignup =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [kakaoProfile, setKakaoProfile] = useState<KakaoProfile | null>(null);
-  const [scopeMissing, setScopeMissing] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [alimtalkConsent, setAlimtalkConsent] = useState(false);
 
@@ -96,44 +43,20 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       }
       setAuthUser(user);
 
-      const profile = extractKakaoProfile(user.user_metadata ?? {});
-      if (!profile) {
-        setScopeMissing(true);
-        return;
-      }
-      setKakaoProfile(profile);
-      setDisplayName(profile.suggestedNickname);
+      const meta = user.user_metadata ?? {};
+      const kakaoNickname =
+        typeof meta.nickname === "string" && meta.nickname.trim().length > 0
+          ? meta.nickname.trim()
+          : "유저";
+      setDisplayName(suggestDisplayName(kakaoNickname).slice(0, 16));
     });
   }, [router, supabase]);
 
-  const handleReauth = async () => {
-    await supabase.auth.signOut();
-    router.push("/login?error=scope_required");
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authUser || !kakaoProfile) return;
+    if (!authUser) return;
 
     setLoading(true);
-
-    // 성인 게이트 (청소년보호법: 만 19세 이상)
-    const birthYear = parseInt(kakaoProfile.birthday.slice(0, 4));
-    const birthMonth = parseInt(kakaoProfile.birthday.slice(5, 7));
-    const birthDay = parseInt(kakaoProfile.birthday.slice(8, 10));
-    const today = new Date();
-    let age = today.getFullYear() - birthYear;
-    if (
-      today.getMonth() + 1 < birthMonth ||
-      (today.getMonth() + 1 === birthMonth && today.getDate() < birthDay)
-    ) {
-      age--;
-    }
-    if (age < 19) {
-      toast.error("NightFlow는 만 19세 이상만 이용할 수 있습니다.");
-      setLoading(false);
-      return;
-    }
 
     const displayNameTrimmed = displayName.trim();
     const nicknameCheck = validateDisplayName(displayNameTrimmed);
@@ -173,17 +96,13 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         signupSource = "md_profile";
       }
 
+      // 실명·전화·생일은 첫 PASS 본인인증 시점에 채워짐 (Migration 114)
       const { error } = await supabase.from("users").insert({
         id: authUser.id,
         kakao_id: authUser.user_metadata?.provider_id || authUser.id,
-        name: kakaoProfile.name,
         display_name: displayNameTrimmed,
-        phone: kakaoProfile.phone,
-        profile_image: kakaoProfile.profileImage,
+        profile_image: authUser.user_metadata?.avatar_url || null,
         role: "user",
-        birthday: kakaoProfile.birthday,
-        gender: kakaoProfile.gender || null,
-        age_verified_at: new Date().toISOString(),
         alimtalk_consent: alimtalkConsent,
         alimtalk_consent_at: alimtalkConsent ? new Date().toISOString() : null,
         referred_by: referredById,
@@ -215,37 +134,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     );
   }
 
-  if (scopeMissing) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
-        <Card className="w-full max-w-md p-8 space-y-6 text-center">
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold">추가 동의가 필요합니다</h1>
-            <p className="text-sm text-neutral-500">
-              NightFlow 가입을 위해 카카오에서 <strong>이름·전화번호·생년월일</strong> 제공 동의가 필요합니다.
-            </p>
-          </div>
-          <div className="rounded-lg bg-neutral-900/60 border border-neutral-800 p-4 text-left text-xs text-neutral-500 space-y-1">
-            <p>• 이름: MD 연락·현장 확인용</p>
-            <p>• 전화번호: 낙찰 알림톡 발송</p>
-            <p>• 생년월일: 만 19세 성인 인증</p>
-          </div>
-          <Button onClick={handleReauth} className="w-full">
-            카카오 동의 다시 받기
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!kakaoProfile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>로딩 중...</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
       <Card className="w-full max-w-md p-8 space-y-6">
@@ -256,7 +144,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="displayName">닉네임 *</Label>
             <Input
@@ -273,22 +161,12 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             </p>
           </div>
 
-          <div className="rounded-lg bg-neutral-900/60 border border-neutral-800 p-4 space-y-2 text-sm">
-            <p className="text-xs text-neutral-500 uppercase tracking-wider">
-              카카오에서 가져온 정보
+          <div className="rounded-lg bg-neutral-900/60 border border-neutral-800 p-4 text-xs text-neutral-500 space-y-1">
+            <p className="font-semibold text-neutral-400">실명·전화번호·생년월일</p>
+            <p>
+              입찰·연락·퍼즐 참여 등 실제 행동 시점에 휴대폰 본인인증으로 한 번만
+              확인합니다. 둘러보기만 한다면 별도 입력은 필요하지 않습니다.
             </p>
-            <div className="flex justify-between">
-              <span className="text-neutral-500">이름</span>
-              <span className="text-neutral-200">{kakaoProfile.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-neutral-500">전화번호</span>
-              <span className="text-neutral-200">{formatPhoneDisplay(kakaoProfile.phone)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-neutral-500">생년월일</span>
-              <span className="text-neutral-200">{kakaoProfile.birthday}</span>
-            </div>
           </div>
 
           <label className="flex items-start gap-3 cursor-pointer">

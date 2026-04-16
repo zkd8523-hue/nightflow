@@ -45,11 +45,23 @@ export interface User {
   id: string;
   role: UserRole;
   kakao_id: string;
-  name: string;
+  /** 실명. 가입 시점엔 NULL, 첫 PASS 본인인증 시 채워짐 (Migration 114) */
+  name: string | null;
   /** 경매 입찰 등 공개 노출용 닉네임. 2-16자, 대소문자 무시 유니크. (Migration 108) */
   display_name: string;
-  phone: string;
+  /** 전화번호. 가입 시점엔 NULL, 첫 PASS 본인인증 시 채워짐 (Migration 114) */
+  phone: string | null;
   profile_image: string | null;
+
+  // 본인인증 (Migration 114, PortOne PASS)
+  /** 본인인증 CI. 중복 가입 차단 키 (UNIQUE) */
+  ci: string | null;
+  /** 본인인증 DI. 가맹점 내 식별키 */
+  di: string | null;
+  /** 본인인증 완료 시각. NULL이면 미인증. */
+  identity_verified_at: string | null;
+  /** 내외국인 구분. 'LOCAL' | 'FOREIGNER' */
+  nationality: "LOCAL" | "FOREIGNER" | null;
 
   // MD 전용
   md_status: MDStatus | null;
@@ -101,10 +113,10 @@ export interface User {
   /** 경고 시스템 - 미소진 경고점 합계 (3점 = 1스트라이크) */
   warning_count: number;
 
-  // 신원 정보 (Kakao L2 Scope, Migration 080)
+  // 신원 정보 (Migration 114부터는 PASS 본인인증 결과로 채워짐)
   birthday: string | null;          // "YYYY-MM-DD"
   gender: "male" | "female" | null;
-  age_verified_at: string | null;   // 성인 인증 완료 시각 (L3 연동 시 갱신)
+  age_verified_at: string | null;   // 성인 인증 완료 시각 (PASS 인증 시 갱신)
 
   // 알림톡
   alimtalk_consent: boolean;

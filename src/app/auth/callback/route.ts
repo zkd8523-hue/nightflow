@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       if (user) {
         const { data: profile } = await supabase
           .from("users")
-          .select("id, role, md_status, deleted_at")
+          .select("id, deleted_at")
           .eq("id", user.id)
           .single();
 
@@ -36,13 +36,6 @@ export async function GET(request: Request) {
         // 탈퇴한 유저면 복구 페이지로
         if (profile.deleted_at) {
           return NextResponse.redirect(new URL("/recover-account", origin));
-        }
-
-        // 명시적 redirect가 없으면 역할별 자동 라우팅
-        if (safeNext === "/") {
-          if (profile.role === "md" && profile.md_status === "approved") {
-            return NextResponse.redirect(`${origin}/md/dashboard`);
-          }
         }
       }
 

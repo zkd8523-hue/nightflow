@@ -15,6 +15,7 @@ import {
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useIdentityGuard } from "@/hooks/useIdentityGuard";
 import { useAuctionStore } from "@/stores/useAuctionStore";
 import type { Auction } from "@/types/database";
 import { formatPrice } from "@/lib/utils/format";
@@ -37,7 +38,8 @@ interface BidPanelProps {
 
 export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function BidPanel({ auction, onBidSuccess }, ref) {
   const router = useRouter();
-  const { user } = useCurrentUser();
+  const { user, refetch: refetchUser } = useCurrentUser();
+  const { requireIdentity } = useIdentityGuard(user);
   const bids = useAuctionStore((s) => s.bids);
   const supabase = createClient();
   const [bidAmount, setBidAmount] = useState(0);
@@ -128,6 +130,13 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
       toast.error(`최소 입찰가는 ${formatPrice(minBid)}입니다`);
       return;
     }
+
+    // 본인인증 게이트 (최초 입찰 1회)
+    const verified = await requireIdentity({
+      reason: "경매 입찰 전 휴대폰 본인인증이 필요합니다.",
+    });
+    if (!verified) return;
+    await refetchUser();
 
     setLoading(true);
 
@@ -449,6 +458,11 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                       toast.error("로그인이 필요합니다");
                       return;
                     }
+                    const verified = await requireIdentity({
+                      reason: "즉시 낙찰 전 휴대폰 본인인증이 필요합니다.",
+                    });
+                    if (!verified) return;
+                    await refetchUser();
                     setBinLoading(true);
                     try {
                       const { data: result, error } = await supabase.rpc("place_bid", {

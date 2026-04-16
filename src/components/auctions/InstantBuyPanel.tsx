@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useIdentityGuard } from "@/hooks/useIdentityGuard";
 import type { Auction, ContactMethodType } from "@/types/database";
 import { formatPrice, formatNumber } from "@/lib/utils/format";
 import { isAuctionActive } from "@/lib/utils/auction";
@@ -40,7 +41,8 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
   onInterestRegistered,
   alreadyInterested = false,
 }: InstantBuyPanelProps) {
-  const { user } = useCurrentUser();
+  const { user, refetch: refetchUser } = useCurrentUser();
+  const { requireIdentity } = useIdentityGuard(user);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showContact, setShowContact] = useState(false);
@@ -83,6 +85,35 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
       const data = await res.json();
 
       if (!res.ok) {
+        // 본인인증 필요: PortOne 팝업 후 자동 재시도
+        if (data.error === "VERIFICATION_REQUIRED") {
+          const verified = await requireIdentity({
+            reason: "연락 전 휴대폰 본인인증이 필요합니다.",
+          });
+          if (!verified) return;
+          await refetchUser();
+          const retry = await fetch("/api/auction/chat-interest", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ auctionId: auction.id }),
+          });
+          const retryData = await retry.json();
+          if (!retry.ok) {
+            toast.error(retryData.error || "처리 중 문제가 발생했습니다.");
+            return;
+          }
+          trackEvent("instant_interest", {
+            auction_id: auction.id,
+            price,
+            club_name: auction.club?.name,
+          });
+          setInterested(true);
+          setMdContact(retryData.md);
+          setShowConfirm(false);
+          setShowContact(true);
+          onInterestRegistered?.();
+          return;
+        }
         if (data.error?.includes("자신의 경매")) {
           toast.error("자신의 경매는 예약할 수 없습니다.");
         } else if (data.error?.includes("차단")) {

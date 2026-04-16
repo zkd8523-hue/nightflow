@@ -44,10 +44,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "자신의 경매는 예약할 수 없습니다." }, { status: 400 });
     }
 
-    // 유저 차단 확인
+    // 유저 차단 확인 + 본인인증 상태 확인
     const { data: userData } = await supabaseAdmin
       .from("users")
-      .select("is_blocked, blocked_until")
+      .select("is_blocked, blocked_until, identity_verified_at")
       .eq("id", user.id)
       .single();
 
@@ -57,6 +57,13 @@ export async function POST(req: Request) {
 
     if (userData?.blocked_until && new Date(userData.blocked_until) > new Date()) {
       return NextResponse.json({ error: "이용이 정지된 계정입니다." }, { status: 403 });
+    }
+
+    // 본인인증 미완료 유저는 MD 연락처 획득 불가
+    // PortOne 미설정 환경(로컬 테스트)에서는 우회
+    const portoneEnabled = !!process.env.PORTONE_IMP_KEY;
+    if (portoneEnabled && !userData?.identity_verified_at) {
+      return NextResponse.json({ error: "VERIFICATION_REQUIRED" }, { status: 403 });
     }
 
     // chat_interests INSERT (UNIQUE 제약으로 중복 시 무시)
