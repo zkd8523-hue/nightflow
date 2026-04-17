@@ -50,7 +50,7 @@ export function MDMonitorCard({ md }: Props) {
                 )}
               </div>
               <div className="text-sm text-neutral-400">
-                {md.area || "미지정"} · {lastActive}
+                {Array.isArray(md.area) ? md.area.join(", ") : md.area || "미지정"} · {lastActive}
               </div>
             </div>
           </div>

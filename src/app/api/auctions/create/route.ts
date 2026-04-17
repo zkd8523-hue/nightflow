@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      if (!isEarlybirdEndValid(auctionData.event_date, auctionData.auction_end_at)) {
+      if (process.env.NODE_ENV !== "development" && !isEarlybirdEndValid(auctionData.event_date, auctionData.auction_end_at)) {
         return NextResponse.json(
           { error: "마감은 이벤트 -2일 이전 21:00이어야 합니다." },
           { status: 400 }

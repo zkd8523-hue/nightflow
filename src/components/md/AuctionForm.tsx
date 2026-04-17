@@ -63,7 +63,7 @@ const formSchema = z.object({
                 message: "마감 시각을 선택해주세요.",
                 path: ["auction_end_at"],
             });
-        } else if (!isEarlybirdEndValid(data.event_date, data.auction_end_at)) {
+        } else if (process.env.NODE_ENV !== "development" && !isEarlybirdEndValid(data.event_date, data.auction_end_at)) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 message: "마감은 이벤트 -2일 이전 21:00이어야 합니다.",
@@ -809,7 +809,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 space-y-1">
                     <p className="text-[11px] text-amber-500 font-bold">주류 변경 안내</p>
                     <p className="text-[10px] text-amber-500/80">• 현장에서 동급 브랜드 변경 가능</p>
-                    <p className="text-[10px] text-amber-500/80">• {isInstantMode ? "구매가" : "낙찰가"} 이하 환불 불가</p>
+                    <p className="text-[10px] text-amber-500/80">• {isInstantMode ? "예약가" : "낙찰가"} 이하 환불 불가</p>
                 </div>
                 {errors.includes && <p className="text-red-500 text-[11px]">{errors.includes?.message?.toString()}</p>}
             </section>
@@ -827,8 +827,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     <div className="space-y-3">
                         {hasBids && (
                             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-2">
-                                <p className="text-[12px] text-amber-400 font-bold">🔒 {isInstantMode ? "구매 시도가 있어 조건 변경 불가" : "입찰이 있어 경매 조건 변경 불가"}</p>
-                                <p className="text-[10px] text-amber-400/80 mt-1">{isInstantMode ? "이미 구매 시도가 있어" : `이미 ${initialData.bid_count}회 입찰이 있어`} 가격, 주류, 테이블, 지속시간을 변경할 수 없습니다.</p>
+                                <p className="text-[12px] text-amber-400 font-bold">🔒 {isInstantMode ? "예약이 있어 조건 변경 불가" : "입찰이 있어 경매 조건 변경 불가"}</p>
+                                <p className="text-[10px] text-amber-400/80 mt-1">{isInstantMode ? "이미 예약이 있어" : `이미 ${initialData.bid_count}회 입찰이 있어`} 가격, 주류, 테이블, 지속시간을 변경할 수 없습니다.</p>
                             </div>
                         )}
                         <Input
@@ -981,7 +981,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         </div>
                         {instantEntry ? (
                             <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
-                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "구매 후 즉시 입장 가능" : "낙찰 후 즉시 입장 가능"}</span>
+                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "예약 후 즉시 입장 가능" : "낙찰 후 즉시 입장 가능"}</span>
                             </div>
                         ) : auctionMode === "today" ? (
                             <DateTimeSheet
@@ -1071,6 +1071,17 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
                                 return (
                                     <div className="space-y-2">
+                                        {/* [DEV] 5분 테스트 옵션 */}
+                                        {process.env.NODE_ENV === "development" && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setValue("auction_end_at", dayjs().add(5, "minute").toISOString())}
+                                                className={`w-full h-10 rounded-xl text-xs font-black transition-all px-4 text-left border border-dashed ${watch("auction_end_at") && dayjs(watch("auction_end_at")).diff(dayjs(), "minute") <= 6 ? "bg-yellow-500/20 border-yellow-500/60 text-yellow-300" : "bg-neutral-900 border-yellow-500/30 text-yellow-500/70"}`}
+                                            >
+                                                ⚡ [DEV] 5분 후 마감 (테스트용)
+                                            </button>
+                                        )}
+
                                         {/* 기본 카드 (큰 사이즈) */}
                                         <button
                                             type="button"

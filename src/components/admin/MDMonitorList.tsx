@@ -23,7 +23,7 @@ export function MDMonitorList({ mds }: Props) {
     .filter(
       (md) =>
         md.name.toLowerCase().includes(search.toLowerCase()) ||
-        (md.area && md.area.includes(search)),
+        (md.area && (Array.isArray(md.area) ? md.area.some(a => a.includes(search)) : md.area.includes(search))),
     )
     .sort((a, b) => {
       switch (sort) {

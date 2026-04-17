@@ -161,14 +161,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             </p>
           </div>
 
-          <div className="rounded-lg bg-neutral-900/60 border border-neutral-800 p-4 text-xs text-neutral-500 space-y-1">
-            <p className="font-semibold text-neutral-400">실명·전화번호·생년월일</p>
-            <p>
-              입찰·연락·퍼즐 참여 등 실제 행동 시점에 휴대폰 본인인증으로 한 번만
-              확인합니다. 둘러보기만 한다면 별도 입력은 필요하지 않습니다.
-            </p>
-          </div>
-
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"

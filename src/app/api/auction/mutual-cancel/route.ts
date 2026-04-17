@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { sendFallbackWonNotification } from "@/lib/notifications/alimtalk";
 import { NextResponse } from "next/server";
 
 // MD 합의 취소 (MD가 고객과 합의 후 취소 → 스트라이크 없음)
@@ -51,7 +52,7 @@ export async function POST(req: Request) {
     }
 
     // fallback이 성공하지 않은 경우에만 cancelled로 전환
-    const fbTyped = fallbackResult as { result?: string } | null;
+    const fbTyped = fallbackResult as { result?: string; new_winner_id?: string } | null;
     if (!fbTyped || fbTyped.result !== "fallback_won") {
       await supabaseAdmin
         .from("auctions")
@@ -62,6 +63,39 @@ export async function POST(req: Request) {
         })
         .eq("id", auctionId)
         .eq("status", "won");
+    }
+
+    // 차순위 낙찰자에게 SMS 발송
+    if (fbTyped?.result === "fallback_won" && fbTyped.new_winner_id) {
+      try {
+        const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || "https://nightflow.co").replace(/^https?:\/\//, "");
+        const { data: updatedAuction } = await supabaseAdmin
+          .from("auctions")
+          .select("current_bid, contact_deadline, clubs(name)")
+          .eq("id", auctionId)
+          .single();
+        const { data: newWinner } = await supabaseAdmin
+          .from("users")
+          .select("phone, name")
+          .eq("id", fbTyped.new_winner_id)
+          .single();
+        if (newWinner?.phone && updatedAuction) {
+          const clubName = (updatedAuction.clubs as unknown as { name: string })?.name || "클럽";
+          const winningPrice = new Intl.NumberFormat("ko-KR").format(updatedAuction.current_bid || 0) + "원";
+          const contactDeadline = updatedAuction.contact_deadline
+            ? new Date(updatedAuction.contact_deadline).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })
+            : "";
+          await sendFallbackWonNotification(newWinner.phone, {
+            clubName,
+            userName: newWinner.name || "고객",
+            winningPrice,
+            contactDeadline,
+            auctionUrl: `${APP_URL}/auctions/${auctionId}`,
+          });
+        }
+      } catch {
+        // 알림 실패는 무시
+      }
     }
 
     return NextResponse.json({

@@ -59,23 +59,9 @@ export async function PATCH(request: NextRequest) {
 
     // 3. 요청 데이터 파싱 + 허용 필드만 추출
     const body = await request.json();
-    const { name, phone, instagram, kakao_open_chat_url, preferred_contact_methods } = body;
+    const { instagram, kakao_open_chat_url, preferred_contact_methods } = body;
 
     // 4. 서버사이드 유효성 검증
-    if (!name || typeof name !== "string" || name.trim().length < 2) {
-      return NextResponse.json(
-        { error: "이름은 2자 이상 입력해주세요." },
-        { status: 400 }
-      );
-    }
-
-    if (!phone || typeof phone !== "string" || phone.replace(/\D/g, "").length < 10) {
-      return NextResponse.json(
-        { error: "올바른 연락처를 입력해주세요." },
-        { status: 400 }
-      );
-    }
-
     if (!instagram || typeof instagram !== "string") {
       return NextResponse.json(
         { error: "인스타그램 아이디를 입력해주세요." },
@@ -134,8 +120,6 @@ export async function PATCH(request: NextRequest) {
     const { error: updateError } = await supabaseAdmin
       .from("users")
       .update({
-        name: name.trim(),
-        phone,
         instagram: cleanInstagram,
         md_unique_slug: generatedSlug,
         kakao_open_chat_url: cleanKakaoUrl,

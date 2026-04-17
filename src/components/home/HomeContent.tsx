@@ -89,6 +89,7 @@ export function HomeContent({
   const supabase = createClient();
 
   const [showMDWelcome, setShowMDWelcome] = useState(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
@@ -116,22 +117,24 @@ export function HomeContent({
   }, [searchParams, currentTab]);
 
   useEffect(() => {
-    if (user?.role === "md" && user?.md_status === "approved" && user?.md_welcome_shown === false) {
+    if (!welcomeDismissed && user?.role === "md" && user?.md_status === "approved" && user?.md_welcome_shown === false) {
       setShowMDWelcome(true);
     }
-  }, [user]);
+  }, [user, welcomeDismissed]);
 
   const handleDismissMDWelcome = async () => {
     setShowMDWelcome(false);
+    setWelcomeDismissed(true);
     if (user) {
       await supabase.from("users").update({ md_welcome_shown: true }).eq("id", user.id);
     }
   };
 
-  const handleGoToDashboard = () => {
+  const handleGoToDashboard = async () => {
     setShowMDWelcome(false);
+    setWelcomeDismissed(true);
     if (user) {
-      supabase.from("users").update({ md_welcome_shown: true }).eq("id", user.id);
+      await supabase.from("users").update({ md_welcome_shown: true }).eq("id", user.id);
     }
     router.push("/md/dashboard");
   };
@@ -328,7 +331,7 @@ export function HomeContent({
 
         {!user && auctions.active.length > 0 && (
           <div className="text-center py-6 space-y-3">
-            <p className="text-[12px] text-neutral-500">로그인하면 구매에 참여할 수 있어요</p>
+            <p className="text-[12px] text-neutral-500">로그인하면 입찰에 참여할 수 있어요</p>
             <Link href="/login">
               <Button className="h-10 px-8 bg-white text-black font-bold text-sm rounded-full hover:bg-neutral-200">
                 로그인하기

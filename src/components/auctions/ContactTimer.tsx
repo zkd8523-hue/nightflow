@@ -54,19 +54,14 @@ export function ContactTimer({ deadline }: { deadline: string | null }) {
   const c = colorMap[level];
 
   return (
-    <div className="space-y-1">
-      <div className={`flex items-center justify-between gap-3 py-2.5 px-4 rounded-xl ${c.bg} border ${c.border}`}>
-        <div className="flex items-center gap-2 shrink-0">
-          <Clock className={`w-4 h-4 ${c.icon}`} />
-          <span className={`text-xs font-bold ${c.label} whitespace-nowrap`}>자동 취소까지</span>
-        </div>
-        <span className={`text-lg font-black tabular-nums tracking-wider ${c.text} ${level === "critical" ? "animate-pulse" : ""}`}>
-          {formatTime(remaining)}
-        </span>
+    <div className={`flex items-center justify-between gap-3 py-2.5 px-4 rounded-xl ${c.bg} border ${c.border}`}>
+      <div className="flex items-center gap-2 shrink-0">
+        <Clock className={`w-4 h-4 ${c.icon}`} />
+        <span className={`text-xs font-bold ${c.label} whitespace-nowrap`}>자동 취소까지</span>
       </div>
-      <p className="text-[10px] text-neutral-500 text-center font-medium">
-        MD에게 연락하면 타이머가 멈춥니다
-      </p>
+      <span className={`text-lg font-black tabular-nums tracking-wider ${c.text} ${level === "critical" ? "animate-pulse" : ""}`}>
+        {formatTime(remaining)}
+      </span>
     </div>
   );
 }

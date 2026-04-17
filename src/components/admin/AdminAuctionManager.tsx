@@ -46,6 +46,8 @@ interface AuctionItem {
   auction_end_at: string;
   extended_end_at: string | null;
   buy_now_price: number | null;
+  cancel_type?: string | null;
+  cancel_reason?: string | null;
   club?: { name: string; area: string } | null;
   md?: { name: string } | null;
 }
@@ -169,12 +171,25 @@ function AuctionTable({
                     </div>
                   </div>
 
-                  <div className="col-span-2 flex justify-center">
+                  <div className="col-span-2 flex flex-col items-center gap-1">
                     <Badge
                       className={`${statusCfg.className} font-black text-[10px] px-2 py-0.5 rounded-lg border uppercase tracking-widest`}
                     >
                       {statusCfg.label}
                     </Badge>
+                    {a.status === "cancelled" && a.cancel_type && (
+                      <span className="text-[9px] text-neutral-600 font-medium">
+                        {a.cancel_type === "mutual" ? "합의취소" : a.cancel_type === "noshow_md" ? "노쇼" : a.cancel_type}
+                      </span>
+                    )}
+                    {a.status === "cancelled" && a.cancel_reason && (
+                      <span
+                        className="text-[9px] text-neutral-500 font-medium max-w-[80px] text-center line-clamp-2 leading-tight"
+                        title={a.cancel_reason}
+                      >
+                        "{a.cancel_reason}"
+                      </span>
+                    )}
                   </div>
 
                   <div className="col-span-2 text-right">

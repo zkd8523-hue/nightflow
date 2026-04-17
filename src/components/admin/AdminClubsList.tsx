@@ -251,7 +251,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores }: Admin
                         </span>
                         {club.md.area && (
                           <span className="text-xs text-neutral-400 flex items-center gap-1">
-                            <MapPin className="w-3 h-3" /> {club.md.area}
+                            <MapPin className="w-3 h-3" /> {Array.isArray(club.md.area) ? club.md.area.join(", ") : club.md.area}
                           </span>
                         )}
                         {healthStatus && <MDHealthBadge status={healthStatus} />}
@@ -308,7 +308,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores }: Admin
                             <div className="space-y-1.5">
                               {club.md.area && (
                                 <div className="flex items-center gap-1.5 text-xs text-neutral-400">
-                                  <MapPin className="w-3 h-3 shrink-0" /> {club.md.area}
+                                  <MapPin className="w-3 h-3 shrink-0" /> {Array.isArray(club.md.area) ? club.md.area.join(", ") : club.md.area}
                                 </div>
                               )}
                               {club.md.created_at && (

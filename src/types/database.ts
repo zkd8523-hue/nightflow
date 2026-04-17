@@ -69,7 +69,7 @@ export interface User {
   md_unique_slug: string | null;
   bank_account: string | null;
   bank_name: string | null;
-  area: string | null;
+  area: string[] | null;
   default_club_id: string | null;
   verification_club_name: string | null;
   floor_plan_url: string | null;
@@ -131,6 +131,43 @@ export interface User {
   updated_at: string;
   /** 회원탈퇴 시점 (Soft Delete). null이면 활성 계정. */
   deleted_at: string | null;
+}
+
+export type PenaltyAction = 'block_3_days' | 'block_14_days' | 'block_60_days' | 'permanent_block';
+export type AppealStatus = 'pending' | 'accepted' | 'rejected';
+
+export interface NoshowHistory {
+  id: string;
+  user_id: string;
+  auction_id: string | null;
+  strike_count_at_time: number;
+  penalty_action: PenaltyAction;
+  blocked_until: string | null;
+  created_at: string;
+  // joined
+  auction?: {
+    id: string;
+    clubs: { name: string } | null;
+    event_date: string | null;
+    current_bid: number;
+  } | null;
+  appeal?: PenaltyAppeal | null;
+}
+
+export interface PenaltyAppeal {
+  id: string;
+  user_id: string;
+  noshow_history_id: string;
+  reason: string;
+  status: AppealStatus;
+  admin_id: string | null;
+  admin_response: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+  // joined
+  noshow_history?: NoshowHistory & {
+    user?: Pick<User, 'id' | 'display_name' | 'profile_image'>;
+  };
 }
 
 export interface AuctionNotifySubscription {
@@ -277,7 +314,7 @@ export interface MDVipUser {
 
 export interface UserTrustScore {
   id: string;
-  name: string;
+  display_name: string;
   profile_image: string | null;
   noshow_count: number;
   strike_count: number; // Model B 스트라이크
@@ -286,7 +323,6 @@ export interface UserTrustScore {
   won_bids: number;
   win_rate: number;
   avg_bid_amount: number;
-  noshow_from_transactions: number;
   confirmed_visits: number;
   trust_level: TrustLevel;
 }
@@ -489,7 +525,7 @@ export type VibePref = 'chill' | 'active' | 'any';
 export interface Puzzle {
   id: string;
   leader_id: string;
-  leader?: Pick<User, 'id' | 'name' | 'profile_image'>;
+  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image'>;
   area: Area;
   event_date: string;
   kakao_open_chat_url: string; // 방장/수락된 MD에게만 노출

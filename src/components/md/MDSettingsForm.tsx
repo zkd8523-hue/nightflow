@@ -186,7 +186,7 @@ export function MDSettingsForm({ user }: { user: User }) {
           {/* 선호 연락 수단 */}
           <div className="space-y-3">
             <Label className="text-neutral-500 text-xs font-bold uppercase">
-              구매자에게 표시할 연락 수단
+              고객에게 표시할 연락 수단
             </Label>
             <div className="flex flex-wrap gap-2">
               {CONTACT_METHOD_OPTIONS.map(({ value, label, icon: Icon }) => {
@@ -223,7 +223,7 @@ export function MDSettingsForm({ user }: { user: User }) {
             <p className="text-neutral-600 text-[10px]">
               {preferredMethods.length === 0
                 ? "미선택 시 모든 연락 수단이 표시됩니다"
-                : "선택한 수단만 구매자에게 표시됩니다"}
+                : "선택한 수단만 고객에게 표시됩니다"}
             </p>
           </div>
 
@@ -238,7 +238,7 @@ export function MDSettingsForm({ user }: { user: User }) {
               placeholder="https://open.kakao.com/o/..."
               className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
             />
-            <p className="text-neutral-600 text-[10px]">구매자에게 추가 연락 수단으로 표시됩니다</p>
+            <p className="text-neutral-600 text-[10px]">고객에게 추가 연락 수단으로 표시됩니다</p>
             {form.formState.errors.kakao_open_chat_url && (
               <p className="text-red-500 text-[10px] font-bold">
                 {form.formState.errors.kakao_open_chat_url?.message?.toString()}

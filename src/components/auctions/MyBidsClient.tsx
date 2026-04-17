@@ -119,7 +119,7 @@ function getWonStatusConfig(status: string, isInstant = false) {
       };
     default:
       return {
-        label: isInstant ? "구매완료" : "낙찰",
+        label: isInstant ? "예약완료" : "낙찰",
         className: "bg-amber-500/10 text-amber-500 border-amber-500/20",
         icon: PartyPopper,
       };
@@ -481,7 +481,7 @@ export function MyBidsClient({
             내 활동
           </h1>
           <p className="text-neutral-500 font-medium">
-            입찰, 예약, 구매, 종료된 내역을 한곳에서 확인하세요.
+            입찰, 예약, 종료된 내역을 한곳에서 확인하세요.
           </p>
         </header>
 

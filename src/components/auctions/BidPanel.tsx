@@ -483,6 +483,14 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                         }).catch(logger.error);
                       }
 
+                      if (result?.buy_now) {
+                        fetch("/api/notifications/auction-won", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ auctionId: auction.id }),
+                        }).catch(logger.error);
+                      }
+
                       // [통합 분석] 즉시낙찰 완료 트래킹
                       trackBid('complete', {
                         id: auction.id,

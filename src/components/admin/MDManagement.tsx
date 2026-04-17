@@ -149,7 +149,7 @@ function MDApplicationCard({
                             <p className="text-neutral-500 text-sm font-medium">{user.phone}</p>
                             <div className="flex items-center gap-3 flex-wrap">
                                 <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
-                                    <MapPin className="w-3.5 h-3.5" /> {user.area || "지역 미정"}
+                                    <MapPin className="w-3.5 h-3.5" /> {Array.isArray(user.area) ? user.area.join(", ") : user.area || "지역 미정"}
                                 </div>
                                 {clubName && (
                                     <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">

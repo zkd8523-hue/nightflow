@@ -71,7 +71,7 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                     }
                 } else {
                     onVipChange(userScore.id, true, data.id);
-                    toast.success(`${userScore.name}을 VIP로 등록했습니다!`);
+                    toast.success(`${userScore.display_name}을 VIP로 등록했습니다!`);
                 }
             }
         } catch (error: unknown) {
@@ -123,16 +123,16 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
                             {userScore.profile_image ? (
-                                <img src={userScore.profile_image} alt={userScore.name} className="w-full h-full object-cover" />
+                                <img src={userScore.profile_image} alt={userScore.display_name} className="w-full h-full object-cover" />
                             ) : (
                                 <span className="text-lg font-black text-neutral-500">
-                                    {userScore.name?.substring(0, 1) || "?"}
+                                    {userScore.display_name?.substring(0, 1) || "?"}
                                 </span>
                             )}
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2">
-                                <h3 className="text-white font-black text-lg">{userScore.name}</h3>
+                                <h3 className="text-white font-black text-lg">{userScore.display_name}</h3>
                                 <TrustBadge level={userScore.trust_level} />
                             </div>
                             <p className="text-neutral-500 text-xs mt-0.5">

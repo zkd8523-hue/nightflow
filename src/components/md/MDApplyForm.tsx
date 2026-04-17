@@ -12,15 +12,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowRight, Building2, Smartphone, MapPin, ChevronDown, Map, MessageCircle, Instagram, Phone } from "lucide-react";
+import { ArrowRight, Building2, Smartphone, MapPin, Map, MessageCircle, Instagram, Phone } from "lucide-react";
+// Phone은 연락 수단 토글에서 사용
 import type { User, ContactMethodType } from "@/types/database";
 import dynamic from "next/dynamic";
 
 const AddressSearchModal = dynamic(() => import("./AddressSearchModal").then(m => ({ default: m.AddressSearchModal })), { ssr: false });
 
 const formSchema = z.object({
-    name: z.string().min(2, "실명을 입력해주세요"),
-    phone: z.string().min(10, "올바른 연락처를 입력해주세요"),
+    display_name: z.string().min(2, "닉네임을 입력해주세요").max(16, "닉네임은 최대 16자"),
     instagram: z.string()
         .min(1, "인스타그램 아이디를 입력해주세요")
         .max(30, "인스타그램 아이디는 30자 이하입니다")
@@ -30,7 +30,7 @@ const formSchema = z.object({
         .regex(/^https:\/\/open\.kakao\.com\//, "카카오톡 오픈채팅 URL만 가능합니다")
         .or(z.literal(""))
         .optional(),
-    area: z.string().min(1, "활동 지역을 선택해주세요"),
+    area: z.array(z.string()).min(1, "활동 지역을 선택해주세요"),
     club_name: z.string().min(2, "클럽명을 입력해주세요"),
     club_address: z.string().min(5, "클럽 주소를 검색해주세요"),
     club_address_detail: z.string().optional().default(""),
@@ -51,10 +51,9 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
         resolver: zodResolver(formSchema) as unknown as Parameters<typeof useForm<FormValues>>[0]["resolver"],
         mode: "onBlur",
         defaultValues: {
-            name: initialUser.name || "",
-            phone: initialUser.phone || "",
+            display_name: initialUser.display_name || "",
             instagram: initialUser.instagram || "",
-            area: "",
+            area: [],
             club_name: initialUser.verification_club_name || "",
             club_address: "",
             club_address_detail: "",
@@ -91,15 +90,15 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
     }
 
     const [showOtherCities, setShowOtherCities] = useState(false);
-    const selectedAreaValue = form.watch("area");
-    const isOtherCity = (OTHER_CITIES as readonly string[]).includes(selectedAreaValue);
+    const selectedAreas = form.watch("area");
+    const hasOtherCity = selectedAreas.some(a => (OTHER_CITIES as readonly string[]).includes(a));
 
     const currentClubAddress = form.watch("club_address");
     const hasClubCoordinates = form.watch("club_latitude") != null && form.watch("club_longitude") != null;
 
     return (
         <>
-            <form id="md-apply-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-24">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                 <div className="space-y-6">
                     {/* 1. 연락처 정보 */}
                     <div className="space-y-4">
@@ -107,41 +106,17 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                             <Smartphone className="w-4 h-4 text-neutral-500" />
                             연락처 정보
                         </h3>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                                <Label className="text-neutral-500 text-xs font-bold uppercase">이름</Label>
-                                <Input
-                                    {...form.register("name")}
-                                    placeholder="홍길동"
-                                    className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
-                                />
-                                {form.formState.errors.name && (
-                                    <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.name?.message?.toString()}</p>
-                                )}
-                            </div>
-                            <div className="space-y-2">
-                                <Label className="text-neutral-500 text-xs font-bold uppercase">연락처</Label>
-                                <Input
-                                    {...form.register("phone", {
-                                        onChange: (e) => {
-                                            const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-                                            if (digits.length <= 3) {
-                                                e.target.value = digits;
-                                            } else if (digits.length <= 7) {
-                                                e.target.value = `${digits.slice(0, 3)}-${digits.slice(3)}`;
-                                            } else {
-                                                e.target.value = `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-                                            }
-                                        },
-                                    })}
-                                    inputMode="tel"
-                                    placeholder="010-0000-0000"
-                                    className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
-                                />
-                                {form.formState.errors.phone && (
-                                    <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.phone?.message?.toString()}</p>
-                                )}
-                            </div>
+                        <div className="space-y-2">
+                            <Label className="text-neutral-500 text-xs font-bold uppercase">닉네임 (활동명)</Label>
+                            <Input
+                                {...form.register("display_name")}
+                                placeholder="경매에 표시될 활동명"
+                                maxLength={16}
+                                className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
+                            />
+                            {form.formState.errors.display_name && (
+                                <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.display_name?.message?.toString()}</p>
+                            )}
                         </div>
 
                         {/* Instagram ID (Required) */}
@@ -159,7 +134,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                     className="bg-neutral-900 border-neutral-800 text-white h-12 pl-8 font-mono focus:ring-white"
                                 />
                             </div>
-                            <p className="text-neutral-600 text-[10px]">본인 인증 및 연락 수단으로 사용됩니다 (필수)</p>
+                            <p className="text-neutral-600 text-[10px]">MD 브랜딩 채널로 사용됩니다 (필수)</p>
                             {form.formState.errors.instagram && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.instagram?.message?.toString()}</p>
                             )}
@@ -176,7 +151,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                 placeholder="https://open.kakao.com/o/..."
                                 className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
                             />
-                            <p className="text-neutral-600 text-[10px]">구매자에게 추가 연락 수단으로 표시됩니다</p>
+                            <p className="text-neutral-600 text-[10px]">고객에게 추가 연락 수단으로 표시됩니다</p>
                             {form.formState.errors.kakao_open_chat_url && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.kakao_open_chat_url?.message?.toString()}</p>
                             )}
@@ -184,7 +159,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                         {/* 연락 수단 선택 */}
                         <div className="space-y-3">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">구매자에게 표시할 연락 수단</Label>
+                            <Label className="text-neutral-500 text-xs font-bold uppercase">고객에게 표시할 연락 수단</Label>
                             <div className="flex flex-wrap gap-2">
                                 {([
                                     { value: "dm" as ContactMethodType, label: "인스타 DM", icon: Instagram },
@@ -216,7 +191,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                 })}
                             </div>
                             <p className="text-neutral-600 text-[10px]">
-                                {preferredMethods.length === 0 ? "미선택 시 모든 연락 수단이 표시됩니다" : "선택한 수단만 구매자에게 표시됩니다"}
+                                {preferredMethods.length === 0 ? "미선택 시 모든 연락 수단이 표시됩니다" : "선택한 수단만 고객에게 표시됩니다"}
                             </p>
                         </div>
 
@@ -224,48 +199,69 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                     {/* 2. 활동 지역 */}
                     <div className="space-y-4">
-                        <h3 className="text-white font-bold flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-neutral-500" />
-                            주력 활동 지역
-                        </h3>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-white font-bold flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-neutral-500" />
+                                주력 활동 지역
+                            </h3>
+                            <span className="text-neutral-500 text-[10px]">복수 선택 가능</span>
+                        </div>
                         <div className="flex flex-wrap gap-2">
-                            {MAIN_AREAS.map((a) => (
-                                <button
-                                    key={a}
-                                    type="button"
-                                    onClick={() => { form.setValue("area", a); setShowOtherCities(false); }}
-                                    className={`px-4 py-2 rounded-full border text-sm font-bold transition-all ${selectedAreaValue === a
-                                        ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                                        : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
-                                        }`}
-                                >
-                                    {a}
-                                </button>
-                            ))}
+                            {MAIN_AREAS.map((a) => {
+                                const isSelected = selectedAreas.includes(a);
+                                return (
+                                    <button
+                                        key={a}
+                                        type="button"
+                                        onClick={() => {
+                                            const next = isSelected
+                                                ? selectedAreas.filter(v => v !== a)
+                                                : [...selectedAreas, a];
+                                            form.setValue("area", next, { shouldValidate: true });
+                                        }}
+                                        className={`px-4 py-2 rounded-full border text-sm font-bold transition-all ${isSelected
+                                            ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                                            : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
+                                            }`}
+                                    >
+                                        {a}
+                                    </button>
+                                );
+                            })}
                             <button
                                 type="button"
                                 onClick={() => setShowOtherCities(!showOtherCities)}
-                                className={`px-4 py-2 rounded-full border text-sm font-bold transition-all ${isOtherCity || showOtherCities
+                                className={`px-4 py-2 rounded-full border text-sm font-bold transition-all ${hasOtherCity || showOtherCities
                                     ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
                                     : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
                                     }`}
                             >
-                                다른 지역 {isOtherCity && `(${selectedAreaValue})`}
+                                다른 지역
                             </button>
                         </div>
                         {showOtherCities && (
-                            <div className="relative mt-2">
-                                <select
-                                    value={isOtherCity ? selectedAreaValue : ""}
-                                    onChange={(e) => { form.setValue("area", e.target.value); setShowOtherCities(false); }}
-                                    className="w-full h-12 bg-neutral-900 border border-neutral-800 text-white rounded-md px-3 pr-8 text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-white"
-                                >
-                                    <option value="" disabled>도시를 선택해주세요</option>
-                                    {OTHER_CITIES.map((city) => (
-                                        <option key={city} value={city}>{city}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                {OTHER_CITIES.map((city) => {
+                                    const isSelected = selectedAreas.includes(city);
+                                    return (
+                                        <button
+                                            key={city}
+                                            type="button"
+                                            onClick={() => {
+                                                const next = isSelected
+                                                    ? selectedAreas.filter(v => v !== city)
+                                                    : [...selectedAreas, city];
+                                                form.setValue("area", next, { shouldValidate: true });
+                                            }}
+                                            className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected
+                                                ? "bg-white text-black border-white"
+                                                : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
+                                                }`}
+                                        >
+                                            {city}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         )}
                         {form.formState.errors.area && (
@@ -339,26 +335,21 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                     </div>
 
                 </div>
+
+                <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full h-14 bg-white text-black font-black text-lg hover:bg-neutral-200 rounded-2xl flex items-center justify-center gap-2 group transition-all"
+                >
+                    {loading ? "신청 정보를 전송 중..." : (
+                        <>
+                            파트너 신청 완료하기
+                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </>
+                    )}
+                </Button>
             </form>
 
-            {/* Fixed Bottom CTA */}
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-40">
-                <div className="max-w-lg mx-auto">
-                    <Button
-                        type="submit"
-                        form="md-apply-form"
-                        disabled={loading}
-                        className="w-full h-14 bg-white text-black font-black text-lg hover:bg-neutral-200 rounded-2xl flex items-center justify-center gap-2 group transition-all"
-                    >
-                        {loading ? "신청 정보를 전송 중..." : (
-                            <>
-                                파트너 신청 완료하기
-                                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                            </>
-                        )}
-                    </Button>
-                </div>
-            </div>
 
             <AddressSearchModal
                 isOpen={isAddressModalOpen}

@@ -89,16 +89,16 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     if (activeIds.length > 0) {
         const { data: bids } = await supabase
             .from("bids")
-            .select("auction_id, bid_amount, bidder:users!bids_bidder_id_fkey(name)")
+            .select("auction_id, bid_amount, bidder:users!bids_bidder_id_fkey(display_name)")
             .in("auction_id", activeIds)
             .eq("status", "active")
             .order("bid_amount", { ascending: false });
 
         for (const bid of (bids || [])) {
             if (!topBids[bid.auction_id]) {
-                const bidData = bid as unknown as { auction_id: string; bid_amount: number; bidder?: { name: string } | null };
+                const bidData = bid as unknown as { auction_id: string; bid_amount: number; bidder?: { display_name: string } | null };
                 topBids[bid.auction_id] = {
-                    bidder_name: bidData.bidder?.name || "익명",
+                    bidder_name: bidData.bidder?.display_name || "익명",
                     bid_amount: bidData.bid_amount,
                 };
             }

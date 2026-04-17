@@ -47,14 +47,17 @@ export async function POST(request: NextRequest) {
     // 3. 요청 데이터 파싱
     const body = await request.json();
     const {
-      name, phone, area, instagram, kakao_open_chat_url, business_card_url,
+      display_name, area, instagram, kakao_open_chat_url, business_card_url,
       club_name, club_address, club_address_detail, club_postal_code,
       club_latitude, club_longitude, club_phone, club_thumbnail_url,
       floor_plan_url,
     } = body;
 
-    // 4. 필수 필드 검증
-    if (!name || !phone || !area || !instagram || !club_name || !club_address ||
+    // clubs.area는 TEXT 단일값 — 대표 지역(첫 번째) 사용
+    const primaryArea: string = Array.isArray(area) ? area[0] : area;
+
+    // 4. 필수 필드 검증 (phone은 PASS 인증으로 이미 DB에 저장됨 — 폼에서 재전송 불필요)
+    if (!display_name || !area || !Array.isArray(area) || area.length === 0 || !instagram || !club_name || !club_address ||
         !club_latitude || !club_longitude) {
       return NextResponse.json(
         { error: "필수 항목을 모두 입력해주세요." },
@@ -123,7 +126,7 @@ export async function POST(request: NextRequest) {
         .from("clubs")
         .update({
           name: club_name,
-          area,
+          area: primaryArea,
           address: club_address,
           address_detail: club_address_detail || null,
           postal_code: club_postal_code || null,
@@ -153,7 +156,7 @@ export async function POST(request: NextRequest) {
         .insert({
           md_id: user.id,
           name: club_name,
-          area,
+          area: primaryArea,
           address: club_address,
           address_detail: club_address_detail || null,
           postal_code: club_postal_code || null,
@@ -180,8 +183,7 @@ export async function POST(request: NextRequest) {
     const { error: userError } = await supabaseAdmin
       .from("users")
       .update({
-        name,
-        phone,
+        display_name,
         area,
         instagram: cleanInstagram,
         ...(cleanKakaoUrl ? { kakao_open_chat_url: cleanKakaoUrl } : {}),

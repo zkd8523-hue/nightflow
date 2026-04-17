@@ -61,8 +61,8 @@ export async function POST(req: Request) {
 
     // 본인인증 미완료 유저는 MD 연락처 획득 불가
     // PortOne 미설정 환경(로컬 테스트)에서는 우회
-    const portoneEnabled = !!process.env.PORTONE_IMP_KEY;
-    if (portoneEnabled && !userData?.identity_verified_at) {
+    const danalEnabled = !!process.env.DANAL_CPID;
+    if (danalEnabled && !userData?.identity_verified_at) {
       return NextResponse.json({ error: "VERIFICATION_REQUIRED" }, { status: 403 });
     }
 

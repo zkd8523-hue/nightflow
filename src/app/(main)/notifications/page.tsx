@@ -24,6 +24,7 @@ import type { InAppNotification, InAppNotificationType } from "@/types/database"
 function getFallbackUrl(type: InAppNotification["type"]): string | null {
   if (type.startsWith("puzzle_")) return "/";
   if (type.startsWith("md_")) return "/md/dashboard";
+  if (type === "noshow_penalty" || type === "noshow_dismissed") return "/my-penalties";
   if (
     type.startsWith("auction_") ||
     type === "outbid" ||
@@ -253,7 +254,10 @@ export default function NotificationsPage() {
 
   const handleDeleteAll = async () => {
     if (!user) return;
-    await supabase.from("in_app_notifications").delete().eq("user_id", user.id);
+    let query = supabase.from("in_app_notifications").delete().eq("user_id", user.id);
+    if (filter === "auction") query = query.in("type", AUCTION_TYPES);
+    else if (filter === "md") query = query.in("type", MD_TYPES);
+    await query;
     setNotifications([]);
   };
 

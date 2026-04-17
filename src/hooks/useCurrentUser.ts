@@ -12,19 +12,32 @@ export function useCurrentUser() {
     const supabase = createClient();
     const {
       data: { user: authUser },
+      error: authError,
     } = await supabase.auth.getUser();
 
+    if (authError) {
+      console.error("[useCurrentUser] auth.getUser 실패:", authError.message);
+    }
+
     if (!authUser) {
+      console.log("[useCurrentUser] authUser 없음 (미로그인)");
       setUser(null);
       return;
     }
 
-    const { data: profile } = await supabase
+    console.log("[useCurrentUser] authUser 확인:", authUser.id, authUser.email);
+
+    const { data: profile, error: profileError } = await supabase
       .from("users")
       .select("*")
       .eq("id", authUser.id)
-      .single();
+      .maybeSingle();
 
+    if (profileError) {
+      console.error("[useCurrentUser] users 테이블 조회 실패:", profileError.message, profileError.code);
+    }
+
+    console.log("[useCurrentUser] profile:", profile ? `${profile.name} (${profile.role})` : "null");
     setUser(profile);
   }, [setUser]);
 

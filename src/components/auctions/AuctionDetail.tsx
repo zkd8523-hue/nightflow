@@ -334,7 +334,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               variant="secondary"
               className="text-[10px] px-2.5 py-1 uppercase font-medium tracking-wider bg-black/40 backdrop-blur-md text-neutral-300 border border-white/10 rounded-full"
             >
-              {isExpired ? "마감중" : displayAuction.status === "confirmed" && isInstant ? "거래완료" : displayAuction.status === "won" ? (isInstant ? "구매 완료" : "낙찰 성공") : "종료"}
+              {isExpired ? "마감중" : displayAuction.status === "confirmed" && isInstant ? "거래완료" : displayAuction.status === "won" ? (isInstant ? "예약 완료" : "낙찰 성공") : "종료"}
             </Badge>
           )}
         </div>
@@ -520,9 +520,13 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500">
-                    {md?.display_name?.substring(0, 1) || md?.name?.substring(0, 1) || "MD"}
-                  </div>
+                  {md?.profile_image ? (
+                    <img src={md.profile_image} alt={md.display_name || md.name || "MD"} className="w-12 h-12 rounded-full object-cover border border-neutral-700" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500">
+                      {md?.display_name?.substring(0, 1) || md?.name?.substring(0, 1) || "MD"}
+                    </div>
+                  )}
                   <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1E] flex items-center justify-center">
                     <ShieldCheck className="w-2.5 h-2.5 text-white" />
                   </div>

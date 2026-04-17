@@ -22,6 +22,7 @@ interface PromptDialogProps {
     defaultValue?: string;
     placeholder?: string;
     confirmText?: string;
+    options?: string[];
 }
 
 export function PromptDialog({
@@ -34,6 +35,7 @@ export function PromptDialog({
     defaultValue = "",
     placeholder = "내용을 입력하세요...",
     confirmText = "확인",
+    options,
 }: PromptDialogProps) {
     const [value, setValue] = useState(defaultValue);
     const handledByButton = useRef(false);
@@ -70,7 +72,25 @@ export function PromptDialog({
                     )}
                 </SheetHeader>
 
-                <div className="mt-6 space-y-6">
+                <div className="mt-6 space-y-4">
+                    {options && options.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {options.map((opt) => (
+                                <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => setValue(opt)}
+                                    className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all border ${
+                                        value === opt
+                                            ? "bg-white text-black border-white"
+                                            : "bg-neutral-900 text-neutral-400 border-neutral-700 hover:border-neutral-500"
+                                    }`}
+                                >
+                                    {opt}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                     <Input
                         value={value}
                         onChange={(e) => setValue(e.target.value)}
@@ -97,7 +117,7 @@ export function PromptDialog({
                                 onConfirm(value);
                                 onOpenChange(false);
                             }}
-                            disabled={!value.trim()}
+                            disabled={options ? false : !value.trim()}
                             className="h-14 rounded-2xl bg-white hover:bg-neutral-200 text-black font-black text-lg shadow-lg"
                         >
                             {confirmText}

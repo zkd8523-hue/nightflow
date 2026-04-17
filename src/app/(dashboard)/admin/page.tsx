@@ -39,6 +39,7 @@ export default async function AdminDashboardPage() {
     { count: strikeUsers },
     { count: totalClubs },
     { count: pendingClubs },
+    { count: pendingAppeals },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "md"),
@@ -57,6 +58,7 @@ export default async function AdminDashboardPage() {
     supabase.from("users").select("*", { count: "exact", head: true }).gt("strike_count", 0),
     supabase.from("clubs").select("*", { count: "exact", head: true }),
     supabase.from("clubs").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("penalty_appeals").select("*", { count: "exact", head: true }).eq("status", "pending"),
   ]);
 
   // 시간 기반 필터: 종료 시간이 아직 안 지난 경매만 카운트
@@ -94,7 +96,10 @@ export default async function AdminDashboardPage() {
   };
 
   (clubsRaw || []).forEach((c) => { if (c.area) { ensureArea(c.area); areaMap[c.area].clubs++; } });
-  (mdsRaw || []).forEach((m) => { if (m.area) { ensureArea(m.area); areaMap[m.area].mds++; } });
+  (mdsRaw || []).forEach((m) => {
+    const areas: string[] = Array.isArray(m.area) ? m.area : m.area ? [m.area] : [];
+    areas.forEach(a => { ensureArea(a); areaMap[a].mds++; });
+  });
 
   const bidCountMap: Record<string, number> = {};
   (bidsRaw || []).forEach((b) => { bidCountMap[b.auction_id] = (bidCountMap[b.auction_id] || 0) + 1; });
@@ -185,6 +190,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-orange-500/10",
       badge: pendingReportCount ? `${pendingReportCount}건 대기` : null,
       href: "/admin/reports",
+    },
+    {
+      label: "이의제기",
+      value: `${pendingAppeals || 0}건`,
+      icon: AlertCircle,
+      color: "text-amber-500",
+      bgColor: "bg-amber-500/10",
+      badge: pendingAppeals ? `${pendingAppeals}건 대기` : null,
+      href: "/admin/appeals",
     },
     {
       label: "퍼즐 신고",

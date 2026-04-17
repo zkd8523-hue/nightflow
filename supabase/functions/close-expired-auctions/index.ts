@@ -1,10 +1,8 @@
 // Deno Edge Function for auto-closing expired auctions
 // Runs every 5 minutes via Cron
-// 낙찰 시 SOLAPI 알림톡 발송
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { solapiSendAlimtalk } from "../_shared/solapi.ts";
 
 // CORS 헤더 (Cron에서는 필요 없지만 수동 테스트용)
 const corsHeaders = {
@@ -12,9 +10,7 @@ const corsHeaders = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// 알림톡 템플릿 (SOLAPI 자체 환경변수는 _shared/solapi.ts에서 처리)
-const TPL_AUCTION_WON = Deno.env.get("ALIMTALK_TPL_AUCTION_WON");
-const APP_URL = (Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co").replace(/^https?:\/\//, "");
+const APP_URL = Deno.env.get("NEXT_PUBLIC_APP_URL") || "https://nightflow.co";
 
 interface CloseAuctionResult {
     result: "won" | "unsold";
@@ -108,11 +104,14 @@ serve(async (req: Request) => {
                         result: resultData?.result,
                     });
 
-                    // 낙찰 시 알림톡 발송
+                    // 낙찰 시 알림 발송 (MD + 낙찰자 인앱 알림 + 알림톡)
                     if (resultData?.result === "won") {
-                        // 알림톡 발송
                         try {
-                            await sendWonNotification(supabase, auction.id);
+                            await fetch(`${APP_URL}/api/notifications/auction-won`, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ auctionId: auction.id }),
+                            });
                         } catch (notifyErr) {
                             console.error(`⚠️ 낙찰 알림 발송 실패 (${auction.id}):`, notifyErr);
                         }
@@ -149,54 +148,4 @@ serve(async (req: Request) => {
     }
 });
 
-// ---- 낙찰 알림톡 발송 ----
-
-async function sendWonNotification(
-    supabase: ReturnType<typeof createClient>,
-    auctionId: string
-): Promise<void> {
-    if (!TPL_AUCTION_WON) return;
-
-    // 경매 + 낙찰자 정보 조회
-    const { data: auction } = await supabase
-        .from("auctions")
-        .select("winner_id, winning_price, club:clubs(name)")
-        .eq("id", auctionId)
-        .single();
-
-    if (!auction?.winner_id) return;
-
-    const { data: winner } = await supabase
-        .from("users")
-        .select("phone")
-        .eq("id", auction.winner_id)
-        .single();
-
-    if (!winner?.phone) {
-        console.log(`⚠️ 낙찰자 전화번호 없음: ${auction.winner_id}`);
-        return;
-    }
-
-    const clubName = (auction.club as unknown as { name: string })?.name || "클럽";
-    const price = new Intl.NumberFormat("ko-KR").format(auction.winning_price);
-
-
-
-    await solapiSendAlimtalk(winner.phone, TPL_AUCTION_WON, {
-        clubName,
-        winningPrice: `${price}원`,
-        auctionUrl: `${APP_URL}/auctions/${auctionId}`,
-    });
-
-    await supabase.from("notification_logs").insert({
-        event_type: "auction_won",
-        auction_id: auctionId,
-        recipient_user_id: auction.winner_id,
-        recipient_phone: winner.phone,
-        template_id: TPL_AUCTION_WON,
-        status: "sent",
-    });
-
-    console.log(`📨 낙찰 알림 발송: ${auctionId} → ${winner.phone}`);
-}
 

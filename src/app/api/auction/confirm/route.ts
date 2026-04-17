@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       .update({
         status: "confirmed",
         contact_deadline: null,
-        confirmed_by: user.id,
+        confirmed_at: new Date().toISOString(),
       })
       .eq("id", auctionId)
       .eq("status", "won");

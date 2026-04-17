@@ -8,7 +8,7 @@ import { DateGroup } from "@/components/ui/DateGroup";
 import { ConfirmVisitButton } from "@/components/md/ConfirmVisitButton";
 import { ContactTimer } from "@/components/auctions/ContactTimer";
 import { formatEventDate, formatPrice } from "@/lib/utils/format";
-import { ChevronLeft, ChevronDown, Ticket, User, AlertCircle, Phone, UserCheck } from "lucide-react";
+import { ChevronLeft, ChevronDown, Ticket, User, AlertCircle } from "lucide-react";
 import Link from "next/link";
 
 export interface TransactionItem {
@@ -17,7 +17,7 @@ export interface TransactionItem {
     listingType?: string;
     clubName: string | undefined;
     eventDate: string;
-    winner: { name?: string; phone?: string; noshow_count?: number; strike_count?: number } | null;
+    winner: { display_name?: string; noshow_count?: number; strike_count?: number } | null;
     contactDeadline: string | null;
     createdAt: string;
     winningPrice: number | null;
@@ -124,10 +124,6 @@ export function TransactionList({ items }: TransactionListProps) {
                     <h1 className="text-2xl font-black tracking-tight">낙찰 관리</h1>
                 </div>
 
-                {/* Privacy Warning */}
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 text-[12px] text-amber-500 font-medium leading-relaxed">
-                    ⚠️ 낙찰자의 개인정보(전화번호)는 원활한 방문 확인과 노쇼 방지를 위한 목적으로만 사용해주시고, 확인 후 즉시 파기해주시기 바랍니다.
-                </div>
 
                 {/* Tabs */}
                 <Tabs defaultValue="active" className="w-full">
@@ -148,7 +144,7 @@ export function TransactionList({ items }: TransactionListProps) {
 
                     {/* 진행중 탭 */}
                     <TabsContent value="active" className="space-y-4 m-0 mt-4">
-                        {activeItems.length > 0 && (
+                        {activeItems.length > 3 && (
                             <SortChips
                                 options={ACTIVE_SORT_OPTIONS}
                                 selected={activeSortKey}
@@ -227,6 +223,10 @@ export function TransactionList({ items }: TransactionListProps) {
                         )}
                     </TabsContent>
                 </Tabs>
+
+                <p className="text-[10px] text-neutral-600 text-center px-4 pb-2">
+                    낙찰자 개인정보는 방문 확인 목적으로만 사용, 확인 후 즉시 파기해주세요.
+                </p>
             </div>
         </div>
     );
@@ -295,20 +295,11 @@ function TransactionCard({ item }: { item: TransactionItem }) {
                     ) : winner ? (
                         <div className="flex items-center gap-1.5 text-neutral-300">
                             <User className="w-3 h-3 text-neutral-500" />
-                            <span className="font-bold">{winner.name}</span>
-                            {item.auctionStatus === "won" && <span className="text-neutral-500 text-[11px]">{winner.phone}</span>}
+                            <span className="font-bold">{winner.display_name || "유저"}</span>
                         </div>
                     ) : null}
                 </div>
 
-                {/* 2-Step Flow Guide (경매 낙찰만): 고객 연락 → 방문 확인 */}
-                {!isInstantActive && item.auctionStatus === "won" && (
-                    <div className="flex items-center gap-1 bg-neutral-900/50 rounded-xl px-3 py-2 border border-neutral-800/50">
-                        <StepItem icon={<Phone className="w-3 h-3" />} label="고객 연락" active={true} done={false} />
-                        <div className="flex-1 h-px bg-neutral-700" />
-                        <StepItem icon={<UserCheck className="w-3 h-3" />} label="방문 확인" active={false} done={false} />
-                    </div>
-                )}
 
                 {/* Contact Timer (won only, 경매만) */}
                 {item.auctionStatus === "won" && item.contactDeadline && !isInstantActive && (
@@ -349,16 +340,6 @@ function EmptyState({ label }: { label: string }) {
         <div className="text-center py-20 bg-neutral-900/30 rounded-3xl border border-dashed border-neutral-800">
             <Ticket className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
             <p className="text-neutral-500 font-bold">{label}</p>
-        </div>
-    );
-}
-
-function StepItem({ icon, label, active, done }: { icon: React.ReactNode; label: string; active: boolean; done: boolean }) {
-    const color = done ? "text-green-500" : active ? "text-amber-400" : "text-neutral-600";
-    return (
-        <div className={`flex flex-col items-center gap-0.5 ${color}`}>
-            {icon}
-            <span className={`text-[9px] font-bold whitespace-nowrap ${done ? "text-green-500" : active ? "text-amber-400" : "text-neutral-600"}`}>{label}</span>
         </div>
     );
 }

@@ -10,7 +10,7 @@ import type { Auction } from "@/types/database";
 import { formatNumber, formatTime } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { InlineTimer } from "@/components/auctions/InlineTimer";
-import { Edit2, MoreVertical, Trash2, Share2, RotateCcw, Phone } from "lucide-react";
+import { Edit2, MoreVertical, Trash2, Share2, RotateCcw, Phone, Heart } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
     DropdownMenu,
@@ -30,10 +30,17 @@ interface MDAuctionCardProps {
     auction: Auction;
     onDelete?: () => void;
     topBidder?: { bidder_name: string; bid_amount: number };
+    favoriteCount?: number;
 }
 
-export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, topBidder }: MDAuctionCardProps) {
+export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, topBidder, favoriteCount = 0 }: MDAuctionCardProps) {
     const router = useRouter();
+
+    const handleCardClick = (e: React.MouseEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('button, a, [role="menuitem"]')) return;
+        router.push(`/auctions/${auction.id}`);
+    };
 
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
@@ -48,9 +55,9 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     const getDeleteConfirmInfo = () => {
         if (hasBids && isGracePeriod) {
             return {
-                title: isInstant ? "구매 관심이 있는 판매 삭제" : "입찰이 있는 경매 삭제",
+                title: isInstant ? "연락이 있는 판매 삭제" : "입찰이 있는 경매 삭제",
                 description: isInstant
-                    ? `이미 구매 시도가 있습니다. 생성 후 5분 내이므로 삭제가 가능하지만, 혼란을 줄 수 있습니다. 정말 삭제하시겠습니까?`
+                    ? `이미 연락이 있습니다. 생성 후 5분 내이므로 삭제가 가능하지만, 혼란을 줄 수 있습니다. 정말 삭제하시겠습니까?`
                     : `이미 ${auction.bid_count}회의 입찰이 있습니다. 생성 후 5분 내이므로 삭제가 가능하지만, 입찰자들에게 혼란을 줄 수 있습니다. 정말 삭제하시겠습니까?`,
                 variant: "danger" as const,
             };
@@ -143,7 +150,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     const { remaining: contactRemaining } = useCountdown(showContactTimer ? auction.contact_deadline : null);
 
     return (
-        <Card className="overflow-hidden bg-[#1C1C1E] border-neutral-800/50 hover:border-neutral-700 transition-all p-3">
+        <Card className="overflow-hidden bg-[#1C1C1E] border-neutral-800/50 hover:border-neutral-700 transition-all p-3 cursor-pointer active:scale-[0.98]" onClick={handleCardClick}>
             <div className="flex gap-3">
                 {/* Thumbnail — 클릭 시 상세 */}
                 <Link href={`/auctions/${auction.id}`} className="w-16 h-16 rounded-lg bg-neutral-900 overflow-hidden flex-shrink-0 relative border border-neutral-800">
@@ -161,11 +168,8 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                                 {/* 정산 상태 배지 (종료된 경매만 표시) */}
-                                {auction.status === "won" ? (
-                                    <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-amber-500/20 text-amber-400 border-amber-500/30">
-                                        📞 연락대기
-                                    </Badge>
-                                ) : auction.status === "confirmed" ? (
+                                {auction.status === "won" ? null
+                                : auction.status === "confirmed" ? (
                                     <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-green-500/20 text-green-400 border-green-500/30">
                                         ✅ 판매완료
                                     </Badge>
@@ -225,7 +229,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                 {isActive
                                   ? (isInstant ? "판매가" : "현재가")
                                   : ["won", "confirmed"].includes(auction.status)
-                                    ? (isInstant ? "구매가" : "낙찰가")
+                                    ? (isInstant ? "확정가" : "낙찰가")
                                     : (isInstant ? "판매가" : "시작가")
                                 }
                             </div>
@@ -238,33 +242,27 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                         </div>
 
                         <div className="text-right">
-                            {auction.bid_count > 0 ? (
+                            {auction.bid_count > 0 && !isInstant && (
                                 <>
                                     <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
                                         현황
                                     </div>
                                     <div className="text-[13px] text-neutral-300 font-bold">
-                                        {isInstant ? "구매 완료" : `입찰 ${auction.bid_count}회`}
+                                        입찰 {auction.bid_count}회
                                     </div>
                                 </>
-                            ) : !isEnded ? (
-                                <>
-                                    <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
-                                        현황
-                                    </div>
-                                    <div className="text-[13px] text-neutral-500 font-bold">
-                                        {isInstant ? "구매 대기" : "입찰 대기"}
-                                    </div>
-                                </>
-                            ) : null}
-                            {auction.view_count > 0 && (
-                                <div className="text-[11px] text-neutral-500 font-medium mt-0.5">
-                                    👀 {auction.view_count}회 조회
-                                </div>
                             )}
-                            {isActive && (
-                                <div className={`text-[12px] font-bold mt-0.5 ${topBidder ? "text-green-500" : "text-neutral-600"}`}>
-                                    {topBidder ? `👤 ${topBidder.bidder_name}` : (isInstant ? "아직 구매 없음" : "아직 입찰 없음")}
+                            <div className="flex items-center justify-end gap-2 mt-0.5">
+                                <span className="text-[11px] text-neutral-500 font-medium">
+                                    👀 {auction.view_count || 0}
+                                </span>
+                                <span className="text-[11px] text-neutral-500 font-medium flex items-center gap-0.5">
+                                    <Heart className="w-3 h-3 text-red-500 fill-red-500" /> {favoriteCount}
+                                </span>
+                            </div>
+                            {isActive && !isInstant && topBidder && (
+                                <div className="text-[12px] font-bold mt-0.5 text-green-500">
+                                    👤 {topBidder.bidder_name}
                                 </div>
                             )}
                         </div>
@@ -277,7 +275,6 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                 <div className="flex items-center gap-3">
                     {isActive && (
                         <div className="flex items-center gap-2 bg-neutral-900/50 px-3 py-1.5 rounded-full border border-neutral-800/50">
-                            <span className="text-[11px] text-neutral-500 font-bold">마감</span>
                             <InlineTimer endTime={endTime} status="active" />
                         </div>
                     )}
@@ -292,6 +289,13 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                 </div>
 
                 <div className="flex gap-2">
+                    {auction.status === "won" && (
+                        <Link href="/md/transactions">
+                            <Button size="sm" className="h-8 px-3 rounded-lg bg-green-600 text-white font-black hover:bg-green-500">
+                                낙찰 관리
+                            </Button>
+                        </Link>
+                    )}
                     {isInstant && isActive && (
                         <Button
                             size="sm"

@@ -23,7 +23,7 @@ export default async function MDTransactionsPage() {
         .select(`
             *,
             club:club_id(*),
-            winner:winner_id (name, phone, noshow_count, strike_count)
+            winner:winner_id (display_name, noshow_count, strike_count)
         `)
         .eq("md_id", user.id)
         .in("status", ["won", "confirmed", "cancelled"])

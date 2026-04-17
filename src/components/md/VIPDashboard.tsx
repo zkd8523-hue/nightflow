@@ -95,11 +95,11 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
     const vipUserIds = new Set(vipList.map(v => v.user_id));
 
     const filteredVips = vipList.filter(v =>
-        !searchQuery || v.user?.name?.includes(searchQuery)
+        !searchQuery || v.user?.display_name?.includes(searchQuery)
     );
 
     const filteredBidders = trustScores.filter(s =>
-        !searchQuery || s.name?.includes(searchQuery)
+        !searchQuery || s.display_name?.includes(searchQuery)
     );
 
     return (
@@ -150,10 +150,10 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                             <Card key={vip.id} className="bg-[#1C1C1E] border-neutral-800/50 p-4 flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center font-black text-amber-500">
-                                        {vip.user?.name?.substring(0, 1) || "?"}
+                                        {vip.user?.display_name?.substring(0, 1) || "?"}
                                     </div>
                                     <div>
-                                        <p className="text-white font-bold text-sm">{vip.user?.name || "알 수 없음"}</p>
+                                        <p className="text-white font-bold text-sm">{vip.user?.display_name || "알 수 없음"}</p>
                                         {vip.note && (
                                             <p className="text-xs text-neutral-500 mt-0.5">{vip.note}</p>
                                         )}
@@ -162,7 +162,7 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                                 <Button
                                     variant="ghost"
                                     size="icon"
-                                    onClick={() => handleRemoveVip(vip.id, vip.user?.name)}
+                                    onClick={() => handleRemoveVip(vip.id, vip.user?.display_name)}
                                     className="text-amber-500 hover:text-neutral-400 hover:bg-neutral-800"
                                 >
                                     <StarOff className="w-4 h-4" />
@@ -188,7 +188,7 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <p className="text-white font-bold text-sm">{score.name}</p>
+                                                <p className="text-white font-bold text-sm">{score.display_name}</p>
                                                 <Badge className={`text-[10px] px-1.5 py-0 border ${getTrustLevelColor(score.trust_level)}`}>
                                                     {getTrustLevelLabel(score.trust_level)}
                                                 </Badge>
@@ -209,7 +209,7 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                                     <Button
                                         variant="ghost"
                                         size="icon"
-                                        onClick={() => handleAddVip(score.id, score.name)}
+                                        onClick={() => handleAddVip(score.id, score.display_name)}
                                         disabled={vipUserIds.has(score.id)}
                                         className={vipUserIds.has(score.id)
                                             ? "text-amber-500"

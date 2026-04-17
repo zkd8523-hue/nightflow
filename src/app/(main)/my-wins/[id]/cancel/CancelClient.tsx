@@ -44,7 +44,7 @@ function getCancelReasons(isInstant: boolean) {
     { key: "schedule_change", label: "일정이 변경됐어요" },
     { key: "too_expensive", label: "가격이 부담돼요" },
     { key: "md_no_response", label: "MD가 연락을 안 받아요" },
-    { key: "wrong_bid", label: isInstant ? "실수로 구매했어요" : "실수로 입찰했어요" },
+    { key: "wrong_bid", label: isInstant ? "실수로 예약했어요" : "실수로 입찰했어요" },
     { key: "other_club", label: "다른 곳으로 변경했어요" },
     { key: "other", label: "기타" },
   ] as const;
@@ -137,7 +137,7 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
         return;
       }
 
-      const cancelMsg = isInstant ? "구매가 취소되었습니다" : "낙찰이 취소되었습니다";
+      const cancelMsg = isInstant ? "예약이 취소되었습니다" : "낙찰이 취소되었습니다";
       if (data.warningResult?.strike_triggered) {
         toast.error(cancelMsg, {
           description: "경고 누적으로 스트라이크가 부과되었습니다.",
@@ -166,7 +166,7 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
           <Link href="/my-wins" className="p-2 -ml-2 rounded-xl hover:bg-neutral-800/50 transition-colors">
             <ArrowLeft className="w-5 h-5 text-neutral-400" />
           </Link>
-          <h1 className="text-xl font-black text-white tracking-tight">{isInstant ? "구매 포기" : "낙찰 포기"}</h1>
+          <h1 className="text-xl font-black text-white tracking-tight">{isInstant ? "예약 포기" : "낙찰 포기"}</h1>
         </header>
 
         <div className="space-y-3.5">
@@ -183,7 +183,7 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
               {formatEventDate(auction.eventDate)}
             </div>
             <div className="bg-neutral-900/50 rounded-xl p-3.5 border border-neutral-800/50 flex justify-between items-center">
-              <span className="text-neutral-500 text-sm font-bold">{isInstant ? "구매가" : "낙찰가"}</span>
+              <span className="text-neutral-500 text-sm font-bold">{isInstant ? "예약가" : "낙찰가"}</span>
               <span className="text-xl font-black text-white">
                 {formatPrice(auction.winningPrice)}
               </span>
@@ -327,7 +327,7 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
               onClick={() => setShowConfirm(true)}
               className="w-full h-12 bg-red-500 hover:bg-red-600 text-white font-black text-sm rounded-xl transition-colors"
             >
-              {isInstant ? "구매 포기하기" : "낙찰 포기하기"}
+              {isInstant ? "예약 포기하기" : "낙찰 포기하기"}
             </Button>
           </div>
         </div>
@@ -357,7 +357,7 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
                 <span className="text-white font-bold">{auction.clubName}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500 font-medium">{isInstant ? "구매가" : "낙찰가"}</span>
+                <span className="text-neutral-500 font-medium">{isInstant ? "예약가" : "낙찰가"}</span>
                 <span className="text-white font-bold">{formatPrice(auction.winningPrice)}</span>
               </div>
             </div>

@@ -60,6 +60,8 @@ export default function LoginPage() {
     });
 
     if (error) {
+      console.log("[DEV Login] signInWithPassword 실패:", error.message);
+
       // 계정이 없으면 회원가입 시도
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
@@ -72,37 +74,44 @@ export default function LoginPage() {
         return;
       }
 
-      // 회원가입 성공 시 users 테이블에 프로필 생성 (기존 프로필 있으면 건너뜀)
-      if (signUpData.user) {
-        await supabase.from("users").upsert({
-          id: signUpData.user.id,
-          role: "user",
-          name: email.split("@")[0],
-          kakao_id: `dev_${email}`,
-        }, { ignoreDuplicates: true });
+      // 회원가입은 됐는데 세션이 없으면 (이메일 인증 필요)
+      // 바로 signInWithPassword 재시도
+      if (!signUpData.session) {
+        console.log("[DEV Login] signUp 세션 없음 (이메일 미인증), 재로그인 시도");
+        const { error: retryError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (retryError) {
+          setDevError("회원가입은 완료되었으나 이메일 인증이 필요합니다. Supabase Dashboard > Auth > Settings에서 'Enable email confirmations'를 끄세요.");
+          setLoading(false);
+          return;
+        }
       }
+
     }
 
     // users 테이블에 프로필 있는지 확인
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase
-        .from("users")
-        .select("id")
-        .eq("id", user.id)
-        .single();
-
-      if (!profile) {
-        await supabase.from("users").upsert({
-          id: user.id,
-          role: "user",
-          name: email.split("@")[0],
-          kakao_id: `dev_${email}`,
-        }, { ignoreDuplicates: true });
-      }
+    if (!user) {
+      setDevError("세션이 생성되지 않았습니다. 이메일/비밀번호를 확인하세요.");
+      setLoading(false);
+      return;
     }
 
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", user.id)
+      .single();
+
     setLoading(false);
+
+    if (!profile) {
+      router.push("/signup");
+      return;
+    }
+
     router.push("/");
     router.refresh();
   };

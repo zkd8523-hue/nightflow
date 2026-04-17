@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         // 2. 유저 패널티 부여 (apply_noshow_strike RPC 호출)
         const { data: strikeResult, error: strikeError } = await supabaseAdmin.rpc(
             "apply_noshow_strike",
-            { p_user_id: winnerId }
+            { p_user_id: winnerId, p_auction_id: auctionId }
         );
         if (strikeError) throw strikeError;
 

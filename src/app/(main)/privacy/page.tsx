@@ -41,7 +41,7 @@ export default function PrivacyPage() {
                             <p className="pl-4">- MD 연락 기록 (연락 시간, 방문 확인 여부)</p>
 
                             <p className="text-white font-bold mt-4">③ MD 가입 시 (추가)</p>
-                            <p className="pl-4">- 인스타그램 아이디 (필수, 본인 인증 및 연락 수단)</p>
+                            <p className="pl-4">- 인스타그램 아이디 (필수, MD 브랜딩 채널)</p>
                             <p className="pl-4">- 활동 지역, 소속 클럽 정보</p>
                             <p className="pl-4">- 은행 계좌 정보 (선택)</p>
                             <p className="pl-4">- 명함 사진 (선택, 본인 인증 보조)</p>

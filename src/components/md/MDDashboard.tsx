@@ -38,7 +38,7 @@ interface MDPuzzleOffer extends PuzzleOffer {
         current_count: number;
         status: string;
         kakao_open_chat_url: string;
-        leader?: { name: string };
+        leader?: { name?: string; display_name?: string };
     };
 }
 
@@ -58,6 +58,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
     const [loading, setLoading] = useState(false);
     const [clubSheetOpen, setClubSheetOpen] = useState(false);
     const [favoriteMdCount, setFavoriteMdCount] = useState<number>(0);
+    const [clubFavCounts, setClubFavCounts] = useState<Record<string, number>>({});
     const supabase = createClient();
 
     // 나를 찜한 유저 수
@@ -71,6 +72,28 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
         };
         fetchFavoriteCount();
     }, [user.id, supabase]);
+
+    // 클럽별 찜 수
+    useEffect(() => {
+        const clubIds = [...new Set(auctions.map(a => a.club_id).filter(Boolean))] as string[];
+        if (clubIds.length === 0) return;
+
+        const fetchClubFavCounts = async () => {
+            const { data } = await supabase
+                .from("user_favorite_clubs")
+                .select("club_id")
+                .in("club_id", clubIds);
+
+            if (data) {
+                const counts: Record<string, number> = {};
+                data.forEach((row: { club_id: string }) => {
+                    counts[row.club_id] = (counts[row.club_id] || 0) + 1;
+                });
+                setClubFavCounts(counts);
+            }
+        };
+        fetchClubFavCounts();
+    }, [auctions, supabase]);
 
     const activeClub = clubs.find(c => c.id === defaultClubId)
         ?? clubs.find(c => c.status === "approved")
@@ -168,11 +191,11 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
             <div className="px-6 py-4 space-y-4 text-white">
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                        <h1 className="text-xl font-black tracking-tight">{user.name} MD님</h1>
+                        <h1 className="text-xl font-black tracking-tight">{user.display_name || user.name} MD님</h1>
                         <p className="text-neutral-500 text-[13px] font-medium">오늘도 대박 낙찰 기원합니다!</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href="/md/settings" className="flex items-center gap-1.5 text-neutral-500 hover:text-white transition-colors">
+                        <Link href="/profile" className="flex items-center gap-1.5 text-neutral-500 hover:text-white transition-colors">
                             <Settings className="w-4 h-4" />
                             <span className="text-[12px] font-bold">프로필 설정</span>
                         </Link>
@@ -262,7 +285,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                 📅 얼리버드 {sortedEarlyBirdTop.length > 0 && <span className="ml-0.5 text-amber-500">{sortedEarlyBirdTop.length}</span>}
                             </TabsTrigger>
                             <TabsTrigger value="puzzle" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
-                                <PuzzleIcon className="w-3.5 h-3.5 mr-0.5 inline" /> 퍼즐 {initialPuzzleOffers.length > 0 && <span className="ml-0.5 text-purple-400">{initialPuzzleOffers.length}</span>}
+                                🧩 퍼즐 {initialPuzzleOffers.length > 0 && <span className="ml-0.5 text-purple-400">{initialPuzzleOffers.length}</span>}
                             </TabsTrigger>
                         </TabsList>
 
@@ -273,13 +296,13 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                         <TabsContent value="today" className="space-y-4 m-0">
                             {sortedTodayAuctions.length > 0 ? (
                                 sortedTodayAuctions.map(auction => (
-                                    <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} topBidder={topBids[auction.id]} />
+                                    <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} topBidder={topBids[auction.id]} favoriteCount={clubFavCounts[auction.club_id || ""] || 0} />
                                 ))
                             ) : (
                                 <EmptyState label="진행 중인 특가 경매가 없습니다." />
                             )}
                             {completedTodayAuctions.length > 0 && (
-                                <CompletedSection auctions={completedTodayAuctions} onDelete={handleAuctionDelete} />
+                                <CompletedSection auctions={completedTodayAuctions} onDelete={handleAuctionDelete} clubFavCounts={clubFavCounts} />
                             )}
                         </TabsContent>
 
@@ -287,7 +310,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                         <TabsContent value="earlybird" className="space-y-4 m-0">
                             {sortedEarlyBirdTop.length > 0 ? (
                                 sortedEarlyBirdTop.map(auction => (
-                                    <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} topBidder={topBids[auction.id]} />
+                                    <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} topBidder={topBids[auction.id]} favoriteCount={clubFavCounts[auction.club_id || ""] || 0} />
                                 ))
                             ) : (
                                 <EmptyState
@@ -296,7 +319,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                 />
                             )}
                             {archivedEarlyBirdAuctions.length > 0 && (
-                                <CompletedSection auctions={archivedEarlyBirdAuctions} onDelete={handleAuctionDelete} />
+                                <CompletedSection auctions={archivedEarlyBirdAuctions} onDelete={handleAuctionDelete} clubFavCounts={clubFavCounts} />
                             )}
                         </TabsContent>
 
@@ -330,7 +353,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                                         </span>
                                                         <span className="text-[13px] text-neutral-400">{p.area} · {eventDateStr}</span>
                                                     </div>
-                                                    <span className="text-[12px] text-neutral-600">{p.leader?.name || "익명"}</span>
+                                                    <span className="text-[12px] text-neutral-600">{p.leader?.display_name || p.leader?.name || "익명"}</span>
                                                 </div>
 
                                                 <div className="flex items-center justify-between">
@@ -495,7 +518,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
     );
 }
 
-function CompletedSection({ auctions, onDelete }: { auctions: Auction[]; onDelete: (id: string) => void }) {
+function CompletedSection({ auctions, onDelete, clubFavCounts = {} }: { auctions: Auction[]; onDelete: (id: string) => void; clubFavCounts?: Record<string, number> }) {
     const [statusFilter, setStatusFilter] = useState<"all" | "done" | "none">("all");
     const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -592,7 +615,7 @@ function CompletedSection({ auctions, onDelete }: { auctions: Auction[]; onDelet
                 </button>
             )}
             <div className={selectMode ? "pl-8" : ""}>
-                <MDAuctionCard auction={auction} onDelete={() => onDelete(auction.id)} />
+                <MDAuctionCard auction={auction} onDelete={() => onDelete(auction.id)} favoriteCount={clubFavCounts[auction.club_id || ""] || 0} />
             </div>
         </div>
     );

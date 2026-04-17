@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle, CheckCircle2, Handshake } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle2, Handshake, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PromptDialog } from "@/components/ui/prompt-dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
 
@@ -17,6 +18,8 @@ interface ConfirmVisitButtonProps {
 
 export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: ConfirmVisitButtonProps) {
     const [loading, setLoading] = useState(false);
+    const [showConfirmVisit, setShowConfirmVisit] = useState(false);
+    const [showFallbackSheet, setShowFallbackSheet] = useState(false);
     const [showNoShow, setShowNoShow] = useState(false);
     const [showMutualCancel, setShowMutualCancel] = useState(false);
     const router = useRouter();
@@ -50,7 +53,7 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
         }
     };
 
-    // 노쇼 신고
+    // 노쇼 처리
     const handleNoShow = async () => {
         setLoading(true);
         try {
@@ -132,55 +135,93 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
 
     return (
         <div className="space-y-2">
-            {/* Primary action: won 상태에서 방문 확인 */}
+            {/* Primary action */}
             {auctionStatus === "won" && (
                 <>
-                    <p className="text-[11px] text-neutral-400 text-center leading-normal px-1">
-                        실제 방문을 확인한 후 눌러주세요. 방문 확인 후에는 노쇼 신고가 불가합니다.
-                    </p>
                     <Button
-                        onClick={handleConfirmVisit}
+                        onClick={() => setShowConfirmVisit(true)}
                         disabled={loading}
                         className="w-full h-12 bg-green-600 text-white font-bold hover:bg-green-700 rounded-xl flex items-center justify-center gap-2"
                     >
                         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
                         방문 확인
                     </Button>
+                    <ConfirmDialog
+                        isOpen={showConfirmVisit}
+                        onOpenChange={setShowConfirmVisit}
+                        onConfirm={handleConfirmVisit}
+                        title="방문 확인"
+                        description="실제 방문을 확인하셨나요? 방문 확인 후에는 노쇼 신고가 불가합니다."
+                        confirmText="방문 확인"
+                        variant="default"
+                    />
                 </>
             )}
 
-            {/* Secondary actions: 노쇼 신고 + 합의 취소 (가로 배치) */}
+            {/* Secondary action: 차순위 넘기기 */}
             {auctionStatus === "won" && (
                 <>
-                    <div className="flex gap-2">
-                        <Button
-                            onClick={() => setShowNoShow(true)}
-                            disabled={loading}
-                            variant="outline"
-                            className="flex-1 h-10 border-red-500/30 bg-red-500/5 text-red-500 font-bold hover:bg-red-500/10 rounded-xl flex items-center justify-center gap-1.5 text-[13px]"
-                        >
-                            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-                            차순위에게 제안
-                        </Button>
+                    <Button
+                        onClick={() => setShowFallbackSheet(true)}
+                        disabled={loading}
+                        variant="outline"
+                        className="w-full h-10 border-neutral-700 bg-neutral-900 text-neutral-400 font-bold hover:bg-neutral-800 rounded-xl flex items-center justify-center gap-1.5 text-[13px]"
+                    >
+                        차순위 넘기기
+                        <ChevronRight className="w-3.5 h-3.5" />
+                    </Button>
 
-                        <Button
-                            onClick={() => setShowMutualCancel(true)}
-                            disabled={loading}
-                            variant="outline"
-                            className="flex-1 h-10 border-amber-500/30 bg-amber-500/5 text-amber-500 font-bold hover:bg-amber-500/10 rounded-xl flex items-center justify-center gap-1.5 text-[13px]"
-                        >
-                            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Handshake className="w-3.5 h-3.5" />}
-                            합의 취소
-                        </Button>
-                    </div>
+                    {/* 차순위 넘기기 이유 선택 Sheet */}
+                    <Sheet open={showFallbackSheet} onOpenChange={setShowFallbackSheet}>
+                        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+                            <SheetHeader className="mb-4">
+                                <SheetTitle className="text-white text-base font-bold">차순위로 넘기는 이유를 선택해주세요</SheetTitle>
+                            </SheetHeader>
+                            <div className="space-y-3">
+                                {/* 노쇼 */}
+                                <button
+                                    onClick={() => { setShowFallbackSheet(false); setShowNoShow(true); }}
+                                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/15 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                                            <AlertTriangle className="w-4 h-4 text-red-400" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-white font-bold text-sm">노쇼</p>
+                                            <p className="text-neutral-500 text-xs">연락을 받지 못했습니다</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-neutral-600" />
+                                </button>
+
+                                {/* 합의 취소 */}
+                                <button
+                                    onClick={() => { setShowFallbackSheet(false); setShowMutualCancel(true); }}
+                                    className="w-full flex items-center justify-between p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 transition-colors"
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                            <Handshake className="w-4 h-4 text-amber-400" />
+                                        </div>
+                                        <div className="text-left">
+                                            <p className="text-white font-bold text-sm">합의 취소</p>
+                                            <p className="text-neutral-500 text-xs">고객과 협의했습니다 · 패널티 없음</p>
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-neutral-600" />
+                                </button>
+                            </div>
+                        </SheetContent>
+                    </Sheet>
 
                     <ConfirmDialog
                         isOpen={showNoShow}
                         onOpenChange={setShowNoShow}
                         onConfirm={handleNoShow}
-                        title="차순위에게 제안"
-                        description="낙찰자에게 연락을 못 받으셨나요? 확인 시 낙찰자에게 스트라이크가 부과되고 차순위 입찰자에게 낙찰 제안이 전송됩니다."
-                        confirmText="차순위에게 제안"
+                        title="노쇼 처리"
+                        description="낙찰자에게 스트라이크가 부과되고 차순위 입찰자에게 낙찰 제안이 전송됩니다."
+                        confirmText="노쇼 처리"
                         variant="danger"
                     />
 
@@ -189,8 +230,8 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
                         onOpenChange={setShowMutualCancel}
                         onConfirm={handleMutualCancel}
                         title="합의 취소"
-                        description="고객과 합의하여 경매를 취소합니다. 양측 모두 패널티가 부과되지 않습니다. 차순위 입찰자가 있으면 자동으로 낙찰이 전환됩니다."
-                        placeholder="취소 사유를 입력하세요"
+                        description="고객과 합의하여 경매를 취소합니다. 양측 모두 패널티가 부과되지 않습니다."
+                        placeholder="취소 사유를 입력하세요 (필수)"
                         confirmText="합의 취소"
                     />
                 </>

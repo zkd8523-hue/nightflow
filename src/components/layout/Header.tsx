@@ -223,7 +223,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                 <SheetHeader className="p-6 pb-2 border-b border-neutral-800/50 shrink-0">
                   <div className="text-left">
                     <SheetTitle className="text-white font-black">
-                      {user.name || "사용자"}
+                      {user.display_name || user.name || "사용자"}
                     </SheetTitle>
                     <p className="text-[12px] text-neutral-500">
                       {user.role === "md" ? "MD 파트너" : user.role === "admin" ? "관리자" : "일반 회원"}
@@ -303,7 +303,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                             </button>
                             <button
                               onClick={(e) => handleDeleteNotification(e, notification.id)}
-                              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-md bg-neutral-900/80 hover:bg-red-500/20 transition-colors opacity-0 group-hover:opacity-100"
+                              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-md bg-neutral-900/80 hover:bg-red-500/20 transition-colors"
                               aria-label="알림 삭제"
                             >
                               <X className="w-3.5 h-3.5 text-neutral-400 hover:text-red-400" />
@@ -330,7 +330,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
                       <User className="w-5 h-5 text-neutral-500" />
-                      <span className="text-[15px] font-bold">내 프로필</span>
+                      <span className="text-[15px] font-bold">프로필</span>
                     </Link>
 
                     <Link

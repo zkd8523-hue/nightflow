@@ -66,7 +66,7 @@ export function MDAlertBanner({ mds, onMDClick }: Props) {
                   <div className="text-left">
                     <div className="font-bold text-white">{md.name} MD</div>
                     <div className="text-sm text-neutral-400">
-                      {md.area || "미지정"} · {reason}
+                      {Array.isArray(md.area) ? md.area.join(", ") : md.area || "미지정"} · {reason}
                     </div>
                   </div>
                 </div>

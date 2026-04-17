@@ -159,7 +159,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 {isWon && (
                   <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-bold bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">
                     {isInstant ? <Zap className="w-3 h-3 mr-0.5 fill-amber-400" /> : <Gavel className="w-3 h-3 mr-0.5" />}
-                    {isInstant ? "구매완료" : "낙찰"}
+                    {isInstant ? "예약완료" : "낙찰"}
                   </Badge>
                 )}
                 {auction.status === "unsold" && (
@@ -226,7 +226,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                   {isActive
                     ? isInstant ? (isUserInterested ? "대화중" : "예약하기") : "입찰하기"
                     : isScheduled
-                      ? `${formatTime(auction.auction_start_at)} ${isInstant ? "구매" : "입찰"} 시작`
+                      ? `${formatTime(auction.auction_start_at)} ${isInstant ? "예약" : "입찰"} 시작`
                       : "결과확인"
                   }
                 </Button>
