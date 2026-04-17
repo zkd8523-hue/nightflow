@@ -5,8 +5,9 @@ import { NextResponse } from "next/server";
 // PATCH /api/admin/appeals/[id] — Admin이 이의제기 처리
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -47,7 +48,7 @@ export async function PATCH(
     const { data: appeal } = await supabaseAdmin
       .from("penalty_appeals")
       .select("id, status, user_id, noshow_history_id")
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
 
     if (!appeal) {
@@ -70,7 +71,7 @@ export async function PATCH(
         admin_response: admin_response.trim(),
         reviewed_at: new Date().toISOString(),
       })
-      .eq("id", params.id);
+      .eq("id", id);
 
     if (updateError) throw updateError;
 

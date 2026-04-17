@@ -63,7 +63,7 @@ type FilterTab = "pending" | "all";
 
 export default function AdminAppealsPage() {
   const router = useRouter();
-  const { user, loading: userLoading } = useCurrentUser();
+  const { user, isLoading: userLoading } = useCurrentUser();
   const [appeals, setAppeals] = useState<AppealWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<FilterTab>("pending");

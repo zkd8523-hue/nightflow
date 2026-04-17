@@ -41,7 +41,7 @@ const APPEAL_STATUS_LABEL: Record<AppealStatus, { label: string; className: stri
   rejected: { label: "이의제기 기각", className: "text-red-400 bg-red-400/10" },
 };
 
-interface HistoryWithAppeal extends NoshowHistory {
+interface HistoryWithAppeal extends Omit<NoshowHistory, 'appeal'> {
   appeal: {
     id: string;
     status: AppealStatus;
@@ -59,7 +59,7 @@ interface HistoryWithAppeal extends NoshowHistory {
 
 export default function MyPenaltiesPage() {
   const router = useRouter();
-  const { user, loading: userLoading } = useCurrentUser();
+  const { user, isLoading: userLoading } = useCurrentUser();
   const [histories, setHistories] = useState<HistoryWithAppeal[]>([]);
   const [loading, setLoading] = useState(true);
 
