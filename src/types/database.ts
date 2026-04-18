@@ -74,6 +74,8 @@ export interface User {
   verification_club_name: string | null;
   floor_plan_url: string | null;
   instagram: string | null;
+  instagram_verify_code: string | null;
+  instagram_verified_at: string | null;
   kakao_talk_id: string | null;  // DB 컬럼 유지, UI에서 미사용
   kakao_open_chat_url: string | null;  // 카카오톡 오픈채팅 URL (연락 수단)
   preferred_contact_methods: ContactMethodType[] | null;  // 낙찰자에게 표시할 연락 수단. NULL=전부 표시

@@ -19,6 +19,7 @@ import {
     Calendar,
     MapPinned,
     ArrowRight,
+    CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import type { User, Club, MDHealthScore } from "@/types/database";
@@ -52,6 +53,7 @@ export function MDManagement({
 
     const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+    const pendingUsers = users.filter(u => u.md_status === "pending");
     const approvedUsers = users.filter(u => u.md_status === "approved");
 
     return (
@@ -65,7 +67,19 @@ export function MDManagement({
                 </DialogContent>
             </Dialog>
 
-            {/* MD 활동 모니터링 (승인 게이트 제거됨) */}
+            {/* 심사 대기 MD */}
+            {pendingUsers.length > 0 && (
+                <div className="space-y-4">
+                    <h2 className="text-lg font-bold text-amber-400">심사 대기 ({pendingUsers.length})</h2>
+                    {pendingUsers.map(u => (
+                        <PendingMDCard key={u.id} user={u} onUpdate={(updated) => {
+                            setUsers(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
+                        }} onPreviewImage={setPreviewImage} />
+                    ))}
+                </div>
+            )}
+
+            {/* MD 활동 모니터링 */}
             <div className="space-y-4">
                 <h2 className="text-lg font-bold text-white">활동 모니터링 ({approvedUsers.length})</h2>
                 {healthScores && healthScores.length > 0 ? (
@@ -280,6 +294,131 @@ function MDApplicationCard({
                     </div>
                 )}
 
+            </div>
+        </Card>
+    );
+}
+
+function PendingMDCard({
+    user,
+    onUpdate,
+    onPreviewImage,
+}: {
+    user: UserWithClub;
+    onUpdate: (updated: Partial<UserWithClub> & { id: string }) => void;
+    onPreviewImage: (url: string) => void;
+}) {
+    const [loading, setLoading] = useState(false);
+    const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+    const clubName = user.default_club?.name || user.verification_club_name;
+    const isVerified = !!user.instagram_verified_at;
+
+    const handleGenerateCode = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/admin/mds/${user.id}/verify-code`, { method: "POST" });
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.error);
+            setGeneratedCode(result.code);
+        } catch {
+            // toast handled by caller
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleApprove = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/admin/mds/${user.id}/approve`, { method: "POST" });
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.error);
+            onUpdate({ id: user.id, md_status: "approved", role: "md" } as UserWithClub);
+        } catch {
+            // error
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Card className="bg-[#1C1C1E] border-amber-500/20 overflow-hidden">
+            <div className="p-6 space-y-4">
+                {/* 기본 정보 */}
+                <div className="flex items-start gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-xl text-neutral-500 shrink-0">
+                        {(user.display_name || user.name || "?").substring(0, 1)}
+                    </div>
+                    <div className="space-y-1.5 flex-1">
+                        <h3 className="text-xl font-black text-white">{user.display_name || user.name || "이름 없음"}</h3>
+                        {user.name && user.name !== user.display_name && (
+                            <p className="text-neutral-600 text-xs">실명: {user.name}</p>
+                        )}
+                        <p className="text-neutral-500 text-sm">{user.phone || "전화번호 미인증"}</p>
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
+                                <MapPin className="w-3.5 h-3.5" /> {Array.isArray(user.area) ? user.area.join(", ") : user.area || "지역 미정"}
+                            </div>
+                            {clubName && (
+                                <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
+                                    <Building2 className="w-3.5 h-3.5" /> {clubName}
+                                </div>
+                            )}
+                            {user.instagram && (
+                                <a
+                                    href={`https://instagram.com/${user.instagram}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold hover:text-white transition-colors"
+                                >
+                                    <Instagram className="w-3.5 h-3.5" /> @{user.instagram}
+                                    <ExternalLink className="w-3 h-3" />
+                                </a>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs text-neutral-600">
+                            <Calendar className="w-3 h-3" />
+                            {dayjs(user.created_at).format("YYYY-MM-DD HH:mm")}
+                            <span className="text-neutral-700">({dayjs(user.created_at).fromNow()})</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 인증 상태 + 액션 */}
+                <div className="border-t border-neutral-800/30 pt-4 space-y-3">
+                    {isVerified ? (
+                        <>
+                            <div className="flex items-center gap-2 text-green-400 text-[13px] font-bold">
+                                <CheckCircle2 className="w-4 h-4" />
+                                인스타그램 인증 완료
+                            </div>
+                            <button
+                                onClick={handleApprove}
+                                disabled={loading}
+                                className="w-full py-3 bg-green-600 text-white font-black text-[14px] rounded-xl hover:bg-green-700 transition-colors disabled:opacity-40"
+                            >
+                                {loading ? "처리 중..." : "승인하기"}
+                            </button>
+                        </>
+                    ) : generatedCode ? (
+                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-2">
+                            <p className="text-amber-400 text-[12px] font-bold">인증코드 발급됨</p>
+                            <p className="text-white text-2xl font-black tracking-[0.3em] text-center">{generatedCode}</p>
+                            <p className="text-neutral-500 text-[11px]">
+                                @{user.instagram} DM으로 이 코드를 보내주세요.
+                                MD가 코드를 입력하면 인증이 완료됩니다.
+                            </p>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={handleGenerateCode}
+                            disabled={loading}
+                            className="w-full py-3 bg-amber-500 text-black font-black text-[14px] rounded-xl hover:bg-amber-400 transition-colors disabled:opacity-40"
+                        >
+                            {loading ? "생성 중..." : "인증코드 생성"}
+                        </button>
+                    )}
+                </div>
             </div>
         </Card>
     );

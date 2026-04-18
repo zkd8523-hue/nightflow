@@ -552,7 +552,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                     })()}
                   </div>
                   <div className="flex flex-wrap items-center gap-3 mt-1">
-                    {md?.instagram && (
+                    {md?.instagram && md?.instagram_verified_at && (
                       <a
                         href={`https://instagram.com/${md.instagram}`}
                         target="_blank"
@@ -705,7 +705,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               </div>
 
               <div className="pt-1 space-y-2">
-                {visibleMethods.includes("dm") && md?.instagram && (
+                {visibleMethods.includes("dm") && md?.instagram && md?.instagram_verified_at && (
                   <ContactButton
                     auctionId={displayAuction.id}
                     type="dm"

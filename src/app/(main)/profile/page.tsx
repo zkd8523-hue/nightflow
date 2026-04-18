@@ -320,7 +320,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {user.role === "md" && (
+            {(user.role === "md" || user.role === "admin") && (
               <div className="flex items-center gap-3">
                 <User className="w-4 h-4 text-neutral-500 shrink-0" />
                 <div className="flex-1">
@@ -351,7 +351,7 @@ export default function ProfilePage() {
         </div>
 
         {/* MD 비즈니스 연락처 */}
-        {user.role === "md" && (
+        {(user.role === "md" || user.role === "admin") && (
           <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-[15px] font-bold text-white">MD 정보</h2>
