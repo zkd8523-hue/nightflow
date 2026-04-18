@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowRight, Building2, Smartphone, MapPin, Map, MessageCircle, Instagram, Phone } from "lucide-react";
+import { ArrowRight, Building2, Smartphone, MapPin, Map, MessageCircle, Instagram, Phone, ExternalLink } from "lucide-react";
 // Phone은 연락 수단 토글에서 사용
 import type { User, ContactMethodType } from "@/types/database";
 import dynamic from "next/dynamic";
@@ -80,7 +80,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                 throw new Error(result.error || "신청 중 오류가 발생했습니다.");
             }
             toast.success("MD 파트너 신청이 완료되었습니다!");
-            router.push('/');
+            router.push('/md/apply');
         } catch (error: unknown) {
             logError(error, "MD Apply Form");
             toast.error(getErrorMessage(error));
@@ -142,10 +142,19 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                         {/* Kakao Open Chat (Optional) */}
                         <div className="space-y-2">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
-                                <MessageCircle className="w-3.5 h-3.5" />
-                                카카오톡 오픈채팅 (선택)
-                            </Label>
+                            <div className="flex items-center justify-between">
+                                <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
+                                    <MessageCircle className="w-3.5 h-3.5" />
+                                    카카오톡 오픈채팅 (선택)
+                                </Label>
+                                <button
+                                    type="button"
+                                    onClick={() => { window.location.href = "kakaotalk://"; }}
+                                    className="flex items-center gap-1 text-[11px] text-amber-400 font-medium hover:text-amber-300 transition-colors"
+                                >
+                                    오픈채팅 만들기 <ExternalLink className="w-3 h-3" />
+                                </button>
+                            </div>
                             <Input
                                 {...form.register("kakao_open_chat_url")}
                                 placeholder="https://open.kakao.com/o/..."
@@ -159,12 +168,12 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                         {/* 연락 수단 선택 */}
                         <div className="space-y-3">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">고객에게 표시할 연락 수단</Label>
+                            <Label className="text-neutral-500 text-xs font-bold uppercase">고객에게 표시할 연락 수단을 선택해주세요</Label>
                             <div className="flex flex-wrap gap-2">
                                 {([
                                     { value: "dm" as ContactMethodType, label: "인스타 DM", icon: Instagram },
-                                    { value: "kakao" as ContactMethodType, label: "오픈채팅", icon: MessageCircle },
                                     { value: "phone" as ContactMethodType, label: "전화", icon: Phone },
+                                    { value: "kakao" as ContactMethodType, label: "오픈채팅", icon: MessageCircle },
                                 ]).map(({ value, label, icon: Icon }) => {
                                     const isSelected = preferredMethods.includes(value);
                                     const isDisabled = value === "kakao" && !form.watch("kakao_open_chat_url");
@@ -177,10 +186,10 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                                 isSelected ? prev.filter(m => m !== value) : [...prev, value]
                                             )}
                                             className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all ${
-                                                isDisabled
-                                                    ? "bg-neutral-900 text-neutral-700 cursor-not-allowed"
-                                                    : isSelected
-                                                        ? "bg-white text-black"
+                                                isSelected
+                                                    ? "bg-white text-black"
+                                                    : isDisabled
+                                                        ? "bg-neutral-900 text-neutral-700 cursor-not-allowed"
                                                         : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
                                             }`}
                                         >
@@ -191,7 +200,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                 })}
                             </div>
                             <p className="text-neutral-600 text-[10px]">
-                                {preferredMethods.length === 0 ? "미선택 시 모든 연락 수단이 표시됩니다" : "선택한 수단만 고객에게 표시됩니다"}
+                                {preferredMethods.length === 0 ? "미선택 시 모든 수단이 표시됩니다" : "선택한 수단만 표시됩니다"}
                             </p>
                         </div>
 

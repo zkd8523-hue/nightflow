@@ -21,6 +21,7 @@ export const ALIMTALK_TEMPLATES = {
   MD_NEW_MATCH: process.env.ALIMTALK_TPL_MD_NEW_MATCH || "",
   EARLYBIRD_DDAY_REMINDER: process.env.ALIMTALK_TPL_EARLYBIRD_DDAY_REMINDER || "",
   MD_NOSHOW_CHECK: process.env.ALIMTALK_TPL_MD_NOSHOW_CHECK || "",
+  MD_APPROVED: process.env.ALIMTALK_TPL_MD_APPROVED || "",
 } as const;
 
 function getMessageService(): SolapiMessageService {
@@ -175,6 +176,17 @@ export async function sendEarlybirdDdayReminder(
   return sendAlimtalk({
     to: phone,
     templateId: ALIMTALK_TEMPLATES.EARLYBIRD_DDAY_REMINDER,
+    variables: vars,
+  });
+}
+
+export async function sendMDApprovedNotification(
+  phone: string,
+  vars: { name: string; dashboardUrl: string }
+) {
+  return sendAlimtalk({
+    to: phone,
+    templateId: ALIMTALK_TEMPLATES.MD_APPROVED,
     variables: vars,
   });
 }

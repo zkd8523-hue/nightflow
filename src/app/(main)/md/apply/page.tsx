@@ -51,7 +51,7 @@ export default async function MDApplyPage() {
                         </div>
                     )}
                     <div className="space-y-4">
-                        <Badge className="bg-white/10 text-white/60 font-medium px-3 py-1 border border-white/10">PARTNER APPLY</Badge>
+                        <Badge className="bg-white/10 text-white/60 font-medium px-3 py-1 border border-white/10">MD 파트너 등록</Badge>
                         <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight leading-tight">
                             빈 테이블, 10초 만에<br />수익으로 전환하세요
                         </h1>

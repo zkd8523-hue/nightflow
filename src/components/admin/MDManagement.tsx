@@ -19,7 +19,6 @@ import {
     Calendar,
     MapPinned,
     ArrowRight,
-    CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
 import type { User, Club, MDHealthScore } from "@/types/database";
@@ -309,23 +308,7 @@ function PendingMDCard({
     onPreviewImage: (url: string) => void;
 }) {
     const [loading, setLoading] = useState(false);
-    const [generatedCode, setGeneratedCode] = useState<string | null>(null);
     const clubName = user.default_club?.name || user.verification_club_name;
-    const isVerified = !!user.instagram_verified_at;
-
-    const handleGenerateCode = async () => {
-        setLoading(true);
-        try {
-            const res = await fetch(`/api/admin/mds/${user.id}/verify-code`, { method: "POST" });
-            const result = await res.json();
-            if (!res.ok) throw new Error(result.error);
-            setGeneratedCode(result.code);
-        } catch {
-            // toast handled by caller
-        } finally {
-            setLoading(false);
-        }
-    };
 
     const handleApprove = async () => {
         setLoading(true);
@@ -384,40 +367,15 @@ function PendingMDCard({
                     </div>
                 </div>
 
-                {/* 인증 상태 + 액션 */}
-                <div className="border-t border-neutral-800/30 pt-4 space-y-3">
-                    {isVerified ? (
-                        <>
-                            <div className="flex items-center gap-2 text-green-400 text-[13px] font-bold">
-                                <CheckCircle2 className="w-4 h-4" />
-                                인스타그램 인증 완료
-                            </div>
-                            <button
-                                onClick={handleApprove}
-                                disabled={loading}
-                                className="w-full py-3 bg-green-600 text-white font-black text-[14px] rounded-xl hover:bg-green-700 transition-colors disabled:opacity-40"
-                            >
-                                {loading ? "처리 중..." : "승인하기"}
-                            </button>
-                        </>
-                    ) : generatedCode ? (
-                        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-2">
-                            <p className="text-amber-400 text-[12px] font-bold">인증코드 발급됨</p>
-                            <p className="text-white text-2xl font-black tracking-[0.3em] text-center">{generatedCode}</p>
-                            <p className="text-neutral-500 text-[11px]">
-                                @{user.instagram} DM으로 이 코드를 보내주세요.
-                                MD가 코드를 입력하면 인증이 완료됩니다.
-                            </p>
-                        </div>
-                    ) : (
-                        <button
-                            onClick={handleGenerateCode}
-                            disabled={loading}
-                            className="w-full py-3 bg-amber-500 text-black font-black text-[14px] rounded-xl hover:bg-amber-400 transition-colors disabled:opacity-40"
-                        >
-                            {loading ? "생성 중..." : "인증코드 생성"}
-                        </button>
-                    )}
+                {/* 승인/반려 */}
+                <div className="border-t border-neutral-800/30 pt-4">
+                    <button
+                        onClick={handleApprove}
+                        disabled={loading}
+                        className="w-full py-3 bg-green-600 text-white font-black text-[14px] rounded-xl hover:bg-green-700 transition-colors disabled:opacity-40"
+                    >
+                        {loading ? "처리 중..." : "승인하기"}
+                    </button>
                 </div>
             </div>
         </Card>

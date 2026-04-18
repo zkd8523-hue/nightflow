@@ -110,6 +110,16 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
   const [menuOpen, setMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [pendingMDCount, setPendingMDCount] = useState(0);
+
+  useEffect(() => {
+    if (user?.role !== "admin") return;
+    supabase
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("md_status", "pending")
+      .then(({ count }) => setPendingMDCount(count || 0));
+  }, [user?.role, supabase]);
 
   const minSwipeDistance = 50;
 
@@ -198,6 +208,15 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                 >
                   <Plus className="w-3.5 h-3.5 text-black" />
                   <span className="text-[12px] font-black text-black">경매 등록</span>
+                </Link>
+              )}
+              {user.md_status === "pending" && (
+                <Link
+                  href="/md/apply"
+                  className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
+                >
+                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
                 </Link>
               )}
               <button
@@ -343,14 +362,29 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                     </Link>
 
                     {user.role === "admin" && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                      >
-                        <ShieldCheck className="w-5 h-5 text-green-500" />
-                        <span className="text-[15px] font-bold">Admin</span>
-                      </Link>
+                      <>
+                        <Link
+                          href="/admin"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                        >
+                          <ShieldCheck className="w-5 h-5 text-green-500" />
+                          <span className="text-[15px] font-bold">Admin</span>
+                        </Link>
+                        <Link
+                          href="/admin/mds"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                        >
+                          <User className="w-5 h-5 text-amber-500" />
+                          <span className="text-[15px] font-bold">MD 승인</span>
+                          {pendingMDCount > 0 && (
+                            <span className="ml-auto bg-red-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                              {pendingMDCount}
+                            </span>
+                          )}
+                        </Link>
+                      </>
                     )}
 
                     <div className="h-px bg-neutral-800/50 my-2" />

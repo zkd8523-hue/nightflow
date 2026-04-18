@@ -4,17 +4,13 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
-import {
-  isDisplayNameTaken,
-  suggestDisplayName,
-  validateDisplayName,
-} from "@/lib/utils/displayName";
+import { suggestDisplayName } from "@/lib/utils/displayName";
+import { ChevronRight, Check } from "lucide-react";
+import Link from "next/link";
 
 import type { User as AuthUser } from "@supabase/supabase-js";
 
@@ -32,8 +28,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
-  const [displayName, setDisplayName] = useState("");
-  const [alimtalkConsent, setAlimtalkConsent] = useState(false);
+
+  const [agreeAll, setAgreeAll] = useState(false);
+  const [agreeAge, setAgreeAge] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeMarketing, setAgreeMarketing] = useState(false);
+
+  const requiredMet = agreeAge && agreeTerms && agreePrivacy;
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -42,41 +44,36 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         return;
       }
       setAuthUser(user);
+    });
+  }, [router, supabase]);
 
-      const meta = user.user_metadata ?? {};
+  // 전체 동의 토글
+  const handleAgreeAll = () => {
+    const next = !agreeAll;
+    setAgreeAll(next);
+    setAgreeAge(next);
+    setAgreeTerms(next);
+    setAgreePrivacy(next);
+    setAgreeMarketing(next);
+  };
+
+  // 개별 체크 시 전체 동의 상태 동기화
+  useEffect(() => {
+    setAgreeAll(agreeAge && agreeTerms && agreePrivacy && agreeMarketing);
+  }, [agreeAge, agreeTerms, agreePrivacy, agreeMarketing]);
+
+  const handleSubmit = async () => {
+    if (!authUser || !requiredMet) return;
+
+    setLoading(true);
+
+    try {
+      const meta = authUser.user_metadata ?? {};
       const kakaoNickname =
         typeof meta.nickname === "string" && meta.nickname.trim().length > 0
           ? meta.nickname.trim()
           : "유저";
-      setDisplayName(suggestDisplayName(kakaoNickname).slice(0, 16));
-    });
-  }, [router, supabase]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!authUser) return;
-
-    setLoading(true);
-
-    const displayNameTrimmed = displayName.trim();
-    const nicknameCheck = validateDisplayName(displayNameTrimmed);
-    if (!nicknameCheck.ok) {
-      toast.error(nicknameCheck.message ?? "닉네임을 확인해주세요.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      if (await isDisplayNameTaken(supabase, displayNameTrimmed)) {
-        toast.error("이미 사용 중인 닉네임입니다.");
-        setLoading(false);
-        return;
-      }
-    } catch (checkErr) {
-      logger.error("display_name duplicate check failed:", checkErr);
-    }
-
-    try {
       let referredById: string | null = null;
       let signupSource = "direct";
 
@@ -96,15 +93,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         signupSource = "md_profile";
       }
 
-      // 실명·전화·생일은 첫 PASS 본인인증 시점에 채워짐 (Migration 114)
       const { error } = await supabase.from("users").insert({
         id: authUser.id,
-        kakao_id: authUser.user_metadata?.provider_id || authUser.id,
-        display_name: displayNameTrimmed,
-        profile_image: authUser.user_metadata?.avatar_url || null,
+        kakao_id: meta.provider_id || authUser.id,
+        display_name: suggestDisplayName(kakaoNickname),
+        profile_image: meta.avatar_url || null,
         role: "user",
-        alimtalk_consent: alimtalkConsent,
-        alimtalk_consent_at: alimtalkConsent ? new Date().toISOString() : null,
+        alimtalk_consent: agreeMarketing,
+        alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
         referred_by: referredById,
         signup_source: signupSource,
       });
@@ -115,6 +111,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         user_type: "user",
         signup_source: signupSource,
         has_referrer: !!referredById,
+        marketing_consent: agreeMarketing,
       });
       toast.success("가입이 완료되었습니다!");
       router.push(redirectAfterSignup);
@@ -138,59 +135,110 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
       <Card className="w-full max-w-md p-8 space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-2xl font-bold">프로필 설정</h1>
+          <h1 className="text-2xl font-bold">NightFlow</h1>
           <p className="text-sm text-neutral-500">
-            NightFlow에 오신 것을 환영합니다!
+            서비스 이용을 위해 약관에 동의해주세요.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div className="space-y-2">
-            <Label htmlFor="displayName">닉네임 *</Label>
-            <Input
-              id="displayName"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="2-16자"
-              maxLength={16}
-              required
-              autoFocus
-            />
-            <p className="text-xs text-neutral-500">
-              경매 입찰 시 다른 사용자에게 표시됩니다.
-            </p>
-          </div>
+        <div className="space-y-3">
+          {/* 전체 동의 */}
+          <button
+            type="button"
+            onClick={handleAgreeAll}
+            className="w-full flex items-center gap-3 p-4 rounded-xl bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 transition-colors"
+          >
+            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+              agreeAll ? "bg-white border-white" : "border-neutral-600"
+            }`}>
+              {agreeAll && <Check className="w-4 h-4 text-black" />}
+            </div>
+            <span className="text-[15px] font-bold text-white">전체 동의</span>
+          </button>
 
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={alimtalkConsent}
-              onChange={(e) => setAlimtalkConsent(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-neutral-600 bg-neutral-800 accent-white"
-            />
-            <span className="text-sm text-neutral-400">
-              카카오 알림톡 수신에 동의합니다 (경매 시작, 입찰 역전 등 경쟁 관련 알림)
-              <br />
-              <span className="text-xs text-neutral-500">
-                * 거래 관련 알림(낙찰, 연락 마감 등)은 서비스 이용 시 자동 발송됩니다.
-              </span>
-            </span>
-          </label>
+          <div className="h-px bg-neutral-800" />
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "가입 중..." : "시작하기"}
-          </Button>
-
-          <div className="text-center">
+          {/* 만 19세 이상 (필수) */}
+          <div className="flex items-center gap-3 px-4 py-3">
             <button
               type="button"
-              onClick={() => router.push("/md/apply")}
-              className="text-sm text-neutral-400 hover:text-neutral-200 underline"
+              onClick={() => setAgreeAge(!agreeAge)}
+              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                agreeAge ? "bg-white border-white" : "border-neutral-600"
+              }`}
             >
-              MD로 활동하고 싶으신가요?
+              {agreeAge && <Check className="w-3 h-3 text-black" />}
             </button>
+            <span className="text-[14px] text-neutral-300 flex-1">
+              만 19세 이상입니다 <span className="text-red-400 text-[11px]">(필수)</span>
+            </span>
           </div>
-        </form>
+
+          {/* 이용약관 (필수) */}
+          <div className="flex items-center gap-3 px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setAgreeTerms(!agreeTerms)}
+              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                agreeTerms ? "bg-white border-white" : "border-neutral-600"
+              }`}
+            >
+              {agreeTerms && <Check className="w-3 h-3 text-black" />}
+            </button>
+            <span className="text-[14px] text-neutral-300 flex-1">
+              서비스 이용약관 동의 <span className="text-red-400 text-[11px]">(필수)</span>
+            </span>
+            <Link href="/terms" target="_blank" className="text-neutral-600 hover:text-neutral-400 transition-colors">
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* 개인정보 처리방침 (필수) */}
+          <div className="flex items-center gap-3 px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setAgreePrivacy(!agreePrivacy)}
+              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                agreePrivacy ? "bg-white border-white" : "border-neutral-600"
+              }`}
+            >
+              {agreePrivacy && <Check className="w-3 h-3 text-black" />}
+            </button>
+            <span className="text-[14px] text-neutral-300 flex-1">
+              개인정보 처리방침 동의 <span className="text-red-400 text-[11px]">(필수)</span>
+            </span>
+            <Link href="/privacy" target="_blank" className="text-neutral-600 hover:text-neutral-400 transition-colors">
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* 마케팅 알림 수신 (선택) */}
+          <div className="flex items-center gap-3 px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setAgreeMarketing(!agreeMarketing)}
+              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                agreeMarketing ? "bg-white border-white" : "border-neutral-600"
+              }`}
+            >
+              {agreeMarketing && <Check className="w-3 h-3 text-black" />}
+            </button>
+            <span className="text-[14px] text-neutral-300 flex-1">
+              마케팅 알림 수신 동의 <span className="text-neutral-600 text-[11px]">(선택)</span>
+            </span>
+          </div>
+          <p className="px-4 text-[11px] text-neutral-600">
+            경매 시작, 입찰 역전 등 경쟁 관련 알림을 카카오 알림톡으로 받습니다.
+          </p>
+        </div>
+
+        <Button
+          onClick={handleSubmit}
+          disabled={!requiredMet || loading}
+          className="w-full h-12"
+        >
+          {loading ? "가입 중..." : "동의하고 시작하기"}
+        </Button>
       </Card>
     </div>
   );

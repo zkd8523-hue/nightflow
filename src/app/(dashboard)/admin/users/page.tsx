@@ -4,7 +4,8 @@ import { UserManagement } from "@/components/admin/UserManagement";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Users, ShieldBan, AlertTriangle } from "lucide-react";
+import { Users, ShieldBan, AlertTriangle, Clock } from "lucide-react";
+import dayjs from "dayjs";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -39,6 +40,9 @@ export default async function AdminUsersPage() {
     u.noshow_count > 0
   ).length || 0;
   const strikeUsers = users?.filter(u => (u.strike_count || 0) > 0).length || 0;
+  const suspendedUsers = users?.filter(u =>
+    !u.is_blocked && u.blocked_until && dayjs(u.blocked_until).isAfter(dayjs())
+  ).length || 0;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
@@ -80,6 +84,13 @@ export default async function AdminUsersPage() {
                 <span className="text-[10px] font-bold uppercase tracking-tight">경고 대상</span>
               </div>
               <p className="text-2xl font-black text-white">{problemUsers}</p>
+            </Card>
+            <Card className="bg-[#1C1C1E] border-neutral-800 p-4 flex flex-col gap-1 min-w-[120px]">
+              <div className="flex items-center gap-2 text-orange-500">
+                <Clock className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-tight">정지 중</span>
+              </div>
+              <p className="text-2xl font-black text-white">{suspendedUsers}</p>
             </Card>
             <Card className="bg-[#1C1C1E] border-neutral-800 p-4 flex flex-col gap-1 min-w-[120px]">
               <div className="flex items-center gap-2 text-red-400">

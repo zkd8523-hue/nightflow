@@ -104,13 +104,17 @@ export function UserManagement({ users }: UserManagementProps) {
     const matchesStatus =
       statusFilter === "all" ||
       (statusFilter === "blocked" && u.is_blocked) ||
-      (statusFilter === "normal" && !u.is_blocked &&
+      (statusFilter === "suspended" && isUserSuspended(u)) ||
+      (statusFilter === "normal" && !u.is_blocked && !isUserSuspended(u) &&
         (u.strike_count || 0) === 0 && u.noshow_count === 0) ||
-      (statusFilter === "warning" && !u.is_blocked &&
+      (statusFilter === "warning" && !u.is_blocked && !isUserSuspended(u) &&
         ((u.strike_count || 0) > 0 || u.noshow_count > 0));
 
     return matchesSearch && matchesStatus;
   });
+
+  const isUserSuspended = (user: User) =>
+    !user.is_blocked && user.blocked_until && dayjs(user.blocked_until).isAfter(dayjs());
 
   const getStatusBadge = (user: User) => {
     if (user.is_blocked) {
@@ -118,6 +122,15 @@ export function UserManagement({ users }: UserManagementProps) {
         <Badge className="bg-red-500/10 text-red-500 border-red-500/30 text-xs px-2 py-1 border font-bold">
           <ShieldBan className="w-3 h-3 mr-1" />
           차단됨
+        </Badge>
+      );
+    }
+
+    if (isUserSuspended(user)) {
+      return (
+        <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/30 text-xs px-2 py-1 border font-bold">
+          <AlertTriangle className="w-3 h-3 mr-1" />
+          정지 중
         </Badge>
       );
     }
@@ -171,6 +184,7 @@ export function UserManagement({ users }: UserManagementProps) {
             <SelectItem value="all">전체</SelectItem>
             <SelectItem value="normal">정상</SelectItem>
             <SelectItem value="warning">경고 대상</SelectItem>
+            <SelectItem value="suspended">정지 중</SelectItem>
             <SelectItem value="blocked">차단됨</SelectItem>
           </SelectContent>
         </Select>
@@ -250,37 +264,76 @@ export function UserManagement({ users }: UserManagementProps) {
                         <p className="text-xs text-neutral-400">
                           {dayjs(user.created_at).format("YYYY-MM-DD")}
                         </p>
+                        {isUserSuspended(user) && (
+                          <p className="text-[10px] text-orange-500 mt-0.5">
+                            정지 해제: {dayjs(user.blocked_until).format("MM-DD HH:mm")}
+                          </p>
+                        )}
                       </td>
                       <td className="p-4 text-center">
-                        {user.is_blocked ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleBlock(user.id, false);
-                            }}
-                            disabled={loading}
-                            className="text-xs bg-transparent border-green-500/30 text-green-500 hover:bg-green-500/10"
-                          >
-                            <ShieldCheck className="w-3 h-3 mr-1" />
-                            차단 해제
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleBlock(user.id, true);
-                            }}
-                            disabled={loading}
-                            className="text-xs bg-transparent border-red-500/30 text-red-500 hover:bg-red-500/10"
-                          >
-                            <ShieldBan className="w-3 h-3 mr-1" />
-                            차단
-                          </Button>
-                        )}
+                        <div className="flex items-center justify-center gap-1.5">
+                          {user.is_blocked ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleBlock(user.id, false);
+                              }}
+                              disabled={loading}
+                              className="text-xs bg-transparent border-green-500/30 text-green-500 hover:bg-green-500/10"
+                            >
+                              <ShieldCheck className="w-3 h-3 mr-1" />
+                              차단 해제
+                            </Button>
+                          ) : (
+                            <>
+                              {isUserSuspended(user) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleResetPenalty(user.id, "strike");
+                                  }}
+                                  disabled={loading}
+                                  className="text-xs bg-transparent border-orange-500/30 text-orange-500 hover:bg-orange-500/10"
+                                >
+                                  <RotateCcw className="w-3 h-3 mr-1" />
+                                  정지 해제
+                                </Button>
+                              )}
+                              {!isUserSuspended(user) && (user.strike_count || 0) > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleResetPenalty(user.id, "strike");
+                                  }}
+                                  disabled={loading}
+                                  className="text-xs bg-transparent border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                                >
+                                  <RotateCcw className="w-3 h-3 mr-1" />
+                                  초기화
+                                </Button>
+                              )}
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleBlock(user.id, true);
+                                }}
+                                disabled={loading}
+                                className="text-xs bg-transparent border-red-500/30 text-red-500 hover:bg-red-500/10"
+                              >
+                                <ShieldBan className="w-3 h-3 mr-1" />
+                                차단
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -385,14 +438,41 @@ export function UserManagement({ users }: UserManagementProps) {
                   </div>
                 )}
 
-                {/* 차단 상태 경고 */}
-                {(selectedUser.is_blocked || (selectedUser.blocked_until && dayjs(selectedUser.blocked_until).isAfter(dayjs()))) && (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-sm text-red-400">
-                    ⛔ {selectedUser.is_blocked ? "영구 차단됨" : "이용 정지 중"}
-                    {selectedUser.blocked_until && dayjs(selectedUser.blocked_until).isAfter(dayjs()) && (
-                      <p className="text-xs mt-1">
-                        해제: {dayjs(selectedUser.blocked_until).format("YYYY-MM-DD HH:mm")}
-                      </p>
+                {/* 경고 카운트 (3경고 = 1스트라이크) */}
+                {(selectedUser.warning_count || 0) > 0 && (
+                  <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white text-sm font-bold">경고 누적</p>
+                        <p className="text-xs text-neutral-500 mt-0.5">3경고 = 1스트라이크 자동 전환</p>
+                      </div>
+                      <span className="font-black text-2xl text-amber-500">{selectedUser.warning_count}/3</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 차단/정지 상태 경고 */}
+                {(selectedUser.is_blocked || isUserSuspended(selectedUser)) && (
+                  <div className={`${selectedUser.is_blocked ? "bg-red-500/10 border-red-500/20" : "bg-orange-500/10 border-orange-500/20"} border rounded-xl p-3 space-y-2`}>
+                    <p className={`text-sm font-bold ${selectedUser.is_blocked ? "text-red-400" : "text-orange-400"}`}>
+                      {selectedUser.is_blocked ? "영구 차단됨" : "이용 정지 중"}
+                    </p>
+                    {isUserSuspended(selectedUser) && (
+                      <>
+                        <p className="text-xs text-neutral-400">
+                          정지 해제 예정: {dayjs(selectedUser.blocked_until).format("YYYY-MM-DD HH:mm")}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleResetPenalty(selectedUser.id, "strike")}
+                          disabled={loading}
+                          className="w-full text-xs bg-transparent border-orange-500/30 text-orange-400 hover:bg-orange-500/10"
+                        >
+                          <RotateCcw className="w-3 h-3 mr-1" />
+                          즉시 정지 해제 (스트라이크 초기화)
+                        </Button>
+                      </>
                     )}
                   </div>
                 )}
