@@ -91,6 +91,16 @@ export function useBidNotification(auctionIds: string[], enabled: boolean = true
                         description: n.message,
                         duration: 5000,
                         position: "top-center",
+                        action: {
+                            label: "확인하기",
+                            onClick: () => {
+                                if (n.action_url) window.location.href = n.action_url;
+                            },
+                        },
+                        cancel: {
+                            label: "닫기",
+                            onClick: () => {},
+                        },
                     });
                 }
             } catch (err) {

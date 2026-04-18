@@ -132,9 +132,14 @@ export function useNotifications(userId: string | undefined) {
 
     document.addEventListener("visibilitychange", handleVisibility);
 
+    // 다른 컴포넌트에서 알림 변경 시 동기화
+    const handleSync = () => fetchNotifications(true);
+    window.addEventListener("notifications-changed", handleSync);
+
     return () => {
       if (intervalId) clearInterval(intervalId);
       document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("notifications-changed", handleSync);
     };
   }, [userId]);
 

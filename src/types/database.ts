@@ -401,6 +401,7 @@ export interface PublicUserProfile {
   kakao_open_chat_url: string | null;
   preferred_contact_methods: ContactMethodType[] | null;
   phone: string | null;
+  md_deal_count: number | null;
 }
 
 export interface Bid {

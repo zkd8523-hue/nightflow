@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2 } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame } from "lucide-react";
 import { maskName } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -117,7 +117,7 @@ export function PuzzleDetailClient({
   const loadOffers = useCallback(async () => {
     const { data } = await supabase
       .from("puzzle_offers")
-      .select("*, club:clubs(id, name, area), md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, instagram)")
+      .select("*, club:clubs(id, name, area), md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, md_deal_count)")
       .eq("puzzle_id", puzzle.id)
       .order("created_at", { ascending: true });
 
@@ -485,29 +485,25 @@ export function PuzzleDetailClient({
                         )}
                       </div>
 
-                      {/* MD 정보: 이름 + 인스타 (마스킹/전체) */}
+                      {/* MD 정보: 이름 + 거래 횟수 */}
                       {(() => {
-                        const md = offer.md as { display_name?: string; name?: string; instagram?: string } | null;
-                        const ig = md?.instagram;
-                        const isAcceptedOffer = offer.status === "accepted";
-                        const maskedIg = ig && ig.length > 3 ? ig.slice(0, 3) + "***" : ig;
+                        const md = offer.md as { display_name?: string; name?: string; md_deal_count?: number } | null;
                         const mdLabel = md?.display_name || md?.name;
+                        const dealCount = md?.md_deal_count;
                         return mdLabel ? (
                           <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/60">
                             <p className="text-[12px] text-neutral-300 font-bold">{mdLabel}</p>
-                            {ig && (
-                              isAcceptedOffer ? (
-                                <a
-                                  href={`https://instagram.com/${ig}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[12px] text-purple-400 hover:text-purple-300"
-                                >
-                                  @{ig}
-                                </a>
-                              ) : (
-                                <span className="text-[12px] text-neutral-500">@{maskedIg}</span>
-                              )
+                            {dealCount != null && dealCount >= 3 && (
+                              <span className="flex items-center gap-0.5 text-[10px] font-bold text-neutral-400">
+                                {dealCount >= 30 ? (
+                                  <Flame className="w-3 h-3 text-orange-500" />
+                                ) : dealCount >= 10 ? (
+                                  <BadgeCheck className="w-3 h-3 text-blue-400" />
+                                ) : (
+                                  <BadgeCheck className="w-3 h-3 text-neutral-500" />
+                                )}
+                                거래 {dealCount}회
+                              </span>
                             )}
                           </div>
                         ) : null;

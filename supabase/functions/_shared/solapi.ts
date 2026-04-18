@@ -23,7 +23,7 @@ export async function solapiSendAlimtalk(
     throw new Error("SOLAPI 환경변수 미설정 (API_KEY/SECRET/SENDER/PFID)");
   }
 
-  const timestamp = Date.now().toString();
+  const timestamp = new Date().toISOString();
   const salt = crypto.randomUUID();
 
   // HMAC-SHA256 서명 생성

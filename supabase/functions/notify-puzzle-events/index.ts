@@ -109,15 +109,36 @@ async function sendAndLog(
 // #1 첫 오퍼 도착
 // ============================================================
 async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
-  // pending 오퍼가 정확히 1건인 퍼즐 조회
-  const { data: puzzles } = await supabase.rpc("get_puzzles_with_first_offer");
-  // RPC 대신 raw SQL이 필요하므로 아래 방식으로 대체:
-  // puzzle_offers 집계 → count=1 이고 notification_logs 미존재인 것
-  const { data: rows } = await supabase
+  // pending 오퍼가 있는 open 퍼즐 조회
+  // puzzles!inner 조인이 FK 관계명 불일치로 실패할 수 있어 2단계로 분리
+  const { data: offers, error: offersErr } = await supabase
     .from("puzzle_offers")
-    .select("puzzle_id, puzzles!inner(leader_id, status)")
-    .eq("status", "pending")
-    .eq("puzzles.status", "open");
+    .select("puzzle_id")
+    .eq("status", "pending");
+
+  console.log(`[firstOffer] offers=${offers?.length ?? 0}, error=${offersErr?.message ?? "none"}`);
+
+  if (!offers || offers.length === 0) return;
+
+  // 해당 퍼즐들의 상태 확인
+  const puzzleIds = [...new Set(offers.map(o => o.puzzle_id))];
+  const { data: openPuzzles } = await supabase
+    .from("puzzles")
+    .select("id, leader_id, status")
+    .in("id", puzzleIds)
+    .eq("status", "open");
+
+  console.log(`[firstOffer] openPuzzles=${openPuzzles?.length ?? 0}`);
+
+  if (!openPuzzles || openPuzzles.length === 0) return;
+
+  // puzzle_id별 offer count + leader_id 매핑
+  const rows = offers
+    .filter(o => openPuzzles.some(p => p.id === o.puzzle_id))
+    .map(o => ({
+      puzzle_id: o.puzzle_id,
+      puzzles: openPuzzles.find(p => p.id === o.puzzle_id)!,
+    }));
 
   if (!rows || rows.length === 0) return;
 

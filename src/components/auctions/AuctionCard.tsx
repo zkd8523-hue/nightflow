@@ -4,13 +4,12 @@ import { memo } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { Auction, MDCustomerGrade } from "@/types/database";
-import { MD_GRADE_CONFIG } from "@/types/database";
+import type { Auction } from "@/types/database";
 import { formatNumber, formatTime, formatCountdown, formatEntryTime, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES, URGENCY_LABELS } from "@/lib/constants/timer-urgency";
-import { Clock, Gavel, Zap } from "lucide-react";
+import { Clock, Gavel, Zap, BadgeCheck, Flame } from "lucide-react";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
@@ -101,12 +100,18 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                     </span>
                   )}
                   {(() => {
-                    const grade = (auction.md as { md_customer_grade?: MDCustomerGrade } | null)?.md_customer_grade;
-                    if (!grade || grade === "rookie") return null;
-                    const cfg = MD_GRADE_CONFIG[grade];
+                    const dealCount = (auction.md as { md_deal_count?: number } | null)?.md_deal_count;
+                    if (!dealCount || dealCount < 3) return null;
                     return (
-                      <span className={`flex-shrink-0 px-1.5 py-0 rounded text-[9px] font-black ${cfg.color} ${cfg.bgColor}`}>
-                        {cfg.label}
+                      <span className="flex-shrink-0 flex items-center gap-0.5 text-[9px] font-bold text-neutral-400">
+                        {dealCount >= 30 ? (
+                          <Flame className="w-3 h-3 text-orange-500" />
+                        ) : dealCount >= 10 ? (
+                          <BadgeCheck className="w-3 h-3 text-blue-400" />
+                        ) : (
+                          <BadgeCheck className="w-3 h-3 text-neutral-500" />
+                        )}
+                        거래 {dealCount}회
                       </span>
                     );
                   })()}

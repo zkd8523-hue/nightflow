@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import type { Auction, Bid, User, UserTrustScore, MDCustomerGrade } from "@/types/database";
-import { MD_GRADE_CONFIG } from "@/types/database";
+import type { Auction, Bid, User, UserTrustScore } from "@/types/database";
 import { useAuctionStore } from "@/stores/useAuctionStore";
 import { useAuctionRealtime } from "@/hooks/useAuctionRealtime";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -27,7 +26,7 @@ import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
 import { FallbackOfferCard } from "./FallbackOfferCard";
 import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
-import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, Share2, X, Edit2, Trash2, ExternalLink } from "lucide-react";
+import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame } from "lucide-react";
 import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { ShareAuctionSheet } from "./ShareAuctionSheet";
@@ -541,12 +540,18 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                       </span>
                     )}
                     {(() => {
-                      const grade = (md as { md_customer_grade?: MDCustomerGrade } | null)?.md_customer_grade;
-                      if (!grade || grade === "rookie") return null;
-                      const cfg = MD_GRADE_CONFIG[grade];
+                      const dealCount = (md as { md_deal_count?: number } | null)?.md_deal_count;
+                      if (!dealCount || dealCount < 3) return null;
                       return (
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-black ${cfg.color} ${cfg.bgColor}`}>
-                          {cfg.label} MD
+                        <span className="flex items-center gap-0.5 text-[10px] font-bold text-neutral-400">
+                          {dealCount >= 30 ? (
+                            <Flame className="w-3.5 h-3.5 text-orange-500" />
+                          ) : dealCount >= 10 ? (
+                            <BadgeCheck className="w-3.5 h-3.5 text-blue-400" />
+                          ) : (
+                            <BadgeCheck className="w-3.5 h-3.5 text-neutral-500" />
+                          )}
+                          거래 {dealCount}회
                         </span>
                       );
                     })()}

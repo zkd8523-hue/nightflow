@@ -259,6 +259,7 @@ export default function NotificationsPage() {
     else if (filter === "md") query = query.in("type", MD_TYPES);
     await query;
     setNotifications([]);
+    window.dispatchEvent(new Event("notifications-changed"));
   };
 
   const handleNotificationClick = async (notification: InAppNotification) => {
