@@ -11,12 +11,23 @@ export async function closeExpiredAuction(
   if (closedAuctionIds.has(auctionId)) return false;
   closedAuctionIds.add(auctionId);
 
-  const { error } = await supabase.rpc("close_auction", { p_auction_id: auctionId });
+  const { data, error } = await supabase.rpc("close_auction", { p_auction_id: auctionId });
   if (error) {
     // cron이 먼저 처리했거나 이미 종료 — 정상 케이스
     console.debug(`[close_auction] ${auctionId}: ${error.message}`);
     return false;
   }
+
+  // 낙찰 시 알림 발송 (fire-and-forget)
+  const result = data as { result?: string } | null;
+  if (result?.result === "won") {
+    fetch("/api/notifications/auction-won", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ auctionId }),
+    }).catch(() => {});
+  }
+
   return true;
 }
 
