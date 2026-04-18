@@ -3,6 +3,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { notifyAuctionWon } from "../_shared/notify-auction-won.ts";
 
 // CORS 헤더 (Cron에서는 필요 없지만 수동 테스트용)
 const corsHeaders = {
@@ -104,14 +105,11 @@ serve(async (req: Request) => {
                         result: resultData?.result,
                     });
 
-                    // 낙찰 시 알림 발송 (MD + 낙찰자 인앱 알림 + 알림톡)
+                    // 낙찰 시 알림 발송 (MD 인앱 + MD 알림톡 + 낙찰자 알림톡)
+                    // 낙찰자 인앱 알림은 close_auction() DB 함수에서 생성됨
                     if (resultData?.result === "won") {
                         try {
-                            await fetch(`${APP_URL}/api/notifications/auction-won`, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({ auctionId: auction.id }),
-                            });
+                            await notifyAuctionWon(supabase, auction.id);
                         } catch (notifyErr) {
                             console.error(`⚠️ 낙찰 알림 발송 실패 (${auction.id}):`, notifyErr);
                         }
