@@ -417,7 +417,7 @@ export default function ProfilePage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => { window.location.href = "kakaotalk://"; }}
+                      onClick={() => { window.open("https://open.kakao.com/", "_blank"); }}
                       className="flex items-center gap-1 text-[11px] text-amber-400 font-medium hover:text-amber-300 transition-colors"
                     >
                       오픈채팅 만들기 <ExternalLink className="w-3 h-3" />

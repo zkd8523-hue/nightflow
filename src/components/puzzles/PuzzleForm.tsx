@@ -81,16 +81,15 @@ export function PuzzleForm({ userId }: { userId: string }) {
       if (navigator.clipboard) {
         await navigator.clipboard.writeText(suggestedTitle);
         toast.success("추천 오픈채팅방 이름이 복사되었습니다!", {
-          description: "카카오톡에서 방을 개설하고 링크를 붙여넣어주세요.",
+          description: "카카오톡에서 오픈채팅을 개설하고 링크를 붙여넣어주세요.",
           duration: 4000,
         });
       }
-      setTimeout(() => {
-        window.location.href = "kakaotalk://";
-      }, 1000);
     } catch {
-      window.location.href = "kakaotalk://";
+      // clipboard 실패 시 무시
     }
+    // 카카오톡 오픈채팅 생성 페이지로 이동
+    window.open("https://open.kakao.com/", "_blank");
   };
 
   const handleSubmit = async () => {
