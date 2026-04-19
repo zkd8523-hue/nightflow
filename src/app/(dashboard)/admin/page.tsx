@@ -38,7 +38,6 @@ export default async function AdminDashboardPage() {
     { count: wonAuctions },
     { count: strikeUsers },
     { count: totalClubs },
-    { count: pendingClubs },
     { count: pendingAppeals },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
@@ -57,7 +56,6 @@ export default async function AdminDashboardPage() {
     supabase.from("auctions").select("*", { count: "exact", head: true }).in("status", ["won", "confirmed"]),
     supabase.from("users").select("*", { count: "exact", head: true }).gt("strike_count", 0),
     supabase.from("clubs").select("*", { count: "exact", head: true }),
-    supabase.from("clubs").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("penalty_appeals").select("*", { count: "exact", head: true }).eq("status", "pending"),
   ]);
 
@@ -163,7 +161,7 @@ export default async function AdminDashboardPage() {
       icon: Store,
       color: "text-amber-500",
       bgColor: "bg-amber-500/10",
-      badge: pendingClubs ? `${pendingClubs}곳 대기` : null,
+      badge: null,
       href: "/admin/clubs",
     },
     {

@@ -180,16 +180,19 @@ export const PuzzleCard = memo(function PuzzleCard({
           제안하기
         </Button>
       ) : isFull ? (
-        <Button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            router.push("/puzzles/new");
-          }}
-          className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-neutral-800 text-neutral-300 border border-neutral-700 hover:border-neutral-500 hover:text-white"
-        >
-          인원 마감 · 새 퍼즐 만들기
-        </Button>
+        <div className="space-y-2">
+          <p className="text-[12px] text-neutral-500 font-medium text-center">인원 마감</p>
+          <Button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              router.push("/puzzles/new");
+            }}
+            className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
+          >
+            나도 퍼즐 만들기 →
+          </Button>
+        </div>
       ) : (
         <Button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin?.(puzzle); }}

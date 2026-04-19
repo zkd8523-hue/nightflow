@@ -149,7 +149,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
             </p>
           </div>
 
-          <p className="text-[11px] text-neutral-500 text-center">
+          <p className="text-[12px] text-neutral-300 text-center">
             참여하면 멤버들의 오픈채팅에 입장할 수 있어요
           </p>
           <Button

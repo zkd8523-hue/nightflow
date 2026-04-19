@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { MapPin, Phone, Edit, Map, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import type { Club } from "@/types/database";
 
@@ -20,7 +19,7 @@ export function ClubList({ initialClubs }: ClubListProps) {
     const [deleting, setDeleting] = useState(false);
     const supabase = createClient();
 
-    const canDelete = (club: Club) => club.status !== "approved";
+    const canDelete = (_club: Club) => true;
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -59,7 +58,6 @@ export function ClubList({ initialClubs }: ClubListProps) {
                                     <span className="px-2 py-0.5 bg-neutral-800 text-neutral-400 text-xs rounded-md font-bold flex-shrink-0">
                                         {club.area}
                                     </span>
-                                    <StatusBadge status={club.status} size="sm" />
                                 </div>
 
                                 <div className="space-y-2 text-sm">
@@ -84,11 +82,6 @@ export function ClubList({ initialClubs }: ClubListProps) {
                                         </div>
                                     )}
 
-                                    {club.rejected_reason && (
-                                        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2">
-                                            <p className="text-[11px] text-red-400 font-bold">거부 사유: {club.rejected_reason}</p>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </div>

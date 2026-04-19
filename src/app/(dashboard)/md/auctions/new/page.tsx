@@ -55,28 +55,20 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
         .eq("md_id", user.id)
         .order("name");
 
-    const approvedClubs = allClubs?.filter((c) => c.status === "approved") || [];
-    const pendingClubs = allClubs?.filter((c) => c.status === "pending") || [];
+    const approvedClubs = allClubs || [];
 
-    // Case 1: 승인된 클럽 있음 → 정상 진행 (AuctionForm 렌더링은 아래에서)
-    // Case 2: pending 클럽만 있음 → 승인 대기 안내 (신청 버튼 숨김)
-    if (approvedClubs.length === 0 && pendingClubs.length > 0) {
+    // 클럽 없음 → 신청 유도
+    if (approvedClubs.length === 0) {
         return (
             <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
                 <div className="max-w-md mx-auto p-6 text-center space-y-6">
                     <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto">
-                        <span className="text-3xl">⏳</span>
+                        <span className="text-3xl">🏢</span>
                     </div>
                     <div className="space-y-2">
-                        <h1 className="text-xl font-bold text-white">클럽 승인 진행 중</h1>
+                        <h1 className="text-xl font-bold text-white">등록된 클럽이 없습니다</h1>
                         <p className="text-neutral-400 text-sm leading-relaxed">
-                            신청하신 클럽이 관리자 검토 중입니다.<br />
-                            승인까지 1-2일 소요됩니다.
-                        </p>
-                    </div>
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-                        <p className="text-amber-500 text-xs">
-                            승인 대기 중인 클럽: {pendingClubs.map((c) => c.name).join(", ")}
+                            경매를 등록하려면 관리자에게 클럽 등록을 요청해주세요.
                         </p>
                     </div>
                     <Link
@@ -85,44 +77,6 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
                     >
                         대시보드로 돌아가기
                     </Link>
-                </div>
-            </div>
-        );
-    }
-
-    // Case 3: 클럽 없음 → 신청 유도
-    if (approvedClubs.length === 0 && pendingClubs.length === 0) {
-        return (
-            <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-                <div className="max-w-md mx-auto p-6 text-center space-y-6">
-                    <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto">
-                        <span className="text-3xl">🏢</span>
-                    </div>
-                    <div className="space-y-2">
-                        <h1 className="text-xl font-bold text-white">승인된 클럽이 없습니다</h1>
-                        <p className="text-neutral-400 text-sm leading-relaxed">
-                            경매를 등록하려면 승인된 클럽이 필요합니다.
-                        </p>
-                    </div>
-                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 space-y-2">
-                        <p className="text-amber-500 text-sm font-bold">💡 클럽 승인 절차</p>
-                        <p className="text-amber-500/80 text-xs leading-relaxed">
-                            1. MD Apply 페이지에서 클럽 정보 입력<br />
-                            2. 관리자 검토 (1-2일)<br />
-                            3. 승인 완료 후 경매 등록 가능
-                        </p>
-                    </div>
-                    <div className="flex flex-col gap-3 pt-2">
-                        <Link
-                            href="/md/dashboard"
-                            className="inline-block px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-neutral-200 transition-colors"
-                        >
-                            대시보드로 돌아가기
-                        </Link>
-                        <p className="text-neutral-600 text-xs">
-                            문의: maddawids@gmail.com
-                        </p>
-                    </div>
                 </div>
             </div>
         );

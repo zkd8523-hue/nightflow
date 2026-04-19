@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Check } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 import type { Puzzle, Club } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { LiquorSelector } from "@/components/md/LiquorSelector";
@@ -24,7 +24,7 @@ interface OfferSheetProps {
   onSubmitted?: () => void;
 }
 
-const TABLE_TYPES = ["Standard", "VIP", "Premium"] as const;
+const TABLE_TYPES = ["일반석", "VIP"] as const;
 
 export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetProps) {
   const supabase = createClient();
@@ -32,13 +32,19 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
   const [loading, setLoading] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
   const [activeOffers, setActiveOffers] = useState<number>(0);
+  const [activeOfferList, setActiveOfferList] = useState<{ id: string; puzzle_title: string; table_type: string; proposed_price: number }[]>([]);
+  const [showSlotDropdown, setShowSlotDropdown] = useState(false);
+  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [myClubs, setMyClubs] = useState<Pick<Club, "id" | "name" | "area">[]>([]);
 
   const [selectedClubId, setSelectedClubId] = useState<string>("");
-  const [tableType, setTableType] = useState<"Standard" | "VIP" | "Premium">("Standard");
+  const [tableType, setTableType] = useState<string>("일반석");
+  const [customTableType, setCustomTableType] = useState<string>("");
   const [proposedPrice, setProposedPrice] = useState<string>("");
   const [selectedIncludes, setSelectedIncludes] = useState<string[]>([]);
   const [comment, setComment] = useState("");
+  const [customExtra, setCustomExtra] = useState<string>("");
+  const [showCustomExtraInput, setShowCustomExtraInput] = useState(false);
 
   const baseBudget = puzzle.total_budget ?? (puzzle.budget_per_person * puzzle.target_count);
   const perPersonBudget = puzzle.total_budget
@@ -62,14 +68,64 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
 
     const [{ data: userData }, { data: clubs }] = await Promise.all([
       supabase.from("users").select("md_credits, md_active_offers_count").eq("id", user.id).single(),
-      supabase.from("clubs").select("id, name, area").eq("md_id", user.id).eq("status", "approved"),
+      supabase.from("clubs").select("id, name, area").eq("md_id", user.id),
     ]);
 
     setCredits(userData?.md_credits ?? null);
-    setActiveOffers(userData?.md_active_offers_count ?? 0);
     setMyClubs(clubs ?? []);
     if (clubs && clubs.length === 1) {
       setSelectedClubId(clubs[0].id);
+    }
+
+    const { data: offerData, error: offerError } = await supabase
+      .from("puzzle_offers")
+      .select("id, table_type, proposed_price, puzzle_id")
+      .eq("md_id", user.id)
+      .eq("status", "pending");
+
+    if (offerError) {
+      console.error("offer load error:", offerError);
+      return;
+    }
+
+    if (!offerData || offerData.length === 0) {
+      setActiveOfferList([]);
+      setActiveOffers(0);
+      return;
+    }
+
+    const puzzleIds = offerData.map((o) => o.puzzle_id);
+    const { data: puzzleData } = await supabase
+      .from("puzzles")
+      .select("id, notes, area")
+      .in("id", puzzleIds);
+
+    const puzzleMap = Object.fromEntries((puzzleData ?? []).map((p) => [p.id, p]));
+
+    const list = offerData.map((o) => ({
+      id: o.id,
+      table_type: o.table_type,
+      proposed_price: o.proposed_price,
+      puzzle_title: puzzleMap[o.puzzle_id]?.notes || puzzleMap[o.puzzle_id]?.area || "퍼즐",
+    }));
+
+    setActiveOfferList(list);
+    setActiveOffers(list.length); // 실제 pending 오퍼 수 기준으로 동기화
+  };
+
+  const handleWithdraw = async (offerId: string) => {
+    setWithdrawingId(offerId);
+    try {
+      const { data, error } = await supabase.rpc("withdraw_offer", { p_offer_id: offerId });
+      if (error) throw error;
+      if (!data?.success) { toast.error(data?.error || "철회에 실패했습니다"); return; }
+      toast.success("오퍼가 철회됐습니다. 슬롯이 회복됐습니다.");
+      await loadMdInfo();
+      setShowSlotDropdown(false);
+    } catch {
+      toast.error("철회에 실패했습니다");
+    } finally {
+      setWithdrawingId(null);
     }
   };
 
@@ -89,6 +145,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
   const handleSubmit = async () => {
     if (!selectedClubId) {
       toast.error("클럽을 선택해주세요");
+      return;
+    }
+    if (tableType === "custom" && !customTableType.trim()) {
+      toast.error("테이블 타입을 입력해주세요");
       return;
     }
     if (!priceNum || priceNum <= 0) {
@@ -113,7 +173,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
       const { data, error } = await supabase.rpc("submit_offer", {
         p_puzzle_id: puzzle.id,
         p_club_id: selectedClubId,
-        p_table_type: tableType,
+        p_table_type: tableType === "custom" ? customTableType.trim() : tableType,
         p_proposed_price: priceNum,
         p_includes: selectedIncludes,
         p_comment: comment.trim() || null,
@@ -170,17 +230,56 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
         </SheetHeader>
 
         {/* 슬롯 & 크레딧 상태 */}
-        <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-3 mb-5 flex justify-between items-center">
-          <div>
-            <p className="text-[11px] text-neutral-500">활성 오퍼</p>
-            <p className="text-[14px] font-black text-white">{activeOffers}/3 슬롯 사용 중</p>
+        <div className="mb-5">
+          <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-3 flex justify-between items-center">
+            <button
+              type="button"
+              onClick={() => activeOffers > 0 && setShowSlotDropdown((v) => !v)}
+              className="flex items-center gap-1.5 text-left"
+            >
+              <div>
+                <p className="text-[11px] text-neutral-500">활성 오퍼</p>
+                <p className={`text-[14px] font-black ${activeOffers >= 3 ? "text-red-400" : "text-white"}`}>
+                  {activeOffers}/3 슬롯 사용 중
+                </p>
+              </div>
+              {activeOffers > 0 && (
+                <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${showSlotDropdown ? "rotate-180" : ""}`} />
+              )}
+            </button>
+            <div className="text-right">
+              <p className="text-[11px] text-neutral-500">크레딧 잔액</p>
+              <p className={`text-[14px] font-black ${credits !== null && credits < 30 ? "text-red-400" : "text-amber-400"}`}>
+                {credits !== null ? `${credits} 크레딧` : "..."}
+              </p>
+            </div>
           </div>
-          <div className="text-right">
-            <p className="text-[11px] text-neutral-500">크레딧 잔액</p>
-            <p className="text-[14px] font-black text-amber-400">
-              {credits !== null ? `${credits} 크레딧` : "..."}
-            </p>
-          </div>
+
+          {/* 활성 오퍼 드롭다운 */}
+          {showSlotDropdown && (
+            <div className="mt-1 border border-neutral-800 rounded-xl overflow-hidden">
+              {activeOfferList.length === 0 && (
+                <p className="px-4 py-3 text-[12px] text-neutral-500">활성 오퍼가 없습니다.</p>
+              )}
+              {activeOfferList.map((offer) => (
+                <div key={offer.id} className="flex items-center justify-between px-4 py-3 border-b border-neutral-800/60 last:border-0 bg-neutral-900/40">
+                  <div>
+                    <p className="text-[13px] font-bold text-white">{offer.puzzle_title}</p>
+                    <p className="text-[11px] text-neutral-500">{offer.table_type} · {offer.proposed_price.toLocaleString()}원</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleWithdraw(offer.id)}
+                    disabled={withdrawingId === offer.id}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] font-bold hover:bg-red-500/20 transition-all disabled:opacity-50"
+                  >
+                    <X className="w-3 h-3" />
+                    {withdrawingId === offer.id ? "철회 중" : "철회"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-5">
@@ -217,7 +316,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
                 <button
                   key={type}
                   type="button"
-                  onClick={() => setTableType(type)}
+                  onClick={() => { setTableType(type); setCustomTableType(""); }}
                   className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
                     tableType === type
                       ? "bg-white text-black"
@@ -227,13 +326,32 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
                   {type}
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => { setTableType("custom"); setCustomTableType(""); }}
+                className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
+                  tableType === "custom"
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:border-neutral-500 hover:text-white"
+                }`}
+              >
+                직접 입력
+              </button>
             </div>
+            {tableType === "custom" && (
+              <Input
+                placeholder="예: 룸 A, 루프탑석, VVIP..."
+                value={customTableType}
+                onChange={(e) => setCustomTableType(e.target.value)}
+                className="bg-neutral-900 border-neutral-700 text-white text-[13px] h-10"
+              />
+            )}
           </div>
 
           {/* 제안 금액 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-[13px] font-bold text-white">제안 금액 (방장에게만 공개)</p>
+              <p className="text-[13px] font-bold text-white">제안 금액 (방장에게만 공개됩니다)</p>
               {isPremium && isPriceValid && (
                 <span className="text-[11px] text-amber-400 font-bold">+30% 프리미엄</span>
               )}
@@ -263,7 +381,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
 
           {/* 포함 내역 */}
           <div className="space-y-3">
-            <p className="text-[13px] font-bold text-white">포함 내역 <span className="text-neutral-500 font-normal">(방장에게만 공개)</span></p>
+            <p className="text-[13px] font-bold text-white">포함 내역 <span className="text-neutral-500 font-normal">(방장에게만 공개됩니다)</span></p>
 
             {/* 주류 선택 */}
             <LiquorSelector
@@ -292,7 +410,57 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
                     {item}
                   </button>
                 ))}
+                {/* 커스텀 항목 태그 */}
+                {extraItems.filter(i => !EXTRAS_OPTIONS.includes(i as typeof EXTRAS_OPTIONS[number])).map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleExtra(item)}
+                    className="px-3 py-1.5 rounded-full text-[12px] font-bold flex items-center gap-1 bg-green-500 text-black transition-all"
+                  >
+                    <Check className="w-3 h-3" />
+                    {item}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setShowCustomExtraInput((v) => !v)}
+                  className="px-3 py-1.5 rounded-full text-[12px] font-bold bg-neutral-800 text-neutral-500 border border-neutral-700 hover:border-neutral-500 hover:text-white transition-all"
+                >
+                  + 직접 입력
+                </button>
               </div>
+              {showCustomExtraInput && (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="예: 케이크, 꽃다발..."
+                    value={customExtra}
+                    onChange={(e) => setCustomExtra(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && customExtra.trim()) {
+                        e.preventDefault();
+                        toggleExtra(customExtra.trim());
+                        setCustomExtra("");
+                        setShowCustomExtraInput(false);
+                      }
+                    }}
+                    className="bg-neutral-900 border-neutral-700 text-white text-[13px] h-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customExtra.trim()) {
+                        toggleExtra(customExtra.trim());
+                        setCustomExtra("");
+                        setShowCustomExtraInput(false);
+                      }
+                    }}
+                    className="px-3 h-9 rounded-xl bg-white text-black text-[12px] font-bold flex-shrink-0"
+                  >
+                    추가
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -300,7 +468,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
           <div className="space-y-2">
             <p className="text-[13px] font-bold text-white">
               MD 코멘트{" "}
-              <span className="text-[12px] text-neutral-500 font-normal">(선택, 방장에게만 공개)</span>
+              <span className="text-[12px] text-neutral-500 font-normal">(선택, 방장에게만 공개됩니다)</span>
             </p>
             <textarea
               value={comment}
@@ -321,9 +489,17 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
             </p>
           </div>
 
+          {credits !== null && credits < 30 && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+              <p className="text-[12px] text-red-400 leading-relaxed">
+                크레딧이 부족합니다 ({credits}/30). 매일 오전 6시에 자동 충전됩니다.
+              </p>
+            </div>
+          )}
+
           <Button
             onClick={handleSubmit}
-            disabled={loading || myClubs.length === 0 || !isPriceValid || selectedIncludes.length === 0 || activeOffers >= 3}
+            disabled={loading || myClubs.length === 0 || !isPriceValid || selectedIncludes.length === 0 || activeOffers >= 3 || (credits !== null && credits < 30)}
             className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
             {loading ? "전송 중..." : "제안서 보내기"}
@@ -331,7 +507,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
 
           {activeOffers >= 3 && (
             <p className="text-center text-[12px] text-red-400">
-              동시 활성 오퍼가 3건입니다. 기존 오퍼를 철회해야 새로 제안할 수 있습니다.
+              슬롯이 가득 찼습니다. 위에서 오퍼를 철회하고 새로 제안하세요.
             </p>
           )}
         </div>

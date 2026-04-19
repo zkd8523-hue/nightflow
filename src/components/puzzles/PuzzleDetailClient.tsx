@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame } from "lucide-react";
-import { maskName } from "@/lib/utils/format";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -639,7 +638,7 @@ export function PuzzleDetailClient({
                       )}
                       <div>
                         <p className="text-[14px] font-bold text-white flex items-center gap-1.5">
-                          {isMe ? (member.user?.name || "알 수 없음") : maskName(member.user?.name)}
+                          {member.user?.name || "알 수 없음"}
                           {isLeaderMember && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
                               대표자
@@ -683,7 +682,7 @@ export function PuzzleDetailClient({
           )}
 
           {/* 참여자 나가기 버튼 */}
-          {isMember && isOpen && (
+          {isMember && (isOpen || isFull) && (
             <Button
               onClick={handleLeave}
               disabled={actionLoading}
