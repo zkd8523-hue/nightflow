@@ -61,11 +61,24 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
         return;
       }
 
-      toast.success("퍼즐에 참여했습니다!");
       onClose();
-      router.refresh();
-    } catch {
-      toast.error("참여에 실패했습니다. 다시 시도해주세요.");
+      if (puzzle.kakao_open_chat_url) {
+        toast("퍼즐에 참여했습니다! 오픈채팅에 입장하세요", {
+          duration: 8000,
+          action: {
+            label: "오픈채팅 열기",
+            onClick: () => window.open(puzzle.kakao_open_chat_url!, "_blank"),
+          },
+          description: "내 활동에서 언제든 다시 확인할 수 있어요",
+        });
+      } else {
+        toast.success("퍼즐에 참여했습니다!");
+      }
+      router.push(`/puzzles/${puzzle.id}`);
+    } catch (err: unknown) {
+      console.error("join_puzzle error:", JSON.stringify(err));
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      toast.error(`참여 실패: ${msg}`);
     } finally {
       setSubmitting(false);
     }

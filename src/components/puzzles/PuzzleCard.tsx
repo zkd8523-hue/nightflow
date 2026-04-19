@@ -11,6 +11,8 @@ interface PuzzleCardProps {
   puzzle: Puzzle;
   userRole?: "user" | "md" | "admin";
   offerCount?: number;
+  isMember?: boolean;
+  hasOffered?: boolean;
   onJoin?: (puzzle: Puzzle) => void;
   onUnlock?: (puzzle: Puzzle) => void;
 }
@@ -60,6 +62,8 @@ export const PuzzleCard = memo(function PuzzleCard({
   puzzle,
   userRole,
   offerCount = 0,
+  isMember = false,
+  hasOffered = false,
   onJoin,
   onUnlock,
 }: PuzzleCardProps) {
@@ -173,12 +177,21 @@ export const PuzzleCard = memo(function PuzzleCard({
 
       {/* CTA 버튼 */}
       {isMd ? (
-        <Button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-          className="w-full h-11 bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px] rounded-xl"
-        >
-          제안하기
-        </Button>
+        hasOffered ? (
+          <Button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className="w-full h-11 font-black text-[13px] rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 pointer-events-none"
+          >
+            제안 완료
+          </Button>
+        ) : (
+          <Button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
+            className="w-full h-11 bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px] rounded-xl"
+          >
+            제안하기
+          </Button>
+        )
       ) : isFull ? (
         <div className="space-y-2">
           <p className="text-[12px] text-neutral-500 font-medium text-center">인원 마감</p>
@@ -193,6 +206,13 @@ export const PuzzleCard = memo(function PuzzleCard({
             나도 퍼즐 만들기 →
           </Button>
         </div>
+      ) : isMember ? (
+        <Button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          className="w-full h-11 font-black text-[13px] rounded-xl transition-all bg-green-500/15 border border-green-500/30 text-green-400 pointer-events-none"
+        >
+          참여 중
+        </Button>
       ) : (
         <Button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin?.(puzzle); }}

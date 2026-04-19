@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MDAuctionCard } from "./MDAuctionCard";
 import type { Auction, User, Club, PuzzleOffer } from "@/types/database";
-import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink } from "lucide-react";
+import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink, Coins } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { toast } from "sonner";
 
@@ -59,9 +59,10 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
     const [clubSheetOpen, setClubSheetOpen] = useState(false);
     const [favoriteMdCount, setFavoriteMdCount] = useState<number>(0);
     const [clubFavCounts, setClubFavCounts] = useState<Record<string, number>>({});
+    const [mdCredits, setMdCredits] = useState<number | null>(null);
     const supabase = createClient();
 
-    // 나를 찜한 유저 수
+    // 나를 찜한 유저 수 + 크레딧 잔액
     useEffect(() => {
         const fetchFavoriteCount = async () => {
             const { count } = await supabase
@@ -70,7 +71,16 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                 .eq("md_id", user.id);
             setFavoriteMdCount(count ?? 0);
         };
+        const fetchCredits = async () => {
+            const { data } = await supabase
+                .from("users")
+                .select("md_credits")
+                .eq("id", user.id)
+                .single();
+            setMdCredits(data?.md_credits ?? null);
+        };
         fetchFavoriteCount();
+        fetchCredits();
     }, [user.id, supabase]);
 
     // 클럽별 찜 수
@@ -338,49 +348,92 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                     })();
 
                                     return (
-                                        <Link key={offer.id} href={`/puzzles/${p.id}`}>
-                                            <div className={`bg-[#1C1C1E] border rounded-2xl p-4 space-y-3 transition-colors hover:border-neutral-600 ${
-                                                isAccepted ? "border-green-500/30" : "border-neutral-800"
-                                            }`}>
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                                                            isAccepted
-                                                                ? "bg-green-500/20 text-green-400"
-                                                                : "bg-purple-500/20 text-purple-400"
-                                                        }`}>
-                                                            {isAccepted ? "수락됨" : "대기중"}
-                                                        </span>
-                                                        <span className="text-[13px] text-neutral-400">{p.area} · {eventDateStr}</span>
+                                        <Card key={offer.id} className={`overflow-hidden bg-[#1C1C1E] border-neutral-800/50 hover:border-neutral-700 transition-all p-3 cursor-pointer active:scale-[0.98] ${
+                                            isAccepted ? "border-green-500/30" : ""
+                                        }`}>
+                                            <Link href={`/puzzles/${p.id}`} className="block">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 mb-1">
+                                                            <span className={`text-[9px] font-bold px-1.5 py-0 h-4 inline-flex items-center rounded-full ${
+                                                                isAccepted
+                                                                    ? "bg-green-500/20 text-green-400"
+                                                                    : "bg-purple-500/20 text-purple-400"
+                                                            }`}>
+                                                                {isAccepted ? "수락됨" : "대기중"}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="font-black text-[18px] text-white truncate leading-tight">
+                                                            {p.area} · {eventDateStr}
+                                                        </h3>
                                                     </div>
-                                                    <span className="text-[12px] text-neutral-600">{p.leader?.display_name || p.leader?.name || "익명"}</span>
+                                                    </div>
+
+                                                <div className="flex items-end justify-between mt-1">
+                                                    <div>
+                                                        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">제안가</div>
+                                                        <div className="flex items-baseline gap-1">
+                                                            <span className="text-[20px] font-black text-white leading-none">{offer.proposed_price.toLocaleString()}</span>
+                                                            <span className="text-[12px] font-bold text-neutral-400">원</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">예산</div>
+                                                        <span className="text-[14px] font-bold text-neutral-300">{budget.toLocaleString()}원 · {p.target_count}명</span>
+                                                    </div>
                                                 </div>
 
-                                                <div className="flex items-center justify-between">
-                                                    <div className="space-y-1">
-                                                        <p className="text-[13px] text-neutral-500">내 제안가</p>
-                                                        <p className="text-[18px] font-black text-white">{offer.proposed_price.toLocaleString()}<span className="text-[12px] text-neutral-500">원</span></p>
-                                                    </div>
-                                                    <div className="text-right space-y-1">
-                                                        <p className="text-[13px] text-neutral-500">예산</p>
-                                                        <p className="text-[15px] font-bold text-neutral-300">{budget.toLocaleString()}원 · {p.target_count}명</p>
-                                                    </div>
+                                                {/* 제안 상세 */}
+                                                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                                    <span className="text-[11px] font-bold text-neutral-300 bg-neutral-800 px-2 py-0.5 rounded">{offer.table_type}</span>
+                                                    {offer.includes?.slice(0, 3).map((item: string) => (
+                                                        <span key={item} className="text-[11px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">{item}</span>
+                                                    ))}
+                                                    {offer.includes?.length > 3 && (
+                                                        <span className="text-[11px] text-neutral-500">+{offer.includes.length - 3}</span>
+                                                    )}
                                                 </div>
+                                            </Link>
 
-                                                {isAccepted && (
+                                            {/* Footer */}
+                                            <div className="mt-2 pt-2 border-t border-neutral-800/60 flex items-center justify-end">
+                                                {isAccepted ? (
                                                     <a
                                                         href={p.kakao_open_chat_url}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#FEE500] text-[#3C1E1E] font-bold text-[13px] rounded-xl hover:bg-[#FDD835] transition-colors"
+                                                        className="h-8 px-3 rounded-lg bg-[#FEE500] text-[#3C1E1E] font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-[#FDD835] transition-colors"
                                                     >
-                                                        <ExternalLink className="w-4 h-4" />
-                                                        카카오 오픈채팅 연락하기
+                                                        <ExternalLink className="w-3.5 h-3.5" />
+                                                        오픈채팅 연락
                                                     </a>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            if (!confirm("이 제안을 철회하시겠습니까?")) return;
+                                                            (async () => {
+                                                                const supabase = createClient();
+                                                                const { data, error } = await supabase.rpc("withdraw_offer", { p_offer_id: offer.id });
+                                                                if (error || !data?.success) {
+                                                                    toast.error(data?.error || "철회에 실패했습니다");
+                                                                    return;
+                                                                }
+                                                                toast.success("오퍼가 철회됐습니다");
+                                                                window.location.reload();
+                                                            })();
+                                                        }}
+                                                        className="h-8 px-3 rounded-lg bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-400"
+                                                    >
+                                                        철회
+                                                    </Button>
                                                 )}
                                             </div>
-                                        </Link>
+                                        </Card>
                                     );
                                 })
                             ) : (
@@ -426,7 +479,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                         <TrendingUp className="w-5 h-5 text-green-500" />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-5">
+                    <div className="grid grid-cols-3 gap-x-4 gap-y-5">
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-1.5 text-neutral-500">
                                 <Plus className="w-3 h-3" />
@@ -443,7 +496,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                 {auctions.reduce((acc, a) => acc + a.bid_count, 0)}<span className="text-[12px] text-neutral-500 ml-0.5">회</span>
                             </p>
                         </div>
-                        <div className="space-y-1.5 pt-1 border-t border-neutral-800/50">
+                        <div className="space-y-1.5">
                             <div className="flex items-center gap-1.5 text-neutral-500">
                                 <Ticket className="w-3 h-3" />
                                 <span className="text-[10px] font-bold uppercase tracking-wider">낙찰건</span>
@@ -459,6 +512,15 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                             </div>
                             <p className="text-[24px] font-black text-red-400 leading-none">
                                 {favoriteMdCount}<span className="text-[12px] text-neutral-500 ml-0.5">명</span>
+                            </p>
+                        </div>
+                        <div className="space-y-1.5 pt-1 border-t border-neutral-800/50">
+                            <div className="flex items-center gap-1.5 text-neutral-500">
+                                <Coins className="w-3 h-3" />
+                                <span className="text-[10px] font-bold uppercase tracking-wider">크레딧</span>
+                            </div>
+                            <p className={`text-[24px] font-black leading-none ${mdCredits !== null && mdCredits < 30 ? "text-red-400" : "text-amber-400"}`}>
+                                {mdCredits ?? "—"}<span className="text-[12px] text-neutral-500 ml-0.5">/120</span>
                             </p>
                         </div>
                     </div>

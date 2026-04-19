@@ -70,3 +70,10 @@ verify_jwt = false
 entrypoint = "./functions/notify-puzzle-events/index.ts"
 # 크론: 매 5분 — Dashboard > Edge Functions > notify-puzzle-events > Settings > Cron Schedule
 # schedule = "*/5 * * * *"
+
+[functions.recharge-md-credits]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/recharge-md-credits/index.ts"
+# 크론: 매일 06:00 KST (21:00 UTC) — Dashboard > Edge Functions > recharge-md-credits > Settings > Cron Schedule
+# schedule = "0 21 * * *"

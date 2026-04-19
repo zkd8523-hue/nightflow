@@ -24,27 +24,31 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [devError, setDevError] = useState("");
+  const [loginError, setLoginError] = useState("");
   const supabase = createClient();
 
   const handleKakaoLogin = async (customRedirect?: string) => {
     setLoading(true);
+    setLoginError("");
     const target = customRedirect || redirectPath;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "kakao",
-      options: {
-        // ✅ Kakao OAuth Redirect URI 쿼리 파라미터 처리
-        // - 카카오 개발자 콘솔 등록 URI: http://localhost:3000/auth/callback (쿼리 제외)
-        // - 실제 요청 URI: http://localhost:3000/auth/callback?next=%2F
-        // - 카카오는 scheme/host/port/path만 검증하므로 쿼리 파라미터는 안전
-        // - next 파라미터는 /auth/callback에서 로그인 후 리다이렉트에 사용
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
-        scopes: "profile_nickname profile_image",
-        skipBrowserRedirect: false,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "kakao",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
+          scopes: "profile_nickname profile_image",
+          skipBrowserRedirect: false,
+        },
+      });
 
-    if (error) {
-      logger.error("Login error:", error);
+      if (error) {
+        logger.error("Login error:", error);
+        setLoginError(error.message);
+        setLoading(false);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLoginError(msg);
       setLoading(false);
     }
   };
@@ -137,6 +141,12 @@ export default function LoginPage() {
         {redirectPath !== "/" && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
             <p className="text-[13px] text-amber-400 font-bold">로그인 후 이용할 수 있습니다.</p>
+          </div>
+        )}
+
+        {loginError && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
+            <p className="text-[13px] text-red-400 font-bold">로그인 오류: {loginError}</p>
           </div>
         )}
 

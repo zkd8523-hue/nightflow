@@ -4,6 +4,8 @@ import { MDDashboard } from "@/components/md/MDDashboard";
 
 import type { User, Auction } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+
 export default async function MDDashboardPage({ searchParams }: { searchParams: Promise<{ test?: string }> }) {
     const supabase = await createClient();
     const isDev = process.env.NODE_ENV === "development";
@@ -113,19 +115,21 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         .order("created_at", { ascending: false });
 
     // 7. MD의 퍼즐 오퍼 조회 (퍼즐 정보 포함)
-    const { data: puzzleOffers } = await supabase
+    const { data: puzzleOffers, error: puzzleOffersError } = await supabase
         .from("puzzle_offers")
         .select(`
             *,
-            puzzle:puzzles (
+            puzzle:puzzles!puzzle_offers_puzzle_id_fkey (
                 id, area, event_date, total_budget, budget_per_person,
                 target_count, current_count, status, kakao_open_chat_url,
-                leader:users!puzzles_leader_id_fkey (name)
+                leader_id
             )
         `)
         .eq("md_id", userId)
         .in("status", ["pending", "accepted"])
         .order("created_at", { ascending: false });
+    if (puzzleOffersError) console.error("puzzleOffers query error:", puzzleOffersError);
+    console.log("puzzleOffers count:", puzzleOffers?.length, "userId:", userId);
 
     // 테스트 모드일 때 경매가 하나도 없으면 샘플 하나 추가 (상태 확인용)
     const displayAuctions = (testMode && (!auctions || auctions.length === 0)) ? [

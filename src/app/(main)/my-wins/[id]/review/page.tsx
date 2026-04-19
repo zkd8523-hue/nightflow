@@ -28,6 +28,7 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -66,6 +67,7 @@ export default function ReviewPage() {
   async function handleSubmit() {
     if (rating === 0) return;
     setSubmitting(true);
+    setError(null);
 
     try {
       const res = await fetch("/api/auction/review", {
@@ -76,7 +78,12 @@ export default function ReviewPage() {
 
       if (res.ok) {
         setSubmitted(true);
+      } else {
+        const data = await res.json();
+        setError(data.error || "제출에 실패했습니다. 다시 시도해주세요.");
       }
+    } catch {
+      setError("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setSubmitting(false);
     }
@@ -214,6 +221,9 @@ export default function ReviewPage() {
           >
             {submitting ? "제출 중..." : "리뷰 남기기"}
           </Button>
+          {error && (
+            <p className="text-red-400 text-sm text-center font-medium">{error}</p>
+          )}
         </Card>
       </div>
     </div>

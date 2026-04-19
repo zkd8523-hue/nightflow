@@ -26,7 +26,8 @@ import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
 import { FallbackOfferCard } from "./FallbackOfferCard";
 import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
-import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame } from "lucide-react";
+import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame, Heart } from "lucide-react";
+import { useFavoritesContext } from "@/components/providers";
 import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { ShareAuctionSheet } from "./ShareAuctionSheet";
@@ -47,6 +48,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const router = useRouter();
   const supabase = createClient();
   const { user } = useCurrentUser();
+  const { isFavorited, toggleFavorite } = useFavoritesContext();
   const { currentAuction, setCurrentAuction, setBids, bids } = useAuctionStore();
 
   const bidPanelRef = useRef<BidPanelRef>(null);
@@ -315,6 +317,13 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 </button>
               </>
             )}
+            <button
+              onClick={() => toggleFavorite(displayAuction.club_id)}
+              className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+              title={isFavorited(displayAuction.club_id) ? "찜 해제" : "클럽 찜하기"}
+            >
+              <Heart className={`w-5 h-5 transition-colors ${isFavorited(displayAuction.club_id) ? "text-red-500 fill-red-500" : "text-white"}`} />
+            </button>
             <button
               onClick={() => setShareSheetOpen(true)}
               className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"

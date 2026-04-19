@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PuzzleCard } from "./PuzzleCard";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
+import { createClient } from "@/lib/supabase/client";
 import type { Puzzle } from "@/types/database";
 
 function getDDay(eventDate: string): string {
@@ -28,6 +29,24 @@ interface PuzzleListProps {
 export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
+  const [myPuzzleIds, setMyPuzzleIds] = useState<Set<string>>(new Set());
+  const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [{ data: members }, { data: offers }] = await Promise.all([
+        supabase.from("puzzle_members").select("puzzle_id").eq("user_id", user.id),
+        supabase.from("puzzle_offers").select("puzzle_id").eq("md_id", user.id).in("status", ["pending", "accepted"]),
+      ]);
+
+      if (members) setMyPuzzleIds(new Set(members.map(d => d.puzzle_id)));
+      if (offers) setMyOfferedPuzzleIds(new Set(offers.map(d => d.puzzle_id)));
+    })();
+  }, []);
 
   return (
     <div className="relative">
@@ -82,6 +101,8 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
                           puzzle={puzzle}
                           userRole={userRole}
                           offerCount={offerCounts[puzzle.id] || 0}
+                          isMember={myPuzzleIds.has(puzzle.id)}
+                          hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
                           onJoin={(p) => {
                             setJoinTarget(p);
                           }}

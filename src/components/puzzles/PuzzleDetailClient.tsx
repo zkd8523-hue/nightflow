@@ -118,13 +118,16 @@ export function PuzzleDetailClient({
       .from("puzzle_offers")
       .select("*, club:clubs(id, name, area), md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, md_deal_count)")
       .eq("puzzle_id", puzzle.id)
+      .in("status", ["pending", "accepted"])
       .order("created_at", { ascending: true });
 
     if (!data) return;
     setOffers(data as PuzzleOffer[]);
 
     if (currentUserId && isMd) {
-      const mine = data.find((o) => o.md_id === currentUserId) || null;
+      const mine = data.find((o) => o.md_id === currentUserId && o.status === "pending")
+        || data.find((o) => o.md_id === currentUserId && o.status === "accepted")
+        || null;
       setMyOffer(mine as PuzzleOffer | null);
     }
 
@@ -590,6 +593,16 @@ export function PuzzleDetailClient({
                 <p className="text-[14px] font-black text-white">
                   {myOffer.table_type} · {myOffer.proposed_price.toLocaleString()}원
                 </p>
+                {myOffer.includes?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {myOffer.includes.map((item: string) => (
+                      <span key={item} className="text-[11px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400">{item}</span>
+                    ))}
+                  </div>
+                )}
+                {myOffer.comment && (
+                  <p className="text-[12px] text-neutral-400 italic">"{myOffer.comment}"</p>
+                )}
                 {myOffer.status === "accepted" && (
                   <p className="text-[12px] text-amber-400">방장의 카카오 링크로 직접 연락하세요!</p>
                 )}

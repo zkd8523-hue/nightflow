@@ -194,8 +194,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
       toast.success("제안서가 전송되었습니다! 방장의 수락을 기다려주세요.");
       onSubmitted?.();
       onClose();
-    } catch {
-      toast.error("제안에 실패했습니다. 다시 시도해주세요.");
+    } catch (err: unknown) {
+      console.error("submit_offer error:", JSON.stringify(err));
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      toast.error(`제안 실패: ${msg}`);
     } finally {
       setLoading(false);
     }
