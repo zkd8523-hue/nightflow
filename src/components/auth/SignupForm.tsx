@@ -38,13 +38,29 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const requiredMet = agreeAge && agreeTerms && agreePrivacy;
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        router.push("/login");
-        return;
+    let cancelled = false;
+
+    const checkSession = async () => {
+      // 모바일에서 쿠키 설정 지연 대응: 최대 3회 재시도
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (cancelled) return;
+        if (user) {
+          setAuthUser(user);
+          return;
+        }
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 500));
+        }
       }
-      setAuthUser(user);
-    });
+      // 3회 모두 실패
+      if (!cancelled) {
+        router.push("/login?error=session_expired");
+      }
+    };
+
+    checkSession();
+    return () => { cancelled = true; };
   }, [router, supabase]);
 
   // 전체 동의 토글

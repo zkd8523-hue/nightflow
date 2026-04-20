@@ -16,9 +16,19 @@ function getRedirectPath() {
   return params.get("redirect") || "/";
 }
 
+function getAuthError() {
+  if (typeof window === "undefined") return "";
+  const params = new URLSearchParams(window.location.search);
+  const error = params.get("error");
+  if (!error) return "";
+  if (error === "session_expired") return "세션이 만료되었습니다. 다시 로그인해주세요.";
+  return "카카오 로그인에 실패했습니다. 다시 시도해주세요.";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const redirectPath = getRedirectPath();
+  const authError = getAuthError();
   const [loading, setLoading] = useState(false);
   const [showDevLogin, setShowDevLogin] = useState(false);
   const [email, setEmail] = useState("");
@@ -144,9 +154,9 @@ export default function LoginPage() {
           </div>
         )}
 
-        {loginError && (
+        {(loginError || authError) && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
-            <p className="text-[13px] text-red-400 font-bold">로그인 오류: {loginError}</p>
+            <p className="text-[13px] text-red-400 font-bold">{loginError || authError}</p>
           </div>
         )}
 

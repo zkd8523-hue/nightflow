@@ -1,44 +1,49 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 /** 현재 로그인 유저 조회 + 스토어 동기화 */
 export function useCurrentUser() {
   const { user, isLoading, setUser, setLoading } = useAuthStore();
+  const isRefetching = useRef(false);
 
   const refetch = useCallback(async () => {
-    const supabase = createClient();
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser();
+    // 중복 실행 방지
+    if (isRefetching.current) return;
+    isRefetching.current = true;
 
-    if (authError) {
-      console.error("[useCurrentUser] auth.getUser 실패:", authError.message);
+    try {
+      const supabase = createClient();
+      const {
+        data: { user: authUser },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error("[useCurrentUser] auth.getUser 실패:", authError.message);
+      }
+
+      if (!authUser) {
+        setUser(null);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("id", authUser.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error("[useCurrentUser] users 테이블 조회 실패:", profileError.message, profileError.code);
+      }
+
+      setUser(profile);
+    } finally {
+      isRefetching.current = false;
     }
-
-    if (!authUser) {
-      console.log("[useCurrentUser] authUser 없음 (미로그인)");
-      setUser(null);
-      return;
-    }
-
-    console.log("[useCurrentUser] authUser 확인:", authUser.id, authUser.email);
-
-    const { data: profile, error: profileError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", authUser.id)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error("[useCurrentUser] users 테이블 조회 실패:", profileError.message, profileError.code);
-    }
-
-    console.log("[useCurrentUser] profile:", profile ? `${profile.name} (${profile.role})` : "null");
-    setUser(profile);
   }, [setUser]);
 
   useEffect(() => {
@@ -63,7 +68,6 @@ export function useCurrentUser() {
   // [통합 분석] 유저 식별 연동
   useEffect(() => {
     if (user) {
-      // 분석 유틸리티 로드 및 유저 식별 실행
       import("@/lib/analytics/events").then(({ identifyUser }) => {
         identifyUser(user.id, {
           name: user.name,
@@ -72,7 +76,6 @@ export function useCurrentUser() {
         });
       });
     } else {
-      // 로그아웃 시 식별 정보 초기화
       import("@/lib/analytics/events").then(({ resetUser }) => {
         resetUser();
       });
