@@ -22,6 +22,8 @@ function getAuthError() {
   const error = params.get("error");
   if (!error) return "";
   if (error === "session_expired") return "세션이 만료되었습니다. 다시 로그인해주세요.";
+  if (error === "pkce_failed") return "보안 코드 오류입니다. 다시 시도해주세요. (PKCE)";
+  if (error === "exchange_failed") return "인증 코드 교환에 실패했습니다. 다시 시도해주세요.";
   return "카카오 로그인에 실패했습니다. 다시 시도해주세요.";
 }
 

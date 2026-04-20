@@ -1,17 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
   const safeNext = (next.startsWith("/") && !next.startsWith("//")) ? next : "/";
 
   if (!code) {
+    console.error("[auth/callback] code 파라미터 없음");
     return NextResponse.redirect(`${origin}/login?error=auth_failed`);
   }
 
-  // 쿠키를 직접 Response에 첨부하는 패턴 (모바일 호환)
+  // setAll 호출될 때 쿠키를 캡처해서 Response에 직접 첨부
   const cookiesToSet: Array<{ name: string; value: string; options: Record<string, unknown> }> = [];
 
   const supabase = createServerClient(
@@ -20,15 +21,8 @@ export async function GET(request: Request) {
     {
       cookies: {
         getAll() {
-          return request.headers.get("cookie")
-            ? request.headers
-                .get("cookie")!
-                .split("; ")
-                .map((c) => {
-                  const [name, ...rest] = c.split("=");
-                  return { name: name.trim(), value: rest.join("=") };
-                })
-            : [];
+          // NextRequest.cookies는 모든 쿠키를 정확히 파싱함
+          return request.cookies.getAll();
         },
         setAll(items) {
           cookiesToSet.push(...items);
@@ -37,21 +31,21 @@ export async function GET(request: Request) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  // 코드 → 세션 교환 (session 객체에 user 포함)
+  const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-  if (error) {
-    console.error("[auth/callback] exchangeCodeForSession 실패:", error.message, error.status);
-    const errResponse = NextResponse.redirect(`${origin}/login?error=exchange_failed`);
+  if (exchangeError || !exchangeData?.session) {
+    console.error("[auth/callback] exchangeCodeForSession 실패:", exchangeError?.message, exchangeError?.status);
+    const errCode = exchangeError?.message?.includes("code verifier") ? "pkce_failed" : "exchange_failed";
+    const errResponse = NextResponse.redirect(`${origin}/login?error=${errCode}`);
     cookiesToSet.forEach(({ name, value, options }) => {
       errResponse.cookies.set(name, value, options as Parameters<typeof errResponse.cookies.set>[2]);
     });
     return errResponse;
   }
 
-  // 카카오 로그인 성공 - users 테이블에 프로필이 있는지 확인
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // exchangeCodeForSession이 반환한 user 직접 사용 (추가 getUser 호출 없음)
+  const user = exchangeData.session.user;
 
   let redirectUrl = `${origin}${safeNext}`;
 
@@ -65,9 +59,7 @@ export async function GET(request: Request) {
     if (!profile) {
       // 신규 유저 → 회원가입 페이지로
       const signupUrl = new URL("/signup", origin);
-      if (safeNext !== "/") {
-        signupUrl.searchParams.set("next", safeNext);
-      }
+      if (safeNext !== "/") signupUrl.searchParams.set("next", safeNext);
       redirectUrl = signupUrl.toString();
     } else if (profile.deleted_at) {
       redirectUrl = `${origin}/recover-account`;
@@ -75,7 +67,7 @@ export async function GET(request: Request) {
   }
 
   const response = NextResponse.redirect(redirectUrl);
-  // 교환된 세션 쿠키를 Response에 직접 첨부 (모바일 핵심 수정)
+  // 교환된 세션 쿠키를 Response에 직접 첨부 (모바일 핵심)
   cookiesToSet.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2]);
   });
