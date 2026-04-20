@@ -21,10 +21,12 @@ function getAuthError() {
   const params = new URLSearchParams(window.location.search);
   const error = params.get("error");
   if (!error) return "";
-  if (error === "session_expired") return "세션이 만료되었습니다. 다시 로그인해주세요.";
-  if (error === "pkce_failed") return "보안 코드 오류입니다. 다시 시도해주세요. (PKCE)";
-  if (error === "exchange_failed") return "인증 코드 교환에 실패했습니다. 다시 시도해주세요.";
-  return "카카오 로그인에 실패했습니다. 다시 시도해주세요.";
+  // 진단용: raw 에러 코드를 괄호 안에 함께 표시
+  if (error === "session_expired") return `세션이 만료되었습니다. 다시 로그인해주세요. (${error})`;
+  if (error === "pkce_failed") return `보안 코드 오류입니다. 다시 시도해주세요. (${error})`;
+  if (error === "exchange_failed") return `인증 코드 교환에 실패했습니다. (${error})`;
+  if (error === "auth_failed") return `카카오 인증 코드를 받지 못했습니다. (${error})`;
+  return `카카오 로그인 실패. (${error})`;
 }
 
 export default function LoginPage() {
@@ -50,6 +52,10 @@ export default function LoginPage() {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
           scopes: "profile_nickname profile_image",
           skipBrowserRedirect: false,
+          // 모바일 세션 초기화: 매번 Kakao 동의 화면을 강제 표시해 캐시된 인증 상태 리셋
+          queryParams: {
+            prompt: "login",
+          },
         },
       });
 
