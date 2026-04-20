@@ -83,7 +83,7 @@ export function HomeContent({
   puzzles = [],
   puzzleOfferCounts = {},
 }: HomeContentProps) {
-  const { user } = useCurrentUser();
+  const { user, isLoading } = useCurrentUser();
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -329,7 +329,14 @@ export function HomeContent({
           onTabChange={handleTabChange}
         />
 
-        {!user && auctions.active.length > 0 && (
+        {/* DEBUG: 모바일 로그인 디버깅용 — 확인 후 제거 */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="text-center py-2 text-[10px] text-red-400 font-mono">
+            user: {user ? user.name || user.id?.slice(0,8) : "null"} | loading: {String(isLoading)}
+          </div>
+        )}
+
+        {!user && !isLoading && auctions.active.length > 0 && (
           <div className="text-center py-6 space-y-3">
             <p className="text-[12px] text-neutral-500">로그인하면 입찰에 참여할 수 있어요</p>
             <Link href="/login">
