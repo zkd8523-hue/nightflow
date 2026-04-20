@@ -52,6 +52,14 @@ export function MDMonitorCard({ md }: Props) {
               <div className="text-sm text-neutral-400">
                 {Array.isArray(md.area) ? md.area.join(", ") : md.area || "미지정"} · {lastActive}
               </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                {md.instagram && (
+                  <a href={`https://instagram.com/${md.instagram}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[11px] text-pink-400 hover:text-pink-300">@{md.instagram}</a>
+                )}
+                {md.phone && (
+                  <a href={`tel:${md.phone}`} onClick={(e) => e.stopPropagation()} className="text-[11px] text-neutral-500 hover:text-neutral-300">{md.phone}</a>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">

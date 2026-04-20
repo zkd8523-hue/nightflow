@@ -112,7 +112,15 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading) {
+  // 로딩 타임아웃: 5초 후 강제 해제
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    if (!isLoading) return;
+    const t = setTimeout(() => setTimedOut(true), 5000);
+    return () => clearTimeout(t);
+  }, [isLoading]);
+
+  if (isLoading && !timedOut) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />

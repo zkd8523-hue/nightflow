@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Plus, MapPin } from "lucide-react";
+import { Plus, MapPin, ChevronLeft } from "lucide-react";
 
 import { ClubList } from "./ClubList";
 
@@ -36,6 +36,13 @@ export default async function MDClubsPage() {
       <div className="max-w-lg mx-auto pb-24">
         {/* Header */}
         <div className="px-6 pt-8 pb-6 space-y-4">
+          <Link
+            href="/md/dashboard"
+            className="inline-flex items-center gap-1 text-neutral-500 text-sm font-bold hover:text-white transition-colors mb-2"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            대시보드
+          </Link>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-black text-white tracking-tight">나의 클럽</h1>

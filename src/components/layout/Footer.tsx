@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export function Footer() {
-  const { user } = useAuthStore();
-  const isPartner = user?.role === "md" || user?.role === "admin";
+  const { user, isLoading } = useCurrentUser();
+  const isPartner = isLoading || user?.role === "md" || user?.role === "admin";
 
   return (
     <footer className="border-t border-neutral-800 bg-neutral-950">

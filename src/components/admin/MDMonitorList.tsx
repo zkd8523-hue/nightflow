@@ -12,7 +12,7 @@ interface Props {
   mds: MDHealthScore[];
 }
 
-type SortOption = "recent" | "wonAmount" | "health";
+type SortOption = "recent" | "wonAmount" | "health" | "joined";
 
 export function MDMonitorList({ mds }: Props) {
   const router = useRouter();
@@ -38,6 +38,8 @@ export function MDMonitorList({ mds }: Props) {
           return b.total_won_amount - a.total_won_amount;
         case "health":
           return (b.health_score || 0) - (a.health_score || 0);
+        case "joined":
+          return new Date(b.joined_at).getTime() - new Date(a.joined_at).getTime();
         default:
           return 0;
       }
@@ -69,6 +71,7 @@ export function MDMonitorList({ mds }: Props) {
           <option value="recent">최근활동순</option>
           <option value="wonAmount">낙찰액순</option>
           <option value="health">점수순</option>
+          <option value="joined">최근가입순</option>
         </select>
       </div>
 

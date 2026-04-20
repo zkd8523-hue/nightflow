@@ -104,22 +104,6 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
 
   const onSubmit = async (values: FormValues) => {
     try {
-      // approved 클럽은 이미지 필드만 수정 가능
-      if (isApproved && initialData) {
-        const { error } = await supabase.rpc("update_club_image", {
-          p_club_id: initialData.id,
-          p_field: "thumbnail_url",
-          p_value: values.thumbnail_url || null,
-        });
-
-        if (error) throw error;
-
-        toast.success("클럽 이미지가 수정되었습니다!");
-        router.push("/md/clubs");
-        router.refresh();
-        return;
-      }
-
       // Validation: Coordinates required for new clubs
       if (!initialData && (!values.latitude || !values.longitude)) {
         toast.error("주소 검색을 통해 정확한 위치를 설정해주세요.");
@@ -160,20 +144,15 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
         {/* Approved 안내 배너 */}
         {isApproved && (
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-2xl p-4">
-            <p className="text-sm font-bold text-blue-400">이미지만 수정 가능</p>
+            <p className="text-sm font-bold text-blue-400">클럽 정보 수정</p>
             <p className="text-xs text-blue-400/70 mt-1">
-              승인된 클럽은 대표이미지와 플로어맵만 변경할 수 있습니다.
-              기본 정보 수정은{" "}
-              <a href="http://pf.kakao.com/_ilSqX" target="_blank" rel="noopener noreferrer"
-                 className="underline text-blue-400 hover:text-blue-300">
-                카카오톡으로 문의
-              </a>해주세요.
+              수정 후 저장하면 즉시 반영됩니다.
             </p>
           </div>
         )}
 
         {/* 1. Basic Info */}
-        <section className={`space-y-4 ${isApproved ? 'opacity-50 pointer-events-none' : ''}`}>
+        <section className="space-y-4">
           <div className="flex items-center gap-2 text-white font-bold mb-2">
             <Store className="w-4 h-4 text-purple-500" />
             <span>기본 정보</span>
@@ -236,20 +215,10 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
             {errors.area && <p className="text-red-500 text-xs">{String(errors.area?.message || "")}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-neutral-400 text-xs font-bold uppercase">연락처</Label>
-            <Input
-              {...register("phone")}
-              type="tel"
-              placeholder="예: 02-1234-5678"
-              className="bg-[#1C1C1E] border-neutral-800 h-12 text-white placeholder-neutral-600 rounded-xl"
-            />
-            <p className="text-neutral-600 text-[11px]">클럽 대표 연락처입니다.</p>
-          </div>
         </section>
 
         {/* 2. Location */}
-        <section className={`space-y-4 ${isApproved ? 'opacity-50 pointer-events-none' : ''}`}>
+        <section className="space-y-4">
           <div className="flex items-center gap-2 text-white font-bold mb-2">
             <MapPin className="w-4 h-4 text-green-500" />
             <span>위치 정보 *</span>
@@ -416,7 +385,7 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
               </>
             ) : (
               <>
-                {initialData ? (isApproved ? "이미지 저장하기" : "클럽 정보 수정하기") : "클럽 신청하기"}
+                {initialData ? "클럽 정보 수정하기" : "클럽 신청하기"}
                 <ArrowRight className="w-5 h-5" />
               </>
             )}

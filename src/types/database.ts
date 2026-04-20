@@ -382,6 +382,8 @@ export interface MDHealthScore {
   grade: MDGrade;
   flag_consecutive_noshow: boolean;
   flag_dormant: boolean;
+  instagram: string | null;
+  phone: string | null;
 }
 
 /**

@@ -1,9 +1,12 @@
 import type { MDHealthScore, MDHealthStatus } from "@/types/database";
 
 export function computeHealthStatus(score: MDHealthScore): MDHealthStatus {
-  if (score.flag_consecutive_noshow || score.flag_dormant) return "critical";
-
+  // 신규 MD (경매 5건 미만): 평가 중 → good으로 처리
   if (score.health_score === null) return "good";
+
+  if (score.flag_consecutive_noshow) return "critical";
+  // dormant 체크: 경매 실적이 있는 MD만 적용
+  if (score.flag_dormant && score.total_auctions > 0) return "critical";
   if (
     score.health_score >= 90 &&
     score.noshow_count === 0 &&

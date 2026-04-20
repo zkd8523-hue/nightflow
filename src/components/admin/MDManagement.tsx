@@ -144,11 +144,11 @@ function MDApplicationCard({
                     {/* 좌측: 아바타 + 이름 + 메타데이터 */}
                     <div className="flex items-start gap-4">
                         <div className="w-14 h-14 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-xl text-neutral-500 shrink-0">
-                            {user.name?.substring(0, 1)}
+                            {(user.display_name || user.name || "?").substring(0, 1)}
                         </div>
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
-                                <h3 className="text-xl font-black text-white">{user.name}</h3>
+                                <h3 className="text-xl font-black text-white">{user.display_name || user.name || "이름 없음"}</h3>
                                 <Badge variant="outline" className={`bg-neutral-950 border-neutral-800 text-[10px] py-0 px-2 uppercase font-bold ${
                                     user.md_status === "suspended" ? "text-red-500 border-red-500/30" :
                                     user.md_status === "revoked" ? "text-neutral-600 border-neutral-700" :

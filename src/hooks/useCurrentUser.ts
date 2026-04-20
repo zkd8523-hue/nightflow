@@ -45,7 +45,7 @@ export function useCurrentUser() {
     const supabase = createClient();
 
     setLoading(true);
-    refetch();
+    refetch().catch(() => setUser(null));
 
     const {
       data: { subscription },

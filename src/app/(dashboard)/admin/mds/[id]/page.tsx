@@ -39,7 +39,7 @@ export default async function MDDetailPage({
   // MD 유저 정보 조회 (기본 + 제재 상태)
   const { data: mdUser } = await supabase
     .from("users")
-    .select("id, name, area, md_status, created_at, role")
+    .select("id, name, display_name, area, md_status, created_at, role")
     .eq("id", id)
     .single();
 
@@ -140,7 +140,7 @@ export default async function MDDetailPage({
     confirmed: { label: "방문확인", color: "text-green-500" },
   };
 
-  const mdName = mdData?.name || mdUser.name || "알 수 없음";
+  const mdName = mdData?.name || mdUser.display_name || mdUser.name || "알 수 없음";
   const mdArea = mdData?.area || mdUser.area || "미지정";
 
   return (
