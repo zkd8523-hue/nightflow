@@ -40,6 +40,7 @@ interface UserManagementProps {
 export function UserManagement({ users }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -115,6 +116,9 @@ export function UserManagement({ users }: UserManagementProps) {
       (statusFilter === "new_7d" && dayjs(u.created_at).isAfter(dayjs().subtract(7, "day")));
 
     return matchesSearch && matchesStatus;
+  }).sort((a, b) => {
+    const diff = dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
+    return sortOrder === "newest" ? diff : -diff;
   });
 
   const isUserSuspended = (user: User) =>
@@ -193,6 +197,15 @@ export function UserManagement({ users }: UserManagementProps) {
             <SelectItem value="suspended">정지 중</SelectItem>
             <SelectItem value="blocked">차단됨</SelectItem>
             <SelectItem value="md">MD만</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as "newest" | "oldest")}>
+          <SelectTrigger className="w-[140px] bg-[#1C1C1E] border-neutral-800 text-white">
+            <SelectValue placeholder="정렬" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="newest">최신순</SelectItem>
+            <SelectItem value="oldest">오래된순</SelectItem>
           </SelectContent>
         </Select>
       </div>
