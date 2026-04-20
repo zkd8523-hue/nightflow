@@ -576,7 +576,7 @@ export interface PuzzleMember {
   puzzle_id: string;
   user_id: string;
   guest_count: number;
-  user?: Pick<User, 'id' | 'name' | 'profile_image' | 'gender' | 'birthday'>;
+  user?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'gender' | 'birthday'>;
   joined_at: string;
   /** V2: MD가 방문 확인 시 개별 노쇼 체크 */
   noshow: boolean;
