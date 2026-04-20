@@ -98,6 +98,7 @@ export function UserManagement({ users }: UserManagementProps) {
     const matchesSearch =
       !searchQuery ||
       u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.display_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.phone?.includes(searchQuery) ||
       u.kakao_id?.includes(searchQuery);
 
@@ -108,7 +109,8 @@ export function UserManagement({ users }: UserManagementProps) {
       (statusFilter === "normal" && !u.is_blocked && !isUserSuspended(u) &&
         (u.strike_count || 0) === 0 && u.noshow_count === 0) ||
       (statusFilter === "warning" && !u.is_blocked && !isUserSuspended(u) &&
-        ((u.strike_count || 0) > 0 || u.noshow_count > 0));
+        ((u.strike_count || 0) > 0 || u.noshow_count > 0)) ||
+      (statusFilter === "md" && u.role === "md");
 
     return matchesSearch && matchesStatus;
   });
@@ -186,6 +188,7 @@ export function UserManagement({ users }: UserManagementProps) {
             <SelectItem value="warning">경고 대상</SelectItem>
             <SelectItem value="suspended">정지 중</SelectItem>
             <SelectItem value="blocked">차단됨</SelectItem>
+            <SelectItem value="md">MD만</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -230,7 +233,12 @@ export function UserManagement({ users }: UserManagementProps) {
                             )}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white">{user.name}</p>
+                            <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                              {user.display_name || user.name}
+                              {user.role === "md" && (
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">MD</span>
+                              )}
+                            </p>
                             <p className="text-[10px] text-neutral-500 font-mono">{user.kakao_id}</p>
                           </div>
                         </div>

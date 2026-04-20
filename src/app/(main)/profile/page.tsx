@@ -23,8 +23,8 @@ import {
   MessageCircle,
   Instagram,
   Check,
-  ExternalLink,
 } from "lucide-react";
+import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import type { ContactMethodType } from "@/types/database";
@@ -423,13 +423,7 @@ export default function ProfilePage() {
                       <MessageCircle className="w-4 h-4 text-green-500" />
                       카카오 오픈채팅 URL
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => { window.open("https://open.kakao.com/", "_blank"); }}
-                      className="flex items-center gap-1 text-[11px] text-amber-400 font-medium hover:text-amber-300 transition-colors"
-                    >
-                      오픈채팅 만들기 <ExternalLink className="w-3 h-3" />
-                    </button>
+                    <KakaoOpenChatGuide />
                   </div>
                   <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-3">
                     <input

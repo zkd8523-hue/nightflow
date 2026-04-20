@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowRight, Building2, Smartphone, MapPin, Map, MessageCircle, Instagram, Phone, ExternalLink } from "lucide-react";
+import { ArrowRight, Building2, Smartphone, MapPin, Map, MessageCircle, Instagram, Phone } from "lucide-react";
+import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 // Phone은 연락 수단 토글에서 사용
 import type { User, ContactMethodType } from "@/types/database";
 import dynamic from "next/dynamic";
@@ -171,13 +172,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                     <MessageCircle className="w-3.5 h-3.5" />
                                     카카오톡 오픈채팅 (선택)
                                 </Label>
-                                <button
-                                    type="button"
-                                    onClick={() => { window.open("https://open.kakao.com/", "_blank"); }}
-                                    className="flex items-center gap-1 text-[11px] text-amber-400 font-medium hover:text-amber-300 transition-colors"
-                                >
-                                    오픈채팅 만들기 <ExternalLink className="w-3 h-3" />
-                                </button>
+                                <KakaoOpenChatGuide />
                             </div>
                             <Input
                                 {...form.register("kakao_open_chat_url")}

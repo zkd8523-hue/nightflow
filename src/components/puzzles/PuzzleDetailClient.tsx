@@ -288,10 +288,12 @@ export function PuzzleDetailClient({
           <section className="bg-[#1C1C1E] rounded-2xl p-5 space-y-4">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-[22px] font-black text-white">
-                  {formatEventDate(puzzle.event_date)}
+                {puzzle.notes && (
+                  <p className="text-[18px] font-black text-white leading-snug">{puzzle.notes}</p>
+                )}
+                <p className={`${puzzle.notes ? "text-[14px] text-neutral-400" : "text-[22px] font-black text-white"}`}>
+                  {formatEventDate(puzzle.event_date)} <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400 ml-1"}>{puzzle.area}</span>
                 </p>
-                <p className="text-[15px] text-neutral-400 mt-0.5">{puzzle.area}</p>
               </div>
               <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mt-1 -mr-1">
                 <Share2 className="w-4.5 h-4.5" />
@@ -345,17 +347,6 @@ export function PuzzleDetailClient({
               </div>
             )}
 
-            {/* 자유 메모 */}
-            {puzzle.notes && (
-              <div className="pt-4 border-t border-neutral-800/50">
-                <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4">
-                  <p className="text-[11px] text-neutral-500 mb-2 font-bold uppercase tracking-wider">방장의 한마디</p>
-                  <p className="text-[13px] text-neutral-300 leading-relaxed whitespace-pre-wrap">
-                    {puzzle.notes}
-                  </p>
-                </div>
-              </div>
-            )}
           </section>
 
           {/* 카카오 오픈채팅: 참여자면 항상 표시 */}
@@ -651,7 +642,7 @@ export function PuzzleDetailClient({
                       )}
                       <div>
                         <p className="text-[14px] font-bold text-white flex items-center gap-1.5">
-                          {member.user?.name || "알 수 없음"}
+                          {member.user?.display_name || member.user?.name || "알 수 없음"}
                           {isLeaderMember && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
                               대표자

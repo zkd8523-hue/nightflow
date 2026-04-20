@@ -24,11 +24,11 @@ export default async function AdminUsersPage() {
     redirect("/");
   }
 
-  // 2. 유저 목록 조회 (user role만)
+  // 2. 유저 목록 조회 (admin 제외)
   const { data: users } = await supabase
     .from("users")
     .select("*")
-    .eq("role", "user")
+    .neq("role", "admin")
     .order("created_at", { ascending: false });
 
   // 통계 집계

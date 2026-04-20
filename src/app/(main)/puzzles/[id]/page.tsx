@@ -26,7 +26,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
     .from("puzzle_members")
     .select(`
       *,
-      user:users(id, name, profile_image)
+      user:users(id, name, display_name, profile_image)
     `)
     .eq("puzzle_id", id)
     .order("joined_at", { ascending: true });

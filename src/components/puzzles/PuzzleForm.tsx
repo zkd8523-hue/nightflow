@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, OTHER_CITIES } from "@/lib/constants/areas";
 import { toast } from "sonner";
-import { Minus, Plus, ExternalLink, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight } from "lucide-react";
+import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight } from "lucide-react";
+import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
@@ -55,7 +56,6 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const [vibePref, setVibePref] = useState<VibePref>("any");
   const [submitting, setSubmitting] = useState(false);
   const [showOtherCities, setShowOtherCities] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
   const [notes, setNotes] = useState("");
 
   const todayObj = new Date();
@@ -73,24 +73,10 @@ export function PuzzleForm({ userId }: { userId: string }) {
     return `${date}T12:00:00.000Z`;
   };
 
-  const handleCreateOpenChat = async () => {
+  const suggestedChatTitle = (() => {
     const mmdd = eventDate ? eventDate.split("-").slice(1).join("/") : "";
-    const suggestedTitle = `[NightFlow] ${area || "지역미상"} ${mmdd} 모임`;
-
-    try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(suggestedTitle);
-        toast.success("추천 오픈채팅방 이름이 복사되었습니다!", {
-          description: "카카오톡에서 오픈채팅을 개설하고 링크를 붙여넣어주세요.",
-          duration: 4000,
-        });
-      }
-    } catch {
-      // clipboard 실패 시 무시
-    }
-    // 카카오톡 오픈채팅 생성 페이지로 이동
-    window.open("https://open.kakao.com/", "_blank");
-  };
+    return `[NightFlow] ${area || "지역미상"} ${mmdd} 모임`;
+  })();
 
   const handleSubmit = async () => {
     if (!kakaoUrl.startsWith("https://open.kakao.com/o/")) {
@@ -182,7 +168,8 @@ export function PuzzleForm({ userId }: { userId: string }) {
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">
           <MessageCircle className="w-4 h-4 text-purple-500" />
-          <span>어떤 모임인지 한 줄로 표현해주세요</span>
+          <span>퍼즐 제목</span>
+          <span className="text-[11px] text-neutral-500 font-normal ml-1">카드에 제목으로 표시돼요</span>
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
           <Input
@@ -493,18 +480,9 @@ export function PuzzleForm({ userId }: { userId: string }) {
 
       {/* 카카오 오픈채팅 URL */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-white font-bold">
-            <MessageCircle className="w-4 h-4 text-green-500" />
-            <span>카카오 오픈채팅 URL</span>
-          </div>
-          <button
-            type="button"
-            onClick={handleCreateOpenChat}
-            className="flex items-center gap-1 text-[11px] text-amber-400 font-medium shrink-0 whitespace-nowrap hover:text-amber-300 transition-colors"
-          >
-            오픈채팅 만들기 <ExternalLink className="w-3 h-3" />
-          </button>
+        <div className="flex items-center gap-2 text-white font-bold">
+          <MessageCircle className="w-4 h-4 text-green-500" />
+          <span>카카오 오픈채팅 URL</span>
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-3">
           <Input
@@ -514,37 +492,12 @@ export function PuzzleForm({ userId }: { userId: string }) {
             placeholder="https://open.kakao.com/o/..."
             className="bg-neutral-900 border-neutral-800 h-11 text-white focus:ring-green-500"
           />
-          <div className="flex flex-col gap-2">
-            <p className="text-[11px] text-neutral-500 leading-relaxed">
-              방 만든 후 URL을 붙여넣어 주세요.
-              <br />
-              오퍼를 수락한 MD에게만 공개됩니다.
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowGuide(!showGuide)}
-              className="text-[11px] text-neutral-400 underline underline-offset-2 self-start hover:text-white transition-colors"
-            >
-              오픈채팅은 어떻게 만드나요?
-            </button>
-            {showGuide && (
-              <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 mt-2 space-y-3 text-[12px] text-neutral-300">
-                <p className="font-bold text-white mb-1">오픈채팅 개설 & 링크 복사 방법</p>
-                <div className="flex gap-4">
-                  <div className="w-5 h-5 rounded bg-green-500/20 text-green-500 flex items-center justify-center font-bold shrink-0 mt-0.5">1</div>
-                  <p className="leading-relaxed">위 <span className="text-amber-400">오픈채팅 만들기</span> 버튼을 눌러 카카오톡을 엽니다. (방 이름이 자동 복사됩니다)</p>
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-5 h-5 rounded bg-green-500/20 text-green-500 flex items-center justify-center font-bold shrink-0 mt-0.5">2</div>
-                  <p className="leading-relaxed">채팅 탭 우측 상단의 말풍선(+) ➔ <strong>오픈채팅</strong> ➔ <strong>만들기</strong> ➔ <strong>그룹 채팅방</strong>을 선택합니다.</p>
-                </div>
-                <div className="flex gap-4">
-                  <div className="w-5 h-5 rounded bg-green-500/20 text-green-500 flex items-center justify-center font-bold shrink-0 mt-0.5">3</div>
-                  <p className="leading-relaxed">방을 만든 후 우측 상단의 <strong>≡ (메뉴)</strong> ➔ <strong>공유 아이콘</strong>을 눌러 <strong>링크 복사</strong> 후 위 입력창에 붙여넣습니다.</p>
-                </div>
-              </div>
-            )}
-          </div>
+          <p className="text-[11px] text-neutral-500 leading-relaxed">
+            방 만든 후 URL을 붙여넣어 주세요.
+            <br />
+            오퍼를 수락한 MD에게만 공개됩니다.
+          </p>
+          <KakaoOpenChatGuide suggestedTitle={suggestedChatTitle} />
         </div>
       </section>
 
