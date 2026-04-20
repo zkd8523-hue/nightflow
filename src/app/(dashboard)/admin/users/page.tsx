@@ -4,7 +4,7 @@ import { UserManagement } from "@/components/admin/UserManagement";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Users, ShieldBan, AlertTriangle, Clock } from "lucide-react";
+import { Users, ShieldBan, AlertTriangle, Clock, UserPlus } from "lucide-react";
 import dayjs from "dayjs";
 
 export default async function AdminUsersPage() {
@@ -43,6 +43,12 @@ export default async function AdminUsersPage() {
   const suspendedUsers = users?.filter(u =>
     !u.is_blocked && u.blocked_until && dayjs(u.blocked_until).isAfter(dayjs())
   ).length || 0;
+  const newUsers24h = users?.filter(u =>
+    dayjs(u.created_at).isAfter(dayjs().subtract(1, "day"))
+  ).length || 0;
+  const newUsers7d = users?.filter(u =>
+    dayjs(u.created_at).isAfter(dayjs().subtract(7, "day"))
+  ).length || 0;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
@@ -70,6 +76,20 @@ export default async function AdminUsersPage() {
                 <span className="text-[10px] font-bold uppercase tracking-tight">전체 유저</span>
               </div>
               <p className="text-2xl font-black text-white">{totalUsers}</p>
+            </Card>
+            <Card className="bg-[#1C1C1E] border-neutral-800 p-4 flex flex-col gap-1 min-w-[120px] shadow-[0_0_20px_rgba(34,197,94,0.1)]">
+              <div className="flex items-center gap-2 text-green-500">
+                <UserPlus className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-tight">신규 (24h)</span>
+              </div>
+              <p className="text-2xl font-black text-white">{newUsers24h}</p>
+            </Card>
+            <Card className="bg-[#1C1C1E] border-neutral-800 p-4 flex flex-col gap-1 min-w-[120px]">
+              <div className="flex items-center gap-2 text-emerald-500">
+                <UserPlus className="w-4 h-4" />
+                <span className="text-[10px] font-bold uppercase tracking-tight">신규 (7d)</span>
+              </div>
+              <p className="text-2xl font-black text-white">{newUsers7d}</p>
             </Card>
             <Card className="bg-[#1C1C1E] border-neutral-800 p-4 flex flex-col gap-1 min-w-[120px] shadow-[0_0_20px_rgba(239,68,68,0.1)]">
               <div className="flex items-center gap-2 text-red-500">

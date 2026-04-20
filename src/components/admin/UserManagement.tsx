@@ -110,7 +110,9 @@ export function UserManagement({ users }: UserManagementProps) {
         (u.strike_count || 0) === 0 && u.noshow_count === 0) ||
       (statusFilter === "warning" && !u.is_blocked && !isUserSuspended(u) &&
         ((u.strike_count || 0) > 0 || u.noshow_count > 0)) ||
-      (statusFilter === "md" && u.role === "md");
+      (statusFilter === "md" && u.role === "md") ||
+      (statusFilter === "new_24h" && dayjs(u.created_at).isAfter(dayjs().subtract(1, "day"))) ||
+      (statusFilter === "new_7d" && dayjs(u.created_at).isAfter(dayjs().subtract(7, "day")));
 
     return matchesSearch && matchesStatus;
   });
@@ -184,6 +186,8 @@ export function UserManagement({ users }: UserManagementProps) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">전체</SelectItem>
+            <SelectItem value="new_24h">신규 (24시간)</SelectItem>
+            <SelectItem value="new_7d">신규 (7일)</SelectItem>
             <SelectItem value="normal">정상</SelectItem>
             <SelectItem value="warning">경고 대상</SelectItem>
             <SelectItem value="suspended">정지 중</SelectItem>
