@@ -21,6 +21,9 @@ const AddressSearchModal = dynamic(() => import("./AddressSearchModal").then(m =
 
 const formSchema = z.object({
     display_name: z.string().min(2, "닉네임을 입력해주세요").max(16, "닉네임은 최대 16자"),
+    phone: z.string()
+        .min(10, "전화번호를 입력해주세요")
+        .regex(/^01[016789]\d{7,8}$/, "올바른 휴대폰 번호를 입력해주세요 (예: 01012345678)"),
     instagram: z.string()
         .min(1, "인스타그램 아이디를 입력해주세요")
         .max(30, "인스타그램 아이디는 30자 이하입니다")
@@ -52,6 +55,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
         mode: "onBlur",
         defaultValues: {
             display_name: initialUser.display_name || "",
+            phone: initialUser.phone || "",
             instagram: initialUser.instagram || "",
             area: [],
             club_name: initialUser.verification_club_name || "",
@@ -116,6 +120,26 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                             />
                             {form.formState.errors.display_name && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.display_name?.message?.toString()}</p>
+                            )}
+                        </div>
+
+                        {/* Phone */}
+                        <div className="space-y-2">
+                            <Label className="text-neutral-500 text-xs font-bold uppercase">휴대폰 번호 *</Label>
+                            <Input
+                                {...form.register("phone", {
+                                    onChange: (e) => {
+                                        e.target.value = e.target.value.replace(/[^0-9]/g, "");
+                                    },
+                                })}
+                                type="tel"
+                                placeholder="01012345678"
+                                maxLength={11}
+                                className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono focus:ring-white"
+                            />
+                            <p className="text-neutral-600 text-[10px]">고객 연락 및 본인 확인에 사용됩니다 (하이픈 없이 입력)</p>
+                            {form.formState.errors.phone && (
+                                <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.phone?.message?.toString()}</p>
                             )}
                         </div>
 

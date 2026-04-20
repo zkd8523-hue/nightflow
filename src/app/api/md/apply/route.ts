@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // 3. 요청 데이터 파싱
     const body = await request.json();
     const {
-      display_name, area, instagram, kakao_open_chat_url, business_card_url,
+      display_name, area, phone, instagram, kakao_open_chat_url, business_card_url,
       club_name, club_address, club_address_detail, club_postal_code,
       club_latitude, club_longitude, club_phone, club_thumbnail_url,
       floor_plan_url,
@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
     // clubs.area는 TEXT 단일값 — 대표 지역(첫 번째) 사용
     const primaryArea: string = Array.isArray(area) ? area[0] : area;
 
-    // 4. 필수 필드 검증 (phone은 PASS 인증으로 이미 DB에 저장됨 — 폼에서 재전송 불필요)
-    if (!display_name || !area || !Array.isArray(area) || area.length === 0 || !instagram || !club_name || !club_address ||
+    // 4. 필수 필드 검증
+    if (!display_name || !area || !Array.isArray(area) || area.length === 0 || !instagram || !phone || !club_name || !club_address ||
         !club_latitude || !club_longitude) {
       return NextResponse.json(
         { error: "필수 항목을 모두 입력해주세요." },
@@ -185,6 +185,7 @@ export async function POST(request: NextRequest) {
       .update({
         display_name,
         area,
+        phone,
         instagram: cleanInstagram,
         ...(cleanKakaoUrl ? { kakao_open_chat_url: cleanKakaoUrl } : {}),
         verification_club_name: club_name,
