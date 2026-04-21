@@ -86,6 +86,14 @@ export function useCurrentUser() {
     const supabase = createClient();
     let mounted = true;
 
+    // 벨트 앤 서스펜더: 무슨 일이 있어도 6초 후엔 loading false
+    const hardKillTimer = setTimeout(() => {
+      if (mounted) {
+        console.warn("[useCurrentUser] hard timeout - 강제 loading 해제");
+        setLoading(false);
+      }
+    }, 6000);
+
     const init = async () => {
       setLoading(true);
       try {
@@ -95,6 +103,7 @@ export function useCurrentUser() {
         if (mounted) setUser(null);
       } finally {
         if (mounted) setLoading(false);
+        clearTimeout(hardKillTimer);
       }
     };
 
@@ -113,6 +122,7 @@ export function useCurrentUser() {
 
     return () => {
       mounted = false;
+      clearTimeout(hardKillTimer);
       subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
