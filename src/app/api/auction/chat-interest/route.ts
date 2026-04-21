@@ -59,13 +59,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "이용이 정지된 계정입니다." }, { status: 403 });
     }
 
-    // 본인인증 미완료 유저는 MD 연락처 획득 불가
-    // PortOne 미설정 환경(로컬 테스트)에서는 우회
-    const danalEnabled = !!process.env.DANAL_CPID;
-    if (danalEnabled && !userData?.identity_verified_at) {
-      return NextResponse.json({ error: "VERIFICATION_REQUIRED" }, { status: 403 });
-    }
-
     // chat_interests INSERT (UNIQUE 제약으로 중복 시 무시)
     const { error: insertError } = await supabaseAdmin
       .from("chat_interests")

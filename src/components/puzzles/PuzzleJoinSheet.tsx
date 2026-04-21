@@ -12,8 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useIdentityGuard } from "@/hooks/useIdentityGuard";
 import type { Puzzle } from "@/types/database";
 
 interface PuzzleJoinSheetProps {
@@ -25,8 +23,6 @@ interface PuzzleJoinSheetProps {
 export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps) {
   const router = useRouter();
   const supabase = createClient();
-  const { user, refetch: refetchUser } = useCurrentUser();
-  const { requireIdentity } = useIdentityGuard(user);
 
   const [hasGuest, setHasGuest] = useState(false);
   const [guestCount, setGuestCount] = useState(1);
@@ -41,12 +37,6 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
   const totalBudget = totalJoining * perPerson;
 
   const handleJoin = async () => {
-    const verified = await requireIdentity({
-      reason: "퍼즐 참여 전 휴대폰 본인인증이 필요합니다.",
-    });
-    if (!verified) return;
-    await refetchUser();
-
     setSubmitting(true);
     try {
       const { data, error } = await supabase.rpc("join_puzzle", {

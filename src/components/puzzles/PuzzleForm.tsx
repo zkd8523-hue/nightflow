@@ -12,8 +12,6 @@ import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import type { GenderPref, AgePref, VibePref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useIdentityGuard } from "@/hooks/useIdentityGuard";
 
 // 총 예산 빠른 추가 (만원 단위)
 const BUDGET_PRESETS = [50000, 100000];
@@ -40,8 +38,6 @@ const VIBE_OPTIONS: { value: VibePref; label: string }[] = [
 export function PuzzleForm({ userId }: { userId: string }) {
   const router = useRouter();
   const supabase = createClient();
-  const { user, refetch: refetchUser } = useCurrentUser();
-  const { requireIdentity } = useIdentityGuard(user);
 
   const [kakaoUrl, setKakaoUrl] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -83,11 +79,6 @@ export function PuzzleForm({ userId }: { userId: string }) {
       toast.error("올바른 오픈채팅 링크가 아닙니다. (https://open.kakao.com/o/... 형식)");
       return;
     }
-    const verified = await requireIdentity({
-      reason: "퍼즐 생성 전 휴대폰 본인인증이 필요합니다.",
-    });
-    if (!verified) return;
-    await refetchUser();
     if (!notes.trim()) {
       toast.error("어떤 모임인지 한 줄로 표현해주세요");
       return;
