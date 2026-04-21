@@ -45,6 +45,28 @@ export default function LoginPage() {
     setLoading(true);
     setLoginError("");
     const target = customRedirect || redirectPath;
+
+    // [핵심] 이전 세션 쿠키가 새 OAuth를 망가뜨리는 것 방지
+    // 1) Supabase 로컬 세션 정리 (서버 호출 없이 쿠키만 삭제)
+    try {
+      await Promise.race([
+        supabase.auth.signOut({ scope: "local" }),
+        new Promise((resolve) => setTimeout(resolve, 1500)),
+      ]);
+    } catch {
+      // 실패해도 무시하고 진행
+    }
+
+    // 2) 수동으로 sb-* 쿠키 전체 삭제 (혹시 1)이 놓친 것)
+    if (typeof document !== "undefined") {
+      document.cookie.split(";").forEach((c) => {
+        const name = c.split("=")[0].trim();
+        if (name.startsWith("sb-")) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        }
+      });
+    }
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
@@ -52,10 +74,6 @@ export default function LoginPage() {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
           scopes: "profile_nickname profile_image",
           skipBrowserRedirect: false,
-          // 모바일 세션 초기화: 매번 Kakao 동의 화면을 강제 표시해 캐시된 인증 상태 리셋
-          queryParams: {
-            prompt: "login",
-          },
         },
       });
 

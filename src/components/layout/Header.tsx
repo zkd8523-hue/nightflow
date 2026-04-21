@@ -204,7 +204,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
         </div>
 
         {isLoading ? (
-          <div className="w-9 h-9 bg-neutral-800 animate-pulse rounded-lg" />
+          <Link href="/login" className="w-9 h-9 bg-neutral-800 animate-pulse rounded-lg" aria-label="로딩 중 - 클릭하면 로그인 페이지" />
         ) : user ? (
           <>
             <div className="flex items-center gap-1">
