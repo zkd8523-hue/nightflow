@@ -138,7 +138,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                 maxLength={11}
                                 className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono focus:ring-white"
                             />
-                            <p className="text-neutral-600 text-[10px]">고객 연락 및 본인 확인에 사용됩니다 (하이픈 없이 입력)</p>
+                            <p className="text-neutral-600 text-[10px]">가입 시 입력한 번호예요. 업무용 번호가 따로 있다면 수정해주세요.</p>
                             {form.formState.errors.phone && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.phone?.message?.toString()}</p>
                             )}
@@ -165,26 +165,6 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                             )}
                         </div>
 
-                        {/* Kakao Open Chat (Optional) */}
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
-                                    <MessageCircle className="w-3.5 h-3.5" />
-                                    카카오톡 오픈채팅 (선택)
-                                </Label>
-                                <KakaoOpenChatGuide />
-                            </div>
-                            <Input
-                                {...form.register("kakao_open_chat_url")}
-                                placeholder="https://open.kakao.com/o/..."
-                                className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
-                            />
-                            <p className="text-neutral-600 text-[10px]">고객에게 추가 연락 수단으로 표시됩니다</p>
-                            {form.formState.errors.kakao_open_chat_url && (
-                                <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.kakao_open_chat_url?.message?.toString()}</p>
-                            )}
-                        </div>
-
                         {/* 연락 수단 선택 */}
                         <div className="space-y-3">
                             <Label className="text-neutral-500 text-xs font-bold uppercase">고객에게 표시할 연락 수단을 선택해주세요</Label>
@@ -195,21 +175,22 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                     { value: "kakao" as ContactMethodType, label: "오픈채팅", icon: MessageCircle },
                                 ]).map(({ value, label, icon: Icon }) => {
                                     const isSelected = preferredMethods.includes(value);
-                                    const isDisabled = value === "kakao" && !form.watch("kakao_open_chat_url");
                                     return (
                                         <button
                                             key={value}
                                             type="button"
-                                            disabled={isDisabled}
-                                            onClick={() => setPreferredMethods(prev =>
-                                                isSelected ? prev.filter(m => m !== value) : [...prev, value]
-                                            )}
+                                            onClick={() => {
+                                                if (isSelected) {
+                                                    setPreferredMethods(prev => prev.filter(m => m !== value));
+                                                    if (value === "kakao") form.setValue("kakao_open_chat_url", "");
+                                                } else {
+                                                    setPreferredMethods(prev => [...prev, value]);
+                                                }
+                                            }}
                                             className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all ${
                                                 isSelected
                                                     ? "bg-white text-black"
-                                                    : isDisabled
-                                                        ? "bg-neutral-900 text-neutral-700 cursor-not-allowed"
-                                                        : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                                                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
                                             }`}
                                         >
                                             <Icon className="w-3.5 h-3.5" />
@@ -221,6 +202,25 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                             <p className="text-neutral-600 text-[10px]">
                                 {preferredMethods.length === 0 ? "미선택 시 모든 수단이 표시됩니다" : "선택한 수단만 표시됩니다"}
                             </p>
+                            {preferredMethods.includes("kakao") && (
+                                <div className="space-y-2 pt-1">
+                                    <div className="flex items-center justify-between">
+                                        <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
+                                            <MessageCircle className="w-3.5 h-3.5" />
+                                            오픈채팅 URL
+                                        </Label>
+                                        <KakaoOpenChatGuide />
+                                    </div>
+                                    <Input
+                                        {...form.register("kakao_open_chat_url")}
+                                        placeholder="https://open.kakao.com/o/..."
+                                        className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
+                                    />
+                                    {form.formState.errors.kakao_open_chat_url && (
+                                        <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.kakao_open_chat_url?.message?.toString()}</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                     </div>

@@ -26,10 +26,6 @@ export function validateDisplayName(value: string): DisplayNameValidation {
     return { ok: false, message: `닉네임은 ${MIN_LENGTH}-${MAX_LENGTH}자여야 합니다.` };
   }
 
-  if (/\s/.test(trimmed)) {
-    return { ok: false, message: "공백은 사용할 수 없습니다." };
-  }
-
   const lower = trimmed.toLowerCase();
   if (RESERVED.some((token) => lower.includes(token.toLowerCase()))) {
     return { ok: false, message: "사용할 수 없는 닉네임입니다." };
@@ -58,10 +54,3 @@ export async function isDisplayNameTaken(
   return true;
 }
 
-export function suggestDisplayName(baseName: string): string {
-  const base = baseName.replace(/\s+/g, "").slice(0, 10) || "유저";
-  const suffix = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, "0");
-  return `${base}_${suffix}`.slice(0, MAX_LENGTH);
-}

@@ -19,6 +19,7 @@ import {
     Calendar,
     MapPinned,
     ArrowRight,
+    MessageCircle,
 } from "lucide-react";
 import Link from "next/link";
 import type { User, Club, MDHealthScore } from "@/types/database";
@@ -308,6 +309,8 @@ function PendingMDCard({
     onPreviewImage: (url: string) => void;
 }) {
     const [loading, setLoading] = useState(false);
+    const [showRejectInput, setShowRejectInput] = useState(false);
+    const [rejectReason, setRejectReason] = useState("");
     const clubName = user.default_club?.name || user.verification_club_name;
 
     const handleApprove = async () => {
@@ -317,6 +320,24 @@ function PendingMDCard({
             const result = await res.json();
             if (!res.ok) throw new Error(result.error);
             onUpdate({ id: user.id, md_status: "approved", role: "md" } as UserWithClub);
+        } catch {
+            // error
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReject = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch(`/api/admin/mds/${user.id}/reject`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reason: rejectReason.trim() }),
+            });
+            const result = await res.json();
+            if (!res.ok) throw new Error(result.error);
+            onUpdate({ id: user.id, md_status: "rejected", md_rejection_reason: rejectReason.trim() || null } as unknown as UserWithClub);
         } catch {
             // error
         } finally {
@@ -359,6 +380,17 @@ function PendingMDCard({
                                 </a>
                             )}
                         </div>
+                        {user.kakao_open_chat_url && (
+                            <a
+                                href={user.kakao_open_chat_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-xs text-amber-400 font-bold hover:text-amber-300 transition-colors"
+                            >
+                                <MessageCircle className="w-3.5 h-3.5" /> 오픈채팅
+                                <ExternalLink className="w-3 h-3" />
+                            </a>
+                        )}
                         <div className="flex items-center gap-1.5 text-xs text-neutral-600">
                             <Calendar className="w-3 h-3" />
                             {dayjs(user.created_at).format("YYYY-MM-DD HH:mm")}
@@ -368,14 +400,52 @@ function PendingMDCard({
                 </div>
 
                 {/* 승인/반려 */}
-                <div className="border-t border-neutral-800/30 pt-4">
-                    <button
-                        onClick={handleApprove}
-                        disabled={loading}
-                        className="w-full py-3 bg-green-600 text-white font-black text-[14px] rounded-xl hover:bg-green-700 transition-colors disabled:opacity-40"
-                    >
-                        {loading ? "처리 중..." : "승인하기"}
-                    </button>
+                <div className="border-t border-neutral-800/30 pt-4 space-y-2">
+                    {showRejectInput && (
+                        <div className="space-y-2">
+                            <textarea
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                placeholder="거절 사유 (선택사항 — 신청자에게 표시됩니다)"
+                                rows={2}
+                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-red-500/50"
+                            />
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleReject}
+                                    disabled={loading}
+                                    className="flex-1 py-3 bg-red-600 text-white font-black text-[14px] rounded-xl hover:bg-red-700 transition-colors disabled:opacity-40"
+                                >
+                                    {loading ? "처리 중..." : "거절 확정"}
+                                </button>
+                                <button
+                                    onClick={() => { setShowRejectInput(false); setRejectReason(""); }}
+                                    disabled={loading}
+                                    className="px-4 py-3 bg-neutral-800 text-neutral-400 font-bold text-sm rounded-xl hover:bg-neutral-700 transition-colors"
+                                >
+                                    취소
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    {!showRejectInput && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleApprove}
+                                disabled={loading}
+                                className="flex-1 py-3 bg-green-600 text-white font-black text-[14px] rounded-xl hover:bg-green-700 transition-colors disabled:opacity-40"
+                            >
+                                {loading ? "처리 중..." : "승인하기"}
+                            </button>
+                            <button
+                                onClick={() => setShowRejectInput(true)}
+                                disabled={loading}
+                                className="px-5 py-3 bg-neutral-800 text-red-400 font-black text-sm rounded-xl hover:bg-red-500/10 hover:text-red-300 border border-transparent hover:border-red-500/20 transition-colors"
+                            >
+                                거절
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </Card>
