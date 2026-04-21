@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotifications } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import {
@@ -97,6 +98,7 @@ function timeAgo(dateStr: string): string {
 
 export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = {}) {
   const { user, isLoading } = useCurrentUser();
+  const resetAuth = useAuthStore((s) => s.reset);
   const {
     notifications,
     unreadCount,
@@ -154,8 +156,22 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
 
   const handleLogout = async () => {
     setMenuOpen(false);
-    await supabase.auth.signOut();
-    router.push("/login");
+    // signOut이 hang해도 3초 내 강제 탈출
+    try {
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("signOut timeout")), 3000)
+        ),
+      ]);
+    } catch (e) {
+      console.error("[Header] signOut 실패/timeout:", e);
+    } finally {
+      // 서버 세션 정리 실패해도 로컬 state는 무조건 초기화
+      resetAuth();
+      router.push("/login");
+      router.refresh();
+    }
   };
 
   const handleNotificationClick = async (notification: InAppNotification) => {
