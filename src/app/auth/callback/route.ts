@@ -66,7 +66,11 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const response = NextResponse.redirect(redirectUrl);
+  // 진단용: 콜백이 설정한 쿠키 개수를 URL에 기록 (_s=쿠키수)
+  const separator = redirectUrl.includes("?") ? "&" : "?";
+  const urlWithDiag = `${redirectUrl}${separator}_s=${cookiesToSet.length}`;
+
+  const response = NextResponse.redirect(urlWithDiag);
   // 교환된 세션 쿠키를 Response에 직접 첨부 (모바일 핵심)
   cookiesToSet.forEach(({ name, value, options }) => {
     response.cookies.set(name, value, options as Parameters<typeof response.cookies.set>[2]);
