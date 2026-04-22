@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Zap, Trophy, Phone, CheckCircle2, HelpCircle, X, PartyPopper, Puzzle as PuzzleIcon, Users } from "lucide-react";
+import { Zap, Trophy, Phone, CheckCircle2, HelpCircle, X, PartyPopper, Puzzle as PuzzleIcon, Users, Calendar } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { logger } from "@/lib/utils/logger";
 import { isAuctionExpired } from "@/lib/utils/auction";
@@ -21,25 +21,40 @@ const GUIDE_DISMISSED_KEY = "nightflow_guide_dismissed";
 const ONBOARDING_STEPS = [
   {
     title: "1. 테이블 선택",
-    desc: "원하는 클럽과 테이블을 찾아보세요.",
+    desc: "오늘특가 중 원하는 클럽·테이블을 찾아보세요.",
     icon: <Zap className="w-5 h-5 text-amber-500" />,
     color: "bg-amber-500/10",
   },
   {
-    title: "2. 예약·입찰",
-    desc: "오늘특가로 즉시 예약하거나, 얼리버드 경매에 참여해 보세요!",
-    icon: <Trophy className="w-5 h-5 text-yellow-500" />,
-    color: "bg-yellow-500/10",
-  },
-  {
-    title: "3. MD 연락",
-    desc: "안내에 따라 담당 MD에게 연락하세요.",
+    title: "2. MD 연락",
+    desc: "예약하기 버튼을 눌러 담당 MD에게 연락하세요.",
     icon: <Phone className="w-5 h-5 text-emerald-500" />,
     color: "bg-emerald-500/10",
   },
   {
-    title: "4. 현장 결제 및 방문",
-    desc: "별도 사전 결제 없이 현장에서 MD에게 결제하면 끝!",
+    title: "3. 예약 확정",
+    desc: "MD의 안내에 따라 예약하면 끝!",
+    icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
+    color: "bg-blue-500/10",
+  },
+];
+
+const EARLYBIRD_ONBOARDING_STEPS = [
+  {
+    title: "1. 이벤트 둘러보기",
+    desc: "얼리버드 이벤트 중 원하는 날짜·클럽을 골라요.",
+    icon: <Calendar className="w-5 h-5 text-amber-500" />,
+    color: "bg-amber-500/10",
+  },
+  {
+    title: "2. 경매 입찰",
+    desc: "원하는 가격에 입찰하여 최저가에 도전해봐요!",
+    icon: <Trophy className="w-5 h-5 text-yellow-500" />,
+    color: "bg-yellow-500/10",
+  },
+  {
+    title: "3. 낙찰 & 예약",
+    desc: "1등으로 낙찰되면, MD에게 연락해 예약을 확정받아요.",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },
@@ -59,14 +74,14 @@ const PUZZLE_ONBOARDING_STEPS = [
     color: "bg-green-500/10",
   },
   {
-    title: "3. MD 매칭",
-    desc: "MD가 오픈채팅으로 연락해 클럽·테이블을 제안해요.",
+    title: "3. MD 제안 받기",
+    desc: "MD들이 퍼즐을 보고 테이블 조건을 제안해요.",
     icon: <Phone className="w-5 h-5 text-emerald-500" />,
     color: "bg-emerald-500/10",
   },
   {
-    title: "4. 함께 방문",
-    desc: "모인 멤버들과 클럽에서 만나면 끝!",
+    title: "4. 수락 & 예약 확정",
+    desc: "최고의 제안을 수락하면 MD에게 오픈채팅이 공개돼요. 예약 확정하면 끝!",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },
@@ -283,8 +298,15 @@ export function HomeContent({
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                {(currentTab === "puzzle" ? PUZZLE_ONBOARDING_STEPS : ONBOARDING_STEPS).map((step, idx) => (
+              {(() => {
+                const steps = currentTab === "puzzle"
+                  ? PUZZLE_ONBOARDING_STEPS
+                  : currentTab === "advance"
+                  ? EARLYBIRD_ONBOARDING_STEPS
+                  : ONBOARDING_STEPS;
+                return (
+              <div className={`grid gap-3 ${steps.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+                {steps.map((step, idx) => (
                   <div
                     key={idx}
                     className="bg-neutral-900/50 border border-neutral-800/50 rounded-2xl p-4 flex flex-col gap-3 cursor-default"
@@ -296,13 +318,15 @@ export function HomeContent({
                       <h3 className="text-[13px] font-black text-white mb-1">
                         {step.title}
                       </h3>
-                      <p className="text-[10px] text-neutral-400 font-medium leading-tight line-clamp-2">
+                      <p className="text-[10px] text-neutral-400 font-medium leading-tight">
                         {step.desc}
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
+                );
+              })()}
             </div>
           </section>
         ) : (

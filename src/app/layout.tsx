@@ -29,11 +29,12 @@ const nanumPen = Nanum_Pen_Script({
 });
 
 export const metadata: Metadata = {
-  title: "NightFlow - 클럽 테이블 경매",
-  description: "강남·홍대 클럽 테이블을 실시간 경매로",
+  title: "NightFlow | 강남 클럽, 홍대 클럽, 클럽 MD 테이블 예약·실시간 경매",
+  description:
+    "강남·홍대 클럽 테이블을 실시간 경매로 예약하세요. 클럽 MD가 직접 올리는 잔여 테이블, 원하는 가격에 입찰하고 낙찰받는 새로운 클럽 예약 플랫폼.",
   openGraph: {
-    title: "NightFlow - 클럽 테이블 경매",
-    description: "강남·홍대 클럽 테이블을 실시간 경매로",
+    title: "NightFlow",
+    description: "오늘 밤, 당신의 테이블을 경매로",
     url: "https://nightflow.kr",
     siteName: "NightFlow",
     locale: "ko_KR",
