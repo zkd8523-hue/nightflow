@@ -66,7 +66,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
   const requiredMet = agreeAge && agreeTerms && agreePrivacy;
   const phoneDigits = phone.replace(/[^0-9]/g, "");
-  const isValidPhone = useMemo(() => /^01[016789]\d{7,8}$/.test(phoneDigits), [phoneDigits]);
+  const isValidPhone = useMemo(() => {
+    if (process.env.NODE_ENV === "development" && /^070\d{7,8}$/.test(phoneDigits)) return true;
+    return /^01[016789]\d{7,8}$/.test(phoneDigits);
+  }, [phoneDigits]);
 
   useEffect(() => {
     let cancelled = false;

@@ -18,6 +18,9 @@ export function normalizePhone(phone: string): string {
 
 export function isValidKoreanPhone(phone: string): boolean {
   const normalized = cleanPhone(phone);
+  if (process.env.NODE_ENV === "development" && /^070\d{7,8}$/.test(normalized)) {
+    return true;
+  }
   return /^01[016789]\d{7,8}$/.test(normalized);
 }
 

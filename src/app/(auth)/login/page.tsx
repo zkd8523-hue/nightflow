@@ -197,17 +197,6 @@ export default function LoginPage() {
 
         <div className="space-y-4">
           <Button
-            onClick={() => handleKakaoLogin()}
-            disabled={loading}
-            className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835] cursor-pointer"
-          >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.8 5.2 4.5 6.65L5.5 21l3.5-2.25c.97.2 2 .3 3 .3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z" fill="#000"/>
-            </svg>
-            {loading ? "로그인 중..." : "카카오로 시작하기"}
-          </Button>
-
-          <Button
             onClick={() => handleGoogleLogin()}
             disabled={loading}
             className="w-full h-12 bg-white text-black border border-neutral-300 hover:bg-neutral-100 cursor-pointer"
@@ -219,6 +208,17 @@ export default function LoginPage() {
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
             {loading ? "로그인 중..." : "Google로 시작하기"}
+          </Button>
+
+          <Button
+            onClick={() => handleKakaoLogin()}
+            disabled={loading}
+            className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835] cursor-pointer"
+          >
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.8 5.2 4.5 6.65L5.5 21l3.5-2.25c.97.2 2 .3 3 .3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z" fill="#000"/>
+            </svg>
+            {loading ? "로그인 중..." : "카카오로 시작하기"}
           </Button>
 
           <p className="text-xs text-center text-neutral-500">
