@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "NightFlow - 클럽 테이블 경매",
     description: "강남·홍대 클럽 테이블을 실시간 경매로",
-    url: "https://nightflow-black.vercel.app",
+    url: "https://nightflow.kr",
     siteName: "NightFlow",
     locale: "ko_KR",
     type: "website",

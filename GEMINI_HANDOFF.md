@@ -45,13 +45,13 @@
 
 1. **카카오 개발자 콘솔** 확인:
    - 앱 키 (JavaScript 키)가 유효한지
-   - `nightflow-black.vercel.app` 도메인이 허용된 도메인에 등록되어 있는지
+   - `nightflow.kr` 도메인이 허용된 도메인에 등록되어 있는지 (구 `nightflow-black.vercel.app`에서 이관, 2026-04-23)
 
-2. **프로덕션 도메인**: `nightflow-black.vercel.app` (Vercel에서 확인됨)
+2. **프로덕션 도메인**: `nightflow.kr` (Vercel 커스텀 도메인, 2026-04-23 연결 완료. 구 기본 도메인 `nightflow-black.vercel.app`도 동시 유지)
 
 3. **share-image 엔드포인트 테스트**:
    ```
-   https://nightflow-black.vercel.app/api/auctions/{경매ID}/share-image?format=kakao
+   https://nightflow.kr/api/auctions/{경매ID}/share-image?format=kakao
    ```
 
 4. **로컬에서 이미지 확인**:
