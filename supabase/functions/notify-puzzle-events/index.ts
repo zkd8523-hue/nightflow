@@ -30,7 +30,7 @@ const TPL = {
 };
 
 function puzzleUrl(puzzleId: string) {
-  return `${APP_URL}/puzzles/${puzzleId}`;
+  return `${APP_URL}/flags/${puzzleId}`;
 }
 
 // notification_logs 중복 체크

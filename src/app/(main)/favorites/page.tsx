@@ -344,7 +344,7 @@ export default function FavoritesPage() {
                       className="bg-[#1C1C1E] rounded-2xl p-4 flex items-center gap-4"
                     >
                       <Link
-                        href={`/puzzles/${puzzle.id}`}
+                        href={`/flags/${puzzle.id}`}
                         className="flex items-center gap-4 flex-1 min-w-0"
                       >
                         <div className="w-14 h-14 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">

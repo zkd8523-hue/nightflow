@@ -67,7 +67,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
       } else {
         toast.success("깃발 아래 뭉쳤어요!");
       }
-      router.push(`/puzzles/${puzzle.id}`);
+      router.push(`/flags/${puzzle.id}`);
     } catch (err: unknown) {
       console.error("join_puzzle error:", JSON.stringify(err));
       const msg = err instanceof Error ? err.message : JSON.stringify(err);

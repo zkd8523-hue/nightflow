@@ -14,18 +14,16 @@ export function KakaoOpenChatGuide({ suggestedTitle }: KakaoOpenChatGuideProps) 
   const handleCreateOpenChat = async () => {
     if (suggestedTitle) {
       try {
-        if (navigator.clipboard) {
-          await navigator.clipboard.writeText(suggestedTitle);
-          toast.success("추천 방 이름이 복사되었습니다!", {
-            description: "카카오톡 앱에서 오픈채팅을 만들어주세요.",
-            duration: 4000,
-          });
-        }
+        await navigator.clipboard.writeText(suggestedTitle);
+        toast.success("방 이름이 복사되었어요!", {
+          description: "카카오톡에서 오픈채팅 만들고 링크를 붙여넣어 주세요.",
+          duration: 5000,
+        });
       } catch {
         // clipboard 실패 시 무시
       }
     }
-    window.location.href = "kakaotalk://main";
+    window.open("kakaotalk://main", "_blank");
   };
 
   return (

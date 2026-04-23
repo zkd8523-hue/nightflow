@@ -214,7 +214,7 @@ export const PuzzleCard = memo(function PuzzleCard({
       ) : !isRecruitingParty ? (
         // 인원 확정 깃발: 참여 불가, 상세로 이동
         <Button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/puzzles/${puzzle.id}`); }}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
           className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
         >
           깃발 자세히 보기
@@ -226,7 +226,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              router.push("/puzzles/new");
+              router.push("/flags/new");
             }}
             className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
           >

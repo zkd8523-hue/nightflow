@@ -794,7 +794,7 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: Puzzle; userId: string }) {
   };
 
   return (
-    <Link href={`/puzzles/${puzzle.id}`}>
+    <Link href={`/flags/${puzzle.id}`}>
       <Card className="bg-[#1C1C1E] border-neutral-800 p-4 space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[14px] font-black text-white">

@@ -351,7 +351,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                         <Card key={offer.id} className={`overflow-hidden bg-[#1C1C1E] border-neutral-800/50 hover:border-neutral-700 transition-all p-3 cursor-pointer active:scale-[0.98] ${
                                             isAccepted ? "border-green-500/30" : ""
                                         }`}>
-                                            <Link href={`/puzzles/${p.id}`} className="block">
+                                            <Link href={`/flags/${p.id}`} className="block">
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-1.5 mb-1">

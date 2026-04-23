@@ -86,9 +86,19 @@ export function PuzzleForm({ userId }: { userId: string }) {
     return `${date}T12:00:00.000Z`;
   };
 
+  const formatWon = (n: number) =>
+    n >= 10000 ? `${Math.round(n / 10000)}만원` : `${n.toLocaleString()}원`;
+
   const suggestedChatTitle = (() => {
     const mmdd = eventDate ? eventDate.split("-").slice(1).join("/") : "";
-    return `[NightFlow] ${area || "지역미상"} ${mmdd} 모임`;
+    const base = `[NF] ${area || "지역미상"} ${mmdd}`;
+    if (!isRecruitingParty) {
+      const budget = totalBudget > 0 ? `·${formatWon(totalBudget)}` : "";
+      return `${base} | ${totalPeople}인${budget}`;
+    } else {
+      const perPerson = budgetAmount > 0 ? `·인당${formatWon(budgetAmount)}` : "";
+      return `${base} | 파티원 ${targetCount}인${perPerson}`;
+    }
   })();
 
   const handleSubmit = async () => {
@@ -172,7 +182,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
       });
 
       toast.success(isRecruitingParty ? "깃발을 꽂았어요! 파티원과 MD를 기다려봐요" : "깃발을 꽂았어요! MD 제안을 기다려봐요");
-      router.push(`/puzzles/${puzzle.id}`);
+      router.push(`/flags/${puzzle.id}`);
     } catch (err) {
       console.error("puzzle submit error:", err);
       toast.error(err instanceof Error ? err.message : "등록에 실패했습니다");

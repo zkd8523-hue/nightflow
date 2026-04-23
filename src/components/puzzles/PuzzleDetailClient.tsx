@@ -80,7 +80,7 @@ export function PuzzleDetailClient({
   const [acceptedKakaoUrl, setAcceptedKakaoUrl] = useState<string | null>(null);
 
   const handleShare = useCallback(async () => {
-    const url = `${window.location.origin}/puzzles/${puzzle.id}`;
+    const url = `${window.location.origin}/flags/${puzzle.id}`;
     const title = puzzle.notes || `${puzzle.area} 깃발`;
     const text = `${puzzle.area} · 인당 ${((puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count) / puzzle.target_count).toLocaleString()}원 · ${puzzle.target_count}명`;
     if (navigator.share) {

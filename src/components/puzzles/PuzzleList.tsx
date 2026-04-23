@@ -96,7 +96,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
                   </div>
                   <div className="space-y-4">
                     {items.map((puzzle) => (
-                      <Link key={puzzle.id} href={`/puzzles/${puzzle.id}`} className="block" onClick={(e) => e.stopPropagation()}>
+                      <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => e.stopPropagation()}>
                         <PuzzleCard
                           puzzle={puzzle}
                           userRole={userRole}
@@ -122,7 +122,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
       {/* Floating 깃발 꽂기 버튼 (유저 전용) */}
       {userRole !== "md" && (
         <Link
-          href="/puzzles/new"
+          href="/flags/new"
           className="fixed bottom-24 right-4 flex items-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-full pl-4 pr-3 py-3 shadow-lg z-40 transition-colors"
         >
           <span className="text-black text-sm font-semibold whitespace-nowrap">깃발 꽂기</span>
