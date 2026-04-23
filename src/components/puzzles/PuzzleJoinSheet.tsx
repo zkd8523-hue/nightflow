@@ -28,6 +28,9 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
   const [guestCount, setGuestCount] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
+  // 인원 확정 깃발은 참여 불가 — 상위에서 버튼 숨기지만 방어적 가드
+  if (!puzzle.is_recruiting_party) return null;
+
   const remaining = puzzle.target_count - puzzle.current_count;
   const maxGuest = Math.max(0, remaining - 1);
   const totalJoining = 1 + (hasGuest ? guestCount : 0);
@@ -47,13 +50,13 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
       if (error) throw error;
 
       if (!data?.success) {
-        toast.error(data?.error || "참여에 실패했습니다");
+        toast.error(data?.error || "뭉치기에 실패했습니다");
         return;
       }
 
       onClose();
       if (puzzle.kakao_open_chat_url) {
-        toast("퍼즐에 참여했습니다! 오픈채팅에 입장하세요", {
+        toast("깃발 아래 뭉쳤어요! 오픈채팅에 입장하세요", {
           duration: 8000,
           action: {
             label: "오픈채팅 열기",
@@ -62,7 +65,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
           description: "내 활동에서 언제든 다시 확인할 수 있어요",
         });
       } else {
-        toast.success("퍼즐에 참여했습니다!");
+        toast.success("깃발 아래 뭉쳤어요!");
       }
       router.push(`/puzzles/${puzzle.id}`);
     } catch (err: unknown) {
@@ -90,13 +93,13 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
       >
         <SheetHeader className="mb-5">
           <SheetTitle className="text-white text-[17px] font-black text-left">
-            참여 신청
+            파티원 합류하기
           </SheetTitle>
           <p className="text-[13px] text-neutral-400 text-left">
             {formatDate(puzzle.event_date)} {puzzle.area} · {perPerson.toLocaleString()}원/인
           </p>
           <p className="text-[13px] text-neutral-500 text-left">
-            {puzzle.current_count}/{puzzle.target_count}명 참여 중 · 남은 자리 {remaining}명
+            파티원 {puzzle.current_count}/{puzzle.target_count}명 · 남은 자리 {remaining}명
           </p>
         </SheetHeader>
 
@@ -153,14 +156,14 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
           </div>
 
           <p className="text-[12px] text-neutral-300 text-center">
-            참여하면 멤버들의 오픈채팅에 입장할 수 있어요
+            뭉치면 파티원들의 오픈채팅에 입장할 수 있어요
           </p>
           <Button
             onClick={handleJoin}
             disabled={submitting}
             className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
-            {submitting ? "참여 중..." : "참여하기"}
+            {submitting ? "뭉치는 중..." : "파티원 합류하기"}
           </Button>
         </div>
       </SheetContent>

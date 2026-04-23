@@ -22,8 +22,8 @@ interface PuzzleDetailClientProps {
 }
 
 const GENDER_LABEL: Record<GenderPref, string | null> = {
-  male_only: "남성만",
-  female_only: "여성만",
+  male_only: "남",
+  female_only: "녀",
   any: null,
 };
 const AGE_LABEL: Record<AgePref, string | null> = {
@@ -81,7 +81,7 @@ export function PuzzleDetailClient({
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/puzzles/${puzzle.id}`;
-    const title = puzzle.notes || `${puzzle.area} 퍼즐 모집`;
+    const title = puzzle.notes || `${puzzle.area} 깃발`;
     const text = `${puzzle.area} · 인당 ${((puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count) / puzzle.target_count).toLocaleString()}원 · ${puzzle.target_count}명`;
     if (navigator.share) {
       try {
@@ -98,7 +98,9 @@ export function PuzzleDetailClient({
   const isLeader = currentUserId === puzzle.leader_id;
   const isMember = members.some((m) => m.user_id === currentUserId);
   const isMd = userRole === "md";
-  const isFull = puzzle.current_count >= puzzle.target_count;
+  const isRecruitingParty = puzzle.is_recruiting_party;
+  // 파티원 모집 중일 때만 인원 가득 찬 개념이 의미 있음
+  const isFull = isRecruitingParty && puzzle.current_count >= puzzle.target_count;
   const isOpen = puzzle.status === "open" && !isFull;
   const isAccepted = puzzle.status === "accepted";
   // 하위 호환: V1 퍼즐은 budget_per_person, V2는 total_budget 사용
@@ -153,13 +155,13 @@ export function PuzzleDetailClient({
   );
 
   const handleCancel = async () => {
-    if (!confirm("퍼즐을 취소하시겠습니까? 참여자 전원에게 알림이 발송됩니다.")) return;
+    if (!confirm("깃발을 내리시겠습니까? 파티원 전원에게 알림이 발송됩니다.")) return;
     setActionLoading(true);
     try {
       const { data, error } = await supabase.rpc("cancel_puzzle", { p_puzzle_id: puzzle.id });
       if (error) throw error;
       if (!data?.success) { toast.error(data?.error || "취소에 실패했습니다"); return; }
-      toast.success("퍼즐이 취소되었습니다");
+      toast.success("깃발을 내렸습니다");
       router.push("/?tab=puzzle");
     } catch {
       toast.error("취소에 실패했습니다");
@@ -169,13 +171,13 @@ export function PuzzleDetailClient({
   };
 
   const handleLeave = async () => {
-    if (!confirm("퍼즐에서 나가시겠습니까?")) return;
+    if (!confirm("이 깃발에서 나가시겠습니까?")) return;
     setActionLoading(true);
     try {
       const { data, error } = await supabase.rpc("leave_puzzle", { p_puzzle_id: puzzle.id });
       if (error) throw error;
       if (!data?.success) { toast.error(data?.error || "나가기에 실패했습니다"); return; }
-      toast.success("퍼즐에서 나갔습니다");
+      toast.success("깃발에서 나왔습니다");
       router.refresh();
     } catch {
       toast.error("나가기에 실패했습니다");
@@ -265,7 +267,7 @@ export function PuzzleDetailClient({
           <Link href="/?tab=puzzle" className="text-white">
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-[17px] font-black text-white flex-1">퍼즐 상세</h1>
+          <h1 className="text-[17px] font-black text-white flex-1">깃발 상세</h1>
           {!isFull && (
             <span
               className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
@@ -302,36 +304,53 @@ export function PuzzleDetailClient({
 
             {/* 예산 */}
             <div className="space-y-0.5">
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="text-[24px] font-black text-green-400">
-                  현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
-                </span>
-                <span className="text-[13px] text-neutral-500">
-                  / 목표 {baseBudget.toLocaleString()}원
-                </span>
-              </div>
-              <p className="text-[12px] text-neutral-600">
-                인당 {perPersonBudget.toLocaleString()}원
-              </p>
+              {isRecruitingParty ? (
+                <>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-[24px] font-black text-green-400">
+                      현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
+                    </span>
+                    <span className="text-[13px] text-neutral-500">
+                      / 목표 {baseBudget.toLocaleString()}원
+                    </span>
+                  </div>
+                  <p className="text-[12px] text-neutral-600">
+                    인당 {perPersonBudget.toLocaleString()}원
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-[24px] font-black text-green-400">
+                      예산 {baseBudget.toLocaleString()}원
+                    </span>
+                  </div>
+                  <p className="text-[12px] text-neutral-500">
+                    인원 확정 {puzzle.target_count}명 · 인당 {perPersonBudget.toLocaleString()}원
+                  </p>
+                </>
+              )}
             </div>
 
-            {/* 인원 퍼즐 조각 */}
-            <div className="space-y-1.5">
-              <span className="text-[13px] text-neutral-400">
-                {puzzle.current_count >= puzzle.target_count
-                  ? "퍼즐 완성!"
-                  : `${puzzle.current_count}/${puzzle.target_count} 조각 모였어요`}
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {Array.from({ length: puzzle.target_count }).map((_, i) => (
-                  <PuzzlePiece
-                    key={i}
-                    filled={i < puzzle.current_count}
-                    isLeader={i === 0}
-                  />
-                ))}
+            {/* 인원 퍼즐 조각: 파티원 모집 중일 때만 표시 */}
+            {isRecruitingParty && (
+              <div className="space-y-1.5">
+                <span className="text-[13px] text-neutral-400">
+                  {puzzle.current_count >= puzzle.target_count
+                    ? "파티 완성!"
+                    : `파티원 ${puzzle.current_count}/${puzzle.target_count}명`}
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from({ length: puzzle.target_count }).map((_, i) => (
+                    <PuzzlePiece
+                      key={i}
+                      filled={i < puzzle.current_count}
+                      isLeader={i === 0}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* 취향 태그 */}
             {tags.length > 0 && (
@@ -613,11 +632,12 @@ export function PuzzleDetailClient({
             )}
           </section>
 
-          {/* 참여자 목록 */}
+          {/* 참여자 목록: 파티원 모집 중일 때만 */}
+          {isRecruitingParty && (
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-neutral-400" />
-              <h2 className="text-[14px] font-bold text-neutral-300">참여자</h2>
+              <h2 className="text-[14px] font-bold text-neutral-300">파티원</h2>
             </div>
             <div className="space-y-2">
               {members.map((member) => {
@@ -670,6 +690,7 @@ export function PuzzleDetailClient({
               })}
             </div>
           </section>
+          )}
 
           {/* 대표자 전용 액션 */}
           {isLeader && isOpen && (
@@ -680,7 +701,7 @@ export function PuzzleDetailClient({
                 variant="outline"
                 className="w-full h-12 border-red-500/50 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[14px] rounded-2xl"
               >
-                퍼즐 취소하기
+                깃발 내리기
               </Button>
             </section>
           )}
@@ -697,13 +718,13 @@ export function PuzzleDetailClient({
             </Button>
           )}
 
-          {/* 미참여 유저 참여 버튼 */}
-          {!isMember && !isLeader && !isMd && isOpen && currentUserId && (
+          {/* 미참여 유저 파티 합류 버튼: 파티원 모집 ON 일 때만 */}
+          {!isMember && !isLeader && !isMd && isOpen && currentUserId && isRecruitingParty && (
             <Button
               onClick={() => setShowJoin(true)}
               className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
             >
-              참여하기
+              파티원 합류하기
             </Button>
           )}
 
@@ -730,11 +751,11 @@ export function PuzzleDetailClient({
             </div>
           )}
 
-          {/* 로그인 유도 */}
-          {!currentUserId && isOpen && (
+          {/* 로그인 유도: 파티원 모집 ON 일 때만 */}
+          {!currentUserId && isOpen && isRecruitingParty && (
             <Link href="/login">
               <Button className="w-full h-12 bg-white text-black font-black text-[14px] rounded-2xl">
-                로그인하고 참여하기
+                로그인하고 파티원 합류하기
               </Button>
             </Link>
           )}

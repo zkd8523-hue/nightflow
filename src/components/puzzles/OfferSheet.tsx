@@ -106,7 +106,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
       id: o.id,
       table_type: o.table_type,
       proposed_price: o.proposed_price,
-      puzzle_title: puzzleMap[o.puzzle_id]?.notes || puzzleMap[o.puzzle_id]?.area || "퍼즐",
+      puzzle_title: puzzleMap[o.puzzle_id]?.notes || puzzleMap[o.puzzle_id]?.area || "깃발",
     }));
 
     setActiveOfferList(list);

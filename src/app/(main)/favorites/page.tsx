@@ -136,9 +136,9 @@ export default function FavoritesPage() {
             </TabsTrigger>
             <TabsTrigger
               value="puzzles"
-              className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-purple-600 data-[state=active]:text-white text-neutral-500"
+              className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white text-neutral-500"
             >
-              퍼즐
+              깃발
               {favoritePuzzles.length > 0 && (
                 <span className="ml-1.5 text-[11px] text-neutral-400">{favoritePuzzles.length}</span>
               )}
@@ -312,22 +312,22 @@ export default function FavoritesPage() {
             )}
           </TabsContent>
 
-          {/* 퍼즐 탭 */}
+          {/* 깃발 탭 */}
           <TabsContent value="puzzles">
             {favoritePuzzles.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <Heart className="w-12 h-12 text-neutral-700 mb-4" />
                 <p className="text-[15px] text-neutral-400 font-bold mb-2">
-                  아직 찜한 퍼즐이 없습니다
+                  아직 찜한 깃발이 없습니다
                 </p>
                 <p className="text-[13px] text-neutral-600 mb-6">
-                  퍼즐 카드에서 하트를 눌러 찜해보세요
+                  깃발 카드에서 하트를 눌러 찜해보세요
                 </p>
                 <Link
                   href="/?tab=puzzle"
-                  className="h-10 px-6 rounded-full bg-purple-500 text-white font-bold text-[14px] inline-flex items-center hover:bg-purple-400 transition-colors"
+                  className="h-10 px-6 rounded-full bg-amber-500 text-white font-bold text-[14px] inline-flex items-center hover:bg-amber-400 transition-colors"
                 >
-                  퍼즐 둘러보기
+                  깃발 둘러보기
                 </Link>
               </div>
             ) : (
@@ -347,7 +347,7 @@ export default function FavoritesPage() {
                         href={`/puzzles/${puzzle.id}`}
                         className="flex items-center gap-4 flex-1 min-w-0"
                       >
-                        <div className="w-14 h-14 rounded-xl bg-purple-500/20 flex items-center justify-center shrink-0">
+                        <div className="w-14 h-14 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
                           <span className="text-[22px]">🧩</span>
                         </div>
                         <div className="flex-1 min-w-0">
@@ -368,7 +368,7 @@ export default function FavoritesPage() {
                       <button
                         onClick={() => toggleFavoritePuzzle(fav.puzzle_id)}
                         className="w-9 h-9 rounded-full flex items-center justify-center bg-neutral-800/50 hover:bg-red-500/10 transition-colors shrink-0"
-                        title="퍼즐 찜 해제"
+                        title="깃발 찜 해제"
                       >
                         <Heart className="w-4 h-4 text-red-500 fill-red-500" />
                       </button>

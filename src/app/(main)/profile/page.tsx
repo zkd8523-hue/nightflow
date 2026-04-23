@@ -616,7 +616,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <p className="text-[15px] font-bold text-white">찜 목록</p>
-              <p className="text-[12px] text-neutral-500">클럽 · MD · 퍼즐</p>
+              <p className="text-[12px] text-neutral-500">클럽 · MD · 깃발</p>
             </div>
           </div>
           <ChevronRight className="w-5 h-5 text-neutral-600" />

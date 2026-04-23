@@ -295,7 +295,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                 📅 얼리버드 {sortedEarlyBirdTop.length > 0 && <span className="ml-0.5 text-amber-500">{sortedEarlyBirdTop.length}</span>}
                             </TabsTrigger>
                             <TabsTrigger value="puzzle" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
-                                🧩 퍼즐 {initialPuzzleOffers.length > 0 && <span className="ml-0.5 text-purple-400">{initialPuzzleOffers.length}</span>}
+                                ⛳ 깃발 {initialPuzzleOffers.length > 0 && <span className="ml-0.5 text-amber-400">{initialPuzzleOffers.length}</span>}
                             </TabsTrigger>
                         </TabsList>
 
@@ -358,7 +358,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                                             <span className={`text-[9px] font-bold px-1.5 py-0 h-4 inline-flex items-center rounded-full ${
                                                                 isAccepted
                                                                     ? "bg-green-500/20 text-green-400"
-                                                                    : "bg-purple-500/20 text-purple-400"
+                                                                    : "bg-amber-500/20 text-amber-400"
                                                             }`}>
                                                                 {isAccepted ? "수락됨" : "대기중"}
                                                             </span>
@@ -443,12 +443,12 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                     </div>
                                     <p className="text-neutral-500 font-medium text-sm">보낸 제안이 없습니다</p>
                                     <p className="text-neutral-600 text-xs px-10 leading-relaxed">
-                                        홈 퍼즐 탭에서 유저들의 요청을 확인하고<br/>제안을 보내보세요
+                                        홈 깃발 탭에서 유저들이 꽂은 깃발을 확인하고<br/>제안을 보내보세요
                                     </p>
                                     <Link href="/?tab=puzzle">
                                         <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">
                                             <PuzzleIcon className="w-4 h-4 mr-1" />
-                                            퍼즐 둘러보기
+                                            깃발 둘러보기
                                         </Button>
                                     </Link>
                                 </div>

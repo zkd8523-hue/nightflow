@@ -13,6 +13,8 @@ import { validateDisplayName, isDisplayNameTaken } from "@/lib/utils/displayName
 import { ChevronRight, Check } from "lucide-react";
 import Link from "next/link";
 
+const SKIP_PHONE_VERIFICATION = process.env.NEXT_PUBLIC_SKIP_PHONE_VERIFICATION === "true";
+
 import type { User as AuthUser } from "@supabase/supabase-js";
 
 function formatKoreanPhone(digits: string): string {
@@ -50,7 +52,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
   // OTP state
   const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(SKIP_PHONE_VERIFICATION);
   const [otpCode, setOtpCode] = useState("");
   const [otpError, setOtpError] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
@@ -260,12 +262,12 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       return;
     }
 
-    if (!isValidPhone) {
+    if (!SKIP_PHONE_VERIFICATION && !isValidPhone) {
       setPhoneError("올바른 휴대폰 번호를 입력해주세요 (예: 010-1234-5678)");
       return;
     }
 
-    if (!otpVerified) {
+    if (!SKIP_PHONE_VERIFICATION && !otpVerified) {
       setPhoneError("SMS 인증을 완료해주세요.");
       return;
     }
@@ -307,7 +309,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         id: authUser.id,
         kakao_id: meta.provider_id || authUser.id,
         display_name: trimmedName,
-        phone: phoneDigits,
+        phone: SKIP_PHONE_VERIFICATION ? null : phoneDigits,
         profile_image: meta.avatar_url || null,
         role: "user",
         alimtalk_consent: agreeMarketing,
@@ -388,8 +390,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
           <p className="text-[11px] text-neutral-500">나중에 프로필에서 언제든지 변경할 수 있어요.</p>
         </div>
 
-        {/* 전화번호 입력 + SMS 인증 */}
-        <div className="space-y-2">
+        <div className={`space-y-2${SKIP_PHONE_VERIFICATION ? " hidden" : ""}`}>
           <label className="text-[13px] font-bold text-neutral-300">
             휴대폰 번호
           </label>
@@ -567,10 +568,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
         <Button
           onClick={handleSubmit}
-          disabled={!requiredMet || !otpVerified || loading}
+          disabled={!requiredMet || (!SKIP_PHONE_VERIFICATION && !otpVerified) || loading}
           className="w-full h-12"
         >
-          {loading ? "가입 중..." : otpVerified ? "동의하고 시작하기" : "SMS 인증을 완료해주세요"}
+          {loading ? "가입 중..." : !SKIP_PHONE_VERIFICATION && !otpVerified ? "SMS 인증을 완료해주세요" : "동의하고 시작하기"}
         </Button>
       </Card>
     </div>

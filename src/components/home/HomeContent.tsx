@@ -10,7 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Zap, Trophy, Phone, CheckCircle2, HelpCircle, X, PartyPopper, Puzzle as PuzzleIcon, Users, Calendar } from "lucide-react";
+import { Zap, Trophy, Phone, CheckCircle2, HelpCircle, X, PartyPopper, Calendar } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { logger } from "@/lib/utils/logger";
 import { isAuctionExpired } from "@/lib/utils/auction";
@@ -62,25 +62,19 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 
 const PUZZLE_ONBOARDING_STEPS = [
   {
-    title: "1. 퍼즐 만들기",
-    desc: "날짜·지역·예산을 설정하고 오픈채팅 링크를 등록하세요.",
-    icon: <PuzzleIcon className="w-5 h-5 text-purple-500" />,
-    color: "bg-purple-500/10",
+    title: "1. 깃발 꽂기",
+    desc: "날짜·지역·예산을 등록하세요. 파티원이 부족하면 '파티원도 모으기'를 켜세요.",
+    icon: <span className="text-[20px]">⛳</span>,
+    color: "bg-amber-500/10",
   },
   {
-    title: "2. 멤버 모집",
-    desc: "다른 유저들이 퍼즐을 보고 참여해요.",
-    icon: <Users className="w-5 h-5 text-green-500" />,
-    color: "bg-green-500/10",
-  },
-  {
-    title: "3. MD 제안 받기",
-    desc: "MD들이 퍼즐을 보고 테이블 조건을 제안해요.",
-    icon: <Phone className="w-5 h-5 text-emerald-500" />,
+    title: "2. MD 제안 받기",
+    desc: "MD들이 깃발을 보고 클럽·테이블 조건을 제안해요.",
+    icon: <span className="text-[20px]">📨</span>,
     color: "bg-emerald-500/10",
   },
   {
-    title: "4. 수락 & 예약 확정",
+    title: "3. 수락 & 예약 확정",
     desc: "최고의 제안을 수락하면 MD에게 오픈채팅이 공개돼요. 예약 확정하면 끝!",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
@@ -315,7 +309,7 @@ export function HomeContent({
                       {step.icon}
                     </div>
                     <div>
-                      <h3 className="text-[13px] font-black text-white mb-1">
+                      <h3 className="text-[13px] font-black text-white mb-1 break-keep">
                         {step.title}
                       </h3>
                       <p className="text-[10px] text-neutral-400 font-medium leading-tight">

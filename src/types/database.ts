@@ -544,6 +544,8 @@ export interface Puzzle {
   total_budget: number | null;
   target_count: number;
   current_count: number;
+  /** true: 파티원 추가 모집(조각모음). false: 인원 확정 깃발 (target = current). Migration 125 */
+  is_recruiting_party: boolean;
   status: PuzzleStatus;
   notes: string | null;
   expires_at: string;

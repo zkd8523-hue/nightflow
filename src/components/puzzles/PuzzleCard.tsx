@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { useRouter } from "next/navigation";
-import { Heart } from "lucide-react";
+import { Heart, Flag, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePuzzleFavoritesContext } from "@/components/providers";
 import type { Puzzle, GenderPref, AgePref, VibePref } from "@/types/database";
@@ -18,8 +18,8 @@ interface PuzzleCardProps {
 }
 
 const GENDER_LABEL: Record<GenderPref, string | null> = {
-  male_only: "남성만",
-  female_only: "여성만",
+  male_only: "남",
+  female_only: "녀",
   any: null,
 };
 
@@ -73,13 +73,13 @@ export const PuzzleCard = memo(function PuzzleCard({
     ? Math.floor(puzzle.total_budget / puzzle.target_count)
     : puzzle.budget_per_person;
 
-  const genderTag = GENDER_LABEL[puzzle.gender_pref];
   const ageTag = AGE_LABEL[puzzle.age_pref];
   const vibeTag = VIBE_LABEL[puzzle.vibe_pref];
-  const tags = [genderTag, ageTag, vibeTag].filter(Boolean) as string[];
+  const tags = [ageTag, vibeTag].filter(Boolean) as string[];
 
   const { isFavoritedPuzzle, toggleFavoritePuzzle } = usePuzzleFavoritesContext();
   const isMd = userRole === "md";
+  const isRecruitingParty = puzzle.is_recruiting_party;
   const isFull = puzzle.current_count >= puzzle.target_count;
   const isSmall = puzzle.target_count > 8;
   const favorited = isFavoritedPuzzle(puzzle.id);
@@ -108,7 +108,7 @@ export const PuzzleCard = memo(function PuzzleCard({
               toggleFavoritePuzzle(puzzle.id);
             }}
             className="w-8 h-8 inline-flex items-center justify-center transition-colors"
-            title={favorited ? "찜 해제" : "퍼즐 찜하기"}
+            title={favorited ? "찜 해제" : "깃발 찜하기"}
           >
             <span className="w-7 h-7 inline-flex items-center justify-center rounded-full bg-neutral-800/80 border border-neutral-700/50 hover:border-neutral-500 active:bg-neutral-700/80 transition-colors">
               <Heart
@@ -123,35 +123,54 @@ export const PuzzleCard = memo(function PuzzleCard({
 
       {/* 예산 및 인원 정보 그룹 */}
       <div className="flex flex-col gap-1.5">
-        {/* 예산 진행 */}
-        <div className="flex items-baseline gap-1">
-          <span className="text-[18px] font-black text-green-400">
-            현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
-          </span>
-          <span className="text-[14px] font-bold text-neutral-600">/</span>
-          <span className="text-[14px] font-bold text-neutral-500">
-            목표 {totalBudget.toLocaleString()}원
-          </span>
-        </div>
-
-        {/* 인원 정보 + 퍼즐 피스 */}
-        <div className="space-y-1">
-          <span className="text-[13px] text-neutral-400 font-medium">
-            {isFull
-              ? "퍼즐 완성! 🎉"
-              : `${puzzle.current_count}/${puzzle.target_count} 조각 모였어요`}
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {Array.from({ length: puzzle.target_count }).map((_, i) => (
-              <PuzzlePiece
-                key={i}
-                filled={i < puzzle.current_count}
-                isLeader={i === 0}
-                small={isSmall}
-              />
-            ))}
-          </div>
-        </div>
+        {isRecruitingParty ? (
+          <>
+            {/* 파티원 모집 중: 예산/인원 진행 바 */}
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-black text-green-400">
+                현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
+              </span>
+              <span className="text-[14px] font-bold text-neutral-600">/</span>
+              <span className="text-[14px] font-bold text-neutral-500">
+                목표 {totalBudget.toLocaleString()}원
+              </span>
+            </div>
+            <div className="space-y-1">
+              <span className="text-[13px] text-neutral-400 font-medium flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                {isFull
+                  ? "파티 완성! 🎉"
+                  : `파티원 ${puzzle.current_count}/${puzzle.target_count}명 · MD 제안 대기`}
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from({ length: puzzle.target_count }).map((_, i) => (
+                  <PuzzlePiece
+                    key={i}
+                    filled={i < puzzle.current_count}
+                    isLeader={i === 0}
+                    small={isSmall}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* 인원 확정: 총 예산 강조, MD 견적용 인원 명시 */}
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-black text-green-400">
+                예산 {totalBudget.toLocaleString()}원
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[13px] text-neutral-400 font-medium">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-bold">
+                <Flag className="w-3 h-3" />
+                인원 확정 {puzzle.target_count}명
+              </span>
+              <span className="text-neutral-500 text-[11px]">인당 {perPersonBudget.toLocaleString()}원</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* MD 제안 현황 */}
@@ -192,9 +211,17 @@ export const PuzzleCard = memo(function PuzzleCard({
             제안하기
           </Button>
         )
+      ) : !isRecruitingParty ? (
+        // 인원 확정 깃발: 참여 불가, 상세로 이동
+        <Button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/puzzles/${puzzle.id}`); }}
+          className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
+        >
+          깃발 자세히 보기
+        </Button>
       ) : isFull ? (
         <div className="space-y-2">
-          <p className="text-[12px] text-neutral-500 font-medium text-center">인원 마감</p>
+          <p className="text-[12px] text-neutral-500 font-medium text-center">파티 마감</p>
           <Button
             onClick={(e) => {
               e.preventDefault();
@@ -203,7 +230,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             }}
             className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
           >
-            나도 퍼즐 만들기 →
+            나도 깃발 꽂기 →
           </Button>
         </div>
       ) : isMember ? (
@@ -211,14 +238,14 @@ export const PuzzleCard = memo(function PuzzleCard({
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
           className="w-full h-11 font-black text-[13px] rounded-xl transition-all bg-green-500/15 border border-green-500/30 text-green-400 pointer-events-none"
         >
-          참여 중
+          뭉쳤어요
         </Button>
       ) : (
         <Button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin?.(puzzle); }}
           className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
         >
-          참여하기
+          파티원 합류하기
         </Button>
       )}
     </div>

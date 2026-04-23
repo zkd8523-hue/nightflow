@@ -512,9 +512,9 @@ export function MyBidsClient({
             </TabsTrigger>
             <TabsTrigger
               value="puzzle"
-              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-purple-500 data-[state=active]:text-white text-neutral-500"
+              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white text-neutral-500"
             >
-              🧩 퍼즐{puzzles.length > 0 && ` (${puzzles.length})`}
+              ⛳ 깃발{puzzles.length > 0 && ` (${puzzles.length})`}
             </TabsTrigger>
           </TabsList>
 
@@ -804,7 +804,7 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: Puzzle; userId: string }) {
             className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
               isLeader
                 ? "bg-amber-500/20 text-amber-400"
-                : "bg-purple-500/20 text-purple-400"
+                : "bg-amber-500/20 text-amber-400"
             }`}
           >
             {isLeader ? "대표자" : "참여중"}
@@ -894,11 +894,11 @@ function EmptyPuzzle() {
         <span className="text-3xl">🧩</span>
       </div>
       <p className="text-neutral-500 font-medium">
-        참여 중인 퍼즐이 없습니다.
+        참여 중인 깃발이 없습니다.
       </p>
       <Link href="/?tab=puzzle">
         <Button variant="link" className="text-neutral-400 font-bold underline">
-          퍼즐 둘러보기
+          깃발 둘러보기
         </Button>
       </Link>
     </div>

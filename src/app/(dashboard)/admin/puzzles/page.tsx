@@ -71,13 +71,13 @@ export default async function AdminPuzzlesPage() {
           <Link href="/admin" className="text-white">
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-[20px] font-black text-white">퍼즐 신고 관리</h1>
+          <h1 className="text-[20px] font-black text-white">깃발 신고 관리</h1>
         </div>
 
         {puzzleEntries.length === 0 ? (
           <div className="text-center py-20 text-neutral-500">
             <AlertTriangle className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p>신고된 퍼즐이 없습니다</p>
+            <p>신고된 깃발이 없습니다</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -101,7 +101,7 @@ export default async function AdminPuzzlesPage() {
                           </p>
                         </>
                       ) : (
-                        <p className="text-[13px] text-neutral-400">퍼즐 ID: {puzzleId.slice(0, 8)}</p>
+                        <p className="text-[13px] text-neutral-400">깃발 ID: {puzzleId.slice(0, 8)}</p>
                       )}
                     </div>
                     <span

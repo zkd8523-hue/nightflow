@@ -199,7 +199,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/appeals",
     },
     {
-      label: "퍼즐 신고",
+      label: "깃발 신고",
       value: "관리",
       icon: AlertCircle,
       color: "text-purple-500",

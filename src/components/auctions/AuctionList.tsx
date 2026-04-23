@@ -56,7 +56,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
     if (initialTab) return initialTab;
     if (todayAuctions.length > 0) return "today";
     if (advanceAuctions.length > 0) return "advance";
-    return "today";
+    return "puzzle";
   });
 
   const setTab = (t: "today" | "advance" | "puzzle") => {
@@ -105,19 +105,19 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
       <div className="flex items-center gap-2 px-1">
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0">
           <button
-            onClick={() => setTab("today")}
-            className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
-              ? "bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)] border border-amber-400"
+            onClick={() => setTab("puzzle")}
+            className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
+              ? "bg-amber-500 text-black"
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
           >
-            🔥 오늘특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
+            ⛳ 깃발 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
           </button>
 
           <button
             onClick={() => setTab("advance")}
             className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "advance"
-              ? "bg-white text-black"
+              ? "bg-amber-500 text-black"
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
           >
@@ -125,13 +125,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           </button>
 
           <button
-            onClick={() => setTab("puzzle")}
-            className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
-              ? "bg-purple-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]"
+            onClick={() => setTab("today")}
+            className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
+              ? "bg-amber-500 text-black"
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
           >
-            🧩 퍼즐 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
+            🔥 오늘특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
           </button>
         </div>
 
@@ -144,9 +144,9 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               <div className="space-y-2">
                 <p className="text-[15px] font-bold text-neutral-300">오늘특가가 곧 올라옵니다</p>
                 <p className="text-[12px] text-neutral-500 leading-relaxed">
-                  MD가 예약가격 테이블을 올리면
+                  MD가 남은 테이블을 올리면
                   <br />
-                  선착순으로 예약할 수 있어요.
+                  빠르게 잡을 수 있어요.
                 </p>
               </div>
             </div>
