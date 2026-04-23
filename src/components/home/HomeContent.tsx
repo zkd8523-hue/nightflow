@@ -106,8 +106,8 @@ export function HomeContent({
   // URL에서 탭 상태 읽어오기
   const [currentTab, setCurrentTab] = useState<"today" | "advance" | "puzzle">(() => {
     const tab = searchParams.get("tab");
-    if (tab === "advance" || tab === "puzzle") return tab;
-    return "today";
+    if (tab === "today" || tab === "advance" || tab === "puzzle") return tab;
+    return "puzzle";
   });
 
   // 탭 변경 시 URL 업데이트

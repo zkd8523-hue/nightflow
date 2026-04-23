@@ -141,14 +141,31 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         <div>
           {todayAuctions.length === 0 ? (
             <div className="text-center pt-8 pb-16 space-y-6">
-              <div className="space-y-2">
-                <p className="text-[15px] font-bold text-neutral-300">오늘특가가 곧 올라옵니다</p>
-                <p className="text-[12px] text-neutral-500 leading-relaxed">
-                  MD가 남은 테이블을 올리면
-                  <br />
-                  빠르게 잡을 수 있어요.
-                </p>
-              </div>
+              {userRole === "md" ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-[15px] font-bold text-neutral-300">오늘 자리 남아있어요?</p>
+                    <p className="text-[12px] text-neutral-500 leading-relaxed">
+                      올려두면 알아서 연락 와요
+                    </p>
+                  </div>
+                  <a
+                    href="/md/auctions/new"
+                    className="inline-block px-6 py-2.5 bg-white text-black text-[13px] font-black rounded-full"
+                  >
+                    지금 특가 등록하기
+                  </a>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-[15px] font-bold text-neutral-300">오늘특가가 곧 올라옵니다</p>
+                  <p className="text-[12px] text-neutral-500 leading-relaxed">
+                    MD가 오늘 특가를 올리면
+                    <br />
+                    빠르게 잡을 수 있어요.
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex flex-col gap-6">
