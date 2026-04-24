@@ -92,7 +92,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
-                    {club?.name}
+                    {auction.title || club?.name}
                   </h3>
                   {club?.area && (
                     <span className="flex-shrink-0 text-[10px] text-neutral-500 font-medium">
