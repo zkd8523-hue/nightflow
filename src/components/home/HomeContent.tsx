@@ -61,7 +61,7 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 const PUZZLE_ONBOARDING_STEPS = [
   {
     title: "1. 깃발 꽂기",
-    desc: "날짜·지역·예산을 등록하세요. 파티원이 부족하면 '파티원도 모으기'를 켜세요.",
+    desc: "날짜·지역·예산을 등록하세요. 파티원이 없으면 '모으기'를 켜세요.",
     icon: <span className="text-[20px]">⛳</span>,
     color: "bg-amber-500/10",
   },
@@ -73,7 +73,7 @@ const PUZZLE_ONBOARDING_STEPS = [
   },
   {
     title: "3. 수락 & 예약 확정",
-    desc: "최고의 제안을 수락하면 MD에게 오픈채팅이 공개돼요. 예약 확정하면 끝!",
+    desc: "최고의 제안을 수락하면 MD와 오픈채팅이 열려요. 예약 확정하면 끝!",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },
@@ -297,20 +297,20 @@ export function HomeContent({
                   ? EARLYBIRD_ONBOARDING_STEPS
                   : ONBOARDING_STEPS;
                 return (
-              <div className={`grid gap-3 ${steps.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
+              <div className="flex flex-col gap-2.5">
                 {steps.map((step, idx) => (
                   <div
                     key={idx}
-                    className="bg-neutral-900/50 border border-neutral-800/50 rounded-2xl p-4 flex flex-col gap-3 cursor-default"
+                    className="bg-neutral-900/50 border border-neutral-800/50 rounded-2xl p-4 flex flex-row items-center gap-4 cursor-default"
                   >
-                    <div className={`w-10 h-10 rounded-xl ${step.color} flex items-center justify-center`}>
+                    <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
                       {step.icon}
                     </div>
-                    <div>
-                      <h3 className="text-[13px] font-black text-white mb-1 break-keep">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">
                         {step.title}
                       </h3>
-                      <p className="text-[10px] text-neutral-400 font-medium leading-tight">
+                      <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep">
                         {step.desc}
                       </p>
                     </div>

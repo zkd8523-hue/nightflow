@@ -51,7 +51,7 @@ export default function LoginPage() {
         provider: "kakao",
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
-          scopes: "profile_nickname profile_image",
+          scopes: "profile_nickname",
           skipBrowserRedirect: false,
         },
       });
@@ -172,7 +172,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold">NightFlow</h1>
           <div className="space-y-1">
             <p className="text-[15px] text-neutral-300 font-medium">
-              클럽이 스마트해지는 세 가지 도구
+              이번주말, 클럽이 스마트해지는 세 가지 도구
             </p>
             <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500 whitespace-nowrap">
               <span>🔥 오늘특가</span>
