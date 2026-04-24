@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Zap, Trophy, Phone, CheckCircle2, HelpCircle, X, PartyPopper, Calendar } from "lucide-react";
+import { CheckCircle2, HelpCircle, X, PartyPopper } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { isAuctionExpired } from "@/lib/utils/auction";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
@@ -20,13 +20,13 @@ const ONBOARDING_STEPS = [
   {
     title: "1. 테이블 선택",
     desc: "오늘특가 중 원하는 클럽·테이블을 찾아보세요.",
-    icon: <Zap className="w-5 h-5 text-amber-500" />,
+    icon: <span className="text-[20px]">🔥</span>,
     color: "bg-amber-500/10",
   },
   {
     title: "2. MD 연락",
     desc: "예약하기 버튼을 눌러 담당 MD에게 연락하세요.",
-    icon: <Phone className="w-5 h-5 text-emerald-500" />,
+    icon: <span className="text-[20px]">💬</span>,
     color: "bg-emerald-500/10",
   },
   {
@@ -41,14 +41,14 @@ const EARLYBIRD_ONBOARDING_STEPS = [
   {
     title: "1. 이벤트 둘러보기",
     desc: "얼리버드 이벤트 중 원하는 날짜·클럽을 골라요.",
-    icon: <Calendar className="w-5 h-5 text-amber-500" />,
+    icon: <span className="text-[20px]">📅</span>,
     color: "bg-amber-500/10",
   },
   {
     title: "2. 경매 입찰",
     desc: "원하는 가격에 입찰하여 최저가에 도전해봐요!",
-    icon: <Trophy className="w-5 h-5 text-yellow-500" />,
-    color: "bg-yellow-500/10",
+    icon: <span className="text-[20px]">🏆</span>,
+    color: "bg-emerald-500/10",
   },
   {
     title: "3. 낙찰 & 예약",
