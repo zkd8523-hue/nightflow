@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuctionList } from "@/components/auctions/AuctionList";
-import { PullToRefresh } from "@/components/auctions/PullToRefresh";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS } from "@/lib/constants/areas";
@@ -12,7 +11,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Button } from "@/components/ui/button";
 import { Zap, Trophy, Phone, CheckCircle2, HelpCircle, X, PartyPopper, Calendar } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
-import { logger } from "@/lib/utils/logger";
 import { isAuctionExpired } from "@/lib/utils/auction";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 
@@ -347,12 +345,6 @@ export function HomeContent({
           onTabChange={handleTabChange}
         />
 
-        {/* DEBUG: 모바일 로그인 디버깅용 — 확인 후 제거 */}
-        {process.env.NODE_ENV === "development" && (
-          <div className="text-center py-2 text-[10px] text-red-400 font-mono">
-            user: {user ? user.name || user.id?.slice(0,8) : "null"} | loading: {String(isLoading)}
-          </div>
-        )}
 
         {!user && !isLoading && auctions.active.length > 0 && (
           <div className="text-center py-6 space-y-3">
