@@ -280,7 +280,7 @@ export function HomeContent({
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-[15px] font-black text-white flex items-center gap-2">
                   <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                  이용 방법
+                  {currentTab === "puzzle" ? "깃발" : currentTab === "advance" ? "얼리버드 입찰" : "오늘특가"} 이용 방법
                 </h2>
                 <button
                   onClick={dismissGuide}
@@ -328,7 +328,7 @@ export function HomeContent({
               className="flex items-center gap-1.5 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
             >
               <HelpCircle className="w-3.5 h-3.5" />
-              이용 방법
+              {currentTab === "puzzle" ? "깃발" : currentTab === "advance" ? "얼리버드 입찰" : "오늘특가"} 이용 방법
             </button>
           </div>
         )}
