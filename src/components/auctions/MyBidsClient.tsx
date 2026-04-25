@@ -488,33 +488,33 @@ export function MyBidsClient({
         <Tabs defaultValue={defaultTab} className="w-full">
           <TabsList className="w-full bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800 grid grid-cols-4">
             <TabsTrigger
-              value="chat"
-              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
+              value="puzzle"
+              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white text-neutral-500"
             >
-              오늘특가
+              ⛳ 깃발{puzzles.length > 0 && ` (${puzzles.length})`}
             </TabsTrigger>
             <TabsTrigger
               value="active"
               className="rounded-lg text-[12px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
             >
-              얼리버드
+              📅 얼리버드
+            </TabsTrigger>
+            <TabsTrigger
+              value="chat"
+              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
+            >
+              🔥 오늘특가
             </TabsTrigger>
             <TabsTrigger
               value="ended"
               className="rounded-lg text-[12px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500 relative"
             >
               <span className={hasUrgentWon ? "text-amber-500 data-[state=active]:text-black" : ""}>
-                낙찰/종료
+                🏆 낙찰/종료
               </span>
               {hasUrgentWon && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
               )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="puzzle"
-              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white text-neutral-500"
-            >
-              ⛳ 깃발{puzzles.length > 0 && ` (${puzzles.length})`}
             </TabsTrigger>
           </TabsList>
 
