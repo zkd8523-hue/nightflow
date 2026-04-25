@@ -53,7 +53,6 @@ export default function LoginPage() {
         provider: "kakao",
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
-          scopes: "profile_nickname",
           skipBrowserRedirect: false,
         },
       });
@@ -178,11 +177,11 @@ export default function LoginPage() {
               클럽이 스마트해지는 세 가지 도구
             </p>
             <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500 whitespace-nowrap">
-              <span>🔥 오늘특가</span>
-              <span>·</span>
-              <span>📅 얼리버드 입찰</span>
-              <span>·</span>
               <span>⛳ 깃발</span>
+              <span>·</span>
+              <span>📅 얼리버드 경매</span>
+              <span>·</span>
+              <span>🔥 오늘특가</span>
             </div>
           </div>
         </div>

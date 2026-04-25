@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
+import { isValidKoreanPhone, normalizePhone } from "@/lib/auth/otp";
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,11 +48,20 @@ export async function POST(request: NextRequest) {
     // 3. 요청 데이터 파싱
     const body = await request.json();
     const {
-      display_name, area, phone, instagram, kakao_open_chat_url, business_card_url,
+      display_name, area, phone: rawPhone, instagram, kakao_open_chat_url, business_card_url,
       club_name, club_address, club_address_detail, club_postal_code,
       club_latitude, club_longitude, club_phone, club_thumbnail_url,
       floor_plan_url,
     } = body;
+
+    // phone 정규화 (하이픈 제거 등). phone_verifications과 users.phone 모두 normalized 형태로 일관 저장.
+    if (!isValidKoreanPhone(rawPhone ?? "")) {
+      return NextResponse.json(
+        { error: "올바른 휴대폰 번호를 입력해주세요." },
+        { status: 400 }
+      );
+    }
+    const phone = normalizePhone(rawPhone);
 
     // clubs.area는 TEXT 단일값 — 대표 지역(첫 번째) 사용
     const primaryArea: string = Array.isArray(area) ? area[0] : area;
@@ -63,6 +73,36 @@ export async function POST(request: NextRequest) {
         { error: "필수 항목을 모두 입력해주세요." },
         { status: 400 }
       );
+    }
+
+    // 4.1 SMS OTP 본인인증 검증 (10분 윈도우 + user_id 매칭으로 도용 차단)
+    {
+      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: verified, error: verifyErr } = await supabaseAdmin
+        .from("phone_verifications")
+        .select("id")
+        .eq("phone", phone)
+        .eq("user_id", user.id)
+        .not("verified_at", "is", null)
+        .gte("verified_at", tenMinAgo)
+        .order("verified_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (verifyErr) {
+        logger.error("phone_verifications lookup error:", verifyErr);
+        return NextResponse.json(
+          { error: "본인인증 확인 중 오류가 발생했습니다. 다시 시도해주세요." },
+          { status: 500 }
+        );
+      }
+
+      if (!verified) {
+        return NextResponse.json(
+          { error: "phone_not_verified" },
+          { status: 400 }
+        );
+      }
     }
 
     // Instagram 서버 검증
@@ -208,6 +248,14 @@ export async function POST(request: NextRequest) {
 
       // 에러 코드별 메시지
       if (userError.code === "23505") {
+        // phone unique 충돌 (idx_users_unique_phone) vs slug 중복 분기
+        const detail = `${userError.message} ${userError.details ?? ""}`.toLowerCase();
+        if (detail.includes("phone")) {
+          return NextResponse.json(
+            { error: "이 번호는 다른 계정에 등록되어 있습니다. 다른 번호로 시도해주세요." },
+            { status: 409 }
+          );
+        }
         return NextResponse.json(
           { error: "이미 사용 중인 아이디입니다. 다른 아이디를 선택해주세요." },
           { status: 409 }

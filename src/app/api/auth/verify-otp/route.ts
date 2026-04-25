@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import {
   isValidKoreanPhone,
   normalizePhone,
@@ -7,8 +8,10 @@ import {
   OTP_CONFIG,
 } from "@/lib/auth/otp";
 
+type Purpose = "signup" | "md_apply";
+
 export async function POST(req: NextRequest) {
-  let body: { phone?: string; code?: string };
+  let body: { phone?: string; code?: string; purpose?: Purpose };
   try {
     body = await req.json();
   } catch {
@@ -17,6 +20,7 @@ export async function POST(req: NextRequest) {
 
   const rawPhone = body.phone ?? "";
   const code = (body.code ?? "").trim();
+  const purpose: Purpose = body.purpose === "md_apply" ? "md_apply" : "signup";
 
   if (!isValidKoreanPhone(rawPhone)) {
     return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
@@ -26,6 +30,18 @@ export async function POST(req: NextRequest) {
   }
 
   const phone = normalizePhone(rawPhone);
+
+  // md_apply: 인증된 세션 필요 (verified_at 기록 시 user_id 함께 저장)
+  let sessionUserId: string | null = null;
+  if (purpose === "md_apply") {
+    const serverSupabase = await createServerSupabase();
+    const { data: { user }, error: authError } = await serverSupabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    sessionUserId = user.id;
+  }
+
   const supabase = createAdminClient();
 
   // 가장 최근 발송 기록 조회
@@ -76,10 +92,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 성공: verified_at 기록
+  // 성공: verified_at + user_id 기록 (md_apply 컨텍스트에서만 user_id 저장)
   const { error: updateError } = await supabase
     .from("phone_verifications")
-    .update({ verified_at: new Date().toISOString() })
+    .update({
+      verified_at: new Date().toISOString(),
+      ...(sessionUserId ? { user_id: sessionUserId } : {}),
+    })
     .eq("id", verification.id);
 
   if (updateError) {

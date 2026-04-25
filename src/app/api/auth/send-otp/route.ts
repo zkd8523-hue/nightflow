@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import {
   generateOtpCode,
   getOtpExpiresAt,
   hashOtpCode,
   isValidKoreanPhone,
+  isTestEnv,
   normalizePhone,
   sendOtpSms,
 } from "@/lib/auth/otp";
@@ -17,8 +19,10 @@ function getClientIp(req: NextRequest): string {
   return "unknown";
 }
 
+type Purpose = "signup" | "md_apply";
+
 export async function POST(req: NextRequest) {
-  let body: { phone?: string };
+  let body: { phone?: string; purpose?: Purpose };
   try {
     body = await req.json();
   } catch {
@@ -26,6 +30,8 @@ export async function POST(req: NextRequest) {
   }
 
   const rawPhone = body.phone ?? "";
+  const purpose: Purpose = body.purpose === "md_apply" ? "md_apply" : "signup";
+
   if (!isValidKoreanPhone(rawPhone)) {
     return NextResponse.json({ error: "invalid_phone" }, { status: 400 });
   }
@@ -33,6 +39,17 @@ export async function POST(req: NextRequest) {
   const phone = normalizePhone(rawPhone);
   const ip = getClientIp(req);
   const userAgent = req.headers.get("user-agent") ?? null;
+
+  // md_apply 컨텍스트는 인증된 세션 필요 (본인 user.id로 중복 체크 우회)
+  let sessionUserId: string | null = null;
+  if (purpose === "md_apply") {
+    const serverSupabase = await createServerSupabase();
+    const { data: { user }, error: authError } = await serverSupabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+    }
+    sessionUserId = user.id;
+  }
 
   const supabase = createAdminClient();
 
@@ -73,7 +90,12 @@ export async function POST(req: NextRequest) {
   }
 
   if (existingUser) {
-    return NextResponse.json({ error: "phone_already_registered" }, { status: 409 });
+    // md_apply: 본인이 이미 등록한 phone이면 통과 (재인증 허용)
+    // 테스트 환경: 중복 체크 스킵 (동일 번호 재사용 가능)
+    const isSelf = purpose === "md_apply" && existingUser.id === sessionUserId;
+    if (!isSelf && !isTestEnv()) {
+      return NextResponse.json({ error: "phone_already_registered" }, { status: 409 });
+    }
   }
 
   // 3. OTP 생성
