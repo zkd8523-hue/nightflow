@@ -171,7 +171,7 @@ export default function LoginPage() {
         <div className="text-center space-y-3">
           <h1 className="text-3xl font-bold">NightFlow</h1>
           <div className="space-y-1">
-            <p className="text-[15px] text-neutral-300 font-medium break-keep">
+            <p className="text-[15px] text-neutral-300 font-medium whitespace-nowrap">
               이번주말, 클럽이 스마트해지는 세 가지 도구
             </p>
             <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500 whitespace-nowrap">
