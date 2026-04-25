@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { logger } from "@/lib/utils/logger";
+import { trackEvent } from "@/lib/analytics/events";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -42,6 +43,7 @@ export default function LoginPage() {
   const supabase = createClient();
 
   const handleKakaoLogin = async (customRedirect?: string) => {
+    trackEvent('login_click', { method: 'kakao' });
     setLoading(true);
     setLoginError("");
     const target = customRedirect || redirectPath;
@@ -69,6 +71,7 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async (customRedirect?: string) => {
+    trackEvent('login_click', { method: 'google' });
     setLoading(true);
     setLoginError("");
     const target = customRedirect || redirectPath;
