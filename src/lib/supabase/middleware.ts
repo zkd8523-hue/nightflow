@@ -33,7 +33,13 @@ export async function updateSession(request: NextRequest) {
   );
 
   // 세션 갱신 (IMPORTANT: getUser()로 서버 검증)
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+
+  // refresh token 만료 등 세션 에러 → SDK가 setAll로 빈 쿠키 설정하도록 signOut 호출
+  // 이렇게 해야 브라우저의 만료된 쿠키가 삭제되어 무한로딩 방지
+  if (getUserError) {
+    await supabase.auth.signOut();
+  }
 
   // ?ref= 파라미터 → 쿠키 저장 (30일, 바이럴 추적용)
   const refCode = request.nextUrl.searchParams.get('ref');

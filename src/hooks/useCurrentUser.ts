@@ -114,6 +114,8 @@ export function useCurrentUser() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       if (!session) {
+        // 만료된 쿠키를 로컬에서 정리 — 새로고침 시 refresh 재시도 루프 방지
+        supabase.auth.signOut({ scope: "local" }).catch(() => {});
         setUser(null);
       } else {
         refetch();
