@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AuctionForm } from "@/components/md/AuctionForm";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { isInstantEnabled } from "@/lib/features";
 
 export default async function NewAuctionPage({ searchParams }: { searchParams: Promise<{ repost?: string }> }) {
     const supabase = await createClient();
@@ -106,7 +107,11 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
                             {repostFrom ? "경매 재등록" : "새 경매 등록"}
                         </h1>
                         <p className="text-neutral-500 text-sm font-medium">
-                            {repostFrom ? "유찰된 경매를 다시 등록합니다. 가격을 조정해보세요." : "오늘 밤 주인공이 될 테이블을 올려주세요."}
+                            {repostFrom
+                                ? "유찰된 경매를 다시 등록합니다. 가격을 조정해보세요."
+                                : isInstantEnabled()
+                                    ? "오늘 밤 주인공이 될 테이블을 올려주세요."
+                                    : "다음 주말 테이블을 미리 올려 입찰 경쟁을 받아보세요."}
                         </p>
                     </div>
                 </div>

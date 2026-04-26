@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
+import { isInstantEnabled } from "@/lib/features";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -174,14 +175,18 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold">NightFlow</h1>
           <div className="space-y-1">
             <p className="text-[15px] text-neutral-300 font-medium whitespace-nowrap">
-              클럽이 스마트해지는 세 가지 도구
+              {isInstantEnabled() ? "클럽이 스마트해지는 세 가지 도구" : "클럽이 스마트해지는 두 가지 도구"}
             </p>
             <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500 whitespace-nowrap">
               <span>⛳ 깃발</span>
               <span>·</span>
               <span>📅 얼리버드 경매</span>
-              <span>·</span>
-              <span>🔥 오늘특가</span>
+              {isInstantEnabled() && (
+                <>
+                  <span>·</span>
+                  <span>🔥 오늘특가</span>
+                </>
+              )}
             </div>
           </div>
         </div>
