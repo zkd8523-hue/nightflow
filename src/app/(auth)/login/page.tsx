@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInstantEnabled } from "@/lib/features";
-import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
+import { isInAppBrowser } from "@/lib/utils/browser";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -174,42 +174,6 @@ export default function LoginPage() {
     router.refresh();
   };
 
-  if (isInApp) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-6">
-        <div className="w-full max-w-sm space-y-6 text-center">
-          <div className="text-5xl">🚩</div>
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-2">
-              {isIOS() ? "Safari에서 열어주세요" : "브라우저에서 열어주세요"}
-            </h2>
-            <p className="text-neutral-400 text-sm leading-relaxed">
-              카카오 로그인은 인스타그램 내 브라우저에서<br />작동하지 않습니다
-            </p>
-          </div>
-          <div className="bg-neutral-900 rounded-2xl p-5 text-left space-y-3">
-            <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wide">여는 방법</p>
-            <div className="flex items-start gap-3">
-              <span className="text-neutral-500 text-sm font-bold">1.</span>
-              <p className="text-neutral-300 text-sm">화면 하단 <span className="text-white font-bold">···</span> 버튼 탭</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-neutral-500 text-sm font-bold">2.</span>
-              <p className="text-neutral-300 text-sm">
-                <span className="text-white font-bold">
-                  {isIOS() ? "Safari에서 열기" : "기본 브라우저에서 열기"}
-                </span>{" "}선택
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-neutral-600">
-            또는 {isIOS() ? "Safari" : "브라우저"}에서{" "}
-            <span className="text-neutral-400">nightflow.kr</span> 직접 입력
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
@@ -262,16 +226,18 @@ export default function LoginPage() {
             {loading ? "로그인 중..." : "Google로 시작하기"}
           </Button>
 
-          <Button
-            onClick={() => handleKakaoLogin()}
-            disabled={loading}
-            className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835] cursor-pointer"
-          >
-            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.8 5.2 4.5 6.65L5.5 21l3.5-2.25c.97.2 2 .3 3 .3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z" fill="#000" />
-            </svg>
-            {loading ? "로그인 중..." : "카카오로 시작하기"}
-          </Button>
+          {!isInApp && (
+            <Button
+              onClick={() => handleKakaoLogin()}
+              disabled={loading}
+              className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835] cursor-pointer"
+            >
+              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.8 5.2 4.5 6.65L5.5 21l3.5-2.25c.97.2 2 .3 3 .3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z" fill="#000" />
+              </svg>
+              {loading ? "로그인 중..." : "카카오로 시작하기"}
+            </Button>
+          )}
 
           <p className="text-xs text-center text-neutral-500">
             로그인 시{" "}
