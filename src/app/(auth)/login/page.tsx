@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInstantEnabled } from "@/lib/features";
-import { isInAppBrowser } from "@/lib/utils/browser";
+import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -47,6 +47,7 @@ export default function LoginPage() {
   useEffect(() => {
     setIsInApp(isInAppBrowser());
   }, []);
+
   const supabase = createClient();
 
   const handleKakaoLogin = async (customRedirect?: string) => {
@@ -226,17 +227,29 @@ export default function LoginPage() {
             {loading ? "로그인 중..." : "Google로 시작하기"}
           </Button>
 
-          {!isInApp && (
-            <Button
-              onClick={() => handleKakaoLogin()}
-              disabled={loading}
-              className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835] cursor-pointer"
-            >
-              <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.8 5.2 4.5 6.65L5.5 21l3.5-2.25c.97.2 2 .3 3 .3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z" fill="#000" />
-              </svg>
-              {loading ? "로그인 중..." : "카카오로 시작하기"}
-            </Button>
+          <Button
+            onClick={() => handleKakaoLogin()}
+            disabled={loading}
+            className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835] cursor-pointer"
+          >
+            <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.8 5.2 4.5 6.65L5.5 21l3.5-2.25c.97.2 2 .3 3 .3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z" fill="#000" />
+            </svg>
+            {loading ? "로그인 중..." : "카카오로 시작하기"}
+          </Button>
+
+          {isInApp && (
+            <div className="bg-neutral-800 rounded-xl p-3 text-center space-y-1">
+              <p className="text-xs text-neutral-400">
+                💡 계정이 자동으로 뜨지 않으면
+              </p>
+              <p className="text-xs text-neutral-300">
+                하단 <span className="font-bold text-white">···</span> →{" "}
+                <span className="font-bold text-white">
+                  {isIOS() ? "Safari에서 열기" : "기본 브라우저에서 열기"}
+                </span>
+              </p>
+            </div>
           )}
 
           <p className="text-xs text-center text-neutral-500">
