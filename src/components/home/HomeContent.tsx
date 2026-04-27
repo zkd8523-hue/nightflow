@@ -82,7 +82,7 @@ const PUZZLE_ONBOARDING_STEPS = [
 
 const TAB_PROMISES = {
   today: "지금 비어있는 자리, 한눈에",
-  advance: "원하는 가격에 미리 도전하세요",
+  advance: "다가올 주말 테이블 선점에 도전하세요",
   puzzle: "원하는 조건만 올리면, MD가 직접 찾아옵니다",
 } as const;
 
