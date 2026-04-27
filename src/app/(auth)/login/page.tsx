@@ -176,6 +176,43 @@ export default function LoginPage() {
   };
 
 
+  if (isInApp) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-6">
+        <div className="w-full max-w-sm space-y-6 text-center">
+          <div className="text-5xl">🚩</div>
+          <div>
+            <h2 className="text-2xl font-bold text-white mb-2">
+              {isIOS() ? "Safari에서 열어주세요" : "브라우저에서 열어주세요"}
+            </h2>
+            <p className="text-neutral-400 text-sm leading-relaxed">
+              소셜 로그인은 인스타그램 내 브라우저에서<br />작동하지 않습니다
+            </p>
+          </div>
+          <div className="bg-neutral-900 rounded-2xl p-5 text-left space-y-3">
+            <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wide">여는 방법</p>
+            <div className="flex items-start gap-3">
+              <span className="text-neutral-500 text-sm font-bold">1.</span>
+              <p className="text-neutral-300 text-sm">화면 하단 <span className="text-white font-bold">···</span> 버튼 탭</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-neutral-500 text-sm font-bold">2.</span>
+              <p className="text-neutral-300 text-sm">
+                <span className="text-white font-bold">
+                  {isIOS() ? "Safari에서 열기" : "기본 브라우저에서 열기"}
+                </span>{" "}선택
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-neutral-600">
+            또는 {isIOS() ? "Safari" : "브라우저"}에서{" "}
+            <span className="text-neutral-400">nightflow.kr</span> 직접 입력
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
       <Card className="w-full max-w-md p-8 space-y-5">
@@ -237,20 +274,6 @@ export default function LoginPage() {
             </svg>
             {loading ? "로그인 중..." : "카카오로 시작하기"}
           </Button>
-
-          {isInApp && (
-            <div className="bg-neutral-800 rounded-xl p-3 text-center space-y-1">
-              <p className="text-xs text-neutral-400">
-                💡 계정이 자동으로 뜨지 않으면
-              </p>
-              <p className="text-xs text-neutral-300">
-                하단 <span className="font-bold text-white">···</span> →{" "}
-                <span className="font-bold text-white">
-                  {isIOS() ? "Safari에서 열기" : "기본 브라우저에서 열기"}
-                </span>
-              </p>
-            </div>
-          )}
 
           <p className="text-xs text-center text-neutral-500">
             로그인 시{" "}
