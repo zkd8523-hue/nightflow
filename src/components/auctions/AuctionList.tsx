@@ -7,7 +7,6 @@ import { PuzzleList } from "@/components/puzzles/PuzzleList";
 import { isAuctionActive, getEffectiveEndTime } from "@/lib/utils/auction";
 import { getClubEventDate } from "@/lib/utils/date";
 import { DateGroup } from "@/components/ui/DateGroup";
-import { isInstantEnabled } from "@/lib/features";
 
 
 interface AuctionListProps {
@@ -52,12 +51,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   // 얼리버드 경매: listing_type === 'auction' (경매)
   const advanceAuctions = liveAndUpcoming.filter(a => a.listing_type === 'auction');
 
-  const instantEnabled = isInstantEnabled();
-
-  // 경매가 있는 탭을 기본으로 선택 (instant off일 때 today 후보 제외)
+  // 경매가 있는 탭을 기본으로 선택
   const [tab, setTabRaw] = useState<"today" | "advance" | "puzzle">(() => {
-    if (initialTab && (initialTab !== "today" || instantEnabled)) return initialTab;
-    if (instantEnabled && todayAuctions.length > 0) return "today";
+    if (initialTab) return initialTab;
+    if (todayAuctions.length > 0) return "today";
     if (advanceAuctions.length > 0) return "advance";
     return "puzzle";
   });
@@ -127,38 +124,36 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             📅 얼리버드 경매 {advanceAuctions.length > 0 && `(${advanceAuctions.length})`}
           </button>
 
-          {instantEnabled && (
-            <button
-              onClick={() => setTab("today")}
-              className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
-                ? "bg-amber-500 text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                }`}
-            >
-              🔥 오늘특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
-            </button>
-          )}
+          <button
+            onClick={() => setTab("today")}
+            className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
+              ? "bg-amber-500 text-black"
+              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+              }`}
+          >
+            🔥 오늘특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
+          </button>
         </div>
 
       </div>
 
-      {instantEnabled && tab === "today" && (
+      {tab === "today" && (
         <div>
           {todayAuctions.length === 0 ? (
             <div className="text-center pt-8 pb-16 space-y-6">
               {userRole === "md" ? (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <p className="text-[15px] font-bold text-neutral-300">테이블이 비었나요?</p>
+                    <p className="text-[15px] font-bold text-neutral-300">오늘 자리 남아있어요?</p>
                     <p className="text-[12px] text-neutral-500 leading-relaxed">
-                      지금 당장 수익으로 전환해보세요!
+                      올려두면 알아서 연락 와요
                     </p>
                   </div>
                   <a
                     href="/md/auctions/new"
                     className="inline-block px-6 py-2.5 bg-white text-black text-[13px] font-black rounded-full"
                   >
-                    10초 만에 오늘특가 등록하기
+                    지금 특가 등록하기
                   </a>
                 </div>
               ) : (
