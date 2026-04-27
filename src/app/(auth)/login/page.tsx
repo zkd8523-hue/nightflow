@@ -175,7 +175,7 @@ export default function LoginPage() {
           <h1 className="text-3xl font-bold">NightFlow</h1>
           <div className="space-y-1">
             <p className="text-[15px] text-neutral-300 font-medium whitespace-nowrap">
-              {isInstantEnabled() ? "클럽이 스마트해지는 세 가지 도구" : "클럽이 스마트해지는 두 가지 도구"}
+              {isInstantEnabled() ? "당신의 불금이 스마트해지는 세 가지 도구" : "당신의 불금이 스마트해지는 두 가지 도구"}
             </p>
             <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500 whitespace-nowrap">
               <span>⛳ 깃발</span>
