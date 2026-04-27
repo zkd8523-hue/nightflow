@@ -109,15 +109,22 @@ export function useCurrentUser() {
 
     init();
 
+    // INITIAL_SESSION에서 signOut 호출 시 SIGNED_OUT 이벤트가 다시 트리거되어
+    // 무한루프 발생 → 페이지 hang. 마운트 1회만 cleanup 시도하도록 가드.
+    let cleanupAttempted = false;
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       if (!session) {
-        // 만료된 쿠키를 로컬에서 정리 — 새로고침 시 refresh 재시도 루프 방지
-        supabase.auth.signOut({ scope: "local" }).catch(() => {});
+        if (!cleanupAttempted) {
+          cleanupAttempted = true;
+          // 만료된 쿠키를 로컬에서 정리 — 새로고침 시 refresh 재시도 루프 방지
+          supabase.auth.signOut({ scope: "local" }).catch(() => {});
+        }
         setUser(null);
       } else {
+        cleanupAttempted = false;
         refetch();
       }
     });
