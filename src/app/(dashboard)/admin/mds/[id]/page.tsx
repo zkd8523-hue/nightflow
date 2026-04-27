@@ -79,6 +79,26 @@ export default async function MDDetailPage({
     .order("created_at", { ascending: false })
     .limit(20);
 
+  // MD 퍼즐 제안 내역 조회
+  const { data: puzzleOffers } = await supabase
+    .from("puzzle_offers")
+    .select(`
+      id, status, table_type, proposed_price, includes, comment, created_at,
+      puzzle:puzzles(id, area, event_date, status, notes),
+      club:clubs(name)
+    `)
+    .eq("md_id", id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  const offerStatusMap: Record<string, { label: string; color: string }> = {
+    pending: { label: "제안 중", color: "text-green-500" },
+    accepted: { label: "수락됨", color: "text-amber-500" },
+    rejected: { label: "거절됨", color: "text-neutral-500" },
+    withdrawn: { label: "철회됨", color: "text-neutral-500" },
+    expired: { label: "미선택", color: "text-neutral-600" },
+  };
+
   const hasHealthData = !!mdData;
   const status = hasHealthData ? computeHealthStatus(mdData) : undefined;
   const lastActive = mdData?.last_auction_date
@@ -240,7 +260,7 @@ export default async function MDDetailPage({
 
         {/* Auction History */}
         <div className="space-y-3">
-          <h2 className="text-lg font-black">경매 내역</h2>
+          <h2 className="text-lg font-black">얼리버드 내역</h2>
           {auctions && auctions.length > 0 ? (
             <div className="space-y-2">
               {(auctions as Array<{
@@ -287,7 +307,69 @@ export default async function MDDetailPage({
             </div>
           ) : (
             <div className="text-center py-8 text-neutral-500">
-              경매 내역이 없습니다
+              얼리버드 내역이 없습니다
+            </div>
+          )}
+        </div>
+
+        {/* Puzzle Offer History */}
+        <div className="space-y-3">
+          <h2 className="text-lg font-black">깃발 제안 내역</h2>
+          {puzzleOffers && puzzleOffers.length > 0 ? (
+            <div className="space-y-2">
+              {puzzleOffers.map((o) => {
+                const puzzle = o.puzzle as {
+                  id?: string;
+                  area?: string;
+                  event_date?: string;
+                  status?: string;
+                  notes?: string;
+                } | null;
+                const club = o.club as { name?: string } | null;
+                const s = offerStatusMap[o.status] || {
+                  label: o.status,
+                  color: "text-neutral-500",
+                };
+                return (
+                  <Link
+                    key={o.id}
+                    href={`/admin/puzzles?tab=list${puzzle?.area ? `&area=${encodeURIComponent(puzzle.area)}` : ""}`}
+                    className="block bg-[#1C1C1E] rounded-xl p-3 hover:bg-neutral-900 transition-colors"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm text-neutral-400">
+                          {puzzle?.event_date
+                            ? dayjs(puzzle.event_date).format("M/D (ddd)")
+                            : dayjs(o.created_at).format("M/D (ddd)")}
+                          {puzzle?.area && <> · {puzzle.area}</>}
+                          {club?.name && <> · {club.name}</>}
+                        </div>
+                        <div className="text-sm text-white truncate">
+                          {o.table_type} · {formatPrice(o.proposed_price)}
+                        </div>
+                        {puzzle?.notes && (
+                          <div className="text-xs text-neutral-600 truncate">
+                            "{puzzle.notes}"
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className={`text-sm font-bold ${s.color}`}>
+                          {s.label}
+                        </div>
+                        <div className="text-xs text-neutral-600">
+                          {dayjs(o.created_at).fromNow()}
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-neutral-500">
+              깃발 제안 내역이 없습니다
             </div>
           )}
         </div>

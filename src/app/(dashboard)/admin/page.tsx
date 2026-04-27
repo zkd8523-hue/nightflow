@@ -39,6 +39,8 @@ export default async function AdminDashboardPage() {
     { count: strikeUsers },
     { count: totalClubs },
     { count: pendingAppeals },
+    { count: totalPuzzles },
+    { count: activePuzzles },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "md"),
@@ -57,6 +59,8 @@ export default async function AdminDashboardPage() {
     supabase.from("users").select("*", { count: "exact", head: true }).gt("strike_count", 0),
     supabase.from("clubs").select("*", { count: "exact", head: true }),
     supabase.from("penalty_appeals").select("*", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("puzzles").select("*", { count: "exact", head: true }),
+    supabase.from("puzzles").select("*", { count: "exact", head: true }).eq("status", "open"),
   ]);
 
   // 시간 기반 필터: 종료 시간이 아직 안 지난 경매만 카운트
@@ -199,11 +203,12 @@ export default async function AdminDashboardPage() {
       href: "/admin/appeals",
     },
     {
-      label: "깃발 신고",
-      value: "관리",
-      icon: AlertCircle,
-      color: "text-purple-500",
+      label: "깃발 현황",
+      value: `${totalPuzzles || 0}건`,
+      icon: Flag,
+      color: "text-purple-400",
       bgColor: "bg-purple-500/10",
+      badge: activePuzzles ? `${activePuzzles}건 모집 중` : null,
       href: "/admin/puzzles",
     },
   ];
