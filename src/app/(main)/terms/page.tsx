@@ -51,9 +51,10 @@ export default function TermsPage() {
 
                             <p className="text-white font-bold mt-4">② 회원 탈퇴</p>
                             <p className="pl-4">1. 회원은 언제든지 마이페이지를 통해 탈퇴를 요청할 수 있습니다.</p>
-                            <p className="pl-4">2. 탈퇴 시 개인정보는 즉시 삭제됩니다. (단, 법령에 따른 보관 의무가 있는 경우 예외)</p>
-                            <p className="pl-4">3. 진행 중인 거래 또는 정산이 있는 경우, 해당 절차 완료 후 탈퇴가 처리됩니다.</p>
-                            <p className="pl-4">4. 탈퇴 후 재가입 시 이전 계정의 스트라이크 및 경고 기록은 동일 카카오 계정 기준으로 승계됩니다.</p>
+                            <p className="pl-4">2. 탈퇴 신청 시 계정은 즉시 비활성화되며, 30일 내 복구 신청이 없을 경우 개인정보가 영구 삭제됩니다. (단, 법령에 따른 보관 의무가 있는 경우 예외)</p>
+                            <p className="pl-4">3. 탈퇴 신청 후 30일 이내에 고객센터를 통해 계정을 복구할 수 있습니다.</p>
+                            <p className="pl-4">4. 진행 중인 거래 또는 정산이 있는 경우, 해당 절차 완료 후 탈퇴가 처리됩니다.</p>
+                            <p className="pl-4">5. 탈퇴 후 재가입 시 이전 계정의 스트라이크 및 경고 기록은 동일 카카오 계정 기준으로 승계됩니다.</p>
                         </div>
                     </section>
 
@@ -88,8 +89,9 @@ export default function TermsPage() {
                             <p className="text-white font-bold">① 입찰 규칙</p>
                             <p className="pl-4">1. 모든 입찰은 취소가 불가능하므로 신중하게 입찰해주시기 바랍니다.</p>
                             <p className="pl-4">2. 입찰 금액은 현재가보다 높아야 하며, 최소 입찰 단위는 1만원입니다.</p>
-                            <p className="pl-4">3. 경매 마감 3분 전 입찰 시 자동으로 3분 연장됩니다. (스나이핑 방지)</p>
-                            <p className="pl-4">4. 경매 종료 시 최고가 입찰자가 자동으로 낙찰됩니다.</p>
+                            <p className="pl-4">3. 경매 마감 3분 전 입찰 시 자동으로 3분 연장됩니다. (스나이핑 방지, 최대 3회/+9분)</p>
+                            <p className="pl-4">4. MD가 즉시 낙찰가(BIN)를 설정한 경우, 해당 금액 이상으로 입찰하면 경매가 즉시 종료되고 낙찰됩니다.</p>
+                            <p className="pl-4">5. 경매 종료 시 최고가 입찰자가 자동으로 낙찰됩니다.</p>
 
                             <p className="text-white font-bold mt-4">② 낙찰 및 연락</p>
                             <p className="pl-4">1. 경매 종료 시 최고가 입찰자가 자동으로 낙찰됩니다.</p>

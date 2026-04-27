@@ -89,15 +89,21 @@ export default function PrivacyPage() {
                                     </tr>
                                     <tr className="border-b border-neutral-800">
                                         <td className="px-4 py-3 text-green-500 font-bold">해당 클럽 MD</td>
-                                        <td className="px-4 py-3">이름, 전화번호</td>
-                                        <td className="px-4 py-3">현장 예약 확인</td>
+                                        <td className="px-4 py-3">이름, 카카오 프로필</td>
+                                        <td className="px-4 py-3">현장 예약 확인 (낙찰자가 직접 연락 시 MD에게 표시되는 정보에 한함)</td>
                                         <td className="px-4 py-3">이벤트 종료 후 7일</td>
                                     </tr>
-                                    <tr>
+                                    <tr className="border-b border-neutral-800">
                                         <td className="px-4 py-3 text-green-500 font-bold">Supabase (AWS)</td>
                                         <td className="px-4 py-3">전체 데이터</td>
                                         <td className="px-4 py-3">서버 호스팅</td>
-                                        <td className="px-4 py-3">회원 탈퇴 시 삭제</td>
+                                        <td className="px-4 py-3">회원 탈퇴 후 30일</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="px-4 py-3 text-green-500 font-bold">Vercel</td>
+                                        <td className="px-4 py-3">접속 로그, IP, 요청 헤더</td>
+                                        <td className="px-4 py-3">프론트엔드 호스팅</td>
+                                        <td className="px-4 py-3">30일 후 자동 삭제</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -113,7 +119,7 @@ export default function PrivacyPage() {
                         <h2 className="text-lg font-black text-white">4. 개인정보의 보유 및 이용 기간</h2>
                         <div className="space-y-2">
                             <p className="text-white font-bold">① 원칙</p>
-                            <p className="pl-4">회원 탈퇴 시 지체 없이 파기합니다. 단, 다음의 경우 명시한 기간 동안 보관합니다:</p>
+                            <p className="pl-4">회원 탈퇴 신청 시 계정을 즉시 비활성화하고, 30일 경과 후 개인정보를 영구 파기합니다. 30일 이내 복구 요청 시 계정을 복원할 수 있습니다. 단, 다음의 경우 명시한 기간 동안 보관합니다:</p>
 
                             <p className="text-white font-bold mt-4">② 법령에 따른 보관 (전자상거래법)</p>
                             <p className="pl-4">- <span className="text-amber-500 font-bold">계약 또는 청약철회 기록:</span> 5년</p>
