@@ -73,6 +73,11 @@ export default function LoginPage() {
     setLoginError("");
     const target = customRedirect || redirectPath;
 
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      setLoginError("로그인 페이지로 이동에 실패했습니다. Chrome 또는 Safari에서 다시 시도해주세요.");
+    }, 5000);
+
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
@@ -83,11 +88,13 @@ export default function LoginPage() {
       });
 
       if (error) {
+        clearTimeout(safetyTimer);
         logger.error("Login error:", error);
         setLoginError(error.message);
         setLoading(false);
       }
     } catch (e: unknown) {
+      clearTimeout(safetyTimer);
       const msg = e instanceof Error ? e.message : String(e);
       setLoginError(msg);
       setLoading(false);
@@ -100,6 +107,11 @@ export default function LoginPage() {
     setLoading(true);
     setLoginError("");
     const target = customRedirect || redirectPath;
+
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+      setLoginError("로그인 페이지로 이동에 실패했습니다. Chrome 또는 Safari에서 다시 시도해주세요.");
+    }, 5000);
 
     try {
       const { error } = await supabase.auth.signInWithOAuth({
@@ -115,11 +127,13 @@ export default function LoginPage() {
       });
 
       if (error) {
+        clearTimeout(safetyTimer);
         logger.error("Login error:", error);
         setLoginError(error.message);
         setLoading(false);
       }
     } catch (e: unknown) {
+      clearTimeout(safetyTimer);
       const msg = e instanceof Error ? e.message : String(e);
       setLoginError(msg);
       setLoading(false);
