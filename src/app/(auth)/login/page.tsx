@@ -241,8 +241,8 @@ export default function LoginPage() {
                 🌐 Chrome으로 열고 로그인하기
               </Button>
               <p className="text-xs text-center text-neutral-500 leading-relaxed">
-                인스타그램 앱 내에서는 로그인이 동작하지 않습니다.<br />
-                Chrome에서 열어 로그인해주세요.
+                인스타그램 인앱에서는 로그인이 동작하지 않습니다.<br />
+                Chrome에서 열어 카카오/구글로 로그인해보세요!
               </p>
             </>
           ) : (
