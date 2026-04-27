@@ -9,7 +9,6 @@ import { useRouter } from "next/navigation";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInstantEnabled } from "@/lib/features";
-import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -17,27 +16,6 @@ function getRedirectPath() {
   if (typeof window === "undefined") return "/";
   const params = new URLSearchParams(window.location.search);
   return params.get("redirect") || "/";
-}
-
-async function tryOpenChrome(): Promise<boolean> {
-  if (!isInAppBrowser() || isIOS()) return false;
-
-  return new Promise((resolve) => {
-    let opened = false;
-    const onVisibilityChange = () => {
-      if (document.hidden) opened = true;
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    const path = window.location.pathname + window.location.search;
-    window.location.href =
-      `intent://nightflow.kr${path}#Intent;scheme=https;package=com.android.chrome;end`;
-
-    setTimeout(() => {
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      resolve(opened);
-    }, 1500);
-  });
 }
 
 function getAuthError() {
@@ -67,7 +45,6 @@ export default function LoginPage() {
   const supabase = createClient();
 
   const handleKakaoLogin = async (customRedirect?: string) => {
-    if (await tryOpenChrome()) return;
     trackEvent('login_click', { method: 'kakao' });
     setLoading(true);
     setLoginError("");
@@ -102,7 +79,6 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async (customRedirect?: string) => {
-    if (await tryOpenChrome()) return;
     trackEvent('login_click', { method: 'google' });
     setLoading(true);
     setLoginError("");
