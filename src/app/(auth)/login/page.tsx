@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,6 @@ export default function LoginPage() {
   const router = useRouter();
   const redirectPath = getRedirectPath();
   const authError = getAuthError();
-  const [isInApp, setIsInApp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showDevLogin, setShowDevLogin] = useState(false);
   const [email, setEmail] = useState("");
@@ -44,13 +43,14 @@ export default function LoginPage() {
   const [devError, setDevError] = useState("");
   const [loginError, setLoginError] = useState("");
 
-  useEffect(() => {
-    setIsInApp(isInAppBrowser());
-  }, []);
-
   const supabase = createClient();
 
   const handleKakaoLogin = async (customRedirect?: string) => {
+    if (isInAppBrowser() && !isIOS()) {
+      const path = window.location.pathname + window.location.search;
+      window.location.href = `intent://nightflow.kr${path}#Intent;scheme=https;package=com.android.chrome;end`;
+      return;
+    }
     trackEvent('login_click', { method: 'kakao' });
     setLoading(true);
     setLoginError("");
@@ -78,6 +78,11 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async (customRedirect?: string) => {
+    if (isInAppBrowser() && !isIOS()) {
+      const path = window.location.pathname + window.location.search;
+      window.location.href = `intent://nightflow.kr${path}#Intent;scheme=https;package=com.android.chrome;end`;
+      return;
+    }
     trackEvent('login_click', { method: 'google' });
     setLoading(true);
     setLoginError("");
@@ -176,42 +181,6 @@ export default function LoginPage() {
   };
 
 
-  if (isInApp) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-6">
-        <div className="w-full max-w-sm space-y-6 text-center">
-          <div className="text-5xl">🚩</div>
-          <div>
-            <h2 className="text-2xl font-bold text-white mb-2">
-              {isIOS() ? "Safari에서 열어주세요" : "브라우저에서 열어주세요"}
-            </h2>
-            <p className="text-neutral-400 text-sm leading-relaxed">
-              소셜 로그인은 인스타그램 내 브라우저에서<br />작동하지 않습니다
-            </p>
-          </div>
-          <div className="bg-neutral-900 rounded-2xl p-5 text-left space-y-3">
-            <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wide">여는 방법</p>
-            <div className="flex items-start gap-3">
-              <span className="text-neutral-500 text-sm font-bold">1.</span>
-              <p className="text-neutral-300 text-sm">화면 하단 <span className="text-white font-bold">···</span> 버튼 탭</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="text-neutral-500 text-sm font-bold">2.</span>
-              <p className="text-neutral-300 text-sm">
-                <span className="text-white font-bold">
-                  {isIOS() ? "Safari에서 열기" : "기본 브라우저에서 열기"}
-                </span>{" "}선택
-              </p>
-            </div>
-          </div>
-          <p className="text-xs text-neutral-600">
-            또는 {isIOS() ? "Safari" : "브라우저"}에서{" "}
-            <span className="text-neutral-400">nightflow.kr</span> 직접 입력
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
