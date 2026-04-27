@@ -37,7 +37,8 @@ export async function updateSession(request: NextRequest) {
 
   // refresh token 만료 등 세션 에러 → SDK가 setAll로 빈 쿠키 설정하도록 signOut 호출
   // 이렇게 해야 브라우저의 만료된 쿠키가 삭제되어 무한로딩 방지
-  if (getUserError) {
+  // 단, /auth/* 경로(OAuth 콜백)에서는 PKCE code_verifier 쿠키를 보존해야 하므로 제외
+  if (getUserError && !request.nextUrl.pathname.startsWith("/auth/")) {
     await supabase.auth.signOut();
   }
 
