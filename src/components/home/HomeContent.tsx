@@ -13,6 +13,7 @@ import { CheckCircle2, HelpCircle, X, PartyPopper } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { isAuctionExpired } from "@/lib/utils/auction";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
+import { isInstantEnabled } from "@/lib/features";
 
 const GUIDE_DISMISSED_KEY = "nightflow_guide_dismissed";
 
@@ -79,6 +80,12 @@ const PUZZLE_ONBOARDING_STEPS = [
   },
 ];
 
+const TAB_PROMISES = {
+  today: "지금 비어있는 자리, 한눈에",
+  advance: "원하는 가격에 미리 도전하세요",
+  puzzle: "원하는 조건만 올리면, MD가 직접 찾아옵니다",
+} as const;
+
 interface HomeContentProps {
   activeAuctions: Auction[];
   puzzles?: Puzzle[];
@@ -100,27 +107,33 @@ export function HomeContent({
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
-  
-  // URL에서 탭 상태 읽어오기
-  const [currentTab, setCurrentTab] = useState<"today" | "advance" | "puzzle">(() => {
-    const tab = searchParams.get("tab");
-    if (tab === "today" || tab === "advance" || tab === "puzzle") return tab;
+
+  const instantEnabled = isInstantEnabled();
+  const normalizeTab = (t: string | null): "today" | "advance" | "puzzle" => {
+    if (t === "today" && instantEnabled) return "today";
+    if (t === "advance") return "advance";
+    if (t === "puzzle") return "puzzle";
     return "puzzle";
+  };
+
+  // URL에서 탭 상태 읽어오기 (instant off 시 today → puzzle)
+  const [currentTab, setCurrentTab] = useState<"today" | "advance" | "puzzle">(() => {
+    return normalizeTab(searchParams.get("tab"));
   });
 
   // 탭 변경 시 URL 업데이트
   const handleTabChange = (tab: "today" | "advance" | "puzzle") => {
-    setCurrentTab(tab);
+    const safe = normalizeTab(tab);
+    setCurrentTab(safe);
     const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", tab);
+    params.set("tab", safe);
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 
   useEffect(() => {
-    const tab = searchParams.get("tab");
-    if (tab === "today" || tab === "advance" || tab === "puzzle") {
-      if (tab !== currentTab) setCurrentTab(tab);
-    }
+    const tab = normalizeTab(searchParams.get("tab"));
+    if (tab !== currentTab) setCurrentTab(tab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, currentTab]);
 
   useEffect(() => {
@@ -277,7 +290,7 @@ export function HomeContent({
         {showGuide ? (
           <section className="px-1">
             <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-5 overflow-hidden relative">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-2">
                 <h2 className="text-[15px] font-black text-white flex items-center gap-2">
                   <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
                   {currentTab === "puzzle" ? "깃발" : currentTab === "advance" ? "얼리버드 입찰" : "오늘특가"} 이용 방법
@@ -289,6 +302,10 @@ export function HomeContent({
                   <X className="w-4 h-4" />
                 </button>
               </div>
+
+              <p className="text-[13px] text-amber-400 font-medium mb-4">
+                {TAB_PROMISES[currentTab]}
+              </p>
 
               {(() => {
                 const steps = currentTab === "puzzle"

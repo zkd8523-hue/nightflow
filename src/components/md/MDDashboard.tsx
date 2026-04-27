@@ -21,6 +21,7 @@ import "dayjs/locale/ko";
 import { isAuctionExpired, isAuctionActive } from "@/lib/utils/auction";
 import { useBidNotification } from "@/hooks/useBidNotification";
 import { getErrorMessage, logError } from "@/lib/utils/error";
+import { isInstantEnabled } from "@/lib/features";
 
 export interface TopBidInfo {
     bidder_name: string;
@@ -178,6 +179,11 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
         return dayjs(a.extended_end_at || a.auction_end_at).unix() - dayjs(b.extended_end_at || b.auction_end_at).unix();
     });
 
+    // 오늘특가 탭은 instant on이거나 기존 instant 데이터가 있을 때만 노출 (자연 만료 처리)
+    const instantEnabled = isInstantEnabled();
+    const hasInstantData = activeTodayAuctions.length > 0 || completedTodayAuctions.length > 0;
+    const showTodayTab = instantEnabled || hasInstantData;
+
     // 얼리버드 상단: won/contacted → active → scheduled 순
     const sortedEarlyBirdTop = [...actionEarlyBirdAuctions, ...activeEarlyBirdAuctions].sort((a, b) => {
         const priority = (s: string) => {
@@ -285,12 +291,14 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
 
             {/* Auction Tabs + Register Button */}
             <div className="px-4 mt-1">
-                <Tabs defaultValue="today" className="w-full">
+                <Tabs defaultValue={showTodayTab ? "today" : "earlybird"} className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">
-                            <TabsTrigger value="today" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
-                                🔥 오늘특가 {activeTodayAuctions.length > 0 && <span className="ml-0.5 text-amber-500">{activeTodayAuctions.length}</span>}
-                            </TabsTrigger>
+                            {showTodayTab && (
+                                <TabsTrigger value="today" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
+                                    🔥 오늘특가 {activeTodayAuctions.length > 0 && <span className="ml-0.5 text-amber-500">{activeTodayAuctions.length}</span>}
+                                </TabsTrigger>
+                            )}
                             <TabsTrigger value="earlybird" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
                                 📅 얼리버드 {sortedEarlyBirdTop.length > 0 && <span className="ml-0.5 text-amber-500">{sortedEarlyBirdTop.length}</span>}
                             </TabsTrigger>
@@ -302,19 +310,21 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                     </div>
 
                     <div className="mt-4">
-                        {/* 오늘특가: 진행중 instant + 하단 종료 instant */}
-                        <TabsContent value="today" className="space-y-4 m-0">
-                            {sortedTodayAuctions.length > 0 ? (
-                                sortedTodayAuctions.map(auction => (
-                                    <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} topBidder={topBids[auction.id]} favoriteCount={clubFavCounts[auction.club_id || ""] || 0} />
-                                ))
-                            ) : (
-                                <EmptyState label="진행 중인 특가 경매가 없습니다." />
-                            )}
-                            {completedTodayAuctions.length > 0 && (
-                                <CompletedSection auctions={completedTodayAuctions} onDelete={handleAuctionDelete} clubFavCounts={clubFavCounts} />
-                            )}
-                        </TabsContent>
+                        {/* 오늘특가: 진행중 instant + 하단 종료 instant (탭이 노출될 때만 렌더) */}
+                        {showTodayTab && (
+                            <TabsContent value="today" className="space-y-4 m-0">
+                                {sortedTodayAuctions.length > 0 ? (
+                                    sortedTodayAuctions.map(auction => (
+                                        <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} topBidder={topBids[auction.id]} favoriteCount={clubFavCounts[auction.club_id || ""] || 0} />
+                                    ))
+                                ) : (
+                                    <EmptyState label="진행 중인 특가 경매가 없습니다." />
+                                )}
+                                {completedTodayAuctions.length > 0 && (
+                                    <CompletedSection auctions={completedTodayAuctions} onDelete={handleAuctionDelete} clubFavCounts={clubFavCounts} />
+                                )}
+                            </TabsContent>
+                        )}
 
                         {/* 얼리버드: won/contacted 상단 + active/scheduled + 하단 종료 */}
                         <TabsContent value="earlybird" className="space-y-4 m-0">

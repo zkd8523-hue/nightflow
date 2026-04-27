@@ -30,6 +30,7 @@ import { ShareSuccessSheet } from "./ShareSuccessSheet";
 
 import { trackEvent } from "@/lib/analytics";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
+import { isInstantEnabled } from "@/lib/features";
 
 const formSchema = z.object({
     listing_type: z.enum(["auction", "instant"]).default("auction"),
@@ -112,11 +113,17 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const prefill = repostFrom || null;
     const router = useRouter();
     const supabase = createClient();
-    const [auctionMode, setAuctionMode] = useState<"today" | "advance">(
-        initialData
-            ? (initialData.listing_type === "instant" ? "today" : (dayjs(initialData.event_date).isSame(getClubEventDate(), "day") ? "today" : "advance"))
-            : "today"
-    );
+    const instantEnabled = isInstantEnabled();
+    const [auctionMode, setAuctionMode] = useState<"today" | "advance">(() => {
+        if (initialData) {
+            // 기존 데이터 수정은 그대로 유지 (진행 중인 instant 거래 보존)
+            return initialData.listing_type === "instant"
+                ? "today"
+                : (dayjs(initialData.event_date).isSame(getClubEventDate(), "day") ? "today" : "advance");
+        }
+        // 신규 등록: instant off면 advance 강제
+        return instantEnabled ? "today" : "advance";
+    });
     const isInstantMode = auctionMode === "today";
     const [startPriceDisplay, setStartPriceDisplay] = useState((initialData?.start_price || prefill?.start_price)?.toLocaleString() || "");
     const [binPriceDisplay, setBinPriceDisplay] = useState(
@@ -161,7 +168,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const { register, handleSubmit, setValue, watch, clearErrors, formState: { errors, isSubmitting } } = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            listing_type: initialData?.listing_type || "instant",
+            listing_type: initialData?.listing_type || (instantEnabled ? "instant" : "auction"),
             club_id: initialData?.club_id || prefill?.club_id || defaultClubId || "",
             table_info: initialData?.table_info || prefill?.table_info || "",
             duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 240,
@@ -513,52 +520,58 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         }
     };
 
+    // 토글 노출 조건: instant on이거나 기존 instant 데이터를 수정 중일 때
+    const isEditingInstant = !!initialData && initialData.listing_type === "instant";
+    const showModeToggle = instantEnabled || isEditingInstant;
+
     return (
         <div>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-12">
-            {/* Top Toggle: Today vs Advance */}
-            <div className="flex bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800">
-                <button
-                    type="button"
-                    onClick={() => {
-                        setAuctionMode("today");
-                        setValue("listing_type", "instant");
-                        setInstantEntry(false);
-                        setValue("entry_time", "22:00");
-                        setValue("event_date", getClubEventDate());
-                        setValue("duration_minutes", 240);
-                    }}
-                    className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${auctionMode === "today"
-                        ? "bg-amber-500 text-black shadow-sm"
-                        : "text-neutral-500 hover:text-white"
-                        }`}
-                >
-                    🔥 오늘특가 (타임세일)
-                </button>
-                <button
-                    type="button"
-                    onClick={() => {
-                        setAuctionMode("advance");
-                        setValue("listing_type", "auction");
-                        setInstantEntry(false);
-                        setValue("entry_time", "22:00");
-                        setValue("duration_minutes", 24 * 60);
-                        // 경매 종료(24h) 이후 22:00이 오는 첫 날짜
-                        const auctionEnd = dayjs().add(24 * 60, "minute");
-                        let ed = auctionEnd.format("YYYY-MM-DD");
-                        if (dayjs(`${ed}T22:00`).isBefore(auctionEnd)) {
-                            ed = auctionEnd.add(1, "day").format("YYYY-MM-DD");
-                        }
-                        setValue("event_date", ed);
-                    }}
-                    className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${auctionMode === "advance"
-                        ? "bg-white text-black shadow-sm"
-                        : "text-neutral-500 hover:text-white"
-                        }`}
-                >
-                    📅 얼리버드 경매
-                </button>
-            </div>
+            {/* Top Toggle: Today vs Advance — instant off 시 신규 등록에서는 숨김 */}
+            {showModeToggle && (
+                <div className="flex bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setAuctionMode("today");
+                            setValue("listing_type", "instant");
+                            setInstantEntry(false);
+                            setValue("entry_time", "22:00");
+                            setValue("event_date", getClubEventDate());
+                            setValue("duration_minutes", 240);
+                        }}
+                        className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${auctionMode === "today"
+                            ? "bg-amber-500 text-black shadow-sm"
+                            : "text-neutral-500 hover:text-white"
+                            }`}
+                    >
+                        🔥 오늘특가 (타임세일)
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setAuctionMode("advance");
+                            setValue("listing_type", "auction");
+                            setInstantEntry(false);
+                            setValue("entry_time", "22:00");
+                            setValue("duration_minutes", 24 * 60);
+                            // 경매 종료(24h) 이후 22:00이 오는 첫 날짜
+                            const auctionEnd = dayjs().add(24 * 60, "minute");
+                            let ed = auctionEnd.format("YYYY-MM-DD");
+                            if (dayjs(`${ed}T22:00`).isBefore(auctionEnd)) {
+                                ed = auctionEnd.add(1, "day").format("YYYY-MM-DD");
+                            }
+                            setValue("event_date", ed);
+                        }}
+                        className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${auctionMode === "advance"
+                            ? "bg-white text-black shadow-sm"
+                            : "text-neutral-500 hover:text-white"
+                            }`}
+                    >
+                        📅 얼리버드 경매
+                    </button>
+                </div>
+            )}
 
 
 
@@ -1169,7 +1182,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     setShowShareSheet(false);
                     setValue("table_info", "");
                     setValue("event_date", getClubEventDate());
-                    setAuctionMode("today");
+                    setAuctionMode(instantEnabled ? "today" : "advance");
                     window.scrollTo({ top: 0, behavior: "smooth" });
                     toast.success("설정이 유지됩니다. 테이블 위치만 입력하세요!");
                 }}
