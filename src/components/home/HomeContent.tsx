@@ -16,6 +16,7 @@ import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
 
 const GUIDE_DISMISSED_KEY = "nightflow_guide_dismissed";
+const FLAG_CTA_SHOWN_KEY = "nightflow_flag_cta_shown";
 
 const ONBOARDING_STEPS = [
   {
@@ -62,13 +63,13 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 const PUZZLE_ONBOARDING_STEPS = [
   {
     title: "1. 깃발 꽂기",
-    desc: "날짜·지역·예산을 등록하세요. 파티원이 없으면 '모으기'를 켜세요.",
+    desc: "날짜·지역·예산을 등록하세요. 인원을 모집하려면 '파티원 모으기' 체크",
     icon: <span className="text-[20px]">⛳</span>,
     color: "bg-amber-500/10",
   },
   {
     title: "2. MD 제안 받기",
-    desc: "MD들이 깃발을 보고 클럽·테이블 조건을 제안해요.",
+    desc: "MD들이 내용을 보고 클럽·테이블 조건을 제안해요.",
     icon: <span className="text-[20px]">📨</span>,
     color: "bg-emerald-500/10",
   },
@@ -83,7 +84,7 @@ const PUZZLE_ONBOARDING_STEPS = [
 const TAB_PROMISES = {
   today: "지금 비어있는 자리, 한눈에",
   advance: "다가올 주말 테이블 선점에 도전하세요",
-  puzzle: "원하는 조건만 올리면, MD가 직접 찾아옵니다",
+  puzzle: "같은 예산으로 최고의 서비스를 받는 방법",
 } as const;
 
 interface HomeContentProps {
@@ -104,6 +105,7 @@ export function HomeContent({
 
   const [showMDWelcome, setShowMDWelcome] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const [showFlagCTA, setShowFlagCTA] = useState(false);
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
@@ -141,6 +143,25 @@ export function HomeContent({
       setShowMDWelcome(true);
     }
   }, [user, welcomeDismissed]);
+
+  useEffect(() => {
+    if (!isLoading && user?.role === "user") {
+      if (!localStorage.getItem(FLAG_CTA_SHOWN_KEY)) {
+        setShowFlagCTA(true);
+      }
+    }
+  }, [user, isLoading]);
+
+  const handleDismissFlagCTA = () => {
+    localStorage.setItem(FLAG_CTA_SHOWN_KEY, "1");
+    setShowFlagCTA(false);
+  };
+
+  const handleGoToFlagNew = () => {
+    localStorage.setItem(FLAG_CTA_SHOWN_KEY, "1");
+    setShowFlagCTA(false);
+    router.push("/flags/new");
+  };
 
   const handleDismissMDWelcome = async () => {
     setShowMDWelcome(false);
@@ -429,6 +450,38 @@ export function HomeContent({
               onClick={handleDismissMDWelcome}
               className="w-full text-center text-sm text-neutral-500 hover:text-neutral-300 transition-colors py-2 font-medium"
             >
+              나중에 둘러볼게요
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* 깃발 CTA - 신규 유저 1회 표시 */}
+      <Sheet open={showFlagCTA} onOpenChange={(o) => { if (!o) handleDismissFlagCTA(); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl bg-[#1C1C1E] border-t border-neutral-800 pb-10">
+          <div className="flex flex-col items-center text-center pt-2 pb-4 gap-4">
+            <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center text-3xl">⛳</div>
+            <div>
+              <SheetTitle className="text-white font-black text-2xl">같은 예산으로도<br />최상의 테이블을 얻는 방법!</SheetTitle>
+              <SheetDescription className="text-neutral-400 text-sm mt-1">
+                날짜·지역만 찍으면 MD들이 알아서 붙어요
+              </SheetDescription>
+            </div>
+            <div className="w-full flex flex-col gap-2">
+              {PUZZLE_ONBOARDING_STEPS.map((step) => (
+                <div key={step.title} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${step.color}`}>
+                  {step.icon}
+                  <div className="text-left">
+                    <p className="text-white text-sm font-semibold">{step.title}</p>
+                    <p className="text-neutral-400 text-xs">{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <Button onClick={handleGoToFlagNew} className="w-full h-14 bg-white text-black font-black text-base rounded-2xl">
+              지금 깃발 꽂으러 가기 →
+            </Button>
+            <button onClick={handleDismissFlagCTA} className="text-sm text-neutral-500 py-1">
               나중에 둘러볼게요
             </button>
           </div>

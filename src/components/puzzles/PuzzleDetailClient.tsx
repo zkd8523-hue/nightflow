@@ -431,11 +431,7 @@ export function PuzzleDetailClient({
                 <h2 className="text-[14px] font-bold text-neutral-300">MD 제안</h2>
               </div>
               <span className="text-[12px] text-neutral-500">
-                {pendingOffers.length > 0
-                  ? `MD ${pendingOffers.length}명이 제안 중`
-                  : isAccepted
-                  ? "제안 마감"
-                  : "아직 제안 없음"}
+                {isAccepted ? "제안 마감" : pendingOffers.length === 0 ? "아직 제안 없음" : ""}
               </span>
             </div>
 
@@ -548,7 +544,7 @@ export function PuzzleDetailClient({
               </div>
             )}
 
-            {/* 비방장: 테이블타입 + 주류 카테고리 + extras 공개 */}
+            {/* 비방장: 테이블타입 공개 + 주류/extras blur 처리 */}
             {!isLeader && pendingOffers.length > 0 && !isAccepted && (
               <div className="space-y-3">
                 <p className="text-[13px] text-neutral-400">
@@ -559,21 +555,32 @@ export function PuzzleDetailClient({
                     key={offer.id}
                     className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
                   >
-                    <p className="text-[14px] font-bold text-white">{offer.table_type} 테이블</p>
-                    {(offer.public.liquorCategories.length > 0 || offer.public.extras.length > 0) && (
-                      <div className="flex flex-wrap gap-1">
-                        {offer.public.liquorCategories.map((cat) => (
-                          <span key={cat} className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
-                            {cat}
-                          </span>
-                        ))}
-                        {offer.public.extras.map((ext) => (
-                          <span key={ext} className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700">
-                            {ext}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                    <div className="flex items-center justify-between">
+                      <p className="text-[14px] font-bold text-white">{offer.table_type} 테이블</p>
+                      <p className="text-[11px] text-neutral-500">
+                        {new Date(offer.created_at).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })}
+                        {" "}
+                        {new Date(offer.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5 blur-sm select-none pointer-events-none">
+                      {(offer.public.liquorCategories.length > 0 || offer.public.extras.length > 0) && (
+                        <div className="flex flex-wrap gap-1">
+                          {offer.public.liquorCategories.map((cat) => (
+                            <span key={cat} className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
+                              {cat}
+                            </span>
+                          ))}
+                          {offer.public.extras.map((ext) => (
+                            <span key={ext} className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700">
+                              {ext}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <p className="text-[12px] text-neutral-400 italic">"토요일 자리 확보 가능합니다"</p>
+                    </div>
+                    <p className="text-[11px] text-neutral-600">제안 내용은 방장에게만 공개됩니다</p>
                   </div>
                 ))}
               </div>
