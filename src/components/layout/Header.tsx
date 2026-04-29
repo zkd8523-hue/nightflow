@@ -257,7 +257,10 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
               >
                 <SheetHeader className="p-6 pb-2 border-b border-neutral-800/50 shrink-0">
                   <div className="text-left">
-                    <SheetTitle className="text-white font-black">
+                    <SheetTitle
+                      className="text-white font-black cursor-pointer hover:text-neutral-300 transition-colors"
+                      onClick={() => { setMenuOpen(false); router.push("/profile"); }}
+                    >
                       {user.display_name || user.name || "사용자"}
                     </SheetTitle>
                     <p className="text-[12px] text-neutral-500">
