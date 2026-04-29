@@ -31,6 +31,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
   const [myPuzzleIds, setMyPuzzleIds] = useState<Set<string>>(new Set());
   const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
+  const [puzzleTab, setPuzzleTab] = useState<"all" | "recruiting">("all");
 
   useEffect(() => {
     (async () => {
@@ -48,21 +49,44 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
     })();
   }, []);
 
+  const filteredPuzzles = puzzleTab === "recruiting"
+    ? puzzles.filter(p => p.is_recruiting_party && p.current_count < p.target_count)
+    : puzzles;
+
+  const toggleButton = (
+    <button
+      onClick={() => setPuzzleTab(puzzleTab === "recruiting" ? "all" : "recruiting")}
+      className={`px-3 py-1 rounded-full text-[12px] font-bold transition-colors flex-shrink-0 ${
+        puzzleTab === "recruiting"
+          ? "bg-white text-black"
+          : "bg-neutral-800 text-neutral-400"
+      }`}
+    >
+      모집중만 보기
+    </button>
+  );
+
   return (
     <div className="relative">
-      {puzzles.length === 0 ? (
+
+      {filteredPuzzles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-2">
+          <div className="absolute top-0 right-0">{toggleButton}</div>
           <div className="space-y-2 text-center">
-            <p className="text-[15px] font-bold text-neutral-300">아직 꽂혀 있는 깃발이 없어요</p>
+            <p className="text-[15px] font-bold text-neutral-300">
+              {puzzleTab === "recruiting" ? "모집 중인 깃발이 없어요" : "아직 꽂혀 있는 깃발이 없어요"}
+            </p>
             <p className="text-[12px] text-neutral-500 leading-relaxed">
-              깃발을 꽂으면 MD가 몰려와<br />클럽·테이블 조건을 제안해요
+              {puzzleTab === "recruiting"
+                ? "파티원을 모집 중인 깃발이 아직 없어요"
+                : "깃발을 꽂으면 MD가 몰려와\n클럽·테이블 조건을 제안해요"}
             </p>
           </div>
         </div>
       ) : (
         <div className="space-y-12 pb-24">
           {Object.entries(
-            puzzles.reduce((groups, puzzle) => {
+            filteredPuzzles.reduce((groups, puzzle) => {
               const date = puzzle.event_date;
               if (!groups[date]) groups[date] = [];
               groups[date].push(puzzle);
@@ -70,7 +94,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
             }, {} as Record<string, Puzzle[]>)
           )
             .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-            .map(([date, items]) => {
+            .map(([date, items], groupIdx) => {
               const d = new Date(date + "T00:00:00");
               const m = d.getMonth() + 1;
               const day = d.getDate();
@@ -93,6 +117,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
                     >
                       {dday}
                     </span>
+                    {groupIdx === 0 && <div className="flex-1 flex justify-end">{toggleButton}</div>}
                   </div>
                   <div className="space-y-4">
                     {items.map((puzzle) => (

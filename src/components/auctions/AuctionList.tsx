@@ -20,9 +20,10 @@ interface AuctionListProps {
   userRole?: "user" | "md" | "admin";
   initialTab?: "today" | "advance" | "puzzle";
   onTabChange?: (tab: "today" | "advance" | "puzzle") => void;
+  onShowGuide?: () => void;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, userBidMap, userInterestedSet, userRole, initialTab, onTabChange }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, userBidMap, userInterestedSet, userRole, initialTab, onTabChange, onShowGuide }: AuctionListProps) {
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
     return auctions.filter(a => a.club?.area === selectedArea);
@@ -140,6 +141,15 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           )}
         </div>
 
+        {onShowGuide && tab === "puzzle" && (
+          <button
+            onClick={onShowGuide}
+            className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap"
+          >
+            <span className="text-[13px]">ⓘ</span>
+            깃발 이용 방법
+          </button>
+        )}
       </div>
 
       {instantEnabled && tab === "today" && (

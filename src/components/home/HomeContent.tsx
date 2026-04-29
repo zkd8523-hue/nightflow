@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, HelpCircle, X, PartyPopper } from "lucide-react";
+import { CheckCircle2, X, PartyPopper } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { isAuctionExpired } from "@/lib/utils/auction";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
@@ -84,7 +84,7 @@ const PUZZLE_ONBOARDING_STEPS = [
 const TAB_PROMISES = {
   today: "지금 비어있는 자리, 한눈에",
   advance: "다가올 주말 테이블 선점에 도전하세요",
-  puzzle: "같은 예산으로 최고의 서비스를 받는 방법",
+  puzzle: "같은 예산으로 최고의 테이블을",
 } as const;
 
 interface HomeContentProps {
@@ -359,17 +359,7 @@ export function HomeContent({
               })()}
             </div>
           </section>
-        ) : (
-          <div className="px-1 flex justify-end">
-            <button
-              onClick={() => setShowGuide(true)}
-              className="flex items-center gap-1.5 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              {currentTab === "puzzle" ? "깃발" : currentTab === "advance" ? "얼리버드 입찰" : "오늘특가"} 이용 방법
-            </button>
-          </div>
-        )}
+        ) : null}
 
         <AuctionList
           activeAuctions={auctions.active}
@@ -381,6 +371,7 @@ export function HomeContent({
           userRole={user?.role as "user" | "md" | "admin" | undefined}
           initialTab={currentTab}
           onTabChange={handleTabChange}
+          onShowGuide={() => setShowGuide(true)}
         />
 
 
