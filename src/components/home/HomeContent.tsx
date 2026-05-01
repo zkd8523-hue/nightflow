@@ -262,10 +262,7 @@ export function HomeContent({
 
 
 
-  useEffect(() => {
-    const dismissed = localStorage.getItem(GUIDE_DISMISSED_KEY);
-    if (!dismissed) setShowGuide(true);
-  }, []);
+  // 이용 방법 카드는 기본 닫힘. AuctionList의 "ⓘ 깃발 이용 방법" 버튼 → onShowGuide 콜백으로만 활성화.
 
   const dismissGuide = () => {
     setShowGuide(false);
@@ -279,7 +276,7 @@ export function HomeContent({
       <div className="space-y-4">
 
         {/* 지역 필터 바 */}
-        <div className="sticky top-14 z-40 bg-[#0A0A0A]/95 backdrop-blur-sm py-2.5 -mx-4 px-4 border-b border-neutral-800/50">
+        <div className="py-2.5 -mx-4 px-4 border-b border-neutral-800/50">
           <div className="flex gap-3 overflow-x-auto scrollbar-hide">
             <button
               onClick={() => setSelectedArea(null)}
