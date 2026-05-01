@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AuctionList } from "@/components/auctions/AuctionList";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
-import { MAIN_AREAS } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, X, PartyPopper } from "lucide-react";
@@ -62,14 +61,14 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 
 const PUZZLE_ONBOARDING_STEPS = [
   {
-    title: "1. 깃발 꽂기",
-    desc: "날짜·지역·예산을 등록하세요. 인원을 모집하려면 '파티원 모으기' 체크",
+    title: "1. 예산 등록",
+    desc: "날짜·지역·예산을 등록하세요.",
     icon: <span className="text-[20px]">⛳</span>,
     color: "bg-amber-500/10",
   },
   {
     title: "2. MD 제안 받기",
-    desc: "MD들이 내용을 보고 클럽·테이블 조건을 제안해요.",
+    desc: "MD들이 테이블·주류를 제안하고, 서로 경쟁해요.",
     icon: <span className="text-[20px]">📨</span>,
     color: "bg-emerald-500/10",
   },
@@ -84,7 +83,7 @@ const PUZZLE_ONBOARDING_STEPS = [
 const TAB_PROMISES = {
   today: "지금 비어있는 자리, 한눈에",
   advance: "다가올 주말 테이블 선점에 도전하세요",
-  puzzle: "같은 예산으로 최고의 테이블을",
+  puzzle: "예산만 등록하면, MD들이 스페셜 오퍼를 보내와요.",
 } as const;
 
 interface HomeContentProps {
@@ -275,55 +274,23 @@ export function HomeContent({
     <>
       <div className="space-y-4">
 
-        {/* 지역 필터 바 */}
-        <div className="py-2.5 -mx-4 px-4 border-b border-neutral-800/50">
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide">
-            <button
-              onClick={() => setSelectedArea(null)}
-              className={`text-[13px] font-bold px-4 py-2 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                selectedArea === null
-                  ? "bg-white text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-              }`}
-            >
-              전체
-            </button>
-            {MAIN_AREAS.map((area) => (
-              <button
-                key={area}
-                onClick={() => setSelectedArea(area)}
-                className={`text-[13px] font-bold px-4 py-2 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                  selectedArea === area
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                }`}
-              >
-                {area}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Onboarding Guide - 첫 방문 시에만 표시, 닫으면 ? 버튼 */}
         {showGuide ? (
           <section className="px-1">
-            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-5 overflow-hidden relative">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-[15px] font-black text-white flex items-center gap-2">
-                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />
-                  {currentTab === "puzzle" ? "깃발" : currentTab === "advance" ? "얼리버드 입찰" : "오늘특가"} 이용 방법
+            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <h2 className="text-[15px] font-black text-white flex items-start gap-2 leading-snug">
+                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mt-1.5 shrink-0" />
+                  <span>{TAB_PROMISES[currentTab]}</span>
                 </h2>
                 <button
                   onClick={dismissGuide}
-                  className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+                  className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-
-              <p className="text-[13px] text-amber-400 font-medium mb-4">
-                {TAB_PROMISES[currentTab]}
-              </p>
 
               {(() => {
                 const steps = currentTab === "puzzle"
@@ -332,11 +299,11 @@ export function HomeContent({
                   ? EARLYBIRD_ONBOARDING_STEPS
                   : ONBOARDING_STEPS;
                 return (
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-2">
                 {steps.map((step, idx) => (
                   <div
                     key={idx}
-                    className="bg-neutral-900/50 border border-neutral-800/50 rounded-2xl p-4 flex flex-row items-center gap-4 cursor-default"
+                    className="bg-neutral-900/50 border border-neutral-800/50 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
                   >
                     <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
                       {step.icon}
@@ -363,6 +330,7 @@ export function HomeContent({
           puzzles={puzzles}
           puzzleOfferCounts={puzzleOfferCounts}
           selectedArea={selectedArea}
+          onAreaChange={setSelectedArea}
           userBidMap={userBidMap}
           userInterestedSet={userInterestedSet}
           userRole={user?.role as "user" | "md" | "admin" | undefined}

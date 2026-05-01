@@ -145,13 +145,15 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
         </div>
       )}
 
-      {/* Floating 깃발 꽂기 버튼 (유저 전용) */}
+      {/* Floating CTA 버튼 (MD 제외) — 비로그인은 베네핏 호명, 로그인은 행동 호명 */}
       {userRole !== "md" && (
         <Link
-          href="/flags/new"
-          className="fixed bottom-24 right-4 flex items-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-full pl-4 pr-3 py-3 shadow-lg z-40 transition-colors"
+          href={userRole ? "/flags/new" : "/login?redirect=/flags/new"}
+          className="fixed bottom-24 right-4 flex items-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-full pl-4 pr-3 py-3 shadow-lg z-40 transition-colors border-2 border-black"
         >
-          <span className="text-black text-sm font-semibold whitespace-nowrap">깃발 꽂기</span>
+          <span className="text-black text-sm font-semibold whitespace-nowrap">
+            {userRole ? "깃발 꽂기" : "나도 MD 제안 받기"}
+          </span>
           <Plus className="w-5 h-5 text-black" />
         </Link>
       )}

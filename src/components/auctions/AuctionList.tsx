@@ -8,6 +8,8 @@ import { isAuctionActive, getEffectiveEndTime } from "@/lib/utils/auction";
 import { getClubEventDate } from "@/lib/utils/date";
 import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
+import { MAIN_AREAS } from "@/lib/constants/areas";
+import { MapPin, ChevronDown, ChevronUp } from "lucide-react";
 
 
 interface AuctionListProps {
@@ -15,6 +17,7 @@ interface AuctionListProps {
   puzzles?: Puzzle[];
   puzzleOfferCounts?: Record<string, number>;
   selectedArea?: string | null;
+  onAreaChange?: (area: string | null) => void;
   userBidMap?: Map<string, number>;
   userInterestedSet?: Set<string>;
   userRole?: "user" | "md" | "admin";
@@ -23,7 +26,12 @@ interface AuctionListProps {
   onShowGuide?: () => void;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, userBidMap, userInterestedSet, userRole, initialTab, onTabChange, onShowGuide }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, initialTab, onTabChange, onShowGuide }: AuctionListProps) {
+  const [areaExpanded, setAreaExpanded] = useState(false);
+  const handleAreaSelect = (area: string | null) => {
+    onAreaChange?.(area);
+    setAreaExpanded(false);
+  };
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
     return auctions.filter(a => a.club?.area === selectedArea);
@@ -147,10 +155,58 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap"
           >
             <span className="text-[13px]">ⓘ</span>
-            깃발 이용 방법
+            깃발이란?
           </button>
         )}
       </div>
+
+      {/* 지역 필터 — 기본 접힘, 탭하면 가로 펼침 */}
+      {onAreaChange && (
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1">
+          <button
+            onClick={() => setAreaExpanded((v) => !v)}
+            className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
+              selectedArea
+                ? "bg-white text-black"
+                : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+            }`}
+          >
+            <MapPin className="w-3 h-3" />
+            {selectedArea ?? "지역 선택"}
+            {areaExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          <div
+            className={`flex gap-2 overflow-hidden transition-all duration-300 ease-out ${
+              areaExpanded ? "max-w-[600px] opacity-100" : "max-w-0 opacity-0"
+            }`}
+          >
+            <button
+              onClick={() => handleAreaSelect(null)}
+              className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+                selectedArea === null
+                  ? "bg-white text-black"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+              }`}
+            >
+              전체
+            </button>
+            {MAIN_AREAS.map((area) => (
+              <button
+                key={area}
+                onClick={() => handleAreaSelect(area)}
+                className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+                  selectedArea === area
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                }`}
+              >
+                {area}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {instantEnabled && tab === "today" && (
         <div>

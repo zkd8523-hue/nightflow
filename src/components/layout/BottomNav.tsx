@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Gavel, Heart, User } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const TABS = [
   { label: "홈", icon: Home, href: "/" },
@@ -13,6 +14,10 @@ const TABS = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { user, isLoading } = useCurrentUser();
+
+  // 비로그인 사용자에게는 하단 탭바 미노출 (홈 콘텐츠에 집중)
+  if (isLoading || !user) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800">
