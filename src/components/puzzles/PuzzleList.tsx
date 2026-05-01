@@ -7,6 +7,7 @@ import { PuzzleCard } from "./PuzzleCard";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
 import { createClient } from "@/lib/supabase/client";
+import { trackEvent } from "@/lib/analytics/events";
 import type { Puzzle } from "@/types/database";
 
 function getDDay(eventDate: string): string {
@@ -121,7 +122,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
                   </div>
                   <div className="space-y-4">
                     {items.map((puzzle) => (
-                      <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => e.stopPropagation()}>
+                      <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); trackEvent('puzzle_card_click', { puzzle_id: puzzle.id, area: puzzle.area, is_recruiting: puzzle.is_recruiting_party }); }}>
                         <PuzzleCard
                           puzzle={puzzle}
                           userRole={userRole}
