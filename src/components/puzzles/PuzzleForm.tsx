@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, OTHER_CITIES } from "@/lib/constants/areas";
 import { toast } from "sonner";
 import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag } from "lucide-react";
-import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
@@ -47,7 +46,6 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const router = useRouter();
   const supabase = createClient();
 
-  const [kakaoUrl, setKakaoUrl] = useState("");
   const [eventDate, setEventDate] = useState("");
   const [area, setArea] = useState("");
   // OFF: 총액 직접 입력 / ON: 인당 입력
@@ -117,9 +115,6 @@ export function PuzzleForm({ userId }: { userId: string }) {
       total_budget: totalBudget,
     });
 
-    if (!kakaoUrl.startsWith("https://open.kakao.com/o/")) {
-      return fail('kakao_url', '올바른 오픈채팅 링크가 아닙니다. (https://open.kakao.com/o/... 형식)');
-    }
     if (!notes.trim()) {
       return fail('title', '어떤 모임인지 한 줄로 표현해주세요');
     }
@@ -150,7 +145,6 @@ export function PuzzleForm({ userId }: { userId: string }) {
           leader_id: userId,
           area,
           event_date: eventDate,
-          kakao_open_chat_url: kakaoUrl,
           gender_pref: genderPref,
           age_pref: agePref,
           vibe_pref: vibePref,
@@ -567,29 +561,6 @@ export function PuzzleForm({ userId }: { userId: string }) {
           </div>
         </div>
       </section>}
-
-      {/* 카카오 오픈채팅 URL */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold">
-          <MessageCircle className="w-4 h-4 text-green-500" />
-          <span>카카오 오픈채팅 URL</span>
-        </div>
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-3">
-          <Input
-            type="url"
-            value={kakaoUrl}
-            onChange={(e) => setKakaoUrl(e.target.value)}
-            placeholder="https://open.kakao.com/o/..."
-            className="bg-neutral-900 border-neutral-800 h-11 text-white focus:ring-green-500"
-          />
-          <p className="text-[11px] text-neutral-500 leading-relaxed">
-            방 만든 후 URL을 붙여넣어 주세요.
-            <br />
-            오퍼를 수락한 MD에게만 공개됩니다.
-          </p>
-          <KakaoOpenChatGuide suggestedTitle={suggestedChatTitle} />
-        </div>
-      </section>
 
       {/* 깃발 제목 (한 줄 메모) */}
       <section className="space-y-4">

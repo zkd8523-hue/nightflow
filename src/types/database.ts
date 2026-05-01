@@ -534,7 +534,7 @@ export interface Puzzle {
   leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image'>;
   area: Area;
   event_date: string;
-  kakao_open_chat_url: string; // 방장/수락된 MD에게만 노출
+  kakao_open_chat_url: string | null; // 오퍼 수락 시점에 입력, MD에게만 공개
   gender_pref: GenderPref;
   age_pref: AgePref;
   vibe_pref: VibePref;
