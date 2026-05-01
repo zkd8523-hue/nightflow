@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, OTHER_CITIES } from "@/lib/constants/areas";
@@ -67,6 +67,15 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const [showOtherCities, setShowOtherCities] = useState(false);
   const [notes, setNotes] = useState("");
 
+  useEffect(() => {
+    trackEvent('puzzle_form_view');
+  }, []);
+
+  const fail = (error_type: string, error_message: string) => {
+    trackEvent('puzzle_validation_error', { error_type, error_message });
+    toast.error(error_message);
+  };
+
   const todayObj = new Date();
   const today = todayObj.toISOString().split("T")[0];
   const maxObj = new Date();
@@ -102,37 +111,35 @@ export function PuzzleForm({ userId }: { userId: string }) {
   })();
 
   const handleSubmit = async () => {
+    trackEvent('puzzle_submit_attempt', {
+      is_recruiting_party: isRecruitingParty,
+      area: area || null,
+      total_budget: totalBudget,
+    });
+
     if (!kakaoUrl.startsWith("https://open.kakao.com/o/")) {
-      toast.error("올바른 오픈채팅 링크가 아닙니다. (https://open.kakao.com/o/... 형식)");
-      return;
+      return fail('kakao_url', '올바른 오픈채팅 링크가 아닙니다. (https://open.kakao.com/o/... 형식)');
     }
     if (!notes.trim()) {
-      toast.error("어떤 모임인지 한 줄로 표현해주세요");
-      return;
+      return fail('title', '어떤 모임인지 한 줄로 표현해주세요');
     }
     if (!eventDate) {
-      toast.error("날짜를 선택해주세요");
-      return;
+      return fail('date', '날짜를 선택해주세요');
     }
     if (!area) {
-      toast.error("지역을 선택해주세요");
-      return;
+      return fail('area', '지역을 선택해주세요');
     }
     if (isRecruitingParty && budgetAmount < 10000) {
-      toast.error("인당 예산은 최소 1만원 이상이어야 합니다");
-      return;
+      return fail('budget_per_person', '인당 예산은 최소 1만원 이상이어야 합니다');
     }
     if (!isRecruitingParty && budgetAmount < 10000 * totalPeople) {
-      toast.error(`${totalPeople}명 기준 최소 ${(10000 * totalPeople).toLocaleString()}원 이상이어야 합니다`);
-      return;
+      return fail('budget_total', `${totalPeople}명 기준 최소 ${(10000 * totalPeople).toLocaleString()}원 이상이어야 합니다`);
     }
     if (isRecruitingParty && effectiveCurrentCount > effectiveTargetCount) {
-      toast.error("동행 인원이 모집 인원을 초과합니다");
-      return;
+      return fail('headcount_overflow', '동행 인원이 모집 인원을 초과합니다');
     }
     if (!isRecruitingParty && totalPeople < 2) {
-      toast.error("인원 확정 깃발은 2명 이상이어야 합니다");
-      return;
+      return fail('headcount_min', '인원 확정 깃발은 2명 이상이어야 합니다');
     }
 
     setSubmitting(true);
@@ -162,8 +169,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
 
       if (puzzleError) {
         console.error("puzzles insert error:", puzzleError);
-        toast.error(puzzleError.message || "깃발 꽂기에 실패했습니다");
-        return;
+        return fail('db_error', puzzleError.message || '깃발 꽂기에 실패했습니다');
       }
 
       // 대표자를 puzzle_members에도 추가

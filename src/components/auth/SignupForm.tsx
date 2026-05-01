@@ -136,7 +136,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       <Card className="w-full max-w-md p-8 space-y-6 bg-[#1C1C1E] border border-neutral-700 shadow-2xl">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-black text-white tracking-tight">NightFlow</h1>
-          <p className="text-sm text-neutral-300">클럽이 스마트해진다.</p>
         </div>
 
         <div className="space-y-2">
