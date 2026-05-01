@@ -63,7 +63,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
           : "bg-neutral-800 text-neutral-400"
       }`}
     >
-      모집중만 보기
+      파티
     </button>
   );
 
