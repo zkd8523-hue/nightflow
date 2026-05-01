@@ -287,86 +287,10 @@ export function PuzzleForm({ userId }: { userId: string }) {
       {isRecruitingParty && (
         <div className="bg-[#1C1C1E] border border-green-500/30 rounded-2xl px-4 py-3">
           <p className="text-[12px] text-green-400 leading-relaxed">
-            다른 유저도 이 깃발 아래 뭉칠 수 있어요. 인원이 모이면 MD에게 더 좋은 조건을 요청할 수 있어요.
+            인원이 모이면 MD에게 더 좋은 조건을 요청할 수 있어요.
           </p>
         </div>
       )}
-
-      {/* 예산 (모드에 따라 총액 or 인당) */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold mb-2">
-          <Coins className="w-4 h-4 text-amber-500" />
-          <span>{isRecruitingParty ? "인당 예산" : "예산"}</span>
-        </div>
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
-          <div className="relative">
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={budgetInputStr}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/[^0-9]/g, "");
-                if (raw === "") { setBudgetAmount(0); setBudgetInputStr(""); return; }
-                const num = Number(raw);
-                if (!isNaN(num)) {
-                  setBudgetAmount(num);
-                  setBudgetInputStr(num.toLocaleString());
-                }
-              }}
-              onBlur={() => {
-                if (budgetAmount > 0) setBudgetInputStr(budgetAmount.toLocaleString());
-              }}
-              placeholder={isRecruitingParty ? "예: 250,000" : "예: 1,000,000"}
-              className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 pr-12"
-            />
-            {isRecruitingParty && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-neutral-500 font-bold pointer-events-none">
-                /인
-              </span>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {BUDGET_PRESETS.map((preset) => (
-              <Button
-                key={preset}
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  const next = (budgetAmount || 0) + preset;
-                  setBudgetAmount(next);
-                  setBudgetInputStr(next.toLocaleString());
-                }}
-                className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-xs"
-              >
-                +{(preset / 10000).toFixed(0)}만
-              </Button>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => { setBudgetAmount(0); setBudgetInputStr(""); }}
-              className="h-9 px-3 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-xs"
-            >
-              초기화
-            </Button>
-          </div>
-          {/* 예산 요약 */}
-          <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-3">
-            {isRecruitingParty && (
-              <p className="text-[12px] text-neutral-400 leading-relaxed">
-                인당 <span className="text-amber-400 font-bold">{budgetAmount.toLocaleString()}원</span>
-                {" "}× {effectiveTargetCount}명 = 총{" "}
-                <span className="text-white font-bold">{totalBudget.toLocaleString()}원</span>
-              </p>
-            )}
-            <p className="text-[11px] text-neutral-600 mt-1">
-              * 프리미엄 제안(최대 +30%)이 올 수 있습니다. (최대 {maxOfferPrice.toLocaleString()}원)
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* 인원 설정 */}
       <section className="space-y-4">
@@ -404,9 +328,9 @@ export function PuzzleForm({ userId }: { userId: string }) {
 
             {/* 성별 — 내 일행 구성 (혼성) */}
             <div className="pt-3 border-t border-neutral-800 space-y-2">
-              <p className="text-[11px] text-neutral-400">성별</p>
+              <p className="text-[11px] text-neutral-400">{isRecruitingParty ? "파티원 성별" : "성별"}</p>
               <div className="flex gap-2">
-                {GENDER_OPTIONS_FIXED.map((opt) => (
+                {(isRecruitingParty ? GENDER_OPTIONS_RECRUIT : GENDER_OPTIONS_FIXED).map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
@@ -485,6 +409,82 @@ export function PuzzleForm({ userId }: { userId: string }) {
                 </div>
               </div>
             ) : null}
+          </div>
+        </div>
+      </section>
+
+      {/* 예산 (모드에 따라 총액 or 인당) */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 text-white font-bold mb-2">
+          <Coins className="w-4 h-4 text-amber-500" />
+          <span>{isRecruitingParty ? "인당 예산" : "예산"}</span>
+        </div>
+        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
+          <div className="relative">
+            <Input
+              type="text"
+              inputMode="numeric"
+              value={budgetInputStr}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/[^0-9]/g, "");
+                if (raw === "") { setBudgetAmount(0); setBudgetInputStr(""); return; }
+                const num = Number(raw);
+                if (!isNaN(num)) {
+                  setBudgetAmount(num);
+                  setBudgetInputStr(num.toLocaleString());
+                }
+              }}
+              onBlur={() => {
+                if (budgetAmount > 0) setBudgetInputStr(budgetAmount.toLocaleString());
+              }}
+              placeholder={isRecruitingParty ? "예: 250,000" : "총: 1,000,000"}
+              className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 pr-12"
+            />
+            {isRecruitingParty && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-neutral-500 font-bold pointer-events-none">
+                /인
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {BUDGET_PRESETS.map((preset) => (
+              <Button
+                key={preset}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const next = (budgetAmount || 0) + preset;
+                  setBudgetAmount(next);
+                  setBudgetInputStr(next.toLocaleString());
+                }}
+                className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-xs"
+              >
+                +{(preset / 10000).toFixed(0)}만
+              </Button>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => { setBudgetAmount(0); setBudgetInputStr(""); }}
+              className="h-9 px-3 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-xs"
+            >
+              초기화
+            </Button>
+          </div>
+          {/* 예산 요약 */}
+          <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-3">
+            {isRecruitingParty && (
+              <p className="text-[12px] text-neutral-400 leading-relaxed">
+                인당 <span className="text-amber-400 font-bold">{budgetAmount.toLocaleString()}원</span>
+                {" "}× {effectiveTargetCount}명 = 총{" "}
+                <span className="text-white font-bold">{totalBudget.toLocaleString()}원</span>
+              </p>
+            )}
+            <p className="text-[11px] text-neutral-600 mt-1">
+              * 프리미엄 제안(최대 +30%)이 올 수 있습니다. (최대 {maxOfferPrice.toLocaleString()}원)
+            </p>
           </div>
         </div>
       </section>
