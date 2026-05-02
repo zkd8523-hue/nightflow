@@ -3,14 +3,15 @@
 import { useState, useEffect, useRef } from "react";
 import dayjs from "dayjs";
 
-/** 긴박감 레벨 (3단계) */
-export type UrgencyLevel = 'normal' | 'warning' | 'critical';
+/** 긴박감 레벨 (4단계) */
+export type UrgencyLevel = 'idle' | 'normal' | 'warning' | 'critical';
 
 /** 남은 시간(초)에 따른 긴박감 레벨 계산 */
 export function getUrgencyLevel(seconds: number): UrgencyLevel {
-  if (seconds > 300) return 'normal';    // 5분 이상
-  if (seconds > 60) return 'warning';    // 1-5분
-  return 'critical';                      // 1분 미만
+  if (seconds > 86400) return 'idle';     // 24시간 초과
+  if (seconds > 3600) return 'normal';    // 1-24시간
+  if (seconds > 300) return 'warning';    // 5분-1시간
+  return 'critical';                       // 5분 이하
 }
 
 /** 카운트다운 훅 결과 */

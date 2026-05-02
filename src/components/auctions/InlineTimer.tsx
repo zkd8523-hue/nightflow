@@ -32,7 +32,7 @@ export const InlineTimer = memo(function InlineTimer({ endTime, status }: Inline
                 styles.glow
             )}
         >
-            {level === 'normal' && <Clock className={iconClassName} />}
+            {(level === 'idle' || level === 'normal') && <Clock className={iconClassName} />}
             {level === 'warning' && <AlertTriangle className={iconClassName} />}
             {level === 'critical' && <Zap className={iconClassName} />}
             <span

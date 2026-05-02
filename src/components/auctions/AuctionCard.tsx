@@ -5,11 +5,11 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Auction } from "@/types/database";
-import { formatNumber, formatTime, formatCountdown, formatEntryTime, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
+import { formatNumber, formatTime, formatCountdown, formatCountdownLong, formatEntryTimeShort, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES, URGENCY_LABELS } from "@/lib/constants/timer-urgency";
-import { Clock, Gavel, Zap, BadgeCheck, Flame } from "lucide-react";
+import { Gavel, Zap, BadgeCheck, Flame } from "lucide-react";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
@@ -33,7 +33,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
   const currentPrice = isWon && auction.winning_price ? auction.winning_price : (auction.current_bid || auction.start_price);
   const isInstant = auction.listing_type === 'instant';
   const countdown = useCountdown((isActive || isExpired) ? endTime : null);
-  const timerStyles = URGENCY_STYLES[countdown.level];
+  const timerStyles = URGENCY_STYLES[countdown.level] ?? URGENCY_STYLES.idle;
 
   // 사용자 입찰 상태
   const userHasBid = userBidAmount !== undefined;
@@ -51,7 +51,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
   // 입장시간 텍스트
   const hasEntryInfo = !isCompleted && !isExpired;
   const entryText = hasEntryInfo
-    ? formatEntryTime(auction.entry_time, auction.event_date)
+    ? formatEntryTimeShort(auction.entry_time, auction.event_date)
     : null;
 
   return (
@@ -66,8 +66,8 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
               </div>
             )}
             {entryText && (
-              <span className="text-[10px] font-medium text-blue-400/90">
-                {entryText}
+              <span className="text-[11px] font-medium whitespace-nowrap text-blue-400/90">
+                {entryText} 입장
               </span>
             )}
           </div>
@@ -148,7 +148,15 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
 
               {/* 타이머/상태 */}
               <div className="flex items-center mt-1 -ml-1">
-                {isActive && (
+                {isActive && countdown.level === 'idle' && (
+                  <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${timerStyles.bg}`}>
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+                    <span suppressHydrationWarning className={`text-[15px] font-mono font-bold tabular-nums whitespace-nowrap ${timerStyles.text}`}>
+                      {formatCountdownLong(countdown.remaining)}
+                    </span>
+                  </div>
+                )}
+                {isActive && countdown.level !== 'idle' && (
                   <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full transition-all duration-500 ${timerStyles.bg} ${countdown.level === 'critical' ? timerStyles.glow : ''} ${countdown.level === 'critical' ? 'animate-breathe' : ''}`}>
                     <span className={`w-2.5 h-2.5 rounded-full ${countdown.level === 'critical' ? 'bg-red-500 animate-ping' : 'bg-red-500 animate-pulse'}`} />
                     <span suppressHydrationWarning className={`text-[15px] font-mono font-bold tabular-nums ${timerStyles.text} ${countdown.shouldFlash ? 'animate-flip' : ''} ${countdown.level === 'critical' ? 'animate-tension' : ''}`}>
@@ -184,17 +192,16 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
           {/* Bottom Bar: 가격+유저상태 (좌) + 소셜프루프+CTA (우) */}
           <div className="flex items-center justify-between mt-1">
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className={`text-[23px] font-bold leading-none tracking-tight ${isWon ? "text-amber-400" : "text-white"}`}>
-                  {formatNumber(currentPrice)}원
+              <span className={`text-[23px] font-bold leading-none tracking-tight ${isWon ? "text-amber-400" : "text-white"}`}>
+                {formatNumber(currentPrice)}원
+              </span>
+              {!isInstant && auction.buy_now_price && auction.buy_now_price > 0 && !isWon && (
+                <span className="text-[11px] font-bold whitespace-nowrap flex items-center gap-1 mt-1">
+                  <Zap className="w-3 h-3 fill-amber-400 text-amber-400" />
+                  <span className="text-amber-400">즉낙</span>
+                  <span className="text-amber-400">{formatNumber(auction.buy_now_price)}원</span>
                 </span>
-                {!isInstant && auction.buy_now_price && auction.buy_now_price > 0 && !isWon && (
-                  <span className="text-amber-400 text-[10px] font-bold whitespace-nowrap flex items-center gap-0.5">
-                    <Zap className="w-3 h-3 fill-amber-400" />
-                    {formatNumber(auction.buy_now_price)}원 즉낙
-                  </span>
-                )}
-              </div>
+              )}
               {(!isInstant && (isUserHighest || isUserOutbid) || (isWon && !isInstant)) && (
                 <div className="flex items-center gap-1 mt-1">
                   {!isInstant && isUserHighest && (

@@ -53,6 +53,22 @@ export function formatEntryTime(entryTime: string | null, eventDate: string): st
   return `${entryTime}~ 입장`;
 }
 
+/**
+ * 카드용 단축 입장시간 포맷 (우상단 absolute 영역 폭 절약)
+ * "22:00" → "22:00"
+ * "01:00" (hour<4) → "5/9 01:00"
+ * null → "즉시"
+ */
+export function formatEntryTimeShort(entryTime: string | null, eventDate: string): string {
+  if (!entryTime) return "즉시";
+  const [h] = entryTime.split(":").map(Number);
+  if (h < 4) {
+    const nextDay = dayjs(eventDate).add(1, "day");
+    return `${nextDay.format("M/D")} ${entryTime}`;
+  }
+  return entryTime;
+}
+
 /** 시간 포맷: "2026-02-18T20:00:00" → "오후 8:00" */
 export function formatTime(datetime: string): string {
   const d = dayjs(datetime);
@@ -168,5 +184,17 @@ export function formatCountdown(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60);
   const s = seconds % 60;
   return `${totalHours.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+/** 장기 카운트다운 포맷 (24h 초과): seconds → "3일 17:51" */
+export function formatCountdownLong(seconds: number): string {
+  if (seconds <= 0) return "마감";
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const hh = hours.toString().padStart(2, "0");
+  const mm = minutes.toString().padStart(2, "0");
+  if (days > 0) return `${days}일 ${hh}:${mm}`;
+  return `${hh}:${mm}`;
 }
 

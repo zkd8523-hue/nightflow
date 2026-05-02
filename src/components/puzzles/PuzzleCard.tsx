@@ -75,7 +75,9 @@ export const PuzzleCard = memo(function PuzzleCard({
 
   const ageTag = AGE_LABEL[puzzle.age_pref];
   const vibeTag = VIBE_LABEL[puzzle.vibe_pref];
-  const tags = [ageTag, vibeTag].filter(Boolean) as string[];
+  const tags = puzzle.is_recruiting_party
+    ? ([ageTag, vibeTag].filter(Boolean) as string[])
+    : [];
 
   const { isFavoritedPuzzle, toggleFavoritePuzzle } = usePuzzleFavoritesContext();
   const isMd = userRole === "md";
@@ -140,9 +142,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 <Users className="w-3.5 h-3.5" />
                 {isFull
                   ? "파티 완성! 🎉"
-                  : offerCount > 0
-                  ? `파티원 ${puzzle.current_count}/${puzzle.target_count}명 · MD ${offerCount}명 제안 중`
-                  : `파티원 ${puzzle.current_count}/${puzzle.target_count}명 · MD 제안 대기`}
+                  : `파티원 ${puzzle.current_count}/${puzzle.target_count}명`}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {Array.from({ length: puzzle.target_count }).map((_, i) => (
@@ -247,7 +247,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin?.(puzzle); }}
           className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
         >
-          파티원 합류하기
+          합류하기
         </Button>
       )}
     </div>

@@ -33,14 +33,22 @@ export async function updateSession(request: NextRequest) {
   );
 
   // 세션 갱신 (IMPORTANT: getUser()로 서버 검증)
-  const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+  const { data: { user: rawUser }, error: getUserError } = await supabase.auth.getUser();
 
   // refresh token 만료 등 세션 에러 → SDK가 setAll로 빈 쿠키 설정하도록 signOut 호출
   // 이렇게 해야 브라우저의 만료된 쿠키가 삭제되어 무한로딩 방지
   // 단, /auth/* 경로(OAuth 콜백)에서는 PKCE code_verifier 쿠키를 보존해야 하므로 제외
-  if (getUserError && !request.nextUrl.pathname.startsWith("/auth/")) {
+  const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/");
+  if (getUserError && !isAuthCallback) {
     await supabase.auth.signOut();
   }
+
+  // 세션 검증 실패 시 같은 요청 안에서 user를 null로 취급해야 후속 redirect 로직이 정합성 유지
+  // (signOut 호출은 쿠키만 비울 뿐 rawUser 변수는 그대로이므로)
+  const user = getUserError && !isAuthCallback ? null : rawUser;
+
+  // [DEBUG] 미들웨어 동작 트레이싱 — 로그인 문제 진단용 (이후 제거)
+  console.log(`[MW] path=${request.nextUrl.pathname} rawUser=${rawUser?.id ?? 'null'} err=${getUserError?.message ?? 'none'} effectiveUser=${user?.id ?? 'null'}`);
 
   // ?ref= 파라미터 → 쿠키 저장 (30일, 바이럴 추적용)
   const refCode = request.nextUrl.searchParams.get('ref');

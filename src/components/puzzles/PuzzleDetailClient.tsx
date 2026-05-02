@@ -116,7 +116,9 @@ export function PuzzleDetailClient({
   const genderTag = GENDER_LABEL[puzzle.gender_pref];
   const ageTag = AGE_LABEL[puzzle.age_pref];
   const vibeTag = VIBE_LABEL[puzzle.vibe_pref];
-  const tags = [genderTag, ageTag, vibeTag].filter(Boolean) as string[];
+  const tags = puzzle.is_recruiting_party
+    ? ([genderTag, ageTag, vibeTag].filter(Boolean) as string[])
+    : [];
 
   const loadOffers = useCallback(async () => {
     const { data } = await supabase
