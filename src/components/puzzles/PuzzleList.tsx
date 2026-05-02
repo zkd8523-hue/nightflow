@@ -33,7 +33,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
   const [myPuzzleIds, setMyPuzzleIds] = useState<Set<string>>(new Set());
   const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
   const [toggleOn, setToggleOn] = useState(false);
-  const isMd = userRole === "md";
+  const isMd = userRole === "md" || userRole === "admin";
 
   useEffect(() => {
     (async () => {

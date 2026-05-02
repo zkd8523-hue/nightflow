@@ -82,7 +82,7 @@ const PUZZLE_ONBOARDING_STEPS = [
 
 const TAB_PROMISES = {
   today: "지금 비어있는 자리, 한눈에",
-  advance: "다가올 주말 테이블 선점에 도전하세요",
+  advance: "일찍 일어난 당신,\n특가 낙찰에 도전해봐요!",
   puzzle: "예산만 등록하면, MD들이 스페셜 오퍼를 보내와요.",
 } as const;
 
@@ -282,7 +282,7 @@ export function HomeContent({
               <div className="flex items-start justify-between gap-3 mb-3">
                 <h2 className="text-[15px] font-black text-white flex items-start gap-2 leading-snug">
                   <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mt-1.5 shrink-0" />
-                  <span>{TAB_PROMISES[currentTab]}</span>
+                  <span className="whitespace-pre-line">{TAB_PROMISES[currentTab]}</span>
                 </h2>
                 <button
                   onClick={dismissGuide}
