@@ -1,7 +1,15 @@
 /* eslint-disable react/no-unescaped-entities */
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ScrollText } from "lucide-react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "이용약관",
+  description:
+    "나이트플로우(나플) 서비스 이용약관. 회원, MD, 경매 거래 관련 권리와 의무를 안내합니다.",
+  alternates: { canonical: "https://nightflow.kr/terms" },
+};
 
 export default function TermsPage() {
     return (

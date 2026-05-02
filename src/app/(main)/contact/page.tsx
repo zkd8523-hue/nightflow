@@ -1,6 +1,14 @@
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Mail, MessageCircle } from "lucide-react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "고객 문의",
+  description:
+    "나이트플로우(나플) 고객센터. 이메일·인스타그램 DM으로 24시간 문의 가능합니다.",
+  alternates: { canonical: "https://nightflow.kr/contact" },
+};
 
 export default function ContactPage() {
     return (

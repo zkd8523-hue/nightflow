@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, MessageCircle, Mail, Sparkles } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+
+export const metadata: Metadata = {
+  title: "회사소개",
+  description:
+    "나이트플로우(나플)는 강남·홍대 클럽 테이블을 실시간 경매로 예약하는 플랫폼입니다. 클럽 MD가 직접 올리는 잔여 테이블을 합리적인 가격에 낙찰받으세요.",
+  alternates: { canonical: "https://nightflow.kr/about" },
+};
 
 export default function AboutPage() {
     return (
