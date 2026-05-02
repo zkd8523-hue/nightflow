@@ -31,6 +31,34 @@ export async function POST(req: NextRequest) {
 
   const phone = normalizePhone(rawPhone);
 
+  // DEV 모드 OTP 우회: 코드 000000이면 통과 (DB 트리거 위해 verified_at 기록)
+  if (process.env.NODE_ENV === "development" && code === "000000") {
+    const adminSupabase = createAdminClient();
+    // 가장 최근 발송 기록 verified 처리, 없으면 새로 insert
+    const { data: existing } = await adminSupabase
+      .from("phone_verifications")
+      .select("id")
+      .eq("phone", phone)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      await adminSupabase
+        .from("phone_verifications")
+        .update({ verified_at: new Date().toISOString() })
+        .eq("id", existing.id);
+    } else {
+      await adminSupabase.from("phone_verifications").insert({
+        phone,
+        code_hash: "dev_bypass",
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+        verified_at: new Date().toISOString(),
+      });
+    }
+    return NextResponse.json({ ok: true, phone });
+  }
+
   // md_apply: 인증된 세션 필요 (verified_at 기록 시 user_id 함께 저장)
   let sessionUserId: string | null = null;
   if (purpose === "md_apply") {

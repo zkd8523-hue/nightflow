@@ -87,6 +87,33 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
     ? (allPuzzles || []).filter((p) => p.area === areaFilter)
     : allPuzzles || [];
 
+  // 최신 제안 탭 데이터
+  const { data: recentOffers } = await supabase
+    .from("puzzle_offers")
+    .select(`
+      id, puzzle_id, status, table_type, proposed_price, includes, comment, created_at,
+      club:clubs(name, area),
+      md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, instagram),
+      puzzle:puzzles(notes, area, event_date)
+    `)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const OFFER_STATUS_LABEL: Record<string, string> = {
+    pending: "대기 중",
+    accepted: "수락됨",
+    rejected: "거절됨",
+    withdrawn: "철회됨",
+    expired: "만료됨",
+  };
+  const OFFER_STATUS_COLOR: Record<string, string> = {
+    pending: "bg-amber-500/20 text-amber-400",
+    accepted: "bg-green-500/20 text-green-400",
+    rejected: "bg-neutral-700 text-neutral-400",
+    withdrawn: "bg-neutral-700 text-neutral-400",
+    expired: "bg-neutral-700 text-neutral-400",
+  };
+
   // 신고 탭 데이터
   const { data: reports } = await supabase
     .from("puzzle_reports")
@@ -136,6 +163,17 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
               }`}
             >
               전체 깃발 {allPuzzles ? `${allPuzzles.length}건` : ""}
+            </button>
+          </Link>
+          <Link href="?tab=offers">
+            <button
+              className={`px-4 py-2 rounded-xl text-[13px] font-bold transition-all ${
+                tab === "offers"
+                  ? "bg-white text-black"
+                  : "bg-neutral-800 text-neutral-400 border border-neutral-700"
+              }`}
+            >
+              최신 제안 {recentOffers ? `${recentOffers.length}건` : ""}
             </button>
           </Link>
           <Link href="?tab=reports">
@@ -206,6 +244,9 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                         <p className="text-[12px] text-neutral-600 mt-0.5">
                           파티 {puzzle.current_count}/{puzzle.target_count}명
                         </p>
+                        <p className="text-[11px] text-neutral-700 mt-0.5">
+                          등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
                       </div>
                       <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[puzzle.status] || "bg-neutral-700 text-neutral-400"}`}>
                         {STATUS_LABEL[puzzle.status] || puzzle.status}
@@ -232,6 +273,52 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                         } | null,
                       }))}
                     />
+                  </Card>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* 최신 제안 탭 */}
+        {tab === "offers" && (
+          <div className="space-y-3">
+            {(recentOffers || []).length === 0 ? (
+              <div className="text-center py-20 text-neutral-500">
+                <p>제안이 없습니다</p>
+              </div>
+            ) : (
+              (recentOffers || []).map((offer) => {
+                const puzzle = offer.puzzle as { notes?: string; area?: string; event_date?: string } | null;
+                const md = offer.md as { display_name?: string; instagram?: string | null } | null;
+                const club = offer.club as { name?: string } | null;
+                return (
+                  <Card key={offer.id} className="bg-[#1C1C1E] border-neutral-800 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="space-y-0.5 min-w-0">
+                        <p className="text-[13px] font-black text-white truncate">
+                          {puzzle?.notes || `${puzzle?.area} ${puzzle?.event_date ? formatDate(puzzle.event_date) : ""}`}
+                        </p>
+                        <p className="text-[12px] text-neutral-400">
+                          {club?.name || "클럽 미정"} · {offer.table_type} · {offer.proposed_price.toLocaleString()}원
+                        </p>
+                        <p className="text-[11px] text-neutral-500">
+                          MD: {md?.display_name || "-"}
+                          {md?.instagram ? ` · @${md.instagram}` : ""}
+                        </p>
+                        <p className="text-[11px] text-neutral-700">
+                          {new Date(offer.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                      <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${OFFER_STATUS_COLOR[offer.status] || "bg-neutral-700 text-neutral-400"}`}>
+                        {OFFER_STATUS_LABEL[offer.status] || offer.status}
+                      </span>
+                    </div>
+                    {offer.comment && (
+                      <p className="text-[12px] text-neutral-400 mt-2 bg-neutral-900 rounded-lg px-3 py-2">
+                        {offer.comment}
+                      </p>
+                    )}
                   </Card>
                 );
               })

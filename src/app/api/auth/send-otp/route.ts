@@ -117,7 +117,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 
-  // 5. SMS 발송
+  // 5. SMS 발송 (DEV 모드는 SMS 발송 스킵, 코드 000000으로 인증 가능)
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[send-otp DEV] phone=${phone}, code=${code} (실제 발송 안 함, 000000 입력 시 통과)`);
+    return NextResponse.json({ ok: true, expires_at: expiresAt.toISOString(), dev_mode: true });
+  }
+
   try {
     await sendOtpSms(phone, code);
   } catch (e) {

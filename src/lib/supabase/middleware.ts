@@ -63,6 +63,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // 💡 이미 로그인된 유저가 로그인/회원가입 페이지 진입 시 홈으로 리다이렉트
+  if (user && (pathname === "/login" || pathname === "/signup")) {
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
   // 보호 경로에만 프로필 권한 체크 수행
   if (user && isProtected) {
     const { data: profile, error: profileError } = await supabase

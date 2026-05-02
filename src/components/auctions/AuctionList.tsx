@@ -177,8 +177,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           </button>
 
           <div
-            className={`flex gap-2 overflow-hidden transition-all duration-300 ease-out ${
-              areaExpanded ? "max-w-[600px] opacity-100" : "max-w-0 opacity-0"
+            className={`flex gap-2 transition-all duration-300 ease-out ${
+              areaExpanded ? "opacity-100 pointer-events-auto" : "max-w-0 opacity-0 overflow-hidden pointer-events-none"
             }`}
           >
             <button

@@ -50,6 +50,14 @@ export default function LoginPage() {
 
   const supabase = createClient();
 
+  // 💡 [캐시 초기화] 페이지 진입 시 인증 에러가 있다면 잔여 캐시 강제 삭제
+  useEffect(() => {
+    if (authError || redirectPath !== "/") {
+      supabase.auth.signOut().catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authError, redirectPath]);
+
   const handleKakaoLogin = async (customRedirect?: string) => {
     trackEvent('login_click', { method: 'kakao' });
     setLoading(true);
@@ -57,6 +65,11 @@ export default function LoginPage() {
     const target = customRedirect || redirectPath;
 
     try {
+      // 💡 [캐시 초기화] 잔여 캐시/세션으로 인한 PKCE 에러 방지
+      await supabase.auth.signOut();
+      // 💡 iOS 등 일부 환경에서 쿠키 삭제와 설정이 겹치는 것을 방지
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
         options: {
@@ -84,6 +97,11 @@ export default function LoginPage() {
     const target = customRedirect || redirectPath;
 
     try {
+      // 💡 [캐시 초기화] 잔여 캐시/세션으로 인한 PKCE 에러 방지
+      await supabase.auth.signOut();
+      // 💡 iOS 등 일부 환경에서 쿠키 삭제와 설정이 겹치는 것을 방지
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
