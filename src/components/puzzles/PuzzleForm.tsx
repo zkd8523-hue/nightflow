@@ -206,7 +206,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
           max={maxDateStr}
           onChange={(val) => setEventDate(val)}
           label="날짜 선택"
-          placeholder="방문 희망 날짜를 선택해주세요"
+          placeholder="날짜를 선택해주세요"
         />
       </section>
 
@@ -218,6 +218,17 @@ export function PuzzleForm({ userId }: { userId: string }) {
         </div>
         <div>
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setArea("서울 어디든")}
+              className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
+                area === "서울 어디든"
+                  ? "bg-white text-black"
+                  : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+              }`}
+            >
+              서울 어디든
+            </button>
             {MAIN_AREAS.map((a) => (
               <button
                 key={a}
@@ -271,6 +282,11 @@ export function PuzzleForm({ userId }: { userId: string }) {
               ))}
             </div>
           )}
+        {area === "서울 어디든" && (
+          <p className="text-[12px] text-amber-400/80 leading-relaxed px-1">
+            서울 모든 지역 MD들의 제안을 받을 수 있어요. 🔥
+          </p>
+        )}
         </div>
       </section>
 
