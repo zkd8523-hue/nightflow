@@ -69,6 +69,15 @@ export function PuzzleForm({ userId }: { userId: string }) {
     trackEvent('puzzle_form_view');
   }, []);
 
+  // "서울 어디든" 선택 시 파티원 모집 강제 OFF (지역 미정 상태에서 합류 결정 불가)
+  const handleAreaChange = (newArea: string) => {
+    setArea(newArea);
+    if (newArea === "서울 어디든" && isRecruitingParty) {
+      setIsRecruitingParty(false);
+      toast.info('"서울 어디든"은 파티원 모집을 사용할 수 없어요');
+    }
+  };
+
   const fail = (error_type: string, error_message: string) => {
     trackEvent('puzzle_validation_error', { error_type, error_message });
     toast.error(error_message);
@@ -109,8 +118,11 @@ export function PuzzleForm({ userId }: { userId: string }) {
   })();
 
   const handleSubmit = async () => {
+    // "서울 어디든"은 파티원 모집 불가 — UI에서 막지만 안전망으로 한 번 더 강제
+    const effectiveIsRecruiting = area === "서울 어디든" ? false : isRecruitingParty;
+
     trackEvent('puzzle_submit_attempt', {
-      is_recruiting_party: isRecruitingParty,
+      is_recruiting_party: effectiveIsRecruiting,
       area: area || null,
       total_budget: totalBudget,
     });
@@ -124,16 +136,16 @@ export function PuzzleForm({ userId }: { userId: string }) {
     if (!area) {
       return fail('area', '지역을 선택해주세요');
     }
-    if (isRecruitingParty && budgetAmount < 10000) {
+    if (effectiveIsRecruiting && budgetAmount < 10000) {
       return fail('budget_per_person', '인당 예산은 최소 1만원 이상이어야 합니다');
     }
-    if (!isRecruitingParty && budgetAmount < 10000 * totalPeople) {
+    if (!effectiveIsRecruiting && budgetAmount < 10000 * totalPeople) {
       return fail('budget_total', `${totalPeople}명 기준 최소 ${(10000 * totalPeople).toLocaleString()}원 이상이어야 합니다`);
     }
-    if (isRecruitingParty && effectiveCurrentCount > effectiveTargetCount) {
+    if (effectiveIsRecruiting && effectiveCurrentCount > effectiveTargetCount) {
       return fail('headcount_overflow', '동행 인원이 모집 인원을 초과합니다');
     }
-    if (!isRecruitingParty && totalPeople < 2) {
+    if (!effectiveIsRecruiting && totalPeople < 2) {
       return fail('headcount_min', '인원 확정 깃발은 2명 이상이어야 합니다');
     }
 
@@ -145,16 +157,16 @@ export function PuzzleForm({ userId }: { userId: string }) {
           leader_id: userId,
           area,
           event_date: eventDate,
-          gender_pref: genderPref,
-          age_pref: agePref,
-          vibe_pref: vibePref,
+          gender_pref: effectiveIsRecruiting ? genderPref : 'any',
+          age_pref: effectiveIsRecruiting ? agePref : 'any',
+          vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
           total_budget: totalBudget,
-          budget_per_person: isRecruitingParty
+          budget_per_person: effectiveIsRecruiting
             ? budgetAmount
             : Math.round(budgetAmount / totalPeople), // 하위 호환용
           target_count: effectiveTargetCount,
           current_count: effectiveCurrentCount,
-          is_recruiting_party: isRecruitingParty,
+          is_recruiting_party: effectiveIsRecruiting,
           notes: notes.trim() || null,
           expires_at: getExpiresAt(eventDate),
         })
@@ -181,7 +193,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
         target_count: effectiveTargetCount,
       });
 
-      toast.success(isRecruitingParty ? "깃발을 꽂았어요! 파티원과 MD를 기다려봐요" : "깃발을 꽂았어요! MD 제안을 기다려봐요");
+      toast.success(effectiveIsRecruiting ? "깃발을 꽂았어요! 파티원과 MD를 기다려봐요" : "깃발을 꽂았어요! MD 제안을 기다려봐요");
       router.push(`/flags/${puzzle.id}`);
     } catch (err) {
       console.error("puzzle submit error:", err);
@@ -220,7 +232,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setArea("서울 어디든")}
+              onClick={() => handleAreaChange("서울 어디든")}
               className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
                 area === "서울 어디든"
                   ? "bg-white text-black"
@@ -233,7 +245,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
               <button
                 key={a}
                 type="button"
-                onClick={() => setArea(a)}
+                onClick={() => handleAreaChange(a)}
                 className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
                   area === a
                     ? "bg-white text-black"
@@ -270,7 +282,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
                 <button
                   key={a}
                   type="button"
-                  onClick={() => { setArea(a); setShowOtherCities(false); }}
+                  onClick={() => { handleAreaChange(a); setShowOtherCities(false); }}
                   className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
                     area === a
                       ? "bg-white text-black"
@@ -291,22 +303,35 @@ export function PuzzleForm({ userId }: { userId: string }) {
       </section>
 
       {/* 파티원 여부 — 텍스트 왼쪽, 체크 오른쪽 */}
-      <label className="flex items-center justify-between cursor-pointer px-1">
-        <span className="text-[14px] font-bold text-white">파티원 모으기</span>
-        <input
-          type="checkbox"
-          checked={isRecruitingParty}
-          onChange={(e) => setIsRecruitingParty(e.target.checked)}
-          className="w-4 h-4 rounded accent-green-500 shrink-0"
-        />
-      </label>
-      {isRecruitingParty && (
-        <div className="bg-[#1C1C1E] border border-green-500/30 rounded-2xl px-4 py-3">
-          <p className="text-[12px] text-green-400 leading-relaxed">
-            인원이 모이면 MD에게 더 좋은 조건을 요청할 수 있어요.
-          </p>
-        </div>
-      )}
+      {(() => {
+        const partyDisabled = area === "서울 어디든";
+        return (
+          <>
+            <label className={`flex items-center justify-between px-1 ${partyDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
+              <span className="text-[14px] font-bold text-white">파티원 모으기</span>
+              <input
+                type="checkbox"
+                checked={isRecruitingParty}
+                disabled={partyDisabled}
+                onChange={(e) => setIsRecruitingParty(e.target.checked)}
+                className="w-4 h-4 rounded accent-green-500 shrink-0"
+              />
+            </label>
+            {partyDisabled && (
+              <p className="text-[11px] text-amber-400/80 leading-relaxed px-1 -mt-2">
+                "서울 어디든"은 지역이 정해지지 않아 파티원 모집이 불가합니다.
+              </p>
+            )}
+            {isRecruitingParty && !partyDisabled && (
+              <div className="bg-[#1C1C1E] border border-green-500/30 rounded-2xl px-4 py-3">
+                <p className="text-[12px] text-green-400 leading-relaxed">
+                  인원이 모이면 MD에게 더 좋은 조건을 요청할 수 있어요.
+                </p>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* 인원 설정 */}
       <section className="space-y-4">
@@ -342,26 +367,28 @@ export function PuzzleForm({ userId }: { userId: string }) {
               </div>
             ) : null}
 
-            {/* 성별 — 내 일행 구성 (혼성) */}
-            <div className="pt-3 border-t border-neutral-800 space-y-2">
-              <p className="text-[11px] text-neutral-400">{isRecruitingParty ? "파티원 성별" : "성별"}</p>
-              <div className="flex gap-2">
-                {(isRecruitingParty ? GENDER_OPTIONS_RECRUIT : GENDER_OPTIONS_FIXED).map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => setGenderPref(opt.value)}
-                    className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
-                      genderPref === opt.value
-                        ? "bg-white text-black"
-                        : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+            {/* 성별 — 파티원 모집 중일 때만 노출 (비모집은 취향 태그 자체 없음) */}
+            {isRecruitingParty && (
+              <div className="pt-3 border-t border-neutral-800 space-y-2">
+                <p className="text-[11px] text-neutral-400">파티원 성별</p>
+                <div className="flex gap-2">
+                  {GENDER_OPTIONS_RECRUIT.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setGenderPref(opt.value)}
+                      className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
+                        genderPref === opt.value
+                          ? "bg-white text-black"
+                          : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {isRecruitingParty ? (
               <div className="space-y-4">

@@ -9,6 +9,7 @@ import { getClubEventDate } from "@/lib/utils/date";
 import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
 import { MAIN_AREAS } from "@/lib/constants/areas";
+import { matchesArea } from "@/lib/utils/area";
 import { MapPin, ChevronDown, ChevronUp } from "lucide-react";
 
 
@@ -76,10 +77,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
     onTabChange?.(t);
   };
 
-  // 퍼즐: 지역 필터 적용
-  const filteredPuzzles = selectedArea
-    ? puzzles.filter((p) => p.area === selectedArea)
-    : puzzles;
+  // 퍼즐: 지역 필터 적용 ("서울 어디든"은 강남/홍대/이태원/건대 어느 것 선택해도 매칭)
+  const filteredPuzzles = puzzles.filter((p) => matchesArea(p.area, selectedArea ?? null));
 
   // 오늘특가: 날짜별 그룹핑
   const { groupedInstant, sortedInstantDates } = useMemo(() => {
@@ -115,10 +114,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   return (
     <div className="space-y-2.5">
       <div className="flex items-center gap-2 px-1">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0 touch-pan-x">
           <button
             onClick={() => setTab("puzzle")}
-            className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
+            className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
               ? "bg-amber-500 text-black"
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
@@ -128,7 +127,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
           <button
             onClick={() => setTab("advance")}
-            className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "advance"
+            className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "advance"
               ? "bg-amber-500 text-black"
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
@@ -139,7 +138,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           {instantEnabled && (
             <button
               onClick={() => setTab("today")}
-              className={`text-[13px] font-bold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
+              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
                 ? "bg-amber-500 text-black"
                 : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
@@ -162,7 +161,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {/* 지역 필터 — 기본 접힘, 탭하면 가로 펼침 */}
       {onAreaChange && (
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1 touch-pan-x">
           <button
             onClick={() => setAreaExpanded((v) => !v)}
             className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
