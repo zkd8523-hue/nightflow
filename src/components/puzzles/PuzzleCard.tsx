@@ -140,6 +140,8 @@ export const PuzzleCard = memo(function PuzzleCard({
                 <Users className="w-3.5 h-3.5" />
                 {isFull
                   ? "파티 완성! 🎉"
+                  : offerCount > 0
+                  ? `파티원 ${puzzle.current_count}/${puzzle.target_count}명 · MD ${offerCount}명 제안 중`
                   : `파티원 ${puzzle.current_count}/${puzzle.target_count}명 · MD 제안 대기`}
               </span>
               <div className="flex flex-wrap gap-1.5">

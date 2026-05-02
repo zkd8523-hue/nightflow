@@ -58,7 +58,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const [targetCount, setTargetCount] = useState(4);
   const [hasGuest, setHasGuest] = useState(false);
   const [guestCount, setGuestCount] = useState(1);
-  const [genderPref, setGenderPref] = useState<GenderPref>("any");
+  const [genderPref, setGenderPref] = useState<GenderPref>("male_only");
   const [agePref, setAgePref] = useState<AgePref>("any");
   const [vibePref, setVibePref] = useState<VibePref>("any");
   const [submitting, setSubmitting] = useState(false);

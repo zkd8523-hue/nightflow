@@ -5,26 +5,17 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInstantEnabled } from "@/lib/features";
 import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
+import { Suspense } from "react";
 
 const isDev = process.env.NODE_ENV === "development";
 
-function getRedirectPath() {
-  if (typeof window === "undefined") return "/";
-  const params = new URLSearchParams(window.location.search);
-  return params.get("redirect") || "/";
-}
-
-function getAuthError() {
-  if (typeof window === "undefined") return "";
-  const params = new URLSearchParams(window.location.search);
-  const error = params.get("error");
+function getAuthErrorMessage(error: string | null) {
   if (!error) return "";
-  // 진단용: raw 에러 코드를 괄호 안에 함께 표시
   if (error === "session_expired") return `세션이 만료되었습니다. 다시 로그인해주세요. (${error})`;
   if (error === "pkce_failed") return `보안 코드 오류입니다. 다시 시도해주세요. (${error})`;
   if (error === "exchange_failed") return `인증 코드 교환에 실패했습니다. (${error})`;
@@ -32,10 +23,11 @@ function getAuthError() {
   return `로그인 실패. (${error})`;
 }
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
-  const redirectPath = getRedirectPath();
-  const authError = getAuthError();
+  const searchParams = useSearchParams();
+  const redirectPath = searchParams.get("redirect") || "/";
+  const authError = getAuthErrorMessage(searchParams.get("error"));
   const [isInAppAndroid, setIsInAppAndroid] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showDevLogin, setShowDevLogin] = useState(false);
@@ -316,5 +308,13 @@ export default function LoginPage() {
         )}
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-neutral-950" />}>
+      <LoginContent />
+    </Suspense>
   );
 }
