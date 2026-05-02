@@ -593,7 +593,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
           </p>
         ) : (
           <p className="text-[18px] font-black text-green-500 leading-snug break-keep">
-            예산 {totalBudget.toLocaleString()}원 · {totalPeople}명
+            총 예산 {totalBudget.toLocaleString()}원
           </p>
         )}
         {!isRecruitingParty ? (

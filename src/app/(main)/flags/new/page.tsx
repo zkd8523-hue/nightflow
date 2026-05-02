@@ -24,7 +24,7 @@ export default async function PuzzleNewPage() {
         {/* 헤더 */}
         <div className="mb-8 pt-12">
           <h1 className="text-2xl font-black text-white tracking-tight">깃발 꽂기</h1>
-          <p className="text-neutral-500 text-sm font-medium mt-0.5">날짜·지역·예산을 올리면 MD들이 조건을 제안해요</p>
+          <p className="text-neutral-500 text-sm font-medium mt-0.5">여러 MD들의 제안 비교하고, 최고의 조건을 골라봐요</p>
         </div>
 
         <PuzzleForm userId={user.id} />
