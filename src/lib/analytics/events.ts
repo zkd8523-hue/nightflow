@@ -6,20 +6,25 @@ import { trackEvent as trackMixpanel, identifyUser as identifyMixpanel, resetAna
  * GA4 및 Mixpanel 통합 이벤트 추적을 위한 유틸리티 함수
  */
 export const trackEvent = (eventName: string, params: Record<string, unknown> = {}) => {
-  // 1. GA4 추적
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', eventName, {
-      ...params,
-      timestamp: new Date().toISOString(),
-    });
-  }
+  try {
+    // 1. GA4 추적
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', eventName, {
+        ...params,
+        timestamp: new Date().toISOString(),
+      });
+    }
 
-  // 2. Mixpanel 추적
-  trackMixpanel(eventName, params);
+    // 2. Mixpanel 추적
+    trackMixpanel(eventName, params);
 
-  // 개발 모드 로그 확인
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`[Analytics Event] ${eventName}:`, params);
+    // 개발 모드 로그 확인
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Analytics Event] ${eventName}:`, params);
+    }
+  } catch (e) {
+    // 분석 툴 에러가 메인 로직을 중단시키지 않도록 방어
+    console.warn(`[Analytics Error] Failed to track ${eventName}`, e);
   }
 };
 
