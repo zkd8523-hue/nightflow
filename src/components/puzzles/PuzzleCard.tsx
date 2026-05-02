@@ -165,7 +165,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             <div className="flex items-center gap-2 text-[13px] text-neutral-400 font-medium">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-bold">
                 <Flag className="w-3 h-3" />
-                인원 확정 {puzzle.target_count}명
+                {puzzle.target_count}명
               </span>
               <span className="text-neutral-500 text-[11px]">인당 {perPersonBudget.toLocaleString()}원</span>
             </div>

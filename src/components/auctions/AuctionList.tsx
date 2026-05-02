@@ -149,13 +149,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           )}
         </div>
 
-        {onShowGuide && tab === "puzzle" && (
+        {onShowGuide && (tab === "puzzle" || tab === "advance") && (
           <button
             onClick={onShowGuide}
             className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap"
           >
             <span className="text-[13px]">ⓘ</span>
-            깃발이란?
+            {tab === "puzzle" ? "깃발이란?" : "얼리버드란?"}
           </button>
         )}
       </div>

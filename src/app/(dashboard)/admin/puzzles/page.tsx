@@ -231,7 +231,8 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
               filteredPuzzles.map((puzzle) => {
                 const offers = offersByPuzzle[puzzle.id] || [];
                 return (
-                  <Card key={puzzle.id} className="bg-[#1C1C1E] border-neutral-800 p-5 space-y-4">
+                  <Link key={puzzle.id} href={`/flags/${puzzle.id}`}>
+                  <Card className="bg-[#1C1C1E] border-neutral-800 p-5 space-y-4 hover:border-neutral-600 transition-colors cursor-pointer">
                     {/* 퍼즐 기본 정보 */}
                     <div className="flex items-start justify-between">
                       <div>
@@ -274,6 +275,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                       }))}
                     />
                   </Card>
+                  </Link>
                 );
               })
             )}
