@@ -33,23 +33,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const formatPrice = (price: number) =>
     new Intl.NumberFormat("ko-KR").format(price);
 
-  const description = `${auction.club?.name} | 현재가 ₩${formatPrice(
-    auction.current_bid || auction.start_price
-  )} | 입찰 ${auction.bid_count}회`;
+  const clubName = auction.club?.name || "";
+  const area = auction.club?.area || "";
+  const areaLabel = area ? `${area} ` : "";
+  const currentPrice = formatPrice(auction.current_bid || auction.start_price);
+
+  const title = `${clubName} ${areaLabel}클럽 테이블 경매 - 현재가 ₩${currentPrice}`;
+  const description = `${clubName}${area ? ` (${area})` : ""} 클럽 테이블 ${auction.title}. 현재가 ₩${currentPrice}, 입찰 ${auction.bid_count}회. MD 직거래로 정가보다 저렴하게 예약하세요.`;
 
   return {
-    title: `${auction.title} | NightFlow`,
+    title,
     description,
+    alternates: { canonical: `https://nightflow.kr/auctions/${id}` },
     openGraph: {
-      title: auction.title,
+      title,
       description,
+      url: `https://nightflow.kr/auctions/${id}`,
       type: "website",
       locale: "ko_KR",
       siteName: "NightFlow",
     },
     twitter: {
       card: "summary_large_image",
-      title: auction.title,
+      title,
       description,
     },
   };

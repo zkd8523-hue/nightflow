@@ -31,11 +31,11 @@ const nanumPen = Nanum_Pen_Script({
 export const metadata: Metadata = {
   metadataBase: new URL("https://nightflow.kr"),
   title: {
-    default: "나이트플로우(나플) | 강남·홍대 클럽 테이블 실시간 경매",
+    default: "강남·홍대 클럽 테이블 예약 - 나이트플로우(나플)",
     template: "%s | 나이트플로우",
   },
   description:
-    "나이트플로우(나플) - 강남·홍대 클럽 테이블을 실시간 경매로 예약하세요. 클럽 MD가 직접 올리는 잔여 테이블, 원하는 가격에 입찰하고 낙찰받는 새로운 클럽 예약 플랫폼.",
+    "강남·홍대 인기 클럽 테이블을 정가보다 저렴하게 예약하세요. 클럽 MD가 잔여 테이블을 올리면 입찰로 가격이 결정됩니다. 옥타곤·에이프릴·아레나 등 강남·홍대 클럽 테이블 가격 비교·예약은 나이트플로우(나플).",
   applicationName: "NightFlow",
   keywords: [
     "나이트플로우",
@@ -56,8 +56,9 @@ export const metadata: Metadata = {
     canonical: "https://nightflow.kr",
   },
   openGraph: {
-    title: "나이트플로우 (나플) - 클럽 테이블 실시간 경매",
-    description: "오늘 밤, 당신의 테이블을 경매로",
+    title: "강남·홍대 클럽 테이블 예약 - 나이트플로우(나플)",
+    description:
+      "강남·홍대 클럽 테이블을 정가보다 저렴하게 예약. MD 직거래, 가격 비교, 실시간 입찰.",
     url: "https://nightflow.kr",
     siteName: "NightFlow",
     locale: "ko_KR",
@@ -67,14 +68,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "NightFlow - 클럽 테이블 실시간 경매",
+        alt: "나이트플로우 - 강남·홍대 클럽 테이블 예약",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "나이트플로우 (나플) - 클럽 테이블 실시간 경매",
-    description: "오늘 밤, 당신의 테이블을 경매로",
+    title: "강남·홍대 클럽 테이블 예약 - 나이트플로우(나플)",
+    description:
+      "강남·홍대 클럽 테이블을 정가보다 저렴하게 예약. MD 직거래, 가격 비교, 실시간 입찰.",
     images: ["/og-image.png"],
   },
   robots: {

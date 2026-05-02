@@ -23,9 +23,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: "클럽을 찾을 수 없습니다 | NightFlow" };
   }
 
+  const area = club.area || "";
+  const titleArea = area ? `${area} ` : "";
+
   return {
-    title: `${club.name} | NightFlow`,
-    description: `${club.name} (${club.area}) - 현재 진행 중인 경매를 확인하세요`,
+    title: `${club.name} ${titleArea}클럽 테이블 가격·예약`,
+    description: `${club.name}${area ? ` (${area})` : ""} 클럽 테이블 정가보다 저렴하게 예약. 잔여 테이블 실시간 가격 비교, MD 직거래로 수수료 없음. 나이트플로우(나플)에서 입찰하세요.`,
+    alternates: { canonical: `https://nightflow.kr/clubs/${id}` },
+    openGraph: {
+      title: `${club.name} ${titleArea}클럽 테이블 가격·예약 - 나이트플로우`,
+      description: `${club.name} 잔여 테이블 실시간 경매. 정가보다 저렴하게.`,
+      url: `https://nightflow.kr/clubs/${id}`,
+      type: "website",
+    },
   };
 }
 
