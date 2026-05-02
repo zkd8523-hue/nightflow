@@ -89,6 +89,11 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  verification: {
+    other: {
+      "naver-site-verification": "43d940356195c90cde1de23bc0d9b3b255fe5fa3",
+    },
+  },
   other: {
     "google-adsense-account": "ca-pub-6936468170635504",
   },
