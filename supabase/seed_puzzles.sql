@@ -26,7 +26,7 @@ VALUES
  'any', 'late_20s', 'any',
  200000, 800000, 4, 4, false, 'open',
  '생일파티 4명, 픽업 잘해주실 MD님',
- now() + interval '3 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #2 B타입: 강남 2명 팀 합칠 분
 ('a0000002-0000-0000-0000-000000000002',
@@ -35,7 +35,7 @@ VALUES
  'any', 'any', 'any',
  150000, null, 4, 2, true, 'open',
  '강남 2명인데 팀 합칠 분',
- now() + interval '3 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #3 A타입: 홍대 6명 급해요
 ('a0000003-0000-0000-0000-000000000003',
@@ -44,7 +44,7 @@ VALUES
  'any', 'late_20s', 'active',
  166667, 1000000, 6, 6, false, 'open',
  '오늘 밤 홍대 6명 씩, 자리 잡아주실 MD님',
- now() + interval '1 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #4 B타입: 홍대 혼자 합류
 ('a0000004-0000-0000-0000-000000000004',
@@ -53,7 +53,7 @@ VALUES
  'any', 'early_20s', 'any',
  120000, null, 4, 1, true, 'open',
  '홍대 혼자인데 합류할게요',
- now() + interval '3 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #5 B타입: 강남 남2 혼성팀
 ('a0000005-0000-0000-0000-000000000005',
@@ -62,7 +62,7 @@ VALUES
  'any', 'late_20s', 'active',
  180000, null, 4, 2, true, 'open',
  '강남 남2 여자친구 있는 팀 구해요',
- now() + interval '2 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #6 B타입: 이태원 2명 팀
 ('a0000006-0000-0000-0000-000000000006',
@@ -71,7 +71,7 @@ VALUES
  'any', 'any', 'chill',
  100000, null, 4, 2, true, 'open',
  '이태원 2명, 조용히 즐길 팀',
- now() + interval '4 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #7 B타입: 강남 금요일 솔로
 ('a0000007-0000-0000-0000-000000000007',
@@ -80,7 +80,7 @@ VALUES
  'any', 'late_20s', 'active',
  200000, null, 3, 1, true, 'open',
  '강남 금요일 같이갈 사람',
- now() + interval '2 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #8 B타입: 강남 3명 여자 한 명
 ('a0000008-0000-0000-0000-000000000008',
@@ -89,7 +89,7 @@ VALUES
  'any', 'late_20s', 'any',
  150000, null, 4, 3, true, 'open',
  '강남 3명, 여자분 한 명 있으면 완벽한데',
- now() + interval '3 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #9 A타입: 부산서 올라온 4명 강남
 ('a0000009-0000-0000-0000-000000000009',
@@ -98,7 +98,7 @@ VALUES
  'male_only', 'late_20s', 'any',
  250000, 1000000, 4, 4, false, 'open',
  '부산서 올라온 4명, 실패없는 MD님 부탁드려요',
- now() + interval '4 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #10 B타입: 홍대 합류 구해요
 ('a0000010-0000-0000-0000-000000000010',
@@ -107,7 +107,7 @@ VALUES
  'any', 'early_20s', 'active',
  120000, null, 4, 2, true, 'open',
  '홍대 합류 구해요',
- now() + interval '3 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #11 A타입: 여자 4명 강남 수질
 ('a0000011-0000-0000-0000-000000000011',
@@ -116,7 +116,7 @@ VALUES
  'female_only', 'late_20s', 'any',
  200000, 800000, 4, 4, false, 'open',
  '여자 4명 강남 총 80만, 수질 좋은 곳으로',
- now() + interval '2 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #12 B타입: 강남 여2 여자분들만
 ('a0000012-0000-0000-0000-000000000012',
@@ -125,7 +125,7 @@ VALUES
  'female_only', 'early_20s', 'any',
  70000, null, 4, 2, true, 'open',
  '강남 여2, 같이 놀 여자분들만',
- now() + interval '3 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #13 B타입: 제주서 올라온 3명 홍대
 ('a0000013-0000-0000-0000-000000000013',
@@ -134,7 +134,7 @@ VALUES
  'any', 'late_20s', 'any',
  130000, null, 5, 3, true, 'open',
  '제주에서 올라온 3명, 홍대 아는 분',
- now() + interval '4 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #14 B타입: 강남 잘 아시는 분
 ('a0000014-0000-0000-0000-000000000014',
@@ -143,7 +143,7 @@ VALUES
  'any', 'early_20s', 'any',
  200000, null, 4, 1, true, 'open',
  '강남 잘 아시는 분 구함',
- now() + interval '2 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #15 A타입: 남자 셋 이태원 60만
 ('a0000015-0000-0000-0000-000000000015',
@@ -152,7 +152,7 @@ VALUES
  'male_only', '30s', 'chill',
  200000, 600000, 3, 3, false, 'open',
  '남자 셋 이태원 60만, 분위기 좋은 곳으로',
- now() + interval '3 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #16 B타입: 홍대 2명 신나게
 ('a0000016-0000-0000-0000-000000000016',
@@ -161,7 +161,7 @@ VALUES
  'any', 'early_20s', 'active',
  110000, null, 4, 2, true, 'open',
  '홍대 2명, 신나게 놀 팀 찾아요',
- now() + interval '2 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #17 B타입: 대구서 올라온 2명 강남
 ('a0000017-0000-0000-0000-000000000017',
@@ -170,7 +170,7 @@ VALUES
  'any', 'late_20s', 'any',
  160000, null, 3, 2, true, 'open',
  '대구서 올라온 2명, 강남 아는 분',
- now() + interval '3 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #18 A타입: 여자 5명 홍대 75만
 ('a0000018-0000-0000-0000-000000000018',
@@ -179,7 +179,7 @@ VALUES
  'female_only', 'late_20s', 'any',
  150000, 750000, 5, 5, false, 'open',
  '여자 5명 홍대 75만, 좋은 자리 부탁드려요',
- now() + interval '4 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #19 B타입: 이태원 혼자 합류
 ('a0000019-0000-0000-0000-000000000019',
@@ -188,7 +188,7 @@ VALUES
  'any', 'late_20s', 'chill',
  120000, null, 3, 1, true, 'open',
  '이태원 혼자인데 팀 있으면 합류요',
- now() + interval '2 days'),
+ (event_date::text || 'T12:00:00+00')::timestamptz),
 
 -- #20 B타입: 강남 2명 30대
 ('a0000020-0000-0000-0000-000000000020',
@@ -197,7 +197,7 @@ VALUES
  'any', '30s', 'chill',
  200000, null, 4, 2, true, 'open',
  '강남 2명, 30대 편한 팀이면 좋겠어요',
- now() + interval '3 days');
+ (event_date::text || 'T12:00:00+00')::timestamptz);
 
 
 -- ============================================================
