@@ -37,6 +37,7 @@ import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
 import { TableDetailsCard } from "./TableDetailsCard";
 import { trackViewAuction, trackEvent } from "@/lib/analytics/events";
 import { isEarlybird } from "@/lib/utils/date";
+import { getClientId } from "@/lib/utils/clientId";
 
 interface AuctionDetailProps {
   auction: Auction;
@@ -107,17 +108,28 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
     });
   }, [auction.id]);
 
-  // 조회수 기록 (유저당 경매당 1회, UNIQUE 제약으로 중복 무시)
+  // 조회수 기록: 로그인 user_id 또는 비로그인 client_id 기반, 24시간 dedup
   useEffect(() => {
-    if (!user) return;
+    if (typeof window === "undefined") return;
+    const viewKey = `nightflow_viewed_${auction.id}`;
+    const lastViewed = localStorage.getItem(viewKey);
+    if (lastViewed && Date.now() - Number(lastViewed) < 24 * 60 * 60 * 1000) {
+      return;
+    }
+
+    const payload = user
+      ? { auction_id: auction.id, user_id: user.id }
+      : { auction_id: auction.id, client_id: getClientId() };
+
     supabase
       .from("auction_views")
-      .upsert(
-        { auction_id: auction.id, user_id: user.id },
-        { onConflict: "auction_id,user_id", ignoreDuplicates: true }
-      )
+      .upsert(payload, {
+        onConflict: user ? "auction_id,user_id" : "auction_id,client_id",
+        ignoreDuplicates: true,
+      })
       .then(({ error }) => {
         if (error) console.warn("[AuctionDetail] View count error:", error.message);
+        else localStorage.setItem(viewKey, String(Date.now()));
       });
   }, [auction.id, user?.id]);
 
