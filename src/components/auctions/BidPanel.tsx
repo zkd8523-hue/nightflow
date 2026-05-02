@@ -220,8 +220,8 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
         {isActive && isEarlybird(auction) && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
             <CalendarCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <p className="text-[11px] text-amber-400/90 font-bold leading-snug">
-              낙찰 후 1시간 내 MD에게 연락하지 않으면 자동 취소돼요
+            <p className="text-[12px] text-amber-400/90 font-bold leading-snug">
+              낙찰 후 1시간 내 미연락 시 자동 취소
             </p>
           </div>
         )}

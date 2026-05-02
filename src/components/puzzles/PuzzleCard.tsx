@@ -142,7 +142,8 @@ export const PuzzleCard = memo(function PuzzleCard({
                 <Users className="w-3.5 h-3.5" />
                 {isFull
                   ? "파티 완성! 🎉"
-                  : `파티원 ${puzzle.current_count}/${puzzle.target_count}명`}
+                  : `파티원 ${puzzle.current_count}/${puzzle.target_count}`}
+                <span className="text-neutral-500 text-[11px]">· 인당 {perPersonBudget.toLocaleString()}원</span>
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {Array.from({ length: puzzle.target_count }).map((_, i) => (

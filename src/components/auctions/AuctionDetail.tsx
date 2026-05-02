@@ -542,7 +542,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 <div>
                   <p className="text-white font-bold">{md?.display_name || md?.name || "나이트플로우 매니저"}</p>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="text-[12px] text-neutral-500 font-medium">NightFlow 공식 인증 파트너</p>
+                    <p className="text-[12px] text-neutral-500 font-medium">NightFlow 인증 파트너</p>
                     {mdConfirmedCount > 0 && (
                       <span className="text-[11px] text-green-500 font-bold">
                         · 거래 {mdConfirmedCount}건 완료

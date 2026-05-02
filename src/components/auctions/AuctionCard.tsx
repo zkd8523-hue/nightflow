@@ -5,10 +5,10 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Auction } from "@/types/database";
-import { formatNumber, formatTime, formatCountdown, formatCountdownLong, formatEntryTimeShort, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
+import { formatNumber, formatTime, formatCountdown, formatCountdownLong, categorizeLiquor } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
-import { URGENCY_STYLES, URGENCY_LABELS } from "@/lib/constants/timer-urgency";
+import { URGENCY_STYLES } from "@/lib/constants/timer-urgency";
 import { Gavel, Zap, BadgeCheck, Flame } from "lucide-react";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
@@ -48,12 +48,6 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
       ? `${auction.bidder_count || auction.bid_count}명 입찰 중`
       : null);
 
-  // 입장시간 텍스트
-  const hasEntryInfo = !isCompleted && !isExpired;
-  const entryText = hasEntryInfo
-    ? formatEntryTimeShort(auction.entry_time, auction.event_date)
-    : null;
-
   return (
     <div>
       <Link href={`/auctions/${auction.id}`}>
@@ -64,11 +58,6 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
               <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                 <FavoriteButton clubId={club.id} />
               </div>
-            )}
-            {entryText && (
-              <span className="text-[11px] font-medium whitespace-nowrap text-blue-400/90">
-                {entryText} 입장
-              </span>
             )}
           </div>
 
@@ -118,27 +107,22 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 </div>
                 <div className="flex items-center mt-0.5 overflow-hidden">
                   {(() => {
-                    const filtered = (auction.includes || []).filter(item => item !== "기본 안주");
-                    const sorted = sortByLiquorFirst(filtered);
-                    const { liquor } = categorizeLiquor(filtered);
-                    const maxShow = 2;
-                    const visible = sorted.slice(0, maxShow);
-                    const remaining = sorted.length - maxShow;
+                    const all = auction.includes || [];
+                    const { liquor } = categorizeLiquor(all);
+                    const liquorOnly = all.filter(item => liquor.includes(item));
+                    const hasExtras = all.length > liquorOnly.length;
                     return (
                       <span className="text-[10px] truncate text-neutral-500">
-                        {visible.map((item, i) => {
-                          const isLiquor = liquor.includes(item);
-                          return (
-                            <span key={item}>
-                              {i > 0 && <span className="text-neutral-600 mx-1">&middot;</span>}
-                              <span className={isLiquor ? "text-amber-400/90 font-medium" : "text-neutral-500"}>
-                                {item}
-                              </span>
+                        {liquorOnly.map((item, i) => (
+                          <span key={item}>
+                            {i > 0 && <span className="text-neutral-600 mx-1">&middot;</span>}
+                            <span className="text-amber-400/90 font-medium">
+                              {item.replace(/병$/, "")}
                             </span>
-                          );
-                        })}
-                        {remaining > 0 && (
-                          <span className="text-neutral-600 ml-1">+{remaining}</span>
+                          </span>
+                        ))}
+                        {hasExtras && (
+                          <span className="text-neutral-600 ml-1">+α</span>
                         )}
                       </span>
                     );
@@ -217,6 +201,9 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
               )}
             </div>
             <div className="flex flex-col items-end gap-1">
+              {!isInstant && (auction.view_count ?? 0) > 0 && (
+                <span className="text-[10px] text-neutral-500 font-medium">조회 {auction.view_count}</span>
+              )}
               {socialProof && (
                 <span className="text-[10px] text-amber-400/60 font-medium">{socialProof}</span>
               )}
