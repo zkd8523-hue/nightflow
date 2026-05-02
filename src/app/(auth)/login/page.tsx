@@ -42,13 +42,13 @@ function LoginContent() {
 
   const supabase = createClient();
 
-  // 💡 [캐시 초기화] 페이지 진입 시 인증 에러가 있다면 잔여 캐시 강제 삭제
+  // 💡 [캐시 초기화] 인증 에러가 있을 때만 잔여 세션 정리 (정상 진입 시에는 건드리지 않음)
   useEffect(() => {
-    if (authError || redirectPath !== "/") {
+    if (authError) {
       supabase.auth.signOut().catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authError, redirectPath]);
+  }, [authError]);
 
   const handleKakaoLogin = async (customRedirect?: string) => {
     trackEvent('login_click', { method: 'kakao' });
