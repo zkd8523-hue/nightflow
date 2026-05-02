@@ -32,7 +32,8 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
   const [myPuzzleIds, setMyPuzzleIds] = useState<Set<string>>(new Set());
   const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
-  const [puzzleTab, setPuzzleTab] = useState<"all" | "recruiting">("all");
+  const [toggleOn, setToggleOn] = useState(false);
+  const isMd = userRole === "md";
 
   useEffect(() => {
     (async () => {
@@ -50,20 +51,25 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
     })();
   }, []);
 
-  const filteredPuzzles = puzzleTab === "recruiting"
+  // 유저: 토글 ON 시 파티 모집 깃발만 필터
+  // MD: 필터 없음 (정렬은 그룹별로 적용)
+  const filteredPuzzles = !isMd && toggleOn
     ? puzzles.filter(p => p.is_recruiting_party && p.current_count < p.target_count)
     : puzzles;
 
+  const getBudget = (p: Puzzle) =>
+    p.total_budget ?? p.budget_per_person * p.target_count;
+
   const toggleButton = (
     <button
-      onClick={() => setPuzzleTab(puzzleTab === "recruiting" ? "all" : "recruiting")}
+      onClick={() => setToggleOn((v) => !v)}
       className={`px-3 py-1 rounded-full text-[12px] font-bold transition-colors flex-shrink-0 ${
-        puzzleTab === "recruiting"
+        toggleOn
           ? "bg-white text-black"
           : "bg-neutral-800 text-neutral-400"
       }`}
     >
-      파티
+      {isMd ? "예산순" : "파티"}
     </button>
   );
 
@@ -75,10 +81,10 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
           <div className="absolute top-0 right-0">{toggleButton}</div>
           <div className="space-y-2 text-center">
             <p className="text-[15px] font-bold text-neutral-300">
-              {puzzleTab === "recruiting" ? "모집 중인 깃발이 없어요" : "아직 꽂혀 있는 깃발이 없어요"}
+              {!isMd && toggleOn ? "모집 중인 깃발이 없어요" : "아직 꽂혀 있는 깃발이 없어요"}
             </p>
             <p className="text-[12px] text-neutral-500 leading-relaxed">
-              {puzzleTab === "recruiting"
+              {!isMd && toggleOn
                 ? "파티원을 모집 중인 깃발이 아직 없어요"
                 : "깃발을 꽂으면 MD가 몰려와\n클럽·테이블 조건을 제안해요"}
             </p>
@@ -95,7 +101,10 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
             }, {} as Record<string, Puzzle[]>)
           )
             .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
-            .map(([date, items], groupIdx) => {
+            .map(([date, rawItems], groupIdx) => {
+              const items = isMd && toggleOn
+                ? [...rawItems].sort((a, b) => getBudget(b) - getBudget(a))
+                : rawItems;
               const d = new Date(date + "T00:00:00");
               const m = d.getMonth() + 1;
               const day = d.getDate();
