@@ -21,10 +21,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const [auctionsRes, clubsRes] = await Promise.all([
       supabase
         .from("auctions")
-        .select("id, updated_at")
-        .in("status", ["active", "scheduled"])
+        .select("id, updated_at, status")
+        .in("status", ["active", "scheduled", "won", "contacted", "confirmed"])
         .order("updated_at", { ascending: false })
-        .limit(500),
+        .limit(1000),
       supabase
         .from("clubs")
         .select("id, updated_at")
@@ -32,12 +32,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .limit(200),
     ]);
 
-    const auctionRoutes: MetadataRoute.Sitemap = (auctionsRes.data ?? []).map((a) => ({
-      url: `${BASE_URL}/auctions/${a.id}`,
-      lastModified: a.updated_at ? new Date(a.updated_at) : now,
-      changeFrequency: "hourly" as const,
-      priority: 0.8,
-    }));
+    const auctionRoutes: MetadataRoute.Sitemap = (auctionsRes.data ?? []).map((a) => {
+      const isLive = a.status === "active" || a.status === "scheduled";
+      return {
+        url: `${BASE_URL}/auctions/${a.id}`,
+        lastModified: a.updated_at ? new Date(a.updated_at) : now,
+        changeFrequency: (isLive ? "hourly" : "monthly") as
+          | "hourly"
+          | "monthly",
+        priority: isLive ? 0.8 : 0.6,
+      };
+    });
 
     const clubRoutes: MetadataRoute.Sitemap = (clubsRes.data ?? []).map((c) => ({
       url: `${BASE_URL}/clubs/${c.id}`,
