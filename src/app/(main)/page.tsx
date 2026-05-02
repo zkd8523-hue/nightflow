@@ -35,6 +35,7 @@ export default async function HomePage() {
     .from("puzzles")
     .select("*")
     .eq("status", "open")
+    .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(50);
 
