@@ -110,11 +110,12 @@ export function HomeContent({
   const [showGuide, setShowGuide] = useState(false);
 
   const instantEnabled = isInstantEnabled();
+  const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
   const normalizeTab = (t: string | null): "today" | "advance" | "puzzle" => {
     if (t === "today" && instantEnabled) return "today";
     if (t === "advance") return "advance";
     if (t === "puzzle") return "puzzle";
-    return "puzzle";
+    return advanceCount > 0 ? "advance" : "puzzle";
   };
 
   // URL에서 탭 상태 읽어오기 (instant off 시 today → puzzle)
