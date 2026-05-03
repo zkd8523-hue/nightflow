@@ -685,6 +685,14 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           </Button>
         )}
 
+        {/* 결제 안내 */}
+        {!isInstant && isActive && (
+          <p className="text-[11px] text-neutral-500 text-center mt-3 leading-relaxed">
+            🔒 입찰만으로는 결제되지 않아요.<br />
+            낙찰 후 MD에게 직접 결제합니다.
+          </p>
+        )}
+
 
         {/* 게시글 신고 */}
         {user && !isMdOwner && (

@@ -25,9 +25,11 @@ interface AuctionListProps {
   initialTab?: "today" | "advance" | "puzzle";
   onTabChange?: (tab: "today" | "advance" | "puzzle") => void;
   onShowGuide?: () => void;
+  tabPromises?: Record<"today" | "advance" | "puzzle", string>;
+  guideSlot?: React.ReactNode;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, initialTab, onTabChange, onShowGuide }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot }: AuctionListProps) {
   const [areaExpanded, setAreaExpanded] = useState(false);
   const handleAreaSelect = (area: string | null) => {
     onAreaChange?.(area);
@@ -158,6 +160,19 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           </button>
         )}
       </div>
+
+      {tabPromises && tabPromises[tab] && (
+        <div className="relative rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-red-500/10 border border-amber-500/30 px-4 pt-5 pb-3">
+          <span className="absolute -top-2.5 left-3 text-[10px] font-black bg-amber-500 text-black px-2 py-0.5 rounded-full">
+            Tip
+          </span>
+          <p className="text-[14px] text-white font-bold leading-snug whitespace-pre-line">
+            {tabPromises[tab]}
+          </p>
+        </div>
+      )}
+
+      {guideSlot}
 
       {/* 지역 필터 — 기본 접힘, 탭하면 가로 펼침 */}
       {onAreaChange && (

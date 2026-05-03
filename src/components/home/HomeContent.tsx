@@ -83,7 +83,7 @@ const PUZZLE_ONBOARDING_STEPS = [
 const TAB_PROMISES = {
   today: "지금 비어있는 자리, 한눈에",
   advance: "주말되면 자리 없다구요~\n지금 바로 특가 입찰에 도전!",
-  puzzle: "DM으로 예약하는 시대는 끝!\n예산만 등록하면, MD들이 먼저 오퍼를 보내와요.",
+  puzzle: "DM 예약 시대는 끝!\n예산만 등록하면, MD들이 먼저 오퍼를 보내와요.",
 } as const;
 
 interface HomeContentProps {
@@ -276,69 +276,62 @@ export function HomeContent({
       <div className="space-y-4">
 
 
-        <AuctionList
-          activeAuctions={auctions.active}
-          puzzles={puzzles}
-          puzzleOfferCounts={puzzleOfferCounts}
-          selectedArea={selectedArea}
-          onAreaChange={setSelectedArea}
-          userBidMap={userBidMap}
-          userInterestedSet={userInterestedSet}
-          userRole={user?.role as "user" | "md" | "admin" | undefined}
-          initialTab={currentTab}
-          onTabChange={handleTabChange}
-          onShowGuide={() => setShowGuide(true)}
-        />
-
-        {/* Onboarding Guide - 첫 방문 시에만 표시, 닫으면 ? 버튼 */}
-        {showGuide ? (
-          <section className="px-1">
-            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
-              <div className="flex items-start justify-between gap-3 mb-3">
-                <h2 className="text-[15px] font-black text-white flex items-start gap-2 leading-snug">
-                  <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse mt-1.5 shrink-0" />
-                  <span className="whitespace-pre-line">{TAB_PROMISES[currentTab]}</span>
-                </h2>
+        {(() => {
+          const steps = currentTab === "puzzle"
+            ? PUZZLE_ONBOARDING_STEPS
+            : currentTab === "advance"
+            ? EARLYBIRD_ONBOARDING_STEPS
+            : ONBOARDING_STEPS;
+          const guideCard = showGuide ? (
+            <section className="px-1">
+              <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
                 <button
                   onClick={dismissGuide}
-                  className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors shrink-0"
+                  className="absolute top-3 right-3 w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors z-10"
                 >
                   <X className="w-4 h-4" />
                 </button>
-              </div>
-
-              {(() => {
-                const steps = currentTab === "puzzle"
-                  ? PUZZLE_ONBOARDING_STEPS
-                  : currentTab === "advance"
-                  ? EARLYBIRD_ONBOARDING_STEPS
-                  : ONBOARDING_STEPS;
-                return (
-              <div className="flex flex-col gap-2">
-                {steps.map((step, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-neutral-900/50 border border-neutral-800/50 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
-                  >
-                    <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
-                      {step.icon}
+                <div className="flex flex-col gap-2">
+                  {steps.map((step, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
+                    >
+                      <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
+                        {step.icon}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">
+                          {step.title}
+                        </h3>
+                        <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep">
+                          {step.desc}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">
-                        {step.title}
-                      </h3>
-                      <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep">
-                        {step.desc}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-                );
-              })()}
-            </div>
-          </section>
-        ) : null}
+            </section>
+          ) : null;
+          return (
+            <AuctionList
+              activeAuctions={auctions.active}
+              puzzles={puzzles}
+              puzzleOfferCounts={puzzleOfferCounts}
+              selectedArea={selectedArea}
+              onAreaChange={setSelectedArea}
+              userBidMap={userBidMap}
+              userInterestedSet={userInterestedSet}
+              userRole={user?.role as "user" | "md" | "admin" | undefined}
+              initialTab={currentTab}
+              onTabChange={handleTabChange}
+              onShowGuide={() => setShowGuide(v => !v)}
+              tabPromises={TAB_PROMISES}
+              guideSlot={guideCard}
+            />
+          );
+        })()}
 
 
         {!user && !isLoading && auctions.active.length > 0 && (
