@@ -83,7 +83,7 @@ const PUZZLE_ONBOARDING_STEPS = [
 const TAB_PROMISES = {
   today: "지금 비어있는 자리, 한눈에",
   advance: "주말되면 자리 없다구요~\n지금 바로 특가 입찰에 도전!",
-  puzzle: "DM으로 예약하는 시대는 끝.\n예산만 등록하면, MD들이 먼저 오퍼를 보내와요!",
+  puzzle: "DM으로 예약하는 시대는 끝!\n예산만 등록하면, MD들이 먼저 오퍼를 보내와요.",
 } as const;
 
 interface HomeContentProps {
@@ -276,6 +276,20 @@ export function HomeContent({
       <div className="space-y-4">
 
 
+        <AuctionList
+          activeAuctions={auctions.active}
+          puzzles={puzzles}
+          puzzleOfferCounts={puzzleOfferCounts}
+          selectedArea={selectedArea}
+          onAreaChange={setSelectedArea}
+          userBidMap={userBidMap}
+          userInterestedSet={userInterestedSet}
+          userRole={user?.role as "user" | "md" | "admin" | undefined}
+          initialTab={currentTab}
+          onTabChange={handleTabChange}
+          onShowGuide={() => setShowGuide(true)}
+        />
+
         {/* Onboarding Guide - 첫 방문 시에만 표시, 닫으면 ? 버튼 */}
         {showGuide ? (
           <section className="px-1">
@@ -325,20 +339,6 @@ export function HomeContent({
             </div>
           </section>
         ) : null}
-
-        <AuctionList
-          activeAuctions={auctions.active}
-          puzzles={puzzles}
-          puzzleOfferCounts={puzzleOfferCounts}
-          selectedArea={selectedArea}
-          onAreaChange={setSelectedArea}
-          userBidMap={userBidMap}
-          userInterestedSet={userInterestedSet}
-          userRole={user?.role as "user" | "md" | "admin" | undefined}
-          initialTab={currentTab}
-          onTabChange={handleTabChange}
-          onShowGuide={() => setShowGuide(true)}
-        />
 
 
         {!user && !isLoading && auctions.active.length > 0 && (
