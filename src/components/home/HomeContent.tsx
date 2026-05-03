@@ -82,8 +82,8 @@ const PUZZLE_ONBOARDING_STEPS = [
 
 const TAB_PROMISES = {
   today: "지금 비어있는 자리, 한눈에",
-  advance: "일찍 일어난 당신,\n특가 낙찰에 도전해봐요!",
-  puzzle: "예산만 등록하면, MD들이 스페셜 오퍼를 보내와요.",
+  advance: "주말되면 자리 없다구요~\n지금 바로 특가 입찰에 도전!",
+  puzzle: "DM으로 예약하는 시대는 끝.\n예산만 등록하면, MD들이 먼저 오퍼를 보내와요!",
 } as const;
 
 interface HomeContentProps {
