@@ -94,11 +94,11 @@ export function MDPuzzleOffers({ mdId }: { mdId: string }) {
   useEffect(() => {
     const fetchOffers = async () => {
       const supabase = createClient();
-      const { data, error } = await supabase
+      // puzzles nested select 제거 — RLS 충돌 회피, 별도 조회 후 매핑
+      const { data: rawOffers, error } = await supabase
         .from("puzzle_offers")
         .select(`
-          id, status, table_type, proposed_price, includes, comment, created_at,
-          puzzle:puzzles(id, area, event_date, notes),
+          id, status, table_type, proposed_price, includes, comment, created_at, puzzle_id,
           club:clubs(name)
         `)
         .eq("md_id", mdId)
@@ -106,9 +106,50 @@ export function MDPuzzleOffers({ mdId }: { mdId: string }) {
         .limit(20);
 
       if (error) {
-        console.error("[MDPuzzleOffers] fetch error:", error);
+        console.error("[MDPuzzleOffers] offers fetch error:", error);
       }
-      setOffers((data as unknown as PuzzleOfferRow[]) || []);
+
+      const offerRows = (rawOffers as unknown as Array<{
+        id: string;
+        status: string;
+        table_type: string | null;
+        proposed_price: number;
+        includes: string[] | null;
+        comment: string | null;
+        created_at: string;
+        puzzle_id: string;
+        club: { name: string | null } | null;
+      }>) || [];
+
+      // puzzle 정보 별도 조회
+      const puzzleIds = [...new Set(offerRows.map((o) => o.puzzle_id))];
+      const puzzleMap = new Map<string, { id: string; area: string | null; event_date: string | null; notes: string | null }>();
+      if (puzzleIds.length > 0) {
+        const { data: puzzles, error: pErr } = await supabase
+          .from("puzzles")
+          .select("id, area, event_date, notes")
+          .in("id", puzzleIds);
+        if (pErr) {
+          console.error("[MDPuzzleOffers] puzzles fetch error:", pErr);
+        }
+        for (const p of puzzles || []) {
+          puzzleMap.set(p.id, p);
+        }
+      }
+
+      const merged: PuzzleOfferRow[] = offerRows.map((o) => ({
+        id: o.id,
+        status: o.status,
+        table_type: o.table_type,
+        proposed_price: o.proposed_price,
+        includes: o.includes,
+        comment: o.comment,
+        created_at: o.created_at,
+        puzzle: puzzleMap.get(o.puzzle_id) || null,
+        club: o.club,
+      }));
+
+      setOffers(merged);
       setLoading(false);
     };
 
