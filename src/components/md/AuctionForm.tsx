@@ -886,21 +886,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             최소 수익을 미리 확정해보세요!
                         </p>
 
-                        {/* MD의 한마디 */}
-                        <div className="space-y-1">
-                            <div className="relative">
-                                <Input
-                                    type="text"
-                                    maxLength={15}
-                                    placeholder="한마디 남기기 (선택 · 최대 15자)"
-                                    {...register("md_comment")}
-                                    className="bg-neutral-900 border-neutral-800 h-10 text-white text-[13px] pr-10"
-                                />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 pointer-events-none">
-                                    {watch("md_comment")?.length || 0}/15
-                                </span>
-                            </div>
-                        </div>
                     </div>
 
                 </div>
@@ -1078,6 +1063,26 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         {errors.duration_minutes && <p className="text-red-500 text-[11px] mt-2">{errors.duration_minutes?.message?.toString()}</p>}
                         {errors.auction_end_at && <p className="text-red-500 text-[11px] mt-2">{errors.auction_end_at?.message?.toString()}</p>}
                     </div>
+                </div>
+            </section>
+
+            {/* MD의 한마디 */}
+            <section className="space-y-2">
+                <div className="flex items-center gap-2 text-white font-bold">
+                    <span>한마디</span>
+                    <span className="text-[11px] text-neutral-500 font-normal">경매 카드에 표시됩니다 (필수x)</span>
+                </div>
+                <div className="relative">
+                    <Input
+                        type="text"
+                        maxLength={15}
+                        placeholder="(예) 오늘 서비스 넉넉해요! 🔥"
+                        {...register("md_comment")}
+                        className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] pr-10"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 pointer-events-none">
+                        {watch("md_comment")?.length || 0}/15
+                    </span>
                 </div>
             </section>
 
