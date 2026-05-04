@@ -98,7 +98,8 @@ export function PuzzleDetailClient({
     }
   }, [puzzle]);
 
-  const isLeader = currentUserId === puzzle.leader_id;
+  const isAdmin = userRole === "admin";
+  const isLeader = currentUserId === puzzle.leader_id || isAdmin;
   const isMember = members.some((m) => m.user_id === currentUserId);
   const isMd = userRole === "md";
   const isRecruitingParty = puzzle.is_recruiting_party;

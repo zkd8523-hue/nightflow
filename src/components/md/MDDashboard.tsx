@@ -448,8 +448,8 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                 })
                             ) : (
                                 <div className="py-16 text-center space-y-4 bg-[#1C1C1E]/30 rounded-3xl border border-dashed border-neutral-800/50">
-                                    <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto">
-                                        <PuzzleIcon className="w-8 h-8 text-neutral-700" />
+                                    <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto text-3xl">
+                                        📨
                                     </div>
                                     <p className="text-neutral-500 font-medium text-sm">보낸 제안이 없습니다</p>
                                     <p className="text-neutral-600 text-xs px-10 leading-relaxed">
@@ -457,7 +457,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                     </p>
                                     <Link href="/?tab=puzzle">
                                         <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">
-                                            <PuzzleIcon className="w-4 h-4 mr-1" />
+                                            <span className="mr-1">⛳</span>
                                             깃발 둘러보기
                                         </Button>
                                     </Link>
