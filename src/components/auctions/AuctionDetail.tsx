@@ -123,13 +123,13 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
     supabase
       .from("auction_views")
-      .upsert(payload, {
-        onConflict: user ? "auction_id,user_id" : "auction_id,client_id",
-        ignoreDuplicates: true,
-      })
+      .insert(payload)
       .then(({ error }) => {
-        if (error) console.warn("[AuctionDetail] View count error:", error.message);
-        else localStorage.setItem(viewKey, String(Date.now()));
+        if (error && error.code !== "23505") {
+          console.warn("[AuctionDetail] View count error:", error.message);
+        } else {
+          localStorage.setItem(viewKey, String(Date.now()));
+        }
       });
   }, [auction.id, user?.id]);
 
