@@ -23,6 +23,16 @@ type Step = "agree" | "phone" | "otp";
 
 const RESEND_COOLDOWN_SEC = 60;
 
+const isTestLoginEnabled =
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_ENABLE_TEST_LOGIN === "true";
+
+const TEST_PHONE_BY_EMAIL: Record<string, string> = {
+  "test-user@nightflow.test": "01099990001",
+  "test-md@nightflow.test": "01099990002",
+  "test-admin@nightflow.test": "01099990003",
+};
+
 const formatPhoneDisplay = (raw: string) => {
   const digits = raw.replace(/\D/g, "").slice(0, 11);
   if (digits.length < 4) return digits;
@@ -97,6 +107,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             return;
           }
           setAuthUser(user);
+          // 테스트 모드: 프리셋 계정이면 약관/전화번호 자동 채움
+          if (isTestLoginEnabled && user.email && TEST_PHONE_BY_EMAIL[user.email]) {
+            setAgreeAge(true);
+            setAgreeTerms(true);
+            setAgreePrivacy(true);
+            setAgreeMarketing(true);
+            setPhoneInput(TEST_PHONE_BY_EMAIL[user.email]);
+          }
           return;
         }
         if (attempt < 2) await new Promise(r => setTimeout(r, 500));
@@ -150,7 +168,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       }
       toast.success("인증번호를 보냈어요");
       setStep("otp");
-      setOtpCode("");
+      setOtpCode(isTestLoginEnabled ? "000000" : "");
       setResendIn(RESEND_COOLDOWN_SEC);
     } catch (err) {
       logger.error("send-otp failed:", err);

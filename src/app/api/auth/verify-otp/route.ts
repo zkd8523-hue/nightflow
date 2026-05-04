@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import {
+  isTestEnv,
   isValidKoreanPhone,
   normalizePhone,
   verifyOtpCode,
@@ -31,8 +32,19 @@ export async function POST(req: NextRequest) {
 
   const phone = normalizePhone(rawPhone);
 
-  // DEV 모드 OTP 우회: 코드 000000이면 통과 (DB 트리거 위해 verified_at 기록)
-  if (process.env.NODE_ENV === "development" && code === "000000") {
+  // 테스트 모드 OTP 우회: 코드 000000이면 통과 (DB 트리거 위해 verified_at 기록)
+  if (isTestEnv() && code === "000000") {
+    // md_apply 컨텍스트에서는 세션 user_id를 함께 저장해야 apply API의 검증을 통과함
+    let bypassUserId: string | null = null;
+    if (purpose === "md_apply") {
+      const serverSupabase = await createServerSupabase();
+      const { data: { user }, error: authError } = await serverSupabase.auth.getUser();
+      if (authError || !user) {
+        return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+      }
+      bypassUserId = user.id;
+    }
+
     const adminSupabase = createAdminClient();
     // 가장 최근 발송 기록 verified 처리, 없으면 새로 insert
     const { data: existing } = await adminSupabase
@@ -46,7 +58,10 @@ export async function POST(req: NextRequest) {
     if (existing) {
       await adminSupabase
         .from("phone_verifications")
-        .update({ verified_at: new Date().toISOString() })
+        .update({
+          verified_at: new Date().toISOString(),
+          ...(bypassUserId ? { user_id: bypassUserId } : {}),
+        })
         .eq("id", existing.id);
     } else {
       await adminSupabase.from("phone_verifications").insert({
@@ -54,6 +69,7 @@ export async function POST(req: NextRequest) {
         code_hash: "dev_bypass",
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
         verified_at: new Date().toISOString(),
+        ...(bypassUserId ? { user_id: bypassUserId } : {}),
       });
     }
     return NextResponse.json({ ok: true, phone });

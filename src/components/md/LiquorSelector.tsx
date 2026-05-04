@@ -121,8 +121,8 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
           ))}
         </div>
 
-        {/* 빠른 선택 (브랜드 미지정) — 하드, 샴페인 */}
-        {(activeCategory === "hard" || activeCategory === "champagne") && (
+        {/* 빠른 선택 (브랜드 미지정) — 하드만 */}
+        {activeCategory === "hard" && (
           <div className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-3 space-y-2">
             <p className="text-neutral-400 text-[10px] font-bold">브랜드 미지정 빠른 선택</p>
             <div className="flex gap-2">
@@ -263,7 +263,7 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
                   handleCustomAdd();
                 }
               }}
-              placeholder="예: 아이스버킷, 시바스리갈..."
+              placeholder="예: 돔페, 아르망, 크리스탈..."
               className="bg-neutral-900 border-neutral-800 h-9 text-white text-[12px] flex-1"
             />
             <select

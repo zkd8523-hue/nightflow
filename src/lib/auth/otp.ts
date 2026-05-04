@@ -27,7 +27,8 @@ export function isValidKoreanPhone(phone: string): boolean {
 export function isTestEnv(): boolean {
   return (
     process.env.NODE_ENV === "development" ||
-    process.env.VERCEL_ENV === "preview"
+    process.env.VERCEL_ENV === "preview" ||
+    process.env.NEXT_PUBLIC_ENABLE_TEST_LOGIN === "true"
   );
 }
 

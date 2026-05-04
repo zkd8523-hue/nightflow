@@ -247,6 +247,7 @@ export interface Auction {
   entry_time: string | null;  // HH:mm format, null = 즉시 입장
   includes: string[];
   notes: string | null;
+  md_comment: string | null;
 
   // 가격
   original_price: number;

@@ -7,7 +7,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction, PriceRecommendation } from "@/types/database";
@@ -37,7 +36,6 @@ const formSchema = z.object({
     club_id: z.string().min(1, "클럽을 선택해주세요."),
     table_info: z.string().min(1, "테이블 정보를 입력해주세요."),
     start_price: z.number().min(1, "가격은 0원보다 커야 합니다."),
-    buy_now_price: z.number().optional(),
     entry_time: z.string().nullable(),
     event_date: z.string(),
     auction_start_at: z.string(),
@@ -46,6 +44,7 @@ const formSchema = z.object({
     // 얼리버드에서는 auction_end_at을 직접 지정. instant에서는 duration_minutes 사용.
     auction_end_at: z.string().optional(),
     includes: z.array(z.string()).min(1, "최소 한 개의 포함 내역을 선택해주세요."),
+    md_comment: z.string().max(15, "최대 15자").optional(),
 }).superRefine((data, ctx) => {
     // 얼리버드 (listing_type='auction'): 이벤트일 윈도우 + 마감 시각 규칙 강제
     if (data.listing_type === "auction") {
@@ -71,15 +70,6 @@ const formSchema = z.object({
                 path: ["auction_end_at"],
             });
         }
-    }
-
-    // 즉시낙찰가(BIN)가 시작가보다 낮은지 체크
-    if (data.listing_type === "auction" && data.buy_now_price && data.buy_now_price < data.start_price) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: "즉시낙찰가는 시작가보다 낮을 수 없습니다.",
-            path: ["buy_now_price"],
-        });
     }
 
     // 오늘특가: 시작 일시가 현재보다 과거인지 체크 — 즉시 시작이면 건너뜀
@@ -126,13 +116,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     });
     const isInstantMode = auctionMode === "today";
     const [startPriceDisplay, setStartPriceDisplay] = useState((initialData?.start_price || prefill?.start_price)?.toLocaleString() || "");
-    const [binPriceDisplay, setBinPriceDisplay] = useState(
-        (initialData?.buy_now_price || prefill?.buy_now_price)?.toLocaleString() || ""
-    );
-    const [binEnabled, setBinEnabled] = useState(
-        !!(initialData?.buy_now_price && initialData.listing_type === 'auction') ||
-        !!(prefill?.buy_now_price && prefill.listing_type === 'auction')
-    );
+    const [startPriceCommitted, setStartPriceCommitted] = useState(!!(initialData?.start_price || prefill?.start_price));
     const [instantEntry, setInstantEntry] = useState(
         initialData ? !initialData.entry_time
         : prefill ? !prefill.entry_time
@@ -175,17 +159,13 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             includes: initialData?.includes || prefill?.includes || ["기본 안주"],
             event_date: initialEventDate,
             start_price: initialData?.start_price || prefill?.start_price || 0,
-            buy_now_price: (initialData?.buy_now_price && initialData.listing_type === 'auction')
-                ? initialData.buy_now_price
-                : (prefill?.buy_now_price && prefill.listing_type === 'auction')
-                    ? prefill.buy_now_price
-                    : undefined,
             entry_time: initialData
                 ? (initialData.entry_time ?? null)
                 : (prefill?.entry_time ?? "22:00"),
             auction_start_at: initialData?.auction_start_at ? dayjs(initialData.auction_start_at).format("YYYY-MM-DDTHH:mm") : dayjs().format("YYYY-MM-DDTHH:mm"),
             auction_end_at: initialData?.auction_end_at || undefined,
             instant_start: true,
+            md_comment: initialData?.md_comment || prefill?.md_comment || "",
         }
     });
 
@@ -442,15 +422,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 bid_increment: getBidIncrement(values.start_price),
             };
 
-            // instant 모드: buy_now_price = start_price (서버에서도 강제하지만 클라이언트도 설정)
-            if (isInstantMode) {
-                auctionData.buy_now_price = values.start_price;
-            } else if (binEnabled && values.buy_now_price && values.buy_now_price > 0) {
-                // 얼리버드 경매: MD가 설정한 BIN 가격
-                auctionData.buy_now_price = values.buy_now_price;
-            } else {
-                auctionData.buy_now_price = null;
-            }
+            auctionData.buy_now_price = isInstantMode ? values.start_price : null;
 
             // 썸네일 처리: 있으면 저장, 수정 모드에서 제거했으면 명시적 null
             if (thumbnailUrl) {
@@ -664,7 +636,83 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 {errors.club_id && <p className="text-red-500 text-xs">{errors.club_id?.message?.toString()}</p>}
             </section>
 
-            {/* 2. 테이블 위치 */}
+
+            {/* 2. 입장 일시 */}
+            <section className="space-y-4">
+                <div className="flex items-center gap-2 text-white font-bold mb-2">
+                    <Calendar className="w-4 h-4 text-green-500" />
+                    <span>입장 일시</span>
+                </div>
+                <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-0.5">
+                            </div>
+                            {auctionMode === "today" && (
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={instantEntry}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setInstantEntry(checked);
+                                        setValue("entry_time", checked ? null : "22:00");
+                                    }}
+                                    className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
+                                />
+                                <span className="text-[10px] text-white font-bold">즉시 입장</span>
+                            </label>
+                            )}
+                        </div>
+                        {instantEntry ? (
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
+                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "예약 후 즉시 입장 가능" : "낙찰 후 즉시 입장 가능"}</span>
+                            </div>
+                        ) : auctionMode === "today" ? (
+                            <DateTimeSheet
+                                label="입장 일시 선택"
+                                mode="date-2"
+                                dateOptions={[
+                                    { label: `${dayjs(getClubEventDate()).format("M/D (ddd)")} 저녁`, value: getClubEventDate(), minTime: "18:00", maxTime: "23:59", defaultTime: "22:00" },
+                                    { label: `${dayjs(getClubEventDate()).add(1, "day").format("M/D (ddd)")} 새벽`, value: dayjs(getClubEventDate()).add(1, "day").format("YYYY-MM-DD"), minTime: "00:00", maxTime: "05:59", defaultTime: "01:00" },
+                                ]}
+                                value={`${watch("event_date")}T${watch("entry_time") || "22:00"}`}
+                                onChange={(val) => {
+                                    const picked = dayjs(val);
+                                    setValue("event_date", picked.format("YYYY-MM-DD"));
+                                    setValue("entry_time", picked.format("HH:mm"));
+                                    clearErrors("entry_time");
+                                }}
+                            />
+                        ) : (
+                            <>
+                                <DateTimeSheet
+                                    label="입장 일시 선택"
+                                    value={(() => {
+                                        const t = watch("entry_time") || "22:00";
+                                        const d = watch("event_date");
+                                        return dayjs(`${d}T${t}`).format("YYYY-MM-DDTHH:mm");
+                                    })()}
+                                    min={dayjs().add(2, "day").set("hour", 0).set("minute", 0).format("YYYY-MM-DDTHH:mm")}
+                                    max={dayjs().add(EARLYBIRD_MAX_EVENT_DAYS_AHEAD, "day").set("hour", 23).set("minute", 59).format("YYYY-MM-DDTHH:mm")}
+                                    onChange={(val) => {
+                                        const picked = dayjs(val);
+                                        const pickedTime = picked.format("HH:mm");
+                                        const eventDate = picked.hour() < 4
+                                            ? picked.subtract(1, "day").format("YYYY-MM-DD")
+                                            : picked.format("YYYY-MM-DD");
+                                        setValue("event_date", eventDate);
+                                        setValue("entry_time", pickedTime);
+                                        clearErrors("entry_time");
+                                    }}
+                                />
+                            </>
+                        )}
+                        {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date?.message?.toString()}</p>}
+                        {errors.entry_time && <p className="text-red-500 text-[11px]">{errors.entry_time?.message?.toString()}</p>}
+                </div>
+            </section>
+
+            {/* 3. 테이블 위치 */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4 text-green-500" />
@@ -761,6 +809,103 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 }}
             />
 
+            {/* Smart Pricing 추천 — 숨김 처리 */}
+
+            {/* 4. 가격 설정 */}
+            <section className="space-y-4">
+                <div className="flex items-center gap-2 text-white font-bold mb-2">
+                    <Wine className="w-4 h-4 text-amber-500" />
+                    <span>{isInstantMode ? "판매가" : "경매 시작가"}</span>
+                </div>
+                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
+                    <div className="space-y-3">
+                        {hasBids && (
+                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-2">
+                                <p className="text-[12px] text-amber-400 font-bold">🔒 {isInstantMode ? "예약이 있어 조건 변경 불가" : "입찰이 있어 경매 조건 변경 불가"}</p>
+                                <p className="text-[10px] text-amber-400/80 mt-1">{isInstantMode ? "이미 예약이 있어" : `이미 ${initialData.bid_count}회 입찰이 있어`} 가격, 주류, 테이블, 지속시간을 변경할 수 없습니다.</p>
+                            </div>
+                        )}
+                        <Input
+                            type="text"
+                            value={startPriceDisplay}
+                            disabled={!isTermsEditable}
+                            onChange={(e) => {
+                                const value = e.target.value.replace(/[^0-9]/g, "");
+                                const numValue = value === "" ? 0 : parseInt(value, 10);
+                                setValue("start_price", numValue);
+                                setStartPriceDisplay(value === "" ? "" : numValue.toLocaleString());
+                                setStartPriceCommitted(false);
+                            }}
+                            onBlur={() => setStartPriceCommitted(true)}
+                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setStartPriceCommitted(true); } }}
+                            placeholder="예: 650,000"
+                            className={`bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-green-500 ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        />
+                        <div className="flex gap-2">
+                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 500000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); setStartPriceCommitted(true); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+50만</Button>
+                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 100000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); setStartPriceCommitted(true); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+10만</Button>
+                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 50000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); setStartPriceCommitted(true); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+5만</Button>
+                        </div>
+
+                        {/* 가격 경고 */}
+                        {(() => {
+                            const ABSOLUTE_MIN = 50000; // 절대 최소가 5만원
+                            const hasSmartPricing = priceRec?.sufficient_data && priceRec?.suggested_start_price;
+                            const recommendedPrice = priceRec?.suggested_start_price || 0;
+                            const isTooLow = hasSmartPricing
+                                ? currentStartPrice > 0 && currentStartPrice < recommendedPrice * 0.7
+                                : currentStartPrice > 0 && currentStartPrice < ABSOLUTE_MIN;
+
+                            if (isInstantMode || !isTooLow || !startPriceCommitted) return null;
+
+                            return (
+                                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 space-y-1">
+                                    <p className="text-[12px] text-red-400 font-bold">⚠️ 시작가가 매우 낮습니다!</p>
+                                    {hasSmartPricing ? (
+                                        <>
+                                            <p className="text-[11px] text-red-400/80">• 추천 시작가: ₩{recommendedPrice.toLocaleString()}</p>
+                                            <p className="text-[11px] text-red-400/80">• 현재 입력: ₩{currentStartPrice.toLocaleString()} (추천가의 {Math.round(currentStartPrice / recommendedPrice * 100)}%)</p>
+                                            <p className="text-[11px] text-red-400/80">• 0을 빠뜨렸는지 확인해주세요</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <p className="text-[11px] text-red-400/80">• 권장 최소가: ₩{ABSOLUTE_MIN.toLocaleString()}</p>
+                                            <p className="text-[11px] text-red-400/80">• 현재 입력: ₩{currentStartPrice.toLocaleString()}</p>
+                                            <p className="text-[11px] text-red-400/80">• 0을 빠뜨렸는지 확인해주세요</p>
+                                        </>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
+                        {errors.start_price && currentStartPrice < 1 && <p className="text-red-500 text-[11px]">{errors.start_price?.message?.toString()}</p>}
+
+                        {/* 정식가 대비 넛지 — 항상 노출 */}
+                        <p className="text-[11px] text-neutral-500 leading-relaxed">
+                            💡 인스타 공식 주대의 <span className="text-amber-400 font-bold">80~90% 수준</span>으로 시작하면 입찰이 빠르게 붙어요.<br />
+                            최소 수익을 미리 확정해보세요!
+                        </p>
+
+                        {/* MD의 한마디 */}
+                        <div className="space-y-1">
+                            <div className="relative">
+                                <Input
+                                    type="text"
+                                    maxLength={15}
+                                    placeholder="한마디 남기기 (선택 · 최대 15자)"
+                                    {...register("md_comment")}
+                                    className="bg-neutral-900 border-neutral-800 h-10 text-white text-[13px] pr-10"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 pointer-events-none">
+                                    {watch("md_comment")?.length || 0}/15
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
             {/* 테이블 구성 */}
             <section className={`space-y-3 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="flex items-center gap-2 text-white font-bold mb-1">
@@ -827,225 +972,17 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 {errors.includes && <p className="text-red-500 text-[11px]">{errors.includes?.message?.toString()}</p>}
             </section>
 
-
-            {/* Smart Pricing 추천 — 숨김 처리 */}
-
-            {/* 4. 가격 설정 */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Wine className="w-4 h-4 text-amber-500" />
-                    <span>{isInstantMode ? "판매가" : "경매 시작가"}</span>
-                </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
-                    <div className="space-y-3">
-                        {hasBids && (
-                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-2">
-                                <p className="text-[12px] text-amber-400 font-bold">🔒 {isInstantMode ? "예약이 있어 조건 변경 불가" : "입찰이 있어 경매 조건 변경 불가"}</p>
-                                <p className="text-[10px] text-amber-400/80 mt-1">{isInstantMode ? "이미 예약이 있어" : `이미 ${initialData.bid_count}회 입찰이 있어`} 가격, 주류, 테이블, 지속시간을 변경할 수 없습니다.</p>
-                            </div>
-                        )}
-                        <Input
-                            type="text"
-                            value={startPriceDisplay}
-                            disabled={!isTermsEditable}
-                            onChange={(e) => {
-                                const value = e.target.value.replace(/[^0-9]/g, "");
-                                const numValue = value === "" ? 0 : parseInt(value, 10);
-                                setValue("start_price", numValue);
-                                setStartPriceDisplay(value === "" ? "" : numValue.toLocaleString());
-                            }}
-                            placeholder="예: 300,000"
-                            className={`bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-green-500 ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        />
-                        <div className="flex gap-2">
-                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 100000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+10만</Button>
-                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 50000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+5만</Button>
-                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 10000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+1만</Button>
-                        </div>
-
-                        {/* 가격 경고 */}
-                        {(() => {
-                            const ABSOLUTE_MIN = 50000; // 절대 최소가 5만원
-                            const hasSmartPricing = priceRec?.sufficient_data && priceRec?.suggested_start_price;
-                            const recommendedPrice = priceRec?.suggested_start_price || 0;
-                            const isTooLow = hasSmartPricing
-                                ? currentStartPrice > 0 && currentStartPrice < recommendedPrice * 0.7
-                                : currentStartPrice > 0 && currentStartPrice < ABSOLUTE_MIN;
-
-                            if (isInstantMode || !isTooLow) return null;
-
-                            return (
-                                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 space-y-1">
-                                    <p className="text-[12px] text-red-400 font-bold">⚠️ 시작가가 매우 낮습니다!</p>
-                                    {hasSmartPricing ? (
-                                        <>
-                                            <p className="text-[11px] text-red-400/80">• 추천 시작가: ₩{recommendedPrice.toLocaleString()}</p>
-                                            <p className="text-[11px] text-red-400/80">• 현재 입력: ₩{currentStartPrice.toLocaleString()} (추천가의 {Math.round(currentStartPrice / recommendedPrice * 100)}%)</p>
-                                            <p className="text-[11px] text-red-400/80">• 0을 빠뜨렸는지 확인해주세요</p>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <p className="text-[11px] text-red-400/80">• 권장 최소가: ₩{ABSOLUTE_MIN.toLocaleString()}</p>
-                                            <p className="text-[11px] text-red-400/80">• 현재 입력: ₩{currentStartPrice.toLocaleString()}</p>
-                                            <p className="text-[11px] text-red-400/80">• 0을 빠뜨렸는지 확인해주세요</p>
-                                        </>
-                                    )}
-                                </div>
-                            );
-                        })()}
-
-                        {errors.start_price && currentStartPrice < 1 && <p className="text-red-500 text-[11px]">{errors.start_price?.message?.toString()}</p>}
-                    </div>
-
-                    {/* 즉시낙찰가 (BIN) — 얼리버드 경매 전용 */}
-                    {!isInstantMode && (
-                        <div className="space-y-3 border-t border-neutral-800/50 pt-4">
-                            <div className="flex items-center justify-between">
-                                <Label className="text-neutral-400 text-[10px] font-bold uppercase">즉시낙찰가 (선택)</Label>
-                                <label className="flex items-center gap-1.5 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={binEnabled}
-                                        disabled={!isTermsEditable}
-                                        onChange={(e) => {
-                                            const checked = e.target.checked;
-                                            setBinEnabled(checked);
-                                            if (!checked) {
-                                                setValue("buy_now_price", undefined);
-                                                setBinPriceDisplay("");
-                                            } else {
-                                                // 자동 추천: 시작가의 2배
-                                                const suggested = currentStartPrice * 2;
-                                                if (suggested > 0) {
-                                                    setValue("buy_now_price", suggested);
-                                                    setBinPriceDisplay(suggested.toLocaleString());
-                                                }
-                                            }
-                                        }}
-                                        className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
-                                    />
-                                    <span className="text-[10px] text-white font-bold">사용</span>
-                                </label>
-                            </div>
-                            {binEnabled && (
-                                <>
-                                    <Input
-                                        type="text"
-                                        value={binPriceDisplay}
-                                        disabled={!isTermsEditable}
-                                        onChange={(e) => {
-                                            const value = e.target.value.replace(/[^0-9]/g, "");
-                                            const numValue = value === "" ? 0 : parseInt(value, 10);
-                                            setValue("buy_now_price", numValue);
-                                            setBinPriceDisplay(value === "" ? "" : numValue.toLocaleString());
-                                        }}
-                                        placeholder={`추천: ${(currentStartPrice * 2).toLocaleString()}원 (시작가의 2배)`}
-                                        className={`bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-green-500 ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    />
-                                    <p className="text-[10px] text-neutral-500 leading-relaxed">
-                                        이 가격에 입찰하면 경매가 즉시 종료되고, 해당 유저에게 낙찰됩니다.
-                                        {currentStartPrice > 0 && watch("buy_now_price") && watch("buy_now_price")! < currentStartPrice * 1.5 && (
-                                            <span className="text-amber-400 font-bold block mt-1">
-                                                ⚠️ 시작가의 1.5배 이상을 권장합니다 (최소 {(currentStartPrice * 1.5).toLocaleString()}원)
-                                            </span>
-                                        )}
-                                    </p>
-                                    {errors.buy_now_price && <p className="text-red-500 text-[11px] mt-1">{errors.buy_now_price?.message?.toString()}</p>}
-                                </>
-                            )}
-                        </div>
-                    )}
-
-                </div>
-            </section>
-
-            {/* 6. 일정 설정 */}
+            {/* 7. 경매 마감 */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 text-white font-bold mb-2">
                     <Calendar className="w-4 h-4 text-green-500" />
-                    <span>일정 설정</span>
+                    <span>경매 마감</span>
                 </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-6">
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex flex-col gap-0.5">
-                                <Label className="text-neutral-400 text-[10px] font-bold uppercase">입장 일시</Label>
-                                {auctionMode !== "today" && (
-                                    <span className="text-[9px] text-neutral-600">
-                                        오늘부터 {EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내 이벤트만 등록할 수 있어요
-                                    </span>
-                                )}
-                            </div>
-                            {auctionMode === "today" && (
-                            <label className="flex items-center gap-1.5 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={instantEntry}
-                                    onChange={(e) => {
-                                        const checked = e.target.checked;
-                                        setInstantEntry(checked);
-                                        setValue("entry_time", checked ? null : "22:00");
-                                    }}
-                                    className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
-                                />
-                                <span className="text-[10px] text-white font-bold">즉시 입장</span>
-                            </label>
-                            )}
-                        </div>
-                        {instantEntry ? (
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
-                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "예약 후 즉시 입장 가능" : "낙찰 후 즉시 입장 가능"}</span>
-                            </div>
-                        ) : auctionMode === "today" ? (
-                            <DateTimeSheet
-                                label="입장 일시 선택"
-                                mode="date-2"
-                                dateOptions={[
-                                    { label: `${dayjs(getClubEventDate()).format("M/D (ddd)")} 저녁`, value: getClubEventDate(), minTime: "18:00", maxTime: "23:59", defaultTime: "22:00" },
-                                    { label: `${dayjs(getClubEventDate()).add(1, "day").format("M/D (ddd)")} 새벽`, value: dayjs(getClubEventDate()).add(1, "day").format("YYYY-MM-DD"), minTime: "00:00", maxTime: "05:59", defaultTime: "01:00" },
-                                ]}
-                                value={`${watch("event_date")}T${watch("entry_time") || "22:00"}`}
-                                onChange={(val) => {
-                                    const picked = dayjs(val);
-                                    setValue("event_date", picked.format("YYYY-MM-DD"));
-                                    setValue("entry_time", picked.format("HH:mm"));
-                                    clearErrors("entry_time");
-                                }}
-                            />
-                        ) : (
-                            <>
-                                <DateTimeSheet
-                                    label="입장 일시 선택"
-                                    value={(() => {
-                                        const t = watch("entry_time") || "22:00";
-                                        const d = watch("event_date");
-                                        return dayjs(`${d}T${t}`).format("YYYY-MM-DDTHH:mm");
-                                    })()}
-                                    min={dayjs().add(2, "day").set("hour", 0).set("minute", 0).format("YYYY-MM-DDTHH:mm")}
-                                    max={dayjs().add(EARLYBIRD_MAX_EVENT_DAYS_AHEAD, "day").set("hour", 23).set("minute", 59).format("YYYY-MM-DDTHH:mm")}
-                                    onChange={(val) => {
-                                        const picked = dayjs(val);
-                                        const pickedTime = picked.format("HH:mm");
-                                        const eventDate = picked.hour() < 4
-                                            ? picked.subtract(1, "day").format("YYYY-MM-DD")
-                                            : picked.format("YYYY-MM-DD");
-                                        setValue("event_date", eventDate);
-                                        setValue("entry_time", pickedTime);
-                                        clearErrors("entry_time");
-                                    }}
-                                />
-                            </>
+                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-3">
+                    <div className={`space-y-2 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
+                        {auctionMode === "advance" && (
+                            <span className="text-[11px] text-neutral-500">마감은 이벤트일 최소 2일 전.</span>
                         )}
-                        {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date?.message?.toString()}</p>}
-                        {errors.entry_time && <p className="text-red-500 text-[11px]">{errors.entry_time?.message?.toString()}</p>}
-                    </div>
-                    <div className={`space-y-3 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <div className="flex flex-col gap-0.5">
-                            <Label className="text-neutral-400 text-[10px] font-bold uppercase">{isInstantMode ? "판매 지속 시간" : "경매 마감"}</Label>
-                            {auctionMode === "advance" && (
-                                <span className="text-[9px] text-neutral-600">마감은 항상 21:00. 이벤트일 최소 2일 전.</span>
-                            )}
-                        </div>
                         {(() => {
                             if (auctionMode === "today") {
                                 return (

@@ -53,27 +53,29 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // 1. Rate limit 체크
-  const { data: limitResult, error: limitError } = await supabase.rpc(
-    "check_otp_rate_limit",
-    { p_phone: phone, p_ip: ip }
-  );
-
-  if (limitError) {
-    console.error("[send-otp] rate limit check failed:", limitError.message);
-    return NextResponse.json({ error: "server_error" }, { status: 500 });
-  }
-
-  const limit = limitResult as { ok: boolean; reason?: string; retry_after_sec?: number };
-  if (!limit.ok) {
-    const status = limit.reason === "phone_cooldown" ? 429 : 429;
-    return NextResponse.json(
-      {
-        error: limit.reason ?? "rate_limited",
-        retry_after_sec: limit.retry_after_sec,
-      },
-      { status }
+  // 1. Rate limit 체크 (테스트 환경은 스킵)
+  if (!isTestEnv()) {
+    const { data: limitResult, error: limitError } = await supabase.rpc(
+      "check_otp_rate_limit",
+      { p_phone: phone, p_ip: ip }
     );
+
+    if (limitError) {
+      console.error("[send-otp] rate limit check failed:", limitError.message);
+      return NextResponse.json({ error: "server_error" }, { status: 500 });
+    }
+
+    const limit = limitResult as { ok: boolean; reason?: string; retry_after_sec?: number };
+    if (!limit.ok) {
+      const status = limit.reason === "phone_cooldown" ? 429 : 429;
+      return NextResponse.json(
+        {
+          error: limit.reason ?? "rate_limited",
+          retry_after_sec: limit.retry_after_sec,
+        },
+        { status }
+      );
+    }
   }
 
   // 2. 중복 가입 방지: 이미 가입된 phone인지 확인
@@ -117,9 +119,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "server_error" }, { status: 500 });
   }
 
-  // 5. SMS 발송 (DEV 모드는 SMS 발송 스킵, 코드 000000으로 인증 가능)
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[send-otp DEV] phone=${phone}, code=${code} (실제 발송 안 함, 000000 입력 시 통과)`);
+  // 5. SMS 발송 (테스트 환경은 SMS 발송 스킵, 코드 000000으로 인증 가능)
+  if (isTestEnv()) {
+    console.log(`[send-otp TEST] phone=${phone}, code=${code} (실제 발송 안 함, 000000 입력 시 통과)`);
     return NextResponse.json({ ok: true, expires_at: expiresAt.toISOString(), dev_mode: true });
   }
 

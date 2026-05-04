@@ -13,6 +13,15 @@ import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
 import { Suspense } from "react";
 
 const isDev = process.env.NODE_ENV === "development";
+const isTestLoginEnabled =
+  isDev || process.env.NEXT_PUBLIC_ENABLE_TEST_LOGIN === "true";
+
+const TEST_PASSWORD = "test1234";
+const TEST_PRESETS = [
+  { label: "유저", email: "test-user@nightflow.test", color: "bg-amber-500 hover:bg-amber-400" },
+  { label: "MD", email: "test-md@nightflow.test", color: "bg-purple-500 hover:bg-purple-400 text-white" },
+  { label: "어드민", email: "test-admin@nightflow.test", color: "bg-red-500 hover:bg-red-400 text-white" },
+] as const;
 
 function getAuthErrorMessage(error: string | null) {
   if (!error) return "";
@@ -51,7 +60,9 @@ function LoginContent() {
   }, [authError]);
 
   // 💡 이미 로그인된 유저가 접근 시 가입 상태에 따라 리다이렉트
+  // 단, 테스트 로그인 모드에선 자동 리다이렉트를 끄고 직접 계정 전환이 가능하도록 함
   useEffect(() => {
+    if (isTestLoginEnabled) return;
     let cancelled = false;
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -62,7 +73,7 @@ function LoginContent() {
           .select("phone")
           .eq("id", user.id)
           .maybeSingle();
-        
+
         if (cancelled) return;
         if (profile?.phone) {
           router.push("/"); // 가입 완료자
@@ -133,14 +144,22 @@ function LoginContent() {
     }
   };
 
-  const handleDevLogin = async () => {
+  const handleDevLogin = async (presetEmail?: string, presetPassword?: string) => {
     setLoading(true);
     setDevError("");
 
+    const loginEmail = presetEmail ?? email;
+    const loginPassword = presetPassword ?? password;
+
+    // 계정 전환을 위해 기존 세션 정리 (프리셋 클릭 시)
+    if (presetEmail) {
+      await supabase.auth.signOut().catch(() => {});
+    }
+
     // 먼저 로그인 시도
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+      email: loginEmail,
+      password: loginPassword,
     });
 
     if (error) {
@@ -300,10 +319,25 @@ function LoginContent() {
         </div>
 
         {/* 개발용 테스트 로그인 */}
-        {isDev && (
+        {isTestLoginEnabled && (
           <div className="border-t border-neutral-800 pt-4 space-y-3">
             <p className="text-xs text-amber-500 text-center font-bold">
-              DEV 테스트 로그인 (계정 없으면 자동 생성)
+              테스트 로그인 (계정 없으면 자동 생성)
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {TEST_PRESETS.map((preset) => (
+                <Button
+                  key={preset.email}
+                  onClick={() => handleDevLogin(preset.email, TEST_PASSWORD)}
+                  disabled={loading}
+                  className={`h-10 font-bold ${preset.color}`}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
+            <p className="text-[10px] text-neutral-500 text-center">
+              비밀번호: <code className="text-neutral-400">{TEST_PASSWORD}</code> · 직접 입력도 가능
             </p>
             <Input
               type="email"
@@ -323,7 +357,7 @@ function LoginContent() {
               <p className="text-xs text-red-500">{devError}</p>
             )}
             <Button
-              onClick={handleDevLogin}
+              onClick={() => handleDevLogin()}
               disabled={loading || !email || password.length < 6}
               className="w-full h-10 bg-amber-500 text-black font-bold hover:bg-amber-400"
             >

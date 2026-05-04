@@ -9,6 +9,10 @@ import { Check, Loader2 } from "lucide-react";
 
 type Purpose = "signup" | "md_apply";
 
+const isTestLoginEnabled =
+  process.env.NODE_ENV === "development" ||
+  process.env.NEXT_PUBLIC_ENABLE_TEST_LOGIN === "true";
+
 interface PhoneVerificationFieldProps {
   value: string;
   onChange: (next: string) => void;
@@ -105,12 +109,40 @@ export function PhoneVerificationField({
       setExpiresAt(expires);
       setNow(Date.now());
       setOtpVisible(true);
-      setCode("");
+      setCode(isTestLoginEnabled ? "000000" : "");
+
+      // 테스트 모드: 자동 인증 완료 처리
+      if (isTestLoginEnabled) {
+        toast.success("테스트 모드: 자동 인증 처리 중...");
+        await autoVerify("000000");
+        return;
+      }
+
       toast.success("인증번호를 발송했어요. 3분 내 입력해주세요.");
     } catch {
       toast.error("네트워크 오류가 발생했습니다.");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function autoVerify(autoCode: string) {
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: value, code: autoCode, purpose }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(VERIFY_ERROR_MESSAGES[data.error] ?? "테스트 자동 인증 실패");
+        return;
+      }
+      lastVerifiedPhone.current = value;
+      onVerifiedChange(true);
+      toast.success("테스트 인증 완료");
+    } catch {
+      toast.error("네트워크 오류가 발생했습니다.");
     }
   }
 

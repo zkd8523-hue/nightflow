@@ -173,19 +173,12 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
             </div>
           </div>
 
-          {/* Bottom Bar: 가격+유저상태 (좌) + 소셜프루프+CTA (우) */}
-          <div className="flex items-center justify-between mt-1">
-            <div className="flex flex-col">
+          {/* Bottom Bar: 가격+유저상태 (좌) + MD한마디(중) + 소셜프루프+CTA (우) */}
+          <div className="flex items-center justify-between mt-1 gap-2">
+            <div className="flex flex-col min-w-0">
               <span className={`text-[23px] font-bold leading-none tracking-tight ${isWon ? "text-amber-400" : "text-white"}`}>
                 {formatNumber(currentPrice)}원
               </span>
-              {!isInstant && auction.buy_now_price && auction.buy_now_price > 0 && !isWon && (
-                <span className="text-[11px] font-bold whitespace-nowrap flex items-center gap-1 mt-1">
-                  <Zap className="w-3 h-3 fill-amber-400 text-amber-400" />
-                  <span className="text-amber-400">즉낙</span>
-                  <span className="text-amber-400">{formatNumber(auction.buy_now_price)}원</span>
-                </span>
-              )}
               {(!isInstant && (isUserHighest || isUserOutbid) || (isWon && !isInstant)) && (
                 <div className="flex items-center gap-1 mt-1">
                   {!isInstant && isUserHighest && (
@@ -200,7 +193,14 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 </div>
               )}
             </div>
-            <div className="flex flex-col items-end gap-1">
+
+            {auction.md_comment && (
+              <span className="flex-1 text-center text-[11px] text-neutral-400 truncate italic px-1">
+                💬 {auction.md_comment}
+              </span>
+            )}
+
+            <div className="flex flex-col items-end gap-1 shrink-0">
               {!isInstant && (auction.view_count ?? 0) > 0 && (
                 <span className="text-[10px] text-neutral-500 font-medium">조회 {auction.view_count}</span>
               )}

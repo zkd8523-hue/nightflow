@@ -26,7 +26,7 @@ import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
 import { FallbackOfferCard } from "./FallbackOfferCard";
 import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
-import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Zap, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame, Heart } from "lucide-react";
+import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame, Heart } from "lucide-react";
 import { useFavoritesContext } from "@/components/providers";
 import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
@@ -678,17 +678,6 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               />
             )}
           </div>
-        )}
-
-        {/* BIN (즉시낙찰) 버튼 - 입찰 패널 아래 배치 */}
-        {!isInstant && isActive && user && displayAuction.buy_now_price && displayAuction.buy_now_price > 0 && (
-          <Button
-            className="w-full h-11 text-sm font-black rounded-xl transition-all active:scale-[0.98] bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_15px_rgba(245,158,11,0.2)] mt-4"
-            onClick={() => bidPanelRef.current?.openBinConfirm()}
-          >
-            <Zap className="w-4 h-4 mr-1.5 fill-current" />
-            {formatPrice(displayAuction.buy_now_price)}에 즉시낙찰하기
-          </Button>
         )}
 
         {/* 결제 안내 */}
