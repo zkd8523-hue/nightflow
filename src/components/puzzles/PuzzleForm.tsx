@@ -95,7 +95,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const effectiveCurrentCount = isRecruitingParty ? 1 + effectiveGuestCount : totalPeople;
   // OFF: budgetAmount = 총액, ON: budgetAmount = 인당
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
-  const maxOfferPrice = Math.ceil(totalBudget * 1.3);
+  const maxOfferPrice = Math.ceil(totalBudget * 1.2);
 
   // expires_at: event_date 당일 21:00 KST = 12:00 UTC
   const getExpiresAt = (date: string) => {
@@ -526,7 +526,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
               </p>
             )}
             <p className="text-[11px] text-neutral-600 mt-1">
-              * 프리미엄 제안(최대 +30%)이 올 수 있습니다. (최대 {maxOfferPrice.toLocaleString()}원)
+              * MD가 예산 그대로 또는 업셀 제안(+최대 20%)을 보낼 수 있어요. (최대 {maxOfferPrice.toLocaleString()}원)
             </p>
           </div>
         </div>

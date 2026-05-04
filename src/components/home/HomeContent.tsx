@@ -89,7 +89,7 @@ const TAB_PROMISES = {
 const TAB_PROMISES_MD = {
   today: "지금 비어있는 자리, 한눈에",
   advance: "주말 빈 테이블 걱정이시죠?\n최소 수익을 미리 확정하고, 최고가를 발견해봐요! 🎯",
-  puzzle: "💰 유저들의 예산이 기다리고 있어요.\n지금 바로 제안해서 매출로 만들어봐요!",
+  puzzle: "유저들의 예산이 기다리고 있어요 💰\n지금 바로 제안해서 매출로 만들어봐요!",
 } as const;
 
 interface HomeContentProps {

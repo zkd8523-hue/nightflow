@@ -51,16 +51,23 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
     ? Math.floor(puzzle.total_budget / puzzle.target_count)
     : puzzle.budget_per_person;
   const currentBudget = perPersonBudget * puzzle.current_count;
-  const maxPrice = Math.ceil(currentBudget * 1.3);
+  const maxPrice = Math.ceil(currentBudget * 1.2);
   const priceNum = Number(proposedPrice.replace(/,/g, ""));
   const isPremium = priceNum > currentBudget;
-  const isPriceValid = priceNum > 0 && priceNum <= maxPrice;
+  const isPriceValid = priceNum >= currentBudget && priceNum <= maxPrice;
 
   useEffect(() => {
     if (open) {
       loadMdInfo();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (open && currentBudget > 0 && !proposedPrice) {
+      setProposedPrice(currentBudget.toLocaleString());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, currentBudget]);
 
   const loadMdInfo = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -155,8 +162,12 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
       toast.error("제안 금액을 입력해주세요");
       return;
     }
+    if (priceNum < currentBudget) {
+      toast.error(`예산 이상으로 제안해주세요 (예산: ${currentBudget.toLocaleString()}원)`);
+      return;
+    }
     if (priceNum > maxPrice) {
-      toast.error(`예산의 130%를 초과할 수 없습니다 (최대 ${maxPrice.toLocaleString()}원)`);
+      toast.error(`예산의 120%를 초과할 수 없습니다 (최대 ${maxPrice.toLocaleString()}원)`);
       return;
     }
     if (selectedIncludes.length === 0) {
@@ -355,7 +366,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
             <div className="flex items-center justify-between">
               <p className="text-[13px] font-bold text-white">제안 금액 (방장에게만 공개됩니다)</p>
               {isPremium && isPriceValid && (
-                <span className="text-[11px] text-amber-400 font-bold">+30% 프리미엄</span>
+                <span className="text-[11px] text-amber-400 font-bold">+20% 프리미엄</span>
               )}
             </div>
             <Input
@@ -368,16 +379,19 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
                   setProposedPrice(raw ? Number(raw).toLocaleString() : "");
                 }
               }}
-              placeholder={`현재 금액: ${(perPersonBudget * puzzle.current_count).toLocaleString()}원`}
+              placeholder={`${currentBudget.toLocaleString()}원 (예산)`}
               className={`bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 ${
                 priceNum > maxPrice ? "border-red-500" : ""
               }`}
             />
             <p className="text-[11px] text-neutral-500">
-              프리미엄 한도: {maxPrice.toLocaleString()}원 (+30%)
+              프리미엄 한도: {maxPrice.toLocaleString()}원 (+20%) · 최소: {currentBudget.toLocaleString()}원
             </p>
+            {priceNum > 0 && priceNum < currentBudget && (
+              <p className="text-[12px] text-red-400">예산 이하로는 제안할 수 없습니다</p>
+            )}
             {priceNum > maxPrice && (
-              <p className="text-[12px] text-red-400">예산의 130%를 초과했습니다</p>
+              <p className="text-[12px] text-red-400">예산의 120%를 초과했습니다</p>
             )}
           </div>
 
