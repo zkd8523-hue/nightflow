@@ -17,7 +17,7 @@ export default async function MDApplyPage() {
         .eq("id", user.id)
         .single();
 
-    if (!userData) return null;
+    if (!userData) redirect("/login");
 
     // 이미 승인된 MD라면 대시보드로 이동
     if (userData.role === "md" && userData.md_status === "approved") {
