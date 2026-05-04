@@ -50,6 +50,31 @@ function LoginContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authError]);
 
+  // 💡 이미 로그인된 유저가 접근 시 가입 상태에 따라 리다이렉트
+  useEffect(() => {
+    let cancelled = false;
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
+      if (user) {
+        const { data: profile } = await supabase
+          .from("users")
+          .select("phone")
+          .eq("id", user.id)
+          .maybeSingle();
+        
+        if (cancelled) return;
+        if (profile?.phone) {
+          router.push("/"); // 가입 완료자
+        } else {
+          router.push("/signup"); // 가입 미완료자 (고아 계정)
+        }
+      }
+    };
+    checkUser();
+    return () => { cancelled = true; };
+  }, [router, supabase]);
+
   const handleKakaoLogin = async (customRedirect?: string) => {
     trackEvent('login_click', { method: 'kakao' });
     setLoading(true);
