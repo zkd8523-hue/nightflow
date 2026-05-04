@@ -520,7 +520,16 @@ export function PuzzleDetailClient({
                         const dealCount = md?.md_deal_count;
                         return mdLabel ? (
                           <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/60">
-                            <p className="text-[12px] text-neutral-300 font-bold">{mdLabel}</p>
+                            {isAdmin && offer.md_id ? (
+                              <Link
+                                href={`/admin/mds/${offer.md_id}`}
+                                className="text-[12px] text-neutral-300 font-bold hover:text-white hover:underline transition-colors"
+                              >
+                                {mdLabel}
+                              </Link>
+                            ) : (
+                              <p className="text-[12px] text-neutral-300 font-bold">{mdLabel}</p>
+                            )}
                             {dealCount != null && dealCount >= 3 && (
                               <span className="flex items-center gap-0.5 text-[10px] font-bold text-neutral-400">
                                 {dealCount >= 30 ? (

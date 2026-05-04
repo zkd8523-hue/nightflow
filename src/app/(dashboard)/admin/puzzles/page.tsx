@@ -87,17 +87,38 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
     ? (allPuzzles || []).filter((p) => p.area === areaFilter)
     : allPuzzles || [];
 
-  // 최신 제안 탭 데이터
-  const { data: recentOffers } = await supabase
+  // 최신 제안 탭 데이터 (puzzles join 제거 — RLS 충돌 회피, 별도 조회 후 매핑)
+  const { data: recentOffersRaw, error: recentOffersError } = await supabase
     .from("puzzle_offers")
     .select(`
       id, puzzle_id, status, table_type, proposed_price, includes, comment, created_at,
       club:clubs(name, area),
-      md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, instagram),
-      puzzle:puzzles(notes, area, event_date)
+      md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, instagram)
     `)
     .order("created_at", { ascending: false })
     .limit(50);
+
+  if (recentOffersError) {
+    console.error("[admin/puzzles] recentOffers error:", recentOffersError);
+  }
+
+  // puzzles 정보 별도 조회 후 매핑
+  const recentPuzzleIds = [...new Set((recentOffersRaw || []).map((o) => o.puzzle_id))];
+  const recentPuzzleMap = new Map<string, { notes: string | null; area: string; event_date: string }>();
+  if (recentPuzzleIds.length > 0) {
+    const { data: recentPuzzlesData } = await supabase
+      .from("puzzles")
+      .select("id, notes, area, event_date")
+      .in("id", recentPuzzleIds);
+    for (const p of recentPuzzlesData || []) {
+      recentPuzzleMap.set(p.id, { notes: p.notes, area: p.area, event_date: p.event_date });
+    }
+  }
+
+  const recentOffers = (recentOffersRaw || []).map((o) => ({
+    ...o,
+    puzzle: recentPuzzleMap.get(o.puzzle_id) || null,
+  }));
 
   const OFFER_STATUS_LABEL: Record<string, string> = {
     pending: "대기 중",
