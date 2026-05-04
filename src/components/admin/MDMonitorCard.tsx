@@ -6,6 +6,7 @@ import type { MDHealthScore } from "@/types/database";
 import { computeHealthStatus } from "@/lib/utils/mdHealth";
 import { MDHealthBadge } from "./MDHealthBadge";
 import { MDActivityTimeline } from "./MDActivityTimeline";
+import { MDPuzzleOffers } from "./MDPuzzleOffers";
 import { ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import { formatPrice } from "@/lib/utils/format";
 import dayjs from "dayjs";
@@ -115,23 +116,30 @@ export function MDMonitorCard({ md }: Props) {
 
       {/* Expanded Activity Timeline */}
       {isExpanded && (
-        <div className="border-t border-neutral-800/50 bg-neutral-900/30 px-4 pt-3 pb-4">
-          {/* Section header + detail link */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
-              최근 활동
-            </div>
-            <Link
-              href={`/admin/mds/${md.md_id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1 text-xs text-neutral-500 hover:text-white transition-colors font-medium"
-            >
-              상세 보기
-              <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
+        <div
+          className="border-t border-neutral-800/50 bg-neutral-900/30 px-4 pt-3 pb-4 space-y-5"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* 깃발 제안: 현재 진행 중 + 전체 내역(드롭다운) */}
+          <MDPuzzleOffers mdId={md.md_id} />
 
-          <MDActivityTimeline mdId={md.md_id} />
+          {/* 경매 활동 타임라인 */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-xs font-bold text-neutral-500 uppercase tracking-wider">
+                경매 최근 활동
+              </div>
+              <Link
+                href={`/admin/mds/${md.md_id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center gap-1 text-xs text-neutral-500 hover:text-white transition-colors font-medium"
+              >
+                상세 보기
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+            <MDActivityTimeline mdId={md.md_id} />
+          </div>
         </div>
       )}
     </div>
