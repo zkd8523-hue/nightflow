@@ -84,7 +84,21 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       for (let attempt = 0; attempt < 3; attempt++) {
         const { data: { user } } = await supabase.auth.getUser();
         if (cancelled) return;
-        if (user) { setAuthUser(user); return; }
+        if (user) {
+          // 이미 가입 완료된 유저(phone 인증 완료)면 홈으로 redirect
+          const { data: profile } = await supabase
+            .from("users")
+            .select("phone")
+            .eq("id", user.id)
+            .maybeSingle();
+          if (cancelled) return;
+          if (profile?.phone) {
+            router.push("/");
+            return;
+          }
+          setAuthUser(user);
+          return;
+        }
         if (attempt < 2) await new Promise(r => setTimeout(r, 500));
       }
       if (!cancelled) router.push("/login?error=session_expired");

@@ -71,8 +71,10 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 💡 이미 로그인된 유저가 로그인/회원가입 페이지 진입 시 홈으로 리다이렉트
-  if (user && (pathname === "/login" || pathname === "/signup")) {
+  // 💡 이미 로그인된 유저가 로그인 페이지 진입 시 홈으로 리다이렉트
+  // /signup은 OAuth 통과했지만 public.users 미생성 상태(가입 미완료)도 진입 가능해야 하므로 제외.
+  // 기가입자 차단은 SignupForm checkSession에서 phone 존재 여부로 처리.
+  if (user && pathname === "/login") {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
