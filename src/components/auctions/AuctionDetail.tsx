@@ -359,6 +359,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           )}
         </div>
 
+
         {/* Hero Content Overlay */}
         <div className="absolute bottom-10 left-4 right-4 space-y-0.5">
           <div className="flex items-center gap-2 text-[13px] text-neutral-400 font-bold uppercase tracking-widest">
@@ -385,6 +386,11 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             {(displayAuction.includes?.length || 0) > 3 && (
               <span className="text-[11px] text-neutral-500 font-bold">
                 +{(displayAuction.includes?.length || 0) - 3}
+              </span>
+            )}
+            {(displayAuction.view_count ?? 0) >= 0 && (
+              <span className="ml-auto text-[11px] text-neutral-500 font-medium">
+                조회 {displayAuction.view_count ?? 0}
               </span>
             )}
           </div>

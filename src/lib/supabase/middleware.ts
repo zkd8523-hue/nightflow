@@ -35,20 +35,20 @@ export async function updateSession(request: NextRequest) {
   // 세션 갱신 (IMPORTANT: getUser()로 서버 검증)
   const { data: { user: rawUser }, error: getUserError } = await supabase.auth.getUser();
 
-  // refresh token 만료 등 세션 에러 → SDK가 setAll로 빈 쿠키 설정하도록 signOut 호출
-  // 이렇게 해야 브라우저의 만료된 쿠키가 삭제되어 무한로딩 방지
-  // 단, /auth/* 경로(OAuth 콜백)에서는 PKCE code_verifier 쿠키를 보존해야 하므로 제외
+  // scope: 'local' → 네트워크 호출 없이 setAll 콜백만 실행되어 만료 쿠키 정리.
+  // 기본값('global')은 Supabase /logout POST가 hang하면 미들웨어 전체가 멈춤.
+  // 만료 토큰은 서버에 통보할 의미가 없으므로 로컬 정리만으로 충분.
+  // /auth/* (OAuth 콜백)는 PKCE code_verifier 보존 필요하므로 제외.
   const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/");
   if (getUserError && !isAuthCallback) {
-    await supabase.auth.signOut();
+    await Promise.race([
+      supabase.auth.signOut({ scope: "local" }),
+      new Promise((resolve) => setTimeout(resolve, 500)),
+    ]).catch(() => {});
   }
 
   // 세션 검증 실패 시 같은 요청 안에서 user를 null로 취급해야 후속 redirect 로직이 정합성 유지
-  // (signOut 호출은 쿠키만 비울 뿐 rawUser 변수는 그대로이므로)
   const user = getUserError && !isAuthCallback ? null : rawUser;
-
-  // [DEBUG] 미들웨어 동작 트레이싱 — 로그인 문제 진단용 (이후 제거)
-  console.log(`[MW] path=${request.nextUrl.pathname} rawUser=${rawUser?.id ?? 'null'} err=${getUserError?.message ?? 'none'} effectiveUser=${user?.id ?? 'null'}`);
 
   // ?ref= 파라미터 → 쿠키 저장 (30일, 바이럴 추적용)
   const refCode = request.nextUrl.searchParams.get('ref');

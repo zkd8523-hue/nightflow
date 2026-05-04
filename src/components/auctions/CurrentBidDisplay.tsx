@@ -35,7 +35,7 @@ export const CurrentBidDisplay = memo(function CurrentBidDisplay({
             {isOutbid && (
               <span className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full text-[11px] font-bold">추월됨</span>
             )}
-            <span className="text-neutral-500">참여자 {bidderCount}명</span>
+            {bidderCount > 0 && <span className="text-neutral-500">참여자 {bidderCount}명</span>}
           </div>
         )}
       </div>
@@ -54,7 +54,7 @@ export const CurrentBidDisplay = memo(function CurrentBidDisplay({
           {isOutbid && (
             <span className="text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full text-[12px] font-bold">추월됨</span>
           )}
-          <span>참여자 {bidderCount}명</span>
+          {bidderCount > 0 && <span>참여자 {bidderCount}명</span>}
         </div>
       )}
     </div>
