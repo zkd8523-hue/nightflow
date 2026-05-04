@@ -464,6 +464,10 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               isOutbid={isOutbid}
               isInstant={isInstant}
             />
+            <p className="text-[11px] text-neutral-500 leading-relaxed">
+              NightFlow는 수수료를 받지 않아요!<br />
+              모든 예약은 MD에게 직접 결제
+            </p>
           </div>
 
           <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} isInstant={isInstant} />
@@ -682,9 +686,9 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
         {/* 결제 안내 */}
         {!isInstant && isActive && (
-          <p className="text-[11px] text-neutral-500 text-center mt-3 leading-relaxed">
-            🔒 입찰만으로는 결제되지 않아요.<br />
-            낙찰 후 MD에게 직접 결제합니다.
+          <p className="text-[13px] text-neutral-500 text-center mt-3 leading-relaxed">
+            💚 NightFlow는 수수료를 받지 않아요 💚<br />
+            낙찰 후 MD에게 직접 결제하시면 됩니다
           </p>
         )}
 
