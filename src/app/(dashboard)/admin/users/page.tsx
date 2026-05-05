@@ -7,7 +7,12 @@ import { Card } from "@/components/ui/card";
 import { Users, ShieldBan, AlertTriangle, Clock, UserPlus } from "lucide-react";
 import dayjs from "dayjs";
 
-export default async function AdminUsersPage() {
+interface PageProps {
+  searchParams: Promise<{ focus?: string }>;
+}
+
+export default async function AdminUsersPage({ searchParams }: PageProps) {
+  const { focus } = await searchParams;
   const supabase = await createClient();
 
   // 1. 관리자 권한 확인
@@ -123,7 +128,7 @@ export default async function AdminUsersPage() {
         </header>
 
         {/* Content */}
-        <UserManagement users={users || []} bidStats={[]} />
+        <UserManagement users={users || []} bidStats={[]} focusId={focus} />
       </div>
     </div>
   );

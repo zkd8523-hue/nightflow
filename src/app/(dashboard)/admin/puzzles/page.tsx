@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AdminPuzzleRefundButton } from "@/components/admin/AdminPuzzleRefundButton";
 import { AdminPuzzleOffersDropdown } from "@/components/admin/AdminPuzzleOffersDropdown";
-import { AlertTriangle, ChevronLeft, Flag } from "lucide-react";
+import { AlertTriangle, ChevronLeft, Flag, User } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 
@@ -51,10 +51,13 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
     return `${m}/${day}(${days[d.getDay()]})`;
   };
 
-  // 전체 깃발 탭 데이터
+  // 전체 깃발 탭 데이터 (admin RLS로 leader users 조회 가능 — Migration 109)
   const { data: allPuzzles } = await supabase
     .from("puzzles")
-    .select("id, area, event_date, status, target_count, current_count, notes, created_at")
+    .select(`
+      id, area, event_date, status, target_count, current_count, notes, created_at,
+      leader:users!puzzles_leader_id_fkey(id, name, display_name, instagram, phone, kakao_open_chat_url)
+    `)
     .order("created_at", { ascending: false });
 
   const { data: allOffers } = await supabase
@@ -251,6 +254,15 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
             ) : (
               filteredPuzzles.map((puzzle) => {
                 const offers = offersByPuzzle[puzzle.id] || [];
+                const leader = puzzle.leader as {
+                  id?: string;
+                  name?: string | null;
+                  display_name?: string | null;
+                  instagram?: string | null;
+                  phone?: string | null;
+                  kakao_open_chat_url?: string | null;
+                } | null;
+                const leaderName = leader?.display_name || leader?.name || "-";
                 return (
                   <Link key={puzzle.id} href={`/flags/${puzzle.id}`}>
                   <Card className="bg-[#1C1C1E] border-neutral-800 p-5 space-y-4 hover:border-neutral-600 transition-colors cursor-pointer">
@@ -273,6 +285,30 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                       <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[puzzle.status] || "bg-neutral-700 text-neutral-400"}`}>
                         {STATUS_LABEL[puzzle.status] || puzzle.status}
                       </span>
+                    </div>
+
+                    {/* 게시자 정보 (admin 전용 — 이름 클릭 시 유저 상세) */}
+                    <div className="border-t border-neutral-800 pt-3 space-y-1">
+                      <div className="flex items-center gap-1.5 text-[12px] text-neutral-300">
+                        <User className="w-3.5 h-3.5 text-neutral-500" />
+                        <span className="font-bold">게시자</span>
+                        {leader?.id ? (
+                          <Link
+                            href={`/admin/users?focus=${leader.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-amber-400 hover:underline"
+                          >
+                            {leaderName}
+                          </Link>
+                        ) : (
+                          <span className="text-neutral-400">{leaderName}</span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-neutral-500 pl-5">
+                        {leader?.instagram && <span>📷 @{leader.instagram}</span>}
+                        {leader?.phone && <span>📞 {leader.phone}</span>}
+                        {leader?.kakao_open_chat_url && <span>💬 카톡 오픈챗</span>}
+                      </div>
                     </div>
 
                     {/* 오퍼 드롭다운 */}

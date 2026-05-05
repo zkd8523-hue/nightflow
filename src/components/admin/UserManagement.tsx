@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User } from "@/types/database";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -35,14 +35,21 @@ import { getErrorMessage, logError } from "@/lib/utils/error";
 interface UserManagementProps {
   users: User[];
   bidStats: Record<string, unknown>[];
+  focusId?: string;
 }
 
-export function UserManagement({ users }: UserManagementProps) {
+export function UserManagement({ users, focusId }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!focusId) return;
+    const target = users.find((u) => u.id === focusId);
+    if (target) setSelectedUser(target);
+  }, [focusId, users]);
 
   const handleBlock = async (userId: string, block: boolean) => {
     setLoading(true);
