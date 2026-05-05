@@ -268,28 +268,29 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                 const leader = puzzle.leader_id ? leaderMap.get(puzzle.leader_id) : null;
                 const leaderName = leader?.display_name || leader?.name || "-";
                 return (
-                  <Link key={puzzle.id} href={`/flags/${puzzle.id}`}>
-                  <Card className="bg-[#1C1C1E] border-neutral-800 p-5 space-y-4 hover:border-neutral-600 transition-colors cursor-pointer">
-                    {/* 퍼즐 기본 정보 */}
-                    <div className="flex items-start justify-between">
-                      <div>
-                        {puzzle.notes && (
-                          <p className="text-[15px] font-black text-white">{puzzle.notes}</p>
-                        )}
-                        <p className={`${puzzle.notes ? "text-[13px] text-neutral-400" : "text-[16px] font-black text-white"}`}>
-                          {formatDate(puzzle.event_date)} {puzzle.area}
-                        </p>
-                        <p className="text-[12px] text-neutral-600 mt-0.5">
-                          파티 {puzzle.current_count}/{puzzle.target_count}명
-                        </p>
-                        <p className="text-[11px] text-neutral-700 mt-0.5">
-                          등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                        </p>
+                  <Card key={puzzle.id} className="bg-[#1C1C1E] border-neutral-800 p-5 space-y-4 hover:border-neutral-600 transition-colors">
+                    {/* 퍼즐 기본 정보 (깃발 상세로 링크) */}
+                    <Link href={`/flags/${puzzle.id}`} className="block">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          {puzzle.notes && (
+                            <p className="text-[15px] font-black text-white">{puzzle.notes}</p>
+                          )}
+                          <p className={`${puzzle.notes ? "text-[13px] text-neutral-400" : "text-[16px] font-black text-white"}`}>
+                            {formatDate(puzzle.event_date)} {puzzle.area}
+                          </p>
+                          <p className="text-[12px] text-neutral-600 mt-0.5">
+                            파티 {puzzle.current_count}/{puzzle.target_count}명
+                          </p>
+                          <p className="text-[11px] text-neutral-700 mt-0.5">
+                            등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                        <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[puzzle.status] || "bg-neutral-700 text-neutral-400"}`}>
+                          {STATUS_LABEL[puzzle.status] || puzzle.status}
+                        </span>
                       </div>
-                      <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[puzzle.status] || "bg-neutral-700 text-neutral-400"}`}>
-                        {STATUS_LABEL[puzzle.status] || puzzle.status}
-                      </span>
-                    </div>
+                    </Link>
 
                     {/* 게시자 정보 (admin 전용 — 이름 클릭 시 유저 상세) */}
                     <div className="border-t border-neutral-800 pt-3 space-y-1">
@@ -299,7 +300,6 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                         {leader?.id ? (
                           <Link
                             href={`/admin/users?focus=${leader.id}`}
-                            onClick={(e) => e.stopPropagation()}
                             className="text-amber-400 hover:underline"
                           >
                             {leaderName}
@@ -336,7 +336,6 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                       }))}
                     />
                   </Card>
-                  </Link>
                 );
               })
             )}
