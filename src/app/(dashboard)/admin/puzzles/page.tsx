@@ -51,14 +51,25 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
     return `${m}/${day}(${days[d.getDay()]})`;
   };
 
-  // 전체 깃발 탭 데이터 (admin RLS로 leader users 조회 가능 — Migration 109)
+  // 전체 깃발 탭 데이터
   const { data: allPuzzles } = await supabase
     .from("puzzles")
-    .select(`
-      id, area, event_date, status, target_count, current_count, notes, created_at,
-      leader:users!puzzles_leader_id_fkey(id, name, display_name, instagram, phone, kakao_open_chat_url)
-    `)
+    .select("id, area, event_date, status, target_count, current_count, notes, created_at, leader_id")
     .order("created_at", { ascending: false });
+
+  // 게시자(leader) 정보 별도 조회 후 매핑 (admin RLS — Migration 109)
+  const leaderIds = [...new Set((allPuzzles || []).map((p) => p.leader_id).filter(Boolean))];
+  const leaderMap = new Map<
+    string,
+    { id: string; name: string | null; display_name: string | null; instagram: string | null; phone: string | null; kakao_open_chat_url: string | null }
+  >();
+  if (leaderIds.length > 0) {
+    const { data: leadersData } = await supabase
+      .from("users")
+      .select("id, name, display_name, instagram, phone, kakao_open_chat_url")
+      .in("id", leaderIds);
+    for (const l of leadersData || []) leaderMap.set(l.id, l);
+  }
 
   const { data: allOffers } = await supabase
     .from("puzzle_offers")
@@ -254,14 +265,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
             ) : (
               filteredPuzzles.map((puzzle) => {
                 const offers = offersByPuzzle[puzzle.id] || [];
-                const leader = puzzle.leader as {
-                  id?: string;
-                  name?: string | null;
-                  display_name?: string | null;
-                  instagram?: string | null;
-                  phone?: string | null;
-                  kakao_open_chat_url?: string | null;
-                } | null;
+                const leader = puzzle.leader_id ? leaderMap.get(puzzle.leader_id) : null;
                 const leaderName = leader?.display_name || leader?.name || "-";
                 return (
                   <Link key={puzzle.id} href={`/flags/${puzzle.id}`}>
