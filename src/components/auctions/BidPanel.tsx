@@ -18,9 +18,9 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAuctionStore } from "@/stores/useAuctionStore";
 import type { Auction } from "@/types/database";
 import { formatPrice } from "@/lib/utils/format";
-import { getMinBidAmount, getBidPresets, isAuctionActive, isAuctionExpired, getRemainingSeconds } from "@/lib/utils/auction";
+import { getMinBidAmount, isAuctionActive, isAuctionExpired, getRemainingSeconds } from "@/lib/utils/auction";
 import { isEarlybird } from "@/lib/utils/date";
-import { Crown, ShieldCheck, Timer, AlertCircle, CalendarCheck } from "lucide-react";
+import { Crown, ShieldCheck, Timer, AlertCircle } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { logger } from "@/lib/utils/logger";
 import { trackBid } from "@/lib/analytics/events";
@@ -41,10 +41,10 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
   const bids = useAuctionStore((s) => s.bids);
   const supabase = createClient();
   const minBid = getMinBidAmount(auction);
-  const presets = getBidPresets(auction);
   const [bidAmount, setBidAmount] = useState(minBid);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showDirectInput, setShowDirectInput] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useImperativeHandle(ref, () => ({}));
@@ -207,45 +207,21 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
   return (
     <>
       <Card className="p-3 space-y-2.5 bg-[#1C1C1E] border-neutral-800/50">
-        <div className="space-y-1">
-          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider ml-1">빠른 입찰</p>
-          <div className="grid grid-cols-3 gap-2">
-            {presets.map((amount, i) => {
-              const label = amount >= 10000
-                ? `${Math.floor(amount / 10000)}만${amount % 10000 > 0 ? (amount % 10000) / 1000 + "천" : ""}`
-                : `${amount / 1000}천`;
-              return (
-                <Button
-                  key={amount}
-                  variant={bidAmount === amount ? "default" : "outline"}
-                  onClick={() => handlePresetClick(amount)}
-                  className={`text-[12px] h-11 border-neutral-800 font-bold flex flex-col gap-0 leading-tight ${bidAmount === amount ? "bg-white text-black hover:bg-neutral-200" : "bg-neutral-900/50 text-neutral-200"
-                    }`}
-                >
-                  <span>{label}</span>
-                  {i === 0 && <span className={`text-[9px] font-medium ${bidAmount === amount ? "text-neutral-500" : "text-neutral-500"}`}>{bids.length === 0 ? "시작가" : "최소"}</span>}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider ml-1">직접 입력</p>
+        {showDirectInput && (
           <Input
             ref={inputRef}
             type="text"
             inputMode="numeric"
             placeholder={`최소 ${formatPrice(minBid)}`}
-            value={bidAmount ? bidAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""}
+            value={bidAmount && bidAmount !== minBid ? bidAmount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : ""}
             onChange={(e) => {
               const raw = e.target.value.replace(/,/g, "");
               setBidAmount(parseInt(raw) || 0);
             }}
             onFocus={handleInputFocus}
-            className="bg-neutral-900/80 border-neutral-800 h-11 text-white font-bold focus:ring-neutral-500 text-sm"
+            className="bg-neutral-900/80 border-neutral-800 h-11 text-white font-bold focus:ring-neutral-500 text-sm w-full"
           />
-        </div>
+        )}
 
         {/* 추월 알림 배지 */}
         {wasOutbid && isActive && (
@@ -295,6 +271,19 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
           </div>
         </div>
 
+        {!showDirectInput && (
+          <button
+            type="button"
+            onClick={() => {
+              setShowDirectInput(true);
+              setTimeout(() => inputRef.current?.focus(), 50);
+            }}
+            className="w-full text-center text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors py-1"
+          >
+            다른 금액으로 입찰 ∨
+          </button>
+        )}
+
       </Card>
 
       {/* 확인 시트 */}
@@ -304,39 +293,20 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
             <SheetTitle className="text-white font-black text-xl">
               입찰 확인
             </SheetTitle>
-            <SheetDescription className="text-neutral-400">
-              {`${formatPrice(bidAmount)}으로 입찰하시겠습니까?`}
-            </SheetDescription>
           </SheetHeader>
           <div className="space-y-4 mt-6">
-            <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-sm font-bold">경매 상품</span>
-                <span className="font-bold text-white text-right max-w-[200px] truncate">{auction.title}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-sm font-bold">입찰가</span>
-                <span className="font-black text-2xl text-white">
-                  {formatPrice(bidAmount)}
-                </span>
-              </div>
-              <div className="h-px bg-neutral-800/30" />
-              <div className="flex items-start gap-2 pt-1">
-                <ShieldCheck className="w-4 h-4 text-neutral-400 mt-0.5" />
-                <p className="text-[11px] text-neutral-400 leading-relaxed font-medium">
-                  본 금액은 나이트플로우를 거치지 않고 <span className="text-white font-bold">MD와 직접 결제</span>합니다.
+            <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-2 border border-neutral-800/50">
+              <p className="text-sm text-neutral-400 font-bold truncate">{auction.title}</p>
+              <p className="font-black text-4xl text-white tracking-tight">
+                {formatPrice(bidAmount)}
+              </p>
+              <div className="h-px bg-neutral-800/30 my-2" />
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-neutral-400 shrink-0" />
+                <p className="text-[12px] text-neutral-400 font-medium">
+                  낙찰되면 <span className="text-white font-bold">안내 문자</span>가 가요 · MD에게 연락하면 끝!
                 </p>
               </div>
-              {isEarlybird(auction) && (
-                <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                  <CalendarCheck className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                  <p className="text-[12px] text-amber-400/90 font-bold leading-snug">
-                    낙찰 성공 시 안내 메시지가 발송됩니다.
-                    <br />
-                    1시간 내 MD에게 연락하면 예약 확정!
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* 마감 임박 시 연장 안내 */}
@@ -365,7 +335,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
             })()}
 
             <p className="text-[11px] text-neutral-500 text-center">
-              최종 낙찰 후 미연락·노쇼 시 이용이 제한됩니다.
+              최종 낙찰 후 미연락·노쇼 시 이용이 제한될 수 있습니다.
             </p>
 
             <div className="grid grid-cols-2 gap-3 pb-8">

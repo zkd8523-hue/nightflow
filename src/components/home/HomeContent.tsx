@@ -100,9 +100,11 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
   puzzle: {
     content: (
       <>
-        Dm 예약 시대는 끝!
+        예산 등록 → MD들이 <span className="text-emerald-400">시크릿 오퍼</span>
         <br />
-        예산만 등록하면, MD들이 <span className="text-emerald-400">시크릿 오퍼</span>를 보내와요.
+        가격·패키지 비교하고 골라요!
+        <br />
+        <span className="text-emerald-400">쉿! 정식주대보다 가성비 ⬆️</span>
       </>
     ),
     note: "💡 모든 서비스 무료",

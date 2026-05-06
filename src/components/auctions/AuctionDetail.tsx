@@ -617,7 +617,6 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                 실시간 입찰 기록
               </h2>
-              <span className="text-[11px] text-red-500">●</span>
             </div>
             <BidHistory
               bids={bids}
