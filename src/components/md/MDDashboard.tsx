@@ -291,7 +291,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
 
             {/* Auction Tabs + Register Button */}
             <div className="px-4 mt-1">
-                <Tabs defaultValue={showTodayTab ? "today" : "earlybird"} className="w-full">
+                <Tabs defaultValue="puzzle" className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">
                             {showTodayTab && (
