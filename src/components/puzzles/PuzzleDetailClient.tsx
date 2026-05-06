@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -431,19 +431,50 @@ export function PuzzleDetailClient({
                   )}
                 </div>
               )}
-              {isLeader && acceptedOffer && (acceptedOffer.md as { instagram?: string | null } | null)?.instagram && (
-                <a
-                  href={`https://instagram.com/${((acceptedOffer.md as unknown) as { instagram: string }).instagram.replace(/^@/, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-[13px] font-bold text-white hover:opacity-80 transition-opacity"
-                >
-                  <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
-                  </svg>
-                  MD 인스타그램 보기
-                </a>
-              )}
+              {isLeader && acceptedOffer && (() => {
+                const md = acceptedOffer.md as { display_name?: string; name?: string; profile_image?: string | null; md_deal_count?: number; instagram?: string | null } | null;
+                if (!md) return null;
+                const dealCount = md.md_deal_count ?? 0;
+                return (
+                  <div className="flex items-center gap-3 pt-1 border-t border-amber-500/20">
+                    <div className="relative shrink-0">
+                      {md.profile_image ? (
+                        <img src={md.profile_image} alt={md.display_name || "MD"} className="w-11 h-11 rounded-full object-cover border border-neutral-700" />
+                      ) : (
+                        <div className="w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500 text-[15px]">
+                          {(md.display_name || md.name || "M").substring(0, 1)}
+                        </div>
+                      )}
+                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1E] flex items-center justify-center">
+                        <ShieldCheck className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white font-bold text-[14px] truncate">{md.display_name || md.name || "나이트플로우 파트너"}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-[11px] text-neutral-500">NightFlow 인증 파트너</p>
+                        {dealCount >= 3 && (
+                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-neutral-400">
+                            {dealCount >= 30 ? <Flame className="w-3 h-3 text-orange-500" /> : <BadgeCheck className="w-3 h-3 text-blue-400" />}
+                            거래 {dealCount}회
+                          </span>
+                        )}
+                      </div>
+                      {md.instagram && (
+                        <a
+                          href={`https://instagram.com/${md.instagram.replace(/^@/, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white transition-colors mt-0.5"
+                        >
+                          <Instagram className="w-3 h-3" />
+                          @{md.instagram.replace(/^@/, "")}
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
               <p className="text-[11px] text-neutral-500">
                 {isLeader
                   ? "MD가 곧 연락할 예정입니다. 선입금/테이블 배정은 MD와 직접 협의하세요."
@@ -669,9 +700,9 @@ export function PuzzleDetailClient({
                     href={puzzle.kakao_open_chat_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-[12px] font-bold text-amber-400 underline underline-offset-2"
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold text-[13px] rounded-xl hover:bg-[#FDD835] transition-colors"
                   >
-                    방장의 카카오 오픈채팅으로 연락하기 →
+                    카카오 오픈채팅 입장하기
                   </a>
                 )}
                 {myOffer.status === "accepted" && !puzzle.kakao_open_chat_url && (
