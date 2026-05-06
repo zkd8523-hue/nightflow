@@ -162,7 +162,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
       </div>
 
       {tabPromises && tabPromises[tab] && (
-        <div className="relative rounded-2xl bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-red-500/10 border border-amber-500/30 px-4 pt-5 pb-3">
+        <div className="relative rounded-2xl bg-gradient-to-r from-amber-500/30 via-orange-500/20 to-red-500/15 border border-amber-500/40 px-4 pt-5 pb-3">
           <span className="absolute -top-2.5 left-3 text-[10px] font-black bg-amber-500 text-black px-2 py-0.5 rounded-full">
             Tip
           </span>

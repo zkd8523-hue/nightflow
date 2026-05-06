@@ -29,7 +29,7 @@ export const BidHistory = memo(function BidHistory({ bids, currentBid, vipUserId
   if (bids.length === 0) {
     return (
       <div className="text-center py-12 bg-neutral-900/30 rounded-3xl border border-dashed border-neutral-800/50">
-        <p className="text-neutral-500 font-medium text-sm">아직 입찰 내역이 없습니다</p>
+        <p className="text-neutral-500 font-medium text-sm">아직 입찰 없음 · 지금이 기회예요 🔥</p>
       </div>
     );
   }

@@ -5,6 +5,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
 import { GoogleAnalytics } from "@/lib/analytics/google-analytics";
+import { LoginSuccessTracker } from "@/components/analytics/LoginSuccessTracker";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OfflineBanner } from "@/components/layout/OfflineBanner";
 
@@ -167,6 +168,7 @@ export default function RootLayout({
 
         <ErrorBoundary>
           <Providers>
+            <LoginSuccessTracker />
             <OfflineBanner />
             {children}
             <Toaster />

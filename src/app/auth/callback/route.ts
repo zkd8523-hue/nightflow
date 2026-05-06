@@ -46,6 +46,7 @@ export async function GET(request: NextRequest) {
 
   // exchangeCodeForSession이 반환한 user 직접 사용 (추가 getUser 호출 없음)
   const user = exchangeData.session.user;
+  const provider = (user.app_metadata?.provider as string) || "kakao";
 
   let redirectUrl = `${origin}${safeNext}`;
 
@@ -60,6 +61,7 @@ export async function GET(request: NextRequest) {
       // 신규 유저 → 회원가입 페이지로
       const signupUrl = new URL("/signup", origin);
       if (safeNext !== "/") signupUrl.searchParams.set("next", safeNext);
+      signupUrl.searchParams.set("auth_success", `signup_${provider}`);
       redirectUrl = signupUrl.toString();
     } else if (profile.deleted_at) {
       redirectUrl = `${origin}/recover-account`;
@@ -67,8 +69,11 @@ export async function GET(request: NextRequest) {
   }
 
   // 진단용: 콜백이 설정한 쿠키 개수를 URL에 기록 (_s=쿠키수)
+  const alreadyHasAuthSuccess = redirectUrl.includes("auth_success=");
   const separator = redirectUrl.includes("?") ? "&" : "?";
-  const urlWithDiag = `${redirectUrl}${separator}_s=${cookiesToSet.length}`;
+  const urlWithDiag = alreadyHasAuthSuccess
+    ? `${redirectUrl}${separator}_s=${cookiesToSet.length}`
+    : `${redirectUrl}${separator}_s=${cookiesToSet.length}&auth_success=login_${provider}`;
 
   const response = NextResponse.redirect(urlWithDiag);
   // 교환된 세션 쿠키를 Response에 직접 첨부 (모바일 핵심)

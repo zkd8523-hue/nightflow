@@ -92,7 +92,7 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
         <br />
         <span className="text-emerald-400">주대는 ⬇️ &nbsp; 서비스는 ⬆️</span>
         <br />
-        지금 바로 구경해봐요!
+        지금 바로 입찰해봐요!
       </>
     ),
     note: "🛡 결제 없이 입찰 · 낙찰되면 MD가 안내",
