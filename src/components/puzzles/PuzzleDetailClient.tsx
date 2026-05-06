@@ -433,7 +433,7 @@ export function PuzzleDetailClient({
               )}
               {isLeader && acceptedOffer && (acceptedOffer.md as { instagram?: string | null } | null)?.instagram && (
                 <a
-                  href={`https://instagram.com/${(acceptedOffer.md as { instagram: string }).instagram.replace(/^@/, "")}`}
+                  href={`https://instagram.com/${((acceptedOffer.md as unknown) as { instagram: string }).instagram.replace(/^@/, "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 text-[13px] font-bold text-white hover:opacity-80 transition-opacity"
