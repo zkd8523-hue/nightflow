@@ -150,7 +150,7 @@ export function MyBidsClient({
   const [puzzles] = useState<Puzzle[]>(initialPuzzles);
 
   const hasInitialUrgentWon = initialWonAuctions.some(a => a.status === "won" && !a.fallback_offered_to);
-  const defaultTab = initialTab === "puzzle" ? "puzzle" : initialTab === "chat" ? "chat" : initialTab === "ended" ? "ended" : hasInitialUrgentWon ? "ended" : "active";
+  const defaultTab = initialTab === "puzzle" ? "puzzle" : initialTab === "ended" ? "ended" : hasInitialUrgentWon ? "ended" : "active";
 
   const fetchBids = useCallback(async () => {
     const supabase = createClient();
@@ -486,7 +486,7 @@ export function MyBidsClient({
         </header>
 
         <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="w-full bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800 grid grid-cols-4">
+          <TabsList className="w-full bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800 grid grid-cols-3">
             <TabsTrigger
               value="puzzle"
               className="rounded-lg text-[12px] font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white text-neutral-500"
@@ -500,12 +500,6 @@ export function MyBidsClient({
               📅 얼리버드
             </TabsTrigger>
             <TabsTrigger
-              value="chat"
-              className="rounded-lg text-[12px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500"
-            >
-              🔥 오늘특가
-            </TabsTrigger>
-            <TabsTrigger
               value="ended"
               className="rounded-lg text-[12px] font-bold data-[state=active]:bg-white data-[state=active]:text-black text-neutral-500 relative"
             >
@@ -517,23 +511,6 @@ export function MyBidsClient({
               )}
             </TabsTrigger>
           </TabsList>
-
-          {/* 대화중 탭 */}
-          <TabsContent value="chat" className="mt-4">
-            <div className="space-y-4">
-              {activeInterests.length > 0 ? (
-                activeInterests.map((interest) => (
-                  <ChatInterestCard
-                    key={interest.id}
-                    interest={interest}
-                    isEnded={false}
-                  />
-                ))
-              ) : (
-                <EmptyChat />
-              )}
-            </div>
-          </TabsContent>
 
           {/* 입찰중 탭 */}
           <TabsContent value="active" className="mt-4">

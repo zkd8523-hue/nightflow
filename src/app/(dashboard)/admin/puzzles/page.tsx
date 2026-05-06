@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AdminPuzzleRefundButton } from "@/components/admin/AdminPuzzleRefundButton";
 import { AdminPuzzleOffersDropdown } from "@/components/admin/AdminPuzzleOffersDropdown";
+import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
 import { AlertTriangle, ChevronLeft, Flag, User } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -314,6 +315,13 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                         {leader?.kakao_open_chat_url && <span>💬 카톡 오픈챗</span>}
                       </div>
                     </div>
+
+                    {/* 깃발 취소 (open 상태만) */}
+                    {puzzle.status === "open" && (
+                      <div className="flex justify-end border-t border-neutral-800 pt-3">
+                        <AdminCancelPuzzleButton puzzleId={puzzle.id} />
+                      </div>
+                    )}
 
                     {/* 오퍼 드롭다운 */}
                     <AdminPuzzleOffersDropdown
