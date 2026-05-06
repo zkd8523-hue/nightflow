@@ -664,8 +664,18 @@ export function PuzzleDetailClient({
                 {myOffer.comment && (
                   <p className="text-[12px] text-neutral-400 italic">"{myOffer.comment}"</p>
                 )}
-                {myOffer.status === "accepted" && (
-                  <p className="text-[12px] text-amber-400">방장의 카카오 링크로 직접 연락하세요!</p>
+                {myOffer.status === "accepted" && puzzle.kakao_open_chat_url && (
+                  <a
+                    href={puzzle.kakao_open_chat_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-[12px] font-bold text-amber-400 underline underline-offset-2"
+                  >
+                    방장의 카카오 오픈채팅으로 연락하기 →
+                  </a>
+                )}
+                {myOffer.status === "accepted" && !puzzle.kakao_open_chat_url && (
+                  <p className="text-[12px] text-amber-400">방장이 아직 카카오 링크를 등록하지 않았습니다.</p>
                 )}
                 {myOffer.status === "pending" && isOpen && (
                   <Button
