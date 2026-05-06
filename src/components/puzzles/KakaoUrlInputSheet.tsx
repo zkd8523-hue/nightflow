@@ -33,7 +33,7 @@ export function KakaoUrlInputSheet({ open, onClose, onSubmit }: KakaoUrlInputShe
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <SheetContent side="bottom" className="rounded-t-3xl bg-[#1C1C1E] border-t border-neutral-800 pb-10">
+      <SheetContent side="bottom" className="rounded-t-3xl bg-[#1C1C1E] border-t border-neutral-800 px-5 pb-10">
         <div className="flex flex-col gap-4 pt-2">
           <div>
             <SheetTitle className="text-white font-black text-[18px]">제안 수락 - 오픈채팅 링크</SheetTitle>
