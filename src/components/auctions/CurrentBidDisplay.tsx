@@ -44,7 +44,7 @@ export const CurrentBidDisplay = memo(function CurrentBidDisplay({
 
   return (
     <div className="bg-neutral-900/50 border border-neutral-800/50 rounded-lg p-6 text-center space-y-3">
-      <p className="text-sm text-neutral-400">{isInstant ? "예약가" : "현재 최고 입찰가"}</p>
+      <p className="text-sm text-neutral-400">{isInstant ? "예약가" : bidderCount === 0 ? "시작가" : "현재 최고 입찰가"}</p>
       <p className="text-4xl font-black text-white">{formatPrice(amount)}</p>
       {!isInstant && (
         <div className="flex items-center justify-center gap-4 text-sm text-neutral-500">

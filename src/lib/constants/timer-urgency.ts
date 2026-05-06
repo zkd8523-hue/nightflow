@@ -52,8 +52,8 @@ export const URGENCY_STYLES_COMPACT: Record<UrgencyLevel, {
 /** 레벨별 라벨 텍스트 */
 export const URGENCY_LABELS: Record<UrgencyLevel, string> = {
   idle: '남은 시간',
-  normal: 'LIVE',
-  warning: 'LIVE',
+  normal: '●',
+  warning: '●',
   critical: '곧 종료!',
 };
 

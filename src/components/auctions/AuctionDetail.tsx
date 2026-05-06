@@ -451,10 +451,10 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         )}
 
         {/* 2. Current Bid Status Card (High Urgency) */}
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-5 space-y-3 shadow-2xl">
-          <div className="space-y-1">
+        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 space-y-2 shadow-2xl">
+          <div className="space-y-0.5">
             <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">
-              {isInstant ? "예약가" : "현재 최고 입찰가"}
+              {isInstant ? "예약가" : (displayAuction.bidder_count ?? 0) === 0 ? "시작가" : "현재 최고 입찰가"}
             </p>
             <CurrentBidDisplay
               amount={displayAuction.current_bid || displayAuction.start_price}
@@ -464,10 +464,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               isOutbid={isOutbid}
               isInstant={isInstant}
             />
-            <p className="text-[11px] text-neutral-500 leading-relaxed">
-              NightFlow는 수수료를 받지 않아요!<br />
-              모든 예약은 MD에게 직접 결제
-            </p>
+
           </div>
 
           <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} isInstant={isInstant} />
@@ -493,10 +490,10 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               <Calendar className="w-3.5 h-3.5 text-neutral-500" />
               <span className="text-[11px] text-neutral-500 font-bold tracking-wider">방문 일정</span>
             </div>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
               <p className="text-[16px] text-white font-bold">{formatEventDate(displayAuction.event_date)}</p>
               {displayAuction.entry_time ? (
-                <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
+                <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full mt-0.5">
                   <Clock className="w-3 h-3 text-blue-400" />
                   <span className="text-[11px] font-bold text-blue-400">{formatEntryTime(displayAuction.entry_time, displayAuction.event_date)}</span>
                 </div>
@@ -620,7 +617,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
                 실시간 입찰 기록
               </h2>
-              <span className="text-[11px] text-neutral-500 font-bold">LIVE</span>
+              <span className="text-[11px] text-red-500">●</span>
             </div>
             <BidHistory
               bids={bids}
@@ -684,13 +681,6 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           </div>
         )}
 
-        {/* 결제 안내 */}
-        {!isInstant && isActive && (
-          <p className="text-[13px] text-neutral-500 text-center mt-3 leading-relaxed">
-            💚 NightFlow는 수수료를 받지 않아요 💚<br />
-            낙찰 후 MD에게 직접 결제하시면 됩니다
-          </p>
-        )}
 
 
         {/* 게시글 신고 */}

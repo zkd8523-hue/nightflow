@@ -40,7 +40,9 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
   const { user } = useCurrentUser();
   const bids = useAuctionStore((s) => s.bids);
   const supabase = createClient();
-  const [bidAmount, setBidAmount] = useState(0);
+  const minBid = getMinBidAmount(auction);
+  const presets = getBidPresets(auction);
+  const [bidAmount, setBidAmount] = useState(minBid);
   const [loading, setLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -55,8 +57,6 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
 
   const isActive = isAuctionActive(auction);
   const isExpired = isAuctionExpired(auction);
-  const minBid = getMinBidAmount(auction);
-  const presets = getBidPresets(auction);
 
   // 현재 최고 입찰자인지 확인 (bids[0]이 최신 입찰)
   const isHighestBidder = user && bids.length > 0 && bids[0]?.bidder_id === user.id;
@@ -207,18 +207,6 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
   return (
     <>
       <Card className="p-3 space-y-2.5 bg-[#1C1C1E] border-neutral-800/50">
-        {/* 얼리버드 경매: 방문 당일 재확인 안내 */}
-        {isActive && isEarlybird(auction) && (
-          <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <CalendarCheck className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-            <p className="text-[12px] text-amber-400/90 font-bold leading-snug">
-              낙찰 성공 시 안내 메시지가 발송됩니다.
-              <br />
-              1시간 내 MD에게 연락하면 예약 확정!
-            </p>
-          </div>
-        )}
-
         <div className="space-y-1">
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider ml-1">빠른 입찰</p>
           <div className="grid grid-cols-3 gap-2">
@@ -235,7 +223,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                     }`}
                 >
                   <span>{label}</span>
-                  {i === 0 && <span className={`text-[9px] font-medium ${bidAmount === amount ? "text-neutral-500" : "text-neutral-500"}`}>최소</span>}
+                  {i === 0 && <span className={`text-[9px] font-medium ${bidAmount === amount ? "text-neutral-500" : "text-neutral-500"}`}>{bids.length === 0 ? "시작가" : "최소"}</span>}
                 </Button>
               );
             })}
@@ -269,37 +257,43 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
           </div>
         )}
 
-        {!user ? (
-          <Button
-            onClick={() => {
-              // 분석용 이벤트 기록 후 로그인 이동
-              trackBid('start', {
-                id: auction.id,
-                clubName: auction.club?.name || "알수없음",
-                is_guest: true
-              });
-              router.push(`/login?redirect=/auctions/${auction.id}`);
-            }}
-            className="w-full h-12 text-base font-black rounded-xl bg-white text-black hover:bg-neutral-200 shadow-xl animate-pulse"
-          >
-            로그인하고 입찰하기
-          </Button>
-        ) : (
-          <Button
-            className={`w-full h-12 text-base font-black rounded-xl transition-all active:scale-[0.98] ${getButtonStyle()}`}
-            onClick={() => {
-              setShowConfirm(true);
-              // [통합 분석] 입찰 시도(시작) 트래킹
-              trackBid('start', {
-                id: auction.id,
-                clubName: auction.club?.name || "알수없음",
-              });
-            }}
-            disabled={!isActive || bidAmount < minBid || loading || isHighestBidder}
-          >
-            {getButtonContent()}
-          </Button>
-        )}
+        <div className="flex flex-col gap-2">
+          {!user ? (
+            <Button
+              onClick={() => {
+                // 분석용 이벤트 기록 후 로그인 이동
+                trackBid('start', {
+                  id: auction.id,
+                  clubName: auction.club?.name || "알수없음",
+                  is_guest: true
+                });
+                router.push(`/login?redirect=/auctions/${auction.id}`);
+              }}
+              className="w-full h-12 text-base font-black rounded-xl bg-white text-black hover:bg-neutral-200 shadow-xl animate-pulse"
+            >
+              로그인하고 입찰하기
+            </Button>
+          ) : (
+            <Button
+              className={`w-full h-12 text-base font-black rounded-xl transition-all active:scale-[0.98] ${getButtonStyle()}`}
+              onClick={() => {
+                setShowConfirm(true);
+                // [통합 분석] 입찰 시도(시작) 트래킹
+                trackBid('start', {
+                  id: auction.id,
+                  clubName: auction.club?.name || "알수없음",
+                });
+              }}
+              disabled={!isActive || bidAmount < minBid || loading || isHighestBidder}
+            >
+              {getButtonContent()}
+            </Button>
+          )}
+          <div className="flex items-center justify-center gap-1.5 text-[12px] text-green-400 font-semibold">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            결제 없이 입찰 · 낙찰되면 MD가 안내해요
+          </div>
+        </div>
 
       </Card>
 
@@ -333,6 +327,16 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                   본 금액은 나이트플로우를 거치지 않고 <span className="text-white font-bold">MD와 직접 결제</span>합니다.
                 </p>
               </div>
+              {isEarlybird(auction) && (
+                <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                  <CalendarCheck className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-[12px] text-amber-400/90 font-bold leading-snug">
+                    낙찰 성공 시 안내 메시지가 발송됩니다.
+                    <br />
+                    1시간 내 MD에게 연락하면 예약 확정!
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* 마감 임박 시 연장 안내 */}

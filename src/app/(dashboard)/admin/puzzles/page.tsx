@@ -283,7 +283,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                             파티 {puzzle.current_count}/{puzzle.target_count}명
                           </p>
                           <p className="text-[11px] text-neutral-700 mt-0.5">
-                            등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                            등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                           </p>
                         </div>
                         <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[puzzle.status] || "bg-neutral-700 text-neutral-400"}`}>
@@ -369,7 +369,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                           {md?.instagram ? ` · @${md.instagram}` : ""}
                         </p>
                         <p className="text-[11px] text-neutral-700">
-                          {new Date(offer.created_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                          {new Date(offer.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                         </p>
                       </div>
                       <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full shrink-0 ${OFFER_STATUS_COLOR[offer.status] || "bg-neutral-700 text-neutral-400"}`}>
@@ -440,7 +440,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                           className="bg-neutral-900 rounded-lg px-3 py-2 text-[12px] text-neutral-300"
                         >
                           <span className="text-neutral-500 mr-2">
-                            {new Date(report!.created_at).toLocaleDateString("ko-KR")}
+                            {new Date(report!.created_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}
                           </span>
                           {report!.reason}
                         </div>

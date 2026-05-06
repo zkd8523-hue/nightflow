@@ -166,11 +166,11 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           <span className="absolute -top-2.5 left-3 text-[10px] font-black bg-amber-500 text-black px-2 py-0.5 rounded-full">
             Tip
           </span>
-          <p className="text-[14px] text-white font-bold leading-snug whitespace-pre-line">
+          <p className="text-[14px] text-white font-bold leading-snug whitespace-pre-line break-keep">
             {tabPromises[tab].content}
           </p>
           {tabPromises[tab].note && (
-            <p className="absolute bottom-1.5 right-3 text-[10px] text-amber-300/70 font-medium">
+            <p className="mt-2 text-right text-[10px] text-amber-300/70 font-medium whitespace-nowrap">
               {tabPromises[tab].note}
             </p>
           )}

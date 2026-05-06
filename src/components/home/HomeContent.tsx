@@ -95,7 +95,7 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
         지금 바로 구경해봐요!
       </>
     ),
-    note: "💡 모든 서비스 무료",
+    note: "🛡 결제 없이 입찰 · 낙찰되면 MD가 안내",
   },
   puzzle: {
     content: (
