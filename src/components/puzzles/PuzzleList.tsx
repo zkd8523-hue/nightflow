@@ -158,6 +158,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
       {userRole !== "md" && (
         <Link
           href={userRole ? "/flags/new" : "/login?redirect=/flags/new"}
+          onClick={() => trackEvent("puzzle_cta_click", { source: "list_float" })}
           className="fixed bottom-24 right-4 flex items-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-full pl-4 pr-3 py-3 shadow-lg z-40 transition-colors border-2 border-black"
         >
           <span className="text-black text-sm font-semibold whitespace-nowrap">

@@ -6,6 +6,7 @@ import { Heart, Flag, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePuzzleFavoritesContext } from "@/components/providers";
 import type { Puzzle, GenderPref, AgePref, VibePref } from "@/types/database";
+import { trackEvent } from "@/lib/analytics/events";
 
 interface PuzzleCardProps {
   puzzle: Puzzle;
@@ -229,6 +230,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              trackEvent("puzzle_cta_click", { source: "card" });
               router.push("/flags/new");
             }}
             className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"

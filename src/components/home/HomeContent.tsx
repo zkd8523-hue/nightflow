@@ -13,6 +13,7 @@ import type { Auction, Puzzle } from "@/types/database";
 import { isAuctionExpired } from "@/lib/utils/auction";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
+import { trackEvent } from "@/lib/analytics/events";
 
 const GUIDE_DISMISSED_KEY = "nightflow_guide_dismissed";
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_cta_shown";
@@ -80,17 +81,39 @@ const PUZZLE_ONBOARDING_STEPS = [
   },
 ];
 
-const TAB_PROMISES = {
-  today: "지금 비어있는 자리, 한눈에",
-  advance: "주말되면 자리 없다구요~\n지금 바로 특가 입찰에 도전!",
-  puzzle: "DM 예약 시대는 끝!\n예산만 등록하면, MD들이 먼저 오퍼를 보내와요.",
-} as const;
+type TabPromise = { content: React.ReactNode; note?: React.ReactNode };
 
-const TAB_PROMISES_MD = {
-  today: "지금 비어있는 자리, 한눈에",
-  advance: "주말 빈 테이블 걱정이시죠?\n최소 수익을 미리 확정하고, 최고가를 발견해봐요! 🎯",
-  puzzle: "유저들의 예산이 기다리고 있어요 💰\n지금 바로 제안해서 매출로 만들어봐요!",
-} as const;
+const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
+  today: { content: "지금 비어있는 자리, 한눈에" },
+  advance: {
+    content: (
+      <>
+        먼저 예약하는 당신, 자격 있다!
+        <br />
+        <span className="text-emerald-400">주대는 ⬇️ &nbsp; 서비스는 ⬆️</span>
+        <br />
+        지금 바로 구경해봐요!
+      </>
+    ),
+    note: "💡 모든 서비스 무료",
+  },
+  puzzle: {
+    content: (
+      <>
+        Dm 예약 시대는 끝!
+        <br />
+        예산만 등록하면, MD들이 <span className="text-emerald-400">시크릿 오퍼</span>를 보내와요.
+      </>
+    ),
+    note: "💡 모든 서비스 무료",
+  },
+};
+
+const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle", TabPromise> = {
+  today: { content: "지금 비어있는 자리, 한눈에" },
+  advance: { content: "주말 빈 테이블 걱정이시죠?\n최소 수익을 미리 확정하고, 최고가를 발견해봐요! 🎯" },
+  puzzle: { content: "유저들의 예산이 기다리고 있어요 💰\n지금 바로 제안해서 매출로 만들어봐요!" },
+};
 
 interface HomeContentProps {
   activeAuctions: Auction[];
@@ -164,6 +187,7 @@ export function HomeContent({
   };
 
   const handleGoToFlagNew = () => {
+    trackEvent("puzzle_cta_click", { source: "home" });
     localStorage.setItem(FLAG_CTA_SHOWN_KEY, "1");
     setShowFlagCTA(false);
     router.push("/flags/new");
@@ -418,21 +442,10 @@ export function HomeContent({
           <div className="flex flex-col items-center text-center pt-2 pb-4 gap-4">
             <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center text-3xl">⛳</div>
             <div>
-              <SheetTitle className="text-white font-black text-2xl">같은 예산으로도<br />최상의 테이블을 얻는 방법!</SheetTitle>
+              <SheetTitle className="text-amber-400 font-black text-2xl">같은 돈으로 더 크게 놀자!</SheetTitle>
               <SheetDescription className="text-neutral-400 text-sm mt-1">
                 날짜·지역만 찍으면 MD들이 알아서 붙어요
               </SheetDescription>
-            </div>
-            <div className="w-full flex flex-col gap-2">
-              {PUZZLE_ONBOARDING_STEPS.map((step) => (
-                <div key={step.title} className={`flex items-center gap-3 rounded-xl px-4 py-3 ${step.color}`}>
-                  {step.icon}
-                  <div className="text-left">
-                    <p className="text-white text-sm font-semibold">{step.title}</p>
-                    <p className="text-neutral-400 text-xs">{step.desc}</p>
-                  </div>
-                </div>
-              ))}
             </div>
             <Button onClick={handleGoToFlagNew} className="w-full h-14 bg-white text-black font-black text-base rounded-2xl">
               지금 깃발 꽂으러 가기 →

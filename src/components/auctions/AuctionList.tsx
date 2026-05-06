@@ -25,7 +25,7 @@ interface AuctionListProps {
   initialTab?: "today" | "advance" | "puzzle";
   onTabChange?: (tab: "today" | "advance" | "puzzle") => void;
   onShowGuide?: () => void;
-  tabPromises?: Record<"today" | "advance" | "puzzle", string>;
+  tabPromises?: Record<"today" | "advance" | "puzzle", { content: React.ReactNode; note?: React.ReactNode }>;
   guideSlot?: React.ReactNode;
 }
 
@@ -167,8 +167,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             Tip
           </span>
           <p className="text-[14px] text-white font-bold leading-snug whitespace-pre-line">
-            {tabPromises[tab]}
+            {tabPromises[tab].content}
           </p>
+          {tabPromises[tab].note && (
+            <p className="absolute bottom-1.5 right-3 text-[10px] text-amber-300/70 font-medium">
+              {tabPromises[tab].note}
+            </p>
+          )}
         </div>
       )}
 

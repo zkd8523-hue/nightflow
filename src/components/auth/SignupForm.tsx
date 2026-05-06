@@ -107,6 +107,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             return;
           }
           setAuthUser(user);
+          trackEvent("signup_start", { provider: user.app_metadata?.provider ?? "unknown" });
           // 테스트 모드: 프리셋 계정이면 약관/전화번호 자동 채움
           if (isTestLoginEnabled && user.email && TEST_PHONE_BY_EMAIL[user.email]) {
             setAgreeAge(true);
@@ -146,6 +147,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
   const handleAgreeNext = () => {
     if (!requiredMet) return;
+    trackEvent("signup_agree", { marketing_consent: agreeMarketing });
     setStep("phone");
   };
 
@@ -208,6 +210,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       }
 
       const verifiedPhone: string = verifyData.phone;
+      trackEvent("signup_phone_verified");
 
       setLoading(true);
       const displayName = await generateRandomNickname(supabase);

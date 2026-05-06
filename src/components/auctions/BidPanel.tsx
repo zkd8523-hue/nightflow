@@ -209,10 +209,12 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
       <Card className="p-3 space-y-2.5 bg-[#1C1C1E] border-neutral-800/50">
         {/* 얼리버드 경매: 방문 당일 재확인 안내 */}
         {isActive && isEarlybird(auction) && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-            <CalendarCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <div className="flex items-start gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <CalendarCheck className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
             <p className="text-[12px] text-amber-400/90 font-bold leading-snug">
-              낙찰 후 1시간 내 미연락 시 자동 취소
+              낙찰 성공 시 안내 메시지가 발송됩니다.
+              <br />
+              1시간 내 MD에게 연락하면 예약 확정!
             </p>
           </div>
         )}
