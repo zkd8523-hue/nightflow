@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Script from "next/script";
+import { Suspense } from "react";
 import { Geist, Geist_Mono, Nanum_Pen_Script } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -168,7 +169,9 @@ export default function RootLayout({
 
         <ErrorBoundary>
           <Providers>
-            <LoginSuccessTracker />
+            <Suspense fallback={null}>
+              <LoginSuccessTracker />
+            </Suspense>
             <OfflineBanner />
             {children}
             <Toaster />

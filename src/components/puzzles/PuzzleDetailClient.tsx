@@ -450,8 +450,14 @@ export function PuzzleDetailClient({
                 <Building2 className="w-4 h-4 text-neutral-400" />
                 <h2 className="text-[14px] font-bold text-neutral-300">MD 제안</h2>
               </div>
-              <span className="text-[12px] text-neutral-500">
-                {isAccepted ? "제안 마감" : pendingOffers.length === 0 ? "아직 제안 없음" : ""}
+              <span className="text-[11px] text-neutral-500">
+                {isAccepted
+                  ? "제안 마감"
+                  : pendingOffers.length === 0
+                  ? "아직 제안 없음"
+                  : !isLeader
+                  ? "🔒 방장에게만 공개"
+                  : ""}
               </span>
             </div>
 
@@ -609,7 +615,6 @@ export function PuzzleDetailClient({
                       )}
                       <p className="text-[12px] text-neutral-400 italic">"토요일 자리 확보 가능합니다"</p>
                     </div>
-                    <p className="text-[11px] text-neutral-600">제안 내용은 방장에게만 공개됩니다</p>
                   </div>
                 ))}
               </div>

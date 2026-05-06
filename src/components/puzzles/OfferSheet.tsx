@@ -228,23 +228,29 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
         side="bottom"
         className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-5 pb-10 max-h-[92vh] overflow-y-auto"
       >
-        <SheetHeader className="mb-5">
+        <SheetHeader className="p-0 mb-3">
           <SheetTitle className="text-white text-[17px] font-black text-left">
             MD 제안서 보내기
           </SheetTitle>
-          <div className="text-left space-y-0.5">
+          <div className="text-left space-y-0">
             <p className="text-[13px] text-neutral-400">
               {formatDate(puzzle.event_date)} {puzzle.area}
             </p>
-            <p className="text-[13px] text-neutral-500">
-              현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원 / 목표 {baseBudget.toLocaleString()}원 · {puzzle.current_count}/{puzzle.target_count}명
-            </p>
+            {puzzle.is_recruiting_party ? (
+              <p className="text-[13px] text-neutral-500">
+                현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원 / 목표 {baseBudget.toLocaleString()}원 · {puzzle.current_count}/{puzzle.target_count}명
+              </p>
+            ) : (
+              <p className="text-[16px] text-white font-black">
+                {baseBudget.toLocaleString()}원 <span className="text-[13px] text-neutral-500 font-normal ml-1">· {puzzle.target_count}명</span>
+              </p>
+            )}
           </div>
         </SheetHeader>
 
         {/* 슬롯 & 크레딧 상태 */}
-        <div className="mb-5">
-          <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-3 flex justify-between items-center">
+        <div className="mb-4">
+          <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-2.5 flex justify-between items-center">
             <button
               type="button"
               onClick={() => activeOffers > 0 && setShowSlotDropdown((v) => !v)}
