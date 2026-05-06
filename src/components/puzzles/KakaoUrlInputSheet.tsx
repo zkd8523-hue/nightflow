@@ -36,10 +36,10 @@ export function KakaoUrlInputSheet({ open, onClose, onSubmit }: KakaoUrlInputShe
       <SheetContent side="bottom" className="rounded-t-3xl bg-[#1C1C1E] border-t border-neutral-800 pb-10">
         <div className="flex flex-col gap-4 pt-2">
           <div>
-            <SheetTitle className="text-white font-black text-[18px]">카카오 오픈채팅 URL 입력</SheetTitle>
+            <SheetTitle className="text-white font-black text-[18px]">제안 수락 - 오픈채팅 링크</SheetTitle>
             <SheetDescription className="text-neutral-400 text-[13px] mt-1">
-              제안을 수락했습니다. MD와 연락할 오픈채팅 방 링크를 입력해주세요.
-              수락한 MD에게만 공개됩니다.
+              MD가 연락할 오픈채팅 방 링크를 입력해야 수락이 완료됩니다.
+              닫으면 수락이 취소됩니다. (수락한 MD에게만 공개)
             </SheetDescription>
           </div>
 
@@ -58,7 +58,7 @@ export function KakaoUrlInputSheet({ open, onClose, onSubmit }: KakaoUrlInputShe
             disabled={submitting || !kakaoUrl}
             className="w-full h-14 bg-white text-black font-black text-base rounded-2xl hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500"
           >
-            {submitting ? "저장 중..." : "저장하고 완료"}
+            {submitting ? "수락 중..." : "수락 완료"}
           </Button>
         </div>
       </SheetContent>

@@ -80,7 +80,7 @@ export function PuzzleDetailClient({
   const [acceptedOffer, setAcceptedOffer] = useState<PuzzleOffer | null>(null);
   const [acceptedKakaoUrl, setAcceptedKakaoUrl] = useState<string | null>(null);
   const [showKakaoUrlSheet, setShowKakaoUrlSheet] = useState(false);
-  const [pendingAcceptedPuzzleId, setPendingAcceptedPuzzleId] = useState<string | null>(null);
+  const [pendingAcceptOfferId, setPendingAcceptOfferId] = useState<string | null>(null);
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/flags/${puzzle.id}`;
@@ -210,41 +210,38 @@ export function PuzzleDetailClient({
 
   const handleAcceptOffer = async (offerId: string) => {
     if (!confirm("이 제안을 수락하시겠습니까? 수락 후에는 취소할 수 없습니다.")) return;
+    setPendingAcceptOfferId(offerId);
+    setShowKakaoUrlSheet(true);
+  };
+
+  const handleKakaoUrlSubmit = async (url: string) => {
+    if (!pendingAcceptOfferId) return;
     setActionLoading(true);
     try {
-      const { data, error } = await supabase.rpc("accept_offer", { p_offer_id: offerId });
+      const { data, error } = await supabase.rpc("accept_offer", {
+        p_offer_id: pendingAcceptOfferId,
+        p_kakao_open_chat_url: url,
+      });
       if (error) throw error;
-      if (!data?.success) { toast.error(data?.error || "수락에 실패했습니다"); return; }
+      if (!data?.success) {
+        toast.error(data?.error || "수락에 실패했습니다");
+        return;
+      }
       trackEvent('puzzle_offer_accepted', {
         puzzle_id: puzzle.id,
-        offer_id: offerId,
+        offer_id: pendingAcceptOfferId,
       });
-      toast.success("제안을 수락했습니다! 카카오 오픈채팅 URL을 입력해주세요.");
-      setPendingAcceptedPuzzleId(puzzle.id);
-      setShowKakaoUrlSheet(true);
+      setAcceptedKakaoUrl(url);
+      setShowKakaoUrlSheet(false);
+      setPendingAcceptOfferId(null);
+      toast.success("수락 완료! MD가 곧 연락할 예정입니다.");
       await loadOffers();
+      router.refresh();
     } catch {
       toast.error("수락에 실패했습니다");
     } finally {
       setActionLoading(false);
     }
-  };
-
-  const handleKakaoUrlSubmit = async (url: string) => {
-    if (!pendingAcceptedPuzzleId) return;
-    const { error } = await supabase
-      .from("puzzles")
-      .update({ kakao_open_chat_url: url })
-      .eq("id", pendingAcceptedPuzzleId);
-    if (error) {
-      toast.error("URL 저장에 실패했습니다");
-      return;
-    }
-    setAcceptedKakaoUrl(url);
-    setShowKakaoUrlSheet(false);
-    setPendingAcceptedPuzzleId(null);
-    toast.success("완료! MD가 곧 연락할 예정입니다.");
-    router.refresh();
   };
 
   const handleRejectOffer = async (offerId: string) => {
@@ -825,7 +822,10 @@ export function PuzzleDetailClient({
 
       <KakaoUrlInputSheet
         open={showKakaoUrlSheet}
-        onClose={() => setShowKakaoUrlSheet(false)}
+        onClose={() => {
+          setShowKakaoUrlSheet(false);
+          setPendingAcceptOfferId(null);
+        }}
         onSubmit={handleKakaoUrlSubmit}
       />
     </div>
