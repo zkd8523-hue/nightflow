@@ -99,9 +99,9 @@ export async function POST(request: NextRequest) {
       auctionData.max_extensions = 0;
     }
 
-    // 4-c. 얼리버드 타이밍 규칙 강제 (Migration 089)
-    //      - event_date = 오늘 + 7일 이내 (슬라이딩 윈도우)
-    //      - auction_end_at = KST 21:00 고정, 이벤트 -2일 이상 이전
+    // 4-c. 얼리버드 타이밍 규칙 강제 (Migration 089 → 137)
+    //      - event_date = 오늘 + 14일 이내 (슬라이딩 윈도우)
+    //      - auction_end_at = KST 21:00 고정, 이벤트 전날(-1일) 이상 이전
     //      - auction_start_at = now() 서버 강제 (신규 등록만)
     if (auctionData.listing_type === 'auction') {
       if (!auctionData.event_date || !auctionData.auction_end_at) {
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       }
       if (process.env.NODE_ENV !== "development" && !isEarlybirdEndValid(auctionData.event_date, auctionData.auction_end_at)) {
         return NextResponse.json(
-          { error: "마감은 이벤트 -2일 이전 21:00이어야 합니다." },
+          { error: "마감은 이벤트 전날 21:00 이전이어야 합니다." },
           { status: 400 }
         );
       }

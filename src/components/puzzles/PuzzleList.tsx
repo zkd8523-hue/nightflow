@@ -25,9 +25,10 @@ interface PuzzleListProps {
   puzzles: Puzzle[];
   userRole?: "user" | "md" | "admin";
   offerCounts?: Record<string, number>;
+  selectedArea?: string | null;
 }
 
-export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListProps) {
+export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
   const [myPuzzleIds, setMyPuzzleIds] = useState<Set<string>>(new Set());
@@ -80,14 +81,30 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {} }: PuzzleListPr
         <div className="flex flex-col items-center justify-center py-20 gap-2">
           <div className="absolute top-0 right-0">{toggleButton}</div>
           <div className="space-y-2 text-center">
-            <p className="text-[15px] font-bold text-neutral-300">
-              {!isMd && toggleOn ? "모집 중인 깃발이 없어요" : "아직 꽂혀 있는 깃발이 없어요"}
-            </p>
-            <p className="text-[12px] text-neutral-500 leading-relaxed">
-              {!isMd && toggleOn
-                ? "파티원을 모집 중인 깃발이 아직 없어요"
-                : "깃발을 꽂으면 MD가 몰려와\n클럽·테이블 조건을 제안해요"}
-            </p>
+            {!isMd && toggleOn ? (
+              <>
+                <p className="text-[15px] font-bold text-neutral-300">모집 중인 깃발이 없어요</p>
+                <p className="text-[12px] text-neutral-500 leading-relaxed">
+                  파티원을 모집 중인 깃발이 아직 없어요
+                </p>
+              </>
+            ) : isMd ? (
+              <>
+                <p className="text-[15px] font-bold text-neutral-300">아직 꽂혀 있는 깃발이 없어요</p>
+                <p className="text-[12px] text-neutral-500 leading-relaxed">
+                  깃발이 꽂히면 알림으로 알려드릴게요
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-[15px] font-black text-white">
+                  {selectedArea && selectedArea !== "다른지역" ? `${selectedArea} ` : ""}MD들이 24시간 기다리고 있어요
+                </p>
+                <p className="text-[12px] text-amber-400 font-semibold leading-relaxed">
+                  첫 번째 깃발을 꽂아보세요!
+                </p>
+              </>
+            )}
           </div>
         </div>
       ) : (

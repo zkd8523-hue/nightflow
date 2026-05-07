@@ -31,7 +31,7 @@ interface AuctionListProps {
 export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot }: AuctionListProps) {
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
-    return auctions.filter(a => a.club?.area === selectedArea);
+    return auctions.filter(a => matchesArea(a.club?.area, selectedArea));
   };
 
   const liveAndUpcoming = [...filterByArea(initialAuctions)].sort((a, b) => {
@@ -198,6 +198,16 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               {area}
             </button>
           ))}
+          <button
+            onClick={() => onAreaChange("다른지역")}
+            className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+              selectedArea === "다른지역"
+                ? "bg-white text-black"
+                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+            }`}
+          >
+            다른지역
+          </button>
         </div>
       )}
 
@@ -284,6 +294,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           puzzles={filteredPuzzles}
           userRole={userRole}
           offerCounts={puzzleOfferCounts}
+          selectedArea={selectedArea}
         />
       )}
 

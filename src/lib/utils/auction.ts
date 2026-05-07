@@ -7,17 +7,17 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 // ============================================================================
-// 얼리버드 경매 타이밍 규칙 (Migration 089)
+// 얼리버드 경매 타이밍 규칙 (Migration 089 → 137)
 // ============================================================================
 // - 마감 시각: 항상 21:00 KST 고정
-// - 마감일: 이벤트일 -2일 또는 그 이전 (MD 선택)
+// - 마감일: 이벤트일 전날(-1일) 또는 그 이전, 최대 -3일 (MD 선택)
 // - 경매 시작: 등록 즉시 (서버에서 now() 강제)
 // - 연락 타이머: 60분 단일 (낙찰 후 MD 연락 마감)
 // ============================================================================
 
 export const EARLYBIRD_END_HOUR_KST = 21;
-export const EARLYBIRD_MIN_BUFFER_DAYS = 2;
-export const EARLYBIRD_MAX_DAYS_BEFORE = 4;
+export const EARLYBIRD_MIN_BUFFER_DAYS = 1;
+export const EARLYBIRD_MAX_DAYS_BEFORE = 3;
 export const EARLYBIRD_MAX_EVENT_DAYS_AHEAD = 14;
 export const CONTACT_TIMER_MINUTES = 60;
 const KST = "Asia/Seoul";

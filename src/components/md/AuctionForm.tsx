@@ -66,7 +66,7 @@ const formSchema = z.object({
         } else if (process.env.NODE_ENV !== "development" && !isEarlybirdEndValid(data.event_date, data.auction_end_at)) {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
-                message: "마감은 이벤트 -2일 이전 21:00이어야 합니다.",
+                message: "마감은 이벤트 전날 21:00 이전이어야 합니다.",
                 path: ["auction_end_at"],
             });
         }
@@ -143,8 +143,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [showShareSheet, setShowShareSheet] = useState(false);
     const [createdAuctionId, setCreatedAuctionId] = useState<string | null>(null);
 
-    // 얼리버드 기본 event_date: 오늘 + 3일 (→ 마감 옵션 최소 1개 보장)
-    const defaultEarlybirdEventDate = dayjs().add(3, "day").format("YYYY-MM-DD");
+    // 얼리버드 기본 event_date: 오늘 + 2일 (→ 마감 옵션 최소 1개 보장, -1일 버퍼 기준)
+    const defaultEarlybirdEventDate = dayjs().add(2, "day").format("YYYY-MM-DD");
     const initialEventDate = initialData?.event_date
         || (prefill?.event_date)
         || (initialData?.listing_type === "auction" ? defaultEarlybirdEventDate : getClubEventDate());
@@ -966,7 +966,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-3">
                     <div className={`space-y-2 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
                         {auctionMode === "advance" && (
-                            <span className="text-[11px] text-neutral-500">마감은 이벤트일 최소 2일 전.</span>
+                            <span className="text-[11px] text-neutral-500">마감은 이벤트 전날까지 가능.</span>
                         )}
                         {(() => {
                             if (auctionMode === "today") {
@@ -984,7 +984,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     </div>
                                 );
                             } else {
-                                // 얼리버드: 마감 날짜 선택 (이벤트 -2일 ~ -4일, 21:00 KST 고정)
+                                // 얼리버드: 마감 날짜 선택 (이벤트 -1일 ~ -3일, 21:00 KST 고정)
                                 const eventDate = watch("event_date");
                                 const options = getEarlybirdEndDateOptions(eventDate);
                                 const currentEnd = watch("auction_end_at");
@@ -999,7 +999,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     );
                                 }
 
-                                // -2일이 가장 가까운 마감 (daysBefore가 가장 작은 값)
+                                // -1일이 가장 가까운 마감 (daysBefore가 가장 작은 값)
                                 const defaultOption = options.reduce((a, b) => (a.daysBefore < b.daysBefore ? a : b));
                                 const otherOptions = options.filter(o => o.endAtISO !== defaultOption.endAtISO);
                                 const isDefaultSelected = currentEnd === defaultOption.endAtISO;
