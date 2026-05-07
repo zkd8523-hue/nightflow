@@ -10,7 +10,6 @@ import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { matchesArea } from "@/lib/utils/area";
-import { MapPin, ChevronDown, ChevronUp } from "lucide-react";
 
 
 interface AuctionListProps {
@@ -30,11 +29,6 @@ interface AuctionListProps {
 }
 
 export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot }: AuctionListProps) {
-  const [areaExpanded, setAreaExpanded] = useState(false);
-  const handleAreaSelect = (area: string | null) => {
-    onAreaChange?.(area);
-    setAreaExpanded(false);
-  };
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
     return auctions.filter(a => a.club?.area === selectedArea);
@@ -179,51 +173,31 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {guideSlot}
 
-      {/* 지역 필터 — 기본 접힘, 탭하면 가로 펼침 */}
       {onAreaChange && (
         <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1 touch-pan-x">
           <button
-            onClick={() => setAreaExpanded((v) => !v)}
-            className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
-              selectedArea
+            onClick={() => onAreaChange(null)}
+            className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+              selectedArea === null
                 ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
             }`}
           >
-            <MapPin className="w-3 h-3" />
-            {selectedArea ?? "지역 선택"}
-            {areaExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            전체
           </button>
-
-          <div
-            className={`flex gap-2 transition-all duration-300 ease-out ${
-              areaExpanded ? "opacity-100 pointer-events-auto" : "max-w-0 opacity-0 overflow-hidden pointer-events-none"
-            }`}
-          >
+          {MAIN_AREAS.map((area) => (
             <button
-              onClick={() => handleAreaSelect(null)}
+              key={area}
+              onClick={() => onAreaChange(area)}
               className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                selectedArea === null
+                selectedArea === area
                   ? "bg-white text-black"
                   : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
             >
-              전체
+              {area}
             </button>
-            {MAIN_AREAS.map((area) => (
-              <button
-                key={area}
-                onClick={() => handleAreaSelect(area)}
-                className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                  selectedArea === area
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                }`}
-              >
-                {area}
-              </button>
-            ))}
-          </div>
+          ))}
         </div>
       )}
 
