@@ -9,8 +9,10 @@ import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, A
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { GenderPref, AgePref, VibePref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
+import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 
 // 총 예산 빠른 추가 (만원 단위)
 const BUDGET_PRESETS = [50000, 100000];
@@ -64,6 +66,22 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [showOtherCities, setShowOtherCities] = useState(false);
   const [notes, setNotes] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  // 입력값이 초기 default에서 하나라도 변경되면 dirty
+  const isDirty =
+    !submitted && (
+      eventDate !== "" ||
+      area !== "" ||
+      budgetAmount !== 0 ||
+      notes.trim() !== "" ||
+      isRecruitingParty !== false ||
+      totalPeople !== 2 ||
+      targetCount !== 4 ||
+      hasGuest !== false
+    );
+
+  const { showConfirm, setShowConfirm, confirmLeave, cancelLeave } = useLeaveConfirm(isDirty);
 
   useEffect(() => {
     trackEvent('puzzle_form_view');
@@ -194,6 +212,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
       });
 
       toast.success(effectiveIsRecruiting ? "깃발을 꽂았어요! 파티원과 MD를 기다려봐요" : "깃발을 꽂았어요! MD 제안을 기다려봐요");
+      setSubmitted(true); // 이탈 가드 해제
       router.push(`/flags/${puzzle.id}`);
     } catch (err) {
       console.error("puzzle submit error:", err);
@@ -670,6 +689,18 @@ export function PuzzleForm({ userId }: { userId: string }) {
           {!submitting && <ArrowRight className="w-5 h-5" />}
         </Button>
       </div>
+
+      <ConfirmDialog
+        isOpen={showConfirm}
+        onOpenChange={setShowConfirm}
+        onConfirm={confirmLeave}
+        onCancel={cancelLeave}
+        title="정말요?"
+        description="작성 중인 내용이 사라집니다."
+        confirmText="나가기"
+        cancelText="계속 작성"
+        variant="danger"
+      />
     </div>
   );
 }

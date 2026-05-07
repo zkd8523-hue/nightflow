@@ -74,6 +74,7 @@ export function PuzzleDetailClient({
 
   const [showJoin, setShowJoin] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
+  const [editingOffer, setEditingOffer] = useState<PuzzleOffer | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [offers, setOffers] = useState<PuzzleOffer[]>([]);
   const [myOffer, setMyOffer] = useState<PuzzleOffer | null>(null);
@@ -709,16 +710,27 @@ export function PuzzleDetailClient({
                   <p className="text-[12px] text-amber-400">방장이 아직 카카오 링크를 등록하지 않았습니다.</p>
                 )}
                 {myOffer.status === "pending" && isOpen && (
-                  <Button
-                    onClick={() => handleWithdrawOffer(myOffer.id)}
-                    disabled={actionLoading}
-                    variant="outline"
-                    size="sm"
-                    className="h-8 border-neutral-700 bg-transparent text-neutral-400 hover:bg-neutral-800 font-bold text-[12px] rounded-lg"
-                  >
-                    <Undo2 className="w-3.5 h-3.5 mr-1.5" />
-                    제안 철회
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => { setEditingOffer(myOffer); setShowOffer(true); }}
+                      disabled={actionLoading}
+                      variant="outline"
+                      size="sm"
+                      className="h-8 border-neutral-700 bg-transparent text-neutral-300 hover:bg-neutral-800 font-bold text-[12px] rounded-lg"
+                    >
+                      수정
+                    </Button>
+                    <Button
+                      onClick={() => handleWithdrawOffer(myOffer.id)}
+                      disabled={actionLoading}
+                      variant="outline"
+                      size="sm"
+                      className="h-8 border-neutral-700 bg-transparent text-neutral-400 hover:bg-neutral-800 font-bold text-[12px] rounded-lg"
+                    >
+                      <Undo2 className="w-3.5 h-3.5 mr-1.5" />
+                      제안 철회
+                    </Button>
+                  </div>
                 )}
               </div>
             )}
@@ -866,9 +878,11 @@ export function PuzzleDetailClient({
         <OfferSheet
           puzzle={puzzle}
           open={showOffer}
-          onClose={() => setShowOffer(false)}
+          editingOffer={editingOffer}
+          onClose={() => { setShowOffer(false); setEditingOffer(null); }}
           onSubmitted={() => {
             setShowOffer(false);
+            setEditingOffer(null);
             loadOffers();
           }}
         />

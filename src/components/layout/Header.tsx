@@ -236,6 +236,15 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                   <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
                 </Link>
               )}
+              {user.role === "user" && (
+                <Link
+                  href="/flags/new"
+                  className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
+                >
+                  <span className="text-[14px]">⛳</span>
+                  <span className="text-[12px] font-black text-black">깃발꽂기</span>
+                </Link>
+              )}
               <button
                 onClick={() => setMenuOpen(true)}
                 className="relative w-11 h-11 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"

@@ -23,6 +23,7 @@ import {
     EARLYBIRD_MAX_EVENT_DAYS_AHEAD,
 } from "@/lib/utils/auction";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { uploadImage } from "@/lib/utils/upload";
 import { ShareSuccessSheet } from "./ShareSuccessSheet";
@@ -124,6 +125,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     );
 
     const [customExtra, setCustomExtra] = useState("");
+    const [showCustomExtraSheet, setShowCustomExtraSheet] = useState(false);
     const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(initialData?.thumbnail_url || null);
     const [isClubImage, setIsClubImage] = useState(false);
@@ -156,7 +158,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             club_id: initialData?.club_id || prefill?.club_id || defaultClubId || "",
             table_info: initialData?.table_info || prefill?.table_info || "",
             duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 240,
-            includes: initialData?.includes || prefill?.includes || ["기본 안주"],
+            includes: initialData?.includes || prefill?.includes || [],
             event_date: initialEventDate,
             start_price: initialData?.start_price || prefill?.start_price || 0,
             entry_time: initialData
@@ -897,7 +899,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     <Check className="w-4 h-4 text-green-500" />
                     <span>테이블 구성</span>
                 </div>
-                <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-5 px-5">
+                <div className="flex flex-wrap gap-2">
                     {EXTRAS_OPTIONS.map((item) => (
                         <button
                             key={item}
@@ -926,26 +928,14 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 {item}
                             </button>
                         ))}
-                    {/* 인라인 직접 입력 */}
-                    <div className="flex items-center gap-1 flex-shrink-0 pr-10">
-                        <input
-                            type="text"
-                            value={customExtra}
-                            onChange={(e) => setCustomExtra(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    const trimmed = customExtra.trim();
-                                    if (trimmed && !selectedIncludes.includes(trimmed)) {
-                                        setValue("includes", [...selectedIncludes, trimmed]);
-                                        setCustomExtra("");
-                                    }
-                                }
-                            }}
-                            placeholder="+ 직접 입력"
-                            className="w-24 bg-neutral-900 border border-neutral-800 rounded-full px-3 py-1.5 text-[11px] text-white placeholder-neutral-600 focus:outline-none focus:border-green-500/50"
-                        />
-                    </div>
+                    {/* 직접 입력 버튼 */}
+                    <button
+                        type="button"
+                        onClick={() => setShowCustomExtraSheet(true)}
+                        className="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-neutral-900 text-neutral-400 border border-neutral-800 hover:border-neutral-600 hover:text-white transition-all flex-shrink-0"
+                    >
+                        + 직접 입력
+                    </button>
                 </div>
 
                 {/* 주류 변경 안내 */}
@@ -1104,6 +1094,60 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 description={priceConfirmInfo?.description}
                 confirmText="진행하기"
             />
+
+            {/* 직접 입력 시트 */}
+            <Sheet open={showCustomExtraSheet} onOpenChange={(open) => { if (!open) { setShowCustomExtraSheet(false); setCustomExtra(""); } }}>
+                <SheetContent
+                    side="bottom"
+                    className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-5 pb-10 pt-2"
+                >
+                    <SheetHeader className="p-0 mb-4">
+                        <SheetTitle className="text-white text-[17px] font-black text-left">
+                            서비스 직접 입력
+                        </SheetTitle>
+                        <p className="text-[12px] text-neutral-500 text-left">
+                            테이블 구성에 추가할 서비스를 입력해주세요
+                        </p>
+                    </SheetHeader>
+                    <div className="space-y-3">
+                        <Input
+                            autoFocus
+                            value={customExtra}
+                            onChange={(e) => setCustomExtra(e.target.value)}
+                            onKeyDown={(e) => {
+                                // 한글 IME 조합 중 Enter는 무시 (조합 완료 후 다시 발화됨)
+                                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                                    e.preventDefault();
+                                    const trimmed = customExtra.trim();
+                                    if (trimmed && !selectedIncludes.includes(trimmed)) {
+                                        setValue("includes", [...selectedIncludes, trimmed]);
+                                    }
+                                    setCustomExtra("");
+                                    setShowCustomExtraSheet(false);
+                                }
+                            }}
+                            placeholder="예: 샴페인 타워, 무대앞 자리, 부스 투어..."
+                            maxLength={20}
+                            className="bg-neutral-900 border-neutral-700 text-white text-[14px] h-12"
+                        />
+                        <Button
+                            type="button"
+                            onClick={() => {
+                                const trimmed = customExtra.trim();
+                                if (trimmed && !selectedIncludes.includes(trimmed)) {
+                                    setValue("includes", [...selectedIncludes, trimmed]);
+                                }
+                                setCustomExtra("");
+                                setShowCustomExtraSheet(false);
+                            }}
+                            disabled={!customExtra.trim()}
+                            className="w-full h-12 bg-white hover:bg-neutral-200 text-black font-black text-[14px] rounded-2xl disabled:bg-neutral-800 disabled:text-neutral-600"
+                        >
+                            추가
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
 
         </form>
 

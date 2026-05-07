@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Check, ChevronDown, X } from "lucide-react";
-import type { Puzzle, Club } from "@/types/database";
+import { Check, ChevronDown, X, Lock } from "lucide-react";
+import type { Puzzle, Club, PuzzleOffer } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { LiquorSelector } from "@/components/md/LiquorSelector";
 import { EXTRAS_OPTIONS, LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
@@ -22,11 +22,11 @@ interface OfferSheetProps {
   open: boolean;
   onClose: () => void;
   onSubmitted?: () => void;
+  /** 수정 모드. 지정 시 update_offer 호출 + 상태 prefill */
+  editingOffer?: PuzzleOffer | null;
 }
 
-const TABLE_TYPES = ["일반석", "VIP"] as const;
-
-export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetProps) {
+export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }: OfferSheetProps) {
   const supabase = createClient();
 
   const [loading, setLoading] = useState(false);
@@ -38,8 +38,6 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
   const [myClubs, setMyClubs] = useState<Pick<Club, "id" | "name" | "area">[]>([]);
 
   const [selectedClubId, setSelectedClubId] = useState<string>("");
-  const [tableType, setTableType] = useState<string>("일반석");
-  const [customTableType, setCustomTableType] = useState<string>("");
   const [proposedPrice, setProposedPrice] = useState<string>("");
   const [selectedIncludes, setSelectedIncludes] = useState<string[]>([]);
   const [comment, setComment] = useState("");
@@ -68,6 +66,17 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, currentBudget]);
+
+  // 수정 모드 prefill
+  useEffect(() => {
+    if (open && editingOffer) {
+      setSelectedClubId(editingOffer.club_id || "");
+      setProposedPrice(editingOffer.proposed_price.toLocaleString());
+      setSelectedIncludes(editingOffer.includes || []);
+      setComment(editingOffer.comment || "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editingOffer?.id]);
 
   const loadMdInfo = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -154,10 +163,6 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
       toast.error("클럽을 선택해주세요");
       return;
     }
-    if (tableType === "custom" && !customTableType.trim()) {
-      toast.error("테이블 타입을 입력해주세요");
-      return;
-    }
     if (!priceNum || priceNum <= 0) {
       toast.error("제안 금액을 입력해주세요");
       return;
@@ -174,35 +179,43 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
       toast.error("포함 내역을 최소 1개 이상 선택해주세요");
       return;
     }
-    if (activeOffers >= 3) {
+    // 수정 모드는 슬롯 카운트 검증 스킵 (이미 차지하고 있는 슬롯)
+    if (!editingOffer && activeOffers >= 3) {
       toast.error("동시 활성 오퍼는 최대 3건입니다");
       return;
     }
 
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc("submit_offer", {
-        p_puzzle_id: puzzle.id,
-        p_club_id: selectedClubId,
-        p_table_type: tableType === "custom" ? customTableType.trim() : tableType,
-        p_proposed_price: priceNum,
-        p_includes: selectedIncludes,
-        p_comment: comment.trim() || null,
-      });
+      const { data, error } = editingOffer
+        ? await supabase.rpc("update_offer", {
+            p_offer_id: editingOffer.id,
+            p_club_id: selectedClubId,
+            p_proposed_price: priceNum,
+            p_includes: selectedIncludes,
+            p_comment: comment.trim() || null,
+          })
+        : await supabase.rpc("submit_offer", {
+            p_puzzle_id: puzzle.id,
+            p_club_id: selectedClubId,
+            p_table_type: "일반석",
+            p_proposed_price: priceNum,
+            p_includes: selectedIncludes,
+            p_comment: comment.trim() || null,
+          });
 
       if (error) throw error;
       if (!data?.success) {
-        toast.error(data?.error || "제안에 실패했습니다");
+        toast.error(data?.error || (editingOffer ? "수정에 실패했습니다" : "제안에 실패했습니다"));
         return;
       }
 
-      trackEvent('puzzle_offer_submitted', {
+      trackEvent(editingOffer ? 'puzzle_offer_updated' : 'puzzle_offer_submitted', {
         puzzle_id: puzzle.id,
         proposed_price: priceNum,
-        table_type: tableType,
       });
 
-      toast.success("제안서가 전송되었습니다! 방장의 수락을 기다려주세요.");
+      toast.success(editingOffer ? "제안이 수정되었습니다." : "제안서가 전송되었습니다! 방장의 수락을 기다려주세요.");
       onSubmitted?.();
       onClose();
     } catch (err: unknown) {
@@ -222,16 +235,43 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
     return `${m}/${day} ${days[d.getDay()]}`;
   };
 
+  const initialPrice = currentBudget.toLocaleString();
+  const isDirty =
+    selectedIncludes.length > 0 ||
+    comment.trim().length > 0 ||
+    (proposedPrice !== "" && proposedPrice !== initialPrice);
+
+  const confirmClose = () => {
+    if (!isDirty) return true;
+    return window.confirm("작성 중인 내용이 사라집니다. 닫으시겠습니까?");
+  };
+
+  const handleCloseAttempt = () => {
+    if (confirmClose()) onClose();
+  };
+
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+    <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCloseAttempt(); }}>
       <SheetContent
         side="bottom"
         className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-5 pb-10 max-h-[92vh] overflow-y-auto"
+        onPointerDownOutside={(e) => {
+          if (!confirmClose()) e.preventDefault();
+        }}
+        onEscapeKeyDown={(e) => {
+          if (!confirmClose()) e.preventDefault();
+        }}
       >
         <SheetHeader className="p-0 mb-3">
-          <SheetTitle className="text-white text-[17px] font-black text-left">
-            MD 제안서 보내기
-          </SheetTitle>
+          <div className="flex items-center gap-2 pr-8">
+            <SheetTitle className="text-white text-[17px] font-black text-left">
+              {editingOffer ? "시크릿 오퍼 수정" : "시크릿 오퍼"}
+            </SheetTitle>
+            <span className="flex items-center gap-1 text-[10px] text-neutral-400 font-bold flex-shrink-0">
+              <Lock className="w-3 h-3" />
+              방장에게만 공개돼요
+            </span>
+          </div>
           <div className="text-left space-y-0">
             <p className="text-[13px] text-neutral-400">
               {formatDate(puzzle.event_date)} {puzzle.area}
@@ -241,7 +281,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
                 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원 / 목표 {baseBudget.toLocaleString()}원 · {puzzle.current_count}/{puzzle.target_count}명
               </p>
             ) : (
-              <p className="text-[16px] text-white font-black">
+              <p className="text-[14px] text-neutral-300 font-bold">
                 {baseBudget.toLocaleString()}원 <span className="text-[13px] text-neutral-500 font-normal ml-1">· {puzzle.target_count}명</span>
               </p>
             )}
@@ -301,10 +341,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
           )}
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-6">
           {/* 클럽 선택 */}
           <div className="space-y-2">
-            <p className="text-[13px] font-bold text-white">클럽 선택</p>
+            <p className="text-[11px] font-bold text-neutral-500 tracking-wide">클럽 선택</p>
             {myClubs.length === 0 ? (
               <p className="text-[12px] text-red-400">등록된 클럽이 없습니다. 관리자에게 클럽 등록을 요청해주세요.</p>
             ) : (
@@ -327,50 +367,11 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
             )}
           </div>
 
-          {/* 테이블 타입 */}
-          <div className="space-y-2">
-            <p className="text-[13px] font-bold text-white">테이블 타입</p>
-            <div className="flex gap-2">
-              {TABLE_TYPES.map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => { setTableType(type); setCustomTableType(""); }}
-                  className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
-                    tableType === type
-                      ? "bg-white text-black"
-                      : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:border-neutral-500 hover:text-white"
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => { setTableType("custom"); setCustomTableType(""); }}
-                className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all ${
-                  tableType === "custom"
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:border-neutral-500 hover:text-white"
-                }`}
-              >
-                직접 입력
-              </button>
-            </div>
-            {tableType === "custom" && (
-              <Input
-                placeholder="예: 룸 A, 루프탑석, VVIP..."
-                value={customTableType}
-                onChange={(e) => setCustomTableType(e.target.value)}
-                className="bg-neutral-900 border-neutral-700 text-white text-[13px] h-10"
-              />
-            )}
-          </div>
 
           {/* 제안 금액 */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-[13px] font-bold text-white">제안 금액 (방장에게만 공개됩니다)</p>
+              <p className="text-[11px] font-bold text-neutral-500 tracking-wide">제안 금액</p>
               {isPremium && isPriceValid && (
                 <span className="text-[11px] text-amber-400 font-bold">+20% 프리미엄</span>
               )}
@@ -391,7 +392,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
               }`}
             />
             <p className="text-[11px] text-neutral-500">
-              프리미엄 한도: {maxPrice.toLocaleString()}원 (+20%) · 최소: {currentBudget.toLocaleString()}원
+              최대 {maxPrice.toLocaleString()}원까지 제안 가능 (프리미엄 오퍼)
             </p>
             {priceNum > 0 && priceNum < currentBudget && (
               <p className="text-[12px] text-red-400">예산 이하로는 제안할 수 없습니다</p>
@@ -401,96 +402,90 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
             )}
           </div>
 
-          {/* 포함 내역 */}
-          <div className="space-y-3">
-            <p className="text-[13px] font-bold text-white">포함 내역 <span className="text-neutral-500 font-normal">(방장에게만 공개됩니다)</span></p>
+          {/* 주류 선택 */}
+          <LiquorSelector
+            selected={liquorItems}
+            onSelect={(liquors) => {
+              setSelectedIncludes([...liquors, ...extraItems]);
+            }}
+          />
 
-            {/* 주류 선택 */}
-            <LiquorSelector
-              selected={liquorItems}
-              onSelect={(liquors) => {
-                setSelectedIncludes([...liquors, ...extraItems]);
-              }}
-            />
-
-            {/* 테이블 구성 */}
-            <div className="space-y-2">
-              <p className="text-[12px] font-bold text-neutral-400">테이블 구성</p>
-              <div className="flex flex-wrap gap-1.5">
-                {EXTRAS_OPTIONS.map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => toggleExtra(item)}
-                    className={`px-3 py-1.5 rounded-full text-[12px] font-bold flex items-center gap-1 transition-all ${
-                      extraItems.includes(item)
-                        ? "bg-green-500 text-black"
-                        : "bg-neutral-800 text-neutral-500 border border-neutral-800 hover:border-neutral-600 hover:text-white"
-                    }`}
-                  >
-                    {extraItems.includes(item) && <Check className="w-3 h-3" />}
-                    {item}
-                  </button>
-                ))}
-                {/* 커스텀 항목 태그 */}
-                {extraItems.filter(i => !EXTRAS_OPTIONS.includes(i as typeof EXTRAS_OPTIONS[number])).map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => toggleExtra(item)}
-                    className="px-3 py-1.5 rounded-full text-[12px] font-bold flex items-center gap-1 bg-green-500 text-black transition-all"
-                  >
-                    <Check className="w-3 h-3" />
-                    {item}
-                  </button>
-                ))}
+          {/* 테이블 구성 */}
+          <div className="space-y-2">
+            <p className="text-[11px] font-bold text-neutral-500 tracking-wide">테이블 구성</p>
+            <div className="flex flex-wrap gap-1.5">
+              {EXTRAS_OPTIONS.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => toggleExtra(item)}
+                  className={`px-3 py-1.5 rounded-full text-[12px] font-bold flex items-center gap-1 transition-all ${
+                    extraItems.includes(item)
+                      ? "bg-green-500 text-black"
+                      : "bg-neutral-800 text-neutral-500 border border-neutral-800 hover:border-neutral-600 hover:text-white"
+                  }`}
+                >
+                  {extraItems.includes(item) && <Check className="w-3 h-3" />}
+                  {item}
+                </button>
+              ))}
+              {/* 커스텀 항목 태그 */}
+              {extraItems.filter(i => !EXTRAS_OPTIONS.includes(i as typeof EXTRAS_OPTIONS[number])).map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => toggleExtra(item)}
+                  className="px-3 py-1.5 rounded-full text-[12px] font-bold flex items-center gap-1 bg-green-500 text-black transition-all"
+                >
+                  <Check className="w-3 h-3" />
+                  {item}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => setShowCustomExtraInput((v) => !v)}
+                className="px-3 py-1.5 rounded-full text-[12px] font-bold bg-neutral-800 text-neutral-500 border border-neutral-700 hover:border-neutral-500 hover:text-white transition-all"
+              >
+                + 직접 입력
+              </button>
+            </div>
+            {showCustomExtraInput && (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="서비스를 직접 입력해보세요"
+                  value={customExtra}
+                  onChange={(e) => setCustomExtra(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.nativeEvent.isComposing && customExtra.trim()) {
+                      e.preventDefault();
+                      toggleExtra(customExtra.trim());
+                      setCustomExtra("");
+                      setShowCustomExtraInput(false);
+                    }
+                  }}
+                  className="bg-neutral-900 border-neutral-700 text-white text-[13px] h-9"
+                />
                 <button
                   type="button"
-                  onClick={() => setShowCustomExtraInput((v) => !v)}
-                  className="px-3 py-1.5 rounded-full text-[12px] font-bold bg-neutral-800 text-neutral-500 border border-neutral-700 hover:border-neutral-500 hover:text-white transition-all"
+                  onClick={() => {
+                    if (customExtra.trim()) {
+                      toggleExtra(customExtra.trim());
+                      setCustomExtra("");
+                      setShowCustomExtraInput(false);
+                    }
+                  }}
+                  className="px-3 h-9 rounded-xl bg-white text-black text-[12px] font-bold flex-shrink-0"
                 >
-                  + 직접 입력
+                  추가
                 </button>
               </div>
-              {showCustomExtraInput && (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="예: 케이크, 꽃다발..."
-                    value={customExtra}
-                    onChange={(e) => setCustomExtra(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && customExtra.trim()) {
-                        e.preventDefault();
-                        toggleExtra(customExtra.trim());
-                        setCustomExtra("");
-                        setShowCustomExtraInput(false);
-                      }
-                    }}
-                    className="bg-neutral-900 border-neutral-700 text-white text-[13px] h-9"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (customExtra.trim()) {
-                        toggleExtra(customExtra.trim());
-                        setCustomExtra("");
-                        setShowCustomExtraInput(false);
-                      }
-                    }}
-                    className="px-3 h-9 rounded-xl bg-white text-black text-[12px] font-bold flex-shrink-0"
-                  >
-                    추가
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
           {/* MD 코멘트 */}
           <div className="space-y-2">
-            <p className="text-[13px] font-bold text-white">
-              MD 코멘트{" "}
-              <span className="text-[12px] text-neutral-500 font-normal">(선택, 방장에게만 공개됩니다)</span>
+            <p className="text-[11px] font-bold text-neutral-500 tracking-wide">
+              MD 코멘트 <span className="font-normal">(선택)</span>
             </p>
             <textarea
               value={comment}
@@ -521,13 +516,13 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted }: OfferSheetPro
 
           <Button
             onClick={handleSubmit}
-            disabled={loading || myClubs.length === 0 || !isPriceValid || selectedIncludes.length === 0 || activeOffers >= 3 || (credits !== null && credits < 30)}
+            disabled={loading || myClubs.length === 0 || !isPriceValid || selectedIncludes.length === 0 || (!editingOffer && activeOffers >= 3) || (!editingOffer && credits !== null && credits < 30)}
             className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
-            {loading ? "전송 중..." : "제안서 보내기"}
+            {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "제안서 보내기")}
           </Button>
 
-          {activeOffers >= 3 && (
+          {!editingOffer && activeOffers >= 3 && (
             <p className="text-center text-[12px] text-red-400">
               슬롯이 가득 찼습니다. 위에서 오퍼를 철회하고 새로 제안하세요.
             </p>
