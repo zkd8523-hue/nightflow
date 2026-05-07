@@ -561,7 +561,10 @@ export interface PuzzleOffer {
   md_id: string;
   club_id: string | null;
   club?: Pick<Club, 'id' | 'name' | 'area'>;
-  md?: Pick<User, 'id' | 'name' | 'profile_image'>;
+  md?: Pick<PublicUserProfile,
+    'id' | 'display_name' | 'profile_image' | 'md_deal_count' |
+    'instagram' | 'phone' | 'kakao_open_chat_url' | 'preferred_contact_methods'
+  >;
   table_type: TableType;
   /** 방장 + 해당 MD만 열람 가능 */
   proposed_price: number;

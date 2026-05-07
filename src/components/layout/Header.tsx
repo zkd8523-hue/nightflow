@@ -170,7 +170,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
     } finally {
       // 서버 세션 정리 실패해도 로컬 state는 무조건 초기화
       resetAuth();
-      router.push("/login");
+      router.push("/");
       router.refresh();
     }
   };

@@ -3,15 +3,17 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, Instagram } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
-import { KakaoUrlInputSheet } from "./KakaoUrlInputSheet";
+import { OfferAcceptSheet } from "./OfferAcceptSheet";
+import { MDContactCard } from "./MDContactCard";
+import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { PuzzlePiece } from "./PuzzleCard";
-import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref } from "@/types/database";
+import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 
@@ -79,9 +81,9 @@ export function PuzzleDetailClient({
   const [offers, setOffers] = useState<PuzzleOffer[]>([]);
   const [myOffer, setMyOffer] = useState<PuzzleOffer | null>(null);
   const [acceptedOffer, setAcceptedOffer] = useState<PuzzleOffer | null>(null);
-  const [acceptedKakaoUrl, setAcceptedKakaoUrl] = useState<string | null>(null);
-  const [showKakaoUrlSheet, setShowKakaoUrlSheet] = useState(false);
+  const [showAcceptSheet, setShowAcceptSheet] = useState(false);
   const [pendingAcceptOfferId, setPendingAcceptOfferId] = useState<string | null>(null);
+  const [acceptingMd, setAcceptingMd] = useState<NonNullable<PuzzleOffer["md"]> | null>(null);
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/flags/${puzzle.id}`;
@@ -125,7 +127,7 @@ export function PuzzleDetailClient({
   const loadOffers = useCallback(async () => {
     const { data } = await supabase
       .from("puzzle_offers")
-      .select("*, club:clubs(id, name, area), md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, md_deal_count, instagram)")
+      .select("*, club:clubs(id, name, area), md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, md_deal_count, instagram, phone, kakao_open_chat_url, preferred_contact_methods)")
       .eq("puzzle_id", puzzle.id)
       .in("status", ["pending", "accepted"])
       .order("created_at", { ascending: true });
@@ -209,39 +211,64 @@ export function PuzzleDetailClient({
     }
   };
 
-  const handleAcceptOffer = async (offerId: string) => {
-    if (!confirm("이 제안을 수락하시겠습니까? 수락 후에는 취소할 수 없습니다.")) return;
+  const handleAcceptOffer = (offerId: string) => {
+    const offer = offers.find((o) => o.id === offerId);
+    if (!offer || !offer.md) {
+      toast.error("MD 정보를 불러오지 못했습니다");
+      return;
+    }
+    setAcceptingMd(offer.md);
     setPendingAcceptOfferId(offerId);
-    setShowKakaoUrlSheet(true);
+    setShowAcceptSheet(true);
   };
 
-  const handleKakaoUrlSubmit = async (url: string) => {
-    if (!pendingAcceptOfferId) return;
+  const handleAcceptConfirm = async (): Promise<boolean> => {
+    if (!pendingAcceptOfferId) return false;
     setActionLoading(true);
     try {
       const { data, error } = await supabase.rpc("accept_offer", {
         p_offer_id: pendingAcceptOfferId,
-        p_kakao_open_chat_url: url,
+        p_kakao_open_chat_url: null,
       });
       if (error) throw error;
       if (!data?.success) {
         toast.error(data?.error || "수락에 실패했습니다");
-        return;
+        return false;
       }
       trackEvent('puzzle_offer_accepted', {
         puzzle_id: puzzle.id,
         offer_id: pendingAcceptOfferId,
       });
-      setAcceptedKakaoUrl(url);
-      setShowKakaoUrlSheet(false);
-      setPendingAcceptOfferId(null);
-      toast.success("수락 완료! MD가 곧 연락할 예정입니다.");
+      // 시트는 닫지 않음 — 시트 내부에서 success step으로 전환하며 연락처 공개
+      // 백그라운드로 오퍼/페이지 데이터만 갱신
       await loadOffers();
       router.refresh();
+      return true;
     } catch {
       toast.error("수락에 실패했습니다");
+      return false;
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleSetKakaoUrl = async (url: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc("set_puzzle_kakao_url", {
+        p_puzzle_id: puzzle.id,
+        p_kakao_open_chat_url: url,
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        toast.error(data?.error || "오픈채팅 링크 전달에 실패했습니다");
+        return false;
+      }
+      trackEvent('puzzle_kakao_url_set', { puzzle_id: puzzle.id });
+      router.refresh();
+      return true;
+    } catch {
+      toast.error("오픈채팅 링크 전달에 실패했습니다");
+      return false;
     }
   };
 
@@ -408,7 +435,7 @@ export function PuzzleDetailClient({
               {acceptedOffer && (
                 <div className="space-y-1">
                   <p className="text-[14px] font-bold text-white">
-                    {(acceptedOffer.club as { name?: string } | null)?.name || "클럽"} · {acceptedOffer.table_type}
+                    {(acceptedOffer.club as { name?: string } | null)?.name || "클럽"}
                   </p>
                   {/* 방장에게만 상세 정보 표시 */}
                   {isLeader && (
@@ -432,60 +459,61 @@ export function PuzzleDetailClient({
                   )}
                 </div>
               )}
-              {isLeader && acceptedOffer && (() => {
-                const md = acceptedOffer.md as { display_name?: string; name?: string; profile_image?: string | null; md_deal_count?: number; instagram?: string | null } | null;
-                if (!md) return null;
+              {isLeader && acceptedOffer && acceptedOffer.md && (() => {
+                const md = acceptedOffer.md;
                 const dealCount = md.md_deal_count ?? 0;
                 return (
-                  <div className="flex items-center gap-3 pt-1 border-t border-amber-500/20">
-                    <div className="relative shrink-0">
-                      {md.profile_image ? (
-                        <img src={md.profile_image} alt={md.display_name || "MD"} className="w-11 h-11 rounded-full object-cover border border-neutral-700" />
-                      ) : (
-                        <div className="w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500 text-[15px]">
-                          {(md.display_name || md.name || "M").substring(0, 1)}
-                        </div>
-                      )}
-                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1E] flex items-center justify-center">
-                        <ShieldCheck className="w-2.5 h-2.5 text-white" />
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-bold text-[14px] truncate">{md.display_name || md.name || "나이트플로우 파트너"}</p>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <p className="text-[11px] text-neutral-500">NightFlow 인증 파트너</p>
-                        {dealCount >= 3 && (
-                          <span className="flex items-center gap-0.5 text-[10px] font-bold text-neutral-400">
-                            {dealCount >= 30 ? <Flame className="w-3 h-3 text-orange-500" /> : <BadgeCheck className="w-3 h-3 text-blue-400" />}
-                            거래 {dealCount}회
-                          </span>
+                  <>
+                    <div className="flex items-center gap-3 pt-1 border-t border-amber-500/20">
+                      <div className="relative shrink-0">
+                        {md.profile_image ? (
+                          <img src={md.profile_image} alt={md.display_name || "MD"} className="w-11 h-11 rounded-full object-cover border border-neutral-700" />
+                        ) : (
+                          <div className="w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500 text-[15px]">
+                            {(md.display_name || "M").substring(0, 1)}
+                          </div>
                         )}
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1E] flex items-center justify-center">
+                          <ShieldCheck className="w-2.5 h-2.5 text-white" />
+                        </div>
                       </div>
-                      {md.instagram && (
-                        <a
-                          href={`https://instagram.com/${md.instagram.replace(/^@/, "")}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white transition-colors mt-0.5"
-                        >
-                          <Instagram className="w-3 h-3" />
-                          @{md.instagram.replace(/^@/, "")}
-                        </a>
-                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-[14px] truncate">{md.display_name || "나이트플로우 파트너"}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-[11px] text-neutral-500">NightFlow 인증 파트너</p>
+                          {dealCount >= 3 && (
+                            <span className="flex items-center gap-0.5 text-[10px] font-bold text-neutral-400">
+                              {dealCount >= 30 ? <Flame className="w-3 h-3 text-orange-500" /> : <BadgeCheck className="w-3 h-3 text-blue-400" />}
+                              거래 {dealCount}회
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                    {/* 복사 버튼 — MD에게 보낼 메시지를 원클릭 복사 */}
+                    <CopyAcceptedMessageButton puzzle={puzzle} offer={acceptedOffer} />
+                    {/* puzzle.kakao_open_chat_url이 NULL(기본 케이스)일 때 MD 연락 수단 카드 노출 */}
+                    {!puzzle.kakao_open_chat_url && (
+                      <div className="pt-1">
+                        <MDContactCard md={md as PublicUserProfile} />
+                      </div>
+                    )}
+                  </>
                 );
               })()}
               <p className="text-[11px] text-neutral-500">
                 {isLeader
-                  ? "MD가 곧 연락할 예정입니다. 선입금/테이블 배정은 MD와 직접 협의하세요."
+                  ? puzzle.kakao_open_chat_url
+                    ? "MD가 회원님이 등록한 오픈채팅으로 입장합니다. 선입금/테이블 배정은 MD와 직접 협의하세요."
+                    : "위 연락 수단 중 편한 것으로 MD에게 직접 연락해주세요. 선입금/테이블 배정은 MD와 직접 협의하세요."
                   : `MD ${offers.filter(o => o.status !== 'expired').length}명이 경쟁, 성사됨`}
               </p>
 
             </section>
           )}
 
-          {/* 오퍼 섹션 */}
+          {/* 오퍼 섹션 — 성사 후엔 MD(본인 오퍼 상태 확인) 전용으로 축소. 일반 유저/방장은 위 성사됨 카드로 충분. */}
+          {(!isAccepted || (isMd && myOffer)) && (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -503,11 +531,10 @@ export function PuzzleDetailClient({
               </span>
             </div>
 
-            {/* 방장: 전체 제안 목록 + 수락/거절 버튼 */}
-            {isLeader && offers.length > 0 && (
+            {/* 방장: 진행 중인(pending) 제안만 — 수락된 오퍼는 위 성사됨 카드에 이미 표시 */}
+            {isLeader && !isAccepted && pendingOffers.length > 0 && (
               <div className="space-y-3">
-                {offers
-                  .filter((o) => o.status === "pending" || o.id === puzzle.accepted_offer_id)
+                {pendingOffers
                   .map((offer) => (
                     <div
                       key={offer.id}
@@ -526,7 +553,6 @@ export function PuzzleDetailClient({
                               <span className="text-neutral-500 font-medium"> · {(offer.club as { area: string }).area}</span>
                             )}
                           </p>
-                          <p className="text-[12px] text-neutral-400">{offer.table_type}</p>
                         </div>
                         {offer.status === "accepted" ? (
                           <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold">
@@ -544,7 +570,7 @@ export function PuzzleDetailClient({
                         <p className="text-[16px] font-black text-green-400">
                           {offer.proposed_price.toLocaleString()}원
                           {offer.proposed_price > baseBudget && (
-                            <span className="ml-1.5 text-[11px] text-amber-400 font-bold">⚡ 프리미엄</span>
+                            <span className="ml-1.5 text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
                           )}
                         </p>
                         {offer.includes.length > 0 && (
@@ -563,8 +589,8 @@ export function PuzzleDetailClient({
 
                       {/* MD 정보: 이름 + 거래 횟수 */}
                       {(() => {
-                        const md = offer.md as { display_name?: string; name?: string; md_deal_count?: number } | null;
-                        const mdLabel = md?.display_name || md?.name;
+                        const md = offer.md;
+                        const mdLabel = md?.display_name;
                         const dealCount = md?.md_deal_count;
                         return mdLabel ? (
                           <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/60">
@@ -633,7 +659,12 @@ export function PuzzleDetailClient({
                     className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <p className="text-[14px] font-bold text-white">{offer.table_type} 테이블</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[14px] font-bold text-white">MD 제안</p>
+                        {offer.proposed_price > baseBudget && (
+                          <span className="text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
+                        )}
+                      </div>
                       <p className="text-[11px] text-neutral-500">
                         {new Date(offer.created_at).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })}
                         {" "}
@@ -672,7 +703,12 @@ export function PuzzleDetailClient({
                   : "bg-[#1C1C1E] border-neutral-800"
               }`}>
                 <div className="flex items-center justify-between">
-                  <p className="text-[13px] font-bold text-white">내 제안</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-[13px] font-bold text-white">내 제안</p>
+                    {myOffer.proposed_price > baseBudget && (
+                      <span className="text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
+                    )}
+                  </div>
                   <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
                     myOffer.status === "accepted"
                       ? "bg-amber-500/20 text-amber-400"
@@ -684,7 +720,7 @@ export function PuzzleDetailClient({
                   </span>
                 </div>
                 <p className="text-[14px] font-black text-white">
-                  {myOffer.table_type} · {myOffer.proposed_price.toLocaleString()}원
+                  {myOffer.proposed_price.toLocaleString()}원
                 </p>
                 {myOffer.includes?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
@@ -707,7 +743,7 @@ export function PuzzleDetailClient({
                   </a>
                 )}
                 {myOffer.status === "accepted" && !puzzle.kakao_open_chat_url && (
-                  <p className="text-[12px] text-amber-400">방장이 아직 카카오 링크를 등록하지 않았습니다.</p>
+                  <p className="text-[12px] text-amber-400">방장이 회원님께 직접 연락드릴 예정입니다.</p>
                 )}
                 {myOffer.status === "pending" && isOpen && (
                   <div className="flex gap-2">
@@ -735,6 +771,7 @@ export function PuzzleDetailClient({
               </div>
             )}
           </section>
+          )}
 
           {/* 참여자 목록: 파티원 모집 중일 때만 */}
           {isRecruitingParty && (
@@ -888,13 +925,18 @@ export function PuzzleDetailClient({
         />
       )}
 
-      <KakaoUrlInputSheet
-        open={showKakaoUrlSheet}
+      <OfferAcceptSheet
+        open={showAcceptSheet}
+        md={acceptingMd}
+        puzzle={puzzle}
+        offer={offers.find((o) => o.id === pendingAcceptOfferId) ?? null}
         onClose={() => {
-          setShowKakaoUrlSheet(false);
+          setShowAcceptSheet(false);
           setPendingAcceptOfferId(null);
+          setAcceptingMd(null);
         }}
-        onSubmit={handleKakaoUrlSubmit}
+        onAccept={handleAcceptConfirm}
+        onSetKakaoUrl={handleSetKakaoUrl}
       />
     </div>
   );

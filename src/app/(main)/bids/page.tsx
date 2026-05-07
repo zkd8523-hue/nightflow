@@ -121,9 +121,21 @@ export default async function MyBidsPage({ searchParams }: PageProps) {
     const reportedAuctionIds = new Set(existingReports?.map(r => r.auction_id) || []);
 
     // 4. 내 퍼즐 조회 (대표자이거나 참여자인 퍼즐)
+    //    accepted 상태일 때는 수락된 오퍼의 MD 프로필을 함께 가져와
+    //    "내 활동" 카드에 연락 수단을 인라인 표시
     const { data: leaderPuzzles } = await supabase
         .from("puzzles")
-        .select("*")
+        .select(`
+            *,
+            accepted_offer:puzzle_offers!fk_puzzles_accepted_offer(
+                id, table_type, proposed_price, includes, comment,
+                club:clubs(id, name, area),
+                md:public_user_profiles!puzzle_offers_md_id_fkey(
+                    id, display_name, profile_image, md_deal_count,
+                    instagram, phone, kakao_open_chat_url, preferred_contact_methods
+                )
+            )
+        `)
         .eq("leader_id", authUser.id)
         .order("created_at", { ascending: false });
 

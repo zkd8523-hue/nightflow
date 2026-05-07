@@ -16,7 +16,9 @@ import { ReportMDButton } from "./ReportMDButton";
 import { useMyBidsRealtime, type AuctionUpdate } from "@/hooks/useMyBidsRealtime";
 import { isAuctionActive, isAuctionExpired } from "@/lib/utils/auction";
 import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
-import type { Auction, Puzzle } from "@/types/database";
+import type { Auction, Puzzle, PublicUserProfile } from "@/types/database";
+import { MDContactCard } from "@/components/puzzles/MDContactCard";
+import { CopyAcceptedMessageButton } from "@/components/puzzles/CopyAcceptedMessageButton";
 import {
   Gavel,
   Clock,
@@ -64,6 +66,25 @@ export interface WonAuctionData {
 
 export type { ChatInterestWithAuction };
 
+/**
+ * 내 활동 카드용 enriched puzzle.
+ * accepted 상태일 때 수락된 오퍼의 MD 프로필 + 클럽 + 가격 정보를 포함.
+ */
+export type PuzzleWithAcceptedOffer = Puzzle & {
+  accepted_offer?: {
+    id: string;
+    table_type: string;
+    proposed_price: number;
+    includes: string[];
+    comment: string | null;
+    club: { id: string; name: string; area: string } | null;
+    md: Pick<PublicUserProfile,
+      "id" | "display_name" | "profile_image" | "md_deal_count" |
+      "instagram" | "phone" | "kakao_open_chat_url" | "preferred_contact_methods"
+    > | null;
+  } | null;
+};
+
 interface MyBidsClientProps {
   initialBids: BidWithAuction[];
   initialWonAuctions?: WonAuctionData[];
@@ -71,7 +92,7 @@ interface MyBidsClientProps {
   reportedAuctionIds?: string[];
   userId: string;
   initialTab?: string;
-  initialPuzzles?: Puzzle[];
+  initialPuzzles?: PuzzleWithAcceptedOffer[];
 }
 
 const DISMISSED_KEY = "nightflow_dismissed_bids";
@@ -147,10 +168,15 @@ export function MyBidsClient({
     [reportedAuctionIds]
   );
 
-  const [puzzles] = useState<Puzzle[]>(initialPuzzles);
+  const [puzzles] = useState<PuzzleWithAcceptedOffer[]>(initialPuzzles);
 
   const hasInitialUrgentWon = initialWonAuctions.some(a => a.status === "won" && !a.fallback_offered_to);
-  const defaultTab = initialTab === "puzzle" ? "puzzle" : initialTab === "ended" ? "ended" : hasInitialUrgentWon ? "ended" : "active";
+  const defaultTab =
+    initialTab === "puzzle" ? "puzzle" :
+    initialTab === "ended" ? "ended" :
+    initialTab === "active" ? "active" :
+    hasInitialUrgentWon ? "ended" :
+    "puzzle";
 
   const fetchBids = useCallback(async () => {
     const supabase = createClient();
@@ -750,10 +776,13 @@ function WonAuctionCard({
   );
 }
 
-function MyPuzzleCard({ puzzle, userId }: { puzzle: Puzzle; userId: string }) {
+function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; userId: string }) {
   const isLeader = puzzle.leader_id === userId;
   const isOpen = puzzle.status === "open";
+  const isAccepted = puzzle.status === "accepted";
   const confirmedBudget = puzzle.current_count * puzzle.budget_per_person;
+  const acceptedOffer = puzzle.accepted_offer ?? null;
+  const acceptedMd = acceptedOffer?.md ?? null;
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr + "T00:00:00");
@@ -766,9 +795,73 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: Puzzle; userId: string }) {
   const statusLabel: Record<string, string> = {
     open: "모집 중",
     matched: "마감",
+    accepted: "성사됨",
     cancelled: "취소됨",
     expired: "만료됨",
   };
+
+  // 성사된 leader puzzle은 amber 카드로 강조 + MD 연락처 인라인 노출
+  if (isAccepted && isLeader && acceptedMd) {
+    return (
+      <Card className="bg-amber-500/10 border-amber-500/30 p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-amber-400" />
+            <span className="text-[14px] font-black text-amber-400">성사됨</span>
+          </div>
+          <span className="text-[11px] text-neutral-500">
+            {formatDate(puzzle.event_date)} · {puzzle.area}
+          </span>
+        </div>
+
+        {acceptedOffer && (
+          <div className="space-y-1.5 pb-2 border-b border-amber-500/20">
+            <p className="text-[14px] font-bold text-white">
+              {acceptedOffer.club?.name || "클럽"}
+            </p>
+            <p className="text-[13px] text-neutral-300">
+              💰 {acceptedOffer.proposed_price.toLocaleString()}원
+            </p>
+            {acceptedOffer.includes.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {acceptedOffer.includes.map((inc) => (
+                  <span key={inc} className="text-[11px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                    {inc}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2.5">
+          {acceptedMd.profile_image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={acceptedMd.profile_image} alt={acceptedMd.display_name || "MD"} className="w-9 h-9 rounded-full object-cover border border-neutral-700" />
+          ) : (
+            <div className="w-9 h-9 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500 text-[13px]">
+              {(acceptedMd.display_name || "M").substring(0, 1)}
+            </div>
+          )}
+          <div>
+            <p className="text-white font-bold text-[13px]">{acceptedMd.display_name || "MD"}</p>
+            <p className="text-[10px] text-neutral-500">NightFlow 인증 파트너</p>
+          </div>
+        </div>
+
+        <CopyAcceptedMessageButton puzzle={puzzle} offer={acceptedOffer} />
+
+        <MDContactCard md={acceptedMd} />
+
+        <Link
+          href={`/flags/${puzzle.id}`}
+          className="flex items-center justify-end text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors pt-1"
+        >
+          상세 / 관리 →
+        </Link>
+      </Card>
+    );
+  }
 
   return (
     <Link href={`/flags/${puzzle.id}`}>
