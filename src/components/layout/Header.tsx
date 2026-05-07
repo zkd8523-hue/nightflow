@@ -34,6 +34,7 @@ import {
   MessageCircle,
   Heart,
   TrendingUp,
+  Star,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -447,6 +448,17 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                     </Link>
 
                     <div className="h-px bg-neutral-800/50 my-2" />
+
+                    {user.role === "user" && user.md_status !== "pending" && (
+                      <Link
+                        href="/md/apply"
+                        onClick={() => setMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                      >
+                        <Star className="w-5 h-5 text-amber-500" />
+                        <span className="text-[15px] font-bold">MD 파트너 신청</span>
+                      </Link>
+                    )}
 
                     <button
                       onClick={handleLogout}
