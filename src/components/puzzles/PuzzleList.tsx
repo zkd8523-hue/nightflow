@@ -100,9 +100,17 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
                 <p className="text-[15px] font-black text-white">
                   {selectedArea && selectedArea !== "다른지역" ? `${selectedArea} ` : ""}MD들이 24시간 기다리고 있어요
                 </p>
-                <p className="text-[12px] text-amber-400 font-semibold leading-relaxed">
-                  첫 번째 깃발을 꽂아보세요!
+                <p className="text-[12px] text-neutral-400 leading-relaxed">
+                  어떤 시크릿 제안이 쏟아질지 궁금하죠?
                 </p>
+                <Link
+                  href={userRole ? "/flags/new" : "/login?redirect=/flags/new"}
+                  onClick={() => trackEvent("puzzle_cta_click", { source: "empty_state" })}
+                  className="inline-flex items-center gap-1.5 mt-3 bg-white hover:bg-neutral-200 text-black rounded-full px-5 py-2.5 text-[13px] font-black transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  첫번째 깃발꽂기
+                </Link>
               </>
             )}
           </div>
