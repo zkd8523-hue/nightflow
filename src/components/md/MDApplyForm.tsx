@@ -18,6 +18,8 @@ import { PhoneVerificationField } from "./PhoneVerificationField";
 // Phone은 연락 수단 토글에서 사용
 import type { User, ContactMethodType } from "@/types/database";
 import dynamic from "next/dynamic";
+import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const AddressSearchModal = dynamic(() => import("./AddressSearchModal").then(m => ({ default: m.AddressSearchModal })), { ssr: false });
 
@@ -71,6 +73,11 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
         },
     });
 
+    const [submitted, setSubmitted] = useState(false);
+    const { showConfirm, setShowConfirm, confirmLeave, cancelLeave } = useLeaveConfirm(
+        form.formState.isDirty && !loading && !submitted
+    );
+
     async function onSubmit(values: FormValues) {
         if (!values.club_latitude || !values.club_longitude) {
             toast.error("클럽 주소를 검색하여 정확한 위치를 설정해주세요.");
@@ -88,7 +95,8 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                 throw new Error(result.error || "신청 중 오류가 발생했습니다.");
             }
             toast.success("MD 파트너 신청이 완료되었습니다!");
-            router.push('/md/apply');
+            setSubmitted(true);
+            router.replace('/md/apply');
         } catch (error: unknown) {
             logError(error, "MD Apply Form");
             toast.error(getErrorMessage(error));
@@ -391,6 +399,18 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                     form.setValue("club_latitude", result.latitude);
                     form.setValue("club_longitude", result.longitude);
                 }}
+            />
+
+            <ConfirmDialog
+                isOpen={showConfirm}
+                onOpenChange={setShowConfirm}
+                onConfirm={confirmLeave}
+                onCancel={cancelLeave}
+                title="정말요?"
+                description="작성 중인 내용이 사라집니다."
+                confirmText="나가기"
+                cancelText="계속 작성"
+                variant="danger"
             />
         </>
     );

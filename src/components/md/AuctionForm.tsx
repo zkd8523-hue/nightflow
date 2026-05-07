@@ -31,6 +31,7 @@ import { ShareSuccessSheet } from "./ShareSuccessSheet";
 import { trackEvent } from "@/lib/analytics";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import { isInstantEnabled } from "@/lib/features";
+import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 
 const formSchema = z.object({
     listing_type: z.enum(["auction", "instant"]).default("auction"),
@@ -151,7 +152,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         || (prefill?.event_date)
         || (initialData?.listing_type === "auction" ? defaultEarlybirdEventDate : getClubEventDate());
 
-    const { register, handleSubmit, setValue, watch, clearErrors, formState: { errors, isSubmitting } } = useForm({
+    const { register, handleSubmit, setValue, watch, clearErrors, formState: { errors, isSubmitting, isDirty } } = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
             listing_type: initialData?.listing_type || (instantEnabled ? "instant" : "auction"),
@@ -170,6 +171,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             md_comment: initialData?.md_comment || prefill?.md_comment || "",
         }
     });
+
+    const [submitted, setSubmitted] = useState(false);
+    const { showConfirm, setShowConfirm, confirmLeave, cancelLeave } = useLeaveConfirm(
+        isDirty && !isSubmitting && !submitted
+    );
 
     const selectedIncludes = watch("includes");
     const selectedTableInfo = watch("table_info");
@@ -467,6 +473,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 is_update: !!initialData,
             });
 
+            setSubmitted(true);
             if (initialData) {
                 // 수정: 기존 동작 유지
                 toast.success(isInstantMode ? "판매 정보가 수정되었습니다!" : "경매 정보가 수정되었습니다!");
@@ -1177,6 +1184,17 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             />
         )}
 
+        <ConfirmDialog
+            isOpen={showConfirm}
+            onOpenChange={setShowConfirm}
+            onConfirm={confirmLeave}
+            onCancel={cancelLeave}
+            title="정말요?"
+            description="작성 중인 내용이 사라집니다."
+            confirmText="나가기"
+            cancelText="계속 작성"
+            variant="danger"
+        />
         </div>
     );
 }

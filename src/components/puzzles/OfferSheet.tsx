@@ -250,17 +250,24 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     if (confirmClose()) onClose();
   };
 
+  // 탭 닫기/새로고침 시 네이티브 경고
+  useEffect(() => {
+    if (!open || !isDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [open, isDirty]);
+
   return (
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCloseAttempt(); }}>
       <SheetContent
         side="bottom"
         className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-5 pb-10 max-h-[92vh] overflow-y-auto"
-        onPointerDownOutside={(e) => {
-          if (!confirmClose()) e.preventDefault();
-        }}
-        onEscapeKeyDown={(e) => {
-          if (!confirmClose()) e.preventDefault();
-        }}
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <SheetHeader className="p-0 mb-3">
           <div className="flex items-center gap-2 pr-8">
@@ -373,7 +380,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-bold text-neutral-500 tracking-wide">제안 금액</p>
               {isPremium && isPriceValid && (
-                <span className="text-[11px] text-amber-400 font-bold">+20% 프리미엄</span>
+                <span className="text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
               )}
             </div>
             <Input

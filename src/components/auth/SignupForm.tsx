@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { trackEvent } from "@/lib/analytics";
 import { generateRandomNickname } from "@/lib/utils/displayName";
 import { ChevronRight, Check, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import type { User as AuthUser } from "@supabase/supabase-js";
 
@@ -85,8 +87,13 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [resendIn, setResendIn] = useState(0);
+  // 가입 완료 후 중복 호출/토스트 차단용 가드
+  const completedRef = useRef(false);
 
   const requiredMet = agreeAge && agreeTerms && agreePrivacy;
+
+  const isDirty = (step !== "agree" || phoneInput.length > 0) && !otpVerifying && !loading;
+  const { showConfirm, setShowConfirm, confirmLeave, cancelLeave } = useLeaveConfirm(isDirty);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,6 +194,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
   const handleVerifyAndSignup = async () => {
     if (!authUser) return;
+    if (completedRef.current) return; // 이미 가입 완료 → 중복 호출 차단
     if (!/^\d{6}$/.test(otpCode)) {
       toast.error("6자리 숫자를 입력해주세요");
       return;
@@ -235,18 +243,51 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         signupSource = "md_profile";
       }
 
-      const { error } = await supabase.from("users").insert({
-        id: authUser.id,
-        kakao_id: meta.provider_id || authUser.id,
-        display_name: displayName,
-        phone: verifiedPhone,
-        profile_image: meta.avatar_url || null,
-        role: "user",
-        alimtalk_consent: agreeMarketing,
-        alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
-        referred_by: referredById,
-        signup_source: signupSource,
-      });
+      // 잔재 row 존재 여부 확인 (cf151e8 시기 phone-null row 대응)
+      // RLS "Users can read own profile" (Migration 116) 정책으로 본인 row 조회 가능
+      const { data: existing, error: selectError } = await supabase
+        .from("users")
+        .select("id, deleted_at")
+        .eq("id", authUser.id)
+        .maybeSingle();
+
+      if (selectError) {
+        logger.error("Signup pre-check error:", selectError);
+        toast.error("사용자 정보를 확인하는 중 오류가 발생했습니다.");
+        return;
+      }
+
+      if (existing?.deleted_at) {
+        // 탈퇴 상태 잔재 row → 복구 페이지로 안내
+        toast.error("탈퇴 처리된 계정입니다. 복구 페이지로 이동합니다.");
+        router.replace("/recover-account");
+        return;
+      }
+
+      // 기존 row가 있으면 신규 가입 관련 필드만 UPDATE (role/referred_by/signup_source/kakao_id/profile_image 보존)
+      // 없으면 INSERT (BEFORE INSERT 트리거 3종이 정상 발동)
+      const { error } = existing
+        ? await supabase
+            .from("users")
+            .update({
+              display_name: displayName,
+              phone: verifiedPhone,
+              alimtalk_consent: agreeMarketing,
+              alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
+            })
+            .eq("id", authUser.id)
+        : await supabase.from("users").insert({
+            id: authUser.id,
+            kakao_id: meta.provider_id || authUser.id,
+            display_name: displayName,
+            phone: verifiedPhone,
+            profile_image: meta.avatar_url || null,
+            role: "user",
+            alimtalk_consent: agreeMarketing,
+            alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
+            referred_by: referredById,
+            signup_source: signupSource,
+          });
 
       if (error) {
         const msg = (error as { message?: string }).message || "가입 중 오류가 발생했습니다";
@@ -261,8 +302,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         has_referrer: !!referredById,
         marketing_consent: agreeMarketing,
       });
+      completedRef.current = true;
       toast.success(`어서오세요, ${displayName}님!`);
-      router.push(redirectAfterSignup);
+      // 하드 리다이렉트 — 세션 쿠키 새로 로드 + 뒤로가기로 /signup 재진입 시 또 가입되는 것 차단
+      window.location.replace(redirectAfterSignup);
     } catch (error: unknown) {
       logger.error("Signup error:", error);
       toast.error(error instanceof Error ? error.message : "가입 중 오류가 발생했습니다");
@@ -429,6 +472,17 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
           </>
         )}
       </Card>
+      <ConfirmDialog
+        isOpen={showConfirm}
+        onOpenChange={setShowConfirm}
+        onConfirm={confirmLeave}
+        onCancel={cancelLeave}
+        title="정말요?"
+        description="진행 중인 가입이 취소됩니다."
+        confirmText="나가기"
+        cancelText="계속하기"
+        variant="danger"
+      />
     </div>
   );
 }

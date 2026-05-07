@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Sheet,
@@ -27,6 +27,25 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
   const [hasGuest, setHasGuest] = useState(false);
   const [guestCount, setGuestCount] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+
+  const isDirty = hasGuest || guestCount > 1;
+
+  // 탭 닫기/새로고침 시 네이티브 경고
+  useEffect(() => {
+    if (!open || !isDirty) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [open, isDirty]);
+
+  // 시트 닫기 시도 시 작성 중이면 confirm
+  const handleCloseAttempt = () => {
+    if (isDirty && !window.confirm("작성 중인 내용이 사라집니다. 닫으시겠습니까?")) return;
+    onClose();
+  };
 
   // 인원 확정 깃발은 참여 불가 — 상위에서 버튼 숨기지만 방어적 가드
   if (!puzzle.is_recruiting_party) return null;
@@ -86,7 +105,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
   };
 
   return (
-    <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
+    <Sheet open={open} onOpenChange={(v) => { if (!v) handleCloseAttempt(); }}>
       <SheetContent
         side="bottom"
         className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-5 pb-10"

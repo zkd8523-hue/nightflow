@@ -176,7 +176,9 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) handleSearch();
+              }}
               placeholder="주소, 건물명, 장소명 검색"
               autoFocus
               className="bg-[#1C1C1E] border-neutral-800 h-11 text-white placeholder-neutral-600 rounded-lg flex-1"

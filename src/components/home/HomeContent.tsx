@@ -203,13 +203,13 @@ export function HomeContent({
     }
   };
 
-  const handleGoToDashboard = async () => {
+  const handleGoToCreateAuction = async () => {
     setShowMDWelcome(false);
     setWelcomeDismissed(true);
     if (user) {
       await supabase.from("users").update({ md_welcome_shown: true }).eq("id", user.id);
     }
-    router.push("/md/dashboard");
+    router.push("/md/auctions/new");
   };
 
   const [auctions, setAuctions] = useState({
@@ -404,29 +404,29 @@ export function HomeContent({
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">1</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                대시보드에서 <span className="text-white font-bold">1분 만에 테이블을 등록</span>해보세요
+                <span className="text-white font-bold">주말(공휴일) 테이블</span>을 경매로 올리세요
               </p>
             </div>
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">2</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                유저들이 테이블을 <span className="text-white font-bold">예약·입찰</span>합니다
+                유저들이 실시간으로 <span className="text-white font-bold">입찰 경쟁</span>합니다
               </p>
             </div>
             <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
               <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">3</div>
               <p className="text-[13px] text-neutral-300 font-medium">
-                남는 테이블 없이 <span className="text-white font-bold">매출을 극대화</span> 해보세요
+                낙찰되면 <span className="text-white font-bold">유저가 직접 연락</span>드려요
               </p>
             </div>
           </div>
 
           <div className="space-y-3 mt-6">
             <Button
-              onClick={handleGoToDashboard}
+              onClick={handleGoToCreateAuction}
               className="w-full h-14 bg-white hover:bg-neutral-200 text-black font-black text-base rounded-2xl transition-all active:scale-[0.98]"
             >
-              MD 대시보드로 이동
+              경매 올리기
             </Button>
             <button
               onClick={handleDismissMDWelcome}

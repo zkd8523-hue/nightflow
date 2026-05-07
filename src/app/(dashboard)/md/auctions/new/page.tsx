@@ -99,7 +99,7 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
         <div className="min-h-screen bg-[#0A0A0A] pb-20">
             <div className="max-w-lg mx-auto p-6 pt-12">
                 <div className="flex items-center gap-4 mb-8">
-                    <Link href="/md/dashboard" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800">
+                    <Link href="/" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800">
                         <ChevronLeft className="w-5 h-5 text-neutral-400" />
                     </Link>
                     <div className="space-y-0.5">

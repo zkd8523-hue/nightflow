@@ -80,12 +80,13 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
             value={customBrand}
             onChange={(e) => setCustomBrand(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              // 한글 IME 조합 중 Enter는 무시 (조합 완료 후 다시 발화됨)
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 handleCustomAdd();
               }
             }}
-            placeholder="예: 하드2, 위스키3, 잭3"
+            placeholder="예: 돔페3, 모엣2, 하드1, 데킬라1"
             className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] flex-1"
           />
           <Button
