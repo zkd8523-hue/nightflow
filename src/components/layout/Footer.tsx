@@ -12,7 +12,7 @@ export function Footer() {
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center gap-4 text-sm text-neutral-400">
           <Link href="/" className="text-base font-bold text-white">
-            NightFlow
+            나이트플로우 <span className="text-neutral-500">(나플)</span>
           </Link>
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
             <Link href="/about" className="hover:text-white transition-colors">
@@ -59,7 +59,7 @@ export function Footer() {
             </p>
           </div>
           <p className="text-neutral-500 text-xs">
-            &copy; {new Date().getFullYear()} NightFlow. All rights reserved.
+            &copy; {new Date().getFullYear()} 나이트플로우(나플) · NightFlow. All rights reserved.
           </p>
         </div>
       </div>

@@ -43,6 +43,21 @@ export default function FAQPage() {
                     </div>
 
                     <Accordion type="single" collapsible className="space-y-3">
+                        <AccordionItem value="item-0" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
+                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                                나플이 뭔가요?
+                            </AccordionTrigger>
+                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                                <p>
+                                    <strong className="text-white">나플</strong>은 <strong className="text-white">나이트플로우(NightFlow)</strong>의 줄임말입니다.
+                                </p>
+                                <p className="mt-2">
+                                    강남·홍대 클럽 MD가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.
+                                    "나플에서 잡는다"처럼 편하게 부르시면 됩니다.
+                                </p>
+                            </AccordionContent>
+                        </AccordionItem>
+
                         <AccordionItem value="item-1" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
                             <AccordionTrigger className="text-white font-bold hover:no-underline">
                                 경매는 어떻게 진행되나요?

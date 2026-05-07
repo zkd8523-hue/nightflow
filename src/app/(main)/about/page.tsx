@@ -33,7 +33,7 @@ export default function AboutPage() {
                 {/* 본문 */}
                 <div className="space-y-6 text-[15px] leading-[1.8] text-neutral-400 break-keep">
                     <p>
-                        안녕하세요, NightFlow를 만들고 있는 개발자 김민기입니다.
+                        안녕하세요, 나이트플로우(줄여서 <strong className="text-white">나플</strong>)를 만들고 있는 개발자 김민기입니다.
                     </p>
 
                     <p>
