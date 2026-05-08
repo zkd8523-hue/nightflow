@@ -176,6 +176,11 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
           {/* Bottom Bar: 가격+유저상태 (좌) + MD한마디(중) + 소셜프루프+CTA (우) */}
           <div className="flex items-center justify-between mt-1 gap-2">
             <div className="flex flex-col min-w-0">
+              {!isInstant && !isCompleted && (
+                <span className="text-[10px] text-neutral-500 font-medium leading-none mb-0.5">
+                  {auction.bid_count > 0 ? "현재가" : "시작가"}
+                </span>
+              )}
               <span className={`text-[23px] font-bold leading-none tracking-tight ${isWon ? "text-amber-400" : "text-white"}`}>
                 {formatNumber(currentPrice)}원
               </span>
