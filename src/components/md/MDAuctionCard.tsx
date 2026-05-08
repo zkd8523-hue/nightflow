@@ -22,7 +22,6 @@ import { useCountdown } from "@/hooks/useCountdown";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { toast } from "sonner";
 import dayjs from "dayjs";
-import { shareAuction } from "@/lib/utils/share";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 
@@ -125,14 +124,10 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     };
 
 
-    const handleShare = async () => {
-        await shareAuction({
-            auctionId: auction.id,
-            clubName: auction.club?.name || "클럽",
-            eventDate: auction.event_date,
-            startPrice: auction.start_price,
-            tableInfo: auction.table_info,
-        });
+    const handleShare = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        router.push(`/share/auction/${auction.id}/story`);
     };
 
     const club = auction.club;

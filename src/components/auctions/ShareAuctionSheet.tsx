@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import {
   Drawer,
   DrawerContent,
@@ -8,7 +9,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { MessageCircle, Users, Link2, Share2 } from "lucide-react";
+import { MessageCircle, Users, Link2, Share2, Camera } from "lucide-react";
 
 import { shareAuction, shareToInstagram, shareInvite, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
@@ -28,6 +29,7 @@ export function ShareAuctionSheet({
   onOpenChange,
   auction,
 }: ShareAuctionSheetProps) {
+  const router = useRouter();
   const { shareToKakao, isAvailable: kakaoAvailable } = useKakaoShare();
   const referralCode = useReferralCode();
   const currentUser = useAuthStore((s) => s.user);
@@ -144,7 +146,20 @@ export function ShareAuctionSheet({
     }
   };
 
+  const handleStoryCard = () => {
+    router.push(`/share/auction/${auction.id}/story`);
+  };
+
   const shareOptions = [
+    {
+      id: "story",
+      label: "스토리 카드",
+      icon: Camera,
+      iconColor: "text-pink-400",
+      bgColor: "bg-pink-500/10 border-pink-500/20",
+      handler: handleStoryCard,
+      available: isFromMD,
+    },
     {
       id: "kakao",
       label: "카카오톡",
@@ -199,7 +214,7 @@ export function ShareAuctionSheet({
 
         <div
           className={`grid gap-3 mt-5 ${
-            visibleOptions.length === 4 ? "grid-cols-4" : "grid-cols-3"
+            visibleOptions.length >= 5 ? "grid-cols-5" : visibleOptions.length === 4 ? "grid-cols-4" : "grid-cols-3"
           }`}
         >
           {visibleOptions.map((opt) => {

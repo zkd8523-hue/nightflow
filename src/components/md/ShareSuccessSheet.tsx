@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { PartyPopper, MessageCircle, Instagram, Link2, Share2, ArrowRight, RotateCcw } from "lucide-react";
+import { PartyPopper, MessageCircle, Instagram, Link2, Share2, ArrowRight, RotateCcw, Camera } from "lucide-react";
 
 import { shareAuction, shareToInstagram, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
@@ -144,6 +144,10 @@ export function ShareSuccessSheet({
     }
   };
 
+  const handleStoryCard = () => {
+    router.push(`/share/auction/${auctionId}/story`);
+  };
+
   const handleGoToDashboard = () => {
     onOpenChange(false);
     router.push("/md/dashboard");
@@ -157,6 +161,15 @@ export function ShareSuccessSheet({
   };
 
   const shareOptions = [
+    {
+      id: "story",
+      label: "스토리 카드",
+      icon: Camera,
+      iconColor: "text-pink-400",
+      bgColor: "bg-pink-500/10 border-pink-500/20",
+      handler: handleStoryCard,
+      available: true,
+    },
     {
       id: "kakao",
       label: "카카오톡",
@@ -215,7 +228,7 @@ export function ShareSuccessSheet({
         </DrawerHeader>
 
         {/* 공유 버튼 그리드 */}
-        <div className={`grid gap-3 mt-6 ${visibleOptions.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
+        <div className={`grid gap-3 mt-6 ${visibleOptions.length >= 5 ? "grid-cols-5" : visibleOptions.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
           {visibleOptions.map((opt) => {
             const Icon = opt.icon;
             const isLoading = sharing === opt.id;
