@@ -45,7 +45,12 @@ const formSchema = z.object({
     duration_minutes: z.number().min(1, "지속 시간을 선택해주세요."),
     // 얼리버드에서는 auction_end_at을 직접 지정. instant에서는 duration_minutes 사용.
     auction_end_at: z.string().optional(),
-    includes: z.array(z.string()).min(1, "최소 한 개의 포함 내역을 선택해주세요."),
+    includes: z.array(z.string())
+        .min(1, "주류와 포함 내역을 입력해주세요.")
+        .refine(
+            (arr) => arr.some((item) => LIQUOR_KEYWORDS.some((kw) => item.includes(kw))),
+            { message: "최소 한 개의 주류(보틀)를 입력해주세요." }
+        ),
     md_comment: z.string().max(15, "최대 15자").optional(),
 }).superRefine((data, ctx) => {
     // 얼리버드 (listing_type='auction'): 이벤트일 윈도우 + 마감 시각 규칙 강제

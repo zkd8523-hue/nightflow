@@ -8,6 +8,7 @@ import {
   isEventDateWithinWindow,
   EARLYBIRD_MAX_EVENT_DAYS_AHEAD,
 } from "@/lib/utils/auction";
+import { LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
 
 export async function POST(request: NextRequest) {
   try {
@@ -97,6 +98,21 @@ export async function POST(request: NextRequest) {
       auctionData.buy_now_price = auctionData.start_price;
       auctionData.auto_extend_min = 0;
       auctionData.max_extensions = 0;
+    }
+
+    // 4-b1. 주류(보틀) 필수 검증 — 신규 등록 또는 includes 변경 시
+    //       기존 데이터(주류 없는 과거 경매) 수정 호환을 위해 includes 미전송 시 통과
+    if (!isUpdate || auctionData.includes !== undefined) {
+      const includes: string[] = Array.isArray(auctionData.includes) ? auctionData.includes : [];
+      const hasLiquor = includes.some((item: string) =>
+        LIQUOR_KEYWORDS.some((kw) => item.includes(kw))
+      );
+      if (!hasLiquor) {
+        return NextResponse.json(
+          { error: "최소 한 개의 주류(보틀)를 포함해야 합니다." },
+          { status: 400 }
+        );
+      }
     }
 
     // 4-c. 얼리버드 타이밍 규칙 강제 (Migration 089 → 137)

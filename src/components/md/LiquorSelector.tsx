@@ -70,7 +70,9 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
     <section className={`space-y-4 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
       <div className="flex items-center gap-1.5 text-[11px] font-bold text-neutral-500 tracking-wide mb-2">
         <Wine className="w-3 h-3 text-purple-400/70" />
-        <span>주류 선택</span>
+        <span>주류</span>
+        <span className="text-red-500">*</span>
+        <span className="text-neutral-600 font-medium">최소 1병 이상</span>
       </div>
 
       <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-2">
