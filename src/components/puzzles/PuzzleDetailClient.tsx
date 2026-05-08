@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -12,6 +12,8 @@ import { OfferSheet } from "./OfferSheet";
 import { OfferAcceptSheet } from "./OfferAcceptSheet";
 import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
+import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferButton";
+import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
 import { PuzzlePiece } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
@@ -64,6 +66,28 @@ const OFFER_STATUS_LABEL: Record<string, string> = {
   withdrawn: "철회됨",
   expired: "미선택",
 };
+
+function PremiumBadge() {
+  return (
+    <span className="inline-flex items-center gap-0.5">
+      <span className="text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          toast("프리미엄 오퍼란?", {
+            description: "MD가 깃발 예산보다 높은 금액(최대 +20%)으로 제안한 오퍼예요. 더 좋은 조건의 테이블이 따라옵니다.",
+          });
+        }}
+        className="text-amber-400/70 hover:text-amber-400 transition-colors"
+        aria-label="프리미엄 오퍼 설명"
+      >
+        <HelpCircle className="w-3 h-3" />
+      </button>
+    </span>
+  );
+}
 
 export function PuzzleDetailClient({
   puzzle,
@@ -512,6 +536,17 @@ export function PuzzleDetailClient({
             </section>
           )}
 
+          {/* 관리자 도구 */}
+          {isAdmin && ["open", "matched"].includes(puzzle.status) && (
+            <section className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 flex items-center justify-between">
+              <div>
+                <p className="text-[12px] font-bold text-red-400">관리자 도구</p>
+                <p className="text-[10px] text-neutral-500">깃발 강제 종료 (참여자 알림 + MD 슬롯 회복)</p>
+              </div>
+              <AdminCancelPuzzleButton puzzleId={puzzle.id} />
+            </section>
+          )}
+
           {/* 오퍼 섹션 — 성사 후엔 MD(본인 오퍼 상태 확인) 전용으로 축소. 일반 유저/방장은 위 성사됨 카드로 충분. */}
           {(!isAccepted || (isMd && myOffer)) && (
           <section className="space-y-3">
@@ -570,7 +605,7 @@ export function PuzzleDetailClient({
                         <p className="text-[16px] font-black text-green-400">
                           {offer.proposed_price.toLocaleString()}원
                           {offer.proposed_price > baseBudget && (
-                            <span className="ml-1.5 text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
+                            <span className="ml-1.5 inline-flex items-center"><PremiumBadge /></span>
                           )}
                         </p>
                         {offer.includes.length > 0 && (
@@ -642,6 +677,13 @@ export function PuzzleDetailClient({
                           </Button>
                         </div>
                       )}
+
+                      {/* 관리자 강제 철회 버튼 */}
+                      {isAdmin && offer.status === "pending" && (
+                        <div className="pt-1 flex justify-end">
+                          <AdminWithdrawOfferButton offerId={offer.id} variant="full" onWithdrawn={loadOffers} />
+                        </div>
+                      )}
                     </div>
                   ))}
               </div>
@@ -661,9 +703,7 @@ export function PuzzleDetailClient({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <p className="text-[14px] font-bold text-white">MD 제안</p>
-                        {offer.proposed_price > baseBudget && (
-                          <span className="text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
-                        )}
+                        {offer.proposed_price > baseBudget && <PremiumBadge />}
                       </div>
                       <p className="text-[11px] text-neutral-500">
                         {new Date(offer.created_at).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })}
@@ -705,9 +745,7 @@ export function PuzzleDetailClient({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <p className="text-[13px] font-bold text-white">내 제안</p>
-                    {myOffer.proposed_price > baseBudget && (
-                      <span className="text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
-                    )}
+                    {myOffer.proposed_price > baseBudget && <PremiumBadge />}
                   </div>
                   <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
                     myOffer.status === "accepted"
