@@ -27,6 +27,7 @@ const TPL = {
   PUZZLE_LEADER_CHANGED:    Deno.env.get("ALIMTALK_TPL_PUZZLE_LEADER_CHANGED") || "",
   PUZZLE_MATCHED:           Deno.env.get("ALIMTALK_TPL_PUZZLE_MATCHED") || "",
   PUZZLE_OFFER_WON:         Deno.env.get("ALIMTALK_TPL_PUZZLE_OFFER_WON") || "",
+  PUZZLE_OFFER_REMINDER:    Deno.env.get("ALIMTALK_TPL_PUZZLE_OFFER_REMINDER") || "",
 };
 
 function puzzleUrl(puzzleId: string) {
@@ -243,6 +244,65 @@ async function handleLeaderChanged(supabase: ReturnType<typeof createClient>) {
 }
 
 // ============================================================
+// #6 D-2 오퍼 리마인더 (19:00~19:09 KST = 10:00~10:09 UTC)
+// 이벤트 2일 전, 미수락 오퍼 1건 이상인 방장에게 1회 발송
+// ============================================================
+async function handleOfferReminder(supabase: ReturnType<typeof createClient>) {
+  if (!TPL.PUZZLE_OFFER_REMINDER) return;
+
+  const nowUtc = new Date();
+  const kstHour = (nowUtc.getUTCHours() + 9) % 24;
+  const kstMinute = nowUtc.getUTCMinutes();
+
+  // 19:00~19:09 KST 시간대에만 실행
+  if (kstHour !== 19 || kstMinute >= 10) return;
+
+  // D+2 KST 날짜 계산
+  const kstNow = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
+  const targetDate = new Date(kstNow.getTime() + 2 * 24 * 60 * 60 * 1000);
+  const targetDateStr = targetDate.toISOString().slice(0, 10);
+
+  // D+2 이벤트이고 open 상태인 퍼즐 조회
+  const { data: puzzles } = await supabase
+    .from("puzzles")
+    .select("id, leader_id")
+    .eq("status", "open")
+    .eq("event_date", targetDateStr)
+    .gt("expires_at", nowUtc.toISOString());
+
+  console.log(`[offerReminder] D-2 퍼즐=${puzzles?.length ?? 0} (event_date=${targetDateStr})`);
+
+  if (!puzzles || puzzles.length === 0) return;
+
+  for (const puzzle of puzzles as Array<{ id: string; leader_id: string }>) {
+    if (await alreadySent(supabase, "puzzle_offer_reminder", puzzle.id)) continue;
+
+    // 미수락 오퍼 수 확인
+    const { count } = await supabase
+      .from("puzzle_offers")
+      .select("id", { count: "exact", head: true })
+      .eq("puzzle_id", puzzle.id)
+      .eq("status", "pending");
+
+    if (!count || count === 0) continue;
+
+    const { data: leader } = await supabase
+      .from("users")
+      .select("id, name, phone")
+      .eq("id", puzzle.leader_id)
+      .single();
+
+    if (!leader) continue;
+
+    await sendAndLog(supabase, "puzzle_offer_reminder", puzzle.id, leader, TPL.PUZZLE_OFFER_REMINDER, {
+      userName: leader.name ?? "방장",
+      offerCount: String(count),
+      puzzleUrl: puzzleUrl(puzzle.id),
+    });
+  }
+}
+
+// ============================================================
 // #4 매칭 성사 (조각원 전원) + #5 MD 낙찰
 // ============================================================
 async function handleMatched(supabase: ReturnType<typeof createClient>) {
@@ -321,9 +381,9 @@ serve(async (req: Request) => {
 
     await Promise.allSettled([
       handleFirstOffer(supabase),
-      handleDeadlineReminder(supabase),
       handleLeaderChanged(supabase),
       handleMatched(supabase),
+      handleOfferReminder(supabase),
     ]);
 
     console.log("✅ notify-puzzle-events 완료");
