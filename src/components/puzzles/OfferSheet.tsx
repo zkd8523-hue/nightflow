@@ -180,8 +180,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       return;
     }
     // 수정 모드는 슬롯 카운트 검증 스킵 (이미 차지하고 있는 슬롯)
-    if (!editingOffer && activeOffers >= 3) {
-      toast.error("동시 활성 오퍼는 최대 3건입니다");
+    if (!editingOffer && activeOffers >= 5) {
+      toast.error("동시 활성 오퍼는 최대 5건입니다");
       return;
     }
 
@@ -305,8 +305,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             >
               <div>
                 <p className="text-[11px] text-neutral-500">활성 오퍼</p>
-                <p className={`text-[14px] font-black ${activeOffers >= 3 ? "text-red-400" : "text-white"}`}>
-                  {activeOffers}/3 슬롯 사용 중
+                <p className={`text-[14px] font-black ${activeOffers >= 5 ? "text-red-400" : "text-white"}`}>
+                  {activeOffers}/5 슬롯 사용 중
                 </p>
               </div>
               {activeOffers > 0 && (
@@ -523,13 +523,13 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           <Button
             onClick={handleSubmit}
-            disabled={loading || myClubs.length === 0 || !isPriceValid || selectedIncludes.length === 0 || (!editingOffer && activeOffers >= 3) || (!editingOffer && credits !== null && credits < 30)}
+            disabled={loading || myClubs.length === 0 || !isPriceValid || selectedIncludes.length === 0 || (!editingOffer && activeOffers >= 5) || (!editingOffer && credits !== null && credits < 30)}
             className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
             {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "제안서 보내기")}
           </Button>
 
-          {!editingOffer && activeOffers >= 3 && (
+          {!editingOffer && activeOffers >= 5 && (
             <p className="text-center text-[12px] text-red-400">
               슬롯이 가득 찼습니다. 위에서 오퍼를 철회하고 새로 제안하세요.
             </p>
