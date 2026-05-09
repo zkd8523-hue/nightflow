@@ -11,9 +11,10 @@ import { MDHealthBadge } from "@/components/admin/MDHealthBadge";
 import { computeHealthStatus, getGradeLabel } from "@/lib/utils/mdHealth";
 import { toast } from "sonner";
 import {
-  Trash2, RotateCcw, ChevronDown, ChevronUp,
+  Trash2, RotateCcw, ChevronDown, ChevronUp, GitMerge,
   Instagram, ExternalLink, Eye, ArrowRight, MapPin, Calendar, Building2,
 } from "lucide-react";
+import { MergeClubDialog } from "@/components/admin/MergeClubDialog";
 import Link from "next/link";
 import type { Club, MDHealthScore } from "@/types/database";
 import { getErrorMessage, logError } from "@/lib/utils/error";
@@ -52,9 +53,16 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores }: Admin
   const [clubs, setClubs] = useState<Club[]>(initialClubs);
   const [expandedClubId, setExpandedClubId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [mergeSource, setMergeSource] = useState<Club | null>(null);
 
   const supabase = createClient();
   const router = useRouter();
+
+  const handleMerged = (sourceId: string) => {
+    const nowIso = new Date().toISOString();
+    setClubs((prev) => prev.map((c) => (c.id === sourceId ? { ...c, deleted_at: nowIso, deleted_by: authUserId } : c)));
+    router.refresh();
+  };
 
   const { activeClubs, deletedClubs } = useMemo(() => {
     const active: Club[] = [];
@@ -143,15 +151,26 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores }: Admin
                 <RotateCcw className="w-4 h-4" />
               </Button>
             ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10"
-                onClick={() => handleDelete(club.id)}
-                title="삭제"
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-500 hover:text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => setMergeSource(club)}
+                  title="병합"
+                >
+                  <GitMerge className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10"
+                  onClick={() => handleDelete(club.id)}
+                  title="삭제"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             )}
           </div>
 
@@ -326,6 +345,12 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores }: Admin
           {previewImage && <img src={previewImage} alt="미리보기" className="w-full h-auto rounded-lg" />}
         </DialogContent>
       </Dialog>
+
+      <MergeClubDialog
+        source={mergeSource}
+        onClose={() => setMergeSource(null)}
+        onMerged={handleMerged}
+      />
     </div>
   );
 }

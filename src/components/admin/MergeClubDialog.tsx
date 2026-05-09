@@ -1,0 +1,179 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { GitMerge, Search, AlertTriangle, X } from "lucide-react";
+import { toast } from "sonner";
+import { getErrorMessage, logError } from "@/lib/utils/error";
+import type { Club } from "@/types/database";
+
+interface MergeClubDialogProps {
+  source: Club | null;
+  onClose: () => void;
+  onMerged: (sourceId: string) => void;
+}
+
+export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogProps) {
+  const supabase = createClient();
+  const [search, setSearch] = useState("");
+  const [results, setResults] = useState<{ id: string; name: string; area: string }[]>([]);
+  const [target, setTarget] = useState<{ id: string; name: string; area: string } | null>(null);
+  const [preview, setPreview] = useState<{ auction_count: number; md_count: number } | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // 다이얼로그 열릴 때 미리보기 카운트 조회
+  useEffect(() => {
+    if (!source) return;
+    setSearch("");
+    setResults([]);
+    setTarget(null);
+    setPreview(null);
+    (async () => {
+      const { data, error } = await supabase.rpc("preview_merge_clubs", {
+        p_source_id: source.id,
+      });
+      if (!error && data) {
+        setPreview(data as { auction_count: number; md_count: number });
+      }
+    })();
+  }, [source, supabase]);
+
+  const searchClubs = async (q: string) => {
+    setSearch(q);
+    if (!q.trim() || !source) { setResults([]); return; }
+    const { data } = await supabase
+      .from("clubs")
+      .select("id, name, area")
+      .ilike("name", `%${q}%`)
+      .is("deleted_at", null)
+      .neq("id", source.id)
+      .limit(10);
+    setResults(data ?? []);
+  };
+
+  const handleMerge = async () => {
+    if (!source || !target) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/clubs/merge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ source_id: source.id, target_id: target.id }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "병합 실패");
+      toast.success(`${source.name} → ${target.name} 병합 완료 (경매 ${result.merged_auctions}건, MD ${result.merged_mds}명)`);
+      onMerged(source.id);
+      onClose();
+    } catch (e: unknown) {
+      logError(e, "MergeClubDialog.handleMerge");
+      toast.error(getErrorMessage(e) || "병합 실패");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!source} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-white flex items-center gap-2">
+            <GitMerge className="w-4 h-4 text-amber-400" /> 클럽 병합
+          </DialogTitle>
+        </DialogHeader>
+
+        {source && (
+          <div className="space-y-4">
+            {/* Source 정보 + 영향 범위 */}
+            <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800">
+              <p className="text-xs text-neutral-500 mb-1">병합할 클럽 (사라짐)</p>
+              <p className="text-base text-white font-bold">
+                {source.name} <span className="text-neutral-500 text-xs ml-1">{source.area}</span>
+              </p>
+              {preview && (
+                <p className="text-xs text-neutral-500 mt-2">
+                  경매 <span className="text-amber-400 font-bold">{preview.auction_count}건</span>, MD <span className="text-amber-400 font-bold">{preview.md_count}명</span>이 대표 클럽으로 이전됩니다
+                </p>
+              )}
+            </div>
+
+            {/* 대표 클럽 검색/선택 */}
+            {!target ? (
+              <div className="space-y-2">
+                <p className="text-xs text-neutral-500">대표 클럽 검색</p>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => searchClubs(e.target.value)}
+                    placeholder="클럽명 검색..."
+                    className="w-full bg-neutral-900 border border-neutral-700 rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                    autoFocus
+                  />
+                </div>
+                {results.length > 0 && (
+                  <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                    {results.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => setTarget(c)}
+                        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-neutral-800 transition-colors text-left"
+                      >
+                        <span className="text-sm text-white font-bold">{c.name}</span>
+                        <span className="text-xs text-neutral-500">{c.area}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs text-neutral-500">대표 클럽 (이쪽으로 합쳐짐)</p>
+                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5">
+                  <span className="text-sm text-amber-300 font-bold flex-1">
+                    {target.name} <span className="text-neutral-500 text-xs ml-1">{target.area}</span>
+                  </span>
+                  <button onClick={() => setTarget(null)} className="text-neutral-500 hover:text-neutral-300">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 경고 */}
+            {target && (
+              <div className="flex gap-2 bg-red-500/5 border border-red-500/20 rounded-xl p-3">
+                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-red-300 leading-relaxed">
+                  병합 후 source 클럽은 삭제됩니다. 복구는 가능하지만 이전된 경매·MD는 자동 복구되지 않습니다. 신중히 확인하세요.
+                </p>
+              </div>
+            )}
+
+            {/* 액션 */}
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="ghost"
+                onClick={onClose}
+                disabled={loading}
+                className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-white"
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleMerge}
+                disabled={!target || loading}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 text-black font-black disabled:opacity-40"
+              >
+                {loading ? "병합 중..." : "병합 확정"}
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
