@@ -45,6 +45,7 @@ export async function POST(
       .update({
         md_status: "approved",
         role: "md",
+        md_credits: 60,
       })
       .eq("id", mdId);
 
