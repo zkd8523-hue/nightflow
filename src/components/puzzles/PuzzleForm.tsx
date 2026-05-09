@@ -117,9 +117,9 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
   const maxOfferPrice = Math.ceil(totalBudget * 1.2);
 
-  // expires_at: event_date 당일 21:00 KST = 12:00 UTC
+  // expires_at: event_date 당일 자정(24:00 KST = 다음날 00:00 KST) = 15:00 UTC
   const getExpiresAt = (date: string) => {
-    return `${date}T12:00:00.000Z`;
+    return `${date}T15:00:00.000Z`;
   };
 
   const formatWon = (n: number) =>
