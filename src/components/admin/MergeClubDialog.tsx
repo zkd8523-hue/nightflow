@@ -18,8 +18,8 @@ interface MergeClubDialogProps {
 export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogProps) {
   const supabase = createClient();
   const [search, setSearch] = useState("");
-  const [results, setResults] = useState<{ id: string; name: string; area: string }[]>([]);
-  const [target, setTarget] = useState<{ id: string; name: string; area: string } | null>(null);
+  const [results, setResults] = useState<{ id: string; name: string; area: string; md_count: number }[]>([]);
+  const [target, setTarget] = useState<{ id: string; name: string; area: string; md_count: number } | null>(null);
   const [preview, setPreview] = useState<{ auction_count: number; md_count: number } | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -50,7 +50,21 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
       .is("deleted_at", null)
       .neq("id", source.id)
       .limit(10);
-    setResults(data ?? []);
+    if (!data || data.length === 0) { setResults([]); return; }
+
+    const ids = data.map((c) => c.id);
+    const { data: mds } = await supabase
+      .from("users")
+      .select("default_club_id")
+      .in("default_club_id", ids);
+
+    const counts: Record<string, number> = {};
+    for (const m of mds ?? []) {
+      const id = m.default_club_id as string;
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+
+    setResults(data.map((c) => ({ ...c, md_count: counts[c.id] ?? 0 })));
   };
 
   const handleMerge = async () => {
@@ -122,7 +136,10 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
                         onClick={() => setTarget(c)}
                         className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-neutral-800 transition-colors text-left"
                       >
-                        <span className="text-sm text-white font-bold">{c.name}</span>
+                        <span className="text-sm text-white font-bold">
+                          {c.name}
+                          <span className="text-xs text-neutral-500 font-normal ml-1.5">(MD {c.md_count}명)</span>
+                        </span>
                         <span className="text-xs text-neutral-500">{c.area}</span>
                       </button>
                     ))}

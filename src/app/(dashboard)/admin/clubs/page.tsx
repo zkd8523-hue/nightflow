@@ -32,6 +32,25 @@ export default async function AdminClubsPage() {
             .returns<MDHealthScore[]>(),
     ]);
 
+    const clubIds = (clubs ?? []).map((c) => c.id);
+    const mdSets: Record<string, Set<string>> = {};
+    for (const club of clubs ?? []) {
+        const set = new Set<string>();
+        if (club.md_id) set.add(club.md_id);
+        mdSets[club.id] = set;
+    }
+    const { data: mdRows } = clubIds.length
+        ? await supabase.from("users").select("id, default_club_id").in("default_club_id", clubIds)
+        : { data: [] as { id: string; default_club_id: string | null }[] };
+    for (const row of mdRows ?? []) {
+        const id = row.default_club_id as string | null;
+        if (!id || !mdSets[id]) continue;
+        mdSets[id].add(row.id);
+    }
+    const mdCounts: Record<string, number> = Object.fromEntries(
+        Object.entries(mdSets).map(([k, v]) => [k, v.size])
+    );
+
     return (
         <div className="max-w-2xl mx-auto px-6 py-8">
             <div className="flex items-center gap-4 mb-6">
@@ -40,7 +59,7 @@ export default async function AdminClubsPage() {
                 </Link>
                 <h1 className="text-xl font-black text-white">클럽 신청 관리</h1>
             </div>
-            <AdminClubsList initialClubs={clubs || []} authUserId={authUser.id} healthScores={healthScores || []} />
+            <AdminClubsList initialClubs={clubs || []} authUserId={authUser.id} healthScores={healthScores || []} mdCounts={mdCounts} />
         </div>
     );
 }

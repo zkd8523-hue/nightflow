@@ -29,6 +29,7 @@ interface AdminClubsListProps {
   initialClubs: Club[];
   authUserId: string;
   healthScores: MDHealthScore[];
+  mdCounts: Record<string, number>;
 }
 
 function ImagePreview({ url, label, onPreview }: { url: string | null | undefined; label: string; onPreview: (url: string) => void }) {
@@ -49,7 +50,7 @@ function ImagePreview({ url, label, onPreview }: { url: string | null | undefine
   );
 }
 
-export function AdminClubsList({ initialClubs, authUserId, healthScores }: AdminClubsListProps) {
+export function AdminClubsList({ initialClubs, authUserId, healthScores, mdCounts }: AdminClubsListProps) {
   const [clubs, setClubs] = useState<Club[]>(initialClubs);
   const [expandedClubId, setExpandedClubId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -130,7 +131,9 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores }: Admin
           <div className="flex justify-between items-start mb-2">
             <div>
               <h3 className="text-white font-bold">
-                {club.name} <span className="text-neutral-500 text-xs ml-2">{club.area}</span>
+                {club.name}
+                <span className="text-neutral-500 text-xs ml-2">{club.area}</span>
+                <span className="text-neutral-500 text-xs ml-2 font-normal">· MD {mdCounts[club.id] ?? 0}명</span>
               </h3>
               <p className="text-xs text-neutral-500 mt-1">{club.address}</p>
               {isDeleted && (
