@@ -6,11 +6,15 @@ import { logger } from "@/lib/utils/logger";
 
 // Admin: MD 최종 승인 (approved + role='md')
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: mdId } = await params;
+
+    // body에 merge_club_id가 있으면 기존 클럽에 병합하여 승인
+    const body = await req.json().catch(() => ({}));
+    const merge_club_id: string | undefined = body.merge_club_id || undefined;
 
     // 1. Admin 권한 확인
     const supabase = await createClient();
@@ -31,12 +35,29 @@ export async function POST(
     // 2. 대상 MD 확인
     const { data: md } = await supabaseAdmin
       .from("users")
-      .select("md_status, name, phone")
+      .select("md_status, name, phone, default_club_id")
       .eq("id", mdId)
       .single();
 
     if (!md || md.md_status !== "pending") {
       return NextResponse.json({ error: "pending 상태의 MD만 승인할 수 있습니다." }, { status: 400 });
+    }
+
+    // 2-1. 클럽 병합 처리 (merge_club_id 있을 때)
+    if (merge_club_id) {
+      const pendingClubId = md.default_club_id;
+      // 신청 클럽 soft-delete (기존 클럽과 다를 때만)
+      if (pendingClubId && pendingClubId !== merge_club_id) {
+        await supabaseAdmin
+          .from("clubs")
+          .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
+          .eq("id", pendingClubId);
+      }
+      // default_club_id를 기존 클럽으로 교체
+      await supabaseAdmin
+        .from("users")
+        .update({ default_club_id: merge_club_id })
+        .eq("id", mdId);
     }
 
     // 3. 승인 처리

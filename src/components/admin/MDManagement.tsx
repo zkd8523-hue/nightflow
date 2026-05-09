@@ -20,7 +20,11 @@ import {
     MapPinned,
     ArrowRight,
     MessageCircle,
+    Search,
+    X,
+    GitMerge,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import type { User, Club, MDHealthScore } from "@/types/database";
 import { MDMonitorList } from "./MDMonitorList";
@@ -311,12 +315,34 @@ function PendingMDCard({
     const [loading, setLoading] = useState(false);
     const [showRejectInput, setShowRejectInput] = useState(false);
     const [rejectReason, setRejectReason] = useState("");
+    const [showMerge, setShowMerge] = useState(false);
+    const [clubSearch, setClubSearch] = useState("");
+    const [clubResults, setClubResults] = useState<{ id: string; name: string; area: string }[]>([]);
+    const [selectedMergeClub, setSelectedMergeClub] = useState<{ id: string; name: string } | null>(null);
     const clubName = user.default_club?.name || user.verification_club_name;
+
+    const searchClubs = async (q: string) => {
+        setClubSearch(q);
+        if (!q.trim()) { setClubResults([]); return; }
+        const supabase = createClient();
+        const { data } = await supabase
+            .from("clubs")
+            .select("id, name, area")
+            .ilike("name", `%${q}%`)
+            .is("deleted_at", null)
+            .neq("id", user.default_club_id ?? "")
+            .limit(8);
+        setClubResults(data ?? []);
+    };
 
     const handleApprove = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/admin/mds/${user.id}/approve`, { method: "POST" });
+            const res = await fetch(`/api/admin/mds/${user.id}/approve`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(selectedMergeClub ? { merge_club_id: selectedMergeClub.id } : {}),
+            });
             const result = await res.json();
             if (!res.ok) throw new Error(result.error);
             onUpdate({ id: user.id, md_status: "approved", role: "md" } as UserWithClub);
@@ -399,6 +425,66 @@ function PendingMDCard({
                     </div>
                 </div>
 
+                {/* 클럽 병합 패널 */}
+                {clubName && (
+                    <div className="border-t border-neutral-800/30 pt-3 space-y-2">
+                        {!showMerge && !selectedMergeClub && (
+                            <button
+                                onClick={() => setShowMerge(true)}
+                                className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-amber-400 transition-colors font-bold"
+                            >
+                                <GitMerge className="w-3.5 h-3.5" /> 기존 클럽에 병합
+                            </button>
+                        )}
+                        {showMerge && !selectedMergeClub && (
+                            <div className="space-y-2">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                                    <input
+                                        type="text"
+                                        value={clubSearch}
+                                        onChange={(e) => searchClubs(e.target.value)}
+                                        placeholder="클럽명 검색..."
+                                        className="w-full bg-neutral-900 border border-neutral-700 rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                                        autoFocus
+                                    />
+                                </div>
+                                {clubResults.length > 0 && (
+                                    <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+                                        {clubResults.map((c) => (
+                                            <button
+                                                key={c.id}
+                                                onClick={() => { setSelectedMergeClub(c); setShowMerge(false); setClubResults([]); }}
+                                                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-neutral-800 transition-colors text-left"
+                                            >
+                                                <span className="text-sm text-white font-bold">{c.name}</span>
+                                                <span className="text-xs text-neutral-500">{c.area}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                                <button
+                                    onClick={() => { setShowMerge(false); setClubSearch(""); setClubResults([]); }}
+                                    className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors"
+                                >
+                                    취소
+                                </button>
+                            </div>
+                        )}
+                        {selectedMergeClub && (
+                            <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
+                                <GitMerge className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                <span className="text-xs text-amber-300 font-bold flex-1">
+                                    <span className="text-neutral-400">{clubName}</span> → {selectedMergeClub.name}
+                                </span>
+                                <button onClick={() => { setSelectedMergeClub(null); }} className="text-neutral-600 hover:text-neutral-400 transition-colors">
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {/* 승인/반려 */}
                 <div className="border-t border-neutral-800/30 pt-4 space-y-2">
                     {showRejectInput && (
@@ -433,9 +519,13 @@ function PendingMDCard({
                             <button
                                 onClick={handleApprove}
                                 disabled={loading}
-                                className="flex-1 py-3 bg-green-600 text-white font-black text-[14px] rounded-xl hover:bg-green-700 transition-colors disabled:opacity-40"
+                                className={`flex-1 py-3 text-white font-black text-[14px] rounded-xl transition-colors disabled:opacity-40 ${
+                                    selectedMergeClub
+                                        ? "bg-amber-500 hover:bg-amber-600"
+                                        : "bg-green-600 hover:bg-green-700"
+                                }`}
                             >
-                                {loading ? "처리 중..." : "승인하기"}
+                                {loading ? "처리 중..." : selectedMergeClub ? `${selectedMergeClub.name}에 병합하여 승인` : "승인하기"}
                             </button>
                             <button
                                 onClick={() => setShowRejectInput(true)}
