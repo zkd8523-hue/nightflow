@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useDeferredValue } from "react";
 import Link from "next/link";
+import dayjs from "dayjs";
 import type { Auction, Puzzle } from "@/types/database";
 import { AuctionCard } from "./AuctionCard";
 import { PuzzleList } from "@/components/puzzles/PuzzleList";
@@ -98,6 +99,15 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const isPriceActive = !isDefaultPriceRange(priceRange);
   const hasActiveFilter = isAreaActive || isDateActive || isPriceActive;
   const hasAdvanceFilter = isDateActive || isPriceActive;
+
+  // 깃발 꽂기 링크용 날짜 (선택된 dateFilter에서 추출)
+  const flagDateParam = useMemo(() => {
+    if (dateFilter === "all") return "";
+    const baseline = dayjs(getClubEventDate());
+    if (dateFilter === "this_weekend") return baseline.day(6).format("YYYY-MM-DD");
+    if (dateFilter === "next_weekend") return baseline.day(6).add(1, "week").format("YYYY-MM-DD");
+    return dateFilter;
+  }, [dateFilter]);
 
   const resetAdvanceFilters = () => {
     setDateFilter("all");
@@ -220,11 +230,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {guideSlot}
 
-      {onAreaChange && (
-        <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
           <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1 touch-pan-x flex-1 min-w-0">
             <button
-              onClick={() => onAreaChange(null)}
+              onClick={() => onAreaChange?.(null)}
               className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                 selectedArea === null
                   ? "bg-white text-black"
@@ -236,7 +245,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             {MAIN_AREAS.map((area) => (
               <button
                 key={area}
-                onClick={() => onAreaChange(area)}
+                onClick={() => onAreaChange?.(area)}
                 className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                   selectedArea === area
                     ? "bg-white text-black"
@@ -247,7 +256,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </button>
             ))}
             <button
-              onClick={() => onAreaChange("다른지역")}
+              onClick={() => onAreaChange?.("다른지역")}
               className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                 selectedArea === "다른지역"
                   ? "bg-white text-black"
@@ -257,7 +266,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               다른지역
             </button>
           </div>
-          {tab === "advance" && advanceAuctionsAll.length > 0 && (
+          {tab === "advance" && deferredAuctions.some(a => a.listing_type === "auction") && (
             <div className="relative flex-shrink-0 pb-1">
               <button
                 onClick={() => setFilterSheetOpen(true)}
@@ -275,7 +284,6 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             </div>
           )}
         </div>
-      )}
 
       {instantEnabled && tab === "today" && (
         <div>
@@ -353,20 +361,20 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </button>
             </div>
             {advanceAuctions.length === 0 && dateFilter !== "all" ? (
-              <div className="space-y-3">
-                <p className="text-[13px] text-neutral-400 text-center leading-snug">
-                  이 날은 얼리버드가 없어요.<br />대신 깃발을 꽂아보세요!
-                </p>
-                <Link href="/flags/new" onClick={() => setFilterSheetOpen(false)}>
-                  <button className="w-full h-12 bg-amber-500 text-black font-black text-[14px] rounded-2xl">
-                    ⛳ 깃발 꽂기
-                  </button>
-                </Link>
-              </div>
+              <Link href={flagDateParam ? `/flags/new?date=${flagDateParam}` : "/flags/new"} onClick={() => setFilterSheetOpen(false)} className="block">
+                <button className="w-full bg-amber-500 text-black rounded-2xl flex flex-col items-center justify-center gap-1 py-3 px-4">
+                  <span className="text-[11px] font-medium opacity-70 text-center leading-tight">
+                    이 날 경매가 없나요? 괜찮아요!
+                  </span>
+                  <span className="text-[14px] font-black text-center leading-tight">
+                    깃발 꽂고 시크릿 오퍼 받기 ⛳
+                  </span>
+                </button>
+              </Link>
             ) : (
               <button
                 onClick={() => setFilterSheetOpen(false)}
-                className="w-full h-12 bg-white text-black font-black text-[14px] rounded-2xl"
+                className="w-full h-16 bg-white text-black font-black text-[14px] rounded-2xl"
               >
                 {advanceAuctions.length}건 보기
               </button>

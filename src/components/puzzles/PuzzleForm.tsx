@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, OTHER_CITIES } from "@/lib/constants/areas";
 import { toast } from "sonner";
@@ -46,9 +46,11 @@ const VIBE_OPTIONS: { value: VibePref; label: string }[] = [
 
 export function PuzzleForm({ userId }: { userId: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const [eventDate, setEventDate] = useState("");
+  const initialDate = searchParams.get("date") ?? "";
+  const [eventDate, setEventDate] = useState(initialDate);
   const [area, setArea] = useState("");
   // OFF: 총액 직접 입력 / ON: 인당 입력
   const [budgetAmount, setBudgetAmount] = useState(0);
