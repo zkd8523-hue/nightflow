@@ -267,20 +267,30 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             </button>
           </div>
           {tab === "advance" && deferredAuctions.some(a => a.listing_type === "auction") && (
-            <div className="relative flex-shrink-0 pb-1">
-              <button
-                onClick={() => setFilterSheetOpen(true)}
-                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                  hasAdvanceFilter
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                }`}
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-              </button>
+            <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
               {hasAdvanceFilter && (
-                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
+                <button
+                  onClick={resetAdvanceFilters}
+                  className="text-[11px] font-bold text-neutral-400 hover:text-white transition-colors px-2"
+                >
+                  초기화
+                </button>
               )}
+              <div className="relative">
+                <button
+                  onClick={() => setFilterSheetOpen(true)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                    hasAdvanceFilter
+                      ? "bg-white text-black"
+                      : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  }`}
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                </button>
+                {hasAdvanceFilter && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
+                )}
+              </div>
             </div>
           )}
         </div>
