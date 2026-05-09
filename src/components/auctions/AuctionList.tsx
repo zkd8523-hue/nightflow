@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useDeferredValue } from "react";
+import Link from "next/link";
 import type { Auction, Puzzle } from "@/types/database";
 import { AuctionCard } from "./AuctionCard";
 import { PuzzleList } from "@/components/puzzles/PuzzleList";
@@ -10,6 +11,18 @@ import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { matchesArea } from "@/lib/utils/area";
+import { SlidersHorizontal } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { DateFilterCalendar } from "./filters/DateFilterCalendar";
+import { PriceRangeFilter } from "./filters/PriceRangeFilter";
+import {
+  PRICE_MIN,
+  PRICE_MAX,
+  matchesDate,
+  matchesPrice,
+  isDefaultPriceRange,
+  type DateFilter,
+} from "@/lib/utils/auctionFilters";
 
 
 interface AuctionListProps {
@@ -29,12 +42,20 @@ interface AuctionListProps {
 }
 
 export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot }: AuctionListProps) {
+  // Realtime 입찰 burst 시 필터 깜빡임 방지: deferred render
+  const deferredAuctions = useDeferredValue(initialAuctions);
+
+  // 얼리버드 추가 필터 (날짜·가격)
+  const [dateFilter, setDateFilter] = useState<DateFilter>("all");
+  const [priceRange, setPriceRange] = useState<[number, number]>([PRICE_MIN, PRICE_MAX]);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
     return auctions.filter(a => matchesArea(a.club?.area, selectedArea));
   };
 
-  const liveAndUpcoming = [...filterByArea(initialAuctions)].sort((a, b) => {
+  const liveAndUpcoming = [...filterByArea(deferredAuctions)].sort((a, b) => {
     const aActive = isAuctionActive(a);
     const bActive = isAuctionActive(b);
     if (aActive && !bActive) return -1;
@@ -56,7 +77,33 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   // 오늘특가: listing_type === 'instant' (예약가)
   const todayAuctions = liveAndUpcoming.filter(a => a.listing_type === 'instant');
   // 얼리버드 경매: listing_type === 'auction' (경매)
-  const advanceAuctions = liveAndUpcoming.filter(a => a.listing_type === 'auction');
+  const advanceAuctionsAll = liveAndUpcoming.filter(a => a.listing_type === 'auction');
+
+  // 날짜·가격 필터 적용 (얼리버드 한정)
+  const advanceAuctions = useMemo(
+    () => advanceAuctionsAll
+      .filter(a => matchesDate(a, dateFilter))
+      .filter(a => matchesPrice(a, priceRange)),
+    [advanceAuctionsAll, dateFilter, priceRange]
+  );
+
+  // 날짜 칩 후보 추출 (필터 적용 전 풀에서)
+  const availableEventDates = useMemo(
+    () => Array.from(new Set(advanceAuctionsAll.map(a => a.event_date))),
+    [advanceAuctionsAll]
+  );
+
+  const isAreaActive = !!selectedArea;
+  const isDateActive = dateFilter !== "all";
+  const isPriceActive = !isDefaultPriceRange(priceRange);
+  const hasActiveFilter = isAreaActive || isDateActive || isPriceActive;
+  const hasAdvanceFilter = isDateActive || isPriceActive;
+
+  const resetAdvanceFilters = () => {
+    setDateFilter("all");
+    setPriceRange([PRICE_MIN, PRICE_MAX]);
+    onAreaChange?.(null);
+  };
 
   const instantEnabled = isInstantEnabled();
 
@@ -128,7 +175,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
           >
-            📅 얼리버드 경매 {advanceAuctions.length > 0 && `(${advanceAuctions.length})`}
+            📅 얼리버드 경매 {advanceAuctionsAll.length > 0 && `(${advanceAuctionsAll.length})`}
           </button>
 
           {instantEnabled && (
@@ -174,40 +221,59 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
       {guideSlot}
 
       {onAreaChange && (
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1 touch-pan-x">
-          <button
-            onClick={() => onAreaChange(null)}
-            className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-              selectedArea === null
-                ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-            }`}
-          >
-            전체
-          </button>
-          {MAIN_AREAS.map((area) => (
+        <div className="flex items-center gap-2">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1 touch-pan-x flex-1 min-w-0">
             <button
-              key={area}
-              onClick={() => onAreaChange(area)}
+              onClick={() => onAreaChange(null)}
               className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                selectedArea === area
+                selectedArea === null
                   ? "bg-white text-black"
                   : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
             >
-              {area}
+              전체
             </button>
-          ))}
-          <button
-            onClick={() => onAreaChange("다른지역")}
-            className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-              selectedArea === "다른지역"
-                ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-            }`}
-          >
-            다른지역
-          </button>
+            {MAIN_AREAS.map((area) => (
+              <button
+                key={area}
+                onClick={() => onAreaChange(area)}
+                className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+                  selectedArea === area
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                }`}
+              >
+                {area}
+              </button>
+            ))}
+            <button
+              onClick={() => onAreaChange("다른지역")}
+              className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+                selectedArea === "다른지역"
+                  ? "bg-white text-black"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+              }`}
+            >
+              다른지역
+            </button>
+          </div>
+          {tab === "advance" && advanceAuctionsAll.length > 0 && (
+            <div className="relative flex-shrink-0 pb-1">
+              <button
+                onClick={() => setFilterSheetOpen(true)}
+                className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                  hasAdvanceFilter
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                }`}
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+              </button>
+              {hasAdvanceFilter && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -255,9 +321,64 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         </div>
       )}
 
+      {/* 얼리버드 필터 Sheet */}
+      <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
+          <SheetHeader className="pt-2 pb-4">
+            <SheetTitle className="text-white font-black text-lg text-left">필터</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="text-[12px] font-bold text-neutral-400 px-1">날짜</p>
+              <DateFilterCalendar
+                eventDates={availableEventDates}
+                value={dateFilter}
+                onChange={setDateFilter}
+              />
+            </div>
+            <div className="space-y-2">
+              <PriceRangeFilter value={priceRange} onChange={setPriceRange} />
+            </div>
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={resetAdvanceFilters}
+                disabled={!hasActiveFilter}
+                className={`text-[12px] font-bold transition-colors ${
+                  hasActiveFilter
+                    ? "text-neutral-400 hover:text-white"
+                    : "text-transparent pointer-events-none"
+                }`}
+              >
+                초기화
+              </button>
+            </div>
+            {advanceAuctions.length === 0 && dateFilter !== "all" ? (
+              <div className="space-y-3">
+                <p className="text-[13px] text-neutral-400 text-center leading-snug">
+                  이 날은 얼리버드가 없어요.<br />대신 깃발을 꽂아보세요!
+                </p>
+                <Link href="/flags/new" onClick={() => setFilterSheetOpen(false)}>
+                  <button className="w-full h-12 bg-amber-500 text-black font-black text-[14px] rounded-2xl">
+                    ⛳ 깃발 꽂기
+                  </button>
+                </Link>
+              </div>
+            ) : (
+              <button
+                onClick={() => setFilterSheetOpen(false)}
+                className="w-full h-12 bg-white text-black font-black text-[14px] rounded-2xl"
+              >
+                {advanceAuctions.length}건 보기
+              </button>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {tab === "advance" && (
-        <div>
-          {advanceAuctions.length === 0 ? (
+        <div className="space-y-3">
+
+          {advanceAuctionsAll.length === 0 ? (
             <div className="text-center pt-8 pb-16 space-y-6">
               <div className="space-y-2">
                 <p className="text-[15px] font-bold text-neutral-300">아직 등록된 얼리버드 경매가 없어요</p>
@@ -267,6 +388,21 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   자주 확인하면 좋은 자리를 선점할 수 있어요.
                 </p>
               </div>
+            </div>
+          ) : advanceAuctions.length === 0 ? (
+            <div className="text-center pt-8 pb-16 space-y-4">
+              <div className="space-y-2">
+                <p className="text-[15px] font-bold text-neutral-300">선택한 조건에 맞는 경매가 없어요</p>
+                <p className="text-[12px] text-neutral-500 leading-relaxed">
+                  필터를 조정해보세요.
+                </p>
+              </div>
+              <button
+                onClick={resetAdvanceFilters}
+                className="inline-block px-5 py-2 bg-white text-black text-[13px] font-black rounded-full"
+              >
+                필터 초기화
+              </button>
             </div>
           ) : (
             <div className="flex flex-col gap-6">

@@ -28,7 +28,7 @@ export default async function HomePage() {
     )
     .in("status", ["active", "scheduled"])
     .order("auction_start_at", { ascending: true })
-    .limit(20);
+    .limit(200);
 
   // 오픈 퍼즐 목록 조회
   const { data: puzzles } = await supabase
