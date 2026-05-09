@@ -453,6 +453,23 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           />
         )}
 
+        {/* MD 메시지 (제목 + 한마디) */}
+        {(displayAuction.md_comment || displayAuction.md_message) && (
+          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-2">
+            <span className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">MD의 한마디</span>
+            {displayAuction.md_comment && (
+              <p className="text-[15px] text-white font-bold leading-snug">
+                {displayAuction.md_comment}
+              </p>
+            )}
+            {displayAuction.md_message && (
+              <p className="text-[13px] text-neutral-300 leading-relaxed whitespace-pre-line">
+                {displayAuction.md_message}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* 2. Current Bid Status Card (High Urgency) */}
         <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 space-y-2 shadow-2xl">
           <div className="space-y-0.5">

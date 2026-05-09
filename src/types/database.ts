@@ -252,6 +252,7 @@ export interface Auction {
   includes: string[];
   notes: string | null;
   md_comment: string | null;
+  md_message: string | null;
 
   // 가격
   original_price: number;

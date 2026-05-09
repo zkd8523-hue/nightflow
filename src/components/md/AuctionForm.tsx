@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction, PriceRecommendation } from "@/types/database";
@@ -52,6 +53,7 @@ const formSchema = z.object({
             { message: "최소 한 개의 주류(보틀)를 입력해주세요." }
         ),
     md_comment: z.string().max(15, "최대 15자").optional(),
+    md_message: z.string().max(60, "최대 60자").optional(),
 }).superRefine((data, ctx) => {
     // 얼리버드 (listing_type='auction'): 이벤트일 윈도우 + 마감 시각 규칙 강제
     if (data.listing_type === "auction") {
@@ -174,6 +176,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             auction_end_at: initialData?.auction_end_at || undefined,
             instant_start: true,
             md_comment: initialData?.md_comment || prefill?.md_comment || "",
+            md_message: initialData?.md_message || prefill?.md_message || "",
         }
     });
 
@@ -445,6 +448,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 status: initialData?.status || "scheduled",
                 bid_increment: getBidIncrement(values.start_price),
                 md_comment: values.md_comment || null,
+                md_message: values.md_message || null,
             };
 
             auctionData.buy_now_price = isInstantMode ? values.start_price : null;
@@ -1090,23 +1094,45 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 </div>
             </section>
 
-            {/* MD의 한마디 */}
-            <section className="space-y-2">
+            {/* MD 메시지: 제목 + 한마디 */}
+            <section className="space-y-3">
                 <div className="flex items-center gap-2 text-white font-bold">
-                    <span>한마디</span>
-                    <span className="text-[11px] text-neutral-500 font-normal">경매 카드에 표시됩니다 (필수x)</span>
+                    <span>MD 메시지</span>
+                    <span className="text-[11px] text-neutral-500 font-normal">(필수x)</span>
                 </div>
-                <div className="relative">
-                    <Input
-                        type="text"
-                        maxLength={15}
-                        placeholder="(예) 오늘 서비스 넉넉해요! 🔥"
-                        {...register("md_comment")}
-                        className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] pr-10"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 pointer-events-none">
-                        {watch("md_comment")?.length || 0}/15
-                    </span>
+
+                {/* 제목 (카드 + 상세 헤드라인, 15자) */}
+                <div className="space-y-1">
+                    <label className="text-[11px] text-neutral-500 font-medium">제목 (카드에 노출)</label>
+                    <div className="relative">
+                        <Input
+                            type="text"
+                            maxLength={15}
+                            placeholder="(예) 오늘 서비스 넉넉해요! 🔥"
+                            {...register("md_comment")}
+                            className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] pr-10"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 pointer-events-none">
+                            {watch("md_comment")?.length || 0}/15
+                        </span>
+                    </div>
+                </div>
+
+                {/* 한마디 본문 (상세에만 노출, 60자) */}
+                <div className="space-y-1">
+                    <label className="text-[11px] text-neutral-500 font-medium">한마디 (상세페이지에 노출)</label>
+                    <div className="relative">
+                        <Textarea
+                            maxLength={60}
+                            rows={2}
+                            placeholder="(예) 오늘 시그니처 풀세팅, 디제이 라인업도 빵빵해요 🔥"
+                            {...register("md_message")}
+                            className="bg-neutral-900 border-neutral-800 text-white text-[13px] pr-12 resize-none"
+                        />
+                        <span className="absolute right-3 bottom-2 text-[10px] text-neutral-600 pointer-events-none">
+                            {watch("md_message")?.length || 0}/60
+                        </span>
+                    </div>
                 </div>
             </section>
 
