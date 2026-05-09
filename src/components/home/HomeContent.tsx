@@ -113,8 +113,14 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
 
 const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle", TabPromise> = {
   today: { content: "지금 비어있는 자리, 한눈에" },
-  advance: { content: "주말 빈 테이블 걱정이시죠?\n최소 수익을 미리 확정하고, 최고가를 발견해봐요! 🎯" },
-  puzzle: { content: "유저들의 예산이 기다리고 있어요 💰\n지금 바로 제안해서 매출로 만들어봐요!" },
+  advance: {
+    content: "주말 빈 테이블 걱정이시죠?\n최소 수익을 미리 확정하고, 최고가를 발견해봐요! 🎯",
+    note: "💰 수수료 0% · MD 직접 수령",
+  },
+  puzzle: {
+    content: "유저들의 예산이 기다리고 있어요 💰\n지금 바로 제안해서 매출로 만들어봐요!",
+    note: "💰 제안 무료 · 매칭 시 직접 거래",
+  },
 };
 
 interface HomeContentProps {

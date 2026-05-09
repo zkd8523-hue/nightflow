@@ -29,8 +29,29 @@ import {
   AlertTriangle,
   CheckCircle,
   Loader2,
+  Flag,
+  Gavel,
+  Star,
+  Trophy,
+  Users as UsersIcon,
 } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
+import { createClient } from "@/lib/supabase/client";
+
+interface UserActivityStats {
+  // 깃발 (Puzzles) - 작성자 기준
+  puzzlesCreated: number;        // 깃발 꽂은 수
+  puzzlesAccepted: number;       // 선택(성사)된 수
+  puzzlesCancelled: number;      // 본인이 내린 수
+  puzzlesExpired: number;        // 만료된 수
+  // 깃발 (Puzzles) - 참여자 기준
+  puzzleJoinedCount: number;     // 참여한 깃발 수
+  puzzleNoshowCount: number;     // 참여 후 노쇼 수
+  // 얼리버드 (Auctions)
+  bidsTotal: number;             // 총 입찰 수
+  bidsWon: number;               // 낙찰 수
+  auctionsConfirmed: number;     // 방문 확정 수
+}
 
 interface UserManagementProps {
   users: User[];
@@ -44,12 +65,72 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState<UserActivityStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   useEffect(() => {
     if (!focusId) return;
     const target = users.find((u) => u.id === focusId);
     if (target) setSelectedUser(target);
   }, [focusId, users]);
+
+  useEffect(() => {
+    if (!selectedUser) {
+      setStats(null);
+      return;
+    }
+
+    let cancelled = false;
+    const supabase = createClient();
+    setStatsLoading(true);
+    setStats(null);
+
+    (async () => {
+      const userId = selectedUser.id;
+      const countOpts = { count: "exact" as const, head: true };
+
+      const [
+        puzzlesCreatedRes,
+        puzzlesAcceptedRes,
+        puzzlesCancelledRes,
+        puzzlesExpiredRes,
+        puzzleJoinedRes,
+        puzzleNoshowRes,
+        bidsTotalRes,
+        bidsWonRes,
+        auctionsConfirmedRes,
+      ] = await Promise.all([
+        supabase.from("puzzles").select("id", countOpts).eq("leader_id", userId),
+        supabase.from("puzzles").select("id", countOpts).eq("leader_id", userId).eq("status", "accepted"),
+        supabase.from("puzzles").select("id", countOpts).eq("leader_id", userId).eq("status", "cancelled"),
+        supabase.from("puzzles").select("id", countOpts).eq("leader_id", userId).eq("status", "expired"),
+        supabase.from("puzzle_members").select("id", countOpts).eq("user_id", userId),
+        supabase.from("puzzle_members").select("id", countOpts).eq("user_id", userId).eq("noshow", true),
+        supabase.from("bids").select("id", countOpts).eq("bidder_id", userId),
+        supabase.from("bids").select("id", countOpts).eq("bidder_id", userId).eq("status", "won"),
+        supabase.from("auctions").select("id", countOpts).eq("winner_id", userId).eq("status", "confirmed"),
+      ]);
+
+      if (cancelled) return;
+
+      setStats({
+        puzzlesCreated: puzzlesCreatedRes.count ?? 0,
+        puzzlesAccepted: puzzlesAcceptedRes.count ?? 0,
+        puzzlesCancelled: puzzlesCancelledRes.count ?? 0,
+        puzzlesExpired: puzzlesExpiredRes.count ?? 0,
+        puzzleJoinedCount: puzzleJoinedRes.count ?? 0,
+        puzzleNoshowCount: puzzleNoshowRes.count ?? 0,
+        bidsTotal: bidsTotalRes.count ?? 0,
+        bidsWon: bidsWonRes.count ?? 0,
+        auctionsConfirmed: auctionsConfirmedRes.count ?? 0,
+      });
+      setStatsLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedUser]);
 
   const handleBlock = async (userId: string, block: boolean) => {
     setLoading(true);
@@ -506,6 +587,122 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                         </Button>
                       </>
                     )}
+                  </div>
+                )}
+              </div>
+
+              {/* 활동 통계 — 건전성 판단 */}
+              <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-4 border border-neutral-800/50">
+                <h3 className="text-sm font-black text-white uppercase tracking-tight">활동 내역</h3>
+
+                {statsLoading || !stats ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* 깃발 (Puzzles) */}
+                    <div className="bg-purple-500/5 border border-purple-500/20 rounded-xl p-3 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Flag className="w-4 h-4 text-purple-400" />
+                        <p className="text-sm font-black text-purple-300">깃발</p>
+                      </div>
+
+                      {/* 작성자 활동 */}
+                      <div>
+                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-2">작성자 (방장)</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
+                            <p className="text-[10px] text-neutral-500">꽂은 수</p>
+                            <p className="text-lg font-black text-white">{stats.puzzlesCreated}</p>
+                          </div>
+                          <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
+                            <p className="text-[10px] text-neutral-500">선택 (성사)</p>
+                            <p className="text-lg font-black text-green-400">
+                              {stats.puzzlesAccepted}
+                              {stats.puzzlesCreated > 0 && (
+                                <span className="text-[10px] text-neutral-500 font-medium ml-1">
+                                  ({Math.round((stats.puzzlesAccepted / stats.puzzlesCreated) * 100)}%)
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
+                            <p className="text-[10px] text-neutral-500">스스로 내림</p>
+                            <p className="text-lg font-black text-amber-400">{stats.puzzlesCancelled}</p>
+                          </div>
+                          <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
+                            <p className="text-[10px] text-neutral-500">만료</p>
+                            <p className="text-lg font-black text-neutral-400">{stats.puzzlesExpired}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 참여자 활동 */}
+                      {stats.puzzleJoinedCount > 0 && (
+                        <div>
+                          <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-2">참여자 (파티원)</p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
+                              <p className="text-[10px] text-neutral-500 flex items-center gap-1">
+                                <UsersIcon className="w-3 h-3" /> 참여
+                              </p>
+                              <p className="text-lg font-black text-white">{stats.puzzleJoinedCount}</p>
+                            </div>
+                            <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
+                              <p className="text-[10px] text-neutral-500">노쇼</p>
+                              <p className={`text-lg font-black ${stats.puzzleNoshowCount > 0 ? "text-red-400" : "text-neutral-400"}`}>
+                                {stats.puzzleNoshowCount}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* MD 후기 (placeholder) */}
+                      <div className="border-t border-purple-500/10 pt-2 flex items-center gap-2 text-xs text-neutral-500">
+                        <Star className="w-3.5 h-3.5" />
+                        <span>MD 후기: <span className="text-neutral-600">추후 개발 예정</span></span>
+                      </div>
+                    </div>
+
+                    {/* 얼리버드 (Auctions) */}
+                    <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Gavel className="w-4 h-4 text-amber-400" />
+                        <p className="text-sm font-black text-amber-300">얼리버드 (경매)</p>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-neutral-500">입찰</p>
+                          <p className="text-lg font-black text-white">{stats.bidsTotal}</p>
+                        </div>
+                        <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-neutral-500">낙찰</p>
+                          <p className="text-lg font-black text-green-400">
+                            {stats.bidsWon}
+                            {stats.bidsTotal > 0 && (
+                              <span className="text-[10px] text-neutral-500 font-medium ml-1">
+                                ({Math.round((stats.bidsWon / stats.bidsTotal) * 100)}%)
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-neutral-500 flex items-center gap-1">
+                            <Trophy className="w-3 h-3" /> 방문
+                          </p>
+                          <p className="text-lg font-black text-emerald-400">{stats.auctionsConfirmed}</p>
+                        </div>
+                      </div>
+
+                      {/* MD 후기 (placeholder) */}
+                      <div className="border-t border-amber-500/10 pt-2 flex items-center gap-2 text-xs text-neutral-500">
+                        <Star className="w-3.5 h-3.5" />
+                        <span>MD 후기: <span className="text-neutral-600">추후 개발 예정</span></span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>

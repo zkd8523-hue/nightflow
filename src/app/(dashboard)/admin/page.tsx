@@ -228,10 +228,13 @@ export default async function AdminDashboardPage() {
           <p className="text-neutral-500">NightFlow 플랫폼 관리</p>
         </div>
 
-        {/* 지역별 현황 */}
-        <div className="mb-8">
-          <h2 className="text-lg font-black text-white mb-3">지역별 현황</h2>
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
+        {/* 지역별 현황 (접이식) */}
+        <details className="group mb-8 bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
+          <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none hover:bg-neutral-900/50 transition-colors">
+            <h2 className="text-base font-black text-white">지역별 현황</h2>
+            <span className="text-neutral-500 text-sm font-bold group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div className="border-t border-neutral-800 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-neutral-800">
@@ -259,7 +262,7 @@ export default async function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </details>
 
         {/* 통계 카드 */}
         <div className="grid grid-cols-3 gap-4">

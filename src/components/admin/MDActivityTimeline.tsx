@@ -23,7 +23,6 @@ interface AuctionActivity {
   title: string | null;
   won_at: string | null;
   clubs: { name: string } | null;
-  winner: { name: string } | null;
 }
 
 const STATUS_CONFIG: Record<
@@ -85,16 +84,50 @@ export function MDActivityTimeline({ mdId }: { mdId: string }) {
   useEffect(() => {
     const fetchActivity = async () => {
       const supabase = createClient();
-      const { data } = await supabase
+      const { data: rawAuctions, error } = await supabase
         .from("auctions")
         .select(
-          "id, status, start_price, current_bid, bid_count, created_at, auction_date, table_type, title, won_at, clubs(name), winner:users!winner_id(name)",
+          "id, status, start_price, current_bid, bid_count, created_at, auction_date, table_type, title, won_at, club_id",
         )
         .eq("md_id", mdId)
         .order("created_at", { ascending: false })
         .limit(10);
 
-      setAuctions((data as unknown as AuctionActivity[]) || []);
+      console.log("[MDActivityTimeline] mdId:", mdId, "count:", rawAuctions?.length ?? 0, "error:", error);
+      if (error) {
+        console.error("[MDActivityTimeline] auctions fetch error:", error);
+      }
+
+      const rows = (rawAuctions as Array<Omit<AuctionActivity, "clubs"> & { club_id: string | null }>) || [];
+
+      // 클럽 정보 별도 조회 (JOIN RLS 충돌 회피)
+      const clubIds = [...new Set(rows.map(r => r.club_id).filter(Boolean) as string[])];
+      const clubMap = new Map<string, string>();
+      if (clubIds.length > 0) {
+        const { data: clubs } = await supabase
+          .from("clubs")
+          .select("id, name")
+          .in("id", clubIds);
+        for (const c of (clubs as Array<{ id: string; name: string }> || [])) {
+          clubMap.set(c.id, c.name);
+        }
+      }
+
+      const merged: AuctionActivity[] = rows.map(r => ({
+        id: r.id,
+        status: r.status,
+        start_price: r.start_price,
+        current_bid: r.current_bid,
+        bid_count: r.bid_count,
+        created_at: r.created_at,
+        auction_date: r.auction_date,
+        table_type: r.table_type,
+        title: r.title,
+        won_at: r.won_at,
+        clubs: r.club_id && clubMap.has(r.club_id) ? { name: clubMap.get(r.club_id)! } : null,
+      }));
+
+      setAuctions(merged);
       setLoading(false);
     };
 

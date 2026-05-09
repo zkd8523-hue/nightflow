@@ -25,9 +25,9 @@ interface PuzzleOfferRow {
 }
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  pending: { label: "대기 중", color: "bg-amber-500/20 text-amber-400" },
-  accepted: { label: "수락됨", color: "bg-green-500/20 text-green-400" },
-  rejected: { label: "거절됨", color: "bg-neutral-700 text-neutral-400" },
+  pending: { label: "진행중", color: "bg-amber-500/20 text-amber-400" },
+  accepted: { label: "선택됨", color: "bg-green-500/20 text-green-400" },
+  rejected: { label: "미선택", color: "bg-neutral-700 text-neutral-400" },
   withdrawn: { label: "철회됨", color: "bg-neutral-700 text-neutral-400" },
   expired: { label: "미선택", color: "bg-neutral-700 text-neutral-500" },
 };
@@ -41,8 +41,10 @@ function formatDateLabel(dateStr: string | null) {
   return `${m}/${day} (${days[d.getDay()]})`;
 }
 
-function OfferCard({ offer }: { offer: PuzzleOfferRow }) {
-  const status = STATUS_LABEL[offer.status] || { label: offer.status, color: "bg-neutral-700 text-neutral-400" };
+function OfferCard({ offer, expired }: { offer: PuzzleOfferRow; expired?: boolean }) {
+  const status = expired
+    ? { label: "만료됨", color: "bg-neutral-700 text-neutral-500" }
+    : STATUS_LABEL[offer.status] || { label: offer.status, color: "bg-neutral-700 text-neutral-400" };
   const includes = (offer.includes || []).filter(Boolean);
   const dateLabel = formatDateLabel(offer.puzzle?.event_date || null);
 
@@ -165,8 +167,14 @@ export function MDPuzzleOffers({ mdId }: { mdId: string }) {
     );
   }
 
-  const pending = offers.filter((o) => o.status === "pending");
-  const history = offers.filter((o) => o.status !== "pending");
+  const today = dayjs().startOf("day");
+  const isExpiredPending = (o: PuzzleOfferRow) =>
+    o.status === "pending" &&
+    !!o.puzzle?.event_date &&
+    dayjs(o.puzzle.event_date).isBefore(today);
+
+  const pending = offers.filter((o) => o.status === "pending" && !isExpiredPending(o));
+  const history = offers.filter((o) => o.status !== "pending" || isExpiredPending(o));
 
   if (offers.length === 0) {
     return (
@@ -209,7 +217,7 @@ export function MDPuzzleOffers({ mdId }: { mdId: string }) {
           </button>
           {historyOpen && (
             <div className="space-y-1.5">
-              {history.map((o) => <OfferCard key={o.id} offer={o} />)}
+              {history.map((o) => <OfferCard key={o.id} offer={o} expired={isExpiredPending(o)} />)}
             </div>
           )}
         </div>

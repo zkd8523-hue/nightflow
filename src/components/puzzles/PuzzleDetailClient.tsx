@@ -19,11 +19,24 @@ import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, 
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 
+interface PuzzleLeaderInfo {
+  id: string;
+  name: string | null;
+  display_name: string | null;
+  profile_image: string | null;
+  phone: string | null;
+  instagram: string | null;
+  role: string | null;
+  strike_count: number | null;
+  is_blocked: boolean | null;
+}
+
 interface PuzzleDetailClientProps {
   puzzle: Puzzle;
   members: PuzzleMember[];
   currentUserId?: string;
   userRole?: "user" | "md" | "admin";
+  leader?: PuzzleLeaderInfo | null;
 }
 
 const GENDER_LABEL: Record<GenderPref, string | null> = {
@@ -94,6 +107,7 @@ export function PuzzleDetailClient({
   members,
   currentUserId,
   userRole,
+  leader,
 }: PuzzleDetailClientProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -536,6 +550,62 @@ export function PuzzleDetailClient({
             </section>
           )}
 
+          {/* 관리자 전용: 작성자(대표자) 정보 */}
+          {isAdmin && leader && (
+            <section className="rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-blue-400" />
+                <p className="text-[12px] font-bold text-blue-400">작성자 정보 (관리자 전용)</p>
+              </div>
+              <div className="flex items-center gap-3">
+                {leader.profile_image ? (
+                  <img src={leader.profile_image} alt={leader.display_name || leader.name || "leader"} className="w-11 h-11 rounded-full object-cover border border-neutral-700" />
+                ) : (
+                  <div className="w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500 text-[15px]">
+                    {(leader.display_name || leader.name || "?").substring(0, 1)}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <Link
+                    href={leader.role === "md" ? `/admin/mds/${leader.id}` : `/admin/users?focus=${leader.id}`}
+                    className="text-[14px] font-bold text-white truncate hover:text-blue-400 hover:underline transition-colors block"
+                  >
+                    {leader.display_name || leader.name || "이름 없음"}
+                    {leader.role && leader.role !== "user" && (
+                      <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-neutral-700 text-neutral-300 align-middle">{leader.role}</span>
+                    )}
+                  </Link>
+                  <p className="text-[11px] text-neutral-500 truncate">
+                    {leader.name && leader.display_name && leader.name !== leader.display_name ? `본명: ${leader.name} · ` : ""}
+                    ID: {leader.id.substring(0, 8)}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2">
+                  <p className="text-neutral-500">전화</p>
+                  <p className="text-white font-mono">{leader.phone || "-"}</p>
+                </div>
+                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2">
+                  <p className="text-neutral-500">인스타</p>
+                  <p className="text-white font-mono truncate">{leader.instagram || "-"}</p>
+                </div>
+                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2">
+                  <p className="text-neutral-500">스트라이크</p>
+                  <p className={`font-bold ${(leader.strike_count ?? 0) > 0 ? "text-red-400" : "text-white"}`}>
+                    {leader.strike_count ?? 0}회
+                  </p>
+                </div>
+                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2">
+                  <p className="text-neutral-500">상태</p>
+                  <p className={`font-bold ${leader.is_blocked ? "text-red-400" : "text-green-400"}`}>
+                    {leader.is_blocked ? "차단됨" : "정상"}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* 관리자 도구 */}
           {isAdmin && ["open", "matched"].includes(puzzle.status) && (
             <section className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 flex items-center justify-between">
@@ -841,7 +911,16 @@ export function PuzzleDetailClient({
                       )}
                       <div>
                         <p className="text-[14px] font-bold text-white flex items-center gap-1.5">
-                          {member.user?.display_name || member.user?.name || "알 수 없음"}
+                          {isAdmin ? (
+                            <Link
+                              href={`/admin/users?focus=${member.user_id}`}
+                              className="hover:text-blue-400 hover:underline transition-colors"
+                            >
+                              {member.user?.display_name || member.user?.name || "알 수 없음"}
+                            </Link>
+                          ) : (
+                            <>{member.user?.display_name || member.user?.name || "알 수 없음"}</>
+                          )}
                           {isLeaderMember && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
                               대표자

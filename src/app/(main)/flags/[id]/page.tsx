@@ -22,6 +22,12 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
 
   if (!puzzle) notFound();
 
+  const { data: leader } = await supabase
+    .from("users")
+    .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked")
+    .eq("id", puzzle.leader_id)
+    .maybeSingle();
+
   const { data: members } = await supabase
     .from("puzzle_members")
     .select(`
@@ -41,6 +47,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
       members={members || []}
       currentUserId={authUser?.id}
       userRole={profile?.role as "user" | "md" | "admin" | undefined}
+      leader={profile?.role === "admin" ? leader ?? null : null}
     />
   );
 }
