@@ -28,6 +28,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       supabase
         .from("clubs")
         .select("id, updated_at")
+        .is("deleted_at", null)
         .order("updated_at", { ascending: false })
         .limit(200),
     ]);

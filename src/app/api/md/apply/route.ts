@@ -144,10 +144,12 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. 기존 클럽 확인 (상태별 분기 처리)
+    //    soft-deleted 클럽은 제외 — 삭제된 클럽이 있으면 새로 생성
     const { data: existingClub } = await supabaseAdmin
       .from("clubs")
       .select("id, status")
       .eq("md_id", user.id)
+      .is("deleted_at", null)
       .maybeSingle();
 
     let clubId: string;

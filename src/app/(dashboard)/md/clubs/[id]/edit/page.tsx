@@ -22,6 +22,7 @@ export default async function EditClubPage({
     .select("*")
     .eq("id", id)
     .eq("md_id", user.id)
+    .is("deleted_at", null)
     .single();
 
   if (error || !club) {

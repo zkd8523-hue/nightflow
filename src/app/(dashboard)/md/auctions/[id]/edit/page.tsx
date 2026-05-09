@@ -43,6 +43,7 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
         .from("clubs")
         .select("*")
         .eq("md_id", user.id)
+        .is("deleted_at", null)
         .order("name");
 
     return (

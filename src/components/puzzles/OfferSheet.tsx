@@ -84,7 +84,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
     const [{ data: userData }, { data: clubs }] = await Promise.all([
       supabase.from("users").select("md_credits, md_active_offers_count").eq("id", user.id).single(),
-      supabase.from("clubs").select("id, name, area").eq("md_id", user.id),
+      supabase.from("clubs").select("id, name, area").eq("md_id", user.id).is("deleted_at", null),
     ]);
 
     setCredits(userData?.md_credits ?? null);

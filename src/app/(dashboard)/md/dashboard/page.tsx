@@ -112,6 +112,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         .from("clubs")
         .select("*")
         .eq("md_id", userId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
     // 7. MD의 퍼즐 오퍼 조회 (퍼즐 정보 포함)

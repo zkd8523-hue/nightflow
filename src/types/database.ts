@@ -232,6 +232,10 @@ export interface Club {
   rejected_reason: string | null;
   first_approved_at: string | null;  // 최초 승인 시각
   last_approved_at: string | null;   // 마지막 승인 시각
+
+  // Soft Delete (Migration 143)
+  deleted_at: string | null;
+  deleted_by: string | null;
 }
 
 export interface Auction {
@@ -328,6 +332,10 @@ export interface UserTrustScore {
   win_rate: number;
   avg_bid_amount: number;
   confirmed_visits: number;
+  /** 깃발 leader로서 MD에게 "방문" 마킹 받은 횟수 (Migration 144) */
+  puzzle_visited_count: number;
+  /** 깃발 leader로서 MD에게 "노쇼" 마킹 받은 횟수 (Migration 144) */
+  puzzle_noshow_count: number;
   trust_level: TrustLevel;
 }
 
@@ -573,6 +581,14 @@ export interface PuzzleOffer {
   /** 방장 + 해당 MD만 열람 가능 */
   comment: string | null;
   status: OfferStatus;
+  /** Migration 144: MD가 마킹한 방문 결과 */
+  visit_result: 'visited' | 'noshow' | null;
+  /** Migration 144: 마킹 시각. NULL이면 미평가 */
+  visit_marked_at: string | null;
+  /** Migration 144: admin이 strike 적용한 시각. NULL이면 미처리 큐 */
+  strike_applied_at: string | null;
+  /** Migration 144: strike 처리한 admin id */
+  strike_applied_by: string | null;
   created_at: string;
   updated_at: string;
 }

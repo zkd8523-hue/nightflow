@@ -29,6 +29,7 @@ export default async function MDClubsPage() {
     .from("clubs")
     .select("*")
     .eq("md_id", user.id)
+    .is("deleted_at", null)
     .order("created_at", { ascending: false });
 
   return (

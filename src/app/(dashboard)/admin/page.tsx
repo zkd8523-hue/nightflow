@@ -57,7 +57,7 @@ export default async function AdminDashboardPage() {
       .lte("auction_start_at", now),
     supabase.from("auctions").select("*", { count: "exact", head: true }).in("status", ["won", "confirmed"]),
     supabase.from("users").select("*", { count: "exact", head: true }).gt("strike_count", 0),
-    supabase.from("clubs").select("*", { count: "exact", head: true }),
+    supabase.from("clubs").select("*", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("penalty_appeals").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("puzzles").select("*", { count: "exact", head: true }),
     supabase.from("puzzles").select("*", { count: "exact", head: true }).eq("status", "open"),
@@ -87,7 +87,8 @@ export default async function AdminDashboardPage() {
   const { data: clubsRaw } = await supabase
     .from("clubs")
     .select("area")
-    .eq("status", "approved");
+    .eq("status", "approved")
+    .is("deleted_at", null);
 
   // 지역별 집계
   type AreaStat = { clubs: number; mds: number; auctions: number; totalBids: number; totalInterest: number };

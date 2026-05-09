@@ -23,6 +23,7 @@ export default async function MDFloorPlanPage() {
     .from("clubs")
     .select("*")
     .eq("id", userData.default_club_id)
+    .is("deleted_at", null)
     .single();
 
   if (!club) {

@@ -58,11 +58,12 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // 4. 클럽 소유권 확인
+    // 4. 클럽 소유권 확인 (soft-deleted 클럽은 수정 차단)
     const { data: club, error: clubError } = await supabaseAdmin
       .from("clubs")
       .select("id, md_id")
       .eq("id", clubId)
+      .is("deleted_at", null)
       .single();
 
     if (clubError || !club) {

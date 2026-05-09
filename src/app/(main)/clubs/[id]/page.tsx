@@ -17,6 +17,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .from("clubs")
     .select("name, area")
     .eq("id", id)
+    .is("deleted_at", null)
     .single();
 
   if (!club) {
@@ -47,6 +48,7 @@ export default async function ClubDetailPage({ params }: PageProps) {
     .from("clubs")
     .select("*")
     .eq("id", id)
+    .is("deleted_at", null)
     .single();
 
   if (!club) {
