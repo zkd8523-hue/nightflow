@@ -491,6 +491,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             });
 
             setSubmitted(true);
+            // 라우터 캐시 무효화 — 새 매물/수정 결과가 홈/대시보드에 즉시 반영되도록
+            router.refresh();
             if (initialData) {
                 // 수정: 기존 동작 유지
                 toast.success(isInstantMode ? "판매 정보가 수정되었습니다!" : "경매 정보가 수정되었습니다!");

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/utils/logger";
 import {
@@ -194,6 +195,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      revalidatePath("/");
+      revalidatePath("/md/dashboard");
       return NextResponse.json({ success: true, id: auctionId });
     } else {
       const { data: newAuction, error } = await supabaseAdmin
@@ -210,6 +213,8 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      revalidatePath("/");
+      revalidatePath("/md/dashboard");
       return NextResponse.json({ success: true, id: newAuction?.id });
     }
   } catch (error) {
