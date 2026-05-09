@@ -161,7 +161,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         resolver: zodResolver(formSchema),
         defaultValues: {
             listing_type: initialData?.listing_type || (instantEnabled ? "instant" : "auction"),
-            club_id: initialData?.club_id || prefill?.club_id || defaultClubId || "",
+            club_id: initialData?.club_id || prefill?.club_id || defaultClubId || clubs[0]?.id || "",
             table_info: initialData?.table_info || prefill?.table_info || "",
             duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 240,
             includes: initialData?.includes || prefill?.includes || [],
@@ -243,6 +243,17 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         }, 300);
         return () => clearTimeout(timer);
     }, [selectedClubId, selectedTableInfo]);
+
+    // 마운트 후 club_id가 비어있거나 유효하지 않으면 첫 번째(가장 먼저 등록한) 클럽 자동 선택
+    // - native <select> + register 조합에서 defaultValues가 늦게 적용되는 케이스
+    // - users.default_club_id가 삭제된/이관된 클럽을 가리키는 stale 케이스
+    useEffect(() => {
+        if (clubs.length === 0) return;
+        const matches = selectedClubId && clubs.some(c => c.id === selectedClubId);
+        if (!matches) {
+            setValue("club_id", clubs[0].id, { shouldDirty: false });
+        }
+    }, [selectedClubId, clubs, setValue]);
 
     // 클럽 전환 시 table_info 리셋
     useEffect(() => {
@@ -433,6 +444,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 max_extensions: isInstantMode ? 0 : 3,
                 status: initialData?.status || "scheduled",
                 bid_increment: getBidIncrement(values.start_price),
+                md_comment: values.md_comment || null,
             };
 
             auctionData.buy_now_price = isInstantMode ? values.start_price : null;
@@ -569,16 +581,24 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 </div>
                 <div className="bg-[#1C1C1E] border border-neutral-800 rounded-xl overflow-hidden">
                     <input type="file" accept="image/*" id="thumbnail-upload" className="hidden" onChange={handleThumbnailSelect} />
-                    <select
-                        {...register("club_id")}
-                        disabled={!isTermsEditable}
-                        className={`w-full h-12 bg-transparent px-4 text-white focus:outline-none appearance-none ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        <option value="">클럽을 선택하세요</option>
-                        {clubs.map(club => (
-                            <option key={club.id} value={club.id}>{club.name} ({club.area})</option>
-                        ))}
-                    </select>
+                    <div className={`relative h-12 ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        <div className="absolute inset-0 px-4 flex items-center justify-between pointer-events-none">
+                            <span className={`text-sm font-medium truncate ${selectedClub ? 'text-white' : 'text-neutral-500'}`}>
+                                {selectedClub ? `${selectedClub.name} (${selectedClub.area})` : "클럽을 선택하세요"}
+                            </span>
+                            <ChevronDown className="w-4 h-4 text-neutral-500 shrink-0 ml-2" />
+                        </div>
+                        <select
+                            {...register("club_id")}
+                            disabled={!isTermsEditable}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                        >
+                            <option value="">클럽을 선택하세요</option>
+                            {clubs.map(club => (
+                                <option key={club.id} value={club.id}>{club.name} ({club.area})</option>
+                            ))}
+                        </select>
+                    </div>
                     {selectedClub && (
                         <div className="flex items-center gap-3 border-t border-neutral-800 px-3 py-2.5">
                             <div className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-700 bg-neutral-900 shrink-0">

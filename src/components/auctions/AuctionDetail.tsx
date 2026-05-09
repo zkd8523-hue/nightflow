@@ -70,7 +70,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         const { error } = await res.json();
         throw new Error(error || "삭제에 실패했습니다.");
       }
-      router.push("/md");
+      router.push("/");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "삭제에 실패했습니다.";
       alert(msg);
@@ -171,7 +171,10 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
     : undefined;
 
   const isInstant = displayAuction.listing_type === 'instant';
-  const isMdOwner = user?.role === "md" && user?.id === displayAuction.md_id;
+  const isMdOwner = (user?.role === "md" || user?.role === "admin") && user?.id === displayAuction.md_id;
+  const isAdmin = user?.role === "admin";
+  const canDelete = isMdOwner || isAdmin;
+  const isAdminDeletingForeign = isAdmin && !isMdOwner;
 
   // instant: 관심 등록 여부
   const [alreadyInterested, setAlreadyInterested] = useState(false);
@@ -313,21 +316,21 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         {/* Floating Badges */}
         <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2">
           <div className="flex items-center gap-1.5">
-            {isMdOwner && (
-              <>
-                <Link
-                  href={`/md/auctions/${displayAuction.id}/edit`}
-                  className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
-                >
-                  <Edit2 className="w-4 h-4 text-white" />
-                </Link>
-                <button
-                  onClick={() => setDeleteSheetOpen(true)}
-                  className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
-                >
-                  <Trash2 className="w-4 h-4 text-red-400" />
-                </button>
-              </>
+            {(isMdOwner || isAdmin) && (
+              <Link
+                href={`/md/auctions/${displayAuction.id}/edit`}
+                className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+              >
+                <Edit2 className="w-4 h-4 text-white" />
+              </Link>
+            )}
+            {canDelete && (
+              <button
+                onClick={() => setDeleteSheetOpen(true)}
+                className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+              >
+                <Trash2 className="w-4 h-4 text-red-400" />
+              </button>
             )}
             <button
               onClick={() => toggleFavorite(displayAuction.club_id)}
@@ -786,14 +789,20 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         auction={displayAuction}
       />
 
-      {/* 10. 삭제 확인 Sheet (MD 전용) */}
+      {/* 10. 삭제 확인 Sheet (MD owner / Admin) */}
       <Sheet open={deleteSheetOpen} onOpenChange={setDeleteSheetOpen}>
         <SheetContent side="bottom" className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pb-8 pt-4">
           <div className="max-w-sm mx-auto w-full">
             <SheetHeader className="p-0 mb-6">
               <div className="w-10 h-1 bg-neutral-700 rounded-full mx-auto mb-3" />
-              <SheetTitle className="text-white font-black text-lg text-center">경매를 삭제할까요?</SheetTitle>
-              <p className="text-neutral-500 text-[13px] text-center mt-1">삭제 후 복구할 수 없습니다.</p>
+              <SheetTitle className="text-white font-black text-lg text-center">
+                {isAdminDeletingForeign ? "[관리자] 이 경매를 삭제할까요?" : "경매를 삭제할까요?"}
+              </SheetTitle>
+              <p className="text-neutral-500 text-[13px] text-center mt-1">
+                {isAdminDeletingForeign
+                  ? `다른 MD의 경매입니다${(displayAuction.bid_count ?? 0) > 0 ? ` · 입찰 ${displayAuction.bid_count}건도 함께 삭제됩니다` : ""}.`
+                  : "삭제 후 복구할 수 없습니다."}
+              </p>
             </SheetHeader>
             <div className="flex flex-col gap-2">
               <button

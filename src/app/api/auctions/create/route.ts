@@ -85,12 +85,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // md_id가 본인인지 확인
+    // md_id 확인: 신규 등록은 항상 본인. 수정은 admin이면 원본 owner 일치 확인 후 통과
     if (auctionData.md_id !== user.id) {
-      return NextResponse.json(
-        { error: "본인의 경매만 등록할 수 있습니다" },
-        { status: 403 }
-      );
+      if (!isUpdate || !isAdmin || !auctionId) {
+        return NextResponse.json(
+          { error: "본인의 경매만 등록할 수 있습니다" },
+          { status: 403 }
+        );
+      }
+      // admin 수정 — 원본 auction의 md_id가 요청 md_id와 같은지 검증 (소유권 변경 차단)
+      const { data: originalAuction } = await supabaseAdmin
+        .from("auctions")
+        .select("md_id")
+        .eq("id", auctionId)
+        .single();
+      if (!originalAuction || originalAuction.md_id !== auctionData.md_id) {
+        return NextResponse.json(
+          { error: "경매 소유권은 변경할 수 없습니다" },
+          { status: 403 }
+        );
+      }
     }
 
     // 4-b. instant 모드 서버 측 강제 설정 (클라이언트 조작 방지)

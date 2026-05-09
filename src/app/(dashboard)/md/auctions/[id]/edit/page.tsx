@@ -26,25 +26,28 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
         redirect("/");
     }
 
-    // 2. 경매 정보 데이터 조회
+    // 2. 경매 정보 데이터 조회 (admin은 모든 경매, 그 외엔 본인 경매만)
+    const isAdmin = userData.role === "admin";
     const { data: auction } = await supabase
         .from("auctions")
         .select("*")
         .eq("id", id)
-        .eq("md_id", user.id)
         .single();
 
     if (!auction) {
         redirect("/md/dashboard");
     }
+    if (!isAdmin && auction.md_id !== user.id) {
+        redirect("/md/dashboard");
+    }
 
-    // 3. 선택 가능한 클럽 목록 조회 (본인 소속 클럽만)
+    // 3. 클럽 목록: 경매 owner의 클럽 로드 (admin이 남의 경매 수정 시 owner의 클럽 풀 사용)
     const { data: clubs } = await supabase
         .from("clubs")
         .select("*")
-        .eq("md_id", user.id)
+        .eq("md_id", auction.md_id)
         .is("deleted_at", null)
-        .order("name");
+        .order("created_at", { ascending: true });
 
     return (
         <div className="min-h-screen bg-[#0A0A0A] pb-20">
@@ -61,7 +64,7 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
 
                 <AuctionForm
                     clubs={clubs || []}
-                    mdId={user.id}
+                    mdId={auction.md_id}
                     initialData={auction}
                     defaultClubId={userData.default_club_id}
                 />

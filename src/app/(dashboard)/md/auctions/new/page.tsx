@@ -55,7 +55,7 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
         .select("*")
         .eq("md_id", user.id)
         .is("deleted_at", null)
-        .order("name");
+        .order("created_at", { ascending: true });
 
     const approvedClubs = allClubs || [];
 

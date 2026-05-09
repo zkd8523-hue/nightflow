@@ -62,18 +62,29 @@ export async function DELETE(
       );
     }
 
-    // 권한 확인 (MD 본인만 삭제 가능)
-    if (auction.md_id !== user.id) {
+    // 권한 확인: MD 본인 또는 admin
+    const isOwner = auction.md_id === user.id;
+    let isAdmin = false;
+    if (!isOwner) {
+      const { data: actorRow } = await supabaseAdmin
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      isAdmin = actorRow?.role === "admin";
+    }
+
+    if (!isOwner && !isAdmin) {
       return NextResponse.json(
         { error: "삭제 권한이 없습니다" },
         { status: 403 }
       );
     }
 
-    // 입찰 보호: 진행/예정 중인 경매는 입찰이 있으면 삭제 불가
+    // 입찰 보호: 진행/예정 중인 경매는 입찰이 있으면 삭제 불가 (admin은 우회)
     const endedStatuses = ["won", "unsold", "confirmed", "cancelled"];
     const isEnded = endedStatuses.includes(auction.status);
-    if (!isEnded && auction.bid_count > 0) {
+    if (!isAdmin && !isEnded && auction.bid_count > 0) {
       return NextResponse.json(
         { error: "입찰이 있는 진행 중 경매는 삭제할 수 없습니다." },
         { status: 400 }
