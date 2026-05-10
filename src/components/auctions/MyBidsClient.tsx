@@ -819,9 +819,14 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; use
             <CheckCircle2 className="w-4 h-4 text-amber-400" />
             <span className="text-[14px] font-black text-amber-400">성사됨</span>
           </div>
-          <span className="text-[11px] text-neutral-500">
-            {formatDate(puzzle.event_date)} · {puzzle.area}
-          </span>
+          <div className="flex flex-col items-end">
+            <span className="text-[11px] text-neutral-500">
+              {formatDate(puzzle.event_date)} · {puzzle.area}
+            </span>
+            <span className="text-[10px] text-neutral-600">
+              등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
+            </span>
+          </div>
         </div>
 
         {acceptedOffer && (
@@ -876,13 +881,18 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; use
   return (
     <Link href={`/flags/${puzzle.id}`}>
       <Card className={`bg-[#1C1C1E] border-neutral-800 p-4 space-y-2 ${isTerminal ? "opacity-70" : ""}`}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <span className="text-[14px] font-black text-white">
             {formatDate(puzzle.event_date)} · {puzzle.area}
           </span>
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
-            {isLeader ? "대표자" : "참여중"}
-          </span>
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
+              {isLeader ? "대표자" : "참여중"}
+            </span>
+            <span className="text-[10px] text-neutral-600 whitespace-nowrap">
+              {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
+            </span>
+          </div>
         </div>
         <div className="flex items-center justify-between text-[13px]">
           <span className="text-neutral-400">

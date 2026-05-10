@@ -379,6 +379,9 @@ export function PuzzleDetailClient({
                 <p className={`${puzzle.notes ? "text-[14px] text-neutral-400" : "text-[22px] font-black text-white"}`}>
                   {formatEventDate(puzzle.event_date)} <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400 ml-1"}>{puzzle.area}</span>
                 </p>
+                <p className="text-[11px] text-neutral-600 mt-0.5">
+                  등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
+                </p>
               </div>
               <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mt-1 -mr-1">
                 <Share2 className="w-4.5 h-4.5" />
@@ -397,9 +400,6 @@ export function PuzzleDetailClient({
                       / 목표 {baseBudget.toLocaleString()}원
                     </span>
                   </div>
-                  <p className="text-[12px] text-neutral-600">
-                    인당 {perPersonBudget.toLocaleString()}원
-                  </p>
                 </>
               ) : (
                 <>
@@ -409,7 +409,7 @@ export function PuzzleDetailClient({
                     </span>
                   </div>
                   <p className="text-[12px] text-neutral-500">
-                    인원 확정 {puzzle.target_count}명 · 인당 {perPersonBudget.toLocaleString()}원
+                    인원 확정 {puzzle.target_count}명
                   </p>
                 </>
               )}

@@ -144,7 +144,6 @@ export const PuzzleCard = memo(function PuzzleCard({
                 {isFull
                   ? "파티 완성! 🎉"
                   : `파티원 ${puzzle.current_count}/${puzzle.target_count}`}
-                <span className="text-neutral-500 text-[11px]">· 인당 {perPersonBudget.toLocaleString()}원</span>
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {Array.from({ length: puzzle.target_count }).map((_, i) => (
@@ -160,18 +159,15 @@ export const PuzzleCard = memo(function PuzzleCard({
           </>
         ) : (
           <>
-            {/* 인원 확정: 총 예산 강조, MD 견적용 인원 명시 */}
-            <div className="flex items-baseline gap-1">
+            {/* 인원 확정: 총 예산 + 인원 배지 한 줄 */}
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[18px] font-black text-green-400">
                 예산 {totalBudget.toLocaleString()}원
               </span>
-            </div>
-            <div className="flex items-center gap-2 text-[13px] text-neutral-400 font-medium">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-bold">
                 <Flag className="w-3 h-3" />
                 {puzzle.target_count}명
               </span>
-              <span className="text-neutral-500 text-[11px]">인당 {perPersonBudget.toLocaleString()}원</span>
             </div>
           </>
         )}
@@ -198,7 +194,11 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
       )}
 
-      {/* CTA 버튼 */}
+      {/* CTA 버튼 (등록일시는 우측 상단에 absolute로 띄움) */}
+      <div className="relative">
+        <p className="absolute -top-5 right-1 text-[10px] text-neutral-500 whitespace-nowrap pointer-events-none">
+          등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
+        </p>
       {isMd ? (
         hasOffered ? (
           <Button
@@ -253,6 +253,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           합류하기
         </Button>
       )}
+      </div>
     </div>
   );
 });
