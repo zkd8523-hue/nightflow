@@ -58,13 +58,15 @@ export default async function HomePage() {
   return (
     <div className="container mx-auto max-w-lg px-4 py-4 mb-20">
       <h1 className="sr-only">
-        나이트플로우(나플) - 강남·홍대 클럽 테이블 예약
+        나이트플로우(나플) - 강남·홍대·이태원 클럽 테이블 예약·추천
       </h1>
       <p className="sr-only">
-        나플은 나이트플로우(NightFlow)의 줄임말입니다. 강남·홍대 인기 클럽
-        MD가 잔여 테이블을 올리면, 회원이 입찰로 가격을 정해 정가보다 저렴하게
-        예약할 수 있는 서비스입니다. 강남 레이스&사운드, 홍대 버뮤다 등 클럽
-        테이블을 나플에서 비교하고 입찰하세요.
+        나플은 나이트플로우(NightFlow)의 줄임말로, 서울 인기 클럽 테이블을
+        실시간 경매로 예약하는 서비스입니다. 강남 클럽, 홍대 클럽, 이태원
+        클럽, 신사 클럽의 MD가 잔여 테이블을 올리면 회원이 입찰로 가격을
+        정해 정가보다 저렴하게 클럽 예약을 할 수 있습니다. 강남 레이스&사운드,
+        홍대 버뮤다 등 서울 클럽 추천과 테이블 가격 비교는 나플에서
+        확인하세요.
       </p>
       <Suspense fallback={<div className="animate-pulse bg-neutral-900 h-64 rounded-3xl" />}>
         <HomeContent
