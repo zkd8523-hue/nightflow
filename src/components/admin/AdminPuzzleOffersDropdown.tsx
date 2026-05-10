@@ -12,6 +12,10 @@ interface OfferData {
   proposed_price: number;
   includes: string[];
   comment: string | null;
+  created_at?: string;
+  visit_result?: "visited" | "noshow" | null;
+  visit_marked_at?: string | null;
+  strike_applied_at?: string | null;
   club: { name?: string; area?: string } | null;
   md: {
     id?: string;
@@ -51,13 +55,34 @@ interface Props {
 
 const OFFER_STATUS_LABEL: Record<string, string> = {
   pending: "제안 중",
-  accepted: "수락됨",
+  accepted: "✅ 선택됨",
+  rejected: "거절됨",
+  withdrawn: "철회됨",
+  expired: "만료됨",
 };
 
 const OFFER_STATUS_COLOR: Record<string, string> = {
   pending: "bg-green-500/20 text-green-400",
-  accepted: "bg-amber-500/20 text-amber-400",
+  accepted: "bg-amber-500/30 text-amber-300 border border-amber-500/40",
+  rejected: "bg-neutral-700 text-neutral-400",
+  withdrawn: "bg-neutral-700 text-neutral-500",
+  expired: "bg-neutral-700 text-neutral-500",
 };
+
+const TERMINAL_OFFER_STATUSES = new Set(["rejected", "withdrawn", "expired"]);
+
+function formatVisitBadge(o: OfferData): { label: string; cls: string } | null {
+  if (o.status !== "accepted") return null;
+  if (o.visit_result === "visited") {
+    return { label: "✅ 방문 완료", cls: "bg-green-500/20 text-green-400" };
+  }
+  if (o.visit_result === "noshow") {
+    return o.strike_applied_at
+      ? { label: "⚫ 노쇼 처리됨", cls: "bg-neutral-700 text-neutral-300" }
+      : { label: "🔴 노쇼 신고", cls: "bg-red-500/20 text-red-400" };
+  }
+  return { label: "🟡 결과 대기", cls: "bg-yellow-500/15 text-yellow-400" };
+}
 
 export function AdminPuzzleOffersDropdown({ offers }: Props) {
   const [open, setOpen] = useState(false);
@@ -87,35 +112,51 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
 
       {open && (
         <div className="space-y-2">
-          {offers.map((offer) => (
+          {offers.map((offer) => {
+            const visit = formatVisitBadge(offer);
+            const isAccepted = offer.status === "accepted";
+            const isTerminal = TERMINAL_OFFER_STATUSES.has(offer.status);
+            return (
             <div
               key={offer.id}
               className={`rounded-xl border p-3.5 space-y-2 ${
-                offer.status === "accepted"
-                  ? "bg-amber-500/5 border-amber-500/30"
+                isAccepted
+                  ? "bg-amber-500/10 border-amber-500/40"
+                  : isTerminal
+                  ? "bg-neutral-900/30 border-neutral-800/60 opacity-60"
                   : "bg-neutral-900/50 border-neutral-800"
               }`}
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[14px] font-black text-white">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className={`text-[14px] font-black ${isTerminal ? "text-neutral-400 line-through" : "text-white"}`}>
                     {offer.club?.name || "클럽 미상"}
                     {offer.club?.area && (
                       <span className="text-neutral-500 font-medium"> · {offer.club.area}</span>
                     )}
                   </p>
-                  <p className="text-[11px] text-neutral-500">{offer.table_type}</p>
+                  <p className="text-[11px] text-neutral-500">
+                    {offer.table_type}
+                    {offer.created_at && ` · 제안 ${new Date(offer.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
+                  </p>
                 </div>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    OFFER_STATUS_COLOR[offer.status] || "bg-neutral-700 text-neutral-400"
-                  }`}
-                >
-                  {OFFER_STATUS_LABEL[offer.status] || offer.status}
-                </span>
+                <div className="flex flex-col items-end gap-1 shrink-0">
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      OFFER_STATUS_COLOR[offer.status] || "bg-neutral-700 text-neutral-400"
+                    }`}
+                  >
+                    {OFFER_STATUS_LABEL[offer.status] || offer.status}
+                  </span>
+                  {visit && (
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${visit.cls}`}>
+                      {visit.label}
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <p className="text-[15px] font-black text-green-400">
+              <p className={`text-[15px] font-black ${isTerminal ? "text-neutral-500 line-through" : "text-green-400"}`}>
                 {offer.proposed_price.toLocaleString()}원
               </p>
 
@@ -202,7 +243,8 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
