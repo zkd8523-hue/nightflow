@@ -79,36 +79,33 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
             <div className="flex-1 min-w-0 flex flex-col justify-between py-0">
               {/* 상단 그룹: 클럽명 + 포함내역 (밀착) */}
               <div>
-                {/* 클럽명 (heart 자리만 확보) */}
-                <div className="pr-10">
-                  <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
+                {/* 클럽명 + 영역 (heart 자리 확보) */}
+                <div className="flex items-baseline gap-1.5 pr-10">
+                  <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight min-w-0">
                     {club?.name}
                   </h3>
+                  {club?.area && (
+                    <span className="flex-shrink-0 text-[10px] text-neutral-500 font-medium">
+                      {club.area}
+                    </span>
+                  )}
                 </div>
-                {/* 영역 + 거래 뱃지 (풀너비, 별도 행) */}
+                {/* 거래 뱃지 (별도 행, MD 거래 3회 이상일 때만) */}
                 {(() => {
                   const dealCount = (auction.md as { md_deal_count?: number } | null)?.md_deal_count;
-                  const showDealBadge = !!dealCount && dealCount >= 3;
-                  if (!club?.area && !showDealBadge) return null;
+                  if (!dealCount || dealCount < 3) return null;
                   return (
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      {club?.area && (
-                        <span className="flex-shrink-0 text-[10px] text-neutral-500 font-medium">
-                          {club.area}
-                        </span>
-                      )}
-                      {showDealBadge && (
-                        <span className="flex-shrink-0 flex items-center gap-0.5 text-[9px] font-bold text-neutral-400">
-                          {dealCount! >= 30 ? (
-                            <Flame className="w-3 h-3 text-orange-500" />
-                          ) : dealCount! >= 10 ? (
-                            <BadgeCheck className="w-3 h-3 text-blue-400" />
-                          ) : (
-                            <BadgeCheck className="w-3 h-3 text-neutral-500" />
-                          )}
-                          거래 {dealCount}회
-                        </span>
-                      )}
+                    <div className="flex items-center mt-0.5">
+                      <span className="flex-shrink-0 flex items-center gap-0.5 text-[9px] font-bold text-neutral-400">
+                        {dealCount >= 30 ? (
+                          <Flame className="w-3 h-3 text-orange-500" />
+                        ) : dealCount >= 10 ? (
+                          <BadgeCheck className="w-3 h-3 text-blue-400" />
+                        ) : (
+                          <BadgeCheck className="w-3 h-3 text-neutral-500" />
+                        )}
+                        거래 {dealCount}회
+                      </span>
                     </div>
                   );
                 })()}
@@ -213,12 +210,6 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 </div>
               )}
             </div>
-
-            {auction.md_comment && (
-              <span className="flex-1 text-center text-[11px] text-neutral-400 truncate italic px-1">
-                💬 {auction.md_comment}
-              </span>
-            )}
 
             <div className="flex flex-col items-end gap-1 shrink-0">
               {!isInstant && (auction.view_count ?? 0) > 0 && (
