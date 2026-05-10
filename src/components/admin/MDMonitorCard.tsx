@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { MDHealthScore } from "@/types/database";
+import type { Club, MDHealthScore } from "@/types/database";
 import { computeHealthStatus } from "@/lib/utils/mdHealth";
 import { MDHealthBadge } from "./MDHealthBadge";
 import { MDActivityTimeline } from "./MDActivityTimeline";
 import { MDPuzzleOffers } from "./MDPuzzleOffers";
-import { ChevronDown, ChevronUp, ArrowRight, ShieldOff, Flag, Gavel } from "lucide-react";
+import { ChevronDown, ChevronUp, ArrowRight, ShieldOff, Flag, Gavel, Building2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -18,9 +18,11 @@ dayjs.locale("ko");
 
 interface Props {
   md: MDHealthScore;
+  clubs?: Club[];
+  defaultClubId?: string | null;
 }
 
-export function MDMonitorCard({ md }: Props) {
+export function MDMonitorCard({ md, clubs = [], defaultClubId = null }: Props) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showRevoke, setShowRevoke] = useState(false);
   const [revokeReason, setRevokeReason] = useState("");
@@ -131,6 +133,19 @@ export function MDMonitorCard({ md }: Props) {
               <div className="text-sm text-neutral-400">
                 {Array.isArray(md.area) ? md.area.join(", ") : md.area || "미지정"} · {lastActive}
               </div>
+              {clubs.length > 0 && (
+                <div className="flex items-center gap-1.5 mt-1 text-[11px] text-neutral-400 font-bold">
+                  <Building2 className="w-3 h-3 text-neutral-500" />
+                  <span className="truncate max-w-[280px]">
+                    {clubs.length === 1
+                      ? clubs[0].name
+                      : `${clubs.map(c => c.name).join(", ")}`}
+                  </span>
+                  {clubs.length > 1 && (
+                    <span className="text-neutral-600">({clubs.length}개)</span>
+                  )}
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-0.5">
                 {md.instagram && (
                   <a href={`https://instagram.com/${md.instagram}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-[11px] text-pink-400 hover:text-pink-300">@{md.instagram}</a>
@@ -214,6 +229,49 @@ export function MDMonitorCard({ md }: Props) {
           className="border-t border-neutral-800/50 bg-neutral-900/30 px-4 pt-3 pb-4 space-y-5"
           onClick={(e) => e.stopPropagation()}
         >
+          {/* 등록 클럽 섹션 */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5 text-xs font-black text-neutral-300 uppercase tracking-wider">
+                <Building2 className="w-3.5 h-3.5" />
+                등록 클럽
+                <span className="text-neutral-500 font-bold normal-case ml-1">{clubs.length}개</span>
+              </div>
+            </div>
+            {clubs.length > 0 ? (
+              <div className="space-y-1.5">
+                {clubs.map((c) => (
+                  <div key={c.id} className="flex items-center gap-2 bg-neutral-900/40 rounded-lg px-3 py-2 border border-neutral-800/40">
+                    <div className="w-8 h-8 rounded-md bg-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
+                      {c.thumbnail_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={c.thumbnail_url} alt={c.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Building2 className="w-3.5 h-3.5 text-neutral-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-bold text-white truncate">{c.name}</span>
+                        {c.id === defaultClubId && (
+                          <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded shrink-0">DEFAULT</span>
+                        )}
+                      </div>
+                      {c.address && (
+                        <p className="text-[11px] text-neutral-500 truncate">{c.address}</p>
+                      )}
+                    </div>
+                    {c.area && (
+                      <span className="text-[10px] text-neutral-500 font-bold shrink-0">{c.area}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-600 italic">등록된 클럽 없음</p>
+            )}
+          </div>
+
           {/* 깃발 섹션 */}
           <div>
             <div className="flex items-center gap-1.5 mb-3 text-xs font-black text-amber-400 uppercase tracking-wider">

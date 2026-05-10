@@ -37,6 +37,7 @@ dayjs.locale("ko");
 
 interface UserWithClub extends User {
     default_club: Club | null;
+    owned_clubs?: Club[];
 }
 
 export function MDManagement({
@@ -59,6 +60,16 @@ export function MDManagement({
 
     const pendingUsers = users.filter(u => u.md_status === "pending");
     const approvedUsers = users.filter(u => u.md_status === "approved");
+
+    // md_id → owned active clubs 맵 (MDMonitorCard에 전달)
+    const clubsMap: Record<string, Club[]> = {};
+    for (const u of users) {
+        clubsMap[u.id] = (u.owned_clubs || []).filter(c => !c.deleted_at);
+    }
+    const defaultClubMap: Record<string, string | null> = {};
+    for (const u of users) {
+        defaultClubMap[u.id] = u.default_club_id ?? null;
+    }
 
     return (
         <div className="space-y-6">
@@ -87,7 +98,7 @@ export function MDManagement({
             <div className="space-y-4">
                 <h2 className="text-lg font-bold text-white">활동 모니터링 ({approvedUsers.length})</h2>
                 {healthScores && healthScores.length > 0 ? (
-                    <MDMonitorList mds={healthScores} />
+                    <MDMonitorList mds={healthScores} clubsMap={clubsMap} defaultClubMap={defaultClubMap} />
                 ) : approvedUsers.length > 0 ? (
                     approvedUsers.map(u => (
                         <MDApplicationCard key={u.id} user={u} isSimple onPreviewImage={setPreviewImage} />
@@ -139,7 +150,13 @@ function MDApplicationCard({
     onPreviewImage: (url: string) => void;
 }) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const activeClubs = (user.owned_clubs || []).filter(c => !c.deleted_at);
     const clubName = user.default_club?.name || user.verification_club_name;
+    const clubSummary = activeClubs.length > 0
+        ? activeClubs.length === 1
+            ? activeClubs[0].name
+            : `${activeClubs[0].name} 외 ${activeClubs.length - 1}개`
+        : clubName;
 
     return (
         <Card className="bg-[#1C1C1E] border-neutral-800/50 overflow-hidden">
@@ -169,9 +186,9 @@ function MDApplicationCard({
                                 <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
                                     <MapPin className="w-3.5 h-3.5" /> {Array.isArray(user.area) ? user.area.join(", ") : user.area || "지역 미정"}
                                 </div>
-                                {clubName && (
+                                {clubSummary && (
                                     <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
-                                        <Building2 className="w-3.5 h-3.5" /> {clubName}
+                                        <Building2 className="w-3.5 h-3.5" /> {clubSummary}
                                     </div>
                                 )}
                                 {user.instagram && (
@@ -229,37 +246,55 @@ function MDApplicationCard({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-neutral-800/30">
                         {/* 클럽 정보 */}
                         <div className="bg-neutral-900/50 rounded-2xl p-4 border border-neutral-800/30 space-y-3">
-                            <div className="flex items-center gap-2 text-[10px] text-neutral-500 font-bold uppercase tracking-wider">
-                                <Building2 className="w-3.5 h-3.5" /> Club Information
-                            </div>
-                            <div className="space-y-2">
-                                <div>
-                                    <p className="text-[10px] text-neutral-600 font-bold mb-0.5">클럽명</p>
-                                    <p className="text-sm font-black text-white">{clubName || "미입력"}</p>
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-[10px] text-neutral-500 font-bold uppercase tracking-wider">
+                                    <Building2 className="w-3.5 h-3.5" /> Registered Clubs
                                 </div>
-                                <div>
-                                    <p className="text-[10px] text-neutral-600 font-bold mb-0.5">주소</p>
-                                    <p className="text-sm text-neutral-300">
-                                        {user.default_club?.address || "주소 정보 없음"}
-                                    </p>
-                                    {user.default_club?.address_detail && (
-                                        <p className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
-                                            <MapPinned className="w-3 h-3" />
-                                            {user.default_club.address_detail}
-                                        </p>
-                                    )}
+                                {activeClubs.length > 0 && (
+                                    <span className="text-[10px] text-neutral-600 font-bold">{activeClubs.length}개</span>
+                                )}
+                            </div>
+                            {activeClubs.length === 0 ? (
+                                <p className="text-xs text-neutral-600 italic">등록된 클럽 없음 {clubName ? `(신청서: ${clubName})` : ""}</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {activeClubs.map((c, idx) => (
+                                        <div key={c.id} className={`space-y-2 ${idx > 0 ? "pt-3 border-t border-neutral-800/40" : ""}`}>
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-black text-white truncate">{c.name}</p>
+                                                    {c.id === user.default_club_id && (
+                                                        <span className="inline-block text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded mt-0.5">DEFAULT</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-neutral-400">{c.address || "주소 미입력"}</p>
+                                                {c.address_detail && (
+                                                    <p className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
+                                                        <MapPinned className="w-3 h-3" />
+                                                        {c.address_detail}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            <ImagePreview
+                                                url={c.thumbnail_url}
+                                                label="클럽 이미지"
+                                                onPreview={onPreviewImage}
+                                            />
+                                            {c.floor_plan_url && (
+                                                <ImagePreview
+                                                    url={c.floor_plan_url}
+                                                    label="플로어맵"
+                                                    onPreview={onPreviewImage}
+                                                />
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
-                            <div className="space-y-2">
-                                <p className="text-[10px] text-neutral-600 font-bold">클럽 대표이미지</p>
-                                <ImagePreview
-                                    url={user.default_club?.thumbnail_url}
-                                    label="클럽 이미지"
-                                    onPreview={onPreviewImage}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <p className="text-[10px] text-neutral-600 font-bold">플로어맵</p>
+                            )}
+                            <div className="space-y-2 pt-3 border-t border-neutral-800/40">
+                                <p className="text-[10px] text-neutral-600 font-bold">MD 명의 플로어맵</p>
                                 <ImagePreview
                                     url={user.floor_plan_url}
                                     label="플로어맵"
@@ -472,14 +507,19 @@ function PendingMDCard({
                             </div>
                         )}
                         {selectedMergeClub && (
-                            <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
-                                <GitMerge className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                <span className="text-xs text-amber-300 font-bold flex-1">
-                                    <span className="text-neutral-400">{clubName}</span> → {selectedMergeClub.name}
-                                </span>
-                                <button onClick={() => { setSelectedMergeClub(null); }} className="text-neutral-600 hover:text-neutral-400 transition-colors">
-                                    <X className="w-3.5 h-3.5" />
-                                </button>
+                            <div className="space-y-1.5">
+                                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
+                                    <GitMerge className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                    <span className="text-xs text-amber-300 font-bold flex-1">
+                                        <span className="text-neutral-400">{clubName}</span> → {selectedMergeClub.name}
+                                    </span>
+                                    <button onClick={() => { setSelectedMergeClub(null); }} className="text-neutral-600 hover:text-neutral-400 transition-colors">
+                                        <X className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                                <p className="text-[11px] text-neutral-500 px-1 leading-relaxed">
+                                    신청자 클럽 이름만 &quot;{selectedMergeClub.name}&quot;으로 통일됩니다. 신청자는 본인 명의로 클럽을 보유합니다.
+                                </p>
                             </div>
                         )}
                     </div>

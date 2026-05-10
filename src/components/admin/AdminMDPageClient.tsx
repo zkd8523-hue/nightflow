@@ -10,6 +10,7 @@ import type { User, Club, MDHealthScore } from "@/types/database";
 
 interface UserWithClub extends User {
     default_club: Club | null;
+    owned_clubs?: Club[];
 }
 
 interface AdminMDPageClientProps {

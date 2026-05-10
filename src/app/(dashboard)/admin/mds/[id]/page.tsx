@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, ShieldAlert, Phone, Instagram, ExternalLink } from "lucide-react";
+import { ChevronLeft, ShieldAlert, Phone, Instagram, ExternalLink, Building2, MapPinned } from "lucide-react";
 import Link from "next/link";
-import type { MDHealthScore, MDSanction, User } from "@/types/database";
+import type { Club, MDHealthScore, MDSanction } from "@/types/database";
 import { computeHealthStatus, getGradeLabel } from "@/lib/utils/mdHealth";
 import { MDHealthBadge } from "@/components/admin/MDHealthBadge";
 import { MDSanctionPanel } from "@/components/admin/MDSanctionPanel";
@@ -62,6 +62,22 @@ export default async function MDDetailPage({
     .select("*")
     .eq("md_id", id)
     .single<MDHealthScore>();
+
+  // MD가 등록한 클럽 조회 (active만)
+  const { data: ownedClubs } = await supabase
+    .from("clubs")
+    .select("*")
+    .eq("md_id", id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: true })
+    .returns<Club[]>();
+
+  // default_club 조회 (DEFAULT 표시용)
+  const { data: defaultClubRow } = await supabase
+    .from("users")
+    .select("default_club_id")
+    .eq("id", id)
+    .single();
 
   // 제재 이력 조회
   const { data: sanctions } = await supabase
@@ -282,6 +298,67 @@ export default async function MDDetailPage({
           mdSuspendedUntil={null}
           sanctions={(sanctions as MDSanction[]) || []}
         />
+
+        {/* Registered Clubs */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-black">등록 클럽</h2>
+            <span className="text-xs text-neutral-500 font-bold">{ownedClubs?.length ?? 0}개</span>
+          </div>
+          {ownedClubs && ownedClubs.length > 0 ? (
+            <div className="space-y-2">
+              {ownedClubs.map((c) => {
+                const isDefault = c.id === defaultClubRow?.default_club_id;
+                return (
+                  <Card key={c.id} className="bg-[#1C1C1E] border-neutral-800 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-14 h-14 rounded-xl bg-neutral-900 border border-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
+                        {c.thumbnail_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={c.thumbnail_url} alt={c.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Building2 className="w-5 h-5 text-neutral-700" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-black text-white truncate">{c.name}</p>
+                          {isDefault && (
+                            <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">DEFAULT</span>
+                          )}
+                          {c.area && (
+                            <span className="text-[10px] text-neutral-500 font-bold">{c.area}</span>
+                          )}
+                        </div>
+                        <p className="text-xs text-neutral-400">{c.address || "주소 미입력"}</p>
+                        {c.address_detail && (
+                          <p className="text-xs text-neutral-500 flex items-center gap-1">
+                            <MapPinned className="w-3 h-3" />
+                            {c.address_detail}
+                          </p>
+                        )}
+                        {c.floor_plan_url && (
+                          <a
+                            href={c.floor_plan_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white transition-colors mt-1"
+                          >
+                            플로어맵 <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6 text-sm text-neutral-500">
+              등록된 클럽이 없습니다
+            </div>
+          )}
+        </div>
 
         {/* Auction History */}
         <div className="space-y-3">

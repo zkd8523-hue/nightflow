@@ -44,20 +44,26 @@ export async function POST(
     }
 
     // 2-1. 클럽 병합 처리 (merge_club_id 있을 때)
+    //   - 같은 venue 통일을 위해 신청 클럽의 name만 기존 클럽 이름으로 교체
+    //   - 신청 클럽 자체는 신청자 본인 명의로 active 유지 (soft-delete 안 함)
+    //     → 신청자가 본인 명의 active 클럽을 잃지 않도록 (BLOCKED 방지)
+    //   - default_club_id는 신청 클럽 그대로 유지
     if (merge_club_id) {
       const pendingClubId = md.default_club_id;
-      // 신청 클럽 soft-delete (기존 클럽과 다를 때만)
       if (pendingClubId && pendingClubId !== merge_club_id) {
-        await supabaseAdmin
+        const { data: targetClub } = await supabaseAdmin
           .from("clubs")
-          .update({ deleted_at: new Date().toISOString(), deleted_by: user.id })
-          .eq("id", pendingClubId);
+          .select("name")
+          .eq("id", merge_club_id)
+          .is("deleted_at", null)
+          .single();
+        if (targetClub?.name) {
+          await supabaseAdmin
+            .from("clubs")
+            .update({ name: targetClub.name })
+            .eq("id", pendingClubId);
+        }
       }
-      // default_club_id를 기존 클럽으로 교체
-      await supabaseAdmin
-        .from("users")
-        .update({ default_club_id: merge_club_id })
-        .eq("id", mdId);
     }
 
     // 3. 승인 처리

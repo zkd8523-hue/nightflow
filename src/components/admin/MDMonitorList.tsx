@@ -4,17 +4,19 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import type { MDHealthScore } from "@/types/database";
+import type { Club, MDHealthScore } from "@/types/database";
 import { MDAlertBanner } from "./MDAlertBanner";
 import { MDMonitorCard } from "./MDMonitorCard";
 
 interface Props {
   mds: MDHealthScore[];
+  clubsMap?: Record<string, Club[]>;
+  defaultClubMap?: Record<string, string | null>;
 }
 
 type SortOption = "recent" | "wonAmount" | "health" | "joined";
 
-export function MDMonitorList({ mds }: Props) {
+export function MDMonitorList({ mds, clubsMap, defaultClubMap }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("recent");
@@ -82,6 +84,8 @@ export function MDMonitorList({ mds }: Props) {
             <MDMonitorCard
               key={md.md_id}
               md={md}
+              clubs={clubsMap?.[md.md_id] ?? []}
+              defaultClubId={defaultClubMap?.[md.md_id] ?? null}
             />
           ))
         ) : (

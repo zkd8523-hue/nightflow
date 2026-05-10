@@ -20,10 +20,10 @@ export default async function AdminMDPage() {
         redirect("/");
     }
 
-    // 2. MD 신청 목록 및 통계 데이터 조회 (clubs JOIN 포함)
+    // 2. MD 신청 목록 및 통계 데이터 조회 (default_club + owned_clubs JOIN 포함)
     const { data: allApplications } = await supabase
         .from("users")
-        .select("*, default_club:clubs!default_club_id(*)")
+        .select("*, default_club:clubs!default_club_id(*), owned_clubs:clubs!md_id(*)")
         .not("md_status", "is", null)
         .order("created_at", { ascending: false });
 
