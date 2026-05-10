@@ -221,7 +221,11 @@ export function PuzzleDetailClient({
     if (!confirm("깃발을 내리시겠습니까? 파티원 전원에게 알림이 발송됩니다.")) return;
     setActionLoading(true);
     try {
-      const { data, error } = await supabase.rpc("cancel_puzzle", { p_puzzle_id: puzzle.id });
+      // admin이 타인 깃발 내릴 때는 admin_cancel_puzzle 사용 (cancel_puzzle은 leader_id 체크)
+      const rpc = isAdmin && currentUserId !== puzzle.leader_id
+        ? "admin_cancel_puzzle"
+        : "cancel_puzzle";
+      const { data, error } = await supabase.rpc(rpc, { p_puzzle_id: puzzle.id });
       if (error) throw error;
       if (!data?.success) { toast.error(data?.error || "취소에 실패했습니다"); return; }
       toast.success("깃발을 내렸습니다");
