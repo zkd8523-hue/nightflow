@@ -105,8 +105,10 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
     const stats = [
         { label: "낙찰률", value: `${userScore.win_rate}%`, icon: TrendingUp, color: "text-green-500" },
         { label: "평균 입찰", value: `${formatNumber(userScore.avg_bid_amount)}원`, icon: TrendingUp, color: "text-blue-500" },
-        { label: "방문 완료", value: `${userScore.confirmed_visits}회`, icon: Eye, color: "text-amber-500" },
-        { label: "노쇼", value: `${userScore.noshow_count}회`, icon: AlertTriangle, color: userScore.noshow_count > 0 ? "text-red-500" : "text-neutral-500" },
+        { label: "경매 방문", value: `${userScore.confirmed_visits}회`, icon: Eye, color: "text-amber-500" },
+        { label: "경매 노쇼", value: `${userScore.noshow_count}회`, icon: AlertTriangle, color: userScore.noshow_count > 0 ? "text-red-500" : "text-neutral-500" },
+        { label: "깃발 방문", value: `${userScore.puzzle_visited_count ?? 0}회`, icon: Eye, color: "text-green-400" },
+        { label: "깃발 노쇼", value: `${userScore.puzzle_noshow_count ?? 0}회`, icon: AlertTriangle, color: (userScore.puzzle_noshow_count ?? 0) > 0 ? "text-red-400" : "text-neutral-500" },
     ];
 
     return (

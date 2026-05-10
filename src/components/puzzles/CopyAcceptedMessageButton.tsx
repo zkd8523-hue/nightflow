@@ -43,7 +43,7 @@ export function CopyAcceptedMessageButton({ puzzle, offer }: Props) {
       className="w-full h-12 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-black font-black text-[14px] rounded-2xl transition-colors"
     >
       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-      {copied ? "복사됐어요!" : "메시지 복사 → MD에 붙여넣기"}
+      {copied ? "복사됐어요!" : "메세지 복사"}
     </button>
   );
 }

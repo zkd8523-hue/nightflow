@@ -25,7 +25,8 @@ export function DateGroup({ date, children, showCount = false, label: customLabe
   const dday = useMemo(() => {
     if (customLabel) return null;
     const diff = dayjs(date).diff(dayjs(clubToday), "day");
-    if (diff === 0) return "D-Day";
+    if (diff === 0) return "오늘";
+    if (diff === 1) return "내일";
     if (diff > 0) return `D-${diff}`;
     return `D+${Math.abs(diff)}`;
   }, [date, customLabel, clubToday]);
@@ -41,8 +42,8 @@ export function DateGroup({ date, children, showCount = false, label: customLabe
         <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px]" />
         <h3 className="text-[16px] font-black text-white tracking-tight">{label}</h3>
         {dday && (
-          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] ${
-            dday === "D-Day" ? "bg-red-500/20 text-red-400" : "bg-neutral-800 text-neutral-400"
+          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[5px] ${
+            dday === "오늘" ? "bg-red-500/20 text-red-400" : "bg-neutral-800 text-neutral-400"
           }`}>
             {dday}
           </span>

@@ -1,21 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronRight, Flag } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 
 const TERMINAL_STATUSES = ["expired", "matched", "accepted", "cancelled"];
 const RECENT_DAYS = 7;
+const ACK_KEY_PREFIX = "puzzle_results_ack_";
+
+function getAckSet(userId: string): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(ACK_KEY_PREFIX + userId);
+    if (!raw) return new Set();
+    return new Set(JSON.parse(raw) as string[]);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveAckSet(userId: string, set: Set<string>) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(ACK_KEY_PREFIX + userId, JSON.stringify(Array.from(set)));
+  } catch {}
+}
 
 export function MyPuzzleResultsBanner() {
   const { user, isLoading } = useCurrentUser();
-  const [count, setCount] = useState<number>(0);
+  const router = useRouter();
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (isLoading || !user) {
-      setCount(0);
+      setPendingIds([]);
       return;
     }
     const supabase = createClient();
@@ -24,12 +44,15 @@ export function MyPuzzleResultsBanner() {
     let cancelled = false;
     supabase
       .from("puzzles")
-      .select("id", { count: "exact", head: true })
+      .select("id")
       .eq("leader_id", user.id)
       .in("status", TERMINAL_STATUSES)
       .gt("created_at", since)
-      .then(({ count: c }) => {
-        if (!cancelled) setCount(c ?? 0);
+      .then(({ data }) => {
+        if (cancelled) return;
+        const acked = getAckSet(user.id);
+        const ids = (data ?? []).map((p) => p.id as string).filter((id) => !acked.has(id));
+        setPendingIds(ids);
       });
 
     return () => {
@@ -37,20 +60,29 @@ export function MyPuzzleResultsBanner() {
     };
   }, [user, isLoading]);
 
-  if (count === 0) return null;
+  if (pendingIds.length === 0 || !user) return null;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const acked = getAckSet(user.id);
+    pendingIds.forEach((id) => acked.add(id));
+    saveAckSet(user.id, acked);
+    setPendingIds([]);
+    router.push("/bids?tab=puzzle");
+  };
 
   return (
-    <Link
-      href="/bids?tab=puzzle"
-      className="flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 mb-3 hover:bg-amber-500/15 transition-colors"
+    <button
+      onClick={handleClick}
+      className="w-full flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 mb-3 hover:bg-amber-500/15 transition-colors text-left"
     >
       <div className="flex items-center gap-2.5">
         <Flag className="w-4 h-4 text-amber-400 shrink-0" />
         <span className="text-[13px] font-bold text-amber-400">
-          최근 깃발 {count}개의 결과를 확인하세요
+          최근 깃발 {pendingIds.length}개의 결과를 확인하세요
         </span>
       </div>
       <ChevronRight className="w-4 h-4 text-amber-400 shrink-0" />
-    </Link>
+    </button>
   );
 }

@@ -218,14 +218,16 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           <span className="absolute -top-2.5 left-3 text-[10px] font-black bg-amber-500 text-black px-2 py-0.5 rounded-full">
             Tip
           </span>
-          <p className="text-[14px] text-white font-bold leading-snug whitespace-pre-line break-keep">
-            {tabPromises[tab].content}
-          </p>
-          {tabPromises[tab].note && (
-            <p className="mt-2 text-right text-[10px] text-amber-300/70 font-medium whitespace-nowrap">
-              {tabPromises[tab].note}
+          <div className="flex items-end justify-between gap-2">
+            <p className="text-[14px] text-white font-bold leading-snug whitespace-pre-line break-keep">
+              {tabPromises[tab].content}
             </p>
-          )}
+            {tabPromises[tab].note && (
+              <p className="text-[10px] text-amber-300/70 font-medium whitespace-nowrap flex-shrink-0">
+                {tabPromises[tab].note}
+              </p>
+            )}
+          </div>
         </div>
       )}
 
@@ -342,7 +344,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {/* 얼리버드 필터 Sheet */}
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
+        <SheetContent side="bottom" showCloseButton={false} className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
           <SheetHeader className="pt-2 pb-4">
             <SheetTitle className="text-white font-black text-lg text-left">필터</SheetTitle>
           </SheetHeader>

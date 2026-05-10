@@ -23,13 +23,13 @@ export function Calendar({
     <DayPicker
       locale={ko}
       showOutsideDays={showOutsideDays}
-      className={cn("p-1 text-white", className)}
+      className={cn("p-1 text-white relative", className)}
       classNames={{
         months: "flex flex-col gap-2",
         month: "flex flex-col gap-3",
         month_caption: "flex justify-center items-center h-9 relative",
         caption_label: "text-sm font-bold text-white",
-        nav: "flex items-center justify-between absolute inset-x-0 top-0 h-9 px-1",
+        nav: "flex items-center justify-between absolute inset-x-0 top-0 h-9 px-1 z-10",
         button_previous: cn(
           "inline-flex items-center justify-center w-8 h-8 rounded-lg",
           "bg-neutral-900 border border-neutral-800 text-neutral-300",

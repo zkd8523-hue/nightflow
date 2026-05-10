@@ -100,11 +100,11 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
   puzzle: {
     content: (
       <>
-        예산 등록 → MD들이 <span className="text-emerald-400">시크릿 오퍼</span>
+        예산 등록 → MD들이 시크릿 오퍼
         <br />
-        가격·패키지 비교하고 골라요!
+        가격·패키지 비교하고 골라요.
         <br />
-        <span className="text-emerald-400">쉿! 정식주대보다 가성비 ⬆️</span>
+        <span className="text-emerald-400">지금 바로 VIP가 되어보세요!</span>
       </>
     ),
     note: "💡 모든 서비스 무료",
