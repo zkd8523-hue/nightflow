@@ -33,11 +33,11 @@ const nanumPen = Nanum_Pen_Script({
 export const metadata: Metadata = {
   metadataBase: new URL("https://nightflow.kr"),
   title: {
-    default: "강남·홍대·이태원 클럽 테이블 예약 - 나이트플로우(나플)",
+    default: "강남·홍대 클럽 테이블 예약 - 나이트플로우(나플)",
     template: "%s | 나이트플로우",
   },
   description:
-    "서울 인기 클럽 테이블을 정가보다 저렴하게 예약하세요. 강남·홍대·이태원·신사 클럽 MD가 잔여 테이블을 올리면 입찰로 가격이 결정됩니다. 강남 레이스&사운드, 홍대 버뮤다 등 서울 클럽 테이블 가격 비교·예약은 나이트플로우(나플).",
+    "서울 인기 클럽 테이블을 정가보다 저렴하게 예약하세요. 강남·홍대·신사 클럽 MD가 잔여 테이블을 올리면 입찰로 가격이 결정됩니다. 강남 레이스&사운드, 홍대 버뮤다 등 서울 클럽 테이블 가격 비교·예약은 나이트플로우(나플).",
   applicationName: "NightFlow",
   keywords: [
     "나이트플로우",
@@ -48,16 +48,13 @@ export const metadata: Metadata = {
     "서울 클럽 추천",
     "강남 클럽",
     "홍대 클럽",
-    "이태원 클럽",
     "신사 클럽",
     "강남 클럽 예약",
     "홍대 클럽 예약",
-    "이태원 클럽 예약",
     "강남 클럽 추천",
     "홍대 클럽 추천",
     "강남 클럽 테이블",
     "홍대 클럽 테이블",
-    "이태원 클럽 테이블",
     "클럽 예약",
     "클럽 테이블 예약",
     "클럽 테이블 경매",
@@ -68,9 +65,9 @@ export const metadata: Metadata = {
     canonical: "https://nightflow.kr",
   },
   openGraph: {
-    title: "강남·홍대·이태원 클럽 테이블 예약 - 나이트플로우(나플)",
+    title: "강남·홍대 클럽 테이블 예약 - 나이트플로우(나플)",
     description:
-      "강남·홍대·이태원·신사 클럽 테이블을 정가보다 저렴하게 예약. MD 직거래, 가격 비교, 실시간 입찰.",
+      "강남·홍대·신사 클럽 테이블을 정가보다 저렴하게 예약. MD 직거래, 가격 비교, 실시간 입찰.",
     url: "https://nightflow.kr",
     siteName: "NightFlow",
     locale: "ko_KR",
@@ -80,15 +77,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "나이트플로우 - 강남·홍대·이태원 클럽 테이블 예약",
+        alt: "나이트플로우 - 강남·홍대 클럽 테이블 예약",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "강남·홍대·이태원 클럽 테이블 예약 - 나이트플로우(나플)",
+    title: "강남·홍대 클럽 테이블 예약 - 나이트플로우(나플)",
     description:
-      "강남·홍대·이태원·신사 클럽 테이블을 정가보다 저렴하게 예약. MD 직거래, 가격 비교, 실시간 입찰.",
+      "강남·홍대·신사 클럽 테이블을 정가보다 저렴하게 예약. MD 직거래, 가격 비교, 실시간 입찰.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -133,7 +130,7 @@ export default function RootLayout({
         url: "https://nightflow.kr",
         logo: "https://nightflow.kr/og-image.png",
         description:
-          "강남·홍대·이태원·신사 등 서울 인기 클럽 테이블을 실시간 경매로 예약하는 플랫폼. 클럽 MD가 잔여 테이블을 올리면 유저가 입찰로 가격을 정합니다.",
+          "강남·홍대·신사 등 서울 인기 클럽 테이블을 실시간 경매로 예약하는 플랫폼. 클럽 MD가 잔여 테이블을 올리면 유저가 입찰로 가격을 정합니다.",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],
       },
       {
