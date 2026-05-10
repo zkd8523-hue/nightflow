@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MDHealthBadge } from "@/components/admin/MDHealthBadge";
 import { computeHealthStatus, getGradeLabel } from "@/lib/utils/mdHealth";
 import { toast } from "sonner";
 import {
-  Trash2, RotateCcw, ChevronDown, ChevronUp, GitMerge,
+  Trash2, RotateCcw, ChevronDown, ChevronUp, GitMerge, Pencil,
   Instagram, ExternalLink, Eye, ArrowRight, MapPin, Calendar, Building2,
 } from "lucide-react";
 import { MergeClubDialog } from "@/components/admin/MergeClubDialog";
@@ -25,11 +25,13 @@ import "dayjs/locale/ko";
 dayjs.extend(relativeTime);
 dayjs.locale("ko");
 
+type ClubMdChip = { id: string; name: string };
+
 interface AdminClubsListProps {
   initialClubs: Club[];
   authUserId: string;
   healthScores: MDHealthScore[];
-  mdCounts: Record<string, number>;
+  clubMdLists: Record<string, ClubMdChip[]>;
 }
 
 function ImagePreview({ url, label, onPreview }: { url: string | null | undefined; label: string; onPreview: (url: string) => void }) {
@@ -50,11 +52,17 @@ function ImagePreview({ url, label, onPreview }: { url: string | null | undefine
   );
 }
 
-export function AdminClubsList({ initialClubs, authUserId, healthScores, mdCounts }: AdminClubsListProps) {
+type SortMode = "newest" | "md_desc" | "md_asc";
+
+export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdLists }: AdminClubsListProps) {
   const [clubs, setClubs] = useState<Club[]>(initialClubs);
   const [expandedClubId, setExpandedClubId] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [mergeSource, setMergeSource] = useState<Club | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
+  const [renameTarget, setRenameTarget] = useState<Club | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameSaving, setRenameSaving] = useState(false);
 
   const supabase = createClient();
   const router = useRouter();
@@ -65,6 +73,41 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, mdCount
     router.refresh();
   };
 
+  const openRename = (club: Club) => {
+    setRenameTarget(club);
+    setRenameValue(club.name);
+  };
+
+  const handleRename = async () => {
+    if (!renameTarget) return;
+    const next = renameValue.trim();
+    if (!next) {
+      toast.error("클럽명을 입력해주세요");
+      return;
+    }
+    if (next === renameTarget.name) {
+      setRenameTarget(null);
+      return;
+    }
+    setRenameSaving(true);
+    try {
+      const { error } = await supabase
+        .from("clubs")
+        .update({ name: next })
+        .eq("id", renameTarget.id);
+      if (error) throw error;
+      setClubs((prev) => prev.map((c) => (c.id === renameTarget.id ? { ...c, name: next } : c)));
+      toast.success("클럽명이 변경됐습니다");
+      setRenameTarget(null);
+      router.refresh();
+    } catch (error: unknown) {
+      logError(error, "AdminClubsList.handleRename");
+      toast.error(getErrorMessage(error) || "변경 실패");
+    } finally {
+      setRenameSaving(false);
+    }
+  };
+
   const { activeClubs, deletedClubs } = useMemo(() => {
     const active: Club[] = [];
     const deleted: Club[] = [];
@@ -72,8 +115,19 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, mdCount
       if (c.deleted_at) deleted.push(c);
       else active.push(c);
     }
+    const sorter = (a: Club, b: Club) => {
+      if (sortMode === "newest") {
+        return (b.created_at || "").localeCompare(a.created_at || "");
+      }
+      const aCount = clubMdLists[a.id]?.length ?? 0;
+      const bCount = clubMdLists[b.id]?.length ?? 0;
+      if (aCount !== bCount) return sortMode === "md_desc" ? bCount - aCount : aCount - bCount;
+      return (b.created_at || "").localeCompare(a.created_at || "");
+    };
+    active.sort(sorter);
+    deleted.sort(sorter);
     return { activeClubs: active, deletedClubs: deleted };
-  }, [clubs]);
+  }, [clubs, sortMode, clubMdLists]);
 
   const getHealthScore = (mdId: string | null | undefined): MDHealthScore | undefined => {
     if (!mdId) return undefined;
@@ -133,7 +187,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, mdCount
               <h3 className="text-white font-bold">
                 {club.name}
                 <span className="text-neutral-500 text-xs ml-2">{club.area}</span>
-                <span className="text-neutral-500 text-xs ml-2 font-normal">· MD {mdCounts[club.id] ?? 0}명</span>
+                <span className="text-neutral-500 text-xs ml-2 font-normal">· MD {clubMdLists[club.id]?.length ?? 0}명</span>
               </h3>
               <p className="text-xs text-neutral-500 mt-1">{club.address}</p>
               {isDeleted && (
@@ -158,6 +212,15 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, mdCount
                 <Button
                   variant="ghost"
                   size="icon"
+                  className="text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10"
+                  onClick={() => openRename(club)}
+                  title="이름 수정"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
                   className="text-neutral-500 hover:text-amber-400 hover:bg-amber-500/10"
                   onClick={() => setMergeSource(club)}
                   title="병합"
@@ -177,16 +240,17 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, mdCount
             )}
           </div>
 
-          {club.md && (
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              <span className="text-xs text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-medium">
-                MD: {club.md.name} ({club.md.phone})
-              </span>
-              {club.md.area && (
-                <span className="text-xs text-neutral-400 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {Array.isArray(club.md.area) ? club.md.area.join(", ") : club.md.area}
-                </span>
-              )}
+          {(clubMdLists[club.id]?.length ?? 0) > 0 && (
+            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+              {clubMdLists[club.id]!.map((md) => (
+                <Link
+                  key={md.id}
+                  href={`/admin/mds/${md.id}`}
+                  className="text-xs px-2 py-0.5 rounded font-medium text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
+                >
+                  {md.name}
+                </Link>
+              ))}
               {healthStatus && <MDHealthBadge status={healthStatus} />}
             </div>
           )}
@@ -316,6 +380,25 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, mdCount
 
   return (
     <div className="space-y-3 pb-20">
+      <div className="flex items-center justify-end gap-1.5">
+        {([
+          { v: "newest" as SortMode, label: "최신순" },
+          { v: "md_desc" as SortMode, label: "MD 많은순" },
+          { v: "md_asc" as SortMode, label: "MD 적은순" },
+        ]).map((opt) => (
+          <button
+            key={opt.v}
+            onClick={() => setSortMode(opt.v)}
+            className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+              sortMode === opt.v
+                ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:text-neutral-300"
+            }`}
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
       <Tabs defaultValue="active">
         <TabsList className="grid w-full grid-cols-2 bg-[#1C1C1E] border border-neutral-800/50">
           <TabsTrigger value="active">활성 ({activeClubs.length})</TabsTrigger>
@@ -354,6 +437,47 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, mdCount
         onClose={() => setMergeSource(null)}
         onMerged={handleMerged}
       />
+
+      <Dialog open={!!renameTarget} onOpenChange={(open) => !open && setRenameTarget(null)}>
+        <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-blue-400" /> 클럽명 수정
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRename();
+              }}
+              placeholder="클럽명"
+              className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+              autoFocus
+              disabled={renameSaving}
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setRenameTarget(null)}
+                disabled={renameSaving}
+                className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-white"
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleRename}
+                disabled={renameSaving || !renameValue.trim()}
+                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold disabled:opacity-40"
+              >
+                {renameSaving ? "저장 중..." : "저장"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

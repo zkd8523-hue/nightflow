@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/card";
-import { ChevronLeft, ShieldAlert } from "lucide-react";
+import { ChevronLeft, ShieldAlert, Phone, Instagram, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import type { MDHealthScore, MDSanction, User } from "@/types/database";
 import { computeHealthStatus, getGradeLabel } from "@/lib/utils/mdHealth";
@@ -39,7 +39,7 @@ export default async function MDDetailPage({
   // MD 유저 정보 조회 (기본 + 제재 상태)
   const { data: mdUser } = await supabase
     .from("users")
-    .select("id, name, display_name, area, md_status, created_at, role")
+    .select("id, name, display_name, area, md_status, created_at, role, phone, instagram")
     .eq("id", id)
     .single();
 
@@ -205,6 +205,31 @@ export default async function MDDetailPage({
                 {hasHealthData && <> · {getGradeLabel(mdData.grade)}</>}
                 {" · "}가입 {dayjs(mdData?.joined_at || mdUser.created_at).fromNow()}
               </div>
+              {(mdUser.phone || mdUser.instagram) && (
+                <div className="flex items-center gap-3 mt-1.5 text-sm">
+                  {mdUser.phone && (
+                    <a
+                      href={`tel:${mdUser.phone}`}
+                      className="inline-flex items-center gap-1 text-neutral-300 hover:text-white transition-colors"
+                    >
+                      <Phone className="w-3.5 h-3.5 shrink-0" />
+                      {mdUser.phone}
+                    </a>
+                  )}
+                  {mdUser.instagram && (
+                    <a
+                      href={`https://instagram.com/${mdUser.instagram.replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-neutral-300 hover:text-white transition-colors"
+                    >
+                      <Instagram className="w-3.5 h-3.5 shrink-0" />
+                      @{mdUser.instagram.replace(/^@/, "")}
+                      <ExternalLink className="w-3 h-3 opacity-60" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
             {hasHealthData && mdData.health_score !== null && (
               <div className="text-right">
