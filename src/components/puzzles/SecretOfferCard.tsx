@@ -7,7 +7,8 @@ import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferB
 import type { PuzzleOffer } from "@/types/database";
 import { useRevealedOffers } from "@/hooks/useRevealedOffers";
 
-const REVEAL_DURATION_MS = 600;
+// flip-out(0.25s) + gap(0.05s) + flip-in(0.3s)
+const FLIP_DURATION_MS = 600;
 
 interface SecretOfferCardProps {
   offer: PuzzleOffer;
@@ -47,9 +48,7 @@ export function SecretOfferCard({
     };
   }, []);
 
-  // 강제 공개: 깃발이 닫혔거나 오퍼가 pending이 아니면 잠금 의미 X
   const forceReveal = !isOpen || offer.status !== "pending";
-  // hydration 깜빡임 방지: isLoaded 전엔 잠금으로 통일
   const isRevealed = forceReveal || (isLoaded && hasRevealed(offer.id));
 
   const handleReveal = () => {
@@ -59,73 +58,23 @@ export function SecretOfferCard({
     timerRef.current = setTimeout(() => {
       setRevealing(false);
       timerRef.current = null;
-    }, REVEAL_DURATION_MS);
+    }, FLIP_DURATION_MS);
   };
 
   const club = offer.club as { name?: string; area?: string } | null;
   const dealCount = offer.md?.md_deal_count ?? null;
-
   const staggerStyle = { "--stagger-idx": index } as React.CSSProperties;
 
-  // 잠금 상태 (isLoaded 전 SSR + reveal 전 클라이언트)
-  if (!isRevealed) {
-    return (
-      <div
-        style={staggerStyle}
-        className="animate-offer-card-enter relative rounded-2xl border border-dashed border-neutral-700 bg-[#1C1C1E] p-4 space-y-3 cursor-pointer active:scale-[0.98] hover:border-neutral-500 transition-colors overflow-hidden"
-        onClick={handleReveal}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleReveal();
-          }
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Lock className="w-4 h-4 text-neutral-500" />
-            <p className="text-[14px] font-bold text-white">시크릿 오퍼 #{offerNumber}</p>
-          </div>
-          <span className="text-[16px] font-black text-green-400">
-            {offer.proposed_price.toLocaleString()}원
-          </span>
-        </div>
-
-        {dealCount != null && dealCount >= 3 && (
-          <div className="flex items-center gap-1.5">
-            {dealCount >= 30 ? (
-              <Flame className="w-3 h-3 text-orange-500" />
-            ) : dealCount >= 10 ? (
-              <BadgeCheck className="w-3 h-3 text-blue-400" />
-            ) : (
-              <BadgeCheck className="w-3 h-3 text-neutral-500" />
-            )}
-            <span className="text-[10px] font-bold text-neutral-400">거래 {dealCount}회</span>
-          </div>
-        )}
-
-        <p className="text-[12px] text-neutral-500 font-bold text-center pt-1">
-          탭하여 공개
-        </p>
-      </div>
-    );
-  }
-
-  // 공개 상태 — 기존 PuzzleDetailClient 카드 구조 유지
-  return (
+  // --- 공개 마크업 (재사용) ---
+  const revealedCard = (
     <div
       style={staggerStyle}
-      className={`relative animate-offer-card-enter rounded-2xl border p-4 space-y-3 overflow-hidden ${
+      className={`animate-offer-card-enter rounded-2xl border p-4 space-y-3 ${
         offer.status === "accepted"
           ? "bg-amber-500/10 border-amber-500/30"
           : "bg-[#1C1C1E] border-neutral-800"
-      } ${revealing ? "animate-offer-reveal" : ""}`}
+      }`}
     >
-      {revealing && (
-        <div className="pointer-events-none absolute inset-0 animate-offer-reveal-shine" />
-      )}
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[15px] font-black text-white">
@@ -207,6 +156,80 @@ export function SecretOfferCard({
           <AdminWithdrawOfferButton offerId={offer.id} variant="full" onWithdrawn={onWithdrawn} />
         </div>
       )}
+    </div>
+  );
+
+  // --- 플립 중: 잠금 flip-out + 공개 flip-in (높이는 공개 카드 기준) ---
+  if (revealing) {
+    return (
+      <div style={staggerStyle} className="relative">
+        {/* 공개 면 — normal flow (높이 기준) + flip-in */}
+        <div className="animate-card-flip-in">
+          {revealedCard}
+        </div>
+        {/* 잠금 면 — absolute overlay + flip-out */}
+        <div className="absolute inset-0 animate-card-flip-out pointer-events-none rounded-2xl overflow-hidden bg-[#1C1C1E] border border-dashed border-neutral-700 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-neutral-500" />
+              <p className="text-[14px] font-bold text-white">시크릿 오퍼 #{offerNumber}</p>
+            </div>
+            <span className="text-[16px] font-black text-green-400">
+              {offer.proposed_price.toLocaleString()}원
+            </span>
+          </div>
+          <p className="text-[12px] text-neutral-500 font-bold text-center pt-1">탭하여 공개</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 공개 완료: 정적 렌더 ---
+  if (isRevealed) {
+    return revealedCard;
+  }
+
+  // --- 잠금 상태 ---
+  return (
+    <div
+      style={staggerStyle}
+      className="animate-offer-card-enter rounded-2xl border border-dashed border-neutral-700 bg-[#1C1C1E] p-4 space-y-3 cursor-pointer active:scale-[0.98] hover:border-neutral-500 transition-colors"
+      onClick={handleReveal}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleReveal();
+        }
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Lock className="w-4 h-4 text-neutral-500" />
+          <p className="text-[14px] font-bold text-white">시크릿 오퍼 #{offerNumber}</p>
+        </div>
+        <span className="text-[16px] font-black text-green-400">
+          {offer.proposed_price.toLocaleString()}원
+        </span>
+      </div>
+
+      {dealCount != null && dealCount >= 3 && (
+        <div className="flex items-center gap-1.5">
+          {dealCount >= 30 ? (
+            <Flame className="w-3 h-3 text-orange-500" />
+          ) : dealCount >= 10 ? (
+            <BadgeCheck className="w-3 h-3 text-blue-400" />
+          ) : (
+            <BadgeCheck className="w-3 h-3 text-neutral-500" />
+          )}
+          <span className="text-[10px] font-bold text-neutral-400">거래 {dealCount}회</span>
+        </div>
+      )}
+
+      <p className="text-[12px] text-neutral-500 font-bold text-center pt-1">
+        탭하여 공개
+      </p>
     </div>
   );
 }
