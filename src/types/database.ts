@@ -33,7 +33,7 @@ export type NotificationEventType =
   | "cancellation_confirmed"
   | "md_approved";
 export type NotificationStatus = "pending" | "sent" | "failed";
-export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed" | "puzzle_seat_adjusted" | "puzzle_cancelled" | "puzzle_offer_received" | "puzzle_offer_accepted" | "puzzle_offer_rejected" | "puzzle_leader_changed" | "puzzle_member_joined" | "puzzle_visit_pending" | "puzzle_visit_confirm_requested" | "puzzle_visit_confirmed" | "puzzle_visit_disputed" | "puzzle_visit_noshow_filed" | "puzzle_visit_auto_confirmed";
+export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed" | "puzzle_seat_adjusted" | "puzzle_cancelled" | "puzzle_offer_received" | "puzzle_offer_accepted" | "puzzle_offer_rejected" | "puzzle_leader_changed" | "puzzle_member_joined" | "puzzle_visit_pending" | "puzzle_visit_confirmed";
 export type TableType = "Standard" | "VIP" | "Premium";
 
 export interface TablePosition {
@@ -339,8 +339,6 @@ export interface UserTrustScore {
   confirmed_visits: number;
   /** 깃발 leader로서 MD에게 "방문" 마킹 받은 횟수 (Migration 144) */
   puzzle_visited_count: number;
-  /** 깃발 leader로서 MD에게 "노쇼" 마킹 받은 횟수 (Migration 144) */
-  puzzle_noshow_count: number;
   /** Migration 146: 깃발+경매 합산 누적 거래 카운트 */
   deal_count_total: number;
   /** Migration 146: deal_count_total 기반 자동 등급. 0건이면 null */

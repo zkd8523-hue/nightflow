@@ -368,15 +368,11 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                         {pendingVisit.map(offer => (
                                             <AcceptedPuzzleVisitCard
                                                 key={offer.id}
-                                                currentUserId={user.id}
                                                 offer={{
                                                     id: offer.id,
                                                     proposed_price: offer.proposed_price,
                                                     table_type: offer.table_type,
-                                                    visit_result: offer.visit_result,
                                                     visit_marked_at: offer.visit_marked_at,
-                                                    visit_requested_by: offer.visit_requested_by,
-                                                    visit_requested_at: offer.visit_requested_at,
                                                     puzzle: offer.puzzle ? {
                                                         id: offer.puzzle.id,
                                                         area: offer.puzzle.area,

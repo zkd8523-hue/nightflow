@@ -64,11 +64,6 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/expire-puzzles/index.ts"
 
-[functions.auto-confirm-puzzle-visits]
-enabled = true
-verify_jwt = false
-entrypoint = "./functions/auto-confirm-puzzle-visits/index.ts"
-
 [functions.notify-puzzle-visit-pending]
 enabled = true
 verify_jwt = false

@@ -41,7 +41,6 @@ export default async function AdminDashboardPage() {
     { count: pendingAppeals },
     { count: totalPuzzles },
     { count: activePuzzles },
-    { count: pendingNoshows },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "md"),
@@ -62,7 +61,6 @@ export default async function AdminDashboardPage() {
     supabase.from("penalty_appeals").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("puzzles").select("*", { count: "exact", head: true }),
     supabase.from("puzzles").select("*", { count: "exact", head: true }).eq("status", "open"),
-    supabase.from("puzzle_offers").select("*", { count: "exact", head: true }).eq("visit_result", "noshow").not("visit_marked_at", "is", null).is("strike_applied_at", null),
   ]);
 
   // 시간 기반 필터: 종료 시간이 아직 안 지난 경매만 카운트
@@ -213,15 +211,6 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-purple-500/10",
       badge: activePuzzles ? `${activePuzzles}건 모집 중` : null,
       href: "/admin/puzzles",
-    },
-    {
-      label: "깃발 노쇼 검토",
-      value: `${pendingNoshows || 0}건`,
-      icon: AlertCircle,
-      color: "text-red-400",
-      bgColor: "bg-red-500/10",
-      badge: pendingNoshows ? `${pendingNoshows}건 대기` : null,
-      href: "/admin/puzzle-noshows",
     },
   ];
 
