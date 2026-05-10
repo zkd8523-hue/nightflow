@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Lock, CheckCircle2, XCircle, BadgeCheck, Flame } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Flame, XCircle } from "lucide-react";
 import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferButton";
 import type { PuzzleOffer } from "@/types/database";
 import { useRevealedOffers } from "@/hooks/useRevealedOffers";
 
-// flip-out(0.25s) + gap(0.05s) + flip-in(0.3s)
-const FLIP_DURATION_MS = 600;
+const SCRATCH_THRESHOLD = 45; // % 이상 긁으면 자동 완전 공개
+const BRUSH_RADIUS = 28;      // 긁히는 브러시 크기 (px)
 
 interface SecretOfferCardProps {
   offer: PuzzleOffer;
@@ -36,45 +36,105 @@ export function SecretOfferCard({
   onWithdrawn,
 }: SecretOfferCardProps) {
   const { isLoaded, hasRevealed, markRevealed } = useRevealedOffers(userId);
-  const [revealing, setRevealing] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, []);
+  const [fadingOut, setFadingOut] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isScratching = useRef(false);
+  const scratchDone = useRef(false);
 
   const forceReveal = !isOpen || offer.status !== "pending";
   const isRevealed = forceReveal || (isLoaded && hasRevealed(offer.id));
+  const showCanvas = !isRevealed;
 
-  const handleReveal = () => {
-    if (isRevealed || revealing) return;
-    setRevealing(true);
-    markRevealed(offer.id);
-    timerRef.current = setTimeout(() => {
-      setRevealing(false);
-      timerRef.current = null;
-    }, FLIP_DURATION_MS);
+  // Canvas 초기화 (잠금 상태일 때만)
+  useEffect(() => {
+    if (!showCanvas || !canvasRef.current || !containerRef.current) return;
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    canvas.width = container.offsetWidth;
+    canvas.height = container.offsetHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // 어두운 스크래치 레이어
+    ctx.fillStyle = "#111111";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 대각 라인 패턴 (스크래치 질감)
+    ctx.strokeStyle = "rgba(255,255,255,0.04)";
+    ctx.lineWidth = 1;
+    for (let i = -canvas.height; i < canvas.width; i += 14) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + canvas.height, canvas.height);
+      ctx.stroke();
+    }
+
+    // 안내 텍스트
+    ctx.font = "bold 12px 'Pretendard Variable', sans-serif";
+    ctx.fillStyle = "rgba(156,163,175,0.65)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("긁어서 확인하세요!", canvas.width / 2, canvas.height / 2 - 10);
+    ctx.font = "10px 'Pretendard Variable', sans-serif";
+    ctx.fillStyle = "rgba(107,114,128,0.5)";
+    ctx.fillText(`시크릿 오퍼 #${offerNumber}`, canvas.width / 2, canvas.height / 2 + 10);
+  }, [showCanvas, offerNumber]);
+
+  const getTransparencyPct = useCallback((canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return 0;
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let transparent = 0;
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 128) transparent++;
+    }
+    return (transparent / (data.length / 4)) * 100;
+  }, []);
+
+  const scratchAt = useCallback((x: number, y: number) => {
+    const canvas = canvasRef.current;
+    if (!canvas || scratchDone.current) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(x, y, BRUSH_RADIUS, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (getTransparencyPct(canvas) >= SCRATCH_THRESHOLD) {
+      scratchDone.current = true;
+      setFadingOut(true);
+      setTimeout(() => markRevealed(offer.id), 380);
+    }
+  }, [getTransparencyPct, markRevealed, offer.id]);
+
+  const getPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  };
+  const getTouchPos = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const t = e.touches[0];
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top };
   };
 
   const club = offer.club as { name?: string; area?: string } | null;
   const dealCount = offer.md?.md_deal_count ?? null;
   const staggerStyle = { "--stagger-idx": index } as React.CSSProperties;
 
-  // --- 공개 마크업 (재사용) ---
-  const revealedCard = (
+  return (
     <div
+      ref={containerRef}
       style={staggerStyle}
-      className={`animate-offer-card-enter rounded-2xl border p-4 space-y-3 ${
+      className={`animate-offer-card-enter relative rounded-2xl border p-4 space-y-3 overflow-hidden ${
         offer.status === "accepted"
           ? "bg-amber-500/10 border-amber-500/30"
           : "bg-[#1C1C1E] border-neutral-800"
       }`}
     >
+      {/* 공개 콘텐츠 — 항상 렌더, 캔버스 아래 */}
       <div className="flex items-center justify-between">
         <div>
           <p className="text-[15px] font-black text-white">
@@ -156,80 +216,23 @@ export function SecretOfferCard({
           <AdminWithdrawOfferButton offerId={offer.id} variant="full" onWithdrawn={onWithdrawn} />
         </div>
       )}
-    </div>
-  );
 
-  // --- 플립 중: 잠금 flip-out + 공개 flip-in (높이는 공개 카드 기준) ---
-  if (revealing) {
-    return (
-      <div style={staggerStyle} className="relative">
-        {/* 공개 면 — normal flow (높이 기준) + flip-in */}
-        <div className="animate-card-flip-in">
-          {revealedCard}
-        </div>
-        {/* 잠금 면 — absolute overlay + flip-out */}
-        <div className="absolute inset-0 animate-card-flip-out pointer-events-none rounded-2xl overflow-hidden bg-[#1C1C1E] border border-dashed border-neutral-700 p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-neutral-500" />
-              <p className="text-[14px] font-bold text-white">시크릿 오퍼 #{offerNumber}</p>
-            </div>
-            <span className="text-[16px] font-black text-green-400">
-              {offer.proposed_price.toLocaleString()}원
-            </span>
-          </div>
-          <p className="text-[12px] text-neutral-500 font-bold text-center pt-1">탭하여 공개</p>
-        </div>
-      </div>
-    );
-  }
-
-  // --- 공개 완료: 정적 렌더 ---
-  if (isRevealed) {
-    return revealedCard;
-  }
-
-  // --- 잠금 상태 ---
-  return (
-    <div
-      style={staggerStyle}
-      className="animate-offer-card-enter rounded-2xl border border-dashed border-neutral-700 bg-[#1C1C1E] p-4 space-y-3 cursor-pointer active:scale-[0.98] hover:border-neutral-500 transition-colors"
-      onClick={handleReveal}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleReveal();
-        }
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Lock className="w-4 h-4 text-neutral-500" />
-          <p className="text-[14px] font-bold text-white">시크릿 오퍼 #{offerNumber}</p>
-        </div>
-        <span className="text-[16px] font-black text-green-400">
-          {offer.proposed_price.toLocaleString()}원
-        </span>
-      </div>
-
-      {dealCount != null && dealCount >= 3 && (
-        <div className="flex items-center gap-1.5">
-          {dealCount >= 30 ? (
-            <Flame className="w-3 h-3 text-orange-500" />
-          ) : dealCount >= 10 ? (
-            <BadgeCheck className="w-3 h-3 text-blue-400" />
-          ) : (
-            <BadgeCheck className="w-3 h-3 text-neutral-500" />
-          )}
-          <span className="text-[10px] font-bold text-neutral-400">거래 {dealCount}회</span>
-        </div>
+      {/* 스크래치 Canvas — 공개 콘텐츠를 덮는 overlay */}
+      {showCanvas && (
+        <canvas
+          ref={canvasRef}
+          className={`absolute inset-0 rounded-2xl cursor-crosshair touch-none ${
+            fadingOut ? "animate-canvas-fade" : ""
+          }`}
+          onMouseDown={(e) => { isScratching.current = true; const p = getPos(e); scratchAt(p.x, p.y); }}
+          onMouseMove={(e) => { if (!isScratching.current) return; const p = getPos(e); scratchAt(p.x, p.y); }}
+          onMouseUp={() => { isScratching.current = false; }}
+          onMouseLeave={() => { isScratching.current = false; }}
+          onTouchStart={(e) => { e.preventDefault(); isScratching.current = true; const p = getTouchPos(e); scratchAt(p.x, p.y); }}
+          onTouchMove={(e) => { e.preventDefault(); if (!isScratching.current) return; const p = getTouchPos(e); scratchAt(p.x, p.y); }}
+          onTouchEnd={() => { isScratching.current = false; }}
+        />
       )}
-
-      <p className="text-[12px] text-neutral-500 font-bold text-center pt-1">
-        탭하여 공개
-      </p>
     </div>
   );
 }

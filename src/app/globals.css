@@ -266,35 +266,25 @@
     transform: translateZ(0);
   }
 
-  /* 시크릿 오퍼 카드 플립 애니메이션 */
-  @keyframes card-flip-out {
-    0%   { transform: perspective(800px) rotateY(0deg);   opacity: 1; }
-    100% { transform: perspective(800px) rotateY(-90deg); opacity: 0; }
-  }
-
-  @keyframes card-flip-in {
-    0%   { transform: perspective(800px) rotateY(90deg); opacity: 0; }
-    100% { transform: perspective(800px) rotateY(0deg);  opacity: 1; }
-  }
-
+  /* 시크릿 오퍼 스크래치 애니메이션 */
   @keyframes offer-card-enter {
     0%   { opacity: 0; transform: translateY(8px); }
     100% { opacity: 1; transform: translateY(0);   }
   }
 
-  .animate-card-flip-out {
-    animation: card-flip-out 0.25s ease-in forwards;
-    transform-origin: center center;
-  }
-
-  .animate-card-flip-in {
-    animation: card-flip-in 0.3s ease-out 0.2s both;
-    transform-origin: center center;
+  @keyframes canvas-fade-out {
+    0%   { opacity: 1; }
+    100% { opacity: 0; }
   }
 
   .animate-offer-card-enter {
     animation: offer-card-enter 0.35s ease-out both;
     animation-delay: calc(var(--stagger-idx, 0) * 100ms);
+  }
+
+  .animate-canvas-fade {
+    animation: canvas-fade-out 0.4s ease-out forwards;
+    pointer-events: none;
   }
 
   /* prefers-reduced-motion 대응 */
@@ -303,9 +293,8 @@
     .animate-tension,
     .animate-breathe,
     .animate-new-badge,
-    .animate-card-flip-out,
-    .animate-card-flip-in,
-    .animate-offer-card-enter {
+    .animate-offer-card-enter,
+    .animate-canvas-fade {
       animation: none !important;
     }
     .animate-new-badge {
