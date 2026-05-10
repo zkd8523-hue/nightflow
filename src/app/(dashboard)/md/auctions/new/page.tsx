@@ -70,14 +70,14 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
                     <div className="space-y-2">
                         <h1 className="text-xl font-bold text-white">등록된 클럽이 없습니다</h1>
                         <p className="text-neutral-400 text-sm leading-relaxed">
-                            경매를 등록하려면 관리자에게 클럽 등록을 요청해주세요.
+                            경매를 등록하려면 먼저 클럽을 등록해주세요.
                         </p>
                     </div>
                     <Link
-                        href="/md/dashboard"
+                        href="/md/clubs/new"
                         className="inline-block px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-neutral-200 transition-colors"
                     >
-                        대시보드로 돌아가기
+                        바로 등록하기 →
                     </Link>
                 </div>
             </div>

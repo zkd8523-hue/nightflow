@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { FloorPlanEditor } from "@/components/md/FloorPlanEditor";
 
@@ -32,11 +33,14 @@ export default async function MDFloorPlanPage() {
         <div className="max-w-2xl mx-auto">
           <div className="space-y-4">
             <h1 className="text-white text-2xl font-black">플로어맵 관리</h1>
-            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 text-center space-y-3">
+            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 text-center space-y-4">
               <p className="text-neutral-400">등록된 클럽이 없습니다.</p>
-              <p className="text-neutral-600 text-sm">
-                관리자에게 클럽 등록을 요청해주세요.
-              </p>
+              <Link
+                href="/md/clubs/new"
+                className="inline-block px-5 py-2.5 bg-white text-black font-bold text-sm rounded-xl hover:bg-neutral-200 transition-colors"
+              >
+                바로 등록하기 →
+              </Link>
             </div>
           </div>
         </div>
