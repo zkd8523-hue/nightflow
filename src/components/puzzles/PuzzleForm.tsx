@@ -323,37 +323,6 @@ export function PuzzleForm({ userId }: { userId: string }) {
         </div>
       </section>
 
-      {/* 파티원 여부 — 텍스트 왼쪽, 체크 오른쪽 */}
-      {(() => {
-        const partyDisabled = area === "서울 어디든";
-        return (
-          <>
-            <label className={`flex items-center justify-between px-1 ${partyDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
-              <span className="text-[14px] font-bold text-white">파티원 모으기</span>
-              <input
-                type="checkbox"
-                checked={isRecruitingParty}
-                disabled={partyDisabled}
-                onChange={(e) => setIsRecruitingParty(e.target.checked)}
-                className="w-4 h-4 rounded accent-green-500 shrink-0"
-              />
-            </label>
-            {partyDisabled && (
-              <p className="text-[11px] text-amber-400/80 leading-relaxed px-1 -mt-2">
-                "서울 어디든"은 지역이 정해지지 않아 파티원 모집이 불가합니다.
-              </p>
-            )}
-            {isRecruitingParty && !partyDisabled && (
-              <div className="bg-[#1C1C1E] border border-green-500/30 rounded-2xl px-4 py-3">
-                <p className="text-[12px] text-green-400 leading-relaxed">
-                  인원이 모이면 MD에게 더 좋은 조건을 요청할 수 있어요.
-                </p>
-              </div>
-            )}
-          </>
-        );
-      })()}
-
       {/* 인원 설정 */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">

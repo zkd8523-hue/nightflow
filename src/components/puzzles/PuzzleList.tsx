@@ -52,16 +52,13 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
     })();
   }, []);
 
-  // 유저: 토글 ON 시 파티 모집 깃발만 필터
-  // MD: 필터 없음 (정렬은 그룹별로 적용)
-  const filteredPuzzles = !isMd && toggleOn
-    ? puzzles.filter(p => p.is_recruiting_party && p.current_count < p.target_count)
-    : puzzles;
+  // MD: 토글 ON 시 예산순 정렬 (그룹별 적용). 유저는 필터/토글 없음.
+  const filteredPuzzles = puzzles;
 
   const getBudget = (p: Puzzle) =>
     p.total_budget ?? p.budget_per_person * p.target_count;
 
-  const toggleButton = (
+  const toggleButton = isMd ? (
     <button
       onClick={() => setToggleOn((v) => !v)}
       className={`px-3 py-1 rounded-full text-[12px] font-bold transition-colors flex-shrink-0 ${
@@ -70,9 +67,9 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
           : "bg-neutral-800 text-neutral-400"
       }`}
     >
-      {isMd ? "예산순" : "파티"}
+      예산순
     </button>
-  );
+  ) : null;
 
   return (
     <div className="relative">
@@ -81,14 +78,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
         <div className="flex flex-col items-center justify-center py-20 gap-2">
           <div className="absolute top-0 right-0">{toggleButton}</div>
           <div className="space-y-2 text-center">
-            {!isMd && toggleOn ? (
-              <>
-                <p className="text-[15px] font-bold text-neutral-300">모집 중인 깃발이 없어요</p>
-                <p className="text-[12px] text-neutral-500 leading-relaxed">
-                  파티원을 모집 중인 깃발이 아직 없어요
-                </p>
-              </>
-            ) : isMd ? (
+            {isMd ? (
               <>
                 <p className="text-[15px] font-bold text-neutral-300">아직 꽂혀 있는 깃발이 없어요</p>
                 <p className="text-[12px] text-neutral-500 leading-relaxed">
