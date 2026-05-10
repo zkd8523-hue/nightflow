@@ -234,7 +234,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                     }`}
                 >
                   {isActive
-                    ? isInstant ? (isUserInterested ? "대화중" : "예약하기") : "입찰하기"
+                    ? isInstant ? (isUserInterested ? "대화중" : "예약하기") : "자세히 보기"
                     : isScheduled
                       ? `${formatTime(auction.auction_start_at)} ${isInstant ? "예약" : "입찰"} 시작`
                       : "결과확인"
