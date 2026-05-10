@@ -76,35 +76,42 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
             </div>
 
             {/* Content Area */}
-            <div className="flex-1 min-w-0 flex flex-col justify-between py-0 pr-10">
+            <div className="flex-1 min-w-0 flex flex-col justify-between py-0">
               {/* 상단 그룹: 클럽명 + 포함내역 (밀착) */}
               <div>
-                <div className="flex items-center gap-1.5">
+                {/* 클럽명 (heart 자리만 확보) */}
+                <div className="pr-10">
                   <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight">
                     {club?.name}
                   </h3>
-                  {club?.area && (
-                    <span className="flex-shrink-0 text-[10px] text-neutral-500 font-medium">
-                      {club.area}
-                    </span>
-                  )}
-                  {(() => {
-                    const dealCount = (auction.md as { md_deal_count?: number } | null)?.md_deal_count;
-                    if (!dealCount || dealCount < 3) return null;
-                    return (
-                      <span className="flex-shrink-0 flex items-center gap-0.5 text-[9px] font-bold text-neutral-400">
-                        {dealCount >= 30 ? (
-                          <Flame className="w-3 h-3 text-orange-500" />
-                        ) : dealCount >= 10 ? (
-                          <BadgeCheck className="w-3 h-3 text-blue-400" />
-                        ) : (
-                          <BadgeCheck className="w-3 h-3 text-neutral-500" />
-                        )}
-                        거래 {dealCount}회
-                      </span>
-                    );
-                  })()}
                 </div>
+                {/* 영역 + 거래 뱃지 (풀너비, 별도 행) */}
+                {(() => {
+                  const dealCount = (auction.md as { md_deal_count?: number } | null)?.md_deal_count;
+                  const showDealBadge = !!dealCount && dealCount >= 3;
+                  if (!club?.area && !showDealBadge) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      {club?.area && (
+                        <span className="flex-shrink-0 text-[10px] text-neutral-500 font-medium">
+                          {club.area}
+                        </span>
+                      )}
+                      {showDealBadge && (
+                        <span className="flex-shrink-0 flex items-center gap-0.5 text-[9px] font-bold text-neutral-400">
+                          {dealCount! >= 30 ? (
+                            <Flame className="w-3 h-3 text-orange-500" />
+                          ) : dealCount! >= 10 ? (
+                            <BadgeCheck className="w-3 h-3 text-blue-400" />
+                          ) : (
+                            <BadgeCheck className="w-3 h-3 text-neutral-500" />
+                          )}
+                          거래 {dealCount}회
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="flex items-center mt-0.5 overflow-hidden">
                   {(() => {
                     const all = auction.includes || [];
@@ -173,7 +180,15 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
             </div>
           </div>
 
-          {/* Bottom Bar: 가격+유저상태 (좌) + MD한마디(중) + 소셜프루프+CTA (우) */}
+          {/* MD 한마디 (모바일에서도 풀 너비로 잘 보이게 별도 행) */}
+          {auction.md_comment && (
+            <div className="flex items-center gap-1 mt-1.5 text-[12px] text-neutral-300 italic">
+              <span className="shrink-0">💬</span>
+              <span className="truncate">{auction.md_comment}</span>
+            </div>
+          )}
+
+          {/* Bottom Bar: 가격+유저상태 (좌) + 소셜프루프+CTA (우) */}
           <div className="flex items-center justify-between mt-1 gap-2">
             <div className="flex flex-col min-w-0">
               {!isInstant && !isCompleted && (
