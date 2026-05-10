@@ -34,6 +34,7 @@ import {
   Star,
   Trophy,
   Users as UsersIcon,
+  Trash2,
 } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { createClient } from "@/lib/supabase/client";
@@ -67,6 +68,8 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<UserActivityStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<User | null>(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
 
   useEffect(() => {
     if (!focusId) return;
@@ -150,6 +153,28 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
       const msg = getErrorMessage(error);
       logError(error, 'UserManagement.handleBlock');
       toast.error(msg || "처리 중 오류가 발생했습니다");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (userId: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/delete`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      toast.success(`유저를 영구 삭제했습니다 (${data.deleted_display_name ?? userId})`);
+      setDeleteConfirm(null);
+      setDeleteConfirmText("");
+      setSelectedUser(null);
+      window.location.reload();
+    } catch (error: unknown) {
+      const msg = getErrorMessage(error);
+      logError(error, "UserManagement.handleDelete");
+      toast.error(msg || "삭제 중 오류가 발생했습니다");
     } finally {
       setLoading(false);
     }
@@ -726,11 +751,86 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                     {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "유저 차단"}
                   </Button>
                 )}
+                <Button
+                  onClick={() => { setDeleteConfirm(selectedUser); setDeleteConfirmText(""); }}
+                  disabled={loading}
+                  className="h-12 rounded-2xl font-black bg-neutral-900 hover:bg-red-950 text-red-400 hover:text-red-300 border border-red-500/30 col-span-2"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> 유저 영구 삭제
+                </Button>
               </div>
             </div>
           )}
         </SheetContent>
       </Sheet>
+
+      {/* 영구 삭제 확인 다이얼로그 */}
+      {deleteConfirm && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => { if (!loading) { setDeleteConfirm(null); setDeleteConfirmText(""); } }}
+        >
+          <div
+            className="bg-[#1C1C1E] border border-red-500/30 rounded-3xl p-6 max-w-md w-full space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="text-lg font-black">유저 영구 삭제</h3>
+            </div>
+            <div className="space-y-2 text-sm text-neutral-300">
+              <p>
+                <span className="font-black text-white">{deleteConfirm.display_name || deleteConfirm.name || deleteConfirm.id.slice(0, 8)}</span>
+                {" "}유저를 영구 삭제합니다.
+              </p>
+              <p className="text-red-400 text-xs leading-relaxed">
+                ⚠️ 30일 grace period 없이 즉시 삭제됩니다. 본인 명의 클럽·경매·입찰·거래·정산·VIP·찜 등 모든 데이터가 같이 삭제되며 복구할 수 없습니다.
+              </p>
+              {deleteConfirm.role === "md" && (
+                <p className="text-amber-400 text-xs">
+                  이 유저는 MD입니다. MD 명의 클럽과 경매 내역도 모두 삭제됩니다.
+                </p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <p className="text-xs text-neutral-500">
+                확인을 위해 표시 이름{" "}
+                <span className="font-mono font-black text-white">
+                  {deleteConfirm.display_name || deleteConfirm.name || deleteConfirm.id.slice(0, 8)}
+                </span>
+                {" "}을 그대로 입력하세요.
+              </p>
+              <Input
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="이름 입력"
+                className="bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-600"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => { setDeleteConfirm(null); setDeleteConfirmText(""); }}
+                disabled={loading}
+                className="flex-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold"
+              >
+                취소
+              </Button>
+              <Button
+                onClick={() => handleDelete(deleteConfirm.id)}
+                disabled={
+                  loading ||
+                  deleteConfirmText.trim() !==
+                    (deleteConfirm.display_name || deleteConfirm.name || deleteConfirm.id.slice(0, 8))
+                }
+                className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black disabled:opacity-30"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "영구 삭제"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
