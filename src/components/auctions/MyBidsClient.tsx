@@ -793,12 +793,22 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; use
   };
 
   const statusLabel: Record<string, string> = {
-    open: "모집 중",
-    matched: "마감",
+    open: "🟢 모집 중",
+    matched: "✅ 성사 (인원마감)",
     accepted: "성사됨",
-    cancelled: "취소됨",
-    expired: "만료됨",
+    cancelled: "↩️ 취소됨",
+    expired: "❌ 매칭 실패",
   };
+
+  const statusColorClass: Record<string, string> = {
+    open: "text-green-400",
+    matched: "text-amber-400",
+    accepted: "text-amber-400",
+    cancelled: "text-neutral-500",
+    expired: "text-red-400",
+  };
+
+  const isTerminal = ["expired", "cancelled", "matched"].includes(puzzle.status);
 
   // 성사된 leader puzzle은 amber 카드로 강조 + MD 연락처 인라인 노출
   if (isAccepted && isLeader && acceptedMd) {
@@ -865,18 +875,12 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; use
 
   return (
     <Link href={`/flags/${puzzle.id}`}>
-      <Card className="bg-[#1C1C1E] border-neutral-800 p-4 space-y-2">
+      <Card className={`bg-[#1C1C1E] border-neutral-800 p-4 space-y-2 ${isTerminal ? "opacity-70" : ""}`}>
         <div className="flex items-center justify-between">
           <span className="text-[14px] font-black text-white">
             {formatDate(puzzle.event_date)} · {puzzle.area}
           </span>
-          <span
-            className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-              isLeader
-                ? "bg-amber-500/20 text-amber-400"
-                : "bg-amber-500/20 text-amber-400"
-            }`}
-          >
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
             {isLeader ? "대표자" : "참여중"}
           </span>
         </div>
@@ -885,8 +889,8 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; use
             {puzzle.current_count}/{puzzle.target_count}명 · 확정 {confirmedBudget.toLocaleString()}원
           </span>
           <span
-            className={`font-bold ${
-              isOpen ? "text-green-400" : "text-neutral-500"
+            className={`font-black ${isTerminal ? "text-[13px]" : ""} ${
+              statusColorClass[puzzle.status] || "text-neutral-500"
             }`}
           >
             {statusLabel[puzzle.status] || puzzle.status}
@@ -894,7 +898,7 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; use
         </div>
         <div className="flex justify-end">
           <span className="text-[12px] text-neutral-500">
-            {isLeader ? "[관리]" : "[보기]"} →
+            {isTerminal ? "[결과 보기]" : isLeader ? "[관리]" : "[보기]"} →
           </span>
         </div>
       </Card>

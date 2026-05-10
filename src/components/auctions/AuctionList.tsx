@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import type { Auction, Puzzle } from "@/types/database";
 import { AuctionCard } from "./AuctionCard";
 import { PuzzleList } from "@/components/puzzles/PuzzleList";
+import { MyPuzzleResultsBanner } from "@/components/puzzles/MyPuzzleResultsBanner";
 import { isAuctionActive, getEffectiveEndTime } from "@/lib/utils/auction";
 import { getClubEventDate } from "@/lib/utils/date";
 import { DateGroup } from "@/components/ui/DateGroup";
@@ -444,12 +445,15 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
       )}
 
       {tab === "puzzle" && (
-        <PuzzleList
-          puzzles={filteredPuzzles}
-          userRole={userRole}
-          offerCounts={puzzleOfferCounts}
-          selectedArea={selectedArea}
-        />
+        <>
+          <MyPuzzleResultsBanner />
+          <PuzzleList
+            puzzles={filteredPuzzles}
+            userRole={userRole}
+            offerCounts={puzzleOfferCounts}
+            selectedArea={selectedArea}
+          />
+        </>
       )}
 
     </div>
