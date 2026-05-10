@@ -16,6 +16,7 @@ import type { Puzzle, Club, PuzzleOffer } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { LiquorSelector } from "@/components/md/LiquorSelector";
 import { EXTRAS_OPTIONS, LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
+import { detectContactInfo, describeContactDetection } from "@/lib/utils/contact-detector";
 
 interface OfferSheetProps {
   puzzle: Puzzle;
@@ -185,6 +186,18 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       return;
     }
 
+    // 식별 정보 검증 (코멘트 + 모든 includes 항목)
+    const allInputs = [comment, ...selectedIncludes];
+    const allFound = allInputs.flatMap(detectContactInfo);
+    if (allFound.length > 0) {
+      const label = describeContactDetection(allFound);
+      const matches = [...new Set(allFound.map((f) => f.match))].slice(0, 3);
+      toast.error(`${label} 입력 불가`, {
+        description: matches.map((m) => `'${m}'`).join(", "),
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = editingOffer
@@ -279,6 +292,9 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               방장에게만 공개돼요
             </span>
           </div>
+          <p className="text-[14px] text-amber-400 font-bold leading-snug mt-0.5 text-left">
+            오직 클럽명과 조건만으로 깃발을 따보세요!
+          </p>
           <div className="text-left space-y-0">
             <p className="text-[13px] text-neutral-400">
               {formatDate(puzzle.event_date)} {puzzle.area}
@@ -459,13 +475,21 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             {showCustomExtraInput && (
               <div className="flex gap-2">
                 <Input
-                  placeholder="서비스를 직접 입력해보세요"
+                  placeholder="서비스명만 입력 (전화·SNS 금지)"
                   value={customExtra}
                   onChange={(e) => setCustomExtra(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.nativeEvent.isComposing && customExtra.trim()) {
                       e.preventDefault();
-                      toggleExtra(customExtra.trim());
+                      const trimmed = customExtra.trim();
+                      const found = detectContactInfo(trimmed);
+                      if (found.length > 0) {
+                        toast.error(`${describeContactDetection(found)} 입력 불가`, {
+                          description: `'${found[0].match}'`,
+                        });
+                        return;
+                      }
+                      toggleExtra(trimmed);
                       setCustomExtra("");
                       setShowCustomExtraInput(false);
                     }
@@ -475,11 +499,18 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
                 <button
                   type="button"
                   onClick={() => {
-                    if (customExtra.trim()) {
-                      toggleExtra(customExtra.trim());
-                      setCustomExtra("");
-                      setShowCustomExtraInput(false);
+                    const trimmed = customExtra.trim();
+                    if (!trimmed) return;
+                    const found = detectContactInfo(trimmed);
+                    if (found.length > 0) {
+                      toast.error(`${describeContactDetection(found)} 입력 불가`, {
+                        description: `'${found[0].match}'`,
+                      });
+                      return;
                     }
+                    toggleExtra(trimmed);
+                    setCustomExtra("");
+                    setShowCustomExtraInput(false);
                   }}
                   className="px-3 h-9 rounded-xl bg-white text-black text-[12px] font-bold flex-shrink-0"
                 >
@@ -497,11 +528,14 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="방장에게 전달할 특별한 메시지를 남겨보세요"
+              placeholder="방장에게 전달할 메시지 (전화·카톡·인스타·URL 금지)"
               rows={3}
               maxLength={200}
               className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-[13px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
             />
+            <p className="text-[12px] text-white leading-snug">
+              공정한 경쟁을 위해 전화번호·카톡·인스타등 기재가 제한됩니다.
+            </p>
           </div>
 
           {/* 수락 시 크레딧 안내 */}
