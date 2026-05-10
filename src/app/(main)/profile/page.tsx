@@ -53,6 +53,11 @@ export default function ProfilePage() {
   const [preferredMethods, setPreferredMethods] = useState<ContactMethodType[]>([]);
   const [savingBusiness, setSavingBusiness] = useState(false);
 
+  // 일반 유저용 오픈채팅 URL 별도 편집
+  const [isEditingUserKakao, setIsEditingUserKakao] = useState(false);
+  const [userKakaoUrl, setUserKakaoUrl] = useState("");
+  const [savingUserKakao, setSavingUserKakao] = useState(false);
+
   const [activityStats, setActivityStats] = useState<{
     total_bids: number;
     won_bids: number;
@@ -216,6 +221,35 @@ export default function ProfilePage() {
     }
   };
 
+  const handleEditUserKakao = () => {
+    setUserKakaoUrl(user.kakao_open_chat_url || "");
+    setIsEditingUserKakao(true);
+  };
+
+  const handleSaveUserKakao = async () => {
+    const trimmed = userKakaoUrl.trim();
+    if (trimmed && !/^https:\/\/open\.kakao\.com\//.test(trimmed)) {
+      toast.error("카카오톡 오픈채팅 URL 형식이 올바르지 않습니다");
+      return;
+    }
+    setSavingUserKakao(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from("users")
+        .update({ kakao_open_chat_url: trimmed || null })
+        .eq("id", user.id);
+      if (error) throw error;
+      toast.success(trimmed ? "오픈채팅이 등록되었습니다" : "오픈채팅이 삭제되었습니다");
+      setIsEditingUserKakao(false);
+      refetch();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "저장에 실패했습니다");
+    } finally {
+      setSavingUserKakao(false);
+    }
+  };
+
   const isBanned = user.blocked_until && new Date(user.blocked_until) > new Date();
   const isBlocked = user.is_blocked;
 
@@ -357,6 +391,78 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* 일반 유저용 카카오 오픈채팅 등록 (MD는 아래 MD 정보 섹션에서 관리) */}
+        {user.role !== "md" && user.role !== "admin" && (
+          <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[15px] font-bold text-white">오픈채팅</h2>
+              {!isEditingUserKakao ? (
+                <button
+                  onClick={handleEditUserKakao}
+                  className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
+                >
+                  {user.kakao_open_chat_url ? "수정" : "등록"}
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsEditingUserKakao(false)}
+                    disabled={savingUserKakao}
+                    className="text-[13px] text-neutral-500 hover:text-neutral-400 transition-colors font-bold"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleSaveUserKakao}
+                    disabled={savingUserKakao}
+                    className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold disabled:opacity-50"
+                  >
+                    {savingUserKakao ? "저장 중..." : "저장"}
+                  </button>
+                </div>
+              )}
+            </div>
+            {isEditingUserKakao ? (
+              <div className="space-y-2">
+                <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                  <input
+                    type="url"
+                    value={userKakaoUrl}
+                    onChange={(e) => setUserKakaoUrl(e.target.value)}
+                    placeholder="개인정보 보호를 원한다면 등록"
+                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 text-[13px] text-white focus:outline-none focus:border-green-500"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-neutral-500 leading-relaxed">
+                      깃발 매칭 시 MD에게 전화번호 대신 오픈채팅으로 연락받을 수 있어요.
+                    </p>
+                    <KakaoOpenChatGuide />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <MessageCircle className="w-4 h-4 text-neutral-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-neutral-500">카카오 오픈채팅</p>
+                  {user.kakao_open_chat_url ? (
+                    <a
+                      href={user.kakao_open_chat_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] text-white font-bold truncate block hover:text-amber-400 transition-colors"
+                    >
+                      {user.kakao_open_chat_url}
+                    </a>
+                  ) : (
+                    <p className="text-[13px] text-neutral-500">미설정</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* MD 비즈니스 연락처 */}
         {(user.role === "md" || user.role === "admin") && (
