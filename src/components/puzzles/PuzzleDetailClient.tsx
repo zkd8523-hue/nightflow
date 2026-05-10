@@ -710,7 +710,7 @@ export function PuzzleDetailClient({
           )}
 
           {/* 관리자 도구 */}
-          {isAdmin && ["open", "matched"].includes(puzzle.status) && (
+          {isAdmin && !["cancelled", "expired"].includes(puzzle.status) && (
             <section className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 flex items-center justify-between">
               <div>
                 <p className="text-[12px] font-bold text-red-400">관리자 도구</p>
