@@ -88,11 +88,20 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
   advance: {
     content: (
       <>
-        먼저 예약하는 당신, 자격 있다!
+        먼저 예약하는 당신,
         <br />
-        <span className="text-emerald-400">주대는 ⬇️ &nbsp; 서비스는 ⬆️</span>
+        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 align-middle whitespace-normal">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            주대는
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-black tracking-wider bg-red-500/15 text-red-400 border border-red-500/30">↓ DOWN</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+            서비스는
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-black tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">↑ UP</span>
+          </span>
+        </span>
         <br />
-        지금 바로 입찰해봐요!
+        지금 바로 입찰해보세요!
       </>
     ),
     note: "🛡 결제 없이 입찰 · 낙찰되면 MD가 안내",

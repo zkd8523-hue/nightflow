@@ -21,7 +21,6 @@ import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
-import { AcceptedPuzzleVisitCard } from "@/components/md/AcceptedPuzzleVisitCard";
 import { LeaderInfoSheet } from "./LeaderInfoSheet";
 
 interface PuzzleLeaderInfo {
@@ -654,29 +653,12 @@ export function PuzzleDetailClient({
                         <MDContactCard md={md as PublicUserProfile} />
                       </div>
                     )}
-                    {/* 거래 확정 신청/응답 (event_date 지나면 노출) */}
-                    {currentUserId && puzzle.event_date < new Date().toISOString().split("T")[0] && (
+                    {/* 거래 확정 상태 표시 (Migration 147: leader는 알림만 받고 마킹 권한 없음) */}
+                    {acceptedOffer.visit_marked_at && (
                       <div className="pt-2 border-t border-amber-500/20">
-                        <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider mb-2">거래 확정</p>
-                        <AcceptedPuzzleVisitCard
-                          currentUserId={currentUserId}
-                          offer={{
-                            id: acceptedOffer.id,
-                            proposed_price: acceptedOffer.proposed_price,
-                            table_type: acceptedOffer.table_type,
-                            visit_result: acceptedOffer.visit_result,
-                            visit_marked_at: acceptedOffer.visit_marked_at,
-                            visit_requested_by: acceptedOffer.visit_requested_by,
-                            visit_requested_at: acceptedOffer.visit_requested_at,
-                            puzzle: {
-                              id: puzzle.id,
-                              area: puzzle.area,
-                              event_date: puzzle.event_date,
-                              leader: puzzle.leader ? { display_name: puzzle.leader.display_name, name: puzzle.leader.name } : null,
-                            },
-                            club: acceptedOffer.club ? { name: acceptedOffer.club.name } : null,
-                          }}
-                        />
+                        <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-green-500/15 text-green-400">
+                          <ShieldCheck className="w-3.5 h-3.5" /> 거래 확정됨
+                        </span>
                       </div>
                     )}
                   </>
@@ -766,7 +748,7 @@ export function PuzzleDetailClient({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-neutral-400" />
-                <h2 className="text-[14px] font-bold text-neutral-300">MD 제안</h2>
+                <h2 className="text-[14px] font-bold text-neutral-300">시크릿 오퍼</h2>
               </div>
               <span className="text-[11px] text-neutral-500">
                 {isAccepted
@@ -774,7 +756,7 @@ export function PuzzleDetailClient({
                   : pendingOffers.length === 0
                   ? "아직 제안 없음"
                   : !isLeader
-                  ? "🔒 방장에게만 공개"
+                  ? "방장만 모든 내용을 볼 수 있어요"
                   : ""}
               </span>
             </div>
@@ -891,14 +873,14 @@ export function PuzzleDetailClient({
                 <p className="text-[13px] text-neutral-400">
                   현재 <span className="text-white font-bold">MD {pendingOffers.length}명</span>이 제안 중
                 </p>
-                {publicOffers.map((offer) => (
+                {publicOffers.map((offer, idx) => (
                   <div
                     key={offer.id}
                     className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <p className="text-[14px] font-bold text-white">MD 제안</p>
+                        <p className="text-[14px] font-bold text-white">Offer #{idx + 1}</p>
                         {offer.proposed_price > baseBudget && <PremiumBadge />}
                       </div>
                       <p className="text-[11px] text-neutral-500">
@@ -1005,6 +987,16 @@ export function PuzzleDetailClient({
               </div>
             )}
           </section>
+          )}
+
+          {/* 비방장·비멤버·비MD: 자기 깃발 등록 유도 CTA */}
+          {!isLeader && !isMember && !isMd && (
+            <Link
+              href={currentUserId ? "/flags/new" : "/login?redirect=/flags/new"}
+              className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
+            >
+              나도 시크릿 오퍼 받기 →
+            </Link>
           )}
 
           {/* 참여자 목록: 파티원 모집 중일 때만 */}
