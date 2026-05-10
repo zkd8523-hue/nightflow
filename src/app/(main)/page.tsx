@@ -30,10 +30,10 @@ export default async function HomePage() {
     .order("auction_start_at", { ascending: true })
     .limit(200);
 
-  // 오픈 퍼즐 목록 조회
+  // 오픈 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
   const { data: puzzles } = await supabase
     .from("puzzles")
-    .select("*")
+    .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, created_at)")
     .eq("status", "open")
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false })

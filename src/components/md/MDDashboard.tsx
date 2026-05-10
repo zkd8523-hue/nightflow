@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MDAuctionCard } from "./MDAuctionCard";
+import { AcceptedPuzzleVisitCard } from "./AcceptedPuzzleVisitCard";
 import type { Auction, User, Club, PuzzleOffer } from "@/types/database";
 import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink, Coins } from "lucide-react";
 import { Header } from "@/components/layout/Header";
@@ -39,8 +40,9 @@ interface MDPuzzleOffer extends PuzzleOffer {
         current_count: number;
         status: string;
         kakao_open_chat_url: string;
-        leader?: { name?: string; display_name?: string };
+        leader?: { name?: string; display_name?: string } | null;
     };
+    club?: Pick<import("@/types/database").Club, "id" | "name" | "area"> | null;
 }
 
 interface MDDashboardProps {
@@ -345,8 +347,56 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
 
                         {/* 퍼즐 오퍼 */}
                         <TabsContent value="puzzle" className="space-y-3 m-0">
-                            {initialPuzzleOffers.length > 0 ? (
-                                initialPuzzleOffers.map(offer => {
+                            {/* 거래 확정 — 이벤트 지난 accepted 오퍼 (확정 안된 것 + 응답 대기 + 응답 차례) */}
+                            {(() => {
+                                const today = new Date().toISOString().split("T")[0];
+                                const pendingVisit = initialPuzzleOffers.filter(o =>
+                                    o.status === "accepted" &&
+                                    o.puzzle?.event_date &&
+                                    o.puzzle.event_date < today &&
+                                    !o.visit_marked_at
+                                );
+                                if (pendingVisit.length === 0) return null;
+                                return (
+                                    <div className="space-y-2">
+                                        <div className="flex items-center gap-2 px-1">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                            <span className="text-xs font-black text-amber-400 uppercase tracking-wider">
+                                                거래 확정 ({pendingVisit.length})
+                                            </span>
+                                        </div>
+                                        {pendingVisit.map(offer => (
+                                            <AcceptedPuzzleVisitCard
+                                                key={offer.id}
+                                                currentUserId={user.id}
+                                                offer={{
+                                                    id: offer.id,
+                                                    proposed_price: offer.proposed_price,
+                                                    table_type: offer.table_type,
+                                                    visit_result: offer.visit_result,
+                                                    visit_marked_at: offer.visit_marked_at,
+                                                    visit_requested_by: offer.visit_requested_by,
+                                                    visit_requested_at: offer.visit_requested_at,
+                                                    puzzle: offer.puzzle ? {
+                                                        id: offer.puzzle.id,
+                                                        area: offer.puzzle.area,
+                                                        event_date: offer.puzzle.event_date,
+                                                        leader: offer.puzzle.leader,
+                                                    } : null,
+                                                    club: offer.club,
+                                                }}
+                                            />
+                                        ))}
+                                        <div className="border-b border-neutral-800/40 my-1" />
+                                    </div>
+                                );
+                            })()}
+                            {initialPuzzleOffers.filter(o =>
+                                !(o.status === "accepted" && o.puzzle?.event_date && o.puzzle.event_date < new Date().toISOString().split("T")[0] && !o.visit_marked_at)
+                            ).length > 0 ? (
+                                initialPuzzleOffers.filter(o =>
+                                    !(o.status === "accepted" && o.puzzle?.event_date && o.puzzle.event_date < new Date().toISOString().split("T")[0] && !o.visit_marked_at)
+                                ).map(offer => {
                                     const p = offer.puzzle;
                                     if (!p) return null;
                                     const isAccepted = offer.status === "accepted";
@@ -446,7 +496,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                         </Card>
                                     );
                                 })
-                            ) : (
+                            ) : initialPuzzleOffers.length === 0 ? (
                                 <div className="py-16 text-center space-y-4 bg-[#1C1C1E]/30 rounded-3xl border border-dashed border-neutral-800/50">
                                     <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto text-3xl">
                                         📨
@@ -462,7 +512,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                         </Button>
                                     </Link>
                                 </div>
-                            )}
+                            ) : null}
                         </TabsContent>
 
                     </div>

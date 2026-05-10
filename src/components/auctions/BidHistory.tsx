@@ -3,6 +3,8 @@
 import { memo } from "react";
 import type { Bid } from "@/types/database";
 import { formatPrice } from "@/lib/utils/format";
+import { TrustBadge } from "@/components/ui/TrustBadge";
+import { getDealTier } from "@/lib/utils/dealTier";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ko";
@@ -68,6 +70,9 @@ export const BidHistory = memo(function BidHistory({ bids, currentBid, vipUserId
                 <div>
                   <p className="font-bold text-[14px] text-white flex items-center gap-1.5">
                     {getBidderDisplay(bid.bidder)}
+                    {bid.bidder && "deal_count_total" in bid.bidder && (
+                      <TrustBadge tier={getDealTier(bid.bidder.deal_count_total ?? 0)} size="sm" />
+                    )}
                     {isBidderVip && (
                       <span className="text-amber-500 text-[11px]" title="VIP">⭐</span>
                     )}

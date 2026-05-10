@@ -186,6 +186,32 @@
     animation: breathe 2s ease-in-out infinite;
   }
 
+  /* NEW! 배지 (24시간 이내 등록 깃발) */
+  @keyframes new-badge-pop {
+    0%, 100% { transform: rotate(-10deg) scale(1); }
+    50% { transform: rotate(-10deg) scale(1.12); }
+  }
+
+  @keyframes new-badge-pulse {
+    0%, 100% {
+      box-shadow:
+        0 4px 14px rgba(239, 68, 68, 0.45),
+        0 0 0 0 rgba(239, 68, 68, 0.55);
+    }
+    50% {
+      box-shadow:
+        0 6px 18px rgba(239, 68, 68, 0.65),
+        0 0 0 8px rgba(239, 68, 68, 0);
+    }
+  }
+
+  .animate-new-badge {
+    animation:
+      new-badge-pop 1.3s ease-in-out infinite,
+      new-badge-pulse 1.6s ease-out infinite;
+    transform-origin: center center;
+  }
+
   /* 낙찰 카드 shimmer (보더 위 빛 흐름) */
   @keyframes shimmer {
     0% { background-position: -200% 0; }
@@ -234,6 +260,7 @@
   .animate-flip,
   .animate-tension,
   .animate-breathe,
+  .animate-new-badge,
   .won-card-border::before {
     will-change: transform, opacity;
     transform: translateZ(0);
@@ -243,8 +270,13 @@
   @media (prefers-reduced-motion: reduce) {
     .animate-flip,
     .animate-tension,
-    .animate-breathe {
+    .animate-breathe,
+    .animate-new-badge {
       animation: none !important;
+    }
+    .animate-new-badge {
+      transform: rotate(-10deg);
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
     }
     .won-card-border::before {
       animation: none !important;

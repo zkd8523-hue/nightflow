@@ -2,11 +2,12 @@
 
 import { memo } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, Flag, Users } from "lucide-react";
+import { Flag, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { usePuzzleFavoritesContext } from "@/components/providers";
 import type { Puzzle, GenderPref, AgePref, VibePref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
+import { TrustBadge } from "@/components/ui/TrustBadge";
+import { getDealTier } from "@/lib/utils/dealTier";
 
 interface PuzzleCardProps {
   puzzle: Puzzle;
@@ -80,17 +81,25 @@ export const PuzzleCard = memo(function PuzzleCard({
     ? ([ageTag, vibeTag].filter(Boolean) as string[])
     : [];
 
-  const { isFavoritedPuzzle, toggleFavoritePuzzle } = usePuzzleFavoritesContext();
+  const leaderTier = getDealTier(puzzle.leader?.deal_count_total ?? 0);
+
   const isMd = userRole === "md";
   const isRecruitingParty = puzzle.is_recruiting_party;
   const isFull = puzzle.current_count >= puzzle.target_count;
   const isSmall = puzzle.target_count > 8;
-  const favorited = isFavoritedPuzzle(puzzle.id);
+  const isNew = Date.now() - new Date(puzzle.created_at).getTime() < 24 * 60 * 60 * 1000;
 
   return (
-    <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
-      {/* 상단: 날짜/지역/D-Day + 찜 */}
-      {/* 상단: 메모(방 제목) + 찜 */}
+    <div className="relative bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
+      {isNew && (
+        <div
+          className="animate-new-badge pointer-events-none absolute -top-2.5 -right-2.5 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none"
+          aria-label="24시간 이내 등록"
+        >
+          NEW!
+        </div>
+      )}
+      {/* 상단: 메모(방 제목) + 거래 등급 배지 (찜 자리) */}
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1 flex-1 pr-4">
           <div className="text-[18px] font-black leading-snug break-keep tracking-tight">
@@ -102,26 +111,12 @@ export const PuzzleCard = memo(function PuzzleCard({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5">
-          {/* 찜 버튼 */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleFavoritePuzzle(puzzle.id);
-            }}
-            className="w-8 h-8 inline-flex items-center justify-center transition-colors"
-            title={favorited ? "찜 해제" : "깃발 찜하기"}
-          >
-            <span className="w-7 h-7 inline-flex items-center justify-center rounded-full bg-neutral-800/80 border border-neutral-700/50 hover:border-neutral-500 active:bg-neutral-700/80 transition-colors">
-              <Heart
-                className={`w-3.5 h-3.5 transition-colors ${
-                  favorited ? "text-red-500 fill-red-500" : "text-neutral-400"
-                }`}
-              />
-            </span>
-          </button>
-        </div>
+        <span
+          className="inline-flex items-center justify-center shrink-0 min-w-8 h-8"
+          title={`거래 ${puzzle.leader?.deal_count_total ?? 0}회`}
+        >
+          <TrustBadge tier={leaderTier} size="md" />
+        </span>
       </div>
 
       {/* 예산 및 인원 정보 그룹 */}

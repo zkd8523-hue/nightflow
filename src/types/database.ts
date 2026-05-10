@@ -14,6 +14,8 @@ export type AuctionStatus =
 export type BidStatus = "active" | "outbid" | "won" | "cancelled";
 export type Area = "강남" | "홍대" | "이태원" | "건대" | "부산" | "대구" | "인천" | "광주" | "대전" | "울산" | "세종";
 export type TrustLevel = "vip" | "normal" | "caution" | "blocked";
+/** Migration 146: 거래 누적 횟수 기반 등급 (Silver 1+ / Gold 3+ / Diamond 10+) */
+export type DealTier = "silver" | "gold" | "diamond";
 export type ListingType = "auction" | "instant";
 export type ClubStatus = "pending" | "approved" | "rejected";
 export type NotificationEventType =
@@ -31,7 +33,7 @@ export type NotificationEventType =
   | "cancellation_confirmed"
   | "md_approved";
 export type NotificationStatus = "pending" | "sent" | "failed";
-export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed" | "puzzle_seat_adjusted" | "puzzle_cancelled" | "puzzle_offer_received" | "puzzle_offer_accepted" | "puzzle_offer_rejected" | "puzzle_leader_changed" | "puzzle_member_joined";
+export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed" | "puzzle_seat_adjusted" | "puzzle_cancelled" | "puzzle_offer_received" | "puzzle_offer_accepted" | "puzzle_offer_rejected" | "puzzle_leader_changed" | "puzzle_member_joined" | "puzzle_visit_pending" | "puzzle_visit_confirm_requested" | "puzzle_visit_confirmed" | "puzzle_visit_disputed" | "puzzle_visit_noshow_filed" | "puzzle_visit_auto_confirmed";
 export type TableType = "Standard" | "VIP" | "Premium";
 
 export interface TablePosition {
@@ -115,6 +117,8 @@ export interface User {
   strike_waiver_count: number;
   /** 경고 시스템 - 미소진 경고점 합계 (3점 = 1스트라이크) */
   warning_count: number;
+  /** Migration 146: 누적 거래 카운트 (깃발 visited + 경매 confirmed). Silver/Gold/Diamond 등급 기반. */
+  deal_count_total: number;
 
   // 신원 정보 (Migration 114부터는 PASS 본인인증 결과로 채워짐)
   birthday: string | null;          // "YYYY-MM-DD"
@@ -337,6 +341,10 @@ export interface UserTrustScore {
   puzzle_visited_count: number;
   /** 깃발 leader로서 MD에게 "노쇼" 마킹 받은 횟수 (Migration 144) */
   puzzle_noshow_count: number;
+  /** Migration 146: 깃발+경매 합산 누적 거래 카운트 */
+  deal_count_total: number;
+  /** Migration 146: deal_count_total 기반 자동 등급. 0건이면 null */
+  deal_tier: DealTier | null;
   trust_level: TrustLevel;
 }
 
@@ -414,6 +422,8 @@ export interface PublicUserProfile {
   preferred_contact_methods: ContactMethodType[] | null;
   phone: string | null;
   md_deal_count: number | null;
+  /** Migration 146: 누적 거래 카운트 (deal_count_total 그대로 노출) */
+  deal_count_total: number | null;
 }
 
 export interface Bid {
@@ -541,7 +551,7 @@ export type VibePref = 'chill' | 'active' | 'any';
 export interface Puzzle {
   id: string;
   leader_id: string;
-  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image'>;
+  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'deal_count_total' | 'created_at'>;
   area: Area;
   event_date: string;
   kakao_open_chat_url: string | null; // 오퍼 수락 시점에 입력, MD에게만 공개
@@ -591,6 +601,10 @@ export interface PuzzleOffer {
   strike_applied_at: string | null;
   /** Migration 144: strike 처리한 admin id */
   strike_applied_by: string | null;
+  /** Migration 146: 거래확정 신청자 id (md_id 또는 leader_id). NULL이면 미신청 */
+  visit_requested_by: string | null;
+  /** Migration 146: 신청 시각. 7일 무응답 자동 만료 기준 */
+  visit_requested_at: string | null;
   created_at: string;
   updated_at: string;
 }

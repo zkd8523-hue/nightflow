@@ -10,6 +10,7 @@ import { Star, StarOff, Shield, TrendingUp, Eye, AlertTriangle } from "lucide-re
 import type { UserTrustScore, TrustLevel } from "@/types/database";
 import { formatNumber } from "@/lib/utils/format";
 import { getErrorMessage, logError } from "@/lib/utils/error";
+import { TrustBadge as DealTierBadge } from "@/components/ui/TrustBadge";
 
 interface BidderProfileProps {
     isOpen: boolean;
@@ -133,12 +134,13 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                             )}
                         </div>
                         <div className="flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                                 <h3 className="text-white font-black text-lg">{userScore.display_name}</h3>
+                                <DealTierBadge tier={userScore.deal_tier} size="md" showLabel />
                                 <TrustBadge level={userScore.trust_level} />
                             </div>
                             <p className="text-neutral-500 text-xs mt-0.5">
-                                총 {userScore.total_bids}회 입찰 / {userScore.won_bids}회 낙찰
+                                거래 {userScore.deal_count_total ?? 0}회 · 입찰 {userScore.total_bids}회 / 낙찰 {userScore.won_bids}회
                             </p>
                         </div>
                     </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, HelpCircle, Pencil } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, HelpCircle, Pencil, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -19,6 +19,10 @@ import { PuzzlePiece } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
+import { TrustBadge } from "@/components/ui/TrustBadge";
+import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
+import { AcceptedPuzzleVisitCard } from "@/components/md/AcceptedPuzzleVisitCard";
+import { LeaderInfoSheet } from "./LeaderInfoSheet";
 
 interface PuzzleLeaderInfo {
   id: string;
@@ -134,6 +138,7 @@ export function PuzzleDetailClient({
   const [pendingAcceptOfferId, setPendingAcceptOfferId] = useState<string | null>(null);
   const [acceptingMd, setAcceptingMd] = useState<NonNullable<PuzzleOffer["md"]> | null>(null);
   const [showKakaoNotice, setShowKakaoNotice] = useState(false);
+  const [showLeaderInfo, setShowLeaderInfo] = useState(false);
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/flags/${puzzle.id}`;
@@ -469,6 +474,27 @@ export function PuzzleDetailClient({
                 <p className={`${puzzle.notes ? "text-[14px] text-neutral-400" : "text-[22px] font-black text-white"}`}>
                   {formatEventDate(puzzle.event_date)} <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400 ml-1"}>{puzzle.area}</span>
                 </p>
+                {puzzle.leader && (() => {
+                  const tier = getDealTier(puzzle.leader.deal_count_total ?? 0);
+                  const dealCount = puzzle.leader.deal_count_total ?? 0;
+                  const leaderIsNew = isNewUser(puzzle.leader.created_at);
+                  return (
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setShowLeaderInfo(true)}
+                        className="inline-flex items-center gap-1 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2 py-0.5 transition-colors"
+                      >
+                        <User className="w-3 h-3" />
+                        유저 정보
+                      </button>
+                      <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />
+                      {dealCount > 0 && (
+                        <span className="text-[11px] text-neutral-500 font-bold">거래 {dealCount}회</span>
+                      )}
+                    </div>
+                  );
+                })()}
                 <p className="text-[11px] text-neutral-600 mt-0.5">
                   등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
                 </p>
@@ -606,13 +632,15 @@ export function PuzzleDetailClient({
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-bold text-[14px] truncate">{md.display_name || "나이트플로우 파트너"}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-white font-bold text-[14px] truncate">{md.display_name || "나이트플로우 파트너"}</p>
+                          <TrustBadge tier={getDealTier(dealCount)} size="sm" />
+                        </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-[11px] text-neutral-500">NightFlow 인증 파트너</p>
-                          {dealCount >= 3 && (
-                            <span className="flex items-center gap-0.5 text-[10px] font-bold text-neutral-400">
-                              {dealCount >= 30 ? <Flame className="w-3 h-3 text-orange-500" /> : <BadgeCheck className="w-3 h-3 text-blue-400" />}
-                              거래 {dealCount}회
+                          {dealCount > 0 && (
+                            <span className="text-[10px] font-bold text-neutral-400">
+                              · 거래 {dealCount}회
                             </span>
                           )}
                         </div>
@@ -624,6 +652,31 @@ export function PuzzleDetailClient({
                     {!puzzle.kakao_open_chat_url && (
                       <div className="pt-1">
                         <MDContactCard md={md as PublicUserProfile} />
+                      </div>
+                    )}
+                    {/* 거래 확정 신청/응답 (event_date 지나면 노출) */}
+                    {currentUserId && puzzle.event_date < new Date().toISOString().split("T")[0] && (
+                      <div className="pt-2 border-t border-amber-500/20">
+                        <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider mb-2">거래 확정</p>
+                        <AcceptedPuzzleVisitCard
+                          currentUserId={currentUserId}
+                          offer={{
+                            id: acceptedOffer.id,
+                            proposed_price: acceptedOffer.proposed_price,
+                            table_type: acceptedOffer.table_type,
+                            visit_result: acceptedOffer.visit_result,
+                            visit_marked_at: acceptedOffer.visit_marked_at,
+                            visit_requested_by: acceptedOffer.visit_requested_by,
+                            visit_requested_at: acceptedOffer.visit_requested_at,
+                            puzzle: {
+                              id: puzzle.id,
+                              area: puzzle.area,
+                              event_date: puzzle.event_date,
+                              leader: puzzle.leader ? { display_name: puzzle.leader.display_name, name: puzzle.leader.name } : null,
+                            },
+                            club: acceptedOffer.club ? { name: acceptedOffer.club.name } : null,
+                          }}
+                        />
                       </div>
                     )}
                   </>
@@ -1126,6 +1179,12 @@ export function PuzzleDetailClient({
           setAcceptingMd(null);
         }}
         onAccept={handleAcceptConfirm}
+      />
+
+      <LeaderInfoSheet
+        open={showLeaderInfo}
+        onOpenChange={setShowLeaderInfo}
+        leader={puzzle.leader ?? null}
       />
 
       <ConfirmDialog

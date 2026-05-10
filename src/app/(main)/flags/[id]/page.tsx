@@ -24,7 +24,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
 
   const { data: leader } = await supabase
     .from("users")
-    .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked")
+    .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked, deal_count_total, created_at")
     .eq("id", puzzle.leader_id)
     .maybeSingle();
 
@@ -41,9 +41,24 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
     ? await supabase.from("users").select("role, kakao_open_chat_url").eq("id", authUser.id).single()
     : { data: null };
 
+  // leader 정보를 puzzle에 attach (TrustBadge용 deal_count_total + 신규 유저 판별용 created_at)
+  const puzzleWithLeader = leader
+    ? {
+        ...puzzle,
+        leader: {
+          id: leader.id,
+          name: leader.name,
+          display_name: leader.display_name,
+          profile_image: leader.profile_image,
+          deal_count_total: leader.deal_count_total ?? 0,
+          created_at: leader.created_at,
+        },
+      }
+    : puzzle;
+
   return (
     <PuzzleDetailClient
-      puzzle={puzzle}
+      puzzle={puzzleWithLeader}
       members={members || []}
       currentUserId={authUser?.id}
       userRole={profile?.role as "user" | "md" | "admin" | undefined}
