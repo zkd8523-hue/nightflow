@@ -18,6 +18,9 @@ export function Footer() {
             <Link href="/about" className="hover:text-white transition-colors">
               About Us
             </Link>
+            <Link href="/clubs" className="hover:text-white transition-colors">
+              클럽 목록
+            </Link>
             <Link href="/terms" className="hover:text-white transition-colors">
               이용약관
             </Link>
