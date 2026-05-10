@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, OTHER_CITIES } from "@/lib/constants/areas";
 import { toast } from "sonner";
-import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag } from "lucide-react";
+import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import type { GenderPref, AgePref, VibePref } from "@/types/database";
+import type { GenderPref, AgePref, VibePref, Puzzle } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 
@@ -44,20 +44,28 @@ const VIBE_OPTIONS: { value: VibePref; label: string }[] = [
   { value: "any", label: "상관없음" },
 ];
 
-export function PuzzleForm({ userId }: { userId: string }) {
+export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const initialDate = searchParams.get("date") ?? "";
-  const [eventDate, setEventDate] = useState(initialDate);
-  const [area, setArea] = useState("");
+  const isEditMode = !!puzzle;
+
+  // 편집 모드: puzzle에서 초기값 추출. 신규 등록 모드: 기본값.
+  const initialEventDate = puzzle?.event_date ?? searchParams.get("date") ?? "";
+  const initialArea = puzzle?.area ?? "";
+  const initialBudget = puzzle?.total_budget ?? (puzzle ? puzzle.budget_per_person * puzzle.target_count : 0);
+  const initialNotes = puzzle?.notes ?? "";
+  const initialTotalPeople = puzzle?.target_count ?? 2;
+
+  const [eventDate, setEventDate] = useState(initialEventDate);
+  const [area, setArea] = useState(initialArea);
   // OFF: 총액 직접 입력 / ON: 인당 입력
-  const [budgetAmount, setBudgetAmount] = useState(0);
-  const [budgetInputStr, setBudgetInputStr] = useState("");
+  const [budgetAmount, setBudgetAmount] = useState(initialBudget);
+  const [budgetInputStr, setBudgetInputStr] = useState(initialBudget ? initialBudget.toLocaleString() : "");
   const [isRecruitingParty, setIsRecruitingParty] = useState(false);
   // OFF 모드(인원 확정): 본인 포함 총 일행 수
-  const [totalPeople, setTotalPeople] = useState(2);
+  const [totalPeople, setTotalPeople] = useState(initialTotalPeople);
   // ON 모드(파티원 모집): 목표 인원 + 본인 동행
   const [targetCount, setTargetCount] = useState(4);
   const [hasGuest, setHasGuest] = useState(false);
@@ -67,27 +75,35 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const [vibePref, setVibePref] = useState<VibePref>("any");
   const [submitting, setSubmitting] = useState(false);
   const [showOtherCities, setShowOtherCities] = useState(false);
-  const [notes, setNotes] = useState("");
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [notes, setNotes] = useState(initialNotes);
   const [submitted, setSubmitted] = useState(false);
 
-  // 입력값이 초기 default에서 하나라도 변경되면 dirty
-  const isDirty =
-    !submitted && (
-      eventDate !== "" ||
-      area !== "" ||
-      budgetAmount !== 0 ||
-      notes.trim() !== "" ||
-      isRecruitingParty !== false ||
-      totalPeople !== 2 ||
-      targetCount !== 4 ||
-      hasGuest !== false
-    );
+  // 신규: default 대비 변경 / 편집: 초기값 대비 변경
+  const isDirty = !submitted && (isEditMode
+    ? (
+        eventDate !== initialEventDate ||
+        area !== initialArea ||
+        budgetAmount !== initialBudget ||
+        notes.trim() !== initialNotes.trim() ||
+        totalPeople !== initialTotalPeople
+      )
+    : (
+        eventDate !== "" ||
+        area !== "" ||
+        budgetAmount !== 0 ||
+        notes.trim() !== "" ||
+        isRecruitingParty !== false ||
+        totalPeople !== 2 ||
+        targetCount !== 4 ||
+        hasGuest !== false
+      ));
 
   const { showConfirm, setShowConfirm, confirmLeave, cancelLeave } = useLeaveConfirm(isDirty);
 
   useEffect(() => {
-    trackEvent('puzzle_form_view');
-  }, []);
+    trackEvent(isEditMode ? 'puzzle_edit_view' : 'puzzle_form_view');
+  }, [isEditMode]);
 
   // "서울 어디든" 선택 시 파티원 모집 강제 OFF (지역 미정 상태에서 합류 결정 불가)
   const handleAreaChange = (newArea: string) => {
@@ -106,7 +122,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
   const todayObj = new Date();
   const today = todayObj.toISOString().split("T")[0];
   const maxObj = new Date();
-  maxObj.setDate(todayObj.getDate() + 14);
+  maxObj.setDate(todayObj.getDate() + 30);
   const maxDateStr = maxObj.toISOString().split("T")[0];
 
   // 모드별 인원/예산 파생값
@@ -171,7 +187,54 @@ export function PuzzleForm({ userId }: { userId: string }) {
 
     setSubmitting(true);
     try {
-      const { data: puzzle, error: puzzleError } = await supabase
+      if (isEditMode && puzzle) {
+        const { error: updateError } = await supabase
+          .from("puzzles")
+          .update({
+            area,
+            event_date: eventDate,
+            gender_pref: effectiveIsRecruiting ? genderPref : 'any',
+            age_pref: effectiveIsRecruiting ? agePref : 'any',
+            vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
+            total_budget: totalBudget,
+            budget_per_person: effectiveIsRecruiting
+              ? budgetAmount
+              : Math.round(budgetAmount / totalPeople),
+            target_count: effectiveTargetCount,
+            current_count: effectiveCurrentCount,
+            notes: notes.trim() || null,
+            expires_at: getExpiresAt(eventDate),
+          })
+          .eq("id", puzzle.id)
+          .eq("leader_id", userId);
+
+        if (updateError) {
+          console.error("puzzles update error:", updateError);
+          return fail('db_error', updateError.message || '수정에 실패했습니다');
+        }
+
+        // 대표자의 puzzle_members.guest_count를 새 인원에 맞춰 동기화
+        await supabase
+          .from("puzzle_members")
+          .update({ guest_count: effectiveGuestCount })
+          .eq("puzzle_id", puzzle.id)
+          .eq("user_id", userId);
+
+        trackEvent('puzzle_updated', {
+          puzzle_id: puzzle.id,
+          area,
+          total_budget: totalBudget,
+          target_count: effectiveTargetCount,
+        });
+
+        toast.success("깃발이 수정되었어요");
+        setSubmitted(true);
+        router.push(`/flags/${puzzle.id}`);
+        router.refresh();
+        return;
+      }
+
+      const { data: created, error: puzzleError } = await supabase
         .from("puzzles")
         .insert({
           leader_id: userId,
@@ -200,14 +263,14 @@ export function PuzzleForm({ userId }: { userId: string }) {
 
       // 대표자를 puzzle_members에도 추가
       const { error: memberError } = await supabase.from("puzzle_members").insert({
-        puzzle_id: puzzle.id,
+        puzzle_id: created.id,
         user_id: userId,
         guest_count: effectiveGuestCount,
       });
       if (memberError) console.error("puzzle_members insert error:", memberError);
 
       trackEvent('puzzle_created', {
-        puzzle_id: puzzle.id,
+        puzzle_id: created.id,
         area,
         total_budget: totalBudget,
         target_count: effectiveTargetCount,
@@ -215,10 +278,10 @@ export function PuzzleForm({ userId }: { userId: string }) {
 
       toast.success(effectiveIsRecruiting ? "깃발을 꽂았어요! 파티원과 MD를 기다려봐요" : "깃발을 꽂았어요! MD 제안을 기다려봐요");
       setSubmitted(true); // 이탈 가드 해제
-      router.push(`/flags/${puzzle.id}`);
+      router.push(`/flags/${created.id}`);
     } catch (err) {
       console.error("puzzle submit error:", err);
-      toast.error(err instanceof Error ? err.message : "등록에 실패했습니다");
+      toast.error(err instanceof Error ? err.message : (isEditMode ? "수정에 실패했습니다" : "등록에 실패했습니다"));
     } finally {
       setSubmitting(false);
     }
@@ -239,7 +302,7 @@ export function PuzzleForm({ userId }: { userId: string }) {
           max={maxDateStr}
           onChange={(val) => setEventDate(val)}
           label="날짜 선택"
-          placeholder="날짜를 선택해주세요"
+          placeholder="최대 30일 뒤까지 선택 가능"
         />
       </section>
 
@@ -647,19 +710,36 @@ export function PuzzleForm({ userId }: { userId: string }) {
       {/* 제출 버튼 */}
       <div className="mt-12 px-1">
         <Button
-          onClick={handleSubmit}
-          disabled={submitting}
+          onClick={() => setShowSubmitConfirm(true)}
+          disabled={submitting || (isEditMode && !isDirty)}
           className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
-          {submitting ? "꽂는 중..." : (
+          {submitting ? (isEditMode ? "수정 중..." : "꽂는 중...") : (
             <>
-              <Flag className="w-5 h-5" />
-              깃발 꽂기
+              {isEditMode ? <Check className="w-5 h-5" /> : <Flag className="w-5 h-5" />}
+              {isEditMode ? "수정 완료" : "깃발 꽂기"}
             </>
           )}
-          {!submitting && <ArrowRight className="w-5 h-5" />}
+          {!submitting && !isEditMode && <ArrowRight className="w-5 h-5" />}
         </Button>
       </div>
+
+      <ConfirmDialog
+        isOpen={showSubmitConfirm}
+        onOpenChange={setShowSubmitConfirm}
+        onConfirm={() => {
+          setShowSubmitConfirm(false);
+          handleSubmit();
+        }}
+        onCancel={() => setShowSubmitConfirm(false)}
+        title={isEditMode ? "깃발을 수정할까요?" : "깃발을 꽂을까요?"}
+        description={isEditMode
+          ? "변경된 내용으로 깃발이 갱신됩니다."
+          : "MD가 시크릿 제안을 보내드려요. 제안을 수락하면 그때 MD 연락처가 공개됩니다."}
+        confirmText={isEditMode ? "수정 완료" : "깃발 꽂기"}
+        cancelText="다시 확인"
+        variant="default"
+      />
 
       <ConfirmDialog
         isOpen={showConfirm}

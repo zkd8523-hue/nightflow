@@ -3,12 +3,9 @@
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { CheckCircle2, PartyPopper, Check } from "lucide-react";
-import { toast } from "sonner";
+import { CheckCircle2, PartyPopper } from "lucide-react";
 import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
-import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import type { PublicUserProfile } from "@/types/database";
 
 type MDInfo = Pick<PublicUserProfile,
@@ -37,35 +34,22 @@ interface OfferAcceptSheetProps {
   md: MDInfo | null;
   puzzle: PuzzleForCopy | null;
   offer: OfferForCopy;
-  /** RPC accept_offer 호출. 성공 시 true, 실패 시 false. URL은 항상 null로 호출됨. */
+  /** RPC accept_offer 호출. 성공 시 true, 실패 시 false. */
   onAccept: () => Promise<boolean>;
-  /** RPC set_puzzle_kakao_url 호출. 성공 시 true, 실패 시 false. */
-  onSetKakaoUrl: (url: string) => Promise<boolean>;
 }
-
-const KAKAO_URL_PREFIX = "https://open.kakao.com/o/";
 
 type Step = "confirm" | "success";
 
-export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, onSetKakaoUrl }: OfferAcceptSheetProps) {
+export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept }: OfferAcceptSheetProps) {
   const [step, setStep] = useState<Step>("confirm");
   const [confirmedNoUndo, setConfirmedNoUndo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  // step 2 내부 — 오픈채팅 fallback
-  const [showFallback, setShowFallback] = useState(false);
-  const [kakaoUrl, setKakaoUrl] = useState("");
-  const [savingUrl, setSavingUrl] = useState(false);
-  const [urlSaved, setUrlSaved] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setStep("confirm");
       setConfirmedNoUndo(false);
       setSubmitting(false);
-      setShowFallback(false);
-      setKakaoUrl("");
-      setSavingUrl(false);
-      setUrlSaved(false);
     }
   }, [open]);
 
@@ -81,24 +65,8 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, o
     }
   };
 
-  const isValidKakaoUrl = kakaoUrl.startsWith(KAKAO_URL_PREFIX);
-
-  const handleSaveKakaoUrl = async () => {
-    if (!isValidKakaoUrl) {
-      toast.error("올바른 오픈채팅 링크를 입력해주세요");
-      return;
-    }
-    setSavingUrl(true);
-    try {
-      const success = await onSetKakaoUrl(kakaoUrl);
-      if (success) setUrlSaved(true);
-    } finally {
-      setSavingUrl(false);
-    }
-  };
-
   return (
-    <Sheet open={open} onOpenChange={(v) => { if (!v && !submitting && !savingUrl) onClose(); }}>
+    <Sheet open={open} onOpenChange={(v) => { if (!v && !submitting) onClose(); }}>
       <SheetContent
         side="bottom"
         className="rounded-t-3xl bg-[#1C1C1E] border-t border-neutral-800 px-5 pb-10 max-h-[90vh] overflow-y-auto"
@@ -111,7 +79,7 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, o
                 제안을 수락하시겠어요?
               </SheetTitle>
               <SheetDescription className="text-neutral-400 text-[13px] mt-1.5 leading-relaxed">
-                수락하면 <strong className="text-white">{md.display_name}</strong> MD의 연락처가 공개되고,
+                수락하면 <strong className="text-white">MD의 닉네임과 연락처</strong>가 공개되고,
                 다른 MD 제안은 자동으로 미선택 처리됩니다.
               </SheetDescription>
             </div>
@@ -143,8 +111,8 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, o
                 <PartyPopper className="w-5 h-5 text-amber-400" />
                 수락 완료!
               </SheetTitle>
-              <SheetDescription className="text-neutral-400 text-[13px] mt-1.5 leading-relaxed">
-                아래 연락 수단 중 편한 것으로 MD에게 직접 연락하세요. 선입금/테이블 배정은 MD와 직접 협의합니다.
+              <SheetDescription className="text-neutral-400 text-[13px] mt-1.5 leading-relaxed whitespace-pre-line">
+                {"아래 버튼으로 메세지 복사하고\n원하는 연락수단에 붙여넣으면 끝!"}
               </SheetDescription>
             </div>
 
@@ -159,58 +127,6 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, o
                 {md.display_name} MD 연락 수단
               </p>
               <MDContactCard md={md} />
-            </div>
-
-            {/* 오픈채팅 fallback — 수락 후 부가 옵션 */}
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4 space-y-3">
-              {urlSaved ? (
-                <div className="flex items-center gap-2 text-[13px] text-green-400 font-bold">
-                  <Check className="w-4 h-4" />
-                  오픈채팅 링크가 MD에게 전달되었습니다
-                </div>
-              ) : (
-                <>
-                  <label className="flex items-start gap-3 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={showFallback}
-                      onChange={(e) => {
-                        setShowFallback(e.target.checked);
-                        if (!e.target.checked) setKakaoUrl("");
-                      }}
-                      className="mt-0.5 w-4 h-4 accent-white"
-                    />
-                    <div className="flex-1">
-                      <p className="text-[13px] font-bold text-white leading-snug">
-                        내가 먼저 오픈채팅으로 받을게요
-                      </p>
-                      <p className="text-[12px] text-neutral-400 mt-0.5 leading-relaxed">
-                        내 연락처 노출이 부담스럽다면, 익명 오픈채팅 링크로 MD를 초대하세요.
-                      </p>
-                    </div>
-                  </label>
-
-                  {showFallback && (
-                    <div className="space-y-2 pl-7">
-                      <Input
-                        type="url"
-                        value={kakaoUrl}
-                        onChange={(e) => setKakaoUrl(e.target.value)}
-                        placeholder="https://open.kakao.com/o/..."
-                        className="bg-neutral-900 border-neutral-700 h-11 text-white placeholder-neutral-500 focus:border-white text-[13px]"
-                      />
-                      <KakaoOpenChatGuide />
-                      <Button
-                        onClick={handleSaveKakaoUrl}
-                        disabled={savingUrl || !isValidKakaoUrl}
-                        className="w-full h-11 bg-amber-500 text-black font-bold text-[13px] rounded-xl hover:bg-amber-400 disabled:bg-neutral-800 disabled:text-neutral-600 mt-1"
-                      >
-                        {savingUrl ? "전송 중..." : "MD에게 오픈채팅 링크 전달"}
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
             </div>
 
             <Button

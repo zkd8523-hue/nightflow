@@ -570,6 +570,7 @@ export interface PuzzleOffer {
   md_id: string;
   club_id: string | null;
   club?: Pick<Club, 'id' | 'name' | 'area'>;
+  /** 수락 전: md_deal_count만 채워짐. display_name 등 식별 정보는 수락된 오퍼에 한해 별도 조회로 채워짐. */
   md?: Pick<PublicUserProfile,
     'id' | 'display_name' | 'profile_image' | 'md_deal_count' |
     'instagram' | 'phone' | 'kakao_open_chat_url' | 'preferred_contact_methods'

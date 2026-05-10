@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, HelpCircle } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, HelpCircle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
 import { OfferAcceptSheet } from "./OfferAcceptSheet";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferButton";
@@ -37,6 +38,7 @@ interface PuzzleDetailClientProps {
   currentUserId?: string;
   userRole?: "user" | "md" | "admin";
   leader?: PuzzleLeaderInfo | null;
+  currentUserKakaoUrl?: string | null;
 }
 
 const GENDER_LABEL: Record<GenderPref, string | null> = {
@@ -108,9 +110,18 @@ export function PuzzleDetailClient({
   currentUserId,
   userRole,
   leader,
+  currentUserKakaoUrl,
 }: PuzzleDetailClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  useEffect(() => {
+    if (searchParams.get("edit_blocked") === "offers") {
+      toast.error("MD 제안이 들어온 깃발은 수정할 수 없어요");
+      router.replace(`/flags/${puzzle.id}`);
+    }
+  }, [searchParams, router, puzzle.id]);
 
   const [showJoin, setShowJoin] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
@@ -122,6 +133,7 @@ export function PuzzleDetailClient({
   const [showAcceptSheet, setShowAcceptSheet] = useState(false);
   const [pendingAcceptOfferId, setPendingAcceptOfferId] = useState<string | null>(null);
   const [acceptingMd, setAcceptingMd] = useState<NonNullable<PuzzleOffer["md"]> | null>(null);
+  const [showKakaoNotice, setShowKakaoNotice] = useState(false);
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/flags/${puzzle.id}`;
@@ -163,28 +175,50 @@ export function PuzzleDetailClient({
     : [];
 
   const loadOffers = useCallback(async () => {
+    // 1단계: pending/accepted 오퍼는 식별 정보(display_name 등) 없이 조회.
+    // 거래 횟수만 신뢰도 지표로 노출.
     const { data } = await supabase
       .from("puzzle_offers")
-      .select("*, club:clubs(id, name, area), md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, md_deal_count, instagram, phone, kakao_open_chat_url, preferred_contact_methods)")
+      .select("*, club:clubs(id, name, area), md:public_user_profiles!puzzle_offers_md_id_fkey(md_deal_count)")
       .eq("puzzle_id", puzzle.id)
       .in("status", ["pending", "accepted"])
       .order("created_at", { ascending: true });
 
     if (!data) return;
-    setOffers(data as PuzzleOffer[]);
+    let merged = data as PuzzleOffer[];
+
+    // 2단계: 수락된 오퍼만 별도로 MD 식별 정보 조회 (방장 또는 MD 본인에게만).
+    if (puzzle.accepted_offer_id && (isLeader || isMd)) {
+      const { data: acceptedWithMd } = await supabase
+        .from("puzzle_offers")
+        .select("id, md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, md_deal_count, instagram, phone, kakao_open_chat_url, preferred_contact_methods)")
+        .eq("id", puzzle.accepted_offer_id)
+        .single();
+
+      if (acceptedWithMd?.md) {
+        const acceptedMd = acceptedWithMd.md as unknown as PuzzleOffer["md"];
+        merged = merged.map((o) =>
+          o.id === puzzle.accepted_offer_id
+            ? ({ ...o, md: acceptedMd } as PuzzleOffer)
+            : o
+        );
+      }
+    }
+
+    setOffers(merged);
 
     if (currentUserId && isMd) {
-      const mine = data.find((o) => o.md_id === currentUserId && o.status === "pending")
-        || data.find((o) => o.md_id === currentUserId && o.status === "accepted")
+      const mine = merged.find((o) => o.md_id === currentUserId && o.status === "pending")
+        || merged.find((o) => o.md_id === currentUserId && o.status === "accepted")
         || null;
-      setMyOffer(mine as PuzzleOffer | null);
+      setMyOffer(mine);
     }
 
     if (puzzle.accepted_offer_id) {
-      const accepted = data.find((o) => o.id === puzzle.accepted_offer_id) || null;
-      setAcceptedOffer(accepted as PuzzleOffer | null);
+      const accepted = merged.find((o) => o.id === puzzle.accepted_offer_id) || null;
+      setAcceptedOffer(accepted);
     }
-  }, [puzzle.id, puzzle.accepted_offer_id, currentUserId, isMd, supabase]);
+  }, [puzzle.id, puzzle.accepted_offer_id, currentUserId, isLeader, isMd, supabase]);
 
   useEffect(() => {
     loadOffers();
@@ -249,6 +283,8 @@ export function PuzzleDetailClient({
     }
   };
 
+  const KAKAO_NOTICE_KEY = currentUserId ? `puzzle_kakao_notice_seen_${currentUserId}` : null;
+
   const handleAcceptOffer = (offerId: string) => {
     const offer = offers.find((o) => o.id === offerId);
     if (!offer || !offer.md) {
@@ -257,6 +293,38 @@ export function PuzzleDetailClient({
     }
     setAcceptingMd(offer.md);
     setPendingAcceptOfferId(offerId);
+
+    // 최초 수락 시도 + 카카오 미등록 → 안내 모달 (이후엔 안 보임)
+    const hasKakao = !!currentUserKakaoUrl;
+    const noticeSeen = KAKAO_NOTICE_KEY && typeof window !== "undefined"
+      ? localStorage.getItem(KAKAO_NOTICE_KEY) === "true"
+      : true;
+    if (!hasKakao && !noticeSeen) {
+      setShowKakaoNotice(true);
+      return;
+    }
+
+    setShowAcceptSheet(true);
+  };
+
+  const markKakaoNoticeSeen = () => {
+    if (KAKAO_NOTICE_KEY && typeof window !== "undefined") {
+      localStorage.setItem(KAKAO_NOTICE_KEY, "true");
+    }
+  };
+
+  const handleKakaoNoticeRegister = () => {
+    markKakaoNoticeSeen();
+    setShowKakaoNotice(false);
+    // 진행 중 수락 정보 초기화 (등록 후 다시 수락하도록)
+    setPendingAcceptOfferId(null);
+    setAcceptingMd(null);
+    router.push("/profile");
+  };
+
+  const handleKakaoNoticeSkip = () => {
+    markKakaoNoticeSeen();
+    setShowKakaoNotice(false);
     setShowAcceptSheet(true);
   };
 
@@ -277,6 +345,19 @@ export function PuzzleDetailClient({
         puzzle_id: puzzle.id,
         offer_id: pendingAcceptOfferId,
       });
+
+      // 수락 직후 success step에서 MD 연락처를 보여주려면 풀 프로필이 필요.
+      // 이 시점 puzzle prop은 stale(accepted_offer_id=null)이라 loadOffers()의
+      // 분기에 의존할 수 없으므로 직접 조회해 acceptingMd를 갱신한다.
+      const { data: acceptedFull } = await supabase
+        .from("puzzle_offers")
+        .select("md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, md_deal_count, instagram, phone, kakao_open_chat_url, preferred_contact_methods)")
+        .eq("id", pendingAcceptOfferId)
+        .single();
+      if (acceptedFull?.md) {
+        setAcceptingMd(acceptedFull.md as unknown as NonNullable<PuzzleOffer["md"]>);
+      }
+
       // 시트는 닫지 않음 — 시트 내부에서 success step으로 전환하며 연락처 공개
       // 백그라운드로 오퍼/페이지 데이터만 갱신
       await loadOffers();
@@ -351,6 +432,15 @@ export function PuzzleDetailClient({
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <h1 className="text-[17px] font-black text-white flex-1">깃발 상세</h1>
+          {currentUserId === puzzle.leader_id && isOpen && pendingOffers.length === 0 && (
+            <Link
+              href={`/flags/${puzzle.id}/edit`}
+              aria-label="깃발 수정"
+              className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+            >
+              <Pencil className="w-4 h-4" />
+            </Link>
+          )}
           {!isFull && (
             <span
               className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
@@ -692,38 +782,21 @@ export function PuzzleDetailClient({
                         )}
                       </div>
 
-                      {/* MD 정보: 이름 + 거래 횟수 */}
-                      {(() => {
-                        const md = offer.md;
-                        const mdLabel = md?.display_name;
-                        const dealCount = md?.md_deal_count;
-                        return mdLabel ? (
-                          <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/60">
-                            {isAdmin && offer.md_id ? (
-                              <Link
-                                href={`/admin/mds/${offer.md_id}`}
-                                className="text-[12px] text-neutral-300 font-bold hover:text-white hover:underline transition-colors"
-                              >
-                                {mdLabel}
-                              </Link>
-                            ) : (
-                              <p className="text-[12px] text-neutral-300 font-bold">{mdLabel}</p>
-                            )}
-                            {dealCount != null && dealCount >= 3 && (
-                              <span className="flex items-center gap-0.5 text-[10px] font-bold text-neutral-400">
-                                {dealCount >= 30 ? (
-                                  <Flame className="w-3 h-3 text-orange-500" />
-                                ) : dealCount >= 10 ? (
-                                  <BadgeCheck className="w-3 h-3 text-blue-400" />
-                                ) : (
-                                  <BadgeCheck className="w-3 h-3 text-neutral-500" />
-                                )}
-                                거래 {dealCount}회
-                              </span>
-                            )}
-                          </div>
-                        ) : null;
-                      })()}
+                      {/* MD 거래 횟수 (식별 정보는 수락 후 공개) */}
+                      {offer.md?.md_deal_count != null && offer.md.md_deal_count >= 3 && (
+                        <div className="flex items-center gap-1.5 pt-2 border-t border-neutral-800/60">
+                          {offer.md.md_deal_count >= 30 ? (
+                            <Flame className="w-3 h-3 text-orange-500" />
+                          ) : offer.md.md_deal_count >= 10 ? (
+                            <BadgeCheck className="w-3 h-3 text-blue-400" />
+                          ) : (
+                            <BadgeCheck className="w-3 h-3 text-neutral-500" />
+                          )}
+                          <span className="text-[10px] font-bold text-neutral-400">
+                            거래 {offer.md.md_deal_count}회
+                          </span>
+                        </div>
+                      )}
 
                       {/* 수락/거절 버튼 (open 상태일 때만) */}
                       {isOpen && offer.status === "pending" && (
@@ -1053,7 +1126,18 @@ export function PuzzleDetailClient({
           setAcceptingMd(null);
         }}
         onAccept={handleAcceptConfirm}
-        onSetKakaoUrl={handleSetKakaoUrl}
+      />
+
+      <ConfirmDialog
+        isOpen={showKakaoNotice}
+        onOpenChange={setShowKakaoNotice}
+        onConfirm={handleKakaoNoticeRegister}
+        onCancel={handleKakaoNoticeSkip}
+        title="오픈채팅으로 받고 싶다면?"
+        description="개인정보 공개를 원치 않으신다면 오픈채팅을 등록해보세요. 등록 후 MD에게 전화번호 대신 오픈채팅 링크가 전달됩니다."
+        confirmText="오픈채팅 등록"
+        cancelText="그냥 수락하기"
+        variant="default"
       />
     </div>
   );

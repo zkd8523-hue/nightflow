@@ -38,7 +38,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
     .order("joined_at", { ascending: true });
 
   const { data: profile } = authUser
-    ? await supabase.from("users").select("role").eq("id", authUser.id).single()
+    ? await supabase.from("users").select("role, kakao_open_chat_url").eq("id", authUser.id).single()
     : { data: null };
 
   return (
@@ -48,6 +48,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
       currentUserId={authUser?.id}
       userRole={profile?.role as "user" | "md" | "admin" | undefined}
       leader={profile?.role === "admin" ? leader ?? null : null}
+      currentUserKakaoUrl={profile?.kakao_open_chat_url ?? null}
     />
   );
 }
