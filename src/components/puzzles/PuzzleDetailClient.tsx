@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, Pencil, User } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -13,8 +13,8 @@ import { OfferAcceptSheet } from "./OfferAcceptSheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
-import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
+import { SecretOfferCard } from "./SecretOfferCard";
 import { PuzzlePiece } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
@@ -189,7 +189,7 @@ export function PuzzleDetailClient({
 
     setOffers(merged);
 
-    if (currentUserId && isMd) {
+    if (currentUserId && (isMd || isAdmin)) {
       const mine = merged.find((o) => o.md_id === currentUserId && o.status === "pending")
         || merged.find((o) => o.md_id === currentUserId && o.status === "accepted")
         || null;
@@ -200,7 +200,7 @@ export function PuzzleDetailClient({
       const accepted = merged.find((o) => o.id === puzzle.accepted_offer_id) || null;
       setAcceptedOffer(accepted);
     }
-  }, [puzzle.id, puzzle.accepted_offer_id, currentUserId, isLeader, isMd, supabase]);
+  }, [puzzle.id, puzzle.accepted_offer_id, currentUserId, isLeader, isMd, isAdmin, supabase]);
 
   useEffect(() => {
     loadOffers();
@@ -721,7 +721,7 @@ export function PuzzleDetailClient({
           )}
 
           {/* 오퍼 섹션 — 성사 후엔 MD(본인 오퍼 상태 확인) 전용으로 축소. 일반 유저/방장은 위 성사됨 카드로 충분. */}
-          {(!isAccepted || (isMd && myOffer)) && (
+          {(!isAccepted || ((isMd || isAdmin) && myOffer)) && (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -742,103 +742,21 @@ export function PuzzleDetailClient({
             {/* 방장: 진행 중인(pending) 제안만 — 수락된 오퍼는 위 성사됨 카드에 이미 표시 */}
             {isLeader && !isAccepted && pendingOffers.length > 0 && (
               <div className="space-y-3">
-                {pendingOffers
-                  .map((offer) => (
-                    <div
-                      key={offer.id}
-                      className={`rounded-2xl border p-4 space-y-3 ${
-                        offer.status === "accepted"
-                          ? "bg-amber-500/10 border-amber-500/30"
-                          : "bg-[#1C1C1E] border-neutral-800"
-                      }`}
-                    >
-                      {/* 클럽명 + 지역 + 테이블타입 */}
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-[15px] font-black text-white">
-                            {(offer.club as { name?: string; area?: string } | null)?.name || "클럽"}
-                            {(offer.club as { area?: string } | null)?.area && (
-                              <span className="text-neutral-500 font-medium"> · {(offer.club as { area: string }).area}</span>
-                            )}
-                          </p>
-                        </div>
-                        {offer.status === "accepted" ? (
-                          <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold">
-                            ✓ 수락됨
-                          </span>
-                        ) : (
-                          <span className="text-[11px] px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
-                            제안 중
-                          </span>
-                        )}
-                      </div>
-
-                      {/* 방장 전용: 금액 + 포함내역 + 코멘트 */}
-                      <div className="space-y-2 pt-2 border-t border-neutral-800/60">
-                        <p className="text-[16px] font-black text-green-400">
-                          {offer.proposed_price.toLocaleString()}원
-                        </p>
-                        {offer.includes.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {offer.includes.map((inc) => (
-                              <span key={inc} className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700">
-                                {inc}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                        {offer.comment && (
-                          <p className="text-[12px] text-neutral-400 italic">"{offer.comment}"</p>
-                        )}
-                      </div>
-
-                      {/* MD 거래 횟수 (식별 정보는 수락 후 공개) */}
-                      {offer.md?.md_deal_count != null && offer.md.md_deal_count >= 3 && (
-                        <div className="flex items-center gap-1.5 pt-2 border-t border-neutral-800/60">
-                          {offer.md.md_deal_count >= 30 ? (
-                            <Flame className="w-3 h-3 text-orange-500" />
-                          ) : offer.md.md_deal_count >= 10 ? (
-                            <BadgeCheck className="w-3 h-3 text-blue-400" />
-                          ) : (
-                            <BadgeCheck className="w-3 h-3 text-neutral-500" />
-                          )}
-                          <span className="text-[10px] font-bold text-neutral-400">
-                            거래 {offer.md.md_deal_count}회
-                          </span>
-                        </div>
-                      )}
-
-                      {/* 수락/거절 버튼 (open 상태일 때만) */}
-                      {isOpen && offer.status === "pending" && (
-                        <div className="flex gap-2 pt-1">
-                          <Button
-                            onClick={() => handleAcceptOffer(offer.id)}
-                            disabled={actionLoading}
-                            className="flex-1 h-10 bg-white hover:bg-neutral-200 text-black font-black text-[13px] rounded-xl"
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                            수락
-                          </Button>
-                          <Button
-                            onClick={() => handleRejectOffer(offer.id)}
-                            disabled={actionLoading}
-                            variant="outline"
-                            className="flex-1 h-10 border-red-500/40 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[13px] rounded-xl"
-                          >
-                            <XCircle className="w-4 h-4 mr-1.5" />
-                            거절
-                          </Button>
-                        </div>
-                      )}
-
-                      {/* 관리자 강제 철회 버튼 */}
-                      {isAdmin && offer.status === "pending" && (
-                        <div className="pt-1 flex justify-end">
-                          <AdminWithdrawOfferButton offerId={offer.id} variant="full" onWithdrawn={loadOffers} />
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                {pendingOffers.map((offer, idx) => (
+                  <SecretOfferCard
+                    key={offer.id}
+                    offer={offer}
+                    offerNumber={idx + 1}
+                    index={idx}
+                    userId={currentUserId}
+                    isAdmin={isAdmin}
+                    isOpen={isOpen}
+                    actionLoading={actionLoading}
+                    onAccept={handleAcceptOffer}
+                    onReject={handleRejectOffer}
+                    onWithdrawn={loadOffers}
+                  />
+                ))}
               </div>
             )}
 
@@ -885,8 +803,8 @@ export function PuzzleDetailClient({
               </div>
             )}
 
-            {/* MD 본인 오퍼 상태 */}
-            {isMd && myOffer && (
+            {/* MD/Admin 본인 오퍼 상태 */}
+            {(isMd || isAdmin) && myOffer && (
               <div className={`rounded-2xl border p-4 space-y-2 ${
                 myOffer.status === "accepted"
                   ? "bg-amber-500/10 border-amber-500/30"
@@ -1077,8 +995,8 @@ export function PuzzleDetailClient({
             </Button>
           )}
 
-          {/* MD 제안하기 버튼 */}
-          {isMd && isOpen && !myOffer && (
+          {/* MD/Admin 제안하기 버튼 */}
+          {(isMd || isAdmin) && isOpen && !myOffer && (
             <div className="space-y-2">
               <Button
                 onClick={() => setShowOffer(true)}
@@ -1092,8 +1010,8 @@ export function PuzzleDetailClient({
             </div>
           )}
 
-          {/* MD 이미 제안한 경우 */}
-          {isMd && isOpen && myOffer && myOffer.status === "pending" && (
+          {/* MD/Admin 이미 제안한 경우 */}
+          {(isMd || isAdmin) && isOpen && myOffer && myOffer.status === "pending" && (
             <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
               <p className="text-[13px] text-green-400 font-bold">제안서를 보냈습니다</p>
               <p className="text-[12px] text-neutral-500 mt-1">방장의 수락을 기다리고 있습니다</p>

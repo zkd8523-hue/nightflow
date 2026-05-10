@@ -71,10 +71,17 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const [{ data: userData }, { data: clubs }] = await Promise.all([
-      supabase.from("users").select("md_credits, md_active_offers_count").eq("id", user.id).single(),
-      supabase.from("clubs").select("id, name, area").eq("md_id", user.id).is("deleted_at", null),
-    ]);
+    const { data: userData } = await supabase
+      .from("users")
+      .select("md_credits, md_active_offers_count, role")
+      .eq("id", user.id)
+      .single();
+
+    const isAdminUser = userData?.role === "admin";
+
+    // admin은 모든 활성 클럽 중 선택 가능, MD는 본인 소유 클럽만
+    const clubsQuery = supabase.from("clubs").select("id, name, area").is("deleted_at", null);
+    const { data: clubs } = await (isAdminUser ? clubsQuery : clubsQuery.eq("md_id", user.id));
 
     setCredits(userData?.md_credits ?? null);
     setMyClubs(clubs ?? []);
