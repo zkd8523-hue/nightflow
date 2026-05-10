@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
  * 페이지 이탈 가드 훅.
@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
  */
 export function useLeaveConfirm(isDirty: boolean) {
   const [showConfirm, setShowConfirm] = useState(false);
+  // confirmLeave가 트리거한 history.back()의 popstate를 모달로 다시 잡지 않기 위한 가드.
+  const isLeavingRef = useRef(false);
 
   useEffect(() => {
     if (!isDirty) return;
@@ -23,6 +25,10 @@ export function useLeaveConfirm(isDirty: boolean) {
     window.history.pushState(null, "", window.location.href);
 
     const handlePopState = () => {
+      if (isLeavingRef.current) {
+        isLeavingRef.current = false;
+        return;
+      }
       setShowConfirm(true);
       // 취소 케이스 대비 가드 재삽입
       window.history.pushState(null, "", window.location.href);
@@ -40,10 +46,11 @@ export function useLeaveConfirm(isDirty: boolean) {
   return {
     showConfirm,
     setShowConfirm,
-    /** 사용자 "확인" → 모달 닫고 한 단계 더 뒤로가기로 가드 state 빠져나감 */
+    /** 사용자 "확인" → 가드 state + 폼 페이지 두 칸 뒤로 가서 실제 이전 페이지로 이동 */
     confirmLeave: () => {
+      isLeavingRef.current = true;
       setShowConfirm(false);
-      setTimeout(() => window.history.back(), 0);
+      setTimeout(() => window.history.go(-2), 0);
     },
     cancelLeave: () => setShowConfirm(false),
   };
