@@ -131,7 +131,6 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const effectiveCurrentCount = isRecruitingParty ? 1 + effectiveGuestCount : totalPeople;
   // OFF: budgetAmount = 총액, ON: budgetAmount = 인당
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
-  const maxOfferPrice = Math.ceil(totalBudget * 1.2);
 
   // expires_at: event_date 당일 자정(24:00 KST = 다음날 00:00 KST) = 15:00 UTC
   const getExpiresAt = (date: string) => {
@@ -579,7 +578,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               </p>
             )}
             <p className="text-[11px] text-neutral-600 mt-1">
-              * MD가 예산 그대로 또는 업셀 제안(+최대 20%)을 보낼 수 있어요. (최대 {maxOfferPrice.toLocaleString()}원)
+              * MD가 이 예산에 맞춰 보틀·서비스 구성을 제안해요.
             </p>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, HelpCircle, Pencil, User } from "lucide-react";
+import { ChevronLeft, Users, CheckCircle2, XCircle, Undo2, Building2, Share2, BadgeCheck, Flame, ShieldCheck, Pencil, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -84,28 +84,6 @@ const OFFER_STATUS_LABEL: Record<string, string> = {
   withdrawn: "철회됨",
   expired: "미선택",
 };
-
-function PremiumBadge() {
-  return (
-    <span className="inline-flex items-center gap-0.5">
-      <span className="text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          e.preventDefault();
-          toast("프리미엄 오퍼란?", {
-            description: "MD가 깃발 예산보다 높은 금액(최대 +20%)으로 제안한 오퍼예요. 더 좋은 조건의 테이블이 따라옵니다.",
-          });
-        }}
-        className="text-amber-400/70 hover:text-amber-400 transition-colors"
-        aria-label="프리미엄 오퍼 설명"
-      >
-        <HelpCircle className="w-3 h-3" />
-      </button>
-    </span>
-  );
-}
 
 export function PuzzleDetailClient({
   puzzle,
@@ -799,9 +777,6 @@ export function PuzzleDetailClient({
                       <div className="space-y-2 pt-2 border-t border-neutral-800/60">
                         <p className="text-[16px] font-black text-green-400">
                           {offer.proposed_price.toLocaleString()}원
-                          {offer.proposed_price > baseBudget && (
-                            <span className="ml-1.5 inline-flex items-center"><PremiumBadge /></span>
-                          )}
                         </p>
                         {offer.includes.length > 0 && (
                           <div className="flex flex-wrap gap-1">
@@ -881,7 +856,6 @@ export function PuzzleDetailClient({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <p className="text-[14px] font-bold text-white">Offer #{idx + 1}</p>
-                        {offer.proposed_price > baseBudget && <PremiumBadge />}
                       </div>
                       <p className="text-[11px] text-neutral-500">
                         {new Date(offer.created_at).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })}
@@ -923,7 +897,6 @@ export function PuzzleDetailClient({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <p className="text-[13px] font-bold text-white">내 제안</p>
-                    {myOffer.proposed_price > baseBudget && <PremiumBadge />}
                   </div>
                   <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
                     myOffer.status === "accepted"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import {
   Sheet,
   SheetContent,
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Check, ChevronDown, X, Lock } from "lucide-react";
+import { Check, ChevronDown, X, Lock, ArrowRight } from "lucide-react";
 import type { Puzzle, Club, PuzzleOffer } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { LiquorSelector } from "@/components/md/LiquorSelector";
@@ -39,7 +40,6 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   const [myClubs, setMyClubs] = useState<Pick<Club, "id" | "name" | "area">[]>([]);
 
   const [selectedClubId, setSelectedClubId] = useState<string>("");
-  const [proposedPrice, setProposedPrice] = useState<string>("");
   const [selectedIncludes, setSelectedIncludes] = useState<string[]>([]);
   const [comment, setComment] = useState("");
   const [customExtra, setCustomExtra] = useState<string>("");
@@ -50,10 +50,6 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     ? Math.floor(puzzle.total_budget / puzzle.target_count)
     : puzzle.budget_per_person;
   const currentBudget = perPersonBudget * puzzle.current_count;
-  const maxPrice = Math.ceil(currentBudget * 1.2);
-  const priceNum = Number(proposedPrice.replace(/,/g, ""));
-  const isPremium = priceNum > currentBudget;
-  const isPriceValid = priceNum >= currentBudget && priceNum <= maxPrice;
 
   useEffect(() => {
     if (open) {
@@ -61,18 +57,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     }
   }, [open]);
 
-  useEffect(() => {
-    if (open && currentBudget > 0 && !proposedPrice) {
-      setProposedPrice(currentBudget.toLocaleString());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, currentBudget]);
-
-  // 수정 모드 prefill
+  // 수정 모드 prefill (가격은 항상 currentBudget 고정이라 prefill 불필요)
   useEffect(() => {
     if (open && editingOffer) {
       setSelectedClubId(editingOffer.club_id || "");
-      setProposedPrice(editingOffer.proposed_price.toLocaleString());
       setSelectedIncludes(editingOffer.includes || []);
       setComment(editingOffer.comment || "");
     }
@@ -164,16 +152,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       toast.error("클럽을 선택해주세요");
       return;
     }
-    if (!priceNum || priceNum <= 0) {
-      toast.error("제안 금액을 입력해주세요");
-      return;
-    }
-    if (priceNum < currentBudget) {
-      toast.error(`예산 이상으로 제안해주세요 (예산: ${currentBudget.toLocaleString()}원)`);
-      return;
-    }
-    if (priceNum > maxPrice) {
-      toast.error(`예산의 120%를 초과할 수 없습니다 (최대 ${maxPrice.toLocaleString()}원)`);
+    if (currentBudget <= 0) {
+      toast.error("예산이 0원인 깃발에는 제안할 수 없습니다");
       return;
     }
     if (selectedIncludes.length === 0) {
@@ -204,7 +184,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         ? await supabase.rpc("update_offer", {
             p_offer_id: editingOffer.id,
             p_club_id: selectedClubId,
-            p_proposed_price: priceNum,
+            p_proposed_price: currentBudget,
             p_includes: selectedIncludes,
             p_comment: comment.trim() || null,
           })
@@ -212,7 +192,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             p_puzzle_id: puzzle.id,
             p_club_id: selectedClubId,
             p_table_type: "일반석",
-            p_proposed_price: priceNum,
+            p_proposed_price: currentBudget,
             p_includes: selectedIncludes,
             p_comment: comment.trim() || null,
           });
@@ -225,7 +205,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
       trackEvent(editingOffer ? 'puzzle_offer_updated' : 'puzzle_offer_submitted', {
         puzzle_id: puzzle.id,
-        proposed_price: priceNum,
+        proposed_price: currentBudget,
       });
 
       toast.success(editingOffer ? "제안이 수정되었습니다." : "제안서가 전송되었습니다! 방장의 수락을 기다려주세요.");
@@ -248,11 +228,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     return `${m}/${day} ${days[d.getDay()]}`;
   };
 
-  const initialPrice = currentBudget.toLocaleString();
-  const isDirty =
-    selectedIncludes.length > 0 ||
-    comment.trim().length > 0 ||
-    (proposedPrice !== "" && proposedPrice !== initialPrice);
+  const isDirty = selectedIncludes.length > 0 || comment.trim().length > 0;
 
   const confirmClose = () => {
     if (!isDirty) return true;
@@ -369,7 +345,14 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           <div className="space-y-2">
             <p className="text-[11px] font-bold text-neutral-500 tracking-wide">클럽 선택</p>
             {myClubs.length === 0 ? (
-              <p className="text-[12px] text-red-400">등록된 클럽이 없습니다. 관리자에게 클럽 등록을 요청해주세요.</p>
+              <Link
+                href="/md/clubs/new"
+                onClick={onClose}
+                className="inline-flex items-center gap-1 text-[12px] font-bold text-red-400 hover:text-red-300 transition-colors"
+              >
+                등록된 클럽이 없습니다. 바로 등록하세요
+                <ArrowRight className="w-3 h-3" />
+              </Link>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {myClubs.map((club) => (
@@ -391,38 +374,21 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           </div>
 
 
-          {/* 제안 금액 */}
+          {/* 제안 금액 (예산 정가 고정) */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-bold text-neutral-500 tracking-wide">제안 금액</p>
-              {isPremium && isPriceValid && (
-                <span className="text-[11px] text-amber-400 font-bold">프리미엄 오퍼 👑</span>
-              )}
+            <p className="text-[11px] font-bold text-neutral-500 tracking-wide">제안 금액</p>
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl h-11 px-4 flex items-center justify-between">
+              <span className="text-white font-bold text-[15px]">
+                {currentBudget.toLocaleString()}원
+              </span>
+              <span className="text-[11px] text-neutral-500 font-bold flex items-center gap-1">
+                <Lock className="w-3 h-3" />
+                예산 고정
+              </span>
             </div>
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={proposedPrice}
-              onChange={(e) => {
-                const raw = e.target.value.replace(/,/g, "");
-                if (raw === "" || /^\d+$/.test(raw)) {
-                  setProposedPrice(raw ? Number(raw).toLocaleString() : "");
-                }
-              }}
-              placeholder={`${currentBudget.toLocaleString()}원 (예산)`}
-              className={`bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 ${
-                priceNum > maxPrice ? "border-red-500" : ""
-              }`}
-            />
             <p className="text-[11px] text-neutral-500">
-              최대 {maxPrice.toLocaleString()}원까지 제안 가능 (프리미엄 오퍼)
+              깃발 예산과 동일한 금액으로만 제안할 수 있어요. 보틀·서비스 구성으로 차별화하세요.
             </p>
-            {priceNum > 0 && priceNum < currentBudget && (
-              <p className="text-[12px] text-red-400">예산 이하로는 제안할 수 없습니다</p>
-            )}
-            {priceNum > maxPrice && (
-              <p className="text-[12px] text-red-400">예산의 120%를 초과했습니다</p>
-            )}
           </div>
 
           {/* 주류 선택 */}
@@ -557,7 +523,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           <Button
             onClick={handleSubmit}
-            disabled={loading || myClubs.length === 0 || !isPriceValid || selectedIncludes.length === 0 || (!editingOffer && activeOffers >= 5) || (!editingOffer && credits !== null && credits < 30)}
+            disabled={loading || myClubs.length === 0 || currentBudget <= 0 || selectedIncludes.length === 0 || (!editingOffer && activeOffers >= 5) || (!editingOffer && credits !== null && credits < 30)}
             className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
             {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "제안서 보내기")}
