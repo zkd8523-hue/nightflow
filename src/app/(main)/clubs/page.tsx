@@ -76,13 +76,12 @@ export default async function ClubsIndexPage() {
     <div className="container mx-auto max-w-3xl px-4 py-8 mb-20">
       <header className="mb-8 space-y-2">
         <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-          강남·홍대
-          <br />
-          인기 클럽 목록
+          강남·홍대 인기 클럽 목록
         </h1>
         <p className="text-sm text-neutral-400 leading-relaxed break-keep">
           강남·홍대 인기 클럽의 잔여 테이블을 실시간 경매로 정가보다 저렴하게
-          예약하세요. 각 클럽의 진행 중인 경매와 가격 정보를 확인할 수 있습니다.
+          예약하세요.
+          <br />각 클럽의 진행 중인 경매와 가격 정보를 확인할 수 있습니다.
         </p>
       </header>
 
