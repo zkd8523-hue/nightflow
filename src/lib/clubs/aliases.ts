@@ -25,8 +25,8 @@ export const CLUB_ALIASES: Record<string, string[]> = {
   "80ba0738-ffbb-4463-b97e-7e68e4c0da60": ["컬러", "압구정 컬러"],
   // 강남 HYPE SEOUL
   "67b2286c-63e9-46a1-bb90-e9ca4ccf6fae": ["하잎서울", "하잎 서울", "하잎"],
-  // 강남 VEIL CLUB
-  "bb929c21-bd6d-4766-85c6-2b51452058da": ["베일", "베일 클럽"],
+  // 광주 VEIL CLUB
+  "bb929c21-bd6d-4766-85c6-2b51452058da": ["베일", "베일 클럽", "광주 베일", "광주 VEIL"],
   // 강남 플팔
   "6a19815e-c22b-4bc5-8bb5-dd84b872a7b4": ["Plus82", "플러스82"],
   // 홍대 OCEAN

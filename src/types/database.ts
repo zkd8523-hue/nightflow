@@ -545,6 +545,8 @@ export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'e
 export type GenderPref = 'male_only' | 'female_only' | 'any';
 export type AgePref = 'early_20s' | 'late_20s' | '30s' | 'any';
 export type VibePref = 'chill' | 'active' | 'any';
+// Migration 156: 음악 선호. NULL = 상관없음(필터 시 모두 통과)
+export type MusicPref = 'hiphop' | 'edm' | 'any';
 
 export interface Puzzle {
   id: string;
@@ -556,6 +558,8 @@ export interface Puzzle {
   gender_pref: GenderPref;
   age_pref: AgePref;
   vibe_pref: VibePref;
+  /** Migration 156: 음악 선호. NULL = 미지정(상관없음 동일 취급) */
+  music_preference: MusicPref | null;
   /** V1 호환 필드. 신규 퍼즐은 total_budget 사용 (null이면 이 값 사용) */
   budget_per_person: number;
   /** V2: 총액 고정 예산 (budget_per_person 대체) */

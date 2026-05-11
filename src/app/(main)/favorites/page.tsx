@@ -1,88 +1,162 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { useFavoritesContext, useMdFavoritesContext, usePuzzleFavoritesContext } from "@/components/providers";
-import { createClient } from "@/lib/supabase/client";
+import { usePuzzleFavoritesContext } from "@/components/providers";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
-import {
-  ArrowLeft,
-  Heart,
-  MapPin,
-  Gavel,
-  Users,
-} from "lucide-react";
+import { ArrowLeft, Heart } from "lucide-react";
+import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Auction } from "@/types/database";
+import type { PuzzleInterest } from "@/types/database";
+
+function getDDay(eventDate: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const event = new Date(eventDate);
+  event.setHours(0, 0, 0, 0);
+  const diff = Math.round((event.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "D-Day";
+  if (diff > 0) return `D-${diff}`;
+  return `D+${Math.abs(diff)}`;
+}
+
+function PuzzleCardList({
+  items,
+  userRole,
+  emptyText,
+}: {
+  items: PuzzleInterest[];
+  userRole?: "user" | "md" | "admin";
+  emptyText?: string;
+}) {
+  if (items.length === 0) {
+    return (
+      <div className="py-12 text-center text-[13px] text-neutral-500">
+        {emptyText ?? "찜한 항목이 없어요."}
+      </div>
+    );
+  }
+
+  // 날짜별 그룹핑 (홈 참조)
+  const groups = items.reduce((acc, fav) => {
+    const p = fav.puzzle;
+    if (!p) return acc;
+    if (!acc[p.event_date]) acc[p.event_date] = [];
+    acc[p.event_date].push(fav);
+    return acc;
+  }, {} as Record<string, PuzzleInterest[]>);
+
+  return (
+    <div className="space-y-12 pb-24">
+      {Object.entries(groups)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([date, favs]) => {
+          const d = new Date(date + "T00:00:00");
+          const m = d.getMonth() + 1;
+          const day = d.getDate();
+          const days = ["일", "월", "화", "수", "목", "금", "토"];
+          const dateLabel = `${m}월 ${day}일 (${days[d.getDay()]})`;
+          const dday = getDDay(date);
+          return (
+            <div key={date} className="space-y-4">
+              <div className="flex items-center gap-2.5 px-1 py-1">
+                <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px]" />
+                <h3 className="text-[16px] font-black text-white tracking-tight">{dateLabel}</h3>
+                <span
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] ${
+                    dday === "D-Day"
+                      ? "bg-red-500/20 text-red-400"
+                      : "bg-neutral-800 text-neutral-400"
+                  }`}
+                >
+                  {dday}
+                </span>
+              </div>
+              <div className="space-y-4">
+                {favs.map((fav) => {
+                  const puzzle = fav.puzzle;
+                  if (!puzzle) return null;
+                  return (
+                    <Link key={fav.id} href={`/flags/${puzzle.id}`} className="block">
+                      <PuzzleCard puzzle={puzzle} userRole={userRole} hideNewBadge />
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+    </div>
+  );
+}
+
+function EmptyState({ isMdOrAdmin }: { isMdOrAdmin: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <Heart className="w-12 h-12 text-neutral-700 mb-4" />
+      <p className="text-[15px] text-neutral-400 font-bold mb-2">
+        {isMdOrAdmin ? "아직 찜한 깃발/퍼즐이 없어요" : "아직 찜한 퍼즐이 없어요"}
+      </p>
+      <p className="text-[13px] text-neutral-600 mb-6">
+        퍼즐 카드의 하트 버튼으로 찜해보세요.
+      </p>
+      <Link
+        href="/?tab=puzzle"
+        className="h-10 px-6 rounded-full bg-amber-500 text-black font-bold text-[14px] inline-flex items-center hover:bg-amber-400 transition-colors"
+      >
+        퍼즐 둘러보기
+      </Link>
+    </div>
+  );
+}
 
 export default function FavoritesPage() {
   const { user, isLoading: userLoading } = useCurrentUser();
-  const { favorites, isLoading: favLoading, toggleFavorite } = useFavoritesContext();
-  const { favoriteMds, isLoading: mdFavLoading, toggleFavoriteMd } = useMdFavoritesContext();
-  const { favoritePuzzles, isLoading: puzzleFavLoading, toggleFavoritePuzzle } = usePuzzleFavoritesContext();
+  const { favoritePuzzles, isLoading: puzzleFavLoading } = usePuzzleFavoritesContext();
   const router = useRouter();
-  const supabase = createClient();
 
-  const [clubAuctionCounts, setClubAuctionCounts] = useState<Record<string, number>>({});
-  const [mdAuctionCounts, setMdAuctionCounts] = useState<Record<string, number>>({});
+  const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
+  const [puzzleSort, setPuzzleSort] = useState<"recent" | "budget">("recent");
 
-  // 찜한 클럽의 active/scheduled 경매 수
-  useEffect(() => {
-    if (favorites.length === 0) return;
+  const sortFavorites = (list: PuzzleInterest[]) => {
+    const sorted = [...list];
+    if (isMdOrAdmin && puzzleSort === "budget") {
+      sorted.sort((a, b) => {
+        const ab = a.puzzle ? (a.puzzle.total_budget ?? a.puzzle.budget_per_person * a.puzzle.target_count) : 0;
+        const bb = b.puzzle ? (b.puzzle.total_budget ?? b.puzzle.budget_per_person * b.puzzle.target_count) : 0;
+        return bb - ab;
+      });
+    } else {
+      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    return sorted;
+  };
 
-    const clubIds = favorites.map((f) => f.club_id);
+  // 깃발 = 깃발 직접 등록 + 인원 충족된 퍼즐 (오퍼 가능)
+  const flagFavorites = useMemo(() => {
+    const list = favoritePuzzles.filter((fav) => {
+      const p = fav.puzzle;
+      if (!p) return false;
+      return !p.is_recruiting_party || p.current_count >= p.target_count;
+    });
+    return sortFavorites(list);
+  }, [favoritePuzzles, isMdOrAdmin, puzzleSort]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const fetchCounts = async () => {
-      const { data } = await supabase
-        .from("auctions")
-        .select("club_id")
-        .in("club_id", clubIds)
-        .in("status", ["active", "scheduled"]);
+  // 퍼즐 = 모집 중인 미완성 퍼즐 (트래킹용)
+  const puzzleFavorites = useMemo(() => {
+    const list = favoritePuzzles.filter((fav) => {
+      const p = fav.puzzle;
+      if (!p) return false;
+      return p.is_recruiting_party && p.current_count < p.target_count;
+    });
+    return sortFavorites(list);
+  }, [favoritePuzzles, isMdOrAdmin, puzzleSort]); // eslint-disable-line react-hooks/exhaustive-deps
 
-      if (data) {
-        const counts: Record<string, number> = {};
-        data.forEach((a: Pick<Auction, "club_id">) => {
-          if (a.club_id) {
-            counts[a.club_id] = (counts[a.club_id] || 0) + 1;
-          }
-        });
-        setClubAuctionCounts(counts);
-      }
-    };
+  // 일반 유저: 전체 표시 (탭 없음)
+  const allFavorites = useMemo(() => sortFavorites(favoritePuzzles), [favoritePuzzles, isMdOrAdmin, puzzleSort]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    fetchCounts();
-  }, [favorites, supabase]);
-
-  // 찜한 MD의 active/scheduled 경매 수
-  useEffect(() => {
-    if (favoriteMds.length === 0) return;
-
-    const mdIds = favoriteMds.map((f) => f.md_id);
-
-    const fetchMdCounts = async () => {
-      const { data } = await supabase
-        .from("auctions")
-        .select("md_id")
-        .in("md_id", mdIds)
-        .in("status", ["active", "scheduled"]);
-
-      if (data) {
-        const counts: Record<string, number> = {};
-        (data as { md_id: string }[]).forEach((a) => {
-          if (a.md_id) {
-            counts[a.md_id] = (counts[a.md_id] || 0) + 1;
-          }
-        });
-        setMdAuctionCounts(counts);
-      }
-    };
-
-    fetchMdCounts();
-  }, [favoriteMds, supabase]);
-
-  if (userLoading || favLoading || mdFavLoading || puzzleFavLoading) {
+  if (userLoading || puzzleFavLoading) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
@@ -94,8 +168,6 @@ export default function FavoritesPage() {
     router.push("/login?redirect=/favorites");
     return null;
   }
-
-  const totalCount = favorites.length + favoriteMds.length + favoritePuzzles.length;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
@@ -109,276 +181,72 @@ export default function FavoritesPage() {
             <ArrowLeft className="w-5 h-5 text-neutral-400" />
           </button>
           <h1 className="text-xl font-black text-white">찜</h1>
-          {totalCount > 0 && (
-            <span className="text-[13px] text-neutral-500">{totalCount}개</span>
+          {favoritePuzzles.length > 0 && (
+            <span className="text-[13px] text-neutral-500">{favoritePuzzles.length}개</span>
           )}
         </div>
 
-        <Tabs defaultValue="clubs">
-          <TabsList className="w-full bg-[#1C1C1E] rounded-xl mb-4 p-1">
-            <TabsTrigger
-              value="clubs"
-              className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-neutral-700 data-[state=active]:text-white text-neutral-500"
-            >
-              클럽
-              {favorites.length > 0 && (
-                <span className="ml-1.5 text-[11px] text-neutral-400">{favorites.length}</span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="mds"
-              className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-neutral-700 data-[state=active]:text-white text-neutral-500"
-            >
-              MD
-              {favoriteMds.length > 0 && (
-                <span className="ml-1.5 text-[11px] text-neutral-400">{favoriteMds.length}</span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger
-              value="puzzles"
-              className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-white text-neutral-500"
-            >
-              깃발
-              {favoritePuzzles.length > 0 && (
-                <span className="ml-1.5 text-[11px] text-neutral-400">{favoritePuzzles.length}</span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+        {favoritePuzzles.length === 0 ? (
+          <EmptyState isMdOrAdmin={isMdOrAdmin} />
+        ) : isMdOrAdmin ? (
+          <Tabs defaultValue="flag">
+            <TabsList className="w-full bg-[#1C1C1E] rounded-xl mb-4 p-1">
+              <TabsTrigger
+                value="flag"
+                className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-black text-neutral-500"
+              >
+                🚩 깃발
+                {flagFavorites.length > 0 && (
+                  <span className="ml-1.5 text-[11px] opacity-80">{flagFavorites.length}</span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="puzzle"
+                className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-green-500 data-[state=active]:text-black text-neutral-500"
+              >
+                🧩 퍼즐
+                {puzzleFavorites.length > 0 && (
+                  <span className="ml-1.5 text-[11px] opacity-80">{puzzleFavorites.length}</span>
+                )}
+              </TabsTrigger>
+            </TabsList>
 
-          {/* 클럽 탭 */}
-          <TabsContent value="clubs">
-            {favorites.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <Heart className="w-12 h-12 text-neutral-700 mb-4" />
-                <p className="text-[15px] text-neutral-400 font-bold mb-2">
-                  아직 찜한 클럽이 없습니다
-                </p>
-                <p className="text-[13px] text-neutral-600 mb-6">
-                  경매 카드에서 하트를 눌러 클럽을 찜해보세요
-                </p>
-                <Link
-                  href="/"
-                  className="h-10 px-6 rounded-full bg-white text-black font-bold text-[14px] inline-flex items-center hover:bg-neutral-200 transition-colors"
-                >
-                  경매 둘러보기
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {favorites.map((fav) => {
-                  const club = fav.club;
-                  if (!club) return null;
+            {/* MD 정렬 토글 (탭 공통) */}
+            <div className="flex items-center justify-end gap-1.5 mb-3">
+              <button
+                type="button"
+                onClick={() => setPuzzleSort("recent")}
+                className={`h-7 px-3 inline-flex items-center rounded-full text-[12px] leading-none font-bold transition-colors ${
+                  puzzleSort === "recent"
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                }`}
+              >
+                최신순
+              </button>
+              <button
+                type="button"
+                onClick={() => setPuzzleSort("budget")}
+                className={`h-7 px-3 inline-flex items-center rounded-full text-[12px] leading-none font-bold transition-colors ${
+                  puzzleSort === "budget"
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                }`}
+              >
+                금액 높은순 ↑
+              </button>
+            </div>
 
-                  const liveCount = clubAuctionCounts[club.id] || 0;
-
-                  return (
-                    <div
-                      key={fav.id}
-                      className="bg-[#1C1C1E] rounded-2xl p-4 flex items-center gap-4"
-                    >
-                      <Link
-                        href={`/clubs/${club.id}`}
-                        className="flex items-center gap-4 flex-1 min-w-0"
-                      >
-                        <div className="w-14 h-14 rounded-xl bg-neutral-800 overflow-hidden shrink-0 relative">
-                          {club.thumbnail_url ? (
-                            <Image
-                              src={club.thumbnail_url}
-                              alt={club.name}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <span className="text-[18px] font-black text-neutral-600">
-                                {club.name.charAt(0)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-[15px] font-bold text-white truncate">
-                            {club.name}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {club.area && (
-                              <span className="flex items-center gap-0.5 text-[12px] text-neutral-500">
-                                <MapPin className="w-3 h-3" />
-                                {club.area}
-                              </span>
-                            )}
-                            {liveCount > 0 && (
-                              <span className="flex items-center gap-0.5 text-[11px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full">
-                                <Gavel className="w-3 h-3" />
-                                경매 {liveCount}건
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </Link>
-
-                      <button
-                        onClick={() => toggleFavorite(club.id)}
-                        className="w-9 h-9 rounded-full flex items-center justify-center bg-neutral-800/50 hover:bg-red-500/10 transition-colors shrink-0"
-                        title="찜 해제"
-                      >
-                        <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* MD 탭 */}
-          <TabsContent value="mds">
-            {favoriteMds.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <Users className="w-12 h-12 text-neutral-700 mb-4" />
-                <p className="text-[15px] text-neutral-400 font-bold mb-2">
-                  아직 찜한 MD가 없습니다
-                </p>
-                <p className="text-[13px] text-neutral-600 mb-6">
-                  경매 상세에서 MD를 찜하면 여기에 표시됩니다
-                </p>
-                <Link
-                  href="/"
-                  className="h-10 px-6 rounded-full bg-white text-black font-bold text-[14px] inline-flex items-center hover:bg-neutral-200 transition-colors"
-                >
-                  경매 둘러보기
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {favoriteMds.map((fav) => {
-                  const md = fav.md;
-                  if (!md) return null;
-
-                  const liveCount = mdAuctionCounts[fav.md_id] || 0;
-
-                  return (
-                    <div
-                      key={fav.id}
-                      className="bg-[#1C1C1E] rounded-2xl p-4 flex items-center gap-4"
-                    >
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        {/* MD 아바타 */}
-                        <div className="w-14 h-14 rounded-full bg-neutral-800 border border-neutral-700 overflow-hidden shrink-0 relative flex items-center justify-center">
-                          {md.profile_image ? (
-                            <Image
-                              src={md.profile_image}
-                              alt={md.display_name || "MD"}
-                              fill
-                              className="object-cover"
-                            />
-                          ) : (
-                            <span className="text-[20px] font-black text-neutral-500">
-                              {md.display_name?.charAt(0) || "M"}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* MD 정보 */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-[15px] font-bold text-white truncate">
-                            {md.display_name}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[12px] text-neutral-500">NightFlow MD</span>
-                            {liveCount > 0 && (
-                              <span className="flex items-center gap-0.5 text-[11px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full">
-                                <Gavel className="w-3 h-3" />
-                                경매 {liveCount}건
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 찜 해제 */}
-                      <button
-                        onClick={() => toggleFavoriteMd(fav.md_id)}
-                        className="w-9 h-9 rounded-full flex items-center justify-center bg-neutral-800/50 hover:bg-red-500/10 transition-colors shrink-0"
-                        title="MD 찜 해제"
-                      >
-                        <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* 깃발 탭 */}
-          <TabsContent value="puzzles">
-            {favoritePuzzles.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <Heart className="w-12 h-12 text-neutral-700 mb-4" />
-                <p className="text-[15px] text-neutral-400 font-bold mb-2">
-                  아직 찜한 깃발이 없습니다
-                </p>
-                <p className="text-[13px] text-neutral-600 mb-6">
-                  깃발 카드에서 하트를 눌러 찜해보세요
-                </p>
-                <Link
-                  href="/?tab=puzzle"
-                  className="h-10 px-6 rounded-full bg-amber-500 text-white font-bold text-[14px] inline-flex items-center hover:bg-amber-400 transition-colors"
-                >
-                  깃발 둘러보기
-                </Link>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {favoritePuzzles.map((fav) => {
-                  const puzzle = fav.puzzle;
-                  if (!puzzle) return null;
-
-                  const confirmedBudget = puzzle.current_count * puzzle.budget_per_person;
-
-                  return (
-                    <div
-                      key={fav.id}
-                      className="bg-[#1C1C1E] rounded-2xl p-4 flex items-center gap-4"
-                    >
-                      <Link
-                        href={`/flags/${puzzle.id}`}
-                        className="flex items-center gap-4 flex-1 min-w-0"
-                      >
-                        <div className="w-14 h-14 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
-                          <span className="text-[22px]">🧩</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-[15px] font-bold text-white truncate">
-                            {puzzle.area} · {puzzle.budget_per_person.toLocaleString()}원/인
-                          </h3>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[12px] text-neutral-500">
-                              {puzzle.current_count}/{puzzle.target_count}명
-                            </span>
-                            <span className="text-[11px] text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded-full">
-                              확정 {confirmedBudget.toLocaleString()}원
-                            </span>
-                          </div>
-                        </div>
-                      </Link>
-
-                      <button
-                        onClick={() => toggleFavoritePuzzle(fav.puzzle_id)}
-                        className="w-9 h-9 rounded-full flex items-center justify-center bg-neutral-800/50 hover:bg-red-500/10 transition-colors shrink-0"
-                        title="깃발 찜 해제"
-                      >
-                        <Heart className="w-4 h-4 text-red-500 fill-red-500" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            <TabsContent value="flag">
+              <PuzzleCardList items={flagFavorites} userRole={user.role as "user" | "md" | "admin" | undefined} emptyText="찜한 깃발이 없어요. 인원 확정된 깃발 또는 완성된 퍼즐이 여기에 모여요." />
+            </TabsContent>
+            <TabsContent value="puzzle">
+              <PuzzleCardList items={puzzleFavorites} userRole={user.role as "user" | "md" | "admin" | undefined} emptyText="찜한 퍼즐(모집 중)이 없어요. 완성되면 자동으로 깃발 탭으로 이동해요." />
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <PuzzleCardList items={allFavorites} userRole={user.role as "user" | "md" | "admin" | undefined} />
+        )}
       </div>
     </div>
   );

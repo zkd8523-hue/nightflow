@@ -2,12 +2,13 @@
 
 import { memo } from "react";
 import { useRouter } from "next/navigation";
-import { Flag, Users } from "lucide-react";
+import { Flag, Users, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Puzzle, GenderPref, AgePref, VibePref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
+import { usePuzzleFavoritesContext } from "@/components/providers";
 
 interface PuzzleCardProps {
   puzzle: Puzzle;
@@ -15,6 +16,7 @@ interface PuzzleCardProps {
   offerCount?: number;
   isMember?: boolean;
   hasOffered?: boolean;
+  hideNewBadge?: boolean;
   onJoin?: (puzzle: Puzzle) => void;
   onUnlock?: (puzzle: Puzzle) => void;
 }
@@ -32,8 +34,9 @@ const AGE_LABEL: Record<AgePref, string | null> = {
   any: null,
 };
 
+// Phase 1: 바이브 라벨 정정 (PuzzleForm과 동기화)
 const VIBE_LABEL: Record<VibePref, string | null> = {
-  chill: "조용히",
+  chill: "편하게",
   active: "신나게",
   any: null,
 };
@@ -66,6 +69,7 @@ export const PuzzleCard = memo(function PuzzleCard({
   offerCount = 0,
   isMember = false,
   hasOffered = false,
+  hideNewBadge = false,
   onJoin,
   onUnlock,
 }: PuzzleCardProps) {
@@ -89,21 +93,57 @@ export const PuzzleCard = memo(function PuzzleCard({
   const isSmall = puzzle.target_count > 8;
   const isNew = Date.now() - new Date(puzzle.created_at).getTime() < 24 * 60 * 60 * 1000;
 
+  // MD가 퍼즐(모집 중)을 찜할 수 있음 — 인원 부족/예산 큰 거 트래킹
+  const { isFavoritedPuzzle, toggleFavoritePuzzle } = usePuzzleFavoritesContext();
+  const isFavorited = isFavoritedPuzzle(puzzle.id);
+  const canFavorite = isMd && isRecruitingParty;
+
   return (
     <div className="relative bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
-      {isNew && (
+      {isNew && !hideNewBadge && (
         <div
-          className="animate-new-badge pointer-events-none absolute -top-2.5 -right-2.5 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none"
+          className="animate-new-badge pointer-events-none absolute -top-4 -right-2.5 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none"
           aria-label="24시간 이내 등록"
         >
           NEW!
         </div>
       )}
-      {/* 상단: 메모(방 제목) + 거래 등급 배지 (찜 자리) */}
+      {/* 모드 라벨 뱃지 🧩 퍼즐 / 🚩 깃발 — 카드 우측 상단 */}
+      {/* 퍼즐(모집 ON)이라도 인원이 다 찼으면 깃발 단계로 전환 */}
+      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+        {canFavorite && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleFavoritePuzzle(puzzle.id);
+            }}
+            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
+              isFavorited
+                ? "bg-rose-500/15 text-rose-400 hover:bg-rose-500/25"
+                : "bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700 hover:text-rose-300"
+            }`}
+            aria-label={isFavorited ? "찜 해제" : "찜하기"}
+          >
+            <Heart className={`w-3.5 h-3.5 ${isFavorited ? "fill-current" : ""}`} />
+          </button>
+        )}
+        {isRecruitingParty && !isFull ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
+            🧩 퍼즐
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-bold">
+            🚩 깃발
+          </span>
+        )}
+      </div>
+      {/* 상단: 메모(방 제목) + 지역 + 거래 등급 배지 (찜 자리) */}
       <div className="flex items-start justify-between">
         <div className="flex flex-col gap-1 flex-1 pr-4">
           <div className="text-[18px] font-black leading-snug break-keep tracking-tight">
-            <span className="text-white">{puzzle.notes || `${puzzle.area}에서 모임해요`}</span>
+            <span className="text-white">{puzzle.notes || `${puzzle.area}에서 모여요`}</span>
             {puzzle.notes && (
               <span className="text-neutral-500 text-[14px] ml-1.5 font-bold tracking-normal align-middle">
                 {puzzle.area}
@@ -134,12 +174,11 @@ export const PuzzleCard = memo(function PuzzleCard({
               </span>
             </div>
             <div className="space-y-1">
-              <span className="text-[13px] text-neutral-400 font-medium flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" />
-                {isFull
-                  ? "파티 완성! 🎉"
-                  : `파티원 ${puzzle.current_count}/${puzzle.target_count}`}
-              </span>
+              {isFull && (
+                <span className="text-[13px] text-green-400 font-bold">
+                  퍼즐 완성! 🎉
+                </span>
+              )}
               <div className="flex flex-wrap gap-1.5">
                 {Array.from({ length: puzzle.target_count }).map((_, i) => (
                   <PuzzlePiece
@@ -160,7 +199,6 @@ export const PuzzleCard = memo(function PuzzleCard({
                 예산 {totalBudget.toLocaleString()}원
               </span>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-bold">
-                <Flag className="w-3 h-3" />
                 {puzzle.target_count}명
               </span>
             </div>
@@ -168,12 +206,16 @@ export const PuzzleCard = memo(function PuzzleCard({
         )}
       </div>
 
-      {/* MD 제안 현황 */}
-      {offerCount > 0 && (
-        <p className="text-[12px] text-amber-400 font-bold">
-          MD {offerCount}명 제안 중
+      {/* MD 제안 현황: MD는 컴팩트 메트릭(0/N offers), 일반 유저는 문장형 */}
+      {isMd ? (
+        <p className="text-[12px] text-amber-400 font-bold tabular-nums">
+          {offerCount} {offerCount === 1 ? "offer" : "offers"}
         </p>
-      )}
+      ) : offerCount > 0 ? (
+        <p className="text-[12px] text-amber-400 font-bold">
+          MD {offerCount}명이 줄서있어요
+        </p>
+      ) : null}
 
       {/* 취향 태그 */}
       {tags.length > 0 && (
@@ -207,7 +249,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
             className="w-full h-11 bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px] rounded-xl"
           >
-            제안하기
+            {offerCount === 0 ? "가장 먼저 제안하기" : "나도 제안하기"}
           </Button>
         )
       ) : !isRecruitingParty ? (
@@ -216,7 +258,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
           className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
         >
-          깃발 자세히 보기
+          자세히 보기
         </Button>
       ) : isFull ? (
         <div className="space-y-2">
@@ -230,7 +272,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             }}
             className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
           >
-            나도 깃발 꽂기 →
+            나도 파티원 모집하기 →
           </Button>
         </div>
       ) : isMember ? (

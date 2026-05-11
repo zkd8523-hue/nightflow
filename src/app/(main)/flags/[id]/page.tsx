@@ -14,6 +14,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
 
   const { data: { user: authUser } } = await supabase.auth.getUser();
 
+  // puzzle 먼저 받아서 leader_id 확보
   const { data: puzzle } = await supabase
     .from("puzzles")
     .select("*")
@@ -22,24 +23,25 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
 
   if (!puzzle) notFound();
 
-  const { data: leader } = await supabase
-    .from("users")
-    .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked, deal_count_total, created_at")
-    .eq("id", puzzle.leader_id)
-    .maybeSingle();
-
-  const { data: members } = await supabase
-    .from("puzzle_members")
-    .select(`
-      *,
-      user:users(id, name, display_name, profile_image)
-    `)
-    .eq("puzzle_id", id)
-    .order("joined_at", { ascending: true });
-
-  const { data: profile } = authUser
-    ? await supabase.from("users").select("role, kakao_open_chat_url").eq("id", authUser.id).single()
-    : { data: null };
+  // 나머지 3쿼리는 병렬 실행 (puzzle에 의존)
+  const [{ data: leader }, { data: members }, { data: profile }] = await Promise.all([
+    supabase
+      .from("users")
+      .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked, deal_count_total, created_at")
+      .eq("id", puzzle.leader_id)
+      .maybeSingle(),
+    supabase
+      .from("puzzle_members")
+      .select(`
+        *,
+        user:users(id, name, display_name, profile_image)
+      `)
+      .eq("puzzle_id", id)
+      .order("joined_at", { ascending: true }),
+    authUser
+      ? supabase.from("users").select("role, kakao_open_chat_url").eq("id", authUser.id).single()
+      : Promise.resolve({ data: null }),
+  ]);
 
   // leader 정보를 puzzle에 attach (TrustBadge용 deal_count_total + 신규 유저 판별용 created_at)
   const puzzleWithLeader = leader

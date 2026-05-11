@@ -32,7 +32,7 @@ export function buildAcceptedFlagMessage(
     : `${puzzle.target_count}명`;
   const url = `${origin}/flags/${puzzle.id}`;
 
-  const lines: string[] = [`[NightFlow 🚩 깃발 수락!]`, ``];
+  const lines: string[] = [`[NightFlow 🧩 퍼즐 오퍼 수락!]`, ``];
   lines.push(`${date} · ${puzzle.area} · ${headcount}`);
 
   if (offer) {

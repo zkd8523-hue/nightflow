@@ -62,20 +62,42 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 
 const PUZZLE_ONBOARDING_STEPS = [
   {
-    title: "1. 예산 등록",
-    desc: "날짜·지역·예산을 등록하세요.",
+    title: "1. 퍼즐 등록",
+    desc: "날짜·지역·예산을 선택하세요.\n인원이 부족하다면? 파티원 모집!",
     icon: <span className="text-[20px]">⛳</span>,
     color: "bg-amber-500/10",
   },
   {
-    title: "2. MD 제안 받기",
-    desc: "MD들이 테이블·주류를 제안하고, 서로 경쟁해요.",
+    title: "2. 오퍼 받기",
+    desc: "MD들이 테이블·주류를 제안해요.\n오퍼 내용은 오직 <방장>만 볼 수 있어요. (쉿)",
     icon: <span className="text-[20px]">📨</span>,
     color: "bg-emerald-500/10",
   },
   {
     title: "3. 수락 & 예약 확정",
-    desc: "최고의 제안을 수락하면 MD와 오픈채팅이 열려요. 예약 확정하면 끝!",
+    desc: "최고의 제안을 수락하면 MD의 연락처가 공개돼요. 예약 확정하면 끝!",
+    icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
+    color: "bg-blue-500/10",
+  },
+];
+
+// MD 전용 퍼즐 이용방법 (시크릿 오퍼 핵심 가치 강조)
+const PUZZLE_ONBOARDING_STEPS_MD = [
+  {
+    title: "1. 입맛 다시기",
+    desc: "유저들이 올린 퍼즐/깃발을 살펴봐요.\n예산·인원·날짜 한눈에 확인!",
+    icon: <span className="text-[20px]">🍰</span>,
+    color: "bg-amber-500/10",
+  },
+  {
+    title: "2. 시크릿 오퍼 제안",
+    desc: "🔒 다른 MD는 못 봐요 (가격 눈치 X)\n🤫 인스타·연락처 비공개\n👁 방장 한 명만 봐요\n⚔️ 오직 클럽명 + 조건으로 승부!",
+    icon: <span className="text-[20px]">✉️</span>,
+    color: "bg-emerald-500/10",
+  },
+  {
+    title: "3. 예약 확정하기",
+    desc: "선택된 파트너님의 연락처만이 방장에게 공개돼요.",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },
@@ -109,11 +131,11 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
   puzzle: {
     content: (
       <>
-        예산 등록 → MD들이 시크릿 오퍼
+        퍼즐이 다 모이면 <span className="text-amber-400">깃발</span>로 승격!
         <br />
-        가격·패키지 비교하고 골라요.
+        깃발에는 MD들이 시크릿 오퍼
         <br />
-        <span className="text-emerald-400">지금 바로 VIP가 되어보세요!</span>
+        <span className="text-emerald-400">가격·패키지 비교하고 골라요.</span>
       </>
     ),
     note: "💡 모든 서비스 무료",
@@ -127,7 +149,8 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle", TabPromise> = {
     note: "💰 수수료 0% · MD 직접 수령",
   },
   puzzle: {
-    content: "유저들의 예산이 기다리고 있어요 💰\n지금 바로 제안해서 매출로 만들어봐요!",
+    // content는 HomeContent 내부에서 JSX로 재정의 (시크릿오퍼란? 버튼 포함)
+    content: "유저들의 예산이 기다리고 있어요 💰\n시크릿 오퍼로 매출을 올려봐요!",
     note: "💰 제안 무료 · 매칭 시 직접 거래",
   },
 };
@@ -324,11 +347,33 @@ export function HomeContent({
 
 
         {(() => {
+          const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
           const steps = currentTab === "puzzle"
-            ? PUZZLE_ONBOARDING_STEPS
+            ? (isMdOrAdmin ? PUZZLE_ONBOARDING_STEPS_MD : PUZZLE_ONBOARDING_STEPS)
             : currentTab === "advance"
             ? EARLYBIRD_ONBOARDING_STEPS
             : ONBOARDING_STEPS;
+          // MD 전용 puzzle tip: 본 카피 + "(시크릿오퍼란?)" 버튼
+          const mdPuzzleTipContent = (
+            <>
+              유저들의 예산이 기다리고 있어요 💰
+              <br />
+              시크릿 오퍼로 매출을 올려봐요!{" "}
+              <button
+                type="button"
+                onClick={() => setShowGuide((v) => !v)}
+                className="inline-flex items-center text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors ml-1 align-baseline"
+              >
+                (시크릿오퍼란?)
+              </button>
+            </>
+          );
+          const overriddenTabPromises = isMdOrAdmin
+            ? {
+                ...TAB_PROMISES_MD,
+                puzzle: { ...TAB_PROMISES_MD.puzzle, content: mdPuzzleTipContent },
+              }
+            : TAB_PROMISES;
           const guideCard = showGuide ? (
             <section className="px-1">
               <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
@@ -351,7 +396,7 @@ export function HomeContent({
                         <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">
                           {step.title}
                         </h3>
-                        <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep">
+                        <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep whitespace-pre-line">
                           {step.desc}
                         </p>
                       </div>
@@ -374,7 +419,7 @@ export function HomeContent({
               initialTab={currentTab}
               onTabChange={handleTabChange}
               onShowGuide={() => setShowGuide(v => !v)}
-              tabPromises={user?.role === "md" || user?.role === "admin" ? TAB_PROMISES_MD : TAB_PROMISES}
+              tabPromises={overriddenTabPromises}
               guideSlot={guideCard}
             />
           );

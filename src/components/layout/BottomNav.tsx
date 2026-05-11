@@ -2,12 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Gavel, Heart, User } from "lucide-react";
+import { Home, Gavel, LayoutDashboard, Heart, User } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
-const TABS = [
+const USER_TABS = [
   { label: "홈", icon: Home, href: "/" },
   { label: "내 활동", icon: Gavel, href: "/bids" },
+  { label: "찜", icon: Heart, href: "/favorites" },
+  { label: "프로필", icon: User, href: "/profile" },
+];
+
+// MD/Admin: "내 활동" → "MD 대시보드"
+const MD_TABS = [
+  { label: "홈", icon: Home, href: "/" },
+  { label: "대시보드", icon: LayoutDashboard, href: "/md/dashboard" },
   { label: "찜", icon: Heart, href: "/favorites" },
   { label: "프로필", icon: User, href: "/profile" },
 ];
@@ -18,6 +26,9 @@ export function BottomNav() {
 
   // 비로그인 사용자에게는 하단 탭바 미노출 (홈 콘텐츠에 집중)
   if (isLoading || !user) return null;
+
+  const isMdOrAdmin = user.role === "md" || user.role === "admin";
+  const TABS = isMdOrAdmin ? MD_TABS : USER_TABS;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800">

@@ -1,14 +1,76 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 import { PuzzleCard } from "./PuzzleCard";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
+import { DateFilterChips } from "@/components/auctions/filters/DateFilterChips";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Calendar } from "@/components/ui/calendar";
+import dayjs from "dayjs";
+import type { DateRange } from "react-day-picker";
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics/events";
 import type { Puzzle } from "@/types/database";
+import {
+  type NbiFilter,
+  type SeatFilter,
+  type DateFilter as PuzzleDateFilter,
+  NBI_BANDS,
+  matchesNbi,
+  matchesSeat,
+  matchesDate as matchesDatePuzzle,
+} from "@/lib/utils/puzzleFilters";
+
+const NBI_CHIPS: { value: NbiFilter; label: string }[] = [
+  { value: "all", label: "전체" },
+  { value: "value", label: "가성비 ~9만" },
+  { value: "standard", label: "스탠다드 10~15만" },
+  { value: "premium", label: "프리미엄 15만+" },
+];
+
+const SEAT_CHIPS: { value: SeatFilter; label: string }[] = [
+  { value: "all", label: "전체" },
+  { value: "1", label: "1자리" },
+  { value: "2", label: "2자리" },
+  { value: "3+", label: "3자리+" },
+];
+
+function FilterRow({
+  label,
+  chips,
+  value,
+  onChange,
+}: {
+  label: string;
+  chips: { value: string; label: string }[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x">
+      <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">{label}</span>
+      {chips.map((chip) => {
+        const active = chip.value === value;
+        return (
+          <button
+            key={chip.value}
+            onClick={() => onChange(chip.value)}
+            className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+              active
+                ? "bg-white text-black"
+                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+            }`}
+          >
+            {chip.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function getDDay(eventDate: string): string {
   const today = new Date();
@@ -26,14 +88,43 @@ interface PuzzleListProps {
   userRole?: "user" | "md" | "admin";
   offerCounts?: Record<string, number>;
   selectedArea?: string | null;
+  /** 외부(부모)에서 필터 시트를 컨트롤할 때 사용 */
+  filterOpen?: boolean;
+  onFilterOpenChange?: (open: boolean) => void;
+  /** 활성 필터 여부 변경 시 부모에 전달 (지역 칩 옆 amber dot 등) */
+  onActiveFilterChange?: (hasActive: boolean) => void;
+  /** 필터 초기화 콜백을 부모가 호출할 수 있도록 ref로 노출 */
+  resetRef?: React.MutableRefObject<(() => void) | null>;
 }
 
-export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }: PuzzleListProps) {
+export function PuzzleList({
+  puzzles,
+  userRole,
+  offerCounts = {},
+  selectedArea,
+  filterOpen,
+  onFilterOpenChange,
+  onActiveFilterChange,
+  resetRef,
+}: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
   const [myPuzzleIds, setMyPuzzleIds] = useState<Set<string>>(new Set());
   const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
-  const [toggleOn, setToggleOn] = useState(false);
+  // MD 전용 정렬 순환: 등록순 → 높은순 → 낮은순 → 등록순 ...
+  const [sortMode, setSortMode] = useState<"registered" | "desc" | "asc">("registered");
+  // 모드 뷰 4-state 순환:
+  //   initial(회색, 필터X, 라벨"퍼즐만") → puzzle(활성) → flag(활성) → all(활성, 전체보기) → initial
+  const [modeView, setModeView] = useState<"initial" | "puzzle" | "flag" | "all">("initial");
+  // Phase 1: 3종 필터 (지역은 상위 AuctionList에서 처리, 중복 제거)
+  const [nbiFilter, setNbiFilter] = useState<NbiFilter>("all");
+  const [seatFilter, setSeatFilter] = useState<SeatFilter>("all");
+  const [dateFilter, setDateFilter] = useState<PuzzleDateFilter>("all");
+  // 필터 시트 open 상태: 부모가 controlled하면 부모 우선, 아니면 자체 관리
+  const [internalFilterOpen, setInternalFilterOpen] = useState(false);
+  const filterSheetOpen = filterOpen ?? internalFilterOpen;
+  const setFilterSheetOpen = onFilterOpenChange ?? setInternalFilterOpen;
+  const [recentCollapsed, setRecentCollapsed] = useState(false);
   const isMd = userRole === "md" || userRole === "admin";
 
   useEffect(() => {
@@ -52,37 +143,220 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
     })();
   }, []);
 
-  // MD: 토글 ON 시 예산순 정렬 (그룹별 적용). 유저는 필터/토글 없음.
-  const filteredPuzzles = puzzles;
+  // Phase 1: 3종 필터 (엔비/자리/날짜) + 모드 뷰. 지역은 부모(AuctionList).
+  // initial / all → 필터 미적용. puzzle / flag → 해당 모드만.
+  const filteredPuzzles = useMemo(() => {
+    return puzzles.filter((p) => {
+      if (modeView === "flag" && p.is_recruiting_party) return false;
+      if (modeView === "puzzle" && !p.is_recruiting_party) return false;
+      return (
+        matchesNbi(p, nbiFilter) &&
+        matchesSeat(p, seatFilter) &&
+        matchesDatePuzzle(p, dateFilter)
+      );
+    });
+  }, [puzzles, nbiFilter, seatFilter, dateFilter, modeView]);
+
+  const eventDates = useMemo(() => {
+    return Array.from(new Set(puzzles.map((p) => p.event_date)));
+  }, [puzzles]);
+
+  const hasActiveFilter =
+    nbiFilter !== "all" || seatFilter !== "all" || dateFilter !== "all";
+
+  // 부모에 활성 필터 / reset 콜백 노출
+  useEffect(() => {
+    onActiveFilterChange?.(hasActiveFilter);
+  }, [hasActiveFilter, onActiveFilterChange]);
+
+  useEffect(() => {
+    if (resetRef) {
+      resetRef.current = () => {
+        setNbiFilter("all");
+        setSeatFilter("all");
+        setDateFilter("all");
+      };
+    }
+  }, [resetRef]);
 
   const getBudget = (p: Puzzle) =>
     p.total_budget ?? p.budget_per_person * p.target_count;
 
-  const toggleButton = isMd ? (
-    <button
-      onClick={() => setToggleOn((v) => !v)}
-      className={`px-3 py-1 rounded-full text-[12px] font-bold transition-colors flex-shrink-0 ${
-        toggleOn
-          ? "bg-white text-black"
-          : "bg-neutral-800 text-neutral-400"
-      }`}
-    >
-      예산순
-    </button>
-  ) : null;
+  // 사이클: initial(최초만) → puzzle → flag → all → puzzle → flag → all → ...
+  const cycleModeView = () => {
+    setModeView((cur) =>
+      cur === "initial" ? "puzzle"
+      : cur === "puzzle" ? "flag"
+      : cur === "flag" ? "all"
+      : "puzzle"  // all 다음은 다시 puzzle (initial로 안 돌아감)
+    );
+  };
+
+  const modeViewLabel =
+    modeView === "puzzle" ? "퍼즐만 보기"
+    : modeView === "flag" ? "깃발만 보기"
+    : modeView === "all" ? "전체보기"
+    : "퍼즐만 보기"; // initial: 힌트로 "퍼즐만 보기" 표시
+
+  // 활성 여부: initial은 비활성(회색), 나머지는 활성(흰색)
+  const modeViewActive = modeView !== "initial";
+
+  const cycleSortMode = () => {
+    setSortMode((cur) => (cur === "registered" ? "desc" : cur === "desc" ? "asc" : "registered"));
+  };
+
+  const sortLabel =
+    sortMode === "registered" ? "등록순" : sortMode === "desc" ? "높은순 ↑" : "낮은순 ↓";
+
+  const toggleButton = (
+    <div className="flex items-center gap-1.5 flex-shrink-0">
+      <button
+        onClick={cycleModeView}
+        className={`h-7 px-3 inline-flex items-center rounded-full text-[12px] leading-none font-bold transition-colors ${
+          modeViewActive
+            ? "bg-white text-black"
+            : "bg-neutral-800 text-neutral-400"
+        }`}
+      >
+        {modeViewLabel}
+      </button>
+      {/* 정렬은 MD/Admin 전용 */}
+      {isMd && (
+        <button
+          onClick={cycleSortMode}
+          className={`h-7 px-3 inline-flex items-center rounded-full text-[12px] leading-none font-bold transition-colors ${
+            sortMode === "registered"
+              ? "bg-neutral-800 text-neutral-400"
+              : "bg-white text-black"
+          }`}
+        >
+          {sortLabel}
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className="relative">
+      {/* 필터 아이콘 버튼: 부모(AuctionList)가 컨트롤하지 않을 때만 자체 노출 */}
+      {puzzles.length > 0 && onFilterOpenChange === undefined && (
+        <div className="flex items-center justify-end gap-1.5 mb-3">
+          {hasActiveFilter && (
+            <button
+              onClick={() => {
+                setNbiFilter("all");
+                setSeatFilter("all");
+                setDateFilter("all");
+              }}
+              className="text-[11px] font-bold text-neutral-400 hover:text-white transition-colors px-2"
+            >
+              초기화
+            </button>
+          )}
+          <div className="relative">
+            <button
+              onClick={() => setFilterSheetOpen(true)}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                hasActiveFilter
+                  ? "bg-white text-black"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+              }`}
+              aria-label="필터"
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+            </button>
+            {hasActiveFilter && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 필터 Sheet */}
+      <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
+        <SheetContent side="bottom" showCloseButton={false} className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
+          <SheetHeader className="pt-2 pb-4">
+            <SheetTitle className="text-white font-black text-lg text-left">필터</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-5">
+            <FilterRow
+              label="엔비"
+              chips={NBI_CHIPS}
+              value={nbiFilter}
+              onChange={(v) => setNbiFilter(v as NbiFilter)}
+            />
+            <FilterRow
+              label="자리"
+              chips={SEAT_CHIPS}
+              value={seatFilter}
+              onChange={(v) => setSeatFilter(v as SeatFilter)}
+            />
+            {eventDates.length > 1 && (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">날짜</span>
+                <DateFilterChips
+                  eventDates={eventDates}
+                  value={dateFilter}
+                  onChange={(v) => setDateFilter(v)}
+                />
+              </div>
+            )}
+            {nbiFilter === "value" && (
+              <p className="text-[11px] text-amber-400/80 px-1">
+                💡 가성비 ({NBI_BANDS.value.label}) 퍼즐엔 방장수고비를 받지 않아요.
+              </p>
+            )}
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => {
+                  setNbiFilter("all");
+                  setSeatFilter("all");
+                  setDateFilter("all");
+                }}
+                disabled={!hasActiveFilter}
+                className={`text-[12px] font-bold transition-colors ${
+                  hasActiveFilter
+                    ? "text-neutral-400 hover:text-white"
+                    : "text-transparent pointer-events-none"
+                }`}
+              >
+                초기화
+              </button>
+            </div>
+            <button
+              onClick={() => setFilterSheetOpen(false)}
+              className="w-full h-16 bg-white text-black font-black text-[14px] rounded-2xl"
+            >
+              {filteredPuzzles.length}건 보기
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {filteredPuzzles.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-2">
           <div className="absolute top-0 right-0">{toggleButton}</div>
           <div className="space-y-2 text-center">
-            {isMd ? (
+            {hasActiveFilter ? (
               <>
-                <p className="text-[15px] font-bold text-neutral-300">아직 꽂혀 있는 깃발이 없어요</p>
+                <p className="text-[15px] font-bold text-neutral-300">조건에 맞는 퍼즐이 없어요</p>
+                <p className="text-[12px] text-neutral-500 leading-relaxed">필터를 조정해보세요</p>
+                <button
+                  onClick={() => {
+                    setNbiFilter("all");
+                    setSeatFilter("all");
+                    setDateFilter("all");
+                  }}
+                  className="inline-flex items-center gap-1.5 mt-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-full px-5 py-2 text-[12px] font-bold transition-colors"
+                >
+                  필터 초기화
+                </button>
+              </>
+            ) : isMd ? (
+              <>
+                <p className="text-[15px] font-bold text-neutral-300">아직 올라와 있는 퍼즐이 없어요</p>
                 <p className="text-[12px] text-neutral-500 leading-relaxed">
-                  깃발이 꽂히면 알림으로 알려드릴게요
+                  퍼즐이 올라오면 알림으로 알려드릴게요
                 </p>
               </>
             ) : (
@@ -91,7 +365,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
                   {selectedArea && selectedArea !== "다른지역" ? `${selectedArea} ` : ""}MD들이 24시간 기다리고 있어요
                 </p>
                 <p className="text-[12px] text-neutral-400 leading-relaxed">
-                  어떤 시크릿 제안이 쏟아질지 궁금하죠?
+                  어떤 시크릿 오퍼가 쏟아질지 궁금하죠?
                 </p>
                 <Link
                   href={userRole ? "/flags/new" : "/login?redirect=/flags/new"}
@@ -99,7 +373,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
                   className="inline-flex items-center gap-1.5 mt-3 bg-white hover:bg-neutral-200 text-black rounded-full px-5 py-2.5 text-[13px] font-black transition-colors"
                 >
                   <Plus className="w-4 h-4" />
-                  첫번째 깃발꽂기
+                  파티원 모집하기
                 </Link>
               </>
             )}
@@ -107,18 +381,79 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
         </div>
       ) : (
         <div className="space-y-12 pb-24">
-          {Object.entries(
-            filteredPuzzles.reduce((groups, puzzle) => {
-              const date = puzzle.event_date;
-              if (!groups[date]) groups[date] = [];
-              groups[date].push(puzzle);
-              return groups;
-            }, {} as Record<string, Puzzle[]>)
-          )
+          {/* 🆕 방금 올라온 퍼즐/깃발 (6시간 이내) — 상단 별도 섹션 */}
+          {(() => {
+            const RECENT_THRESHOLD_MS = 6 * 60 * 60 * 1000;
+            const now = Date.now();
+            // MD: 오퍼할 수 있는 깃발 상태(직접 등록 깃발 + 인원 충족된 퍼즐)만
+            // 유저/비로그인: 모든 최근 퍼즐 (퍼즐/깃발 둘 다)
+            const recentPuzzles = filteredPuzzles
+              .filter(p => now - new Date(p.created_at).getTime() < RECENT_THRESHOLD_MS)
+              .filter(p => {
+                if (!isMd) return true;
+                const isFlagState = !p.is_recruiting_party || p.current_count >= p.target_count;
+                return isFlagState;
+              })
+              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+            const recentTitle = isMd ? "방금 등록된 깃발" : "방금 등록된 퍼즐";
+            const recentIdSet = new Set(recentPuzzles.map(p => p.id));
+            const rest = filteredPuzzles.filter(p => !recentIdSet.has(p.id));
+
+            return (
+              <>
+                {recentPuzzles.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2.5 px-1 py-1">
+                      <span className="relative flex h-2.5 w-2.5 mt-[1px]">
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-60 animate-ping" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setRecentCollapsed((v) => !v)}
+                        className="flex items-center gap-1.5 text-[16px] font-black text-white tracking-tight hover:text-neutral-300 transition-colors"
+                        aria-label={recentCollapsed ? "펼치기" : "접기"}
+                      >
+                        {recentTitle}
+                        {recentCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                      </button>
+                      <div className="flex-1 flex justify-end">{toggleButton}</div>
+                    </div>
+                    {!recentCollapsed && (
+                      <div className="space-y-4">
+                        {recentPuzzles.map((puzzle) => (
+                          <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); trackEvent('puzzle_card_click', { puzzle_id: puzzle.id, area: puzzle.area, is_recruiting: puzzle.is_recruiting_party, source: 'recent' }); }}>
+                            <PuzzleCard
+                              puzzle={puzzle}
+                              userRole={userRole}
+                              offerCount={offerCounts[puzzle.id] || 0}
+                              isMember={myPuzzleIds.has(puzzle.id)}
+                              hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
+                              onJoin={(p) => setJoinTarget(p)}
+                              onUnlock={(p) => setUnlockTarget(p)}
+                            />
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {Object.entries(
+                  rest.reduce((groups, puzzle) => {
+                    const date = puzzle.event_date;
+                    if (!groups[date]) groups[date] = [];
+                    groups[date].push(puzzle);
+                    return groups;
+                  }, {} as Record<string, Puzzle[]>)
+                )
             .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
             .map(([date, rawItems], groupIdx) => {
-              const items = isMd && toggleOn
-                ? [...rawItems].sort((a, b) => getBudget(b) - getBudget(a))
+              const items = isMd && sortMode !== "registered"
+                ? [...rawItems].sort((a, b) =>
+                    sortMode === "desc"
+                      ? getBudget(b) - getBudget(a)
+                      : getBudget(a) - getBudget(b)
+                  )
                 : rawItems;
               const d = new Date(date + "T00:00:00");
               const m = d.getMonth() + 1;
@@ -142,7 +477,7 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
                     >
                       {dday}
                     </span>
-                    {groupIdx === 0 && <div className="flex-1 flex justify-end">{toggleButton}</div>}
+                    {groupIdx === 0 && recentPuzzles.length === 0 && <div className="flex-1 flex justify-end">{toggleButton}</div>}
                   </div>
                   <div className="space-y-4">
                     {items.map((puzzle) => (
@@ -166,6 +501,9 @@ export function PuzzleList({ puzzles, userRole, offerCounts = {}, selectedArea }
                 </div>
               );
             })}
+              </>
+            );
+          })()}
         </div>
       )}
 

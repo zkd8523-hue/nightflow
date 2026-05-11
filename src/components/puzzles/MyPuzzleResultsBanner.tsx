@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, Flag } from "lucide-react";
+import { ChevronRight, Flag, X } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 
@@ -62,8 +62,7 @@ export function MyPuzzleResultsBanner() {
 
   if (pendingIds.length === 0 || !user) return null;
 
-  const handleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleClick = () => {
     const acked = getAckSet(user.id);
     pendingIds.forEach((id) => acked.add(id));
     saveAckSet(user.id, acked);
@@ -71,18 +70,42 @@ export function MyPuzzleResultsBanner() {
     router.push("/bids?tab=puzzle");
   };
 
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const acked = getAckSet(user.id);
+    pendingIds.forEach((id) => acked.add(id));
+    saveAckSet(user.id, acked);
+    setPendingIds([]);
+  };
+
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
-      className="w-full flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 mb-3 hover:bg-amber-500/15 transition-colors text-left"
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") handleClick();
+      }}
+      className="w-full flex items-center justify-between bg-amber-500/10 border border-amber-500/30 rounded-2xl px-4 py-3 mb-3 hover:bg-amber-500/15 transition-colors text-left cursor-pointer"
     >
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <Flag className="w-4 h-4 text-amber-400 shrink-0" />
-        <span className="text-[13px] font-bold text-amber-400">
-          최근 깃발 {pendingIds.length}개의 결과를 확인하세요
+        <span className="text-[13px] font-bold text-amber-400 truncate">
+          최근 퍼즐 {pendingIds.length}개의 결과를 확인하세요
         </span>
       </div>
-      <ChevronRight className="w-4 h-4 text-amber-400 shrink-0" />
-    </button>
+      <div className="flex items-center gap-1 shrink-0">
+        <ChevronRight className="w-4 h-4 text-amber-400" />
+        <button
+          type="button"
+          onClick={handleDismiss}
+          aria-label="배너 닫기"
+          className="w-7 h-7 rounded-full flex items-center justify-center text-amber-400/70 hover:text-amber-300 hover:bg-amber-500/10 transition-colors"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
   );
 }

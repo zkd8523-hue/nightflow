@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useDeferredValue } from "react";
+import { useState, useMemo, useRef, useDeferredValue } from "react";
 import Link from "next/link";
 import dayjs from "dayjs";
 import type { Auction, Puzzle } from "@/types/database";
@@ -51,6 +51,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const [dateFilter, setDateFilter] = useState<DateFilter>("all");
   const [priceRange, setPriceRange] = useState<[number, number]>([PRICE_MIN, PRICE_MAX]);
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  // 퍼즐 탭 필터 (state lift up from PuzzleList — 아이콘을 지역 칩 옆에 배치하기 위함)
+  const [puzzleFilterOpen, setPuzzleFilterOpen] = useState(false);
+  const [puzzleHasActiveFilter, setPuzzleHasActiveFilter] = useState(false);
+  const puzzleResetRef = useRef<(() => void) | null>(null);
 
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
@@ -176,7 +180,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
           >
-            ⛳ 깃발 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
+            🧩 퍼즐 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
           </button>
 
           <button
@@ -202,13 +206,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           )}
         </div>
 
-        {onShowGuide && (tab === "puzzle" || tab === "advance") && (
+        {onShowGuide && (tab === "advance" || (tab === "puzzle" && (userRole === "md" || userRole === "admin"))) && (
           <button
             onClick={onShowGuide}
             className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap"
           >
             <span className="text-[13px]">ⓘ</span>
-            {tab === "puzzle" ? "깃발이란?" : "얼리버드란?"}
+            {tab === "puzzle" ? "퍼즐 이용안내" : "얼리버드란?"}
           </button>
         )}
       </div>
@@ -291,6 +295,34 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   <SlidersHorizontal className="w-4 h-4" />
                 </button>
                 {hasAdvanceFilter && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
+                )}
+              </div>
+            </div>
+          )}
+          {tab === "puzzle" && filteredPuzzles.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
+              {puzzleHasActiveFilter && (
+                <button
+                  onClick={() => puzzleResetRef.current?.()}
+                  className="text-[11px] font-bold text-neutral-400 hover:text-white transition-colors px-2"
+                >
+                  초기화
+                </button>
+              )}
+              <div className="relative">
+                <button
+                  onClick={() => setPuzzleFilterOpen(true)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                    puzzleHasActiveFilter
+                      ? "bg-white text-black"
+                      : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  }`}
+                  aria-label="필터"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                </button>
+                {puzzleHasActiveFilter && (
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
                 )}
               </div>
@@ -454,6 +486,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             userRole={userRole}
             offerCounts={puzzleOfferCounts}
             selectedArea={selectedArea}
+            filterOpen={puzzleFilterOpen}
+            onFilterOpenChange={setPuzzleFilterOpen}
+            onActiveFilterChange={setPuzzleHasActiveFilter}
+            resetRef={puzzleResetRef}
           />
         </>
       )}

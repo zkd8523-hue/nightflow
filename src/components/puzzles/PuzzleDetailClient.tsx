@@ -447,8 +447,8 @@ export function PuzzleDetailClient({
         <div className="space-y-5 pb-10">
           {/* 기본 정보 */}
           <section className="bg-[#1C1C1E] rounded-2xl p-5 space-y-4">
-            <div className="flex items-start justify-between">
-              <div>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
                 {puzzle.notes && (
                   <p className="text-[18px] font-black text-white leading-snug">{puzzle.notes}</p>
                 )}
@@ -456,33 +456,32 @@ export function PuzzleDetailClient({
                   {formatEventDate(puzzle.event_date)} <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400 ml-1"}>{puzzle.area}</span>
                 </p>
                 {puzzle.leader && (() => {
-                  const tier = getDealTier(puzzle.leader.deal_count_total ?? 0);
                   const dealCount = puzzle.leader.deal_count_total ?? 0;
-                  const leaderIsNew = isNewUser(puzzle.leader.created_at);
-                  return (
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => setShowLeaderInfo(true)}
-                        className="inline-flex items-center gap-1 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2 py-0.5 transition-colors"
-                      >
-                        <User className="w-3 h-3" />
-                        유저 정보
-                      </button>
-                      <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />
-                      {dealCount > 0 && (
-                        <span className="text-[11px] text-neutral-500 font-bold">거래 {dealCount}회</span>
-                      )}
-                    </div>
-                  );
+                  return dealCount > 0 ? (
+                    <span className="inline-block mt-1 text-[11px] text-neutral-500 font-bold">거래 {dealCount}회</span>
+                  ) : null;
                 })()}
-                <p className="text-[11px] text-neutral-600 mt-0.5">
-                  등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
-                </p>
               </div>
-              <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mt-1 -mr-1">
-                <Share2 className="w-4.5 h-4.5" />
-              </button>
+              <div className="flex items-center gap-1.5 -mt-1 shrink-0 flex-wrap justify-end">
+                {puzzle.leader && (() => {
+                  const tier = getDealTier(puzzle.leader.deal_count_total ?? 0);
+                  const leaderIsNew = isNewUser(puzzle.leader.created_at);
+                  return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
+                })()}
+                {puzzle.leader && (
+                  <button
+                    type="button"
+                    onClick={() => setShowLeaderInfo(true)}
+                    className="inline-flex items-center gap-1 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2 py-1 transition-colors"
+                  >
+                    <User className="w-3 h-3" />
+                    유저 정보
+                  </button>
+                )}
+                <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mr-1">
+                  <Share2 className="w-4.5 h-4.5" />
+                </button>
+              </div>
             </div>
 
             {/* 예산 */}
@@ -517,7 +516,7 @@ export function PuzzleDetailClient({
               <div className="space-y-1.5">
                 <span className="text-[13px] text-neutral-400">
                   {puzzle.current_count >= puzzle.target_count
-                    ? "파티 완성!"
+                    ? "퍼즐 완성!"
                     : `파티원 ${puzzle.current_count}/${puzzle.target_count}명`}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -546,6 +545,10 @@ export function PuzzleDetailClient({
               </div>
             )}
 
+            {/* 등록일시 — 우측 하단 */}
+            <p className="text-[11px] text-neutral-600 text-right">
+              등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
+            </p>
           </section>
 
           {/* 카카오 오픈채팅: 참여자면 항상 표시 */}
@@ -768,7 +771,7 @@ export function PuzzleDetailClient({
             {!isLeader && pendingOffers.length > 0 && !isAccepted && (
               <div className="space-y-3">
                 <p className="text-[13px] text-neutral-400">
-                  현재 <span className="text-white font-bold">MD {pendingOffers.length}명</span>이 제안 중
+                  <span className="text-white font-bold">MD {pendingOffers.length}명</span>이 줄서있어요
                 </p>
                 {publicOffers.map((offer, idx) => (
                   <div

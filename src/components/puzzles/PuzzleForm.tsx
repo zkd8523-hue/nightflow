@@ -10,21 +10,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import type { GenderPref, AgePref, VibePref, Puzzle } from "@/types/database";
+import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
+import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 
-// 총 예산 빠른 추가 (만원 단위)
-const BUDGET_PRESETS = [50000, 100000];
+// 빠른 추가 (만원 단위) — 모드별로 다름
+const BUDGET_PRESETS_RECRUIT = [100000, 50000, 10000]; // 퍼즐(인당) +10만/+5만/+1만
+const BUDGET_PRESETS_FIXED = [500000, 100000, 50000]; // 깃발(총액) +50만/+10만/+5만
 
-// 인원 설정(내 일행 구성): 혼성
+// 모집 OFF (인원 확정 깃발): 본인 일행 구성 명세 - 혼성 제거 (남/녀만)
 const GENDER_OPTIONS_FIXED: { value: GenderPref; label: string }[] = [
   { value: "male_only", label: "남" },
   { value: "female_only", label: "녀" },
-  { value: "any", label: "혼성" },
 ];
 
-// 파티원 모집(원하는 상대): 상관없음
+// 모집 ON (파티원 모집): 원하는 상대 - 상관없음 포함
 const GENDER_OPTIONS_RECRUIT: { value: GenderPref; label: string }[] = [
   { value: "male_only", label: "남" },
   { value: "female_only", label: "녀" },
@@ -38,9 +39,17 @@ const AGE_OPTIONS: { value: AgePref; label: string }[] = [
   { value: "any", label: "상관없음" },
 ];
 
+// Phase 1: 바이브 라벨 정정 (조용히 → 편하게, 상관없음 → 누구나 환영)
 const VIBE_OPTIONS: { value: VibePref; label: string }[] = [
-  { value: "chill", label: "조용히" },
+  { value: "chill", label: "편하게" },
   { value: "active", label: "신나게" },
+  { value: "any", label: "누구나 환영" },
+];
+
+// Phase 1 신규: 음악 선호 (한국 클럽씬 1차 분기 - 힙합/EDM)
+const MUSIC_OPTIONS: { value: MusicPref; label: string }[] = [
+  { value: "hiphop", label: "힙합" },
+  { value: "edm", label: "EDM" },
   { value: "any", label: "상관없음" },
 ];
 
@@ -51,32 +60,86 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
   const isEditMode = !!puzzle;
 
-  // 편집 모드: puzzle에서 초기값 추출. 신규 등록 모드: 기본값.
-  const initialEventDate = puzzle?.event_date ?? searchParams.get("date") ?? "";
-  const initialArea = puzzle?.area ?? "";
-  const initialBudget = puzzle?.total_budget ?? (puzzle ? puzzle.budget_per_person * puzzle.target_count : 0);
-  const initialNotes = puzzle?.notes ?? "";
-  const initialTotalPeople = puzzle?.target_count ?? 2;
+  // 자동저장 draft 로드 (신규 등록 시에만)
+  const DRAFT_KEY = `puzzle_form_draft_${userId}`;
+  const draft = (() => {
+    if (typeof window === "undefined" || isEditMode) return null;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      return raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  // 편집 모드: puzzle에서 초기값 추출. 신규 등록 모드: draft → 기본값 순.
+  const initialEventDate = puzzle?.event_date ?? (draft?.eventDate as string) ?? searchParams.get("date") ?? "";
+  // 디폴트 모드 = 모집하기(퍼즐). 깃발 모드 진입 시에만 "서울 어디든" 자동 선택.
+  const draftIsRecruiting = (draft?.isRecruitingParty as boolean) ?? true;
+  const initialArea = puzzle?.area ?? (draft?.area as string) ?? (!draftIsRecruiting ? "서울 어디든" : "");
+  // budgetAmount 의미: 퍼즐(모집 ON)=인당가 / 깃발(모집 OFF)=총액
+  // edit 모드: puzzle에서 모드에 맞춰 변환 / 신규: draft 또는 0
+  const initialBudget = puzzle
+    ? (puzzle.is_recruiting_party
+        ? (puzzle.total_budget && puzzle.target_count > 0
+            ? Math.round(puzzle.total_budget / puzzle.target_count)
+            : (puzzle.budget_per_person ?? 0))
+        : (puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count))
+    : ((draft?.budgetAmount as number) ?? 0);
+  const initialNotes = puzzle?.notes ?? (draft?.notes as string) ?? "";
+  const initialTotalPeople = puzzle?.target_count ?? (draft?.totalPeople as number) ?? 2;
+  const initialKakaoUrl = puzzle?.kakao_open_chat_url ?? (draft?.kakaoUrl as string) ?? "";
 
   const [eventDate, setEventDate] = useState(initialEventDate);
   const [area, setArea] = useState(initialArea);
   // OFF: 총액 직접 입력 / ON: 인당 입력
   const [budgetAmount, setBudgetAmount] = useState(initialBudget);
   const [budgetInputStr, setBudgetInputStr] = useState(initialBudget ? initialBudget.toLocaleString() : "");
-  const [isRecruitingParty, setIsRecruitingParty] = useState(false);
+  const [isRecruitingParty, setIsRecruitingParty] = useState<boolean>(
+    puzzle?.is_recruiting_party ?? (draft?.isRecruitingParty as boolean) ?? true
+  );
   // OFF 모드(인원 확정): 본인 포함 총 일행 수
   const [totalPeople, setTotalPeople] = useState(initialTotalPeople);
   // ON 모드(파티원 모집): 목표 인원 + 본인 동행
-  const [targetCount, setTargetCount] = useState(4);
-  const [hasGuest, setHasGuest] = useState(false);
-  const [guestCount, setGuestCount] = useState(1);
-  const [genderPref, setGenderPref] = useState<GenderPref>("male_only");
-  const [agePref, setAgePref] = useState<AgePref>("any");
-  const [vibePref, setVibePref] = useState<VibePref>("any");
+  const [targetCount, setTargetCount] = useState<number>(
+    (puzzle?.is_recruiting_party ? puzzle?.target_count : undefined) ?? (draft?.targetCount as number) ?? 4
+  );
+  // edit 모드에서 추가 멤버 없으므로 current_count - 1 = 방장 본인의 일행 수
+  const initialGuest = puzzle?.is_recruiting_party ? Math.max(0, (puzzle?.current_count ?? 1) - 1) : 0;
+  const [hasGuest, setHasGuest] = useState<boolean>(
+    puzzle ? initialGuest > 0 : ((draft?.hasGuest as boolean) ?? false)
+  );
+  const [guestCount, setGuestCount] = useState<number>(
+    initialGuest > 0 ? initialGuest : ((draft?.guestCount as number) ?? 1)
+  );
+  const [genderPref, setGenderPref] = useState<GenderPref>(
+    puzzle?.gender_pref ?? (draft?.genderPref as GenderPref) ?? "male_only"
+  );
+  const [agePref, setAgePref] = useState<AgePref>(
+    puzzle?.age_pref ?? (draft?.agePref as AgePref) ?? "any"
+  );
+  const [vibePref, setVibePref] = useState<VibePref>(
+    puzzle?.vibe_pref ?? (draft?.vibePref as VibePref) ?? "any"
+  );
+  // Phase 1: 음악 선호 (DB nullable, 기본값 'any')
+  const [musicPref, setMusicPref] = useState<MusicPref>(
+    puzzle?.music_preference ?? (draft?.musicPref as MusicPref) ?? "any"
+  );
+  // 여성 파티원 모집 시 방장도 여성임을 확인하는 체크박스
+  const [leaderFemaleConfirmed, setLeaderFemaleConfirmed] = useState<boolean>(
+    (draft?.leaderFemaleConfirmed as boolean) ?? false
+  );
+  // 오픈채팅 URL — edit 모드면 puzzle에서 복원, 신규 등록은 항상 빈 값으로 시작
+  const [kakaoUrl, setKakaoUrl] = useState(puzzle?.kakao_open_chat_url ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [showOtherCities, setShowOtherCities] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
+  // 퍼즐 소개: 비어 있으면 자동 채움. 사용자가 수동 입력 시 자동 채움 중단.
+  // draft에서 복원되면 그 상태 유지, 아니면 initialNotes 유무로 판단
+  const [notesEverEdited, setNotesEverEdited] = useState(
+    (draft?.notesEverEdited as boolean | undefined) ?? !!puzzle?.notes
+  );
   const [submitted, setSubmitted] = useState(false);
 
   // 신규: default 대비 변경 / 편집: 초기값 대비 변경
@@ -86,14 +149,23 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         area !== initialArea ||
         budgetAmount !== initialBudget ||
         notes.trim() !== initialNotes.trim() ||
-        totalPeople !== initialTotalPeople
+        totalPeople !== initialTotalPeople ||
+        isRecruitingParty !== (puzzle?.is_recruiting_party ?? false) ||
+        targetCount !== (puzzle?.target_count ?? 4) ||
+        hasGuest !== (initialGuest > 0) ||
+        (hasGuest && guestCount !== initialGuest) ||
+        genderPref !== (puzzle?.gender_pref ?? "male_only") ||
+        agePref !== (puzzle?.age_pref ?? "any") ||
+        vibePref !== (puzzle?.vibe_pref ?? "any") ||
+        (musicPref === "any" ? null : musicPref) !== (puzzle?.music_preference ?? null)
+        // 카톡 URL은 edit 모드에서 수정 불가 (dirty 체크 제외)
       )
     : (
         eventDate !== "" ||
         area !== "" ||
         budgetAmount !== 0 ||
         notes.trim() !== "" ||
-        isRecruitingParty !== false ||
+        isRecruitingParty !== true ||
         totalPeople !== 2 ||
         targetCount !== 4 ||
         hasGuest !== false
@@ -104,6 +176,87 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   useEffect(() => {
     trackEvent(isEditMode ? 'puzzle_edit_view' : 'puzzle_form_view');
   }, [isEditMode]);
+
+  // 자동 저장 (신규 등록 시에만, 500ms debounce)
+  useEffect(() => {
+    if (isEditMode || typeof window === "undefined") return;
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          DRAFT_KEY,
+          JSON.stringify({
+            eventDate,
+            area,
+            budgetAmount,
+            isRecruitingParty,
+            totalPeople,
+            targetCount,
+            hasGuest,
+            guestCount,
+            genderPref,
+            agePref,
+            vibePref,
+            musicPref,
+            leaderFemaleConfirmed,
+            notes,
+            notesEverEdited,
+            // kakaoUrl 제외 — 매번 새 채팅방을 만들도록 유도
+          })
+        );
+      } catch {
+        // localStorage full or disabled — silently ignore
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [
+    isEditMode,
+    DRAFT_KEY,
+    eventDate,
+    area,
+    budgetAmount,
+    isRecruitingParty,
+    totalPeople,
+    targetCount,
+    hasGuest,
+    guestCount,
+    genderPref,
+    agePref,
+    vibePref,
+    musicPref,
+    leaderFemaleConfirmed,
+    notes,
+    notesEverEdited,
+  ]);
+
+  // 등록 성공 시 draft 삭제
+  const clearDraft = () => {
+    if (typeof window === "undefined") return;
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      // ignore
+    }
+  };
+
+  // 퍼즐 소개 자동 채움: 사용자가 수동 입력하지 않았을 때만
+  useEffect(() => {
+    if (notesEverEdited) return;
+    if (!eventDate || !area) return;
+    const d = new Date(eventDate + "T00:00:00");
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+    const days = ["일", "월", "화", "수", "목", "금", "토"];
+    const datePart = `${m}/${day}(${days[d.getDay()]})`;
+    const headcount = isRecruitingParty ? targetCount : totalPeople;
+    // 퍼즐(모집 ON): 인당가 N표기 / 깃발(모집 OFF): 총액 만원 표기
+    let pricePart = "";
+    if (isRecruitingParty && budgetAmount > 0) {
+      pricePart = `, N${Math.round(budgetAmount / 10000)}`;
+    } else if (!isRecruitingParty && budgetAmount > 0) {
+      pricePart = `, ${Math.round(budgetAmount / 10000)}만`;
+    }
+    setNotes(`${datePart} ${area} ${headcount}명${pricePart}`);
+  }, [eventDate, area, isRecruitingParty, targetCount, totalPeople, budgetAmount, notesEverEdited]);
 
   // "서울 어디든" 선택 시 파티원 모집 강제 OFF (지역 미정 상태에서 합류 결정 불가)
   const handleAreaChange = (newArea: string) => {
@@ -174,11 +327,20 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     if (effectiveIsRecruiting && budgetAmount < 10000) {
       return fail('budget_per_person', '인당 예산은 최소 1만원 이상이어야 합니다');
     }
+    // 카톡 오픈채팅 검증은 신규 등록(insert) 시에만 적용. edit 모드에선 기존 값 그대로 유지.
+    if (!isEditMode) {
+      if (effectiveIsRecruiting && !kakaoUrl.trim()) {
+        return fail('kakao_url_required', '파티원 모집은 카톡 오픈채팅 링크가 필수예요');
+      }
+      if (kakaoUrl.trim() && !kakaoUrl.trim().startsWith('https://open.kakao.com/')) {
+        return fail('kakao_url', '카톡 오픈채팅 링크는 https://open.kakao.com/ 로 시작해야 합니다');
+      }
+    }
     if (!effectiveIsRecruiting && budgetAmount < 10000 * totalPeople) {
       return fail('budget_total', `${totalPeople}명 기준 최소 ${(10000 * totalPeople).toLocaleString()}원 이상이어야 합니다`);
     }
     if (effectiveIsRecruiting && effectiveCurrentCount > effectiveTargetCount) {
-      return fail('headcount_overflow', '동행 인원이 모집 인원을 초과합니다');
+      return fail('headcount_overflow', '일행 인원이 모집 인원을 초과합니다');
     }
     if (!effectiveIsRecruiting && totalPeople < 2) {
       return fail('headcount_min', '인원 확정 깃발은 2명 이상이어야 합니다');
@@ -192,9 +354,12 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           .update({
             area,
             event_date: eventDate,
+            is_recruiting_party: effectiveIsRecruiting,
             gender_pref: effectiveIsRecruiting ? genderPref : 'any',
             age_pref: effectiveIsRecruiting ? agePref : 'any',
             vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
+            music_preference: musicPref === 'any' ? null : musicPref,
+            // 카톡 오픈채팅: edit 모드에선 변경 X (기존 값 보존)
             total_budget: totalBudget,
             budget_per_person: effectiveIsRecruiting
               ? budgetAmount
@@ -226,7 +391,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           target_count: effectiveTargetCount,
         });
 
-        toast.success("깃발이 수정되었어요");
+        toast.success("퍼즐이 수정되었어요");
+        clearDraft();
         setSubmitted(true);
         router.push(`/flags/${puzzle.id}`);
         router.refresh();
@@ -242,6 +408,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           gender_pref: effectiveIsRecruiting ? genderPref : 'any',
           age_pref: effectiveIsRecruiting ? agePref : 'any',
           vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
+          music_preference: musicPref === 'any' ? null : musicPref,
+          kakao_open_chat_url: kakaoUrl.trim() || null,
           total_budget: totalBudget,
           budget_per_person: effectiveIsRecruiting
             ? budgetAmount
@@ -257,16 +425,20 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
       if (puzzleError) {
         console.error("puzzles insert error:", puzzleError);
-        return fail('db_error', puzzleError.message || '깃발 꽂기에 실패했습니다');
+        return fail('db_error', puzzleError.message || '퍼즐 등록에 실패했습니다');
       }
 
-      // 대표자를 puzzle_members에도 추가
-      const { error: memberError } = await supabase.from("puzzle_members").insert({
-        puzzle_id: created.id,
-        user_id: userId,
-        guest_count: effectiveGuestCount,
-      });
-      if (memberError) console.error("puzzle_members insert error:", memberError);
+      // 대표자를 puzzle_members에도 추가 (fire-and-forget — 네비게이션 블로킹 X)
+      supabase
+        .from("puzzle_members")
+        .insert({
+          puzzle_id: created.id,
+          user_id: userId,
+          guest_count: effectiveGuestCount,
+        })
+        .then(({ error: memberError }) => {
+          if (memberError) console.error("puzzle_members insert error:", memberError);
+        });
 
       trackEvent('puzzle_created', {
         puzzle_id: created.id,
@@ -275,7 +447,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         target_count: effectiveTargetCount,
       });
 
-      toast.success(effectiveIsRecruiting ? "깃발을 꽂았어요! 파티원과 MD를 기다려봐요" : "깃발을 꽂았어요! MD 제안을 기다려봐요");
+      toast.success(effectiveIsRecruiting ? "퍼즐이 올라갔어요! 파티원과 MD를 기다려봐요 🧩" : "깃발이 올라갔어요! MD 시크릿 오퍼를 기다려봐요 🚩");
+      clearDraft();
       setSubmitted(true); // 이탈 가드 해제
       router.push(`/flags/${created.id}`);
     } catch (err) {
@@ -288,6 +461,72 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
   return (
     <div className="space-y-8 pb-12">
+      {/* Phase 1: 파티원 모집 토글 (첫 질문) */}
+      {!isEditMode && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 text-white font-bold mb-2">
+            <Users className="w-4 h-4 text-green-500" />
+            <span>파티원을 모집하시나요?</span>
+          </div>
+          <div className="grid grid-cols-1 gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isRecruitingParty) {
+                  // 깃발 → 퍼즐: 예산 의미 변경(총액→인당)으로 값 초기화
+                  setBudgetAmount(0);
+                  setBudgetInputStr("");
+                }
+                setIsRecruitingParty(true);
+                // 퍼즐(파티원 모집) 모드에선 "서울 어디든" 불가 — 선택돼 있으면 초기화
+                if (area === "서울 어디든") setArea("");
+              }}
+              className={`w-full text-left p-4 rounded-2xl border transition-all ${
+                isRecruitingParty
+                  ? "bg-green-500/10 border-green-500/50"
+                  : "bg-[#1C1C1E] border-neutral-800 hover:border-neutral-700"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[15px] font-black text-white">
+                  모집하기 - 퍼즐 🧩
+                </span>
+              </div>
+              <p className="text-[12px] text-neutral-400 leading-snug">
+                파티원이 다 모이면 자동으로 깃발🚩로 바뀌어 MD 시크릿 오퍼를 받아요.
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (isRecruitingParty) {
+                  // 퍼즐 → 깃발: 예산 의미 변경(인당→총액)으로 값 초기화
+                  setBudgetAmount(0);
+                  setBudgetInputStr("");
+                }
+                setIsRecruitingParty(false);
+                // 깃발 모드 디폴트 지역: "서울 어디든" (사용자가 따로 선택 안 했을 때)
+                if (!area) setArea("서울 어디든");
+              }}
+              className={`w-full text-left p-4 rounded-2xl border transition-all ${
+                !isRecruitingParty
+                  ? "bg-green-500/10 border-green-500/50"
+                  : "bg-[#1C1C1E] border-neutral-800 hover:border-neutral-700"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[15px] font-black text-white">
+                  인원 확정 - 깃발 🚩
+                </span>
+              </div>
+              <p className="text-[12px] text-neutral-400 leading-snug">
+                즉시 MD 시크릿 오퍼를 받아요.
+              </p>
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* 방문희망날짜 */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">
@@ -313,17 +552,19 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         </div>
         <div>
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => handleAreaChange("서울 어디든")}
-              className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
-                area === "서울 어디든"
-                  ? "bg-white text-black"
-                  : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-              }`}
-            >
-              서울 어디든
-            </button>
+            {!isRecruitingParty && (
+              <button
+                type="button"
+                onClick={() => handleAreaChange("서울 어디든")}
+                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
+                  area === "서울 어디든"
+                    ? "bg-white text-black"
+                    : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                }`}
+              >
+                서울 어디든 🔥
+              </button>
+            )}
             {MAIN_AREAS.map((a) => (
               <button
                 key={a}
@@ -379,7 +620,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           )}
         {area === "서울 어디든" && (
           <p className="text-[12px] text-amber-400/80 leading-relaxed px-1">
-            서울 모든 지역 MD들의 제안을 받을 수 있어요. 🔥
+            서울 모든 지역 MD들의 제안을 받을 수 있어요.
           </p>
         )}
         </div>
@@ -392,36 +633,31 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           <span>인원 설정</span>
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
-          <div>
-            {!isRecruitingParty ? (
-              <div className="space-y-2">
-                <p className="text-[11px] text-neutral-400">총 일행 수 (본인 포함)</p>
-                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
-                  <button
-                    type="button"
-                    onClick={() => setTotalPeople(Math.max(2, totalPeople - 1))}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
-                  >
-                    <Minus className="w-3.5 h-3.5 text-white" />
-                  </button>
-                  <span className="text-[15px] font-black text-white">{totalPeople}명</span>
-                  <button
-                    type="button"
-                    onClick={() => setTotalPeople(Math.min(20, totalPeople + 1))}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-white" />
-                  </button>
-                </div>
-                <p className="text-[11px] text-neutral-500">
-                  MD가 인원에 맞춰 테이블·음료를 세팅해요
-                </p>
+          {!isRecruitingParty ? (
+            <div className="space-y-2">
+              <p className="text-[11px] text-neutral-400">총 일행 수 (본인 포함)</p>
+              <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
+                <button
+                  type="button"
+                  onClick={() => setTotalPeople(Math.max(2, totalPeople - 1))}
+                  className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                >
+                  <Minus className="w-3.5 h-3.5 text-white" />
+                </button>
+                <span className="text-[15px] font-black text-white">{totalPeople}명</span>
+                <button
+                  type="button"
+                  onClick={() => setTotalPeople(Math.min(6, totalPeople + 1))}
+                  className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5 text-white" />
+                </button>
               </div>
-            ) : null}
-
-            {/* 성별 — 파티원 모집 중일 때만 노출 (비모집은 취향 태그 자체 없음) */}
-            {isRecruitingParty && (
-              <div className="pt-3 border-t border-neutral-800 space-y-2">
+            </div>
+          ) : (
+            <>
+              {/* 파티원 성별 */}
+              <div className="space-y-2">
                 <p className="text-[11px] text-neutral-400">파티원 성별</p>
                 <div className="flex gap-2">
                   {GENDER_OPTIONS_RECRUIT.map((opt) => (
@@ -439,49 +675,64 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {isRecruitingParty ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <p className="text-[11px] text-neutral-400">목표 인원 (본인 포함)</p>
-                  <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const next = Math.max(2, targetCount - 1);
-                        setTargetCount(next);
-                        if (hasGuest) setGuestCount((g) => Math.min(g, next - 1));
-                      }}
-                      className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
-                    >
-                      <Minus className="w-3.5 h-3.5 text-white" />
-                    </button>
-                    <span className="text-[15px] font-black text-white">{targetCount}명</span>
-                    <button
-                      type="button"
-                      onClick={() => setTargetCount(Math.min(20, targetCount + 1))}
-                      className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-white" />
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-neutral-500">최소 2명, 최대 20명</p>
-                </div>
-                <div className="pt-2 border-t border-neutral-800 space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer">
+                {genderPref === "female_only" && (
+                  <label className="flex items-center justify-between gap-2 cursor-pointer pt-1">
+                    <span className="text-[12px] font-bold text-white">
+                      💜 방장님도 여성이신가요?
+                    </span>
                     <input
                       type="checkbox"
-                      checked={hasGuest}
-                      onChange={(e) => {
-                        setHasGuest(e.target.checked);
-                        if (!e.target.checked) setGuestCount(1);
-                      }}
-                      className="w-4 h-4 rounded accent-white"
+                      checked={leaderFemaleConfirmed}
+                      onChange={(e) => setLeaderFemaleConfirmed(e.target.checked)}
+                      className="w-4 h-4 rounded accent-pink-400"
                     />
-                    <span className="text-[13px] font-bold text-white">본인이 이미 데려가는 일행이 있나요?</span>
                   </label>
+                )}
+              </div>
+
+              {/* 목표 인원 */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] text-neutral-400">목표 인원 (본인 포함)</p>
+                  <p className="text-[11px] text-neutral-500">최소 2명, 최대 6명</p>
+                </div>
+                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = Math.max(2, targetCount - 1);
+                      setTargetCount(next);
+                      if (hasGuest) setGuestCount((g) => Math.min(g, next - 1));
+                    }}
+                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                  >
+                    <Minus className="w-3.5 h-3.5 text-white" />
+                  </button>
+                  <span className="text-[15px] font-black text-white">{targetCount}명</span>
+                  <button
+                    type="button"
+                    onClick={() => setTargetCount(Math.min(6, targetCount + 1))}
+                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
+              </div>
+
+              {/* 동행 일행 */}
+              <div className="space-y-3">
+                <label className="flex items-center justify-between gap-3 cursor-pointer">
+                  <span className="text-[13px] font-bold text-white">이미 일행이 있나요?</span>
+                  <input
+                    type="checkbox"
+                    checked={hasGuest}
+                    onChange={(e) => {
+                      setHasGuest(e.target.checked);
+                      if (!e.target.checked) setGuestCount(1);
+                    }}
+                    className="w-4 h-4 rounded accent-white"
+                  />
+                </label>
                   {hasGuest && (
                     <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
                       <button
@@ -491,7 +742,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                       >
                         <Minus className="w-3.5 h-3.5 text-white" />
                       </button>
-                      <span className="text-[15px] font-black text-white">동행 {guestCount}명</span>
+                      <span className="text-[15px] font-black text-white">일행 {guestCount}명</span>
                       <button
                         type="button"
                         onClick={() => setGuestCount(Math.min(targetCount - 1, guestCount + 1))}
@@ -501,10 +752,16 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                       </button>
                     </div>
                   )}
-                </div>
               </div>
-            ) : null}
-          </div>
+
+              {/* 모집 요약 안내 (일행이 있을 때만 표시) */}
+              {hasGuest && effectiveTargetCount - effectiveCurrentCount > 0 && (
+                <p className="text-[12px] text-green-400 font-bold">
+                  🧩 총 {effectiveTargetCount - effectiveCurrentCount}명의 파티원을 구해요
+                </p>
+              )}
+            </>
+          )}
         </div>
       </section>
 
@@ -512,7 +769,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">
           <Coins className="w-4 h-4 text-amber-500" />
-          <span>{isRecruitingParty ? "인당 예산" : "예산"}</span>
+          <span>{isRecruitingParty ? "인당 예산" : "총 예산"}</span>
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
           <div className="relative">
@@ -532,7 +789,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               onBlur={() => {
                 if (budgetAmount > 0) setBudgetInputStr(budgetAmount.toLocaleString());
               }}
-              placeholder={isRecruitingParty ? "예: 250,000" : "총: 1,000,000"}
+              placeholder={isRecruitingParty ? "예) 250,000" : "예) 1,000,000"}
               className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 pr-12"
             />
             {isRecruitingParty && (
@@ -541,8 +798,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               </span>
             )}
           </div>
-          <div className="flex gap-2">
-            {BUDGET_PRESETS.map((preset) => (
+          <div className="grid grid-cols-4 gap-1.5">
+            {(isRecruitingParty ? BUDGET_PRESETS_RECRUIT : BUDGET_PRESETS_FIXED).map((preset) => (
               <Button
                 key={preset}
                 type="button"
@@ -553,7 +810,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                   setBudgetAmount(next);
                   setBudgetInputStr(next.toLocaleString());
                 }}
-                className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-xs"
+                className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-[13px]"
               >
                 +{(preset / 10000).toFixed(0)}만
               </Button>
@@ -563,67 +820,42 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               variant="outline"
               size="sm"
               onClick={() => { setBudgetAmount(0); setBudgetInputStr(""); }}
-              className="h-9 px-3 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-xs"
+              className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-[13px]"
             >
               초기화
             </Button>
           </div>
-          {/* 예산 요약 */}
-          <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-3">
-            {isRecruitingParty && (
-              <p className="text-[12px] text-neutral-400 leading-relaxed">
-                인당 <span className="text-amber-400 font-bold">{budgetAmount.toLocaleString()}원</span>
-                {" "}× {effectiveTargetCount}명 = 총{" "}
-                <span className="text-white font-bold">{totalBudget.toLocaleString()}원</span>
-              </p>
-            )}
-            <p className="text-[11px] text-neutral-600 mt-1">
-              * MD가 이 예산에 맞춰 보틀·서비스 구성을 제안해요.
+          {/* 예산 요약 — 박스 없이 인라인 */}
+          {isRecruitingParty && (
+            <p className="text-[13px] font-bold text-white">
+              인당 <span className="text-amber-400">{budgetAmount.toLocaleString()}원</span>
+              {" "}× {effectiveTargetCount}명 = 총{" "}
+              <span className="text-green-400">{totalBudget.toLocaleString()}원</span>
             </p>
-          </div>
+          )}
+          <p className="text-[12px] text-neutral-400">
+            MD가 이 예산에 맞춰 보틀·서비스를 구성해요
+          </p>
         </div>
       </section>
 
       {/* 취향 태그 — 파티원 모집 중일 때만 */}
       {isRecruitingParty && <section className="space-y-4">
-        <div>
-          <div className="flex items-center gap-2 text-white font-bold mb-1">
-            <Sparkles className="w-4 h-4 text-green-500" />
-            <span>이런 분들과 함께해요</span>
-          </div>
-          <p className="text-[11px] text-neutral-500 ml-6">필수 아님 — 참여자가 스스로 판단할 수 있도록 도와줍니다</p>
+        <div className="flex items-center gap-2 text-white font-bold mb-2">
+          <Sparkles className="w-4 h-4 text-green-500" />
+          <span>이런 분들과 함께해요</span>
         </div>
 
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
-          <div>
-            <p className="text-[11px] text-neutral-400 mb-2">성별</p>
-            <div className="flex gap-2">
-              {GENDER_OPTIONS_RECRUIT.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setGenderPref(opt.value)}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
-                    genderPref === opt.value
-                      ? "bg-white text-black"
-                      : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-[11px] text-neutral-400 mb-2">연령</p>
-            <div className="flex gap-2">
+        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-4 py-3 space-y-2.5">
+          <div className="flex items-center gap-3">
+            <p className="text-[11px] text-neutral-400 w-8 shrink-0">연령</p>
+            <div className="flex gap-1.5 flex-wrap">
               {AGE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setAgePref(opt.value)}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
                     agePref === opt.value
                       ? "bg-white text-black"
                       : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
@@ -635,15 +867,35 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             </div>
           </div>
 
-          <div>
-            <p className="text-[11px] text-neutral-400 mb-2">분위기</p>
-            <div className="flex gap-2">
+          <div className="flex items-center gap-3">
+            <p className="text-[11px] text-neutral-400 w-8 shrink-0">음악</p>
+            <div className="flex gap-1.5 flex-wrap">
+              {MUSIC_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setMusicPref(opt.value)}
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
+                    musicPref === opt.value
+                      ? "bg-white text-black"
+                      : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <p className="text-[11px] text-neutral-400 w-8 shrink-0">바이브</p>
+            <div className="flex gap-1.5 flex-wrap">
               {VIBE_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => setVibePref(opt.value)}
-                  className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
+                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
                     vibePref === opt.value
                       ? "bg-white text-black"
                       : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
@@ -657,26 +909,58 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         </div>
       </section>}
 
-      {/* 깃발 제목 (한 줄 메모) */}
+      {/* 팀 소개 (한 줄 메모) */}
       <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold mb-2">
-          <MessageCircle className="w-4 h-4 text-purple-500" />
-          <span>깃발 제목</span>
-          <span className="text-[11px] text-neutral-500 font-normal ml-1">MD가 가장 먼저 읽는 문구예요</span>
+        <div className="flex items-baseline gap-2 text-white font-bold mb-2">
+          <MessageCircle className="w-4 h-4 text-purple-500 self-center" />
+          <span>{isRecruitingParty ? "퍼즐 소개" : "MD에게 한마디"}</span>
+          <span className="text-[11px] text-neutral-500 font-normal">
+            {isRecruitingParty ? "참여자와 MD가 가장 먼저 읽어요" : "MD가 매물 제안할 때 참고해요"}
+          </span>
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
           <Input
             type="text"
             value={notes}
-            onChange={(e) => setNotes(e.target.value)}
+            onChange={(e) => {
+              setNotes(e.target.value);
+              // 사용자가 비웠다면 자동 채움 재개, 그 외엔 수동 편집으로 표시
+              if (e.target.value === "") setNotesEverEdited(false);
+              else setNotesEverEdited(true);
+            }}
             placeholder={isRecruitingParty
-              ? "예) 오늘 강남에서 생파할 텐션 높은 분 모여요🔥 (최대 25자)"
-              : "예) 강남 토요일 4명, 서비스 넉넉한 MD님 기다려요! (최대 25자)"}
+              ? "예) 매너 좋으신 분만. 신나게 놀 분."
+              : "예) 4명, 메인테이블 원해요"}
             className="bg-neutral-900 border-neutral-800 h-12 text-[14px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal"
             maxLength={25}
           />
         </div>
       </section>
+
+      {/* 카톡 오픈채팅 — 파티원 모집 중일 때만 (edit 모드에선 수정 불가) */}
+      {isRecruitingParty && (
+        <section className="space-y-4">
+          <div className="flex items-baseline gap-2 text-white font-bold mb-2">
+            <MessageCircle className="w-4 h-4 text-yellow-400 self-center" />
+            <span>카톡 오픈채팅 링크</span>
+            {isEditMode && (
+              <span className="text-[11px] text-neutral-500 font-normal">수정 불가</span>
+            )}
+          </div>
+          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
+            <Input
+              type="url"
+              value={kakaoUrl}
+              onChange={(e) => setKakaoUrl(e.target.value)}
+              placeholder="https://open.kakao.com/..."
+              readOnly={isEditMode}
+              disabled={isEditMode}
+              className="bg-neutral-900 border-neutral-800 h-11 text-[13px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal disabled:opacity-70 disabled:cursor-not-allowed"
+            />
+            {!isEditMode && <KakaoOpenChatGuide suggestedTitle={suggestedChatTitle} />}
+          </div>
+        </section>
+      )}
 
       {/* 총 예산 미리보기 */}
       <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 space-y-1">
@@ -697,7 +981,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           </p>
         ) : hasGuest ? (
           <p className="text-[11px] text-green-500/60">
-            본인 + 동행 {guestCount}명으로 시작 ({effectiveCurrentCount}/{effectiveTargetCount}명)
+            본인 + 일행 {guestCount}명으로 시작 ({effectiveCurrentCount}/{effectiveTargetCount}명)
           </p>
         ) : (
           <p className="text-[11px] text-green-500/60">
@@ -713,10 +997,10 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           disabled={submitting || (isEditMode && !isDirty)}
           className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
-          {submitting ? (isEditMode ? "수정 중..." : "꽂는 중...") : (
+          {submitting ? (isEditMode ? "수정 중..." : "등록 중...") : (
             <>
-              {isEditMode ? <Check className="w-5 h-5" /> : <Flag className="w-5 h-5" />}
-              {isEditMode ? "수정 완료" : "깃발 꽂기"}
+              {isEditMode ? <Check className="w-5 h-5" /> : (isRecruitingParty ? <Users className="w-5 h-5" /> : <Flag className="w-5 h-5" />)}
+              {isEditMode ? "수정 완료" : (isRecruitingParty ? "파티원 모집 시작" : "깃발 올리기")}
             </>
           )}
           {!submitting && !isEditMode && <ArrowRight className="w-5 h-5" />}
@@ -731,11 +1015,15 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           handleSubmit();
         }}
         onCancel={() => setShowSubmitConfirm(false)}
-        title={isEditMode ? "깃발을 수정할까요?" : "깃발을 꽂을까요?"}
+        title={isEditMode
+          ? "수정할까요?"
+          : (isRecruitingParty
+            ? "퍼즐이 완성되면 MD가 오퍼를 보내와요"
+            : "MD가 시크릿 오퍼를 보내드려요")}
         description={isEditMode
-          ? "변경된 내용으로 깃발이 갱신됩니다."
-          : "MD가 시크릿 제안을 보내드려요. 제안을 수락하면 그때 MD 연락처가 공개됩니다."}
-        confirmText={isEditMode ? "수정 완료" : "깃발 꽂기"}
+          ? "변경된 내용으로 갱신됩니다."
+          : "오퍼 중 하나를 수락하면 그때 MD 연락처가 공개됩니다."}
+        confirmText={isEditMode ? "수정 완료" : (isRecruitingParty ? "파티원 모집 시작" : "깃발 올리기")}
         cancelText="다시 확인"
         variant="default"
       />
