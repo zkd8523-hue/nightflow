@@ -62,20 +62,20 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 
 const PUZZLE_ONBOARDING_STEPS = [
   {
-    title: "1. 퍼즐 등록",
-    desc: "날짜·지역·예산을 선택하세요.\n인원이 부족하다면? 파티원 모집!",
+    title: "1. 깃발꽂기",
+    desc: "날짜·지역·예산만 정하면 깃발 끝!\n일행 모자라도 OK — 퍼즐🧩로 파티원 모집!",
     icon: <span className="text-[20px]">⛳</span>,
     color: "bg-amber-500/10",
   },
   {
-    title: "2. 오퍼 받기",
-    desc: "MD들이 테이블·주류를 제안해요.\n오퍼 내용은 오직 <방장>만 볼 수 있어요. (쉿)",
+    title: "2. 시크릿 오퍼 받기",
+    desc: "오퍼는 오직 방장만 볼 수 있어요 → MD들 눈치 0%, 진짜 경쟁\n클럽명·조건을 보고 베스트 픽!",
     icon: <span className="text-[20px]">📨</span>,
     color: "bg-emerald-500/10",
   },
   {
-    title: "3. 수락 & 예약 확정",
-    desc: "최고의 제안을 수락하면 MD의 연락처가 공개돼요. 예약 확정하면 끝!",
+    title: "3. 예약 확정",
+    desc: "마음에 드는 오퍼 수락 → MD 연락처 공개\n바로 연락해서 예약 확정하면 끝!",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },
@@ -368,12 +368,29 @@ export function HomeContent({
               </button>
             </>
           );
+          const userPuzzleTipContent = (
+            <>
+              예산만 꽂으면 시크릿 오퍼 쏟아져요!🚩
+              <br />
+              최고만 골라 잡으세요{" "}
+              <button
+                type="button"
+                onClick={() => setShowGuide((v) => !v)}
+                className="inline-flex items-center text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors ml-1 align-baseline"
+              >
+                (시크릿 오퍼란?)
+              </button>
+            </>
+          );
           const overriddenTabPromises = isMdOrAdmin
             ? {
                 ...TAB_PROMISES_MD,
                 puzzle: { ...TAB_PROMISES_MD.puzzle, content: mdPuzzleTipContent },
               }
-            : TAB_PROMISES;
+            : {
+                ...TAB_PROMISES,
+                puzzle: { ...TAB_PROMISES.puzzle, content: userPuzzleTipContent },
+              };
           const guideCard = showGuide ? (
             <section className="px-1">
               <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">

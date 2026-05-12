@@ -241,8 +241,8 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                   href="/flags/new"
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
                 >
-                  <span className="text-[14px]">🧩</span>
-                  <span className="text-[12px] font-black text-black">퍼즐 등록</span>
+                  <span className="text-[14px]">🚩</span>
+                  <span className="text-[12px] font-black text-black">깃발 꽂기</span>
                 </Link>
               )}
               <button

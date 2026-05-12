@@ -180,7 +180,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
           >
-            🧩 퍼즐 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
+            ⛳ 깃발 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
           </button>
 
           <button
@@ -206,13 +206,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           )}
         </div>
 
-        {onShowGuide && (tab === "advance" || (tab === "puzzle" && (userRole === "md" || userRole === "admin"))) && (
+        {onShowGuide && (tab === "advance" || (tab === "puzzle" && userRole !== "md" && userRole !== "admin")) && (
           <button
             onClick={onShowGuide}
             className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap"
           >
             <span className="text-[13px]">ⓘ</span>
-            {tab === "puzzle" ? "퍼즐 이용안내" : "얼리버드란?"}
+            {tab === "puzzle" ? "깃발 이용안내" : "얼리버드란?"}
           </button>
         )}
       </div>
