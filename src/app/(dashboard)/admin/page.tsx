@@ -8,6 +8,7 @@ import {
   Store,
   CheckCircle,
   Flag,
+  ShieldAlert,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -227,6 +228,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-purple-500/10",
       badge: activePuzzles ? `${activePuzzles}건 모집 중` : null,
       href: "/admin/puzzles",
+    },
+    {
+      label: "어뷰징 조사",
+      value: "깃발 패턴",
+      icon: ShieldAlert,
+      color: "text-red-400",
+      bgColor: "bg-red-500/10",
+      badge: null,
+      href: "/admin/abuse",
     },
   ];
 
