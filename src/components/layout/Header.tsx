@@ -193,7 +193,10 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
   };
 
   return (
-    <header className="border-b border-neutral-800 bg-neutral-950/50 backdrop-blur-sm sticky top-0 z-50">
+    <header
+      className="border-b border-neutral-800 bg-neutral-950/50 backdrop-blur-sm sticky top-0 z-50"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
       <div className="container mx-auto max-w-lg px-4 h-[68px] flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
           <Link href="/" className="text-lg font-black tracking-tighter text-white leading-none">
@@ -300,6 +303,18 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                             className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
                           >
                             모두 읽음
+                          </button>
+                        )}
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={() => {
+                              if (confirm("모든 알림을 삭제하시겠습니까?")) {
+                                deleteAllNotifications();
+                              }
+                            }}
+                            className="text-[11px] text-neutral-500 hover:text-red-400 transition-colors"
+                          >
+                            모두 지우기
                           </button>
                         )}
                         <Link

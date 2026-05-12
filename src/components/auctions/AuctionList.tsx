@@ -172,49 +172,51 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   return (
     <div className="space-y-2.5">
       <div className="flex items-center gap-2 px-1">
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0 touch-pan-x">
-          <button
-            onClick={() => setTab("puzzle")}
-            className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
-              ? "bg-amber-500 text-black"
-              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-              }`}
-          >
-            ⛳ 깃발 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
-          </button>
-
-          <button
-            onClick={() => setTab("advance")}
-            className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "advance"
-              ? "bg-amber-500 text-black"
-              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-              }`}
-          >
-            📅 얼리버드 경매 {advanceAuctionsAll.length > 0 && `(${advanceAuctionsAll.length})`}
-          </button>
-
-          {instantEnabled && (
+        <div className="overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0 touch-pan-x">
+          <div className="flex gap-2 w-max pr-4">
             <button
-              onClick={() => setTab("today")}
-              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
+              onClick={() => setTab("puzzle")}
+              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
                 ? "bg-amber-500 text-black"
                 : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
             >
-              🔥 오늘특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
+              ⛳ 깃발 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
             </button>
-          )}
-        </div>
 
-        {onShowGuide && (tab === "advance" || (tab === "puzzle" && userRole !== "md" && userRole !== "admin")) && (
-          <button
-            onClick={onShowGuide}
-            className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap"
-          >
-            <span className="text-[13px]">ⓘ</span>
-            {tab === "puzzle" ? "깃발 이용안내" : "얼리버드란?"}
-          </button>
-        )}
+            <button
+              onClick={() => setTab("advance")}
+              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "advance"
+                ? "bg-amber-500 text-black"
+                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                }`}
+            >
+              📅 얼리버드 경매 {advanceAuctionsAll.length > 0 && `(${advanceAuctionsAll.length})`}
+            </button>
+
+            {instantEnabled && (
+              <button
+                onClick={() => setTab("today")}
+                className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
+                  ? "bg-amber-500 text-black"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  }`}
+              >
+                🔥 오늘특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
+              </button>
+            )}
+
+            {onShowGuide && (tab === "advance" || (tab === "puzzle" && userRole !== "md" && userRole !== "admin")) && (
+              <button
+                onClick={onShowGuide}
+                className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap px-1"
+              >
+                <span className="text-[13px]">ⓘ</span>
+                {tab === "puzzle" ? "깃발 이용안내" : "얼리버드란?"}
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       {tabPromises && tabPromises[tab] && (
@@ -238,40 +240,42 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
       {guideSlot}
 
       <div className="flex items-center gap-2">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1 touch-pan-x flex-1 min-w-0">
-            <button
-              onClick={() => onAreaChange?.(null)}
-              className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                selectedArea === null
-                  ? "bg-white text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-              }`}
-            >
-              전체
-            </button>
-            {MAIN_AREAS.map((area) => (
+          <div className="overflow-x-auto scrollbar-hide pb-1 touch-pan-x flex-1 min-w-0">
+            <div className="flex gap-2 px-1 pr-3 w-max">
               <button
-                key={area}
-                onClick={() => onAreaChange?.(area)}
-                className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                  selectedArea === area
+                onClick={() => onAreaChange?.(null)}
+                className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+                  selectedArea === null
                     ? "bg-white text-black"
                     : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
               >
-                {area}
+                전체
               </button>
-            ))}
-            <button
-              onClick={() => onAreaChange?.("다른지역")}
-              className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                selectedArea === "다른지역"
-                  ? "bg-white text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-              }`}
-            >
-              다른지역
-            </button>
+              {MAIN_AREAS.map((area) => (
+                <button
+                  key={area}
+                  onClick={() => onAreaChange?.(area)}
+                  className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+                    selectedArea === area
+                      ? "bg-white text-black"
+                      : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  }`}
+                >
+                  {area}
+                </button>
+              ))}
+              <button
+                onClick={() => onAreaChange?.("다른지역")}
+                className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+                  selectedArea === "다른지역"
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                }`}
+              >
+                다른지역
+              </button>
+            </div>
           </div>
           {tab === "advance" && deferredAuctions.some(a => a.listing_type === "auction") && (
             <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
