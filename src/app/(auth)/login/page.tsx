@@ -106,7 +106,12 @@ function LoginContent() {
         if (error) throw error;
         if (data.url) {
           const { Browser } = await import("@capacitor/browser");
-          await Browser.open({ url: data.url, windowName: "_system" });
+          await Browser.open({
+            url: data.url,
+            windowName: "_self",
+            toolbarColor: "#0A0A0A",
+            presentationStyle: "fullscreen",
+          });
         }
         setLoading(false);
         return;
@@ -154,7 +159,12 @@ function LoginContent() {
         if (error) throw error;
         if (data.url) {
           const { Browser } = await import("@capacitor/browser");
-          await Browser.open({ url: data.url, windowName: "_system" });
+          await Browser.open({
+            url: data.url,
+            windowName: "_self",
+            toolbarColor: "#0A0A0A",
+            presentationStyle: "fullscreen",
+          });
         }
         setLoading(false);
         return;
