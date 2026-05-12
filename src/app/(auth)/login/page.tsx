@@ -93,21 +93,22 @@ function LoginContent() {
     const target = customRedirect || redirectPath;
 
     try {
-      // Capacitor 앱: webview 내부에서 OAuth 진행 (주소창 없음)
-      // callback은 client-side route로 처리 (code_verifier가 webview localStorage에 있어야 PKCE 성공)
+      // Capacitor 앱: Custom Tabs로 OAuth (카카오톡 앱 설치 시 자동 전환)
       const { Capacitor } = await import("@capacitor/core");
       if (Capacitor.isNativePlatform()) {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "kakao",
           options: {
-            redirectTo: `${window.location.origin}/auth/callback-client?next=${encodeURIComponent(target)}`,
+            redirectTo: `nightflow://auth/callback?next=${encodeURIComponent(target)}`,
             skipBrowserRedirect: true,
           },
         });
         if (error) throw error;
         if (data.url) {
-          window.location.href = data.url;
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: data.url, toolbarColor: "#0A0A0A" });
         }
+        setLoading(false);
         return;
       }
 
@@ -139,21 +140,23 @@ function LoginContent() {
     const target = customRedirect || redirectPath;
 
     try {
-      // Capacitor 앱: webview 내부 OAuth (Google은 webview 차단 가능성 — 추후 SDK 연동 검토)
+      // Capacitor 앱: Custom Tabs로 OAuth
       const { Capacitor: Cap } = await import("@capacitor/core");
       if (Cap.isNativePlatform()) {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: `${window.location.origin}/auth/callback-client?next=${encodeURIComponent(target)}`,
+            redirectTo: `nightflow://auth/callback?next=${encodeURIComponent(target)}`,
             skipBrowserRedirect: true,
             queryParams: { access_type: "offline", prompt: "select_account" },
           },
         });
         if (error) throw error;
         if (data.url) {
-          window.location.href = data.url;
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: data.url, toolbarColor: "#0A0A0A" });
         }
+        setLoading(false);
         return;
       }
 
