@@ -133,6 +133,13 @@ export default async function AdminDashboardPage() {
     .select("id", { count: "exact", head: true })
     .eq("status", "pending");
 
+  // 연락 미수신 신고 큐 (visit_result=noshow, strike 미처리)
+  const { count: pendingPuzzleNoshowCount } = await supabase
+    .from("puzzle_offers")
+    .select("id", { count: "exact", head: true })
+    .eq("visit_result", "noshow")
+    .is("strike_applied_at", null);
+
   const stats = [
     {
       label: "전체 유저",
@@ -202,6 +209,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-amber-500/10",
       badge: pendingAppeals ? `${pendingAppeals}건 대기` : null,
       href: "/admin/appeals",
+    },
+    {
+      label: "연락 미수신 신고",
+      value: `${pendingPuzzleNoshowCount || 0}건`,
+      icon: AlertCircle,
+      color: "text-red-500",
+      bgColor: "bg-red-500/10",
+      badge: pendingPuzzleNoshowCount ? `${pendingPuzzleNoshowCount}건 대기` : null,
+      href: "/admin/puzzle-noshow-reports",
     },
     {
       label: "깃발 현황",

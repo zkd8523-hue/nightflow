@@ -109,6 +109,8 @@ function getNotificationIcon(type: InAppNotification["type"]) {
       return <XCircle className="w-5 h-5 text-neutral-400 shrink-0" />;
     case "puzzle_member_joined":
       return <Users className="w-5 h-5 text-green-500 shrink-0" />;
+    case "puzzle_promoted_to_flag":
+      return <CheckCircle2 className="w-5 h-5 text-amber-500 shrink-0" />;
     default:
       return <Bell className="w-5 h-5 text-neutral-500 shrink-0" />;
   }
