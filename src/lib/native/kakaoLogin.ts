@@ -3,11 +3,11 @@
 import { createClient } from "@/lib/supabase/client";
 
 export async function kakaoNativeLogin(): Promise<{ isNewUser: boolean }> {
-  const { KakaoLogin } = await import("capacitor-kakao-login-plugin");
+  const { KakaoLoginPlugin } = await import("capacitor-kakao-login-plugin");
   const supabase = createClient();
 
   // 카카오 SDK 로그인 (주소창 없음)
-  const kakaoResult = await KakaoLogin.goLogin();
+  const kakaoResult = await KakaoLoginPlugin.goLogin();
   const accessToken = kakaoResult.accessToken;
   if (!accessToken) throw new Error("카카오 로그인 실패");
 
