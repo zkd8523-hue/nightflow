@@ -93,20 +93,16 @@ function LoginContent() {
     const target = customRedirect || redirectPath;
 
     try {
-      // Capacitor 앱: Custom Tabs로 OAuth (카카오톡 앱 설치 시 자동 전환)
+      // Capacitor 앱: 카카오 네이티브 SDK (주소창 없음)
       const { Capacitor } = await import("@capacitor/core");
       if (Capacitor.isNativePlatform()) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "kakao",
-          options: {
-            redirectTo: `nightflow://auth/callback?next=${encodeURIComponent(target)}`,
-            skipBrowserRedirect: true,
-          },
-        });
-        if (error) throw error;
-        if (data.url) {
-          const { Browser } = await import("@capacitor/browser");
-          await Browser.open({ url: data.url, toolbarColor: "#0A0A0A" });
+        const { kakaoNativeLogin } = await import("@/lib/native/kakaoLogin");
+        const { isNewUser } = await kakaoNativeLogin();
+        if (isNewUser) {
+          router.push(`/signup${target !== "/" ? `?next=${encodeURIComponent(target)}` : ""}`);
+        } else {
+          router.push(target);
+          router.refresh();
         }
         setLoading(false);
         return;
