@@ -10,6 +10,8 @@ import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInstantEnabled } from "@/lib/features";
 import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { Suspense } from "react";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -93,6 +95,22 @@ function LoginContent() {
     const target = customRedirect || redirectPath;
 
     try {
+      // Capacitor 앱: 시스템 브라우저로 OAuth 열기 → 딥링크로 복귀
+      if (Capacitor.isNativePlatform()) {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "kakao",
+          options: {
+            redirectTo: `nightflow://auth/callback?next=${encodeURIComponent(target)}`,
+            skipBrowserRedirect: true,
+          },
+        });
+        if (error) throw error;
+        if (data.url) await Browser.open({ url: data.url, windowName: "_system" });
+        setLoading(false);
+        return;
+      }
+
+      // 웹: 기존 플로우 유지
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "kakao",
         options: {
@@ -120,14 +138,28 @@ function LoginContent() {
     const target = customRedirect || redirectPath;
 
     try {
+      // Capacitor 앱: 시스템 브라우저로 OAuth 열기 → 딥링크로 복귀
+      if (Capacitor.isNativePlatform()) {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `nightflow://auth/callback?next=${encodeURIComponent(target)}`,
+            skipBrowserRedirect: true,
+            queryParams: { access_type: "offline", prompt: "select_account" },
+          },
+        });
+        if (error) throw error;
+        if (data.url) await Browser.open({ url: data.url, windowName: "_system" });
+        setLoading(false);
+        return;
+      }
+
+      // 웹: 기존 플로우 유지
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
-          queryParams: {
-            access_type: "offline",
-            prompt: "select_account",
-          },
+          queryParams: { access_type: "offline", prompt: "select_account" },
           skipBrowserRedirect: false,
         },
       });

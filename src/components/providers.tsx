@@ -8,6 +8,8 @@ import { useFavoriteMds } from "@/hooks/useFavoriteMds";
 import { useFavoritePuzzles } from "@/hooks/useFavoritePuzzles";
 import { initAnalytics, identifyUser } from "@/lib/analytics";
 import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
+import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
+import { initDeepLinkHandler } from "@/lib/native/deepLink";
 
 function GlobalNotifications() {
   useWinNotification();
@@ -105,11 +107,24 @@ function FavoritesProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+function PushInit() {
+  const { user } = useCurrentUser();
+  if (!user) return null;
+  return <PushPermissionPrompt userId={user.id} />;
+}
+
+function DeepLinkInit() {
+  useEffect(() => { initDeepLinkHandler(); }, []);
+  return null;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <>
       <GlobalNotifications />
       <MixpanelInit />
+      <DeepLinkInit />
+      <PushInit />
       <WinAlertBanner />
       <FavoritesProvider>
         {children}
