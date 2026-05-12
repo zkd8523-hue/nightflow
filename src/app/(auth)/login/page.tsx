@@ -10,8 +10,6 @@ import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInstantEnabled } from "@/lib/features";
 import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
-import { Capacitor } from "@capacitor/core";
-import { Browser } from "@capacitor/browser";
 import { Suspense } from "react";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -96,6 +94,7 @@ function LoginContent() {
 
     try {
       // Capacitor 앱: 시스템 브라우저로 OAuth 열기 → 딥링크로 복귀
+      const { Capacitor } = await import("@capacitor/core");
       if (Capacitor.isNativePlatform()) {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "kakao",
@@ -105,7 +104,10 @@ function LoginContent() {
           },
         });
         if (error) throw error;
-        if (data.url) await Browser.open({ url: data.url, windowName: "_system" });
+        if (data.url) {
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: data.url, windowName: "_system" });
+        }
         setLoading(false);
         return;
       }
@@ -139,7 +141,8 @@ function LoginContent() {
 
     try {
       // Capacitor 앱: 시스템 브라우저로 OAuth 열기 → 딥링크로 복귀
-      if (Capacitor.isNativePlatform()) {
+      const { Capacitor: Cap } = await import("@capacitor/core");
+      if (Cap.isNativePlatform()) {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
@@ -149,7 +152,10 @@ function LoginContent() {
           },
         });
         if (error) throw error;
-        if (data.url) await Browser.open({ url: data.url, windowName: "_system" });
+        if (data.url) {
+          const { Browser } = await import("@capacitor/browser");
+          await Browser.open({ url: data.url, windowName: "_system" });
+        }
         setLoading(false);
         return;
       }

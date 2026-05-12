@@ -2,26 +2,6 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // 서버 빌드 시 Capacitor 패키지를 빈 모듈로 처리 (브라우저 전용)
-      const capacitorPackages = [
-        "@capacitor/core",
-        "@capacitor/app",
-        "@capacitor/browser",
-        "@capacitor/push-notifications",
-        "@capacitor/haptics",
-        "@capacitor/network",
-        "@capacitor/preferences",
-        "@capacitor/splash-screen",
-        "@capacitor/status-bar",
-      ];
-      capacitorPackages.forEach((pkg) => {
-        config.resolve.alias[pkg] = false;
-      });
-    }
-    return config;
-  },
   async redirects() {
     return [
       { source: "/puzzles/:path*", destination: "/flags/:path*", permanent: true },
