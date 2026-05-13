@@ -161,14 +161,8 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
       });
 
       setShowConfirm(false);
-      // 입찰 성공 햅틱
-      import("@capacitor/core").then(({ Capacitor }) => {
-        if (Capacitor.isNativePlatform()) {
-          import("@capacitor/haptics").then(({ Haptics, ImpactStyle }) => {
-            Haptics.impact({ style: ImpactStyle.Medium });
-          });
-        }
-      });
+      // 입찰 성공 진동
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
       onBidSuccess(bidAmount);
       setBidAmount(0);

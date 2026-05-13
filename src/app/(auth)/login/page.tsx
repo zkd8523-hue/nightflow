@@ -136,13 +136,13 @@ function LoginContent() {
     const target = customRedirect || redirectPath;
 
     try {
-      // Capacitor 앱: Custom Tabs로 OAuth
+      // Capacitor 앱: Custom Tabs로 OAuth (PKCE는 Chrome에서 처리 → browserFinished 후 리로드)
       const { Capacitor: Cap } = await import("@capacitor/core");
       if (Cap.isNativePlatform()) {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: `nightflow://auth/callback?next=${encodeURIComponent(target)}`,
+            redirectTo: `https://nightflow.kr/auth/callback?next=${encodeURIComponent(target)}`,
             skipBrowserRedirect: true,
             queryParams: { access_type: "offline", prompt: "select_account" },
           },
@@ -150,6 +150,9 @@ function LoginContent() {
         if (error) throw error;
         if (data.url) {
           const { Browser } = await import("@capacitor/browser");
+          Browser.addListener("browserFinished", () => {
+            window.location.reload();
+          });
           await Browser.open({ url: data.url, toolbarColor: "#0A0A0A" });
         }
         setLoading(false);
