@@ -46,10 +46,9 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   const [showCustomExtraInput, setShowCustomExtraInput] = useState(false);
 
   const baseBudget = puzzle.total_budget ?? (puzzle.budget_per_person * puzzle.target_count);
-  const perPersonBudget = puzzle.total_budget
-    ? Math.floor(puzzle.total_budget / puzzle.target_count)
-    : puzzle.budget_per_person;
-  const currentBudget = perPersonBudget * puzzle.current_count;
+  const currentBudget = puzzle.current_count === puzzle.target_count
+    ? baseBudget
+    : Math.round(baseBudget * puzzle.current_count / puzzle.target_count);
 
   useEffect(() => {
     if (open) {
@@ -284,7 +283,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             </p>
             {puzzle.is_recruiting_party ? (
               <p className="text-[13px] text-neutral-500">
-                현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원 / 목표 {baseBudget.toLocaleString()}원 · {puzzle.current_count}/{puzzle.target_count}명
+                현재 {currentBudget.toLocaleString()}원 / 목표 {baseBudget.toLocaleString()}원 · {puzzle.current_count}/{puzzle.target_count}명
               </p>
             ) : (
               <p className="text-[14px] text-neutral-300 font-bold">
