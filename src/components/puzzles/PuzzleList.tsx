@@ -382,9 +382,10 @@ export function PuzzleList({
         </div>
       ) : (
         <div className="space-y-12 pb-24">
-          {/* 🆕 방금 올라온 퍼즐/깃발 (6시간 이내) — 상단 별도 섹션 */}
+          {/* 🆕 방금 올라온 퍼즐/깃발 — 상단 별도 섹션 */}
           {(() => {
-            const RECENT_THRESHOLD_MS = 6 * 60 * 60 * 1000;
+            // 베타 기간 한정 12h (정상 등록량 도달 시 6h로 환원)
+            const RECENT_THRESHOLD_MS = 12 * 60 * 60 * 1000;
             const now = Date.now();
             // MD: 오퍼할 수 있는 깃발 상태(직접 등록 깃발 + 인원 충족된 퍼즐)만
             // 유저/비로그인: 모든 최근 퍼즐 (퍼즐/깃발 둘 다)
