@@ -136,21 +136,16 @@ function LoginContent() {
     const target = customRedirect || redirectPath;
 
     try {
-      // Capacitor 앱: nightflow:// 딥링크로 콜백 → WebView에서 PKCE 교환
+      // Capacitor 앱: 구글 네이티브 SDK (주소창 없음, PKCE 우회)
       const { Capacitor: Cap } = await import("@capacitor/core");
       if (Cap.isNativePlatform()) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: `nightflow://auth/callback?next=${encodeURIComponent(target)}`,
-            skipBrowserRedirect: true,
-            queryParams: { access_type: "offline", prompt: "select_account" },
-          },
-        });
-        if (error) throw error;
-        if (data.url) {
-          const { Browser } = await import("@capacitor/browser");
-          await Browser.open({ url: data.url, toolbarColor: "#0A0A0A" });
+        const { googleNativeLogin } = await import("@/lib/native/googleLogin");
+        const { isNewUser } = await googleNativeLogin();
+        if (isNewUser) {
+          router.push(`/signup${target !== "/" ? `?next=${encodeURIComponent(target)}` : ""}`);
+        } else {
+          router.push(target);
+          router.refresh();
         }
         setLoading(false);
         return;
