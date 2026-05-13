@@ -8,6 +8,7 @@ import type { Puzzle, GenderPref, AgePref, VibePref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
+import { formatRelativeTime } from "@/lib/utils/format";
 import { usePuzzleFavoritesContext } from "@/components/providers";
 
 interface PuzzleCardProps {
@@ -233,8 +234,11 @@ export const PuzzleCard = memo(function PuzzleCard({
 
       {/* CTA 버튼 (등록일시는 우측 상단에 absolute로 띄움) */}
       <div className="relative">
-        <p className="absolute -top-5 right-1 text-[10px] text-neutral-500 whitespace-nowrap pointer-events-none">
-          등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
+        <p
+          className="absolute -top-5 right-1 text-[10px] text-neutral-500 whitespace-nowrap pointer-events-none"
+          suppressHydrationWarning
+        >
+          {formatRelativeTime(puzzle.created_at)}
         </p>
       {isMd ? (
         hasOffered ? (

@@ -21,6 +21,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
+import { formatRelativeTime } from "@/lib/utils/format";
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { LeaderInfoSheet } from "./LeaderInfoSheet";
 
@@ -550,8 +551,11 @@ export function PuzzleDetailClient({
             )}
 
             {/* 등록일시 — 우측 하단 */}
-            <p className="text-[11px] text-neutral-600 text-right">
-              등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}
+            <p
+              className="text-[11px] text-neutral-600 text-right"
+              suppressHydrationWarning
+            >
+              {formatRelativeTime(puzzle.created_at)}
             </p>
           </section>
 

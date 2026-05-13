@@ -69,6 +69,21 @@ export function formatEntryTimeShort(entryTime: string | null, eventDate: string
   return entryTime;
 }
 
+/** 상대 시간 포맷 (당근 스타일): "방금" / "x분 전" / "x시간 전" / "x일 전" */
+export function formatRelativeTime(date: string): string {
+  const now = dayjs();
+  const target = dayjs(date);
+  const diffSec = now.diff(target, "second");
+
+  if (diffSec < 60) return "방금";
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}분 전`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}시간 전`;
+  const diffDay = Math.floor(diffHour / 24);
+  return `${diffDay}일 전`;
+}
+
 /** 시간 포맷: "2026-02-18T20:00:00" → "오후 8:00" */
 export function formatTime(datetime: string): string {
   const d = dayjs(datetime);

@@ -16,7 +16,8 @@ function getDDay(eventDate: string): string {
   const event = new Date(eventDate);
   event.setHours(0, 0, 0, 0);
   const diff = Math.round((event.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diff === 0) return "D-Day";
+  if (diff === 0) return "오늘";
+  if (diff === 1) return "내일";
   if (diff > 0) return `D-${diff}`;
   return `D+${Math.abs(diff)}`;
 }
@@ -65,7 +66,7 @@ function PuzzleCardList({
                 <h3 className="text-[16px] font-black text-white tracking-tight">{dateLabel}</h3>
                 <span
                   className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] ${
-                    dday === "D-Day"
+                    dday === "오늘"
                       ? "bg-red-500/20 text-red-400"
                       : "bg-neutral-800 text-neutral-400"
                   }`}
