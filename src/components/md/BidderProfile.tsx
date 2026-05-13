@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Star, StarOff, Shield, TrendingUp, Eye, AlertTriangle } from "lucide-react";
 import type { UserTrustScore, TrustLevel } from "@/types/database";
 import { formatNumber } from "@/lib/utils/format";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { TrustBadge as DealTierBadge } from "@/components/ui/TrustBadge";
 
@@ -123,13 +124,17 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                 <div className="space-y-5 overflow-y-auto max-h-[calc(75vh-100px)] pb-6">
                     {/* Profile Header */}
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
-                            {userScore.profile_image ? (
-                                <img src={userScore.profile_image} alt={userScore.display_name} className="w-full h-full object-cover" />
-                            ) : (
-                                <span className="text-lg font-black text-neutral-500">
-                                    {userScore.display_name?.substring(0, 1) || "?"}
-                                </span>
+                        <div className="relative w-14 h-14 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
+                            <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-neutral-500">
+                                {userScore.display_name?.substring(0, 1) || "?"}
+                            </span>
+                            {userScore.profile_image && (
+                                <img
+                                    src={normalizeProfileImage(userScore.profile_image)!}
+                                    alt={userScore.display_name}
+                                    className="relative w-full h-full object-cover"
+                                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                />
                             )}
                         </div>
                         <div className="flex-1">

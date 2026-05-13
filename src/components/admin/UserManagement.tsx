@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeProfileImage } from "@/lib/utils/image";
 
 interface UserActivityStats {
   // 깃발 (Puzzles) - 작성자 기준
@@ -355,11 +356,15 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                     >
                       <td className="p-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
-                            {user.profile_image ? (
-                              <img src={user.profile_image} className="w-full h-full object-cover" />
-                            ) : (
-                              <span className="text-[10px] font-bold text-neutral-500 uppercase">{user.name?.substring(0, 1)}</span>
+                          <div className="relative w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
+                            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-neutral-500 uppercase">{user.name?.substring(0, 1)}</span>
+                            {user.profile_image && (
+                              <img
+                                src={normalizeProfileImage(user.profile_image)!}
+                                alt={user.name || "프로필"}
+                                className="relative w-full h-full object-cover"
+                                onError={(e) => { e.currentTarget.style.display = "none"; }}
+                              />
                             )}
                           </div>
                           <div>

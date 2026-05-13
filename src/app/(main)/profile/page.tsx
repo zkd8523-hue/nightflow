@@ -25,6 +25,7 @@ import {
   Check,
 } from "lucide-react";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import type { ContactMethodType } from "@/types/database";
@@ -289,11 +290,15 @@ export default function ProfilePage() {
           {/* 프로필 이미지 */}
           <div className="flex flex-col items-center mb-5">
             <label className="relative cursor-pointer group">
-              <div className="w-20 h-20 rounded-full overflow-hidden bg-neutral-700 flex items-center justify-center">
-                {user.profile_image ? (
-                  <img src={user.profile_image} alt="프로필" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl font-black text-white">{user.display_name?.[0] || user.name?.[0] || "?"}</span>
+              <div className="relative w-20 h-20 rounded-full overflow-hidden bg-neutral-700 flex items-center justify-center">
+                <span className="absolute inset-0 flex items-center justify-center text-2xl font-black text-white">{user.display_name?.[0] || user.name?.[0] || "?"}</span>
+                {user.profile_image && (
+                  <img
+                    src={normalizeProfileImage(user.profile_image)!}
+                    alt="프로필"
+                    className="relative w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  />
                 )}
               </div>
               <div className="absolute bottom-0 right-0 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow group-hover:bg-neutral-200 transition-colors">

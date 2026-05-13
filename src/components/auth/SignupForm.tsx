@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
 import { generateRandomNickname } from "@/lib/utils/displayName";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import { ChevronRight, Check, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
@@ -281,7 +282,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             kakao_id: meta.provider_id || authUser.id,
             display_name: displayName,
             phone: verifiedPhone,
-            profile_image: meta.avatar_url || null,
+            profile_image: normalizeProfileImage(meta.avatar_url),
             role: "user",
             alimtalk_consent: agreeMarketing,
             alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,

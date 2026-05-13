@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { MergeClubDialog } from "@/components/admin/MergeClubDialog";
 import Link from "next/link";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import type { Club, MDHealthScore } from "@/types/database";
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import dayjs from "dayjs";
@@ -273,11 +274,17 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                     <Building2 className="w-3.5 h-3.5" /> MD Profile
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-sm font-black text-neutral-400 shrink-0 overflow-hidden">
-                      {club.md.profile_image ? (
-                        <img src={club.md.profile_image} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        club.md.name?.substring(0, 1)
+                    <div className="relative w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-sm font-black text-neutral-400 shrink-0 overflow-hidden">
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        {club.md.name?.substring(0, 1)}
+                      </span>
+                      {club.md.profile_image && (
+                        <img
+                          src={normalizeProfileImage(club.md.profile_image)!}
+                          alt={club.md.name || "MD"}
+                          className="relative w-full h-full object-cover"
+                          onError={(e) => { e.currentTarget.style.display = "none"; }}
+                        />
                       )}
                     </div>
                     <p className="text-sm font-black text-white">{club.md.name}</p>

@@ -5,6 +5,7 @@ import type { Bid } from "@/types/database";
 import { formatPrice } from "@/lib/utils/format";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ko";
@@ -53,18 +54,18 @@ export const BidHistory = memo(function BidHistory({ bids, currentBid, vipUserId
                 } ${onBidderClick ? "cursor-pointer hover:border-neutral-600" : ""}`}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full bg-neutral-800 border flex items-center justify-center overflow-hidden ${isBidderVip ? "border-white/40" : "border-neutral-700"
+                <div className={`relative w-10 h-10 rounded-full bg-neutral-800 border flex items-center justify-center overflow-hidden ${isBidderVip ? "border-white/40" : "border-neutral-700"
                   }`}>
-                  {bid.bidder?.profile_image ? (
+                  <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-neutral-500 uppercase">
+                    {getBidderDisplay(bid.bidder).substring(0, 1) || "익"}
+                  </span>
+                  {bid.bidder?.profile_image && (
                     <img
-                      src={bid.bidder.profile_image}
+                      src={normalizeProfileImage(bid.bidder.profile_image)!}
                       alt={getBidderDisplay(bid.bidder)}
-                      className="w-full h-full object-cover"
+                      className="relative w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
                     />
-                  ) : (
-                    <span className="text-[10px] font-bold text-neutral-500 uppercase">
-                      {getBidderDisplay(bid.bidder).substring(0, 1) || "익"}
-                    </span>
                   )}
                 </div>
                 <div>

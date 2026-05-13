@@ -19,6 +19,7 @@ import { BidCompetitionIndicator } from "./BidCompetitionIndicator";
 import { useCountdown } from "@/hooks/useCountdown";
 import { BidderProfile } from "@/components/md/BidderProfile";
 import { formatDate, formatTime, formatPrice, formatEventDate, formatEntryTime, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { ContactButton } from "./ContactButton";
 import { getVisibleContactMethods } from "@/lib/utils/contact-methods";
@@ -567,13 +568,19 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  {md?.profile_image ? (
-                    <img src={md.profile_image} alt={md.display_name || md.name || "MD"} className="w-12 h-12 rounded-full object-cover border border-neutral-700" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500">
+                  <div className="relative w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
+                    <span className="absolute inset-0 flex items-center justify-center font-black text-neutral-500">
                       {md?.display_name?.substring(0, 1) || md?.name?.substring(0, 1) || "MD"}
-                    </div>
-                  )}
+                    </span>
+                    {md?.profile_image && (
+                      <img
+                        src={normalizeProfileImage(md.profile_image)!}
+                        alt={md.display_name || md.name || "MD"}
+                        className="relative w-full h-full object-cover"
+                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      />
+                    )}
+                  </div>
                   <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1E] flex items-center justify-center">
                     <ShieldCheck className="w-2.5 h-2.5 text-white" />
                   </div>

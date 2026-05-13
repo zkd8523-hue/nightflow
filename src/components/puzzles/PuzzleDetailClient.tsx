@@ -21,6 +21,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import { LeaderInfoSheet } from "./LeaderInfoSheet";
 
 interface PuzzleLeaderInfo {
@@ -447,27 +448,9 @@ export function PuzzleDetailClient({
         <div className="space-y-5 pb-10">
           {/* 기본 정보 */}
           <section className="bg-[#1C1C1E] rounded-2xl p-5 space-y-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                {puzzle.notes && (
-                  <p className="text-[18px] font-black text-white leading-snug">{puzzle.notes}</p>
-                )}
-                <p className={`${puzzle.notes ? "text-[14px] text-neutral-400" : "text-[22px] font-black text-white"}`}>
-                  {formatEventDate(puzzle.event_date)} <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400 ml-1"}>{puzzle.area}</span>
-                </p>
-                {puzzle.leader && (() => {
-                  const dealCount = puzzle.leader.deal_count_total ?? 0;
-                  return dealCount > 0 ? (
-                    <span className="inline-block mt-1 text-[11px] text-neutral-500 font-bold">거래 {dealCount}회</span>
-                  ) : null;
-                })()}
-              </div>
-              <div className="flex items-center gap-1.5 -mt-1 shrink-0 flex-wrap justify-end">
-                {puzzle.leader && (() => {
-                  const tier = getDealTier(puzzle.leader.deal_count_total ?? 0);
-                  const leaderIsNew = isNewUser(puzzle.leader.created_at);
-                  return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
-                })()}
+            {/* 작성자 메타: 별도 행으로 분리 */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                 {puzzle.leader && (
                   <button
                     type="button"
@@ -478,10 +461,31 @@ export function PuzzleDetailClient({
                     유저 정보
                   </button>
                 )}
-                <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mr-1">
-                  <Share2 className="w-4.5 h-4.5" />
-                </button>
+                {puzzle.leader && (() => {
+                  const tier = getDealTier(puzzle.leader.deal_count_total ?? 0);
+                  const leaderIsNew = isNewUser(puzzle.leader.created_at);
+                  return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
+                })()}
+                {puzzle.leader && (() => {
+                  const dealCount = puzzle.leader.deal_count_total ?? 0;
+                  return dealCount > 0 ? (
+                    <span className="text-[11px] text-neutral-500 font-bold">거래 {dealCount}회</span>
+                  ) : null;
+                })()}
               </div>
+              <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mr-1 shrink-0">
+                <Share2 className="w-4.5 h-4.5" />
+              </button>
+            </div>
+
+            {/* 제목 + 날짜: 풀폭 단독 행 */}
+            <div className="space-y-1">
+              {puzzle.notes && (
+                <p className="text-[18px] font-black text-white leading-snug">{puzzle.notes}</p>
+              )}
+              <p className={`${puzzle.notes ? "text-[14px] text-neutral-400" : "text-[22px] font-black text-white"}`}>
+                {formatEventDate(puzzle.event_date)} <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400 ml-1"}>{puzzle.area}</span>
+              </p>
             </div>
 
             {/* 예산 */}
@@ -604,13 +608,19 @@ export function PuzzleDetailClient({
                   <>
                     <div className="flex items-center gap-3 pt-1 border-t border-amber-500/20">
                       <div className="relative shrink-0">
-                        {md.profile_image ? (
-                          <img src={md.profile_image} alt={md.display_name || "MD"} className="w-11 h-11 rounded-full object-cover border border-neutral-700" />
-                        ) : (
-                          <div className="w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500 text-[15px]">
+                        <div className="relative w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
+                          <span className="absolute inset-0 flex items-center justify-center font-black text-neutral-500 text-[15px]">
                             {(md.display_name || "M").substring(0, 1)}
-                          </div>
-                        )}
+                          </span>
+                          {md.profile_image && (
+                            <img
+                              src={normalizeProfileImage(md.profile_image)!}
+                              alt={md.display_name || "MD"}
+                              className="relative w-full h-full object-cover"
+                              onError={(e) => { e.currentTarget.style.display = "none"; }}
+                            />
+                          )}
+                        </div>
                         <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1E] flex items-center justify-center">
                           <ShieldCheck className="w-2.5 h-2.5 text-white" />
                         </div>
@@ -668,13 +678,19 @@ export function PuzzleDetailClient({
                 <p className="text-[12px] font-bold text-blue-400">작성자 정보 (관리자 전용)</p>
               </div>
               <div className="flex items-center gap-3">
-                {leader.profile_image ? (
-                  <img src={leader.profile_image} alt={leader.display_name || leader.name || "leader"} className="w-11 h-11 rounded-full object-cover border border-neutral-700" />
-                ) : (
-                  <div className="w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500 text-[15px]">
+                <div className="relative w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
+                  <span className="absolute inset-0 flex items-center justify-center font-black text-neutral-500 text-[15px]">
                     {(leader.display_name || leader.name || "?").substring(0, 1)}
-                  </div>
-                )}
+                  </span>
+                  {leader.profile_image && (
+                    <img
+                      src={normalizeProfileImage(leader.profile_image)!}
+                      alt={leader.display_name || leader.name || "leader"}
+                      className="relative w-full h-full object-cover"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    />
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <Link
                     href={leader.role === "md" ? `/admin/mds/${leader.id}` : `/admin/users?focus=${leader.id}`}

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { AuctionCard } from "@/components/auctions/AuctionCard";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
+import { ProfileAvatar } from "@/components/shared/ProfileAvatar";
 
 export default async function MDPublicProfilePage({
     params
@@ -48,13 +49,12 @@ export default async function MDPublicProfilePage({
         <div className="min-h-screen bg-[#0A0A0A] pb-20">
             {/* Profile Header */}
             <div className="bg-gradient-to-b from-neutral-900 to-[#0A0A0A] pt-16 pb-12 px-6 text-center">
-                <div className="w-24 h-24 bg-neutral-800 rounded-full mx-auto mb-6 flex items-center justify-center border-4 border-[#1C1C1E] shadow-2xl overflow-hidden">
-                    {mdUser.profile_image ? (
-                        <img src={mdUser.profile_image} alt={mdUser.name} className="w-full h-full object-cover" />
-                    ) : (
-                        <User className="w-10 h-10 text-neutral-600" />
-                    )}
-                </div>
+                <ProfileAvatar
+                    src={mdUser.profile_image}
+                    alt={mdUser.name || "MD"}
+                    fallback={<User className="w-10 h-10 text-neutral-600" />}
+                    className="w-24 h-24 bg-neutral-800 rounded-full mx-auto mb-6 border-4 border-[#1C1C1E] shadow-2xl"
+                />
 
                 <div className="space-y-2">
                     <div className="flex items-center justify-center gap-2">

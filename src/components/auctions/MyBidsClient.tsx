@@ -15,6 +15,7 @@ import { FallbackOfferCard } from "./FallbackOfferCard";
 import { ReportMDButton } from "./ReportMDButton";
 import { useMyBidsRealtime, type AuctionUpdate } from "@/hooks/useMyBidsRealtime";
 import { isAuctionActive, isAuctionExpired } from "@/lib/utils/auction";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import type { Auction, Puzzle, PublicUserProfile } from "@/types/database";
 import { MDContactCard } from "@/components/puzzles/MDContactCard";
@@ -850,14 +851,20 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; use
         )}
 
         <div className="flex items-center gap-2.5">
-          {acceptedMd.profile_image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={acceptedMd.profile_image} alt={acceptedMd.display_name || "MD"} className="w-9 h-9 rounded-full object-cover border border-neutral-700" />
-          ) : (
-            <div className="w-9 h-9 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center font-black text-neutral-500 text-[13px]">
+          <div className="relative w-9 h-9 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
+            <span className="absolute inset-0 flex items-center justify-center font-black text-neutral-500 text-[13px]">
               {(acceptedMd.display_name || "M").substring(0, 1)}
-            </div>
-          )}
+            </span>
+            {acceptedMd.profile_image && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={normalizeProfileImage(acceptedMd.profile_image)!}
+                alt={acceptedMd.display_name || "MD"}
+                className="relative w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+              />
+            )}
+          </div>
           <div>
             <p className="text-white font-bold text-[13px]">{acceptedMd.display_name || "MD"}</p>
             <p className="text-[10px] text-neutral-500">NightFlow 인증 파트너</p>
