@@ -48,6 +48,11 @@ export default function AboutPage() {
                         그 연결을 돕는 게 NightFlow가 하고 싶은 일입니다.
                     </p>
 
+                    <p>
+                        혼자 가긴 부담스러우면 <strong className="text-white">퍼즐</strong>(클럽 조각·합석) 기능으로
+                        같은 클럽에 갈 일행을 안전하게 찾을 수 있어요.
+                    </p>
+
                     <p className="text-white font-semibold">
                         부족한 점이 많습니다.<br />
                         언제든 여러분의 목소리에 귀 기울이겠습니다.

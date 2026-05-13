@@ -58,6 +58,24 @@ export default function FAQPage() {
                             </AccordionContent>
                         </AccordionItem>
 
+                        <AccordionItem value="item-0a" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
+                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                                퍼즐(클럽 조각)이 뭔가요?
+                            </AccordionTrigger>
+                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                                <p>
+                                    <strong className="text-white">퍼즐</strong>은 나이트플로우의 일행 모집 기능입니다.
+                                    흔히 <strong className="text-white">"클럽 조각"</strong>,{" "}
+                                    <strong className="text-white">"클럽 합석"</strong>이라고 부르는 그 기능이에요.
+                                </p>
+                                <p className="mt-2">
+                                    인원이 부족할 때 같은 클럽에 갈 일행을 모집하거나, 다른 사람이
+                                    모집 중인 퍼즐에 합류할 수 있습니다. 강남 클럽 조각, 홍대 클럽
+                                    합석을 안전하게 찾는 가장 빠른 방법입니다.
+                                </p>
+                            </AccordionContent>
+                        </AccordionItem>
+
                         <AccordionItem value="item-1" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
                             <AccordionTrigger className="text-white font-bold hover:no-underline">
                                 경매는 어떻게 진행되나요?

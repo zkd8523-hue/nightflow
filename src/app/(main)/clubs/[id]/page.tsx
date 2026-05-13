@@ -37,11 +37,22 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     keywords: [
       club.name,
       ...aliases,
-      ...(area ? [`${area} 클럽`, `${area} 클럽 테이블`] : []),
+      ...(area
+        ? [
+            `${area} 클럽`,
+            `${area} 클럽 테이블`,
+            `${area} 클럽 조각`,
+            `${area} 클럽 합석`,
+          ]
+        : []),
       `${club.name} 테이블`,
       `${club.name} 예약`,
+      `${club.name} 조각`,
+      `${club.name} 합석`,
       ...aliases.map((a) => `${a} 클럽`),
       ...aliases.map((a) => `${a} 테이블`),
+      ...aliases.map((a) => `${a} 조각`),
+      ...aliases.map((a) => `${a} 합석`),
     ],
     alternates: { canonical: `https://nightflow.kr/clubs/${id}` },
     openGraph: {

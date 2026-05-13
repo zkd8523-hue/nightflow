@@ -65,7 +65,9 @@ export default async function HomePage() {
         실시간 경매로 예약하는 서비스입니다. 강남 클럽, 홍대 클럽, 신사
         클럽의 MD가 잔여 테이블을 올리면 회원이 입찰로 가격을 정해 정가보다
         저렴하게 클럽 예약을 할 수 있습니다. 강남 레이스&사운드, 홍대 버뮤다
-        등 서울 클럽 추천과 테이블 가격 비교는 나플에서 확인하세요.
+        등 서울 클럽 추천과 테이블 가격 비교는 나플에서 확인하세요. 혼자
+        가긴 부담스러우면 퍼즐(클럽 조각·합석) 기능으로 같은 클럽에 갈
+        일행을 모집할 수 있습니다.
       </p>
       <Suspense fallback={<div className="animate-pulse bg-neutral-900 h-64 rounded-3xl" />}>
         <HomeContent

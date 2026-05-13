@@ -1,11 +1,91 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PuzzleDetailClient } from "@/components/puzzles/PuzzleDetailClient";
+import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { data: puzzle } = await supabase
+    .from("puzzles")
+    .select("area, event_date, target_count, current_count, budget_per_person, is_recruiting_party, status")
+    .eq("id", id)
+    .single();
+
+  if (!puzzle) {
+    return { title: "퍼즐을 찾을 수 없습니다 | 나이트플로우" };
+  }
+
+  const area = puzzle.area || "서울";
+  const eventDate = puzzle.event_date
+    ? new Date(puzzle.event_date).toLocaleDateString("ko-KR", {
+        month: "numeric",
+        day: "numeric",
+        weekday: "short",
+      })
+    : "";
+  const budgetText = puzzle.budget_per_person
+    ? `${Math.round(puzzle.budget_per_person / 10000)}만원`
+    : "";
+  const remaining = Math.max(
+    (puzzle.target_count ?? 0) - (puzzle.current_count ?? 0),
+    0
+  );
+  const recruiting = puzzle.is_recruiting_party && remaining > 0;
+  const mode = recruiting ? `${remaining}명 추가 모집` : `${puzzle.target_count}명 확정`;
+
+  const title = `${area} 클럽 퍼즐 ${mode}${eventDate ? ` · ${eventDate}` : ""}${budgetText ? ` · ${budgetText}` : ""}`;
+  const description = `${area} 클럽 조각·합석 일행 모집. ${eventDate ? `${eventDate} ` : ""}${puzzle.target_count}명${budgetText ? ` ${budgetText}` : ""} 퍼즐${recruiting ? " 진행 중" : " 확정"}. 나이트플로우(나플)에서 안전하게 일행을 찾으세요.`;
+
+  return {
+    title,
+    description,
+    keywords: [
+      "퍼즐",
+      "클럽 퍼즐",
+      "클럽 조각",
+      "클럽 조각모임",
+      "클럽 합석",
+      "클럽 일행",
+      "클럽 일행 구하기",
+      `${area} 클럽 조각`,
+      `${area} 클럽 합석`,
+      `${area} 클럽 일행`,
+      `${area} 클럽 퍼즐`,
+      "나이트플로우",
+      "나플",
+    ],
+    alternates: { canonical: `https://nightflow.kr/flags/${id}` },
+    openGraph: {
+      title,
+      description,
+      url: `https://nightflow.kr/flags/${id}`,
+      siteName: "NightFlow",
+      locale: "ko_KR",
+      type: "article",
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: `${area} 클럽 퍼즐 - 나이트플로우`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["/og-image.png"],
+    },
+  };
 }
 
 export default async function PuzzleDetailPage({ params }: PageProps) {

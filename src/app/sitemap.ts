@@ -19,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const supabase = await createClient();
 
-    const [auctionsRes, clubsRes] = await Promise.all([
+    const [auctionsRes, clubsRes, puzzlesRes] = await Promise.all([
       supabase
         .from("auctions")
         .select("id, updated_at, status")
@@ -32,6 +32,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .is("deleted_at", null)
         .order("updated_at", { ascending: false })
         .limit(200),
+      supabase
+        .from("puzzles")
+        .select("id, updated_at")
+        .eq("status", "open")
+        .gt("expires_at", new Date().toISOString())
+        .order("updated_at", { ascending: false })
+        .limit(500),
     ]);
 
     const auctionRoutes: MetadataRoute.Sitemap = (auctionsRes.data ?? []).map((a) => {
@@ -53,7 +60,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-    return [...staticRoutes, ...auctionRoutes, ...clubRoutes];
+    const puzzleRoutes: MetadataRoute.Sitemap = (puzzlesRes.data ?? []).map((p) => ({
+      url: `${BASE_URL}/flags/${p.id}`,
+      lastModified: p.updated_at ? new Date(p.updated_at) : now,
+      changeFrequency: "hourly" as const,
+      priority: 0.7,
+    }));
+
+    return [...staticRoutes, ...auctionRoutes, ...clubRoutes, ...puzzleRoutes];
   } catch {
     return staticRoutes;
   }
