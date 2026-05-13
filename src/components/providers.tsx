@@ -8,6 +8,7 @@ import { useFavoriteMds } from "@/hooks/useFavoriteMds";
 import { useFavoritePuzzles } from "@/hooks/useFavoritePuzzles";
 import { initAnalytics, identifyUser } from "@/lib/analytics";
 import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
+import { NetworkOverlay } from "@/components/NetworkOverlay";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { initDeepLinkHandler, initBackButtonHandler } from "@/lib/native/deepLink";
 
@@ -128,6 +129,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <MixpanelInit />
       <DeepLinkInit />
       <PushInit />
+      <NetworkOverlay />
       <WinAlertBanner />
       <FavoritesProvider>
         {children}
