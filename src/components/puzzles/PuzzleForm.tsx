@@ -924,9 +924,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             value={notes}
             onChange={(e) => {
               setNotes(e.target.value);
-              // 사용자가 비웠다면 자동 채움 재개, 그 외엔 수동 편집으로 표시
-              if (e.target.value === "") setNotesEverEdited(false);
-              else setNotesEverEdited(true);
+              // 한 번이라도 사용자가 손대면 자동 채움 중단 (비워도 재생되지 않음)
+              setNotesEverEdited(true);
             }}
             placeholder={isRecruitingParty
               ? "예) 매너 좋으신 분만. 신나게 놀 분."
