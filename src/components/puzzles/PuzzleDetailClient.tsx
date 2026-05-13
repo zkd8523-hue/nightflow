@@ -802,10 +802,8 @@ export function PuzzleDetailClient({
                       <div className="flex items-center gap-2">
                         <p className="text-[14px] font-bold text-white">Offer #{idx + 1}</p>
                       </div>
-                      <p className="text-[11px] text-neutral-500">
-                        {new Date(offer.created_at).toLocaleDateString("ko-KR", { month: "numeric", day: "numeric" })}
-                        {" "}
-                        {new Date(offer.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                      <p className="text-[11px] text-neutral-500" suppressHydrationWarning>
+                        {formatRelativeTime(offer.created_at)}
                       </p>
                     </div>
                     <div className="space-y-1.5 blur-sm select-none pointer-events-none">

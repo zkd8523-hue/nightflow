@@ -6,6 +6,7 @@ import { BadgeCheck, CheckCircle2, Flame, XCircle } from "lucide-react";
 import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferButton";
 import type { PuzzleOffer } from "@/types/database";
 import { useRevealedOffers } from "@/hooks/useRevealedOffers";
+import { formatRelativeTime } from "@/lib/utils/format";
 
 const SCRATCH_THRESHOLD = 45; // % 이상 긁으면 자동 완전 공개
 const BRUSH_RADIUS = 28;      // 긁히는 브러시 크기 (px)
@@ -149,8 +150,8 @@ export function SecretOfferCard({
             ✓ 수락됨
           </span>
         ) : (
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-green-500/20 text-green-400 font-medium">
-            제안 중
+          <span className="text-[11px] text-neutral-500 font-medium" suppressHydrationWarning>
+            {formatRelativeTime(offer.created_at)}
           </span>
         )}
       </div>
