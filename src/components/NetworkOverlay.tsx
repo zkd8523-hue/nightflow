@@ -6,19 +6,17 @@ export function NetworkOverlay() {
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
-    const setup = async () => {
-      const { Capacitor } = await import("@capacitor/core");
-      if (!Capacitor.isNativePlatform()) return;
+    setOffline(!navigator.onLine);
 
-      const { Network } = await import("@capacitor/network");
-      const status = await Network.getStatus();
-      setOffline(!status.connected);
+    const onOffline = () => setOffline(true);
+    const onOnline = () => setOffline(false);
 
-      Network.addListener("networkStatusChange", (s) => {
-        setOffline(!s.connected);
-      });
+    window.addEventListener("offline", onOffline);
+    window.addEventListener("online", onOnline);
+    return () => {
+      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("online", onOnline);
     };
-    setup();
   }, []);
 
   if (!offline) return null;
