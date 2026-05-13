@@ -205,7 +205,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
             aria-label="나이트플로우(나플) 홈"
           >
             NightFlow
-            <span className="text-sm font-bold text-neutral-400">나플</span>
+            <span className="text-xs font-bold text-neutral-400">나플</span>
           </Link>
           <p className="text-[11px] text-neutral-400 font-medium tracking-tight">
             같은 돈으로 더 크게 놀자
