@@ -220,14 +220,12 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
       </div>
 
       {tabPromises && tabPromises[tab] && (
-        // Android WebView 호환: Tailwind v4 opacity-modifier 대신 inline rgba()로
-        // linear-gradient · border 지정 (얼리버드 탭에서 그라데이션 누락 이슈 대응)
+        // [DIAGNOSTIC] Wrapper가 페인트되는지 확인용 — 진단 후 원복 예정
         <div
           className="relative rounded-2xl px-4 pt-5 pb-3"
           style={{
-            background:
-              "linear-gradient(to right, rgba(245,158,11,0.30), rgba(249,115,22,0.20), rgba(239,68,68,0.15))",
-            border: "1px solid rgba(245,158,11,0.40)",
+            background: "red",
+            border: "4px solid yellow",
           }}
         >
           <span className="absolute -top-2.5 left-3 text-[10px] font-black bg-amber-500 text-black px-2 py-0.5 rounded-full">
