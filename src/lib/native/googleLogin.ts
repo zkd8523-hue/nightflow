@@ -4,15 +4,31 @@ import { createClient } from "@/lib/supabase/client";
 
 const GOOGLE_WEB_CLIENT_ID =
   "288156738643-seg4hgk4aeuk90bep7o6ml6oi0bi2dpr.apps.googleusercontent.com";
+const GOOGLE_IOS_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
 let initialized = false;
 
 async function ensureInit() {
   if (initialized) return;
   const { SocialLogin } = await import("@capgo/capacitor-social-login");
+  const { Capacitor } = await import("@capacitor/core");
+  const isIOS = Capacitor.getPlatform() === "ios";
+
+  if (isIOS && !GOOGLE_IOS_CLIENT_ID) {
+    throw new Error(
+      "iOS Google 로그인이 설정되지 않았습니다. NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID를 .env.local에 추가하세요.",
+    );
+  }
+
   await SocialLogin.initialize({
     google: {
       webClientId: GOOGLE_WEB_CLIENT_ID,
+      ...(isIOS && GOOGLE_IOS_CLIENT_ID
+        ? {
+            iOSClientId: GOOGLE_IOS_CLIENT_ID,
+            iOSServerClientId: GOOGLE_WEB_CLIENT_ID,
+          }
+        : {}),
       mode: "online",
     },
   });

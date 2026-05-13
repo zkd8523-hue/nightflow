@@ -38,11 +38,18 @@ function LoginContent() {
   const redirectPath = searchParams.get("redirect") || "/";
   const authError = getAuthErrorMessage(searchParams.get("error"));
   const [isInAppAndroid, setIsInAppAndroid] = useState(false);
+  const [isIOSNative, setIsIOSNative] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showDevLogin, setShowDevLogin] = useState(false);
 
   useEffect(() => {
     setIsInAppAndroid(isInAppBrowser() && !isIOS());
+    (async () => {
+      const { Capacitor } = await import("@capacitor/core");
+      setIsIOSNative(
+        Capacitor.isNativePlatform() && Capacitor.getPlatform() === "ios",
+      );
+    })();
   }, []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -122,6 +129,29 @@ function LoginContent() {
         setLoginError(error.message);
         setLoading(false);
       }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLoginError(msg);
+      setLoading(false);
+    }
+  };
+
+  const handleAppleLogin = async (customRedirect?: string) => {
+    trackEvent('login_click', { method: 'apple' });
+    setLoading(true);
+    setLoginError("");
+    const target = customRedirect || redirectPath;
+
+    try {
+      const { appleNativeLogin } = await import("@/lib/native/appleLogin");
+      const { isNewUser } = await appleNativeLogin();
+      if (isNewUser) {
+        router.push(`/signup${target !== "/" ? `?next=${encodeURIComponent(target)}` : ""}`);
+      } else {
+        router.push(target);
+        router.refresh();
+      }
+      setLoading(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setLoginError(msg);
@@ -306,6 +336,19 @@ function LoginContent() {
             </>
           ) : (
             <>
+              {isIOSNative && (
+                <Button
+                  onClick={() => handleAppleLogin()}
+                  disabled={loading}
+                  className="w-full h-12 bg-black text-white border border-neutral-700 hover:bg-neutral-900 cursor-pointer"
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+                  </svg>
+                  {loading ? "로그인 중..." : "Apple로 시작하기"}
+                </Button>
+              )}
+
               <Button
                 onClick={() => handleGoogleLogin()}
                 disabled={loading}

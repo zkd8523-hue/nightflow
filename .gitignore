@@ -46,3 +46,7 @@ supabase/.temp/
 
 # playwright test reports
 /playwright-report/
+
+# mobile platform migration backups (kr.nightflow.app pivot, 2026-05-14)
+ios.backup-*/
+android/app/google-services.json.old-*

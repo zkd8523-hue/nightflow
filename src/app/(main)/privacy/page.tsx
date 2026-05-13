@@ -283,6 +283,37 @@ export default function PrivacyPage() {
                         </div>
                     </section>
 
+                    {/* Account Deletion (English) — Apple App Store Review Guideline 5.1.1(v) */}
+                    <section className="space-y-3 pt-8 border-t border-neutral-800">
+                        <h2 className="text-lg font-black text-white">Account Deletion (English Summary)</h2>
+                        <div className="space-y-3 text-neutral-300">
+                            <p>NightFlow users may permanently delete their account at any time directly within the app. This English summary is provided for reference; the full terms above (in Korean) take precedence.</p>
+
+                            <p className="text-white font-bold mt-4">How to Delete Your Account In-App</p>
+                            <p className="pl-4">1. Open the NightFlow app or website.</p>
+                            <p className="pl-4">2. Sign in to your account.</p>
+                            <p className="pl-4">3. Navigate to <span className="text-green-500 font-bold">My Page → 계정 관리 (Account Management) → 회원 탈퇴 (Delete Account)</span>.</p>
+                            <p className="pl-4">4. Confirm the deletion request.</p>
+
+                            <p className="text-white font-bold mt-4">What Happens After Deletion</p>
+                            <p className="pl-4">- Your account is <span className="text-amber-500 font-bold">deactivated immediately</span> upon request — you will no longer be able to log in or appear to other users.</p>
+                            <p className="pl-4">- Personal data is <span className="text-amber-500 font-bold">retained for 30 days</span> in case of accidental deletion. Within this 30-day window, you may request restoration by contacting us.</p>
+                            <p className="pl-4">- After the 30-day grace period, all personal data is <span className="text-amber-500 font-bold">permanently and irreversibly erased</span> from our active databases (low-level format).</p>
+                            <p className="pl-4">- Records that we are legally required to retain (e.g., transaction records under the Korean E-Commerce Act, fraud-prevention records) are kept in a separate, restricted database for the periods specified in Section 4 above.</p>
+
+                            <p className="text-white font-bold mt-4">Email Deletion Request (Alternative)</p>
+                            <p className="pl-4">If you cannot access the in-app deletion flow, send a request to <span className="text-green-500 font-bold">maddawids@gmail.com</span> with the subject <span className="text-green-500">"Account Deletion Request"</span> and include the email address or phone number tied to your account. We will process your request within 10 business days.</p>
+
+                            <p className="text-white font-bold mt-4">Data Categories Deleted</p>
+                            <p className="pl-4">Name, phone number, Kakao profile, bidding history, contact records with venue managers, push tokens, and all other personally identifiable information stored in our systems — except records we are legally required to retain (see Section 4).</p>
+
+                            <p className="text-white font-bold mt-4">Privacy Officer Contact</p>
+                            <p className="pl-4">- Email: <span className="text-green-500">maddawids@gmail.com</span></p>
+                            <p className="pl-4">- Phone: +82-70-7954-7464 (weekdays 10:00–18:00 KST)</p>
+                            <p className="pl-4">- Address: 4F, 21 Ssangmicheon-ro 129beon-gil, Yeonje-gu, Busan, Republic of Korea</p>
+                        </div>
+                    </section>
+
                     {/* 시행일 */}
                     <section className="space-y-3 pt-8 border-t border-neutral-800">
                         <div className="text-neutral-500 text-sm space-y-1">
