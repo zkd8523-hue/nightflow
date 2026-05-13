@@ -29,7 +29,7 @@ export function initBackButtonHandler() {
             position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
             background:rgba(0,0,0,0.75); color:#fff; padding:10px 20px;
             border-radius:20px; font-size:14px; z-index:9999;
-            pointer-events:none;
+            pointer-events:none; white-space:nowrap;
           `;
           document.body.appendChild(toast);
           setTimeout(() => toast.remove(), 2000);
