@@ -199,8 +199,13 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
     >
       <div className="container mx-auto max-w-lg px-4 h-[68px] flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <Link href="/" className="text-lg font-black tracking-tighter text-white leading-none">
+          <Link
+            href="/"
+            className="text-lg font-black tracking-tighter text-white leading-none flex items-baseline gap-1.5"
+            aria-label="나이트플로우(나플) 홈"
+          >
             NightFlow
+            <span className="text-sm font-bold text-neutral-400">나플</span>
           </Link>
           <p className="text-[11px] text-neutral-400 font-medium tracking-tight">
             같은 돈으로 더 크게 놀자
