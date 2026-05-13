@@ -86,7 +86,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             : (puzzle.budget_per_person ?? 0))
         : (puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count))
     : ((draft?.budgetAmount as number) ?? 0);
-  const initialNotes = puzzle?.notes ?? (draft?.notes as string) ?? "";
+  // notes는 draft에 저장하지 않음 — 다시 들어오면 자동 채움이 새로 추천하도록.
+  const initialNotes = puzzle?.notes ?? "";
   const initialTotalPeople = puzzle?.target_count ?? (draft?.totalPeople as number) ?? 2;
   const initialKakaoUrl = puzzle?.kakao_open_chat_url ?? (draft?.kakaoUrl as string) ?? "";
 
@@ -136,10 +137,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
   // 퍼즐 소개: 비어 있으면 자동 채움. 사용자가 수동 입력 시 자동 채움 중단.
-  // draft에서 복원되면 그 상태 유지, 아니면 initialNotes 유무로 판단
-  const [notesEverEdited, setNotesEverEdited] = useState(
-    (draft?.notesEverEdited as boolean | undefined) ?? !!puzzle?.notes
-  );
+  // draft에는 저장하지 않으므로 신규 진입 시에는 항상 false에서 시작.
+  const [notesEverEdited, setNotesEverEdited] = useState(!!puzzle?.notes);
   const [submitted, setSubmitted] = useState(false);
 
   // 신규: default 대비 변경 / 편집: 초기값 대비 변경
@@ -198,8 +197,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             vibePref,
             musicPref,
             leaderFemaleConfirmed,
-            notes,
-            notesEverEdited,
+            // notes, notesEverEdited 제외 — 자동 채움이 매번 새로 추천하도록
             // kakaoUrl 제외 — 매번 새 채팅방을 만들도록 유도
           })
         );
@@ -224,8 +222,6 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     vibePref,
     musicPref,
     leaderFemaleConfirmed,
-    notes,
-    notesEverEdited,
   ]);
 
   // 등록 성공 시 draft 삭제
