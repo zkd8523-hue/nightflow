@@ -24,9 +24,11 @@ export async function googleNativeLogin(): Promise<{ isNewUser: boolean }> {
   const { SocialLogin } = await import("@capgo/capacitor-social-login");
   const supabase = createClient();
 
+  // scopes 미지정: capgo가 MainActivity 수정을 요구하므로 생략
+  // (email/profile은 Google Credential Manager의 idToken에 기본 포함됨)
   const loginResult = await SocialLogin.login({
     provider: "google",
-    options: { scopes: ["profile", "email"] },
+    options: {},
   });
 
   if (loginResult.provider !== "google" || loginResult.result.responseType !== "online") {
