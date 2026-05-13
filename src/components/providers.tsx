@@ -9,7 +9,7 @@ import { useFavoritePuzzles } from "@/hooks/useFavoritePuzzles";
 import { initAnalytics, identifyUser } from "@/lib/analytics";
 import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
-import { initDeepLinkHandler } from "@/lib/native/deepLink";
+import { initDeepLinkHandler, initBackButtonHandler } from "@/lib/native/deepLink";
 
 function GlobalNotifications() {
   useWinNotification();
@@ -114,7 +114,10 @@ function PushInit() {
 }
 
 function DeepLinkInit() {
-  useEffect(() => { initDeepLinkHandler(); }, []);
+  useEffect(() => {
+    initDeepLinkHandler();
+    initBackButtonHandler();
+  }, []);
   return null;
 }
 

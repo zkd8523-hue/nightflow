@@ -38,47 +38,117 @@ serve(async (req: Request) => {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // 기존 유저 조회 (kakao provider + kakaoId)
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(
-      (u) => u.app_metadata?.provider === "kakao" &&
-             u.app_metadata?.provider_id === kakaoId
-    );
+    const loginEmail = email || `kakao_${kakaoId}@nightflow.kakao`;
 
+    // 페이지네이션으로 전체 유저 검색 (listUsers 기본 50명 제한 회피)
+    const findUser = async () => {
+      let page = 1;
+      while (true) {
+        const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
+        if (error || !data?.users?.length) return null;
+        const byKakao = data.users.find(
+          (u) => u.app_metadata?.provider === "kakao" &&
+                 u.app_metadata?.provider_id === kakaoId
+        );
+        if (byKakao) return byKakao;
+        const byEmail = data.users.find((u) => u.email === loginEmail);
+        if (byEmail) return byEmail;
+        if (data.users.length < 1000) return null;
+        page += 1;
+        if (page > 50) return null; // 안전 상한
+      }
+    };
+
+    let existingUser = await findUser();
     let userId: string;
+    let isNewUser = false;
 
     if (existingUser) {
       userId = existingUser.id;
+      if (existingUser.app_metadata?.provider_id !== kakaoId) {
+        await supabase.auth.admin.updateUserById(userId, {
+          app_metadata: {
+            ...(existingUser.app_metadata || {}),
+            provider: "kakao",
+            provider_id: kakaoId,
+            providers: Array.from(new Set([...(existingUser.app_metadata?.providers || []), "kakao"])),
+          },
+        });
+      }
     } else {
-      // 신규 유저 생성
-      const loginEmail = email || `kakao_${kakaoId}@nightflow.kakao`;
       const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
         email: loginEmail,
         email_confirm: true,
         user_metadata: { full_name: name, avatar_url: avatar, name },
         app_metadata: { provider: "kakao", provider_id: kakaoId, providers: ["kakao"] },
       });
-      if (createError || !newUser?.user) {
-        return new Response(JSON.stringify({ error: createError?.message }), {
+
+      if (createError) {
+        // 이메일 중복인 경우: 재검색하여 기존 유저 사용
+        const msg = createError.message || "";
+        if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("registered")) {
+          existingUser = await findUser();
+          if (!existingUser) {
+            return new Response(
+              JSON.stringify({ error: `email exists but user lookup failed: ${msg}` }),
+              { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            );
+          }
+          userId = existingUser.id;
+          await supabase.auth.admin.updateUserById(userId, {
+            app_metadata: {
+              ...(existingUser.app_metadata || {}),
+              provider: "kakao",
+              provider_id: kakaoId,
+              providers: Array.from(new Set([...(existingUser.app_metadata?.providers || []), "kakao"])),
+            },
+          });
+        } else {
+          return new Response(JSON.stringify({ error: msg }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else if (!newUser?.user) {
+        return new Response(JSON.stringify({ error: "createUser returned no user" }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
+      } else {
+        userId = newUser.user.id;
+        isNewUser = true;
       }
-      userId = newUser.user.id;
     }
 
-    // 세션 발급
-    const { data: session, error: sessionError } = await supabase.auth.admin.createSession(userId);
-    if (sessionError || !session) {
-      return new Response(JSON.stringify({ error: sessionError?.message }), {
+    // 세션 발급: generateLink(magiclink) → verifyOtp
+    const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
+      email: loginEmail,
+    });
+    if (linkError || !linkData?.properties?.hashed_token) {
+      return new Response(JSON.stringify({ error: linkError?.message || "generateLink failed" }), {
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const anonClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    const { data: verifyData, error: verifyError } = await anonClient.auth.verifyOtp({
+      token_hash: linkData.properties.hashed_token,
+      type: "magiclink",
+    });
+    if (verifyError || !verifyData?.session) {
+      return new Response(JSON.stringify({ error: verifyError?.message || "verifyOtp failed" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     return new Response(
       JSON.stringify({
-        access_token: session.session.access_token,
-        refresh_token: session.session.refresh_token,
-        is_new_user: !existingUser,
+        access_token: verifyData.session.access_token,
+        refresh_token: verifyData.session.refresh_token,
+        is_new_user: isNewUser,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
