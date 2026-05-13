@@ -220,12 +220,19 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
       </div>
 
       {tabPromises && tabPromises[tab] && (
-        // [DIAGNOSTIC] Wrapper가 페인트되는지 확인용 — 진단 후 원복 예정
+        // Android WebView 페인트 무효화 대응:
+        // - key={tab}로 탭 전환 시 wrapper 재마운트 → 페인트 강제 갱신
+        // - transform: translateZ(0)로 별도 컴포지트 레이어 → 초기 페인트 안정화
+        // - inline rgba로 Tailwind v4 opacity-modifier 우회
         <div
+          key={tab}
           className="relative rounded-2xl px-4 pt-5 pb-3"
           style={{
-            background: "red",
-            border: "4px solid yellow",
+            background:
+              "linear-gradient(to right, rgba(245,158,11,0.30), rgba(249,115,22,0.20), rgba(239,68,68,0.15))",
+            border: "1px solid rgba(245,158,11,0.40)",
+            transform: "translateZ(0)",
+            willChange: "transform",
           }}
         >
           <span className="absolute -top-2.5 left-3 text-[10px] font-black bg-amber-500 text-black px-2 py-0.5 rounded-full">
