@@ -447,6 +447,43 @@ export function PuzzleDetailClient({
         </div>
 
         <div className="space-y-5 pb-10">
+          {/* 취소 안내 배너 (status = cancelled) */}
+          {puzzle.status === "cancelled" && (
+            <section
+              role="alert"
+              className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 space-y-2"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] font-black text-red-300">🚩 취소된 깃발입니다</span>
+              </div>
+              {puzzle.cancelled_reason ? (
+                <>
+                  <p className="text-[12px] text-red-200/70 font-bold uppercase tracking-wide">
+                    관리자 안내 사유
+                  </p>
+                  <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap break-keep">
+                    {puzzle.cancelled_reason}
+                  </p>
+                </>
+              ) : (
+                <p className="text-[13px] text-neutral-300 leading-relaxed">
+                  이 깃발은 더 이상 진행되지 않습니다. 새로운 깃발을 등록해 주세요.
+                </p>
+              )}
+              {puzzle.cancelled_at && (
+                <p className="text-[11px] text-neutral-500">
+                  {new Date(puzzle.cancelled_at).toLocaleString("ko-KR", {
+                    timeZone: "Asia/Seoul",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })} 취소됨
+                </p>
+              )}
+            </section>
+          )}
+
           {/* 기본 정보 */}
           <section className="bg-[#1C1C1E] rounded-2xl p-5 space-y-4">
             {/* 작성자 메타: 별도 행으로 분리 */}

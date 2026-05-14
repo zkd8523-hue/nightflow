@@ -569,6 +569,10 @@ export interface Puzzle {
   /** true: 파티원 추가 모집(조각모음). false: 인원 확정 깃발 (target = current). Migration 125 */
   is_recruiting_party: boolean;
   status: PuzzleStatus;
+  /** Migration 167: 취소 사유 (admin이 입력 시) */
+  cancelled_reason: string | null;
+  /** Migration 167: 취소 시각 (admin/방장 공통) */
+  cancelled_at: string | null;
   notes: string | null;
   expires_at: string;
   accepted_offer_id: string | null;
