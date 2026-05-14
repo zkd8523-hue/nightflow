@@ -333,6 +333,17 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
         {step === "agree" && (
           <>
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push("/login");
+              }}
+              className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> 로그인 화면으로
+            </button>
+
             <div className="space-y-2">
               <button
                 type="button"
