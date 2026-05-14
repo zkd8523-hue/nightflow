@@ -481,8 +481,8 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                           </div>
                         </div>
 
-                        {/* 깃발 취소 (open 상태만) */}
-                        {puzzle.status === "open" && (
+                        {/* 깃발 취소 (종료된 상태 제외) */}
+                        {!["cancelled", "expired"].includes(puzzle.status) && (
                           <div className="flex justify-end border-t border-neutral-800 pt-3">
                             <AdminCancelPuzzleButton puzzleId={puzzle.id} />
                           </div>

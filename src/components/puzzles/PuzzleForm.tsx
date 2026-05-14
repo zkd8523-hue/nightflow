@@ -89,7 +89,6 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // notes는 draft에 저장하지 않음 — 다시 들어오면 자동 채움이 새로 추천하도록.
   const initialNotes = puzzle?.notes ?? "";
   const initialTotalPeople = puzzle?.target_count ?? (draft?.totalPeople as number) ?? 2;
-  const initialKakaoUrl = puzzle?.kakao_open_chat_url ?? (draft?.kakaoUrl as string) ?? "";
 
   const [eventDate, setEventDate] = useState(initialEventDate);
   const [area, setArea] = useState(initialArea);
@@ -323,12 +322,13 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     if (effectiveIsRecruiting && budgetAmount < 10000) {
       return fail('budget_per_person', '인당 예산은 최소 1만원 이상이어야 합니다');
     }
-    // 카톡 오픈채팅 검증은 신규 등록(insert) 시에만 적용. edit 모드에선 기존 값 그대로 유지.
-    if (!isEditMode) {
-      if (effectiveIsRecruiting && !kakaoUrl.trim()) {
+    // 카톡 오픈채팅 검증은 신규 등록 + 파티원 모집 모드일 때만 적용.
+    // 인원 확정 깃발(effectiveIsRecruiting=false)은 카톡 URL을 사용하지 않으므로 검증 생략.
+    if (!isEditMode && effectiveIsRecruiting) {
+      if (!kakaoUrl.trim()) {
         return fail('kakao_url_required', '파티원 모집은 카톡 오픈채팅 링크가 필수예요');
       }
-      if (kakaoUrl.trim() && !kakaoUrl.trim().startsWith('https://open.kakao.com/')) {
+      if (!kakaoUrl.trim().startsWith('https://open.kakao.com/')) {
         return fail('kakao_url', '카톡 오픈채팅 링크는 https://open.kakao.com/ 로 시작해야 합니다');
       }
     }
@@ -355,7 +355,9 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             age_pref: effectiveIsRecruiting ? agePref : 'any',
             vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
             music_preference: musicPref === 'any' ? null : musicPref,
-            // 카톡 오픈채팅: edit 모드에선 변경 X (기존 값 보존)
+            // 카톡 오픈채팅: edit 모드에선 직접 수정 X. 단, 깃발(파티원 모집 OFF)로 전환되면
+            // 카톡 URL은 더 이상 사용되지 않으므로 null로 정리 (데이터 정합성).
+            ...(effectiveIsRecruiting ? {} : { kakao_open_chat_url: null }),
             total_budget: totalBudget,
             budget_per_person: effectiveIsRecruiting
               ? budgetAmount
@@ -405,7 +407,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           age_pref: effectiveIsRecruiting ? agePref : 'any',
           vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
           music_preference: musicPref === 'any' ? null : musicPref,
-          kakao_open_chat_url: kakaoUrl.trim() || null,
+          kakao_open_chat_url: effectiveIsRecruiting ? (kakaoUrl.trim() || null) : null,
           total_budget: totalBudget,
           budget_per_person: effectiveIsRecruiting
             ? budgetAmount
@@ -499,6 +501,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                   // 퍼즐 → 깃발: 예산 의미 변경(인당→총액)으로 값 초기화
                   setBudgetAmount(0);
                   setBudgetInputStr("");
+                  // 깃발 모드에선 카톡 오픈채팅 미사용 — stale state 정리
+                  setKakaoUrl("");
                 }
                 setIsRecruitingParty(false);
                 // 깃발 모드 디폴트 지역: "서울 어디든" (사용자가 따로 선택 안 했을 때)
