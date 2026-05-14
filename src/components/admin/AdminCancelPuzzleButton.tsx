@@ -27,9 +27,24 @@ export function AdminCancelPuzzleButton({ puzzleId }: { puzzleId: string }) {
         p_reason: reason.trim() || null,
       });
 
-      if (error) throw error;
+      // 진단용 로그 — 실패 시 원인 추적
+      if (error || !data?.success) {
+        console.error("[admin_cancel_puzzle] error:", error, "data:", data);
+      }
+
+      if (error) {
+        // PostgREST 에러 (PGRST202 = 함수 시그니처 mismatch → migration 165 미적용 가능성)
+        const code = (error as { code?: string }).code;
+        if (code === "PGRST202") {
+          toast.error("DB 함수가 최신이 아닙니다 (migration 165 미적용)");
+        } else {
+          toast.error(error.message || "취소 처리 중 오류가 발생했습니다");
+        }
+        return;
+      }
+
       if (!data?.success) {
-        toast.error(data?.error || "취소에 실패했습니다");
+        toast.error(data?.error || "취소에 실패했습니다 (응답 비어있음)");
         return;
       }
 
@@ -37,8 +52,10 @@ export function AdminCancelPuzzleButton({ puzzleId }: { puzzleId: string }) {
       setOpen(false);
       setReason("");
       router.refresh();
-    } catch {
-      toast.error("취소 처리 중 오류가 발생했습니다");
+    } catch (e) {
+      console.error("[admin_cancel_puzzle] catch:", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`취소 처리 중 오류: ${msg}`);
     } finally {
       setLoading(false);
     }
