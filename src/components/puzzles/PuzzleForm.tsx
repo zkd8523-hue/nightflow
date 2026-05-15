@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import dayjs from "dayjs";
 import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle as PuzzleType } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
@@ -134,6 +136,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const [submitting, setSubmitting] = useState(false);
   const [showOtherCities, setShowOtherCities] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  // 당일 18시 이후 등록 시도 시 안내 다이얼로그
+  const [showLateTodayDialog, setShowLateTodayDialog] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
   // 퍼즐 소개: 비어 있으면 자동 채움. 사용자가 수동 입력 시 자동 채움 중단.
   // draft에는 저장하지 않으므로 신규 진입 시에는 항상 false에서 시작.
@@ -282,10 +286,31 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // OFF: budgetAmount = 총액, ON: budgetAmount = 인당
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
 
-  // offer_deadline: 오퍼 마감 오후 3시 KST (06:00 UTC)
-  // expires_at: 유저 검토 마감 오후 4시 30분 KST (07:30 UTC)
-  const getOfferDeadline = (date: string) => `${date}T06:00:00.000Z`;
-  const getExpiresAt = (date: string) => `${date}T07:30:00.000Z`;
+  // offer_deadline: 오퍼 마감 오후 6시 KST (09:00 UTC)
+  // expires_at: 유저 검토 마감 오후 7시 30분 KST (10:30 UTC)
+  const getOfferDeadline = (date: string) => `${date}T09:00:00.000Z`;
+  const getExpiresAt = (date: string) => `${date}T10:30:00.000Z`;
+
+  // 당일 등록인데 18시(오퍼 마감) 이미 지났는지 체크
+  const isLateForToday = (): boolean => {
+    if (!eventDate || isEditMode) return false;
+    const offerDeadline = dayjs(getOfferDeadline(eventDate));
+    return dayjs().isAfter(offerDeadline) && dayjs().isSame(offerDeadline, "day");
+  };
+
+  // "내일 깃발로 등록" 클릭 시 날짜만 다음날로 변경
+  const handleMoveToTomorrow = () => {
+    const tomorrow = dayjs().add(1, "day").format("YYYY-MM-DD");
+    setEventDate(tomorrow);
+    setShowLateTodayDialog(false);
+    toast.success(`내일(${dayjs(tomorrow).format("M/D")}) 깃발로 변경했어요`);
+  };
+
+  // "얼리버드 보기" 클릭 시 메인 페이지 advance 탭으로 이동
+  const handleGoToEarlybird = () => {
+    setShowLateTodayDialog(false);
+    router.push("/?tab=advance");
+  };
 
   const formatWon = (n: number) =>
     n >= 10000 ? `${Math.round(n / 10000)}만원` : `${n.toLocaleString()}원`;
@@ -455,8 +480,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
       toast.success(
         effectiveIsRecruiting
-          ? "퍼즐이 올라갔어요! 당일 오후 3시까지 파티원·MD 모집, 이후 90분간 검토할 수 있어요 🧩"
-          : "깃발이 올라갔어요! 당일 오후 3시까지 오퍼 받고, 이후 90분간 검토할 수 있어요 🚩"
+          ? "퍼즐이 올라갔어요! 당일 오후 6시까지 파티원·MD 모집, 이후 90분간 검토할 수 있어요 🧩"
+          : "깃발이 올라갔어요! 당일 오후 6시까지 오퍼 받고, 이후 90분간 검토할 수 있어요 🚩"
       );
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
@@ -610,7 +635,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                     : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
                 }`}
               >
-                서울 어디든 🔥
+                서울 어디든
               </button>
             )}
             {MAIN_AREAS.map((a) => (
@@ -966,6 +991,10 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           <span>{isRecruitingParty ? "퍼즐 소개" : "MD에게 한마디"}</span>
           <span className="text-[11px] text-neutral-500 font-normal">
             {isRecruitingParty ? "참여자와 MD가 가장 먼저 읽어요" : "MD가 매물 제안할 때 참고해요"}
+            {" "}
+            <span className={notes.length >= 60 ? "text-amber-500" : ""}>
+              ({notes.length}/60)
+            </span>
           </span>
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
@@ -981,7 +1010,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               ? "예) 매너 좋으신 분만. 신나게 놀 분."
               : "예) 4명, 메인테이블 원해요"}
             className="bg-neutral-900 border-neutral-800 h-12 text-[14px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal"
-            maxLength={25}
+            maxLength={60}
           />
         </div>
       </section>
@@ -1042,14 +1071,20 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       {/* 마감 정책 안내 */}
       {!isEditMode && (
         <p className="text-[12px] text-neutral-400 text-center leading-relaxed px-2">
-          🚩 오후 3시에 오퍼가 마감되고, 90분간 받은 오퍼를 검토할 수 있어요
+          🚩 이벤트 당일 오후 6시에 오퍼가 마감되고, 90분간 받은 오퍼를 검토할 수 있어요
         </p>
       )}
 
       {/* 제출 버튼 */}
       <div className="mt-4 px-1">
         <Button
-          onClick={() => setShowSubmitConfirm(true)}
+          onClick={() => {
+            if (isLateForToday()) {
+              setShowLateTodayDialog(true);
+              return;
+            }
+            setShowSubmitConfirm(true);
+          }}
           disabled={submitting || (isEditMode && !isDirty)}
           className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
@@ -1095,6 +1130,51 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         cancelText="계속 작성"
         variant="danger"
       />
+
+      {/* 당일 18시 이후 등록 시도 시 안내 */}
+      <Sheet open={showLateTodayDialog} onOpenChange={setShowLateTodayDialog}>
+        <SheetContent
+          side="bottom"
+          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-12 outline-none"
+        >
+          <SheetHeader className="text-left space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/10">
+                <Flag className="w-5 h-5 text-amber-500" />
+              </div>
+              <SheetTitle className="text-white font-black text-xl tracking-tight">
+                오늘 깃발은 오후 6시까지였어요
+              </SheetTitle>
+            </div>
+            <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1">
+              지금 당장 가고 싶다면 얼리버드(즉시 매칭)도 확인해보세요.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex flex-col gap-3 mt-8">
+            <Button
+              onClick={handleMoveToTomorrow}
+              className="h-14 rounded-2xl bg-white hover:bg-neutral-200 text-black font-black text-lg shadow-lg flex items-center justify-center gap-2"
+            >
+              <Flag className="w-5 h-5" />
+              내일 깃발로 등록
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleGoToEarlybird}
+              className="h-14 rounded-2xl border-neutral-800 bg-neutral-900/50 text-white font-bold hover:bg-neutral-800"
+            >
+              얼리버드 보기
+            </Button>
+            <button
+              onClick={() => setShowLateTodayDialog(false)}
+              className="text-sm text-neutral-500 py-2"
+            >
+              취소
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

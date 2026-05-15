@@ -69,15 +69,34 @@ export function formatEntryTimeShort(entryTime: string | null, eventDate: string
   return entryTime;
 }
 
-/** offer_deadline → "오늘 3시 마감" / "5월 20일 3시 마감" / null (deadline 없을 때) */
-export function formatOfferDeadline(deadline: string | null): string | null {
-  if (!deadline) return null;
-  const d = dayjs(deadline);
+type PuzzleLike = {
+  status: string;
+  offer_deadline: string | null;
+  expires_at: string;
+};
+
+/**
+ * "오늘 오후 X시에 오퍼가 마감됩니다" 정적 메시지 반환.
+ * - 조건: status='open' + offer_deadline이 오늘 + 미래 시각
+ * - 그룹 내 가장 임박한 오늘 마감 시간 기준
+ * - 해당 없으면 null (표시 안 함)
+ */
+export function getPuzzleGroupDeadline(puzzles: PuzzleLike[]): string | null {
   const now = dayjs();
-  if (d.isSame(now, "day")) {
-    return `오늘 ${d.format("H시")} 마감`;
-  }
-  return `${d.format("M월 D일 H시")} 마감`;
+  const todayDeadlines = puzzles
+    .filter((p) => p.status === "open" && p.offer_deadline)
+    .map((p) => dayjs(p.offer_deadline!))
+    .filter((d) => d.isAfter(now) && d.isSame(now, "day"));
+
+  if (todayDeadlines.length === 0) return null;
+
+  const earliest = todayDeadlines.reduce((min, d) => (d.isBefore(min) ? d : min));
+  const hour = earliest.hour();
+  const minute = earliest.minute();
+  const period = hour < 12 ? "오전" : "오후";
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  const timeStr = minute === 0 ? `${displayHour}시` : `${displayHour}시 ${minute}분`;
+  return `오늘 ${period} ${timeStr}에 오퍼가 마감됩니다`;
 }
 
 /** 상대 시간 포맷 (당근 스타일): "방금" / "x분 전" / "x시간 전" / "x일 전" */

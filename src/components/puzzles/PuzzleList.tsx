@@ -23,6 +23,7 @@ import {
   matchesSeat,
   matchesDate as matchesDatePuzzle,
 } from "@/lib/utils/puzzleFilters";
+import { getPuzzleGroupDeadline } from "@/lib/utils/format";
 
 const NBI_CHIPS: { value: NbiFilter; label: string }[] = [
   { value: "all", label: "전체" },
@@ -127,6 +128,13 @@ export function PuzzleList({
   const setFilterSheetOpen = onFilterOpenChange ?? setInternalFilterOpen;
   const [recentCollapsed, setRecentCollapsed] = useState(false);
   const isMd = userRole === "md" || userRole === "admin";
+
+  // 마감 시간 배지가 분 단위로 갱신되도록 30초마다 강제 rerender
+  const [, setDeadlineTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setDeadlineTick((t) => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -384,6 +392,8 @@ export function PuzzleList({
             const recentIdSet = new Set(recentPuzzles.map(p => p.id));
             const rest = filteredPuzzles.filter(p => !recentIdSet.has(p.id));
 
+            const recentDeadline = getPuzzleGroupDeadline(recentPuzzles);
+
             return (
               <>
                 {recentPuzzles.length > 0 && (
@@ -402,6 +412,14 @@ export function PuzzleList({
                         {recentTitle}
                         {recentCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                       </button>
+                      {recentDeadline && (
+                        <span
+                          suppressHydrationWarning
+                          className="text-[13px] font-semibold text-neutral-400 whitespace-nowrap leading-none"
+                        >
+                          {recentDeadline}
+                        </span>
+                      )}
                       <div className="flex-1 flex justify-end">{toggleButton}</div>
                     </div>
                     {!recentCollapsed && (
@@ -447,6 +465,7 @@ export function PuzzleList({
               const dateLabel = `${m}월 ${day}일 (${days[d.getDay()]})`;
 
               const dday = getDDay(date);
+              const deadline = getPuzzleGroupDeadline(items);
 
               return (
                 <div key={date} className="space-y-4">
@@ -462,6 +481,14 @@ export function PuzzleList({
                     >
                       {dday}
                     </span>
+                    {deadline && (
+                      <span
+                        suppressHydrationWarning
+                        className="text-[13px] font-semibold text-neutral-400 whitespace-nowrap leading-none"
+                      >
+                        {deadline}
+                      </span>
+                    )}
                     {groupIdx === 0 && recentPuzzles.length === 0 && <div className="flex-1 flex justify-end">{toggleButton}</div>}
                   </div>
                   <div className="space-y-4">
