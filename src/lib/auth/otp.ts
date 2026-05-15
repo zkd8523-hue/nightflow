@@ -32,6 +32,22 @@ export function isTestEnv(): boolean {
   );
 }
 
+export function getMagicTestPhone(): string | null {
+  const raw = process.env.MAGIC_TEST_PHONE;
+  if (!raw) return null;
+  const normalized = raw.replace(/[^0-9]/g, "");
+  return normalized.length >= 10 ? normalized : null;
+}
+
+export function isMagicPhone(phone: string): boolean {
+  const magic = getMagicTestPhone();
+  return magic !== null && normalizePhone(phone) === magic;
+}
+
+export function getMagicOtpCode(): string {
+  return process.env.MAGIC_TEST_OTP || "000000";
+}
+
 export function generateOtpCode(): string {
   let code = "";
   for (let i = 0; i < OTP_LENGTH; i++) {

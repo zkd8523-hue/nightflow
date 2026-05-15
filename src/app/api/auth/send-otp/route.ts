@@ -3,8 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient as createServerSupabase } from "@/lib/supabase/server";
 import {
   generateOtpCode,
+  getMagicOtpCode,
   getOtpExpiresAt,
   hashOtpCode,
+  isMagicPhone,
   isValidKoreanPhone,
   isTestEnv,
   normalizePhone,
@@ -52,6 +54,37 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createAdminClient();
+
+  // 0. 매직 phone — 환경변수로 지정된 번호면 SMS 우회 + 기존 매직 user 자동 정리
+  if (isMagicPhone(phone)) {
+    const { data: existingMagicUsers } = await supabase
+      .from("users")
+      .select("id")
+      .eq("phone", phone);
+    for (const u of existingMagicUsers ?? []) {
+      try {
+        await supabase.auth.admin.deleteUser(u.id);
+      } catch (e) {
+        console.warn("[send-otp magic] cleanup failed for", u.id, e);
+      }
+    }
+    const magicCode = getMagicOtpCode();
+    const codeHash = hashOtpCode(magicCode, phone);
+    const expiresAt = getOtpExpiresAt();
+    const { error: insertError } = await supabase.from("phone_verifications").insert({
+      phone,
+      code_hash: codeHash,
+      expires_at: expiresAt.toISOString(),
+      ip,
+      user_agent: userAgent,
+    });
+    if (insertError) {
+      console.error("[send-otp magic] insert failed:", insertError.message);
+      return NextResponse.json({ error: "server_error" }, { status: 500 });
+    }
+    console.log(`[send-otp MAGIC] phone=${phone} → ${magicCode} (SMS 발송 안 함)`);
+    return NextResponse.json({ ok: true, expires_at: expiresAt.toISOString(), magic: true });
+  }
 
   // 1. Rate limit 체크 (테스트 환경은 스킵)
   if (!isTestEnv()) {
