@@ -69,6 +69,17 @@ export function formatEntryTimeShort(entryTime: string | null, eventDate: string
   return entryTime;
 }
 
+/** offer_deadline → "오늘 3시 마감" / "5월 20일 3시 마감" / null (deadline 없을 때) */
+export function formatOfferDeadline(deadline: string | null): string | null {
+  if (!deadline) return null;
+  const d = dayjs(deadline);
+  const now = dayjs();
+  if (d.isSame(now, "day")) {
+    return `오늘 ${d.format("H시")} 마감`;
+  }
+  return `${d.format("M월 D일 H시")} 마감`;
+}
+
 /** 상대 시간 포맷 (당근 스타일): "방금" / "x분 전" / "x시간 전" / "x일 전" */
 export function formatRelativeTime(date: string): string {
   const now = dayjs();

@@ -208,7 +208,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
           >
             NightFlow
           </Link>
-          <p className="text-[13px] text-neutral-400 font-medium tracking-tight">
+          <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
             클럽을 즐기는 가장 스마트한 방식
           </p>
         </div>
