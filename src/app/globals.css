@@ -122,9 +122,10 @@
     @apply border-border outline-ring/50;
   }
 
-  html {
-    overflow-x: hidden;
-  }
+  /* html 에는 overflow 적용하지 않는다.
+     html + body 둘 다에 overflow 가 잡히면 Chrome root scroller 가 꼬여서
+     "JS scrollTo 는 동작하는데 wheel/touch 로는 viewport 가 안 움직이는" 증상이 발생함.
+     가로 흔들림 방지는 body 단에서만 처리. */
 
   body {
     @apply bg-background text-foreground;
