@@ -114,9 +114,9 @@ export function PuzzleList({
   const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
   // MD 전용 정렬 순환: 등록순 → 높은순 → 낮은순 → 등록순 ...
   const [sortMode, setSortMode] = useState<"registered" | "desc" | "asc">("registered");
-  // 모드 뷰 4-state 순환:
-  //   initial(회색, 필터X, 라벨"퍼즐만") → puzzle(활성) → flag(활성) → all(활성, 전체보기) → initial
-  const [modeView, setModeView] = useState<"initial" | "puzzle" | "flag" | "all">("initial");
+  // 모드 뷰 바이너리 토글:
+  //   OFF(회색, 기본): 퍼즐+깃발 혼합 / ON(활성, 흰색): 파티원 모집중 퍼즐만
+  const [partyOnly, setPartyOnly] = useState(false);
   // Phase 1: 3종 필터 (지역은 상위 AuctionList에서 처리, 중복 제거)
   const [nbiFilter, setNbiFilter] = useState<NbiFilter>("all");
   const [seatFilter, setSeatFilter] = useState<SeatFilter>("all");
@@ -144,19 +144,18 @@ export function PuzzleList({
     })();
   }, []);
 
-  // Phase 1: 3종 필터 (엔비/자리/날짜) + 모드 뷰. 지역은 부모(AuctionList).
-  // initial / all → 필터 미적용. puzzle / flag → 해당 모드만.
+  // Phase 1: 3종 필터 (엔비/자리/날짜) + 파티원 모집만 토글. 지역은 부모(AuctionList).
+  // partyOnly=false(기본): 혼합. partyOnly=true: 파티원 모집중 퍼즐만.
   const filteredPuzzles = useMemo(() => {
     return puzzles.filter((p) => {
-      if (modeView === "flag" && p.is_recruiting_party) return false;
-      if (modeView === "puzzle" && !p.is_recruiting_party) return false;
+      if (partyOnly && !p.is_recruiting_party) return false;
       return (
         matchesNbi(p, nbiFilter) &&
         matchesSeat(p, seatFilter) &&
         matchesDatePuzzle(p, dateFilter)
       );
     });
-  }, [puzzles, nbiFilter, seatFilter, dateFilter, modeView]);
+  }, [puzzles, nbiFilter, seatFilter, dateFilter, partyOnly]);
 
   const eventDates = useMemo(() => {
     return Array.from(new Set(puzzles.map((p) => p.event_date)));
@@ -183,24 +182,7 @@ export function PuzzleList({
   const getBudget = (p: Puzzle) =>
     p.total_budget ?? p.budget_per_person * p.target_count;
 
-  // 사이클: initial(최초만) → puzzle → flag → all → puzzle → flag → all → ...
-  const cycleModeView = () => {
-    setModeView((cur) =>
-      cur === "initial" ? "puzzle"
-      : cur === "puzzle" ? "flag"
-      : cur === "flag" ? "all"
-      : "puzzle"  // all 다음은 다시 puzzle (initial로 안 돌아감)
-    );
-  };
-
-  const modeViewLabel =
-    modeView === "puzzle" ? "퍼즐만 보기"
-    : modeView === "flag" ? "깃발만 보기"
-    : modeView === "all" ? "전체보기"
-    : "퍼즐만 보기"; // initial: 힌트로 "퍼즐만 보기" 표시
-
-  // 활성 여부: initial은 비활성(회색), 나머지는 활성(흰색)
-  const modeViewActive = modeView !== "initial";
+  const togglePartyOnly = () => setPartyOnly((v) => !v);
 
   const cycleSortMode = () => {
     setSortMode((cur) => (cur === "registered" ? "desc" : cur === "desc" ? "asc" : "registered"));
@@ -212,14 +194,15 @@ export function PuzzleList({
   const toggleButton = (
     <div className="flex items-center gap-1.5 flex-shrink-0">
       <button
-        onClick={cycleModeView}
+        onClick={togglePartyOnly}
         className={`h-7 px-3 inline-flex items-center rounded-full text-[12px] leading-none font-bold transition-colors ${
-          modeViewActive
+          partyOnly
             ? "bg-white text-black"
             : "bg-neutral-800 text-neutral-400"
         }`}
+        aria-pressed={partyOnly}
       >
-        {modeViewLabel}
+        파티원 모집만
       </button>
       {/* 정렬은 MD/Admin 전용 */}
       {isMd && (
@@ -517,7 +500,7 @@ export function PuzzleList({
           className="fixed bottom-24 right-4 flex items-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-full pl-4 pr-3 py-3 shadow-lg z-40 transition-colors border-2 border-black"
         >
           <span className="text-black text-sm font-semibold whitespace-nowrap">
-            나도 MD 제안 받기
+            나도 MD 줄세우기
           </span>
           <Plus className="w-5 h-5 text-black" />
         </Link>

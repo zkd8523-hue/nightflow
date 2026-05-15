@@ -5,12 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, OTHER_CITIES } from "@/lib/constants/areas";
 import { toast } from "sonner";
-import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check } from "lucide-react";
+import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle } from "@/types/database";
+import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle as PuzzleType } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
@@ -53,7 +53,7 @@ const MUSIC_OPTIONS: { value: MusicPref; label: string }[] = [
   { value: "any", label: "상관없음" },
 ];
 
-export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle }) {
+export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: PuzzleType }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -74,9 +74,9 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
   // 편집 모드: puzzle에서 초기값 추출. 신규 등록 모드: draft → 기본값 순.
   const initialEventDate = puzzle?.event_date ?? (draft?.eventDate as string) ?? searchParams.get("date") ?? "";
-  // 디폴트 모드 = 모집하기(퍼즐). 깃발 모드 진입 시에만 "서울 어디든" 자동 선택.
-  const draftIsRecruiting = (draft?.isRecruitingParty as boolean) ?? true;
-  const initialArea = puzzle?.area ?? (draft?.area as string) ?? (!draftIsRecruiting ? "서울 어디든" : "");
+  // 디폴트 모드 = 인원 확정(깃발). 모집(퍼즐/조각) 모드는 매 진입 시 OFF로 시작 (draft 미복원).
+  // 지역은 draft 복원 제외 — 매 진입 시 "서울 어디든"으로 리셋해 사용자가 의식적으로 좁히도록 유도.
+  const initialArea = puzzle?.area ?? "서울 어디든";
   // budgetAmount 의미: 퍼즐(모집 ON)=인당가 / 깃발(모집 OFF)=총액
   // edit 모드: puzzle에서 모드에 맞춰 변환 / 신규: draft 또는 0
   const initialBudget = puzzle
@@ -96,7 +96,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const [budgetAmount, setBudgetAmount] = useState(initialBudget);
   const [budgetInputStr, setBudgetInputStr] = useState(initialBudget ? initialBudget.toLocaleString() : "");
   const [isRecruitingParty, setIsRecruitingParty] = useState<boolean>(
-    puzzle?.is_recruiting_party ?? (draft?.isRecruitingParty as boolean) ?? true
+    puzzle?.is_recruiting_party ?? false
   );
   // OFF 모드(인원 확정): 본인 포함 총 일행 수
   const [totalPeople, setTotalPeople] = useState(initialTotalPeople);
@@ -139,6 +139,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // draft에는 저장하지 않으므로 신규 진입 시에는 항상 false에서 시작.
   const [notesEverEdited, setNotesEverEdited] = useState(!!puzzle?.notes);
   const [submitted, setSubmitted] = useState(false);
+  // "조각이란?" 용어 풀이 모달
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // 신규: default 대비 변경 / 편집: 초기값 대비 변경
   const isDirty = !submitted && (isEditMode
@@ -163,7 +165,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         area !== "" ||
         budgetAmount !== 0 ||
         notes.trim() !== "" ||
-        isRecruitingParty !== true ||
+        isRecruitingParty !== false ||
         totalPeople !== 2 ||
         targetCount !== 4 ||
         hasGuest !== false
@@ -280,10 +282,10 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // OFF: budgetAmount = 총액, ON: budgetAmount = 인당
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
 
-  // expires_at: event_date 당일 자정(24:00 KST = 다음날 00:00 KST) = 15:00 UTC
-  const getExpiresAt = (date: string) => {
-    return `${date}T15:00:00.000Z`;
-  };
+  // offer_deadline: 오퍼 마감 오후 3시 KST (06:00 UTC)
+  // expires_at: 유저 검토 마감 오후 4시 30분 KST (07:30 UTC)
+  const getOfferDeadline = (date: string) => `${date}T06:00:00.000Z`;
+  const getExpiresAt = (date: string) => `${date}T07:30:00.000Z`;
 
   const formatWon = (n: number) =>
     n >= 10000 ? `${Math.round(n / 10000)}만원` : `${n.toLocaleString()}원`;
@@ -345,6 +347,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     setSubmitting(true);
     try {
       if (isEditMode && puzzle) {
+        const isEventDateChanged = eventDate !== puzzle.event_date;
         const { error: updateError } = await supabase
           .from("puzzles")
           .update({
@@ -365,7 +368,11 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             target_count: effectiveTargetCount,
             current_count: effectiveCurrentCount,
             notes: notes.trim() || null,
-            expires_at: getExpiresAt(eventDate),
+            // 날짜 변경 시에만 마감 시각 갱신. 미변경 시 기존 깃발(자정 마감 등) 보호.
+            ...(isEventDateChanged ? {
+              offer_deadline: getOfferDeadline(eventDate),
+              expires_at: getExpiresAt(eventDate),
+            } : {}),
           })
           .eq("id", puzzle.id)
           .eq("leader_id", userId);
@@ -416,6 +423,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           current_count: effectiveCurrentCount,
           is_recruiting_party: effectiveIsRecruiting,
           notes: notes.trim() || null,
+          offer_deadline: getOfferDeadline(eventDate),
           expires_at: getExpiresAt(eventDate),
         })
         .select("id")
@@ -445,7 +453,11 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         target_count: effectiveTargetCount,
       });
 
-      toast.success(effectiveIsRecruiting ? "퍼즐이 올라갔어요! 파티원과 MD를 기다려봐요 🧩" : "깃발이 올라갔어요! MD 시크릿 오퍼를 기다려봐요 🚩");
+      toast.success(
+        effectiveIsRecruiting
+          ? "퍼즐이 올라갔어요! 당일 오후 3시까지 파티원·MD 모집, 이후 90분간 검토할 수 있어요 🧩"
+          : "깃발이 올라갔어요! 당일 오후 3시까지 오퍼 받고, 이후 90분간 검토할 수 있어요 🚩"
+      );
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
       router.push(`/flags/${created.id}`);
@@ -459,71 +471,107 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Phase 1: 파티원 모집 토글 (첫 질문) */}
+      {/* Phase 1: 파티원 모집 옵트인 (디폴트: OFF=깃발 / ON=퍼즐) */}
       {!isEditMode && (
-        <section className="space-y-3">
+        <section className="space-y-4">
           <div className="flex items-center gap-2 text-white font-bold mb-2">
-            <Users className="w-4 h-4 text-green-500" />
-            <span>파티원을 모집하시나요?</span>
-          </div>
-          <div className="grid grid-cols-1 gap-2.5">
+            <Puzzle className="w-4 h-4 text-green-500" />
+            <span>조각을 모으시겠어요?</span>
             <button
               type="button"
+              role="switch"
+              aria-checked={isRecruitingParty}
+              aria-label="파티원 모집 토글"
               onClick={() => {
-                if (!isRecruitingParty) {
+                const next = !isRecruitingParty;
+                if (next) {
                   // 깃발 → 퍼즐: 예산 의미 변경(총액→인당)으로 값 초기화
                   setBudgetAmount(0);
                   setBudgetInputStr("");
-                }
-                setIsRecruitingParty(true);
-                // 퍼즐(파티원 모집) 모드에선 "서울 어디든" 불가 — 선택돼 있으면 초기화
-                if (area === "서울 어디든") setArea("");
-              }}
-              className={`w-full text-left p-4 rounded-2xl border transition-all ${
-                isRecruitingParty
-                  ? "bg-green-500/10 border-green-500/50"
-                  : "bg-[#1C1C1E] border-neutral-800 hover:border-neutral-700"
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[15px] font-black text-white">
-                  모집하기 - 퍼즐 🧩
-                </span>
-              </div>
-              <p className="text-[12px] text-neutral-400 leading-snug">
-                파티원이 다 모이면 자동으로 깃발🚩로 바뀌어 MD 시크릿 오퍼를 받아요.
-              </p>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                if (isRecruitingParty) {
+                  // 퍼즐 모드에선 "서울 어디든" 불가
+                  if (area === "서울 어디든") setArea("");
+                } else {
                   // 퍼즐 → 깃발: 예산 의미 변경(인당→총액)으로 값 초기화
                   setBudgetAmount(0);
                   setBudgetInputStr("");
-                  // 깃발 모드에선 카톡 오픈채팅 미사용 — stale state 정리
+                  // 깃발 모드에선 카톡 오픈채팅 미사용
                   setKakaoUrl("");
+                  // 깃발 모드 디폴트 지역
+                  if (!area) setArea("서울 어디든");
                 }
-                setIsRecruitingParty(false);
-                // 깃발 모드 디폴트 지역: "서울 어디든" (사용자가 따로 선택 안 했을 때)
-                if (!area) setArea("서울 어디든");
+                setIsRecruitingParty(next);
               }}
-              className={`w-full text-left p-4 rounded-2xl border transition-all ${
-                !isRecruitingParty
-                  ? "bg-green-500/10 border-green-500/50"
-                  : "bg-[#1C1C1E] border-neutral-800 hover:border-neutral-700"
+              className={`relative ml-1 w-11 h-6 rounded-full p-0 transition-colors flex-shrink-0 ${
+                isRecruitingParty ? "bg-green-500" : "bg-neutral-700"
               }`}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[15px] font-black text-white">
-                  인원 확정 - 깃발 🚩
-                </span>
-              </div>
-              <p className="text-[12px] text-neutral-400 leading-snug">
-                즉시 MD 시크릿 오퍼를 받아요.
-              </p>
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                  isRecruitingParty ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              className="ml-auto flex items-center gap-1 text-[11px] text-neutral-400 font-medium underline underline-offset-2 hover:text-white transition-colors"
+            >
+              <HelpCircle className="w-3 h-3" />
+              조각이란?
             </button>
           </div>
+          {isRecruitingParty && (
+            <div className="p-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800">
+              <p className="text-[13px] text-neutral-300 leading-snug">
+                파티원이 다 모이면 자동으로 오퍼가 들어오기 시작해요.
+              </p>
+            </div>
+          )}
+
+          {helpOpen && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center p-4"
+              onClick={() => setHelpOpen(false)}
+            >
+              <div className="absolute inset-0 bg-black/70" />
+              <div
+                className="relative w-full max-w-sm bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4 text-[13px] text-neutral-300 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="font-bold text-white text-[15px]">🧩 조각이란?</p>
+                  <button
+                    type="button"
+                    onClick={() => setHelpOpen(false)}
+                    className="text-neutral-500 hover:text-white transition-colors"
+                    aria-label="닫기"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <p className="font-bold text-white leading-relaxed">
+                  조각 = 일행의 빈 자리
+                </p>
+                <p className="leading-relaxed">
+                  예) 친구랑 둘이서 4명 테이블에 가고 싶을 때,
+                  <br />
+                  빈 자리 2개가 &quot;조각&quot;이에요.
+                </p>
+                <div className="pt-3 border-t border-neutral-800 space-y-2">
+                  <p className="leading-relaxed">
+                    체크하면 다른 유저가 그룹에 참여해요.
+                    <br />
+                    총 금액을 더 모아, <span className="text-amber-400 font-bold">더 멋진 테이블</span>을 노려볼 수 있어요.
+                  </p>
+                  <p className="leading-relaxed">
+                    인원이 다 차면 자동으로 깃발이 되어,
+                    <br />
+                    오퍼를 받기 시작해요.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       )}
 
@@ -620,7 +668,9 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           )}
         {area === "서울 어디든" && (
           <p className="text-[12px] text-amber-400/80 leading-relaxed px-1">
-            서울 모든 지역 MD들의 제안을 받을 수 있어요.
+            어떤 장소에서, 어떤 사람들을 만날까요?
+            <br />
+            알 수 없어서 더 설레요.
           </p>
         )}
         </div>
@@ -989,8 +1039,15 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         )}
       </div>
 
+      {/* 마감 정책 안내 */}
+      {!isEditMode && (
+        <p className="text-[12px] text-neutral-400 text-center leading-relaxed px-2">
+          🚩 오후 3시에 오퍼가 마감되고, 90분간 받은 오퍼를 검토할 수 있어요
+        </p>
+      )}
+
       {/* 제출 버튼 */}
-      <div className="mt-12 px-1">
+      <div className="mt-4 px-1">
         <Button
           onClick={() => setShowSubmitConfirm(true)}
           disabled={submitting || (isEditMode && !isDirty)}

@@ -22,6 +22,8 @@ import { getPublicIncludes } from "@/lib/utils/liquor";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
 import { formatRelativeTime } from "@/lib/utils/format";
+import { useCountdown } from "@/hooks/useCountdown";
+import dayjs from "dayjs";
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { LeaderInfoSheet } from "./LeaderInfoSheet";
 
@@ -73,11 +75,28 @@ function formatEventDate(dateStr: string) {
 
 const STATUS_LABEL: Record<string, string> = {
   open: "모집 중",
+  selecting: "검토 중",
   matched: "마감",
   accepted: "성사됨",
   cancelled: "취소됨",
   expired: "만료됨",
 };
+
+function SelectingBanner({ expiresAt }: { expiresAt: string }) {
+  const { remaining, level } = useCountdown(expiresAt);
+  const mm = Math.floor(remaining / 60).toString().padStart(2, "0");
+  const ss = (remaining % 60).toString().padStart(2, "0");
+  const timerCls = level === "critical" ? "text-red-400" : level === "warning" ? "text-amber-300" : "text-white";
+  return (
+    <section className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-1">
+      <p className="text-[14px] font-bold text-amber-400">⏰ 오퍼가 종료되었습니다</p>
+      <p className="text-[12px] text-neutral-300">
+        <span className={`font-mono font-bold ${timerCls}`}>{mm}:{ss}</span>
+        {" "}동안 더 고민할 수 있어요
+      </p>
+    </section>
+  );
+}
 
 const OFFER_STATUS_LABEL: Record<string, string> = {
   pending: "제안 중",
@@ -434,6 +453,8 @@ export function PuzzleDetailClient({
               className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
                 puzzle.status === "open"
                   ? "bg-green-500/20 text-green-400"
+                  : puzzle.status === "selecting"
+                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
                   : puzzle.status === "accepted"
                   ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
                   : puzzle.status === "matched"
@@ -447,6 +468,11 @@ export function PuzzleDetailClient({
         </div>
 
         <div className="space-y-5 pb-10">
+          {/* 검토 중 배너 (status = selecting) */}
+          {puzzle.status === "selecting" && (
+            <SelectingBanner expiresAt={puzzle.expires_at} />
+          )}
+
           {/* 취소 안내 배너 (status = cancelled) */}
           {puzzle.status === "cancelled" && (
             <section
@@ -521,8 +547,14 @@ export function PuzzleDetailClient({
               {puzzle.notes && (
                 <p className="text-[18px] font-black text-white leading-snug">{puzzle.notes}</p>
               )}
-              <p className={`${puzzle.notes ? "text-[14px] text-neutral-400" : "text-[22px] font-black text-white"}`}>
-                {formatEventDate(puzzle.event_date)} <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400 ml-1"}>{puzzle.area}</span>
+              <p className={`${puzzle.notes ? "text-[14px] text-neutral-400" : "text-[22px] font-black text-white"} flex flex-wrap items-baseline gap-x-1`}>
+                {formatEventDate(puzzle.event_date)}{" "}
+                <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400"}>{puzzle.area}</span>
+                {puzzle.status === "open" && (
+                  <span className="text-[12px] text-neutral-400 whitespace-nowrap">
+                    ⏰ {dayjs(puzzle.event_date).format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD") ? "오늘" : dayjs(puzzle.event_date).format("M/D")} 3시 오퍼 마감
+                  </span>
+                )}
               </p>
             </div>
 

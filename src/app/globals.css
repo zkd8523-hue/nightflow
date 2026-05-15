@@ -186,7 +186,7 @@
     animation: breathe 2s ease-in-out infinite;
   }
 
-  /* NEW! 배지 (24시간 이내 등록 깃발) */
+  /* NEW! 배지 (6시간 이내 등록 깃발) */
   @keyframes new-badge-pop {
     0%, 100% { transform: rotate(-10deg) scale(1); }
     50% { transform: rotate(-10deg) scale(1.12); }

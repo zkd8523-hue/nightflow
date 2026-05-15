@@ -13,7 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Menu,
   Gavel,
@@ -109,7 +109,9 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
     deleteAllNotifications,
   } = useNotifications(user?.id);
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
+  const isOnFlagNewPage = pathname === "/flags/new";
   const [menuOpen, setMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -202,13 +204,12 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
           <Link
             href="/"
             className="text-lg font-black tracking-tighter text-white leading-none flex items-baseline gap-1.5"
-            aria-label="나이트플로우(나플) 홈"
+            aria-label="나이트플로우 홈"
           >
             NightFlow
-            <span className="text-xs font-bold text-neutral-400">나플</span>
           </Link>
-          <p className="text-[11px] text-neutral-400 font-medium tracking-tight">
-            같은 돈으로 더 크게 놀자
+          <p className="text-[13px] text-neutral-400 font-medium tracking-tight">
+            클럽을 즐기는 가장 스마트한 방식
           </p>
         </div>
 
@@ -244,7 +245,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                   <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
                 </Link>
               )}
-              {user.role === "user" && (
+              {user.role === "user" && !isOnFlagNewPage && (
                 <Link
                   href="/flags/new"
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"

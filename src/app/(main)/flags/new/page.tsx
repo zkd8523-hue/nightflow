@@ -23,8 +23,8 @@ export default async function PuzzleNewPage() {
       <div className="max-w-lg mx-auto p-6">
         {/* 헤더 */}
         <div className="mb-8 pt-12">
-          <h1 className="text-2xl font-black text-white tracking-tight">퍼즐</h1>
-          <p className="text-neutral-500 text-sm font-medium mt-0.5">여러 MD들의 제안 비교하고, 최고의 조건을 골라봐요</p>
+          <h1 className="text-2xl font-black text-white tracking-tight">🚩 시크릿 오퍼받기</h1>
+          <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">예산만 꽂으면,<br />MD들이 여러분을 모시려고 서로 경쟁해요.</p>
         </div>
 
         <PuzzleForm userId={user.id} />

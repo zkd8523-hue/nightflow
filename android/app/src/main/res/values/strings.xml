@@ -2,7 +2,8 @@
 <resources>
     <string name="app_name">NightFlow</string>
     <string name="title_activity_main">NightFlow</string>
-    <string name="package_name">com.nightflow.app</string>
-    <string name="custom_url_scheme">com.nightflow.app</string>
+    <string name="package_name">kr.nightflow.app</string>
+    <string name="custom_url_scheme">kr.nightflow.app</string>
     <string name="kakao_app_key">05e4bc59b65a9accadeb923e263e2212</string>
+    <string name="kakao_scheme">kakao05e4bc59b65a9accadeb923e263e2212</string>
 </resources>

@@ -81,6 +81,20 @@ const PUZZLE_ONBOARDING_STEPS = [
   },
 ];
 
+// 유저용 "시크릿 오퍼란?" 설명 (3-포인트 + 감성 마무리)
+const SECRET_OFFER_INTRO_USER = {
+  title: "시크릿오퍼",
+  points: [
+    "오퍼는 방장에게만 공개돼요",
+    "MD끼리도 서로 내용을 못 봐요",
+    "오직 클럽명 + 조건으로 승부",
+  ],
+  highlights: [
+    { emoji: "✨", text: "눈치보지 않는 경쟁으로 혜택 UP" },
+    { emoji: "🎁", text: "최고의 오퍼를 택하는 즐거움!" },
+  ],
+};
+
 // MD 전용 퍼즐 이용방법 (시크릿 오퍼 핵심 가치 강조)
 const PUZZLE_ONBOARDING_STEPS_MD = [
   {
@@ -177,6 +191,7 @@ export function HomeContent({
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [guideMode, setGuideMode] = useState<"full" | "secret-offer">("full");
 
   const instantEnabled = isInstantEnabled();
   const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
@@ -353,6 +368,10 @@ export function HomeContent({
             : currentTab === "advance"
             ? EARLYBIRD_ONBOARDING_STEPS
             : ONBOARDING_STEPS;
+          const handleToggleSecretOffer = () => {
+            setGuideMode("secret-offer");
+            setShowGuide((v) => !(v && guideMode === "secret-offer"));
+          };
           // MD 전용 puzzle tip: 본 카피 + "(시크릿오퍼란?)" 버튼
           const mdPuzzleTipContent = (
             <>
@@ -361,7 +380,7 @@ export function HomeContent({
               시크릿 오퍼로 매출을 올려봐요!{" "}
               <button
                 type="button"
-                onClick={() => setShowGuide((v) => !v)}
+                onClick={handleToggleSecretOffer}
                 className="inline-flex items-center text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors ml-1 align-baseline"
               >
                 (시크릿오퍼란?)
@@ -370,12 +389,14 @@ export function HomeContent({
           );
           const userPuzzleTipContent = (
             <>
-              예산만 꽂으면 시크릿 오퍼 쏟아져요!🚩
+              예산 등록 → MD들이 시크릿 오퍼
               <br />
-              최고만 골라 잡으세요{" "}
+              가격·패키지 비교하고 골라요.
+              <br />
+              <span className="text-emerald-400">지금 바로 VIP가 되어보세요!</span>{" "}
               <button
                 type="button"
-                onClick={() => setShowGuide((v) => !v)}
+                onClick={handleToggleSecretOffer}
                 className="inline-flex items-center text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors ml-1 align-baseline"
               >
                 (시크릿 오퍼란?)
@@ -391,6 +412,13 @@ export function HomeContent({
                 ...TAB_PROMISES,
                 puzzle: { ...TAB_PROMISES.puzzle, content: userPuzzleTipContent },
               };
+          const isUserSecretMode = guideMode === "secret-offer" && currentTab === "puzzle" && !isMdOrAdmin;
+          const visibleSteps = guideMode === "secret-offer" && currentTab === "puzzle"
+            ? steps.filter((s) => s.title.includes("시크릿 오퍼")).map((s) => ({
+                ...s,
+                title: s.title.replace(/^\d+\.\s*/, ""),
+              }))
+            : steps;
           const guideCard = showGuide ? (
             <section className="px-1">
               <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
@@ -400,26 +428,50 @@ export function HomeContent({
                 >
                   <X className="w-4 h-4" />
                 </button>
-                <div className="flex flex-col gap-2">
-                  {steps.map((step, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
-                    >
-                      <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
-                        {step.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">
-                          {step.title}
-                        </h3>
-                        <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep whitespace-pre-line">
-                          {step.desc}
+                {isUserSecretMode ? (
+                  <div className="space-y-4 pt-1 pr-8">
+                    <h3 className="text-[17px] font-black text-white tracking-tight">{SECRET_OFFER_INTRO_USER.title}</h3>
+                    <ol className="space-y-2.5">
+                      {SECRET_OFFER_INTRO_USER.points.map((p, i) => (
+                        <li key={i} className="flex items-center gap-2.5">
+                          <span className="shrink-0 w-5 h-5 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-[11px] font-black text-amber-400">
+                            {i + 1}
+                          </span>
+                          <span className="text-[13.5px] text-neutral-200 font-medium leading-snug break-keep">{p}</span>
+                        </li>
+                      ))}
+                    </ol>
+                    <div className="border-t border-neutral-800 pt-3 space-y-2">
+                      {SECRET_OFFER_INTRO_USER.highlights.map((h, i) => (
+                        <p key={i} className="text-[13.5px] text-emerald-400 font-bold leading-snug break-keep flex items-start gap-1.5">
+                          <span className="shrink-0">{h.emoji}</span>
+                          <span>{h.text}</span>
                         </p>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {visibleSteps.map((step, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
+                      >
+                        <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
+                          {step.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">
+                            {step.title}
+                          </h3>
+                          <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep whitespace-pre-line">
+                            {step.desc}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </section>
           ) : null;
@@ -435,7 +487,10 @@ export function HomeContent({
               userRole={user?.role as "user" | "md" | "admin" | undefined}
               initialTab={currentTab}
               onTabChange={handleTabChange}
-              onShowGuide={() => setShowGuide(v => !v)}
+              onShowGuide={() => {
+                setGuideMode("full");
+                setShowGuide(v => !(v && guideMode === "full"));
+              }}
               tabPromises={overriddenTabPromises}
               guideSlot={guideCard}
             />
@@ -521,7 +576,7 @@ export function HomeContent({
           <div className="flex flex-col items-center text-center pt-2 pb-4 gap-4">
             <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center text-3xl">⛳</div>
             <div>
-              <SheetTitle className="text-amber-400 font-black text-2xl">같은 돈으로 더 크게 놀자!</SheetTitle>
+              <SheetTitle className="text-amber-400 font-black text-2xl">클럽을 즐기는 가장 스마트한 방식</SheetTitle>
               <SheetDescription className="text-neutral-400 text-sm mt-1">
                 날짜·지역만 찍으면 MD들이 알아서 붙어요
               </SheetDescription>

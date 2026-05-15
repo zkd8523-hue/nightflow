@@ -92,7 +92,7 @@ export const PuzzleCard = memo(function PuzzleCard({
   const isRecruitingParty = puzzle.is_recruiting_party;
   const isFull = puzzle.current_count >= puzzle.target_count;
   const isSmall = puzzle.target_count > 8;
-  const isNew = Date.now() - new Date(puzzle.created_at).getTime() < 24 * 60 * 60 * 1000;
+  const isNew = Date.now() - new Date(puzzle.created_at).getTime() < 6 * 60 * 60 * 1000;
 
   // MD가 퍼즐(모집 중)을 찜할 수 있음 — 인원 부족/예산 큰 거 트래킹
   const { isFavoritedPuzzle, toggleFavoritePuzzle } = usePuzzleFavoritesContext();
@@ -104,7 +104,7 @@ export const PuzzleCard = memo(function PuzzleCard({
       {isNew && !hideNewBadge && (
         <div
           className="animate-new-badge pointer-events-none absolute -top-4 -right-2.5 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none"
-          aria-label="24시간 이내 등록"
+          aria-label="6시간 이내 등록"
         >
           NEW!
         </div>

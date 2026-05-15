@@ -33,6 +33,18 @@
             android:name="com.kakao.sdk.AppKey"
             android:value="@string/kakao_app_key" />
 
+        <!-- 카카오톡 로그인 콜백 처리 -->
+        <activity
+            android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:host="oauth" android:scheme="@string/kakao_scheme" />
+            </intent-filter>
+        </activity>
+
         <!-- 카카오톡 설치 여부 확인을 위한 쿼리 -->
         <provider
             android:name="androidx.core.content.FileProvider"

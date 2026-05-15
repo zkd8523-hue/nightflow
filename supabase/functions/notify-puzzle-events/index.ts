@@ -288,14 +288,14 @@ async function handleOfferReminder(supabase: ReturnType<typeof createClient>) {
 
     const { data: leader } = await supabase
       .from("users")
-      .select("id, name, phone")
+      .select("id, display_name, phone")
       .eq("id", puzzle.leader_id)
       .single();
 
     if (!leader) continue;
 
     await sendAndLog(supabase, "puzzle_offer_reminder", puzzle.id, leader, TPL.PUZZLE_OFFER_REMINDER, {
-      userName: leader.name ?? "방장",
+      userName: leader.display_name ?? "방장",
       offerCount: String(count),
       puzzleUrl: puzzleUrl(puzzle.id),
     });

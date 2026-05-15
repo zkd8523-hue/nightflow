@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PullToRefresh } from "@/components/auctions/PullToRefresh";
+import { SelectingFlagAlertSheet } from "@/components/puzzles/SelectingFlagAlertSheet";
 import { useRouter } from "next/navigation";
 
 export default function MainLayout({
@@ -26,6 +27,7 @@ export default function MainLayout({
         <main className="flex-1 pb-16">{children}</main>
         <Footer />
         <BottomNav />
+        <SelectingFlagAlertSheet />
       </div>
     </PullToRefresh>
   );

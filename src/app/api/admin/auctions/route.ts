@@ -104,7 +104,7 @@ export async function PATCH(req: Request) {
   }
 }
 
-// DELETE: draft 경매 삭제
+// DELETE: 경매 영구 삭제 (입찰 유무 무관, 모든 상태 허용)
 export async function DELETE(req: Request) {
   try {
     const result = await verifyAdmin();
@@ -121,7 +121,7 @@ export async function DELETE(req: Request) {
 
     const { data: auction, error: fetchError } = await admin
       .from("auctions")
-      .select("id, status, title, md_id")
+      .select("id, status, title, md_id, bid_count")
       .eq("id", auctionId)
       .single();
 
@@ -129,28 +129,27 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "경매를 찾을 수 없습니다" }, { status: 404 });
     }
 
-    if (auction.status !== "draft") {
-      return NextResponse.json(
-        { error: "draft 상태의 경매만 삭제할 수 있습니다" },
-        { status: 400 }
-      );
-    }
-
-    // bids 먼저 삭제 (CASCADE 없음)
+    // FK는 대부분 ON DELETE CASCADE이지만, 확실하게 bids/chat_interests 명시 삭제
     await admin.from("bids").delete().eq("auction_id", auctionId);
+    await admin.from("chat_interests").delete().eq("auction_id", auctionId);
     const { error: deleteError } = await admin.from("auctions").delete().eq("id", auctionId);
 
     if (deleteError) throw deleteError;
 
-    logger.log(`[Admin] Auction ${auctionId} ("${auction.title}") deleted by ${result.user!.id}`);
+    logger.log(
+      `[Admin] Auction ${auctionId} ("${auction.title}", status=${auction.status}, bids=${auction.bid_count}) deleted by ${result.user!.id}`
+    );
 
     // MD에게 인앱 알림 발송
     if (auction.md_id) {
+      const hasBids = (auction.bid_count ?? 0) > 0;
       const { error: notificationError } = await admin.from("in_app_notifications").insert({
         user_id: auction.md_id,
         type: "auction_admin_deleted",
-        title: "경매 초안이 관리자에 의해 삭제되었습니다",
-        message: `"${auction.title}" 경매 초안이 관리자에 의해 삭제되었습니다.`,
+        title: "경매가 관리자에 의해 삭제되었습니다",
+        message: hasBids
+          ? `"${auction.title}" 경매가 관리자에 의해 삭제되었습니다. (입찰 ${auction.bid_count}건 포함)`
+          : `"${auction.title}" 경매가 관리자에 의해 삭제되었습니다.`,
         action_url: "/md/dashboard",
       });
       if (notificationError) {

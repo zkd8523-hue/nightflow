@@ -150,7 +150,8 @@ function AuctionTable({
             const displayStatus = getDisplayStatus(a);
             const statusCfg = STATUS_CONFIG[displayStatus] || STATUS_CONFIG.expired;
             const canCancel = ["active", "scheduled"].includes(a.status);
-            const canDelete = a.status === "draft";
+            // 운영자는 입찰 유무·상태와 관계없이 모든 경매 삭제 가능
+            const canDelete = true;
 
             return (
               <Card
@@ -495,7 +496,7 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
           <SheetHeader className="text-left">
             <SheetTitle className="text-white font-black text-xl">경매 삭제</SheetTitle>
             <SheetDescription className="text-neutral-400">
-              초안 경매를 삭제합니다
+              경매를 영구 삭제합니다
             </SheetDescription>
           </SheetHeader>
           {deleteTarget && (
@@ -509,10 +510,30 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
                   <span className="text-neutral-500 text-sm font-bold">MD</span>
                   <span className="font-bold text-white">{deleteTarget.md?.name || "-"}</span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-500 text-sm font-bold">상태</span>
+                  <span className="font-bold text-white">
+                    {STATUS_CONFIG[deleteTarget.status]?.label || deleteTarget.status}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-500 text-sm font-bold">입찰 수</span>
+                  <span className={`font-black ${deleteTarget.bid_count > 0 ? "text-red-400" : "text-white"}`}>
+                    {deleteTarget.bid_count}건
+                  </span>
+                </div>
               </div>
 
               <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 text-[13px] text-red-400 font-medium leading-relaxed">
-                이 경매가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+                {deleteTarget.bid_count > 0 ? (
+                  <>
+                    ⚠️ 입찰 {deleteTarget.bid_count}건과 모든 관련 데이터가 함께 삭제됩니다.
+                    입찰자들에게는 사후 안내가 없으니, 가능하면 <b>강제 취소</b>를 먼저 검토해주세요.
+                    이 작업은 되돌릴 수 없습니다.
+                  </>
+                ) : (
+                  "이 경매가 영구적으로 삭제됩니다. 이 작업은 되돌릴 수 없습니다."
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3 pb-8">

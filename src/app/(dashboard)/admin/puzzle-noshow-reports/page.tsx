@@ -12,29 +12,23 @@ import Link from "next/link";
 
 dayjs.locale("ko");
 
-interface PuzzleNoshowReport {
+interface PuzzleNoshowReportRow {
   id: string;
   proposed_price: number;
   table_type: string | null;
   visit_marked_at: string;
   visit_requested_at: string | null;
-  puzzle: {
-    id: string;
-    area: string;
-    event_date: string;
-    leader: {
-      id: string;
-      name: string | null;
-      display_name: string | null;
-      strike_count: number;
-    } | null;
-  } | null;
-  md: {
-    id: string;
-    name: string | null;
-    display_name: string | null;
-  } | null;
-  club: { name: string | null } | null;
+  puzzle_id: string | null;
+  puzzle_area: string | null;
+  puzzle_event_date: string | null;
+  leader_id: string | null;
+  leader_name: string | null;
+  leader_display_name: string | null;
+  leader_strike_count: number | null;
+  md_id: string | null;
+  md_name: string | null;
+  md_display_name: string | null;
+  club_name: string | null;
 }
 
 export default function AdminPuzzleNoshowReportsPage() {
@@ -42,7 +36,7 @@ export default function AdminPuzzleNoshowReportsPage() {
   const { user, isLoading: userLoading } = useCurrentUser();
   const supabase = createClient();
 
-  const [reports, setReports] = useState<PuzzleNoshowReport[]>([]);
+  const [reports, setReports] = useState<PuzzleNoshowReportRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
 
@@ -54,22 +48,13 @@ export default function AdminPuzzleNoshowReportsPage() {
     }
 
     const fetchReports = async () => {
-      const { data } = await supabase
-        .from("puzzle_offers")
-        .select(`
-          id, proposed_price, table_type, visit_marked_at, visit_requested_at,
-          puzzle:puzzles!inner (
-            id, area, event_date,
-            leader:users!puzzles_leader_id_fkey (id, name, display_name, strike_count)
-          ),
-          md:users!puzzle_offers_md_id_fkey (id, name, display_name),
-          club:clubs (name)
-        `)
-        .eq("visit_result", "noshow")
-        .is("strike_applied_at", null)
-        .order("visit_marked_at", { ascending: false });
+      const { data, error } = await supabase.rpc("admin_list_puzzle_noshow_reports");
 
-      setReports((data as unknown as PuzzleNoshowReport[]) || []);
+      if (error) {
+        console.error("[puzzle-noshow-reports] fetch error", error);
+      }
+
+      setReports((data as PuzzleNoshowReportRow[]) || []);
       setLoading(false);
     };
 
@@ -152,13 +137,13 @@ export default function AdminPuzzleNoshowReportsPage() {
         ) : (
           <div className="space-y-3">
             {reports.map((r) => {
-              const eventDate = r.puzzle?.event_date
-                ? dayjs(r.puzzle.event_date).format("M/D (ddd)")
+              const eventDate = r.puzzle_event_date
+                ? dayjs(r.puzzle_event_date).format("M/D (ddd)")
                 : "날짜 미정";
               const markedAt = dayjs(r.visit_marked_at).format("M/D HH:mm");
-              const leaderName = r.puzzle?.leader?.display_name || r.puzzle?.leader?.name || "방장";
-              const mdName = r.md?.display_name || r.md?.name || "MD";
-              const leaderStrikes = r.puzzle?.leader?.strike_count ?? 0;
+              const leaderName = r.leader_display_name || r.leader_name || "방장";
+              const mdName = r.md_display_name || r.md_name || "MD";
+              const leaderStrikes = r.leader_strike_count ?? 0;
               return (
                 <div key={r.id} className="bg-[#1C1C1E] rounded-2xl p-4 border border-red-500/20 space-y-3">
                   <div className="flex items-start justify-between gap-2">
@@ -166,8 +151,8 @@ export default function AdminPuzzleNoshowReportsPage() {
                       <div className="flex items-center gap-2 text-[12px] text-neutral-400 font-bold flex-wrap">
                         <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                         <span>{eventDate}</span>
-                        {r.puzzle?.area && <span>· {r.puzzle.area}</span>}
-                        {r.club?.name && <span>· {r.club.name}</span>}
+                        {r.puzzle_area && <span>· {r.puzzle_area}</span>}
+                        {r.club_name && <span>· {r.club_name}</span>}
                       </div>
                       <div className="mt-1.5 text-[13px] text-white">
                         <span className="font-bold text-red-400">{mdName}</span>
@@ -182,9 +167,9 @@ export default function AdminPuzzleNoshowReportsPage() {
                         )}
                       </div>
                     </div>
-                    {r.puzzle?.id && (
+                    {r.puzzle_id && (
                       <Link
-                        href={`/flags/${r.puzzle.id}`}
+                        href={`/flags/${r.puzzle_id}`}
                         className="shrink-0 inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white transition-colors"
                       >
                         퍼즐 <ExternalLink className="w-3 h-3" />

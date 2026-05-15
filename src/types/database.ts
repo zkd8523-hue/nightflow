@@ -536,7 +536,9 @@ export const MD_GRADE_CONFIG: Record<MDCustomerGrade, { label: string; color: st
 // Puzzle Types (Migration 097)
 // ============================================
 
-export type PuzzleStatus = 'open' | 'matched' | 'cancelled' | 'expired' | 'accepted';
+export type PuzzleStatus = 'open' | 'selecting' | 'matched' | 'cancelled' | 'expired' | 'accepted';
+// open: 오퍼 모집 중
+// selecting: 오퍼 마감, 유저 검토 중 (Migration 170 — 오후 3시 이후 90분)
 // matched: 대표자가 수동 마감 (MD 추가 결제 차단, 홈에서 숨김)
 // accepted: 오퍼 수락 완료 (V2 역경매)
 
@@ -575,6 +577,10 @@ export interface Puzzle {
   cancelled_at: string | null;
   notes: string | null;
   expires_at: string;
+  /** Migration 170: 오퍼 마감 시각 (NULL = 기존 자정 마감 깃발) */
+  offer_deadline: string | null;
+  /** Migration 170: 15분 임박 알림 발송 시각 (중복 방지) */
+  review_ending_notified_at: string | null;
   accepted_offer_id: string | null;
   created_at: string;
   updated_at: string;
