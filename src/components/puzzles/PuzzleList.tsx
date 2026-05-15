@@ -97,6 +97,9 @@ interface PuzzleListProps {
   onActiveFilterChange?: (hasActive: boolean) => void;
   /** 필터 초기화 콜백을 부모가 호출할 수 있도록 ref로 노출 */
   resetRef?: React.MutableRefObject<(() => void) | null>;
+  /** "파티원 모집만" 토글: 외부(부모)에서 컨트롤할 때 사용. 미지정 시 내부 상태 */
+  partyOnly?: boolean;
+  onPartyOnlyChange?: (v: boolean) => void;
 }
 
 export function PuzzleList({
@@ -108,6 +111,8 @@ export function PuzzleList({
   onFilterOpenChange,
   onActiveFilterChange,
   resetRef,
+  partyOnly: partyOnlyProp,
+  onPartyOnlyChange,
 }: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
@@ -117,7 +122,10 @@ export function PuzzleList({
   const [sortMode, setSortMode] = useState<"registered" | "desc" | "asc">("registered");
   // 모드 뷰 바이너리 토글:
   //   OFF(회색, 기본): 퍼즐+깃발 혼합 / ON(활성, 흰색): 파티원 모집중 퍼즐만
-  const [partyOnly, setPartyOnly] = useState(false);
+  // 부모 컨트롤 우선, 미지정 시 내부 상태 사용
+  const [internalPartyOnly, setInternalPartyOnly] = useState(false);
+  const partyOnly = partyOnlyProp ?? internalPartyOnly;
+  const setPartyOnly = onPartyOnlyChange ?? setInternalPartyOnly;
   // Phase 1: 3종 필터 (지역은 상위 AuctionList에서 처리, 중복 제거)
   const [nbiFilter, setNbiFilter] = useState<NbiFilter>("all");
   const [seatFilter, setSeatFilter] = useState<SeatFilter>("all");
@@ -190,7 +198,7 @@ export function PuzzleList({
   const getBudget = (p: Puzzle) =>
     p.total_budget ?? p.budget_per_person * p.target_count;
 
-  const togglePartyOnly = () => setPartyOnly((v) => !v);
+  const togglePartyOnly = () => setPartyOnly(!partyOnly);
 
   const cycleSortMode = () => {
     setSortMode((cur) => (cur === "registered" ? "desc" : cur === "desc" ? "asc" : "registered"));
@@ -199,6 +207,7 @@ export function PuzzleList({
   const sortLabel =
     sortMode === "registered" ? "등록순" : sortMode === "desc" ? "높은순 ↑" : "낮은순 ↓";
 
+  // "파티원 모집만" + 정렬 토글: 첫 그룹 헤더 우측에 같이 표시
   const toggleButton = (
     <div className="flex items-center gap-1.5 flex-shrink-0">
       <button
@@ -398,29 +407,31 @@ export function PuzzleList({
               <>
                 {recentPuzzles.length > 0 && (
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2.5 px-1 py-1">
-                      <span className="relative flex h-2.5 w-2.5 mt-[1px]">
-                        <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-60 animate-ping" />
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setRecentCollapsed((v) => !v)}
-                        className="flex items-center gap-1.5 text-[16px] font-black text-white tracking-tight hover:text-neutral-300 transition-colors"
-                        aria-label={recentCollapsed ? "펼치기" : "접기"}
-                      >
-                        {recentTitle}
-                        {recentCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-                      </button>
+                    <div className="flex flex-col gap-1.5 px-1 py-1">
+                      <div className="flex items-center gap-2.5">
+                        <span className="relative flex h-2.5 w-2.5 mt-[1px] flex-shrink-0">
+                          <span className="absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-60 animate-ping" />
+                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setRecentCollapsed((v) => !v)}
+                          className="flex items-center gap-1.5 text-[16px] font-black text-white tracking-tight hover:text-neutral-300 transition-colors whitespace-nowrap"
+                          aria-label={recentCollapsed ? "펼치기" : "접기"}
+                        >
+                          {recentTitle}
+                          {recentCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                        </button>
+                        <div className="flex-1 flex justify-end">{toggleButton}</div>
+                      </div>
                       {recentDeadline && (
-                        <span
+                        <p
                           suppressHydrationWarning
-                          className="text-[13px] font-semibold text-neutral-400 whitespace-nowrap leading-none"
+                          className="text-[12px] font-semibold text-neutral-400 pl-4 leading-none"
                         >
                           {recentDeadline}
-                        </span>
+                        </p>
                       )}
-                      <div className="flex-1 flex justify-end">{toggleButton}</div>
                     </div>
                     {!recentCollapsed && (
                       <div className="space-y-4">
@@ -469,27 +480,29 @@ export function PuzzleList({
 
               return (
                 <div key={date} className="space-y-4">
-                  <div className="flex items-center gap-2.5 px-1 py-1">
-                    <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px]" />
-                    <h3 className="text-[16px] font-black text-white tracking-tight">{dateLabel}</h3>
-                    <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] ${
-                        dday === "오늘"
-                          ? "bg-red-500/20 text-red-400"
-                          : "bg-neutral-800 text-neutral-400"
-                      }`}
-                    >
-                      {dday}
-                    </span>
-                    {deadline && (
+                  <div className="flex flex-col gap-1.5 px-1 py-1">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
+                      <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
                       <span
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${
+                          dday === "오늘"
+                            ? "bg-amber-500/20 text-amber-400"
+                            : "bg-neutral-800 text-neutral-400"
+                        }`}
+                      >
+                        {dday}
+                      </span>
+                      {groupIdx === 0 && recentPuzzles.length === 0 && <div className="flex-1 flex justify-end">{toggleButton}</div>}
+                    </div>
+                    {deadline && (
+                      <p
                         suppressHydrationWarning
-                        className="text-[13px] font-semibold text-neutral-400 whitespace-nowrap leading-none"
+                        className="text-[12px] font-semibold text-neutral-400 pl-3 leading-none"
                       >
                         {deadline}
-                      </span>
+                      </p>
                     )}
-                    {groupIdx === 0 && recentPuzzles.length === 0 && <div className="flex-1 flex justify-end">{toggleButton}</div>}
                   </div>
                   <div className="space-y-4">
                     {items.map((puzzle) => (

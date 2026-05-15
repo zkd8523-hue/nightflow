@@ -80,7 +80,10 @@ export const PuzzleCard = memo(function PuzzleCard({
     ? Math.floor(puzzle.total_budget / puzzle.target_count)
     : puzzle.budget_per_person;
 
-  const ageTag = AGE_LABEL[puzzle.age_pref];
+  // Migration 171: age_pref가 배열. 'any' 포함 시 null, 외엔 라벨 조합 ("20초·20후")
+  const ageTag = puzzle.age_pref.includes("any")
+    ? null
+    : puzzle.age_pref.map((a) => AGE_LABEL[a]).filter(Boolean).join("·") || null;
   const vibeTag = VIBE_LABEL[puzzle.vibe_pref];
   const tags = puzzle.is_recruiting_party
     ? ([ageTag, vibeTag].filter(Boolean) as string[])

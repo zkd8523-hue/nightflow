@@ -54,6 +54,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const [puzzleFilterOpen, setPuzzleFilterOpen] = useState(false);
   const [puzzleHasActiveFilter, setPuzzleHasActiveFilter] = useState(false);
   const puzzleResetRef = useRef<(() => void) | null>(null);
+  // "파티원 모집만" 토글: 지역 칩 옆 필터 행에 두기 위해 부모에서 관리
+  const [puzzlePartyOnly, setPuzzlePartyOnly] = useState(false);
 
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
@@ -505,6 +507,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           onFilterOpenChange={setPuzzleFilterOpen}
           onActiveFilterChange={setPuzzleHasActiveFilter}
           resetRef={puzzleResetRef}
+          partyOnly={puzzlePartyOnly}
+          onPartyOnlyChange={setPuzzlePartyOnly}
         />
       )}
 

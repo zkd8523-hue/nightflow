@@ -78,6 +78,26 @@ export default function ProfilePage() {
       });
   }, [user]);
 
+  const handleImageDelete = async () => {
+    if (!user) return;
+    if (!confirm("프로필 사진을 삭제하고 기본 이미지로 변경할까요?")) return;
+
+    setUploadingImage(true);
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({ profile_image: null })
+        .eq("id", user.id);
+      if (error) throw error;
+      toast.success("프로필 사진이 삭제되었습니다");
+      refetch();
+    } catch {
+      toast.error("삭제에 실패했습니다");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -316,6 +336,16 @@ export default function ProfilePage() {
               />
             </label>
             <p className="text-[11px] text-neutral-500 mt-2">탭하여 사진 변경</p>
+            {user.profile_image && (
+              <button
+                type="button"
+                onClick={handleImageDelete}
+                disabled={uploadingImage}
+                className="mt-3 px-3 py-1.5 rounded-full text-[12px] font-bold text-neutral-300 bg-neutral-800 hover:bg-neutral-700 hover:text-white transition-colors disabled:opacity-50"
+              >
+                기본 이미지로 변경
+              </button>
+            )}
           </div>
 
           {/* 기본 정보 */}

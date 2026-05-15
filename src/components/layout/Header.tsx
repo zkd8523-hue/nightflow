@@ -111,7 +111,8 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
-  const isOnFlagNewPage = pathname === "/flags/new";
+  // 깃발 등록/수정 페이지에선 헤더의 "깃발 꽂기" CTA 숨김
+  const isOnFlagNewPage = pathname === "/flags/new" || /^\/flags\/[^/]+\/edit$/.test(pathname);
   const [menuOpen, setMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);

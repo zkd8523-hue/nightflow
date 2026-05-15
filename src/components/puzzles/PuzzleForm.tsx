@@ -117,9 +117,29 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const [genderPref, setGenderPref] = useState<GenderPref>(
     puzzle?.gender_pref ?? (draft?.genderPref as GenderPref) ?? "male_only"
   );
-  const [agePref, setAgePref] = useState<AgePref>(
-    puzzle?.age_pref ?? (draft?.agePref as AgePref) ?? "any"
-  );
+  // Migration 171: 복수 선택 지원. ['any'] = 전체. 빈 배열은 불가.
+  const [agePref, setAgePref] = useState<AgePref[]>(() => {
+    if (puzzle?.age_pref && puzzle.age_pref.length > 0) return puzzle.age_pref;
+    const draftArr = draft?.agePref;
+    if (Array.isArray(draftArr) && draftArr.length > 0) return draftArr as AgePref[];
+    if (typeof draftArr === "string") return [draftArr as AgePref];
+    return ["any"];
+  });
+
+  const toggleAgePref = (value: AgePref) => {
+    setAgePref((prev) => {
+      // "상관없음" 클릭 → 단독 선택으로 리셋
+      if (value === "any") return ["any"];
+      // 구체 연령 클릭 시 "any" 자동 제거
+      const withoutAny = prev.filter((v) => v !== "any");
+      const isSelected = withoutAny.includes(value);
+      const next = isSelected
+        ? withoutAny.filter((v) => v !== value)
+        : [...withoutAny, value];
+      // 모두 해제되면 "any"로 폴백
+      return next.length === 0 ? ["any"] : next;
+    });
+  };
   const [vibePref, setVibePref] = useState<VibePref>(
     puzzle?.vibe_pref ?? (draft?.vibePref as VibePref) ?? "any"
   );
@@ -159,7 +179,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         hasGuest !== (initialGuest > 0) ||
         (hasGuest && guestCount !== initialGuest) ||
         genderPref !== (puzzle?.gender_pref ?? "male_only") ||
-        agePref !== (puzzle?.age_pref ?? "any") ||
+        JSON.stringify([...agePref].sort()) !== JSON.stringify([...(puzzle?.age_pref ?? ["any"])].sort()) ||
         vibePref !== (puzzle?.vibe_pref ?? "any") ||
         (musicPref === "any" ? null : musicPref) !== (puzzle?.music_preference ?? null)
         // 카톡 URL은 edit 모드에서 수정 불가 (dirty 체크 제외)
@@ -286,10 +306,10 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // OFF: budgetAmount = 총액, ON: budgetAmount = 인당
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
 
-  // offer_deadline: 오퍼 마감 오후 6시 KST (09:00 UTC)
-  // expires_at: 유저 검토 마감 오후 7시 30분 KST (10:30 UTC)
-  const getOfferDeadline = (date: string) => `${date}T09:00:00.000Z`;
-  const getExpiresAt = (date: string) => `${date}T10:30:00.000Z`;
+  // offer_deadline: 오퍼 마감 오후 5시 KST (08:00 UTC)
+  // expires_at: 유저 검토 마감 오후 6시 30분 KST (09:30 UTC)
+  const getOfferDeadline = (date: string) => `${date}T08:00:00.000Z`;
+  const getExpiresAt = (date: string) => `${date}T09:30:00.000Z`;
 
   // 당일 등록인데 18시(오퍼 마감) 이미 지났는지 체크
   const isLateForToday = (): boolean => {
@@ -380,7 +400,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             event_date: eventDate,
             is_recruiting_party: effectiveIsRecruiting,
             gender_pref: effectiveIsRecruiting ? genderPref : 'any',
-            age_pref: effectiveIsRecruiting ? agePref : 'any',
+            age_pref: effectiveIsRecruiting ? agePref : ['any'],
             vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
             music_preference: musicPref === 'any' ? null : musicPref,
             // 카톡 오픈채팅: edit 모드에선 직접 수정 X. 단, 깃발(파티원 모집 OFF)로 전환되면
@@ -436,7 +456,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           area,
           event_date: eventDate,
           gender_pref: effectiveIsRecruiting ? genderPref : 'any',
-          age_pref: effectiveIsRecruiting ? agePref : 'any',
+          age_pref: effectiveIsRecruiting ? agePref : ['any'],
           vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
           music_preference: musicPref === 'any' ? null : musicPref,
           kakao_open_chat_url: effectiveIsRecruiting ? (kakaoUrl.trim() || null) : null,
@@ -480,8 +500,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
       toast.success(
         effectiveIsRecruiting
-          ? "퍼즐이 올라갔어요! 당일 오후 6시까지 파티원·MD 모집, 이후 90분간 검토할 수 있어요 🧩"
-          : "깃발이 올라갔어요! 당일 오후 6시까지 오퍼 받고, 이후 90분간 검토할 수 있어요 🚩"
+          ? "퍼즐이 올라갔어요! 당일 오후 5시까지 파티원·MD 모집, 이후 90분간 검토할 수 있어요 🧩"
+          : "깃발이 올라갔어요! 당일 오후 5시까지 오퍼 받고, 이후 90분간 검토할 수 있어요 🚩"
       );
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
@@ -925,20 +945,24 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           <div className="flex items-center gap-3">
             <p className="text-[11px] text-neutral-400 w-8 shrink-0">연령</p>
             <div className="flex gap-1.5 flex-wrap">
-              {AGE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setAgePref(opt.value)}
-                  className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
-                    agePref === opt.value
-                      ? "bg-white text-black"
-                      : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
+              {AGE_OPTIONS.map((opt) => {
+                const selected = agePref.includes(opt.value);
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => toggleAgePref(opt.value)}
+                    aria-pressed={selected}
+                    className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
+                      selected
+                        ? "bg-white text-black"
+                        : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -1071,7 +1095,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       {/* 마감 정책 안내 */}
       {!isEditMode && (
         <p className="text-[12px] text-neutral-400 text-center leading-relaxed px-2">
-          🚩 이벤트 당일 오후 6시에 오퍼가 마감되고, 90분간 받은 오퍼를 검토할 수 있어요
+          🚩 이벤트 당일 오후 5시에 오퍼가 마감되고, 90분간 받은 오퍼를 검토할 수 있어요
         </p>
       )}
 
@@ -1143,7 +1167,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                 <Flag className="w-5 h-5 text-amber-500" />
               </div>
               <SheetTitle className="text-white font-black text-xl tracking-tight">
-                오늘 깃발은 오후 6시까지였어요
+                오늘 깃발은 오후 5시까지였어요
               </SheetTitle>
             </div>
             <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1">

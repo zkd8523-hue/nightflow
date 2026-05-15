@@ -538,7 +538,7 @@ export const MD_GRADE_CONFIG: Record<MDCustomerGrade, { label: string; color: st
 
 export type PuzzleStatus = 'open' | 'selecting' | 'matched' | 'cancelled' | 'expired' | 'accepted';
 // open: 오퍼 모집 중
-// selecting: 오퍼 마감, 유저 검토 중 (Migration 170 — 오후 6시 이후 90분)
+// selecting: 오퍼 마감, 유저 검토 중 (Migration 170 — 오후 5시 이후 90분)
 // matched: 대표자가 수동 마감 (MD 추가 결제 차단, 홈에서 숨김)
 // accepted: 오퍼 수락 완료 (V2 역경매)
 
@@ -558,7 +558,8 @@ export interface Puzzle {
   event_date: string;
   kakao_open_chat_url: string | null; // 오퍼 수락 시점에 입력, MD에게만 공개
   gender_pref: GenderPref;
-  age_pref: AgePref;
+  /** Migration 171: 복수 선택 가능. ['any'] = 전체 허용 */
+  age_pref: AgePref[];
   vibe_pref: VibePref;
   /** Migration 156: 음악 선호. NULL = 미지정(상관없음 동일 취급) */
   music_preference: MusicPref | null;
