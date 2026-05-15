@@ -59,9 +59,11 @@ export async function POST(request: NextRequest) {
     );
 
     // 4. 클럽 소유권 확인 (soft-deleted 클럽은 수정 차단)
+    //    Migration 177: club_partners(N:N) 기반 검증.
+    //    club_partners 에 partner row 가 있으면 권한 있는 것으로 간주.
     const { data: club, error: clubError } = await supabaseAdmin
       .from("clubs")
-      .select("id, md_id")
+      .select("id, club_partners(md_id)")
       .eq("id", clubId)
       .is("deleted_at", null)
       .single();
@@ -73,7 +75,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (club.md_id !== user.id) {
+    const partners = (club.club_partners ?? []) as Array<{ md_id: string }>;
+    const isPartner = partners.some((p) => p.md_id === user.id);
+    if (!isPartner) {
       return NextResponse.json(
         { error: "본인 클럽만 수정할 수 있습니다." },
         { status: 403 }

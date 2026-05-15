@@ -79,8 +79,23 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     const isAdminUser = userData?.role === "admin";
 
     // admin은 모든 활성 클럽 중 선택 가능, MD는 본인 소유 클럽만
-    const clubsQuery = supabase.from("clubs").select("id, name, area").is("deleted_at", null);
-    const { data: clubs } = await (isAdminUser ? clubsQuery : clubsQuery.eq("md_id", user.id));
+    //   Migration 177: MD 분기는 club_partners(N:N) 기반.
+    type ClubOption = Pick<Club, "id" | "name" | "area">;
+    let clubs: ClubOption[] | null = null;
+    if (isAdminUser) {
+      const { data } = await supabase
+        .from("clubs")
+        .select("id, name, area")
+        .is("deleted_at", null);
+      clubs = data as ClubOption[] | null;
+    } else {
+      const { data } = await supabase
+        .from("clubs")
+        .select("id, name, area, club_partners!inner(md_id)")
+        .eq("club_partners.md_id", user.id)
+        .is("deleted_at", null);
+      clubs = data as ClubOption[] | null;
+    }
 
     setCredits(userData?.md_credits ?? null);
     setMyClubs(clubs ?? []);

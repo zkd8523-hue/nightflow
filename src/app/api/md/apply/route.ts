@@ -144,13 +144,18 @@ export async function POST(request: NextRequest) {
     }
 
     // 5. 기존 클럽 확인 (상태별 분기 처리)
-    //    soft-deleted 클럽은 제외 — 삭제된 클럽이 있으면 새로 생성
-    const { data: existingClub } = await supabaseAdmin
+    //    soft-deleted 클럽은 제외 — 삭제된 클럽이 있으면 새로 생성.
+    //    Migration 177: club_partners(N:N) 기반으로 본인이 소속된 클럽 중 가장 최신을 선택.
+    //    (다중 partner 케이스에서 maybeSingle 다중 매치 에러 방지)
+    const { data: existingClubs } = await supabaseAdmin
       .from("clubs")
-      .select("id, status")
-      .eq("md_id", user.id)
+      .select("id, status, club_partners!inner(md_id)")
+      .eq("club_partners.md_id", user.id)
       .is("deleted_at", null)
-      .maybeSingle();
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    const existingClub = existingClubs?.[0] ?? null;
 
     let clubId: string;
 
@@ -192,7 +197,10 @@ export async function POST(request: NextRequest) {
       }
       clubId = existingClub.id;
     } else {
-      // 새 클럽 생성
+      // 새 클럽 생성.
+      //   양립 모드: clubs.md_id 도 함께 채운다.
+      //   Migration 174 의 AFTER INSERT 트리거(sync_club_to_partner)가
+      //   club_partners(role='owner') 를 자동으로 동기화한다.
       const { data: newClub, error: clubError } = await supabaseAdmin
         .from("clubs")
         .insert({
