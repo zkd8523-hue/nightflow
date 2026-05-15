@@ -3,6 +3,7 @@
 import { useState, memo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,8 @@ interface MDAuctionCardProps {
 
 export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, topBidder, favoriteCount = 0 }: MDAuctionCardProps) {
     const router = useRouter();
+    const { user } = useCurrentUser();
+    const isAdmin = user?.role === "admin";
 
     const handleCardClick = (e: React.MouseEvent) => {
         const target = e.target as HTMLElement;
@@ -95,7 +98,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     };
 
     const handleDelete = async () => {
-        if (!isEnded && hasBids) {
+        if (!isAdmin && !isEnded && hasBids) {
             toast.error("입찰이 있는 진행 중 경매는 삭제할 수 없습니다.");
             return;
         }
