@@ -21,10 +21,14 @@ export default async function AdminClubsPage() {
         redirect("/");
     }
 
+    // club_partners (Migration 174) 기반으로 멤버 MD 목록 구성.
+    // clubs.md 조인은 양립 모드 표시(주 owner)에 사용.
     const [{ data: clubs }, { data: healthScores }] = await Promise.all([
         supabase
             .from("clubs")
-            .select("*, md:users!clubs_md_id_fkey(id, name, display_name, phone, profile_image, md_status, area, instagram, business_card_url, verification_club_name, created_at)")
+            .select(
+                "*, md:users!clubs_md_id_fkey(id, name, display_name, phone, profile_image, md_status, area, instagram, business_card_url, verification_club_name, created_at), partners:club_partners(md_id, role, user:users!club_partners_md_id_fkey(id, name, display_name, phone))"
+            )
             .order("created_at", { ascending: false }),
         supabase
             .from("md_health_scores")
@@ -42,11 +46,27 @@ export default async function AdminClubsPage() {
         (name && name.trim()) || (displayName && displayName.trim()) || phone || "이름없음";
 
     type MdChip = { id: string; name: string };
+    type PartnerRow = {
+        md_id: string;
+        role: string;
+        user: { id: string; name: string | null; display_name: string | null; phone: string | null } | null;
+    };
     const clubMdLists: Record<string, MdChip[]> = {};
     for (const club of clubs ?? []) {
         const list: MdChip[] = [];
         const seen = new Set<string>();
-        if (club.md_id) {
+        // 1) club_partners 기반 MD 목록 (Migration 174 백필 + 자동 동기화)
+        const partners = (club.partners ?? []) as PartnerRow[];
+        for (const p of partners) {
+            if (seen.has(p.md_id)) continue;
+            list.push({
+                id: p.md_id,
+                name: pickName(p.user?.name, p.user?.display_name, p.user?.phone),
+            });
+            seen.add(p.md_id);
+        }
+        // 2) 양립 보조: clubs.md_id 가 club_partners 에 없을 때만 fallback
+        if (club.md_id && !seen.has(club.md_id)) {
             const ownerMd = club.md as { name?: string | null; display_name?: string | null; phone?: string | null } | null | undefined;
             list.push({
                 id: club.md_id,
@@ -54,6 +74,7 @@ export default async function AdminClubsPage() {
             });
             seen.add(club.md_id);
         }
+        // 3) default_club_id 로 이 클럽을 쓰는 MD (백필 누락 / partner 미연결 케이스 보강)
         for (const row of (defaultClubMds ?? []) as DefaultMdRow[]) {
             if (row.default_club_id !== club.id) continue;
             if (seen.has(row.id)) continue;

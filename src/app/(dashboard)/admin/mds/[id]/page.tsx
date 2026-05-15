@@ -64,10 +64,11 @@ export default async function MDDetailPage({
     .single<MDHealthScore>();
 
   // MD가 등록한 클럽 조회 (active만)
+  //   Phase 3(Migration 177): clubs.md_id 단일 owner → club_partners(N:N) 조인.
   const { data: ownedClubs } = await supabase
     .from("clubs")
-    .select("*")
-    .eq("md_id", id)
+    .select("*, club_partners!inner(md_id)")
+    .eq("club_partners.md_id", id)
     .is("deleted_at", null)
     .order("created_at", { ascending: true })
     .returns<Club[]>();
