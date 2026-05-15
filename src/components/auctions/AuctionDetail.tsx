@@ -15,6 +15,8 @@ import { CurrentBidDisplay } from "./CurrentBidDisplay";
 import { BidHistory } from "./BidHistory";
 import { BidPanel, type BidPanelRef } from "./BidPanel";
 import { InstantBuyPanel } from "./InstantBuyPanel";
+import { ShareJoinPanel } from "./ShareJoinPanel";
+import { MDExternalAttendeesPanel } from "./MDExternalAttendeesPanel";
 import { BidCompetitionIndicator } from "./BidCompetitionIndicator";
 import { useCountdown } from "@/hooks/useCountdown";
 import { BidderProfile } from "@/components/md/BidderProfile";
@@ -172,6 +174,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
     : undefined;
 
   const isInstant = displayAuction.listing_type === 'instant';
+  const isShare = displayAuction.listing_type === 'share';
   const isMdOwner = (user?.role === "md" || user?.role === "admin") && user?.id === displayAuction.md_id;
   const isAdmin = user?.role === "admin";
   const canDelete = isMdOwner || isAdmin;
@@ -688,8 +691,16 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           </div>
         )}
 
-        {/* 입찰/예약 패널 - 스크롤 콘텐츠 하단 배치 (비로그인 시에도 노출하여 탐색 유도) */}
-        {isActive && (
+        {/* 입찰/예약/조각 패널 */}
+        {isShare ? (
+          <div className="mt-4">
+            {isMdOwner ? (
+              <MDExternalAttendeesPanel auction={displayAuction} />
+            ) : (
+              <ShareJoinPanel auction={displayAuction} currentUserId={user?.id} />
+            )}
+          </div>
+        ) : isActive && (
           <div className="mt-4">
             {isInstant ? (
               <InstantBuyPanel

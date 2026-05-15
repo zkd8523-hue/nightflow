@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction, PriceRecommendation } from "@/types/database";
-import { Calendar, Wine, Check, ArrowRight, ImageIcon, ChevronDown, MapPin, X, RefreshCw, Building2 } from "lucide-react";
+import { Calendar, Wine, Check, ArrowRight, ImageIcon, ChevronDown, MapPin, X, RefreshCw, Building2, Users, Bookmark } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 dayjs.locale("ko");
@@ -28,6 +28,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { getErrorMessage, logError } from "@/lib/utils/error";
 import { uploadImage } from "@/lib/utils/upload";
 import { ShareSuccessSheet } from "./ShareSuccessSheet";
+import { TemplateSelector } from "./TemplateSelector";
 
 import { trackEvent } from "@/lib/analytics";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
@@ -35,26 +36,39 @@ import { isInstantEnabled } from "@/lib/features";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 
 const formSchema = z.object({
-    listing_type: z.enum(["auction", "instant"]).default("auction"),
+    listing_type: z.enum(["auction", "instant", "share"]).default("share"),
     club_id: z.string().min(1, "클럽을 선택해주세요."),
     table_info: z.string().min(1, "테이블 정보를 입력해주세요."),
-    start_price: z.number().min(1, "가격은 0원보다 커야 합니다."),
+    start_price: z.number().min(0).default(0),
     entry_time: z.string().nullable(),
     event_date: z.string(),
     auction_start_at: z.string(),
     instant_start: z.boolean().optional(),
-    duration_minutes: z.number().min(1, "지속 시간을 선택해주세요."),
+    duration_minutes: z.number().min(1, "지속 시간을 선택해주세요.").default(240),
     // 얼리버드에서는 auction_end_at을 직접 지정. instant에서는 duration_minutes 사용.
     auction_end_at: z.string().optional(),
-    includes: z.array(z.string())
-        .min(1, "주류와 포함 내역을 입력해주세요.")
-        .refine(
-            (arr) => arr.some((item) => LIQUOR_KEYWORDS.some((kw) => item.includes(kw))),
-            { message: "최소 한 개의 주류(보틀)를 입력해주세요." }
-        ),
+    includes: z.array(z.string()).default([]),
     md_comment: z.string().max(15, "최대 15자").optional(),
     md_message: z.string().max(60, "최대 60자").optional(),
+    // 조각(share) 전용 필드
+    total_seats: z.number().min(2).max(20).optional(),
+    price_per_seat: z.number().min(1).optional(),
+    main_alcohol: z.string().optional(),
+    share_deadline: z.string().optional(),
 }).superRefine((data, ctx) => {
+    // 조각 전용 검증
+    if (data.listing_type === "share") {
+        if (!data.total_seats) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "정원을 입력해주세요. (2~20명)", path: ["total_seats"] });
+        }
+        if (!data.price_per_seat) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "인당 가격을 입력해주세요.", path: ["price_per_seat"] });
+        }
+        if (!data.share_deadline) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "모집 마감 시각을 선택해주세요.", path: ["share_deadline"] });
+        }
+        return; // 조각 모드에서는 아래 auction/instant 검증 스킵
+    }
     // 얼리버드 (listing_type='auction'): 이벤트일 윈도우 + 마감 시각 규칙 강제
     if (data.listing_type === "auction") {
         // 이벤트일은 오늘 ~ +7일 이내
@@ -152,6 +166,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     // Share Success Sheet state
     const [showShareSheet, setShowShareSheet] = useState(false);
     const [createdAuctionId, setCreatedAuctionId] = useState<string | null>(null);
+    const [createdShareData, setCreatedShareData] = useState<{ total_seats: number; price_per_seat: number; main_alcohol: string } | null>(null);
+    const [showTemplateSavePrompt, setShowTemplateSavePrompt] = useState(false);
+    const [templateSaving, setTemplateSaving] = useState(false);
+    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
     // 얼리버드 기본 event_date: 오늘 + 2일 (→ 마감 옵션 최소 1개 보장, -1일 버퍼 기준)
     const defaultEarlybirdEventDate = dayjs().add(2, "day").format("YYYY-MM-DD");
@@ -162,7 +180,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const { register, handleSubmit, setValue, watch, clearErrors, formState: { errors, isSubmitting, isDirty } } = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            listing_type: initialData?.listing_type || (instantEnabled ? "instant" : "auction"),
+            listing_type: initialData?.listing_type || "share",
             club_id: initialData?.club_id || prefill?.club_id || defaultClubId || clubs[0]?.id || "",
             table_info: initialData?.table_info || prefill?.table_info || "",
             duration_minutes: initialData?.duration_minutes || prefill?.duration_minutes || 240,
@@ -192,6 +210,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const floorPlanUrl = localFloorPlanUrls[selectedClubId] || selectedClub?.floor_plan_url;
     const hasFloorPlan = !!floorPlanUrl;
     const currentStartPrice = watch("start_price") || 0;
+    const currentListingType = watch("listing_type");
+    const isShareMode = currentListingType === "share";
 
     // 입찰 보호: 입찰이 있으면 경매 조건 수정 불가
     const hasBids = initialData && (initialData.bid_count > 0 || (initialData.chat_interest_count ?? 0) > 0);
@@ -389,6 +409,93 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             // 이미지 업로드 (선택사항)
             const thumbnailUrl = await uploadThumbnail();
 
+            // ============================================================
+            // 조각(share) 모드 제출 처리
+            // ============================================================
+            if (values.listing_type === "share") {
+                const clubName = clubs.find(c => c.id === values.club_id)?.name || "";
+
+                // 1일 1매물 사전 체크 (KST 날짜 기준)
+                if (!initialData && values.share_deadline) {
+                    const deadlineKST = dayjs(values.share_deadline).tz("Asia/Seoul").format("YYYY-MM-DD");
+                    const { count } = await supabase
+                        .from("auctions")
+                        .select("id", { count: "exact", head: true })
+                        .eq("md_id", mdId)
+                        .eq("listing_type", "share")
+                        .eq("share_date", deadlineKST)
+                        .not("status", "in", '("cancelled","unsold")');
+                    if ((count ?? 0) > 0) {
+                        toast.error("같은 날짜에 이미 등록된 조각 매물이 있습니다.");
+                        return;
+                    }
+                }
+
+                const shareData: Record<string, unknown> = {
+                    md_id: mdId,
+                    listing_type: "share",
+                    club_id: values.club_id,
+                    title: `${clubName} ${values.table_info}`,
+                    table_info: values.table_info,
+                    event_date: values.event_date || dayjs().format("YYYY-MM-DD"),
+                    total_seats: values.total_seats,
+                    price_per_seat: values.price_per_seat,
+                    main_alcohol: values.main_alcohol || null,
+                    share_deadline: values.share_deadline,
+                    includes: values.includes || [],
+                    md_comment: values.md_comment || null,
+                    md_message: values.md_message || null,
+                    status: "active",
+                    // 경매 필수 컬럼 (legacy, 기본값)
+                    start_price: values.price_per_seat || 0,
+                    original_price: values.price_per_seat || 0,
+                    reserve_price: 0,
+                    current_bid: 0,
+                    bid_count: 0,
+                    bidder_count: 0,
+                    auction_start_at: new Date().toISOString(),
+                    auction_end_at: values.share_deadline,
+                    duration_minutes: 0,
+                    auto_extend_min: 0,
+                    max_extensions: 0,
+                    bid_increment: 0,
+                    seats_claimed: 0,
+                    external_attendees: 0,
+                };
+                if (thumbnailUrl) shareData.thumbnail_url = thumbnailUrl;
+
+                const res = await fetch("/api/auctions/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        auctionData: shareData,
+                        isUpdate: !!initialData,
+                        auctionId: initialData?.id || null,
+                    }),
+                });
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.error || "등록에 실패했습니다.");
+
+                router.refresh();
+                if (initialData) {
+                    toast.success("조각 매물이 수정되었습니다!");
+                    setTimeout(() => router.push("/md/dashboard"), 300);
+                } else {
+                    setCreatedAuctionId(result.id);
+                    setCreatedShareData({
+                        total_seats: values.total_seats ?? 0,
+                        price_per_seat: values.price_per_seat ?? 0,
+                        main_alcohol: values.main_alcohol ?? "",
+                    });
+                    setShowShareSheet(true);
+                }
+                return;
+            }
+
+            // ============================================================
+            // 기존 경매/즉시구매 제출 처리 (하위호환)
+            // ============================================================
+
             // 경매 시작 시간 결정
             let auction_start_at: string;
             if (initialData) {
@@ -578,6 +685,22 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             )}
 
 
+
+            {/* 조각 모드: 템플릿에서 생성 버튼 */}
+            {isShareMode && !initialData && (
+              <div className="flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="border-neutral-700 text-neutral-400 hover:text-white hover:border-amber-500 gap-1.5 text-xs"
+                  onClick={() => setShowTemplateSelector(true)}
+                >
+                  <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+                  템플릿에서 생성
+                </Button>
+              </div>
+            )}
 
             {/* 1. 클럽 선택 + 대표 이미지 */}
             <section className="space-y-4">
@@ -851,8 +974,70 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             {/* Smart Pricing 추천 — 숨김 처리 */}
 
-            {/* 4. 가격 설정 */}
-            <section className="space-y-4">
+            {/* ── 조각(share) 전용 섹션 ── */}
+            {isShareMode && (
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-white font-bold mb-2">
+                  <Users className="w-4 h-4 text-amber-500" />
+                  <span>조각 설정</span>
+                </div>
+                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
+                  {/* 인당 가격 */}
+                  <div>
+                    <label className="text-sm text-neutral-400 font-medium mb-1 block">인당 가격</label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        placeholder="50000"
+                        className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white text-lg font-bold placeholder:text-neutral-600 focus:outline-none focus:border-amber-500"
+                        {...register("price_per_seat", { valueAsNumber: true })}
+                        disabled={hasBids}
+                      />
+                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">원</span>
+                    </div>
+                    {errors.price_per_seat && <p className="text-xs text-red-400 mt-1">{errors.price_per_seat.message}</p>}
+                  </div>
+                  {/* 정원 */}
+                  <div>
+                    <label className="text-sm text-neutral-400 font-medium mb-1 block">정원 (2~20명)</label>
+                    <input
+                      type="number"
+                      min={2}
+                      max={20}
+                      placeholder="6"
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white font-bold placeholder:text-neutral-600 focus:outline-none focus:border-amber-500"
+                      {...register("total_seats", { valueAsNumber: true })}
+                      disabled={hasBids}
+                    />
+                    {errors.total_seats && <p className="text-xs text-red-400 mt-1">{errors.total_seats.message}</p>}
+                  </div>
+                  {/* 주류 */}
+                  <div>
+                    <label className="text-sm text-neutral-400 font-medium mb-1 block">메인 주류</label>
+                    <input
+                      type="text"
+                      placeholder="예: 발렌타인17, 시바스리갈18"
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500"
+                      {...register("main_alcohol")}
+                    />
+                  </div>
+                  {/* 모집 마감 시각 */}
+                  <div>
+                    <label className="text-sm text-neutral-400 font-medium mb-1 block">모집 마감 시각</label>
+                    <input
+                      type="datetime-local"
+                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
+                      {...register("share_deadline")}
+                    />
+                    {errors.share_deadline && <p className="text-xs text-red-400 mt-1">{errors.share_deadline.message}</p>}
+                    <p className="text-xs text-neutral-600 mt-1">마감 후 남은 인원은 MD 재량으로 처리됩니다.</p>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {/* 4. 가격 설정 (경매/즉시구매 전용) */}
+            {!isShareMode && <section className="space-y-4">
                 <div className="flex items-center gap-2 text-white font-bold mb-2">
                     <Wine className="w-4 h-4 text-amber-500" />
                     <span>{isInstantMode ? "판매가" : "경매 시작가"}</span>
@@ -929,7 +1114,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     </div>
 
                 </div>
-            </section>
+            </section>}
 
             {/* 테이블 구성 */}
             <section className={`space-y-3 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
@@ -1217,6 +1402,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 isOpen={showShareSheet}
                 onOpenChange={(open) => {
                     setShowShareSheet(open);
+                    // 조각 등록 성공 후 시트 닫힐 때 템플릿 저장 프롬프트 표시
+                    if (!open && createdShareData) {
+                        setShowTemplateSavePrompt(true);
+                    }
                 }}
                 auctionId={createdAuctionId}
                 clubName={selectedClub?.name || "클럽"}
@@ -1236,6 +1425,79 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 areaName={selectedClub?.area}
             />
         )}
+
+        {/* 조각 등록 후 템플릿 저장 프롬프트 */}
+        {createdShareData && (
+            <Sheet open={showTemplateSavePrompt} onOpenChange={setShowTemplateSavePrompt}>
+                <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+                    <SheetHeader className="text-left pb-2">
+                        <SheetTitle className="text-white text-lg">템플릿으로 저장할까요?</SheetTitle>
+                    </SheetHeader>
+                    <p className="text-neutral-400 text-sm mb-4">
+                        다음 등록 시 한 번에 불러올 수 있습니다.
+                    </p>
+                    <div className="bg-neutral-900 rounded-xl p-3 mb-4">
+                        <p className="text-amber-400 font-bold text-sm">
+                            {`${Math.round((createdShareData.price_per_seat || 0) / 10000)}만원 / ${createdShareData.main_alcohol || "주류 미입력"} / 조각${createdShareData.total_seats}`}
+                        </p>
+                    </div>
+                    <div className="flex gap-3">
+                        <Button
+                            variant="outline"
+                            className="flex-1 border-neutral-700 text-neutral-400 hover:text-white"
+                            onClick={() => { setShowTemplateSavePrompt(false); setCreatedShareData(null); }}
+                        >
+                            건너뛰기
+                        </Button>
+                        <Button
+                            className="flex-1 bg-white text-black hover:bg-neutral-100 font-bold"
+                            disabled={templateSaving}
+                            onClick={async () => {
+                                setTemplateSaving(true);
+                                try {
+                                    const templateName = `${Math.round((createdShareData.price_per_seat || 0) / 10000)}만원/${createdShareData.main_alcohol || "주류"}/조각${createdShareData.total_seats}`;
+                                    await supabase.from("auction_templates").insert({
+                                        md_id: mdId,
+                                        name: templateName,
+                                        club_id: watch("club_id"),
+                                        table_type: watch("table_info"),
+                                        total_seats: createdShareData.total_seats,
+                                        price_per_seat: createdShareData.price_per_seat,
+                                        main_alcohol: createdShareData.main_alcohol,
+                                        includes: watch("includes") || [],
+                                    });
+                                    toast.success("템플릿이 저장되었습니다!");
+                                } catch {
+                                    toast.error("템플릿 저장에 실패했습니다.");
+                                } finally {
+                                    setTemplateSaving(false);
+                                    setShowTemplateSavePrompt(false);
+                                    setCreatedShareData(null);
+                                }
+                            }}
+                        >
+                            {templateSaving ? "저장 중..." : "템플릿 저장"}
+                        </Button>
+                    </div>
+                </SheetContent>
+            </Sheet>
+        )}
+
+        {/* 템플릿 선택 시트 */}
+        <TemplateSelector
+          mdId={mdId}
+          open={showTemplateSelector}
+          onOpenChange={setShowTemplateSelector}
+          onSelect={(template) => {
+            if (template.club_id) setValue("club_id", template.club_id);
+            if (template.table_type) setValue("table_info", template.table_type);
+            if (template.total_seats) setValue("total_seats", template.total_seats);
+            if (template.price_per_seat) setValue("price_per_seat", template.price_per_seat);
+            if (template.main_alcohol) setValue("main_alcohol", template.main_alcohol);
+            if (template.includes?.length) setValue("includes", template.includes);
+            toast.success("템플릿이 적용되었습니다. 날짜/마감 시각을 입력하세요.");
+          }}
+        />
 
         <ConfirmDialog
             isOpen={showConfirm}

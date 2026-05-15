@@ -135,6 +135,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
 
     const club = auction.club;
     const isInstant = auction.listing_type === 'instant';
+    const isShare = auction.listing_type === 'share';
     const displayStatus = getAuctionDisplayStatus(auction);
     const isActive = displayStatus === 'active';
     const isExpired = displayStatus === 'expired';
@@ -142,6 +143,10 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     const isEnded = ["won", "unsold", "confirmed"].includes(auction.status);
     const endTime = getEffectiveEndTime(auction);
     const currentPrice = auction.current_bid || auction.start_price;
+
+    // 조각(share) 전용 계산
+    const totalFilled = isShare ? (auction.seats_claimed ?? 0) + (auction.external_attendees ?? 0) : 0;
+    const totalSeats = isShare ? (auction.total_seats ?? 0) : 0;
 
     // 낙찰 경매 연락 타이머 (won + contact_deadline)
     const showContactTimer = auction.status === "won" && !!auction.contact_deadline;
@@ -223,31 +228,54 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
 
                     <div className="flex items-end justify-between mt-1">
                         <div>
-                            <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
-                                {isActive
-                                  ? (isInstant ? "판매가" : "현재가")
-                                  : ["won", "confirmed"].includes(auction.status)
-                                    ? (isInstant ? "확정가" : "낙찰가")
-                                    : (isInstant ? "판매가" : "시작가")
-                                }
-                            </div>
-                            <div className="flex items-baseline gap-1">
-                                <span className={`text-[20px] font-black leading-none ${auction.status === "unsold" || auction.status === "cancelled" ? "text-neutral-600" : "text-white"}`}>
-                                    {formatNumber(currentPrice)}
-                                </span>
-                                <span className="text-[12px] font-bold text-neutral-400">원</span>
-                            </div>
+                            {isShare ? (
+                                <>
+                                    <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">인당</div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className="text-[20px] font-black leading-none text-white">
+                                            {formatNumber(auction.price_per_seat ?? 0)}
+                                        </span>
+                                        <span className="text-[12px] font-bold text-neutral-400">원</span>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
+                                        {isActive
+                                          ? (isInstant ? "판매가" : "현재가")
+                                          : ["won", "confirmed"].includes(auction.status)
+                                            ? (isInstant ? "확정가" : "낙찰가")
+                                            : (isInstant ? "판매가" : "시작가")
+                                        }
+                                    </div>
+                                    <div className="flex items-baseline gap-1">
+                                        <span className={`text-[20px] font-black leading-none ${auction.status === "unsold" || auction.status === "cancelled" ? "text-neutral-600" : "text-white"}`}>
+                                            {formatNumber(currentPrice)}
+                                        </span>
+                                        <span className="text-[12px] font-bold text-neutral-400">원</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="text-right">
-                            {auction.bid_count > 0 && !isInstant && (
+                            {isShare ? (
+                                <div className="text-right">
+                                    <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">현황</div>
+                                    <div className="text-[13px] text-neutral-300 font-bold">{totalFilled}/{totalSeats}명</div>
+                                </div>
+                            ) : (
                                 <>
-                                    <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
-                                        현황
-                                    </div>
-                                    <div className="text-[13px] text-neutral-300 font-bold">
-                                        입찰 {auction.bid_count}회
-                                    </div>
+                                    {auction.bid_count > 0 && !isInstant && (
+                                        <>
+                                            <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
+                                                현황
+                                            </div>
+                                            <div className="text-[13px] text-neutral-300 font-bold">
+                                                입찰 {auction.bid_count}회
+                                            </div>
+                                        </>
+                                    )}
                                 </>
                             )}
                             <div className="flex items-center justify-end gap-2 mt-0.5">
@@ -258,7 +286,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                     <Heart className="w-3 h-3 text-red-500 fill-red-500" /> {favoriteCount}
                                 </span>
                             </div>
-                            {isActive && !isInstant && topBidder && (
+                            {isActive && !isInstant && !isShare && topBidder && (
                                 <div className="text-[12px] font-bold mt-0.5 text-green-500">
                                     👤 {topBidder.bidder_name}
                                 </div>

@@ -10,12 +10,15 @@
 -- 1) 기존 CHECK 제약 제거
 ALTER TABLE puzzles DROP CONSTRAINT IF EXISTS puzzles_age_pref_check;
 
--- 2) 컬럼 타입 변경 + 기존 값 단일 원소 배열로 변환
+-- 2) 기존 DEFAULT 제거 (자동 캐스트 불가 → 명시적 해제)
+ALTER TABLE puzzles ALTER COLUMN age_pref DROP DEFAULT;
+
+-- 3) 컬럼 타입 변경 + 기존 값 단일 원소 배열로 변환
 ALTER TABLE puzzles
   ALTER COLUMN age_pref TYPE TEXT[]
   USING ARRAY[age_pref]::TEXT[];
 
--- 3) 기본값 재설정
+-- 4) 신규 DEFAULT 설정
 ALTER TABLE puzzles
   ALTER COLUMN age_pref SET DEFAULT ARRAY['any']::TEXT[];
 

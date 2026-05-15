@@ -122,10 +122,15 @@
     @apply border-border outline-ring/50;
   }
 
+  html {
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
     overscroll-behavior-y: none; /* iOS Pull-to-Refresh 방지 */
+    overflow-x: hidden; /* 좌우 흔들림(가로 스크롤) 방지 */
   }
 }
 
@@ -174,6 +179,7 @@
 
   .animate-tension {
     animation: tension 0.5s ease-in-out infinite;
+    display: inline-block; /* translateX 진동이 부모 레이아웃에 영향 주지 않도록 격리 */
   }
 
   /* 타이머 배경 호흡 효과 (critical 전용) */

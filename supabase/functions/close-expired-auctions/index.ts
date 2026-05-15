@@ -127,6 +127,28 @@ serve(async (req: Request) => {
 
         console.log("📊 처리 완료:", results);
 
+        // ── 조각(share) 매물 자동 마감 ──
+        // share_deadline 경과했는데 여전히 active인 share 매물 → unsold 처리
+        const { data: expiredShares, error: shareFetchError } = await supabase
+            .from("auctions")
+            .select("id, seats_claimed, external_attendees, total_seats")
+            .eq("listing_type", "share")
+            .eq("status", "active")
+            .lt("share_deadline", new Date().toISOString());
+
+        if (!shareFetchError && expiredShares && expiredShares.length > 0) {
+            console.log(`📦 마감된 조각 매물 ${expiredShares.length}개 처리 중...`);
+            for (const share of expiredShares) {
+                const filled = (share.seats_claimed ?? 0) + (share.external_attendees ?? 0);
+                const newStatus = filled >= (share.total_seats ?? 0) ? "won" : "unsold";
+                await supabase
+                    .from("auctions")
+                    .update({ status: newStatus })
+                    .eq("id", share.id);
+                console.log(`✅ 조각 ${share.id} → ${newStatus} (${filled}/${share.total_seats ?? 0})`);
+            }
+        }
+
         return new Response(JSON.stringify(results), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,

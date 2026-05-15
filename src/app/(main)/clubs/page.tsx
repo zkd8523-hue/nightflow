@@ -8,32 +8,18 @@ export const revalidate = 60;
 export const metadata: Metadata = {
   title: "강남·홍대 인기 클럽 목록 - 클럽 테이블 예약",
   description:
-    "강남·홍대 인기 클럽 전체 목록. 진행 중인 테이블 경매와 가격 정보를 확인하고 정가보다 저렴하게 예약하세요. 레이스&사운드·CLUB BERMUDA 등.",
+    "강남·홍대 인기 클럽 전체 목록. 진행 중인 테이블 경매와 가격 정보를 확인하고 정가보다 저렴하게 예약하세요. Club ACE·CLUB BERMUDA 등.",
   alternates: { canonical: "https://nightflow.kr/clubs" },
   openGraph: {
     title: "강남·홍대 인기 클럽 목록 - 나이트플로우(나플)",
     description:
-      "강남 7개·홍대 2개·광주 1개·부산 1개 인기 클럽 진행 중인 경매와 가격 비교.",
+      "강남 6개·홍대 2개·광주 1개·부산 1개 인기 클럽 진행 중인 경매와 가격 비교.",
     url: "https://nightflow.kr/clubs",
     type: "website",
   },
 };
 
-const VISIBLE_CLUB_IDS = [
-  "14ed8351-1117-4210-b289-eec759bd9b07", // 강남 DM 라운지
-  "0b350d81-3d3c-44f0-9113-32ce0861f87b", // 강남 Sound
-  "e2e6e10a-e574-472c-af49-6380a05032ee", // 강남 레이스&사운드
-  "c6e747de-140f-4a76-857d-6ed51d09b217", // 강남 아르쥬 청담 라운지
-  "80ba0738-ffbb-4463-b97e-7e68e4c0da60", // 강남 컬러 압구
-  "67b2286c-63e9-46a1-bb90-e9ca4ccf6fae", // 강남 HYPE SEOUL
-  "bb929c21-bd6d-4766-85c6-2b51452058da", // 광주 VEIL CLUB
-  "6a19815e-c22b-4bc5-8bb5-dd84b872a7b4", // 강남 플팔
-  "285ed0d2-983f-49da-8873-f3d00a165d88", // 홍대 CLUB BERMUDA
-  "bd820f57-46b6-4d95-822a-4f0cf8e84542", // 홍대 OCEAN
-  "0d24b754-6c1d-40f6-badd-b398d03a4b3f", // 부산 그루브&스팟
-];
-
-const AREA_ORDER = ["강남", "홍대", "광주", "부산"] as const;
+const AREA_ORDER = ["강남", "홍대", "이태원", "광주", "부산", "대구"] as const;
 
 function createAnonClient() {
   return createServerClient(
@@ -50,12 +36,10 @@ export default async function ClubsIndexPage() {
     supabase
       .from("clubs")
       .select("id, name, area, thumbnail_url")
-      .in("id", VISIBLE_CLUB_IDS)
       .is("deleted_at", null),
     supabase
       .from("auctions")
       .select("club_id")
-      .in("club_id", VISIBLE_CLUB_IDS)
       .in("status", ["active", "scheduled"]),
   ]);
 

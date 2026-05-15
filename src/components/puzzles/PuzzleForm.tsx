@@ -337,7 +337,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
   const suggestedChatTitle = (() => {
     const mmdd = eventDate ? eventDate.split("-").slice(1).join("/") : "";
-    const base = `[NF] ${area || "지역미상"} ${mmdd}`;
+    const base = `[나플] ${area || "지역미상"} ${mmdd}`;
     if (!isRecruitingParty) {
       const budget = totalBudget > 0 ? `·${formatWon(totalBudget)}` : "";
       return `${base} | ${totalPeople}인${budget}`;

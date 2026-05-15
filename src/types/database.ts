@@ -16,7 +16,7 @@ export type Area = "강남" | "홍대" | "이태원" | "건대" | "부산" | "�
 export type TrustLevel = "vip" | "normal" | "caution" | "blocked";
 /** Migration 146: 거래 누적 횟수 기반 등급 (Silver 1+ / Gold 3+ / Diamond 10+) */
 export type DealTier = "silver" | "gold" | "diamond";
-export type ListingType = "auction" | "instant";
+export type ListingType = "auction" | "instant" | "share";
 export type ClubStatus = "pending" | "approved" | "rejected";
 export type NotificationEventType =
   | "auction_started"
@@ -310,6 +310,15 @@ export interface Auction {
 
   created_at: string;
   updated_at: string;
+
+  // 조각 (share) 전용 필드 — Migration 172
+  total_seats: number | null;
+  seats_claimed: number;
+  price_per_seat: number | null;
+  share_deadline: string | null;
+  external_attendees: number;
+  main_alcohol: string | null;
+  share_date: string | null;
 
   // JOIN 관계
   club?: Club;
@@ -673,4 +682,50 @@ declare global {
       };
     };
   }
+}
+
+// ============================================================
+// 조각 (share) 관련 타입 — Migration 172/173
+// ============================================================
+
+export interface ShareClaim {
+  id: string;
+  auction_id: string;
+  user_id: string;
+  claimed_at: string;
+  cancelled_at: string | null;
+  cancellation_count: number;
+  kicked_by_md: boolean;
+  user?: User;
+}
+
+export type ShareClaimError =
+  | "NOT_SHARE_LISTING"
+  | "OWN_LISTING"
+  | "NOT_OPEN"
+  | "EXPIRED"
+  | "FULL"
+  | "MD_CHAT_UNAVAILABLE"
+  | "ALREADY_CLAIMED"
+  | "KICKED_BY_MD"
+  | "MAX_CANCELLATIONS"
+  | "CLAIM_NOT_FOUND"
+  | "NOT_OWNER"
+  | "NEGATIVE_NOT_ALLOWED"
+  | "EXCEEDS_TOTAL_SEATS";
+
+export interface AuctionTemplate {
+  id: string;
+  md_id: string;
+  name: string;
+  club_id: string | null;
+  table_type: string | null;
+  // share 전용
+  total_seats: number | null;
+  price_per_seat: number | null;
+  main_alcohol: string | null;
+  includes: string[];
+  created_at: string;
+  updated_at: string;
+  club?: Club;
 }

@@ -287,7 +287,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
           className="w-full h-11 font-black text-[13px] rounded-xl transition-all bg-green-500/15 border border-green-500/30 text-green-400 pointer-events-none"
         >
-          뭉쳤어요
+          합류 완료
         </Button>
       ) : (
         <Button

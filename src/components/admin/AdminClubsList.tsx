@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,10 +13,15 @@ import { computeHealthStatus, getGradeLabel } from "@/lib/utils/mdHealth";
 import { toast } from "sonner";
 import {
   Trash2, RotateCcw, ChevronDown, ChevronUp, GitMerge, Pencil,
-  Instagram, ExternalLink, Eye, ArrowRight, MapPin, Calendar, Building2,
+  Instagram, ExternalLink, Eye, ArrowRight, MapPin, Calendar, Building2, Search,
 } from "lucide-react";
 import { MergeClubDialog } from "@/components/admin/MergeClubDialog";
 import Link from "next/link";
+
+const AddressSearchModal = dynamic(
+  () => import("@/components/md/AddressSearchModal").then((m) => ({ default: m.AddressSearchModal })),
+  { ssr: false },
+);
 import { normalizeProfileImage } from "@/lib/utils/image";
 import type { Club, MDHealthScore } from "@/types/database";
 import { getErrorMessage, logError } from "@/lib/utils/error";
@@ -63,6 +69,12 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
   const [sortMode, setSortMode] = useState<SortMode>("newest");
   const [renameTarget, setRenameTarget] = useState<Club | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [renameAddress, setRenameAddress] = useState("");
+  const [renameAddressDetail, setRenameAddressDetail] = useState("");
+  const [renamePostal, setRenamePostal] = useState<string | null>(null);
+  const [renameLat, setRenameLat] = useState<number | null>(null);
+  const [renameLng, setRenameLng] = useState<number | null>(null);
+  const [addressSearchOpen, setAddressSearchOpen] = useState(false);
   const [renameSaving, setRenameSaving] = useState(false);
 
   const supabase = createClient();
@@ -77,28 +89,74 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
   const openRename = (club: Club) => {
     setRenameTarget(club);
     setRenameValue(club.name);
+    setRenameAddress(club.address ?? "");
+    setRenameAddressDetail(club.address_detail ?? "");
+    setRenamePostal(club.postal_code ?? null);
+    setRenameLat(club.latitude ?? null);
+    setRenameLng(club.longitude ?? null);
   };
 
   const handleRename = async () => {
     if (!renameTarget) return;
-    const next = renameValue.trim();
-    if (!next) {
+    const nextName = renameValue.trim();
+    const nextAddress = renameAddress.trim();
+    const nextAddressDetail = renameAddressDetail.trim();
+    if (!nextName) {
       toast.error("클럽명을 입력해주세요");
       return;
     }
-    if (next === renameTarget.name) {
+    if (!nextAddress) {
+      toast.error("주소를 입력해주세요");
+      return;
+    }
+
+    const patch: Record<string, unknown> = {};
+    if (nextName !== renameTarget.name) patch.name = nextName;
+    if (nextAddress !== (renameTarget.address ?? "")) patch.address = nextAddress;
+    if (nextAddressDetail !== (renameTarget.address_detail ?? "")) {
+      patch.address_detail = nextAddressDetail || null;
+    }
+    if ((renamePostal ?? null) !== (renameTarget.postal_code ?? null)) {
+      patch.postal_code = renamePostal;
+    }
+    if ((renameLat ?? null) !== (renameTarget.latitude ?? null)) {
+      patch.latitude = renameLat;
+    }
+    if ((renameLng ?? null) !== (renameTarget.longitude ?? null)) {
+      patch.longitude = renameLng;
+    }
+
+    if (Object.keys(patch).length === 0) {
       setRenameTarget(null);
       return;
     }
+
     setRenameSaving(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("clubs")
-        .update({ name: next })
-        .eq("id", renameTarget.id);
+        .update(patch)
+        .eq("id", renameTarget.id)
+        .select("id, name, address, address_detail, postal_code, latitude, longitude")
+        .single();
       if (error) throw error;
-      setClubs((prev) => prev.map((c) => (c.id === renameTarget.id ? { ...c, name: next } : c)));
-      toast.success("클럽명이 변경됐습니다");
+      if (!data) throw new Error("저장 후 행을 조회하지 못했습니다");
+      setClubs((prev) =>
+        prev.map((c) =>
+          c.id === renameTarget.id
+            ? {
+                ...c,
+                name: data.name,
+                address: data.address,
+                address_detail: data.address_detail,
+                postal_code: data.postal_code,
+                latitude: data.latitude,
+                longitude: data.longitude,
+              }
+            : c,
+        ),
+      );
+      toast.success("클럽 정보가 변경됐습니다");
       setRenameTarget(null);
       router.refresh();
     } catch (error: unknown) {
@@ -215,7 +273,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                   size="icon"
                   className="text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10"
                   onClick={() => openRename(club)}
-                  title="이름 수정"
+                  title="정보 수정 (이름·주소)"
                 >
                   <Pencil className="w-4 h-4" />
                 </Button>
@@ -446,26 +504,63 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
       />
 
       <Dialog open={!!renameTarget} onOpenChange={(open) => !open && setRenameTarget(null)}>
-        <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-sm">
+        <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-md">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
-              <Pencil className="w-4 h-4 text-blue-400" /> 클럽명 수정
+              <Pencil className="w-4 h-4 text-blue-400" /> 클럽 정보 수정
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <input
-              type="text"
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRename();
-              }}
-              placeholder="클럽명"
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
-              autoFocus
-              disabled={renameSaving}
-            />
-            <div className="flex gap-2">
+            <div>
+              <label className="text-xs text-neutral-500 mb-1 block">클럽명</label>
+              <input
+                type="text"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                placeholder="클럽명"
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                autoFocus
+                disabled={renameSaving}
+              />
+            </div>
+            <div>
+              <label className="text-xs text-neutral-500 mb-1 block">주소</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={renameAddress}
+                  onChange={(e) => setRenameAddress(e.target.value)}
+                  placeholder="도로명 주소"
+                  className="flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                  disabled={renameSaving}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setAddressSearchOpen(true)}
+                  disabled={renameSaving}
+                  className="bg-neutral-800 hover:bg-neutral-700 text-white px-3"
+                  title="주소 검색 (좌표 자동 갱신)"
+                >
+                  <Search className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-[10px] text-neutral-600 mt-1">
+                직접 수정하면 좌표(위도/경도)는 유지됩니다. 좌표까지 갱신하려면 우측 검색 버튼을 사용하세요.
+              </p>
+            </div>
+            <div>
+              <label className="text-xs text-neutral-500 mb-1 block">상세 주소 (선택)</label>
+              <input
+                type="text"
+                value={renameAddressDetail}
+                onChange={(e) => setRenameAddressDetail(e.target.value)}
+                placeholder="층, 호수 등"
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                disabled={renameSaving}
+              />
+            </div>
+            <div className="flex gap-2 pt-1">
               <Button
                 variant="ghost"
                 onClick={() => setRenameTarget(null)}
@@ -476,7 +571,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
               </Button>
               <Button
                 onClick={handleRename}
-                disabled={renameSaving || !renameValue.trim()}
+                disabled={renameSaving || !renameValue.trim() || !renameAddress.trim()}
                 className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold disabled:opacity-40"
               >
                 {renameSaving ? "저장 중..." : "저장"}
@@ -485,6 +580,18 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
           </div>
         </DialogContent>
       </Dialog>
+
+      <AddressSearchModal
+        isOpen={addressSearchOpen}
+        onClose={() => setAddressSearchOpen(false)}
+        onSelectAddress={(result) => {
+          setRenameAddress(result.address ?? "");
+          setRenameAddressDetail(result.addressDetail ?? "");
+          setRenamePostal(result.postalCode || null);
+          setRenameLat(result.latitude ?? null);
+          setRenameLng(result.longitude ?? null);
+        }}
+      />
     </div>
   );
 }

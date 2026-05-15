@@ -28,7 +28,7 @@ interface ShareSuccessSheetProps {
   startPrice: number;
   onContinue?: () => void;
   thumbnailUrl?: string;
-  listingType?: "auction" | "instant";
+  listingType?: "auction" | "instant" | "share";
   areaName?: string;
 }
 

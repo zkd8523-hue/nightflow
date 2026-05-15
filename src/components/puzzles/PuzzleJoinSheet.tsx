@@ -69,13 +69,13 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
       if (error) throw error;
 
       if (!data?.success) {
-        toast.error(data?.error || "뭉치기에 실패했습니다");
+        toast.error(data?.error || "합류에 실패했습니다");
         return;
       }
 
       onClose();
       if (puzzle.kakao_open_chat_url) {
-        toast("깃발 아래 뭉쳤어요! 오픈채팅에 입장하세요", {
+        toast("퍼즐이 완성되고 있어요! 얼른 오픈채팅에 입장해보세요!", {
           duration: 8000,
           action: {
             label: "오픈채팅 열기",
@@ -84,7 +84,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
           description: "내 활동에서 언제든 다시 확인할 수 있어요",
         });
       } else {
-        toast.success("깃발 아래 뭉쳤어요!");
+        toast.success("퍼즐이 완성되고 있어요!");
       }
       router.push(`/flags/${puzzle.id}`);
     } catch (err: unknown) {

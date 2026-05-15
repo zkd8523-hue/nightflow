@@ -46,6 +46,7 @@ export function useAuctionRealtime(auctionId: string, userId?: string) {
   const { updateAuction, addBid } = useAuctionStore();
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastBidCountRef = useRef<number>(0);
+  const lastSeatsClaimedRef = useRef<number>(-1); // share 좌석 변화 추적
   const updateAuctionRef = useRef(updateAuction);
   const addBidRef = useRef(addBid);
 
@@ -90,6 +91,18 @@ export function useAuctionRealtime(auctionId: string, userId?: string) {
             closeExpiredAuction(auction.id, supabase);
             // 다음 poll(POLL_INACTIVE=15초)이 최신 상태(won/unsold)를 반영
           }
+        }
+
+        // 2-a. share 좌석 변화 감지 (좌석 채워질 때 진동)
+        if (auction.listing_type === "share") {
+          const prevSeats = lastSeatsClaimedRef.current;
+          const currentSeats = (auction.seats_claimed ?? 0) + (auction.external_attendees ?? 0);
+          if (prevSeats !== -1 && prevSeats !== currentSeats && currentSeats > prevSeats) {
+            if (typeof window !== "undefined" && window.navigator?.vibrate) {
+              window.navigator.vibrate([100, 50, 100]);
+            }
+          }
+          lastSeatsClaimedRef.current = currentSeats;
         }
 
         // 2. bid_count가 변했을 때만 입찰 기록 조회

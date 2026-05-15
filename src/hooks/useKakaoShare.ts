@@ -36,7 +36,7 @@ interface KakaoShareParams {
   startPrice: number;
   auctionUrl: string;
   thumbnailUrl?: string;
-  listingType?: "auction" | "instant";
+  listingType?: "auction" | "instant" | "share";
   isFromMD?: boolean;
   eventDate?: string;
   area?: string;

@@ -391,13 +391,8 @@ export function PuzzleList({
             // 유저/비로그인: 모든 최근 퍼즐 (퍼즐/깃발 둘 다)
             const recentPuzzles = filteredPuzzles
               .filter(p => now - new Date(p.created_at).getTime() < RECENT_THRESHOLD_MS)
-              .filter(p => {
-                if (!isMd) return true;
-                const isFlagState = !p.is_recruiting_party || p.current_count >= p.target_count;
-                return isFlagState;
-              })
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            const recentTitle = isMd ? "방금 등록된 깃발" : "방금 등록된 퍼즐";
+            const recentTitle = "방금 등록된 퍼즐";
             const recentIdSet = new Set(recentPuzzles.map(p => p.id));
             const rest = filteredPuzzles.filter(p => !recentIdSet.has(p.id));
 

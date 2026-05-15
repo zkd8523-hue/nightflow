@@ -16,8 +16,8 @@ function createAnonClient() {
 export default async function HomePage() {
   const supabase = createAnonClient();
 
-  // 진행 중 + 예정된 경매 목록 조회
-  const { data: activeAuctions } = await supabase
+  // 조각(share) 매물 조회 — 메인 카탈로그 기본
+  const { data: shareAuctions } = await supabase
     .from("auctions")
     .select(
       `
@@ -26,9 +26,28 @@ export default async function HomePage() {
       md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
     `
     )
+    .eq("listing_type", "share")
+    .in("status", ["active", "scheduled"])
+    .gt("share_deadline", new Date().toISOString())
+    .order("share_deadline", { ascending: true })
+    .limit(100);
+
+  // 기존 경매(auction/instant) 조회 — 레거시 노출 (진행 중인 것만)
+  const { data: legacyAuctions } = await supabase
+    .from("auctions")
+    .select(
+      `
+      *,
+      club:clubs(id, name, area, thumbnail_url),
+      md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
+    `
+    )
+    .in("listing_type", ["auction", "instant"])
     .in("status", ["active", "scheduled"])
     .order("auction_start_at", { ascending: true })
-    .limit(200);
+    .limit(50);
+
+  const activeAuctions = [...(shareAuctions ?? []), ...(legacyAuctions ?? [])];
 
   // 오픈 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
   const { data: puzzles } = await supabase
@@ -64,7 +83,7 @@ export default async function HomePage() {
         나플은 나이트플로우(NightFlow)의 줄임말로, 서울 인기 클럽 테이블을
         실시간 경매로 예약하는 서비스입니다. 강남 클럽, 홍대 클럽, 신사
         클럽의 MD가 잔여 테이블을 올리면 회원이 입찰로 가격을 정해 정가보다
-        저렴하게 클럽 예약을 할 수 있습니다. 강남 레이스&사운드, 홍대 버뮤다
+        저렴하게 클럽 예약을 할 수 있습니다. 강남 Club ACE, 홍대 버뮤다
         등 서울 클럽 추천과 테이블 가격 비교는 나플에서 확인하세요. 혼자
         가긴 부담스러우면 퍼즐(클럽 조각·합석) 기능으로 같은 클럽에 갈
         일행을 모집할 수 있습니다.

@@ -9,7 +9,7 @@ import { formatNumber, formatTime, formatCountdown, formatCountdownLong, categor
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES } from "@/lib/constants/timer-urgency";
-import { Gavel, Zap, BadgeCheck, Flame } from "lucide-react";
+import { Gavel, Zap, BadgeCheck, Flame, Users } from "lucide-react";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
@@ -32,8 +32,16 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
   const endTime = getEffectiveEndTime(auction);
   const currentPrice = isWon && auction.winning_price ? auction.winning_price : (auction.current_bid || auction.start_price);
   const isInstant = auction.listing_type === 'instant';
+  const isShare = auction.listing_type === 'share';
   const countdown = useCountdown((isActive || isExpired) ? endTime : null);
   const timerStyles = URGENCY_STYLES[countdown.level] ?? URGENCY_STYLES.idle;
+
+  // 조각(share) 관련 계산
+  const totalFilled = isShare ? (auction.seats_claimed ?? 0) + (auction.external_attendees ?? 0) : 0;
+  const totalSeats = isShare ? (auction.total_seats ?? 0) : 0;
+  const seatsLeft = totalSeats - totalFilled;
+  const isShareFull = isShare && seatsLeft <= 0;
+  const isShareActive = isShare && auction.status === 'active' && !isShareFull;
 
   // 사용자 입찰 상태
   const userHasBid = userBidAmount !== undefined;
@@ -185,7 +193,64 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
             </div>
           )}
 
-          {/* Bottom Bar: 가격+유저상태 (좌) + 소셜프루프+CTA (우) */}
+          {/* Bottom Bar: share 전용 */}
+          {isShare ? (
+            <div className="mt-2 space-y-1.5">
+              {/* 좌석 진행 상황 */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-neutral-400" />
+                  <span className="text-[12px] text-neutral-300 font-medium">
+                    {totalFilled}/{totalSeats}자리 채워짐
+                  </span>
+                </div>
+                {/* 라스트 N 강조 */}
+                {isShareActive && seatsLeft <= 2 && (
+                  <span className={`flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                    seatsLeft === 1
+                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                      : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  }`}>
+                    <Zap className="w-2.5 h-2.5 fill-current" />
+                    라스트 {seatsLeft}자리!
+                  </span>
+                )}
+                {isShareFull && (
+                  <span className="text-[11px] font-bold text-neutral-500 bg-neutral-800 px-2 py-0.5 rounded-full">마감</span>
+                )}
+              </div>
+              {/* 진행 바 */}
+              <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${isShareFull ? "bg-neutral-500" : "bg-amber-500"}`}
+                  style={{ width: `${totalSeats > 0 ? Math.min(100, (totalFilled / totalSeats) * 100) : 0}%` }}
+                />
+              </div>
+              {/* 가격 + CTA */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] text-neutral-500 font-medium leading-none">인당</span>
+                  <div className="text-[22px] font-bold text-white leading-none tracking-tight">
+                    {formatNumber(auction.price_per_seat ?? 0)}원
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={isShareFull}
+                  className={`h-8 px-4 rounded-full font-bold text-xs tracking-tight transition-all ${
+                    isShareFull
+                      ? "bg-neutral-800 text-neutral-500 cursor-not-allowed"
+                      : seatsLeft <= 2
+                        ? "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
+                        : "bg-white text-black hover:bg-neutral-100"
+                  }`}
+                >
+                  {isShareFull ? "마감" : "참여하기"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+          /* Bottom Bar: 경매/즉시구매 전용 (기존 코드) */
           <div className="flex items-center justify-between mt-1 gap-2">
             <div className="flex flex-col min-w-0">
               {!isInstant && !isCompleted && (
@@ -243,6 +308,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
               </div>
             </div>
           </div>
+          )}
         </div>
       </Link>
 
