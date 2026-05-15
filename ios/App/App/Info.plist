@@ -66,7 +66,7 @@
 			<string>kr.nightflow.app.kakao</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>kakao05e4bc59b65a9accadeb923e263e2212</string>
+				<string>kakao1fc85f8f5fb19704e4ba1d8befe17ed4</string>
 			</array>
 		</dict>
 		<dict>
@@ -74,19 +74,19 @@
 			<string>kr.nightflow.app.google</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.REPLACE_WITH_REVERSED_IOS_CLIENT_ID</string>
+				<string>com.googleusercontent.apps.288156738643-kr4jg0rgtce96hgij027vqguolao05u8</string>
 			</array>
 		</dict>
 	</array>
 
 	<!-- Kakao Native App Key (AppDelegate에서 KakaoSDK.initSDK 호출 시 참조) -->
 	<key>KAKAO_APP_KEY</key>
-	<string>05e4bc59b65a9accadeb923e263e2212</string>
+	<string>1fc85f8f5fb19704e4ba1d8befe17ed4</string>
 
 	<!-- Kakao 앱 간 호출 허용 스킴 (kakaotalk 앱 깔린 경우 네이티브 로그인 우선) -->
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>kakao05e4bc59b65a9accadeb923e263e2212</string>
+		<string>kakao1fc85f8f5fb19704e4ba1d8befe17ed4</string>
 		<string>kakaokompassauth</string>
 		<string>storykompassauth</string>
 		<string>kakaolink</string>
