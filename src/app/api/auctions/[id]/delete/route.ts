@@ -62,17 +62,14 @@ export async function DELETE(
       );
     }
 
-    // 권한 확인: MD 본인 또는 admin
+    // 권한 확인: MD 본인 또는 admin (admin은 본인 경매 여부와 무관하게 우회)
     const isOwner = auction.md_id === user.id;
-    let isAdmin = false;
-    if (!isOwner) {
-      const { data: actorRow } = await supabaseAdmin
-        .from("users")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      isAdmin = actorRow?.role === "admin";
-    }
+    const { data: actorRow } = await supabaseAdmin
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    const isAdmin = actorRow?.role === "admin";
 
     if (!isOwner && !isAdmin) {
       return NextResponse.json(
