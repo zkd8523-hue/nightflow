@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { usePendingCancellationSurvey } from "@/hooks/usePendingCancellationSurvey";
-import type { PuzzleCancelReason } from "@/types/database";
+type PuzzleCancelReason =
+  | "schedule_change"
+  | "no_preferred_venue"
+  | "weak_offers"
+  | "mind_change"
+  | "forgot_about_it"
+  | "other"
+  | "no_answer";
 
 const REASONS: { value: PuzzleCancelReason; label: string }[] = [
   { value: "schedule_change",    label: "약속/일정이 바뀌었어요" },
