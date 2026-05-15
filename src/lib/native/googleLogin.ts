@@ -4,7 +4,11 @@ import { createClient } from "@/lib/supabase/client";
 
 const GOOGLE_WEB_CLIENT_ID =
   "288156738643-seg4hgk4aeuk90bep7o6ml6oi0bi2dpr.apps.googleusercontent.com";
-const GOOGLE_IOS_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+// NEXT_PUBLIC_* 변수는 어차피 클라이언트 번들에 포함되므로 보안 차이 없음.
+// Vercel 환경변수 박힘 문제 우회 위해 fallback 하드코딩 (환경변수 있으면 그쪽 우선).
+const GOOGLE_IOS_CLIENT_ID =
+  process.env.NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID ||
+  "288156738643-kr4jg0rgtce96hgij027vqguolao05u8.apps.googleusercontent.com";
 
 let initialized = false;
 
@@ -14,16 +18,10 @@ async function ensureInit() {
   const { Capacitor } = await import("@capacitor/core");
   const isIOS = Capacitor.getPlatform() === "ios";
 
-  if (isIOS && !GOOGLE_IOS_CLIENT_ID) {
-    throw new Error(
-      "iOS Google 로그인이 설정되지 않았습니다. NEXT_PUBLIC_GOOGLE_IOS_CLIENT_ID를 .env.local에 추가하세요.",
-    );
-  }
-
   await SocialLogin.initialize({
     google: {
       webClientId: GOOGLE_WEB_CLIENT_ID,
-      ...(isIOS && GOOGLE_IOS_CLIENT_ID
+      ...(isIOS
         ? {
             iOSClientId: GOOGLE_IOS_CLIENT_ID,
             iOSServerClientId: GOOGLE_WEB_CLIENT_ID,
