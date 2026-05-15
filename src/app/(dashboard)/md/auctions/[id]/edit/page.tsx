@@ -41,11 +41,12 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
         redirect("/md/dashboard");
     }
 
-    // 3. 클럽 목록: 경매 owner의 클럽 로드 (admin이 남의 경매 수정 시 owner의 클럽 풀 사용)
+    // 3. 클럽 목록: 경매 owner의 클럽 로드 (Migration 177: club_partners 기반)
+    //    admin이 남의 경매 수정 시에도 owner(md_id)의 partner 클럽 풀을 사용.
     const { data: clubs } = await supabase
         .from("clubs")
-        .select("*")
-        .eq("md_id", auction.md_id)
+        .select("*, club_partners!inner(md_id)")
+        .eq("club_partners.md_id", auction.md_id)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
 

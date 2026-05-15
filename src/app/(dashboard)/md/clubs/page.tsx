@@ -24,11 +24,11 @@ export default async function MDClubsPage() {
     redirect("/");
   }
 
-  // 3. Fetch MD's clubs
+  // 3. Fetch MD's clubs (Migration 177: club_partners 기반)
   const { data: clubs } = await supabase
     .from("clubs")
-    .select("*")
-    .eq("md_id", user.id)
+    .select("*, club_partners!inner(md_id)")
+    .eq("club_partners.md_id", user.id)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
 

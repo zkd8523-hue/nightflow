@@ -49,11 +49,11 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
         );
     }
 
-    // 2. 선택 가능한 클럽 목록 조회 (본인 소속 클럽만) + 상태별 필터링
+    // 2. 선택 가능한 클럽 목록 조회 (Migration 177: club_partners 기반 N:N)
     const { data: allClubs } = await supabase
         .from("clubs")
-        .select("*")
-        .eq("md_id", user.id)
+        .select("*, club_partners!inner(md_id)")
+        .eq("club_partners.md_id", user.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
 
