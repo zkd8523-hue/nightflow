@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { PendingCancellationSurvey } from "@/types/database";
+type PuzzleSurveyTrigger = "self_cancelled" | "selecting_expired";
+
+interface PendingCancellationSurvey {
+  puzzle_id: string;
+  trigger_type: PuzzleSurveyTrigger;
+  club_label: string;
+  event_date: string;
+  occurred_at: string;
+}
 
 const DISMISS_KEY = "selecting_alert_dismissed";
 const SURVEY_SESSION_DISMISS_KEY = "cancellation_survey_session_dismissed";
