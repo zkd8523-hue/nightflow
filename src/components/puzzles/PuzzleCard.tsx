@@ -2,9 +2,9 @@
 
 import { memo } from "react";
 import { useRouter } from "next/navigation";
-import { Flag, Users, Heart } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Puzzle, GenderPref, AgePref, VibePref } from "@/types/database";
+import type { Puzzle, GenderPref, AgePref, VibePref, MusicPref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
@@ -32,6 +32,8 @@ const AGE_LABEL: Record<AgePref, string | null> = {
   early_20s: "20초",
   late_20s: "20후",
   "30s": "30대",
+  early_30s: "30초",
+  mid_30s: "30중",
   any: null,
 };
 
@@ -39,6 +41,12 @@ const AGE_LABEL: Record<AgePref, string | null> = {
 const VIBE_LABEL: Record<VibePref, string | null> = {
   chill: "편하게",
   active: "신나게",
+  any: null,
+};
+
+const MUSIC_LABEL: Record<MusicPref, string | null> = {
+  hiphop: "힙합",
+  edm: "EDM",
   any: null,
 };
 
@@ -85,13 +93,14 @@ export const PuzzleCard = memo(function PuzzleCard({
     ? null
     : puzzle.age_pref.map((a) => AGE_LABEL[a]).filter(Boolean).join("·") || null;
   const vibeTag = VIBE_LABEL[puzzle.vibe_pref];
+  const musicTag = puzzle.music_preference ? MUSIC_LABEL[puzzle.music_preference] : null;
   const tags = puzzle.is_recruiting_party
-    ? ([ageTag, vibeTag].filter(Boolean) as string[])
+    ? ([ageTag, vibeTag, musicTag].filter(Boolean) as string[])
     : [];
 
   const leaderTier = getDealTier(puzzle.leader?.deal_count_total ?? 0);
 
-  const isMd = userRole === "md";
+  const isMd = userRole === "md" || userRole === "admin";
   const isRecruitingParty = puzzle.is_recruiting_party;
   const isFull = puzzle.current_count >= puzzle.target_count;
   const isSmall = puzzle.target_count > 8;
@@ -112,9 +121,17 @@ export const PuzzleCard = memo(function PuzzleCard({
           NEW!
         </div>
       )}
-      {/* 모드 라벨 뱃지 🧩 퍼즐 / 🚩 깃발 — 카드 우측 상단 */}
-      {/* 퍼즐(모집 ON)이라도 인원이 다 찼으면 깃발 단계로 전환 */}
-      <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+      {/* 모드 라벨 뱃지 🧩 퍼즐 / 🚩 깃발 — 카드 우측 상단, 알림 버튼은 배지 아래 */}
+      <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+        {isRecruitingParty && !isFull ? (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
+            🧩 퍼즐
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-bold">
+            🚩 깃발
+          </span>
+        )}
         {canFavorite && (
           <button
             type="button"
@@ -125,22 +142,13 @@ export const PuzzleCard = memo(function PuzzleCard({
             }}
             className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
               isFavorited
-                ? "bg-rose-500/15 text-rose-400 hover:bg-rose-500/25"
-                : "bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700 hover:text-rose-300"
+                ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
+                : "bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700 hover:text-amber-300"
             }`}
-            aria-label={isFavorited ? "찜 해제" : "찜하기"}
+            aria-label={isFavorited ? "알림 해제" : "알림받기"}
           >
-            <Heart className={`w-3.5 h-3.5 ${isFavorited ? "fill-current" : ""}`} />
+            <Bell className={`w-3.5 h-3.5 ${isFavorited ? "fill-current" : ""}`} />
           </button>
-        )}
-        {isRecruitingParty && !isFull ? (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
-            🧩 퍼즐
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-bold">
-            🚩 깃발
-          </span>
         )}
       </div>
       {/* 상단: 메모(방 제목) + 지역 + 거래 등급 배지 (찜 자리) */}
