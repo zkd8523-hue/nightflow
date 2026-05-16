@@ -726,19 +726,19 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                       else { setNicknameError(null); setNicknameOk(true); }
                     } finally { setNicknameChecking(false); }
                   }}
-                  className="w-full h-12 px-4 pr-20 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
+                  className="w-full h-12 px-4 pr-28 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
                 />
                 {/* 글자수 + 자동생성 버튼 */}
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                   <span className="text-[11px] text-neutral-600 tabular-nums">{nicknameInput.length}/16</span>
                   <button
                     type="button"
                     onClick={applyRandomNickname}
                     disabled={nicknameChecking}
-                    title="랜덤 닉네임"
-                    className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-500 hover:text-neutral-300 hover:bg-neutral-700 transition-colors disabled:opacity-40"
+                    className="h-7 px-2 rounded-lg flex items-center gap-1 text-[11px] font-bold text-neutral-300 bg-neutral-700 hover:bg-neutral-600 transition-colors disabled:opacity-40"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${nicknameChecking ? "animate-spin" : ""}`} />
+                    <RefreshCw className={`w-3 h-3 ${nicknameChecking ? "animate-spin" : ""}`} />
+                    자동생성
                   </button>
                 </div>
               </div>
@@ -751,11 +751,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               )}
               {nicknameChecking && !nicknameError && (
                 <p className="text-[12px] text-neutral-500 px-1">중복 확인 중...</p>
-              )}
-              {!nicknameError && !nicknameOk && !nicknameChecking && (
-                <p className="text-[11px] text-neutral-500 px-1">
-                  🔄 버튼을 누르면 랜덤 닉네임이 만들어져요
-                </p>
               )}
             </div>
 
