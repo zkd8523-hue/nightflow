@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -106,6 +106,35 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const prevPreviewRef = useRef<string | null>(null);
   // 가입 완료 후 중복 호출/토스트 차단용 가드
   const completedRef = useRef(false);
+
+  const NICK_COLORS = ["빨간","파란","초록","노란","보라","주황","하늘빛","민트빛","산호빛","금빛","달빛","별빛"];
+  const NICK_ADJECTIVES = ["신나는","빛나는","화려한","자유로운","멋진","설레는","뜨거운","찬란한","유쾌한","활기찬"];
+  const NICK_ANIMALS = ["재규어","표범","독수리","나비","여우","늑대","치타","팬더","코알라","돌고래","고래","매","올빼미","토끼","수달","라쿤","알파카","카피바라"];
+  const pickRandom = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
+
+  const applyRandomNickname = useCallback(async () => {
+    const candidate = `${Math.random() < 0.5 ? pickRandom(NICK_COLORS) : pickRandom(NICK_ADJECTIVES)}${pickRandom(NICK_ANIMALS)}`;
+    setNicknameInput(candidate);
+    setNicknameError(null);
+    setNicknameOk(false);
+    setNicknameChecking(true);
+    try {
+      const taken = await isDisplayNameTaken(supabase, candidate);
+      setNicknameOk(!taken);
+      if (taken) setNicknameError("이미 사용 중인 닉네임이에요");
+    } finally {
+      setNicknameChecking(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase]);
+
+  // 닉네임 단계 진입 시 랜덤 닉네임 자동 생성
+  useEffect(() => {
+    if (step === "nickname" && !nicknameInput) {
+      applyRandomNickname();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const requiredMet = agreeAge && agreeTerms && agreePrivacy;
 
@@ -715,22 +744,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
             <button
               type="button"
-              onClick={async () => {
-                const COLORS = ["빨간","파란","초록","노란","보라","주황","하늘빛","민트빛","산호빛","금빛","달빛","별빛"];
-                const ADJECTIVES = ["신나는","빛나는","화려한","자유로운","멋진","설레는","뜨거운","찬란한","유쾌한","활기찬"];
-                const ANIMALS = ["재규어","표범","독수리","나비","여우","늑대","치타","팬더","코알라","돌고래","고래","매","올빼미","토끼","수달","라쿤","알파카","카피바라"];
-                const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
-                const candidate = `${Math.random() < 0.5 ? pick(COLORS) : pick(ADJECTIVES)}${pick(ANIMALS)}`;
-                setNicknameInput(candidate);
-                setNicknameError(null);
-                setNicknameOk(false);
-                setNicknameChecking(true);
-                try {
-                  const taken = await isDisplayNameTaken(supabase, candidate);
-                  if (taken) { setNicknameOk(false); }
-                  else { setNicknameOk(true); }
-                } finally { setNicknameChecking(false); }
-              }}
+              onClick={applyRandomNickname}
               className="w-full h-10 rounded-xl border border-neutral-700 text-neutral-400 text-[13px] font-medium hover:border-neutral-500 hover:text-neutral-300 transition-colors flex items-center justify-center gap-2"
             >
               <RefreshCw className="w-3.5 h-3.5" />
