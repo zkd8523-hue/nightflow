@@ -648,8 +648,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "nickname" && (
           <>
             <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-white">프로필을 설정해주세요</p>
-              <p className="text-[12px] text-neutral-500">나중에 언제든 변경할 수 있어요</p>
+              <p className="text-[18px] font-bold text-white">닉네임만 정해, 바로 가자</p>
+              <p className="text-[12px] text-neutral-500">언제든 바꾸기 OK</p>
             </div>
 
             {/* 프로필 사진 */}
