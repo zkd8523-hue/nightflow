@@ -10,7 +10,7 @@ import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
 import { validateDisplayName, isDisplayNameTaken } from "@/lib/utils/displayName";
 import { normalizeProfileImage } from "@/lib/utils/image";
-import { ChevronRight, Check, ArrowLeft, RefreshCw } from "lucide-react";
+import { ChevronRight, Check, ArrowLeft, RefreshCw, Camera } from "lucide-react";
 import Link from "next/link";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -93,11 +93,17 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   // OTP 검증 후 gender 단계로 넘기기 위해 보관
   const [verifiedPhoneState, setVerifiedPhoneState] = useState<string | null>(null);
   const [selectedGender, setSelectedGender] = useState<Gender | null>(null);
-  // 닉네임 단계
+  // 닉네임 + 프로필 사진 단계
   const [nicknameInput, setNicknameInput] = useState("");
   const [nicknameError, setNicknameError] = useState<string | null>(null);
   const [nicknameChecking, setNicknameChecking] = useState(false);
   const [nicknameOk, setNicknameOk] = useState(false);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  // object URL 정리
+  const prevPreviewRef = useRef<string | null>(null);
   // 가입 완료 후 중복 호출/토스트 차단용 가드
   const completedRef = useRef(false);
 
@@ -281,6 +287,26 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       }
       const meta = authUser.user_metadata ?? {};
 
+      // 프로필 사진 업로드 (선택사항)
+      let finalProfileImage = normalizeProfileImage(meta.avatar_url);
+      if (profileImageFile) {
+        setUploadingImage(true);
+        try {
+          const ext = profileImageFile.name.split(".").pop() ?? "jpg";
+          const path = `${authUser.id}/avatar.${ext}`;
+          const { error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(path, profileImageFile, { upsert: true });
+          if (uploadError) throw uploadError;
+          const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+          finalProfileImage = `${urlData.publicUrl}?t=${Date.now()}`;
+        } catch {
+          toast.error("사진 업로드에 실패했어요. 카카오 프로필로 계속합니다");
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
       let referredById: string | null = null;
       let signupSource = "direct";
 
@@ -340,7 +366,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             display_name: displayName,
             phone: verifiedPhone,
             gender: selectedGender,
-            profile_image: normalizeProfileImage(meta.avatar_url),
+            profile_image: finalProfileImage,
             role: "user",
             alimtalk_consent: agreeMarketing,
             alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
@@ -591,8 +617,57 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "nickname" && (
           <>
             <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-white">닉네임을 정해주세요</p>
-              <p className="text-[12px] text-neutral-500">2~16자, 나중에 변경할 수 있어요</p>
+              <p className="text-[18px] font-bold text-white">프로필을 설정해주세요</p>
+              <p className="text-[12px] text-neutral-500">나중에 언제든 변경할 수 있어요</p>
+            </div>
+
+            {/* 프로필 사진 */}
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="relative w-20 h-20 rounded-full overflow-hidden bg-neutral-800 border-2 border-neutral-700 hover:border-neutral-500 transition-colors group"
+              >
+                {profileImagePreview || (authUser && normalizeProfileImage(authUser.user_metadata?.avatar_url)) ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profileImagePreview ?? normalizeProfileImage(authUser!.user_metadata?.avatar_url) ?? ""}
+                    alt="프로필 사진"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-neutral-500">
+                    <Camera className="w-7 h-7" />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="w-5 h-5 text-white" />
+                </div>
+              </button>
+              <p className="text-[11px] text-neutral-500">
+                {profileImageFile ? "사진 변경하기" : "사진 선택 (선택)"}
+              </p>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (file.size > 5 * 1024 * 1024) {
+                    toast.error("5MB 이하 이미지만 업로드 가능해요");
+                    return;
+                  }
+                  // 이전 object URL 해제
+                  if (prevPreviewRef.current) URL.revokeObjectURL(prevPreviewRef.current);
+                  const url = URL.createObjectURL(file);
+                  prevPreviewRef.current = url;
+                  setProfileImageFile(file);
+                  setProfileImagePreview(url);
+                  e.target.value = "";
+                }}
+              />
             </div>
 
             <div className="space-y-2">
@@ -671,10 +746,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               </Button>
               <Button
                 onClick={handleCompleteSignup}
-                disabled={!nicknameOk || loading || nicknameChecking}
+                disabled={!nicknameOk || loading || nicknameChecking || uploadingImage}
                 className="flex-1 h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
-                {loading ? "가입 중..." : "가입 완료"}
+                {uploadingImage ? "사진 업로드 중..." : loading ? "가입 중..." : "가입 완료"}
               </Button>
             </div>
           </>
