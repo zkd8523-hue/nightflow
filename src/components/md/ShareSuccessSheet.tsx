@@ -220,10 +220,10 @@ export function ShareSuccessSheet({
             </div>
           </div>
           <DrawerTitle className="text-white font-black text-2xl tracking-tight">
-            경매등록 성공!
+            조각 등록 성공!
           </DrawerTitle>
           <DrawerDescription className="text-neutral-400 font-medium text-[14px]">
-            지금 바로 공유해서 더 많은 입찰자를 모아보세요!
+            지금 바로 공유해서 자리를 채워보세요!
           </DrawerDescription>
         </DrawerHeader>
 
