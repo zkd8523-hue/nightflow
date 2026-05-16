@@ -1668,7 +1668,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             <div className="mt-12 px-1">
                 <div className="max-w-lg mx-auto">
                     <Button disabled={isSubmitting} className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "경매 정보 수정하기") : (isInstantMode ? "오늘특가 등록하기" : "경매 시작하기"))}
+                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "조각 정보 수정하기") : (isInstantMode ? "오늘특가 등록하기" : "조각 등록하기"))}
                         <ArrowRight className="w-5 h-5" />
                     </Button>
                 </div>
