@@ -1,7 +1,14 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
+
+// 싱글톤: 매 호출마다 새 객체를 반환하면 useEffect deps 가 무효화돼
+// 일부 컴포넌트(SignupForm/login/Header 등)에서 effect 가 무한 재실행됨.
+// supabase-ssr 클라이언트는 쿠키로 상태를 공유하므로 인스턴스 1개로 충분.
+let browserClient: SupabaseClient | null = null;
 
 export function createClient() {
-  return createBrowserClient(
+  if (browserClient) return browserClient;
+  browserClient = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -14,4 +21,5 @@ export function createClient() {
       },
     }
   );
+  return browserClient;
 }

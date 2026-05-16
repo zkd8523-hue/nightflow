@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect } from "react";
 import { useWinNotification } from "@/hooks/useWinNotification";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAuthInit, useCurrentUser } from "@/hooks/useCurrentUser";
 import { useFavoriteClubs } from "@/hooks/useFavoriteClubs";
 import { useFavoriteMds } from "@/hooks/useFavoriteMds";
 import { useFavoritePuzzles } from "@/hooks/useFavoritePuzzles";
@@ -11,6 +11,13 @@ import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
 import { NetworkOverlay } from "@/components/NetworkOverlay";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { initDeepLinkHandler, initBackButtonHandler } from "@/lib/native/deepLink";
+
+function AuthInit() {
+  // 앱 전체에서 단 1회만 auth.getUser/onAuthStateChange 실행.
+  // 다른 컴포넌트는 useCurrentUser() 로 Zustand store 만 읽음.
+  useAuthInit();
+  return null;
+}
 
 function GlobalNotifications() {
   useWinNotification();
@@ -125,6 +132,8 @@ function DeepLinkInit() {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <>
+      {/* AuthInit 은 반드시 최상단 — 다른 컴포넌트가 useCurrentUser() 로 store 를 읽기 전에 mount */}
+      <AuthInit />
       <GlobalNotifications />
       <MixpanelInit />
       <DeepLinkInit />
