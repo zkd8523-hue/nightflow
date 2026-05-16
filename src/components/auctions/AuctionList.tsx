@@ -364,21 +364,6 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </button>
             </div>
           </div>
-          {tab === "puzzle" && (
-            <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
-              {([
-                { key: "popular", label: "인기순" },
-                { key: "budget",  label: "예산순" },
-                { key: "recent",  label: "최신순" },
-              ] as const).map(({ key, label }) => (
-                <button key={key}
-                  onClick={() => setPuzzleSortMode(v => v === key ? "none" : key)}
-                  className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap ${puzzleSortMode === key ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
           {tab === "advance" && deferredAuctions.some(a => a.listing_type === "auction") && (
             <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
               {hasAdvanceFilter && (
@@ -407,6 +392,22 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             </div>
           )}
         </div>
+
+      {tab === "puzzle" && (
+        <div className="flex items-center gap-1.5 px-1">
+          {([
+            { key: "popular", label: "인기순" },
+            { key: "budget",  label: "예산순" },
+            { key: "recent",  label: "최신순" },
+          ] as const).map(({ key, label }) => (
+            <button key={key}
+              onClick={() => setPuzzleSortMode(v => v === key ? "none" : key)}
+              className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap ${puzzleSortMode === key ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {instantEnabled && tab === "today" && (
         <div>
@@ -568,15 +569,23 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 </span>
                 <span className="text-[16px] font-black text-white tracking-tight">모집 중인 조각</span>
               </div>
-              {/* N비 필터 */}
-              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x pb-0.5">
-                {SHARE_NBI_CHIPS.map(({ value, label }) => (
-                  <button key={value}
-                    onClick={() => setShareNbi(v => v === value ? "all" : value as NbiFilter)}
-                    className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${shareNbi === value ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                    {label}
+              {/* N비 필터 + 내 조각 */}
+              <div className="flex items-center gap-1.5 pb-0.5">
+                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x flex-1 min-w-0">
+                  {SHARE_NBI_CHIPS.map(({ value, label }) => (
+                    <button key={value}
+                      onClick={() => setShareNbi(v => v === value ? "all" : value as NbiFilter)}
+                      className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${shareNbi === value ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                {userRole && ["md", "admin"].includes(userRole) && (
+                  <button onClick={() => setMyShareOnly(v => !v)}
+                    className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${myShareOnly ? "bg-green-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                    내 조각
                   </button>
-                ))}
+                )}
               </div>
               {/* 정렬 */}
             </div>
@@ -635,12 +644,6 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                       </span>
                       {groupIdx === 0 && (
                         <div className="flex-1 flex justify-end items-center gap-1.5">
-                          {userRole && ["md", "admin"].includes(userRole) && (
-                            <button onClick={() => setMyShareOnly(v => !v)}
-                              className={`text-[11px] font-bold px-3 py-1 rounded-full transition-colors whitespace-nowrap ${myShareOnly ? "bg-green-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                              내 조각
-                            </button>
-                          )}
                           {[{ key: "seats", label: "마감임박순" }, { key: "recent", label: "최신순" }].map(({ key, label }) => (
                             <button key={key}
                               onClick={() => setShareSort(v => v === key ? "deadline" : key as "seats" | "recent")}
@@ -677,6 +680,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           popularSort={puzzlePopularSort}
           recentSort={puzzleSortMode === "recent"}
           budgetSort={puzzleSortMode === "budget"}
+          sortMode={puzzleSortMode}
+          onSortModeChange={setPuzzleSortMode}
         />
       )}
 

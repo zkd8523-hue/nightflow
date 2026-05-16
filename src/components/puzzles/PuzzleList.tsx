@@ -103,6 +103,8 @@ interface PuzzleListProps {
   popularSort?: boolean;
   recentSort?: boolean;
   budgetSort?: boolean;
+  sortMode?: "none" | "popular" | "budget" | "recent";
+  onSortModeChange?: (mode: "none" | "popular" | "budget" | "recent") => void;
 }
 
 export function PuzzleList({
@@ -119,6 +121,8 @@ export function PuzzleList({
   popularSort = false,
   recentSort = false,
   budgetSort = false,
+  sortMode: externalSortMode = "none",
+  onSortModeChange,
 }: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
@@ -356,7 +360,7 @@ export function PuzzleList({
         </div>
       ) : (popularSort || recentSort || budgetSort) ? (
         /* 인기순/최신순/예산순: 날짜 그룹 헤더 유지 + 정렬 */
-        <div className="space-y-8 pb-24 pt-3">
+        <div className="space-y-8 pb-24">
           {Object.entries(
             filteredPuzzles.reduce((groups, puzzle) => {
               const date = puzzle.event_date;
@@ -411,7 +415,7 @@ export function PuzzleList({
             })}
         </div>
       ) : (
-        <div className="space-y-12 pb-24 pt-3">
+        <div className="space-y-12 pb-24">
           {/* 🆕 방금 올라온 퍼즐/깃발 — 상단 별도 섹션 */}
           {(() => {
             // 베타 기간 한정 12h (정상 등록량 도달 시 6h로 환원)
@@ -446,7 +450,7 @@ export function PuzzleList({
                           {recentTitle}
                           {recentCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                         </button>
-                        <div className="flex-1 flex justify-end">{toggleButton}</div>
+                        <div className="flex-1" />
                       </div>
                       {recentDeadline && (
                         <p
@@ -533,7 +537,7 @@ export function PuzzleList({
                       >
                         {dday}
                       </span>
-                      {groupIdx === 0 && recentPuzzles.length === 0 && <div className="flex-1 flex justify-end">{toggleButton}</div>}
+                      {groupIdx === 0 && recentPuzzles.length === 0 && <div className="flex-1 flex justify-end">{null}</div>}
                     </div>
                     {deadline && (
                       <p
