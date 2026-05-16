@@ -51,14 +51,31 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
   const isFull = seatsLeft <= 0;
   const isOpen = auction.status === "active" && !isFull;
 
-  // 성별 슬롯 레이아웃: 남자 먼저, 여자 뒤. 채워진 순서대로 fill
+  // 성별 슬롯 레이아웃: external_male/female 분리 사용 (AuctionCard와 동일 로직)
   const tM = auction.target_male ?? 0;
   const tF = auction.target_female ?? 0;
   const hasGenderSlot = tM + tF === totalSeats && totalSeats > 0;
-  const slotLayout = Array.from({ length: totalSeats }).map((_, i) => ({
-    gender: hasGenderSlot ? (i < tM ? "male" : "female") as "male" | "female" : null,
-    filled: i < totalFilled,
-  }));
+  const filledMale = auction.external_male ?? 0;
+  const filledFemale = auction.external_female ?? 0;
+  // 남자가 target 초과하면 잉여(maleSurplus)는 female 슬롯에 male로 표시
+  const maleSurplus = Math.max(0, filledMale - tM);
+  const slotLayout = Array.from({ length: totalSeats }).map((_, i) => {
+    if (!hasGenderSlot) {
+      return { gender: null, filled: i < totalFilled };
+    }
+    if (i < tM) {
+      // 남자 슬롯
+      return { gender: "male" as const, filled: i < filledMale };
+    }
+    // 여자 슬롯 영역
+    const femaleIdx = i - tM;
+    if (femaleIdx < maleSurplus) {
+      // 남자 잉여로 채워진 슬롯 (시각적으로 male 표시)
+      return { gender: "male" as const, filled: true };
+    }
+    const adjustedFemaleIdx = femaleIdx - maleSurplus;
+    return { gender: "female" as const, filled: adjustedFemaleIdx < filledFemale };
+  });
 
   // 내 참여 여부 확인
   useEffect(() => {
