@@ -111,7 +111,6 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
       }
 
       const clubData = {
-        md_id: mdId,
         name: values.name,
         area: values.area,
         address: values.address,
@@ -123,11 +122,28 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
         thumbnail_url: values.thumbnail_url || null,
       };
 
-      const { error } = initialData
-        ? await supabase.from("clubs").update(clubData).eq("id", initialData.id)
-        : await supabase.from("clubs").insert({ ...clubData, status: "pending" });
-
-      if (error) throw error;
+      // Phase 4(Migration 182): clubs.md_id 제거 — 신규 INSERT 시 club_partners 명시 등록.
+      if (initialData) {
+        const { error } = await supabase.from("clubs").update(clubData).eq("id", initialData.id);
+        if (error) throw error;
+      } else {
+        const { data: inserted, error } = await supabase
+          .from("clubs")
+          .insert({ ...clubData, status: "pending" })
+          .select("id")
+          .single();
+        if (error) throw error;
+        if (inserted) {
+          const { error: partnerError } = await supabase
+            .from("club_partners")
+            .insert({ club_id: inserted.id, md_id: mdId, role: "owner" });
+          if (partnerError) {
+            // 롤백
+            await supabase.from("clubs").delete().eq("id", inserted.id);
+            throw partnerError;
+          }
+        }
+      }
 
       toast.success(initialData ? "클럽 정보가 수정되었습니다!" : "클럽이 등록되었습니다!");
       router.push("/md/clubs");

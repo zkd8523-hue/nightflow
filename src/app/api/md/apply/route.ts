@@ -198,13 +198,10 @@ export async function POST(request: NextRequest) {
       clubId = existingClub.id;
     } else {
       // 새 클럽 생성.
-      //   양립 모드: clubs.md_id 도 함께 채운다.
-      //   Migration 174 의 AFTER INSERT 트리거(sync_club_to_partner)가
-      //   club_partners(role='owner') 를 자동으로 동기화한다.
+      //   Phase 4(Migration 182): clubs.md_id 제거 — 코드가 직접 club_partners INSERT.
       const { data: newClub, error: clubError } = await supabaseAdmin
         .from("clubs")
         .insert({
-          md_id: user.id,
           name: club_name,
           area: primaryArea,
           address: club_address,
@@ -227,6 +224,20 @@ export async function POST(request: NextRequest) {
         );
       }
       clubId = newClub.id;
+
+      // club_partners (owner) 명시 등록.
+      const { error: partnerError } = await supabaseAdmin
+        .from("club_partners")
+        .insert({ club_id: clubId, md_id: user.id, role: "owner" });
+      if (partnerError) {
+        logger.error("club_partners insert error:", partnerError);
+        // 롤백: 방금 생성한 클럽 삭제
+        await supabaseAdmin.from("clubs").delete().eq("id", clubId);
+        return NextResponse.json(
+          { error: `클럽 파트너 등록에 실패했습니다. (${partnerError.code}: ${partnerError.message})` },
+          { status: 500 }
+        );
+      }
     }
 
     // 6. 유저 업데이트 (md_status = pending)
