@@ -50,3 +50,7 @@ supabase/.temp/
 # mobile platform migration backups (kr.nightflow.app pivot, 2026-05-14)
 ios.backup-*/
 android/app/google-services.json.old-*
+
+# 일회성 디버그 스크립트 및 로그
+test_*.js
+push_*.log

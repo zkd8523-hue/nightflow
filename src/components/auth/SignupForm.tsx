@@ -318,8 +318,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       }
       const meta = authUser.user_metadata ?? {};
 
-      // 프로필 사진 업로드 (선택사항)
-      let finalProfileImage = normalizeProfileImage(meta.avatar_url);
+      // 프로필 사진 (Migration 187 — 정책 변경)
+      // 카카오 OAuth에서 받은 avatar_url은 더 이상 저장하지 않음 (별도 동의 미수집 리스크)
+      // 회원이 직접 업로드한 사진만 저장 (opt-in)
+      let finalProfileImage: string | null = null;
       if (profileImageFile) {
         setUploadingImage(true);
         try {
@@ -332,7 +334,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
           const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
           finalProfileImage = `${urlData.publicUrl}?t=${Date.now()}`;
         } catch {
-          toast.error("사진 업로드에 실패했어요. 카카오 프로필로 계속합니다");
+          toast.error("사진 업로드에 실패했어요. 사진 없이 가입을 계속합니다");
         } finally {
           setUploadingImage(false);
         }
@@ -659,10 +661,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 onClick={() => imageInputRef.current?.click()}
                 className="relative w-20 h-20 rounded-full overflow-hidden bg-neutral-800 border-2 border-neutral-700 hover:border-neutral-500 transition-colors group"
               >
-                {profileImagePreview || (authUser && normalizeProfileImage(authUser.user_metadata?.avatar_url)) ? (
+                {profileImagePreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={profileImagePreview ?? normalizeProfileImage(authUser!.user_metadata?.avatar_url) ?? ""}
+                    src={profileImagePreview}
                     alt="프로필 사진"
                     className="w-full h-full object-cover"
                   />

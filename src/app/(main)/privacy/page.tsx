@@ -41,8 +41,13 @@ export default function PrivacyPage() {
                         <h2 className="text-lg font-black text-white">1. 수집하는 개인정보의 항목</h2>
                         <div className="space-y-2">
                             <p className="text-white font-bold">① 회원 가입 시</p>
-                            <p className="pl-4">- <span className="text-green-500 font-bold">필수:</span> 이름, 휴대전화번호, 카카오 계정 정보(ID, 프로필 이미지)</p>
-                            <p className="pl-4">- <span className="text-neutral-500 font-bold">선택:</span> 없음</p>
+                            <p className="pl-4">- <span className="text-green-500 font-bold">필수:</span> 이름, 휴대전화번호, 카카오 계정 ID</p>
+                            <p className="pl-4">- <span className="text-neutral-500 font-bold">선택:</span> 회원이 직접 업로드한 프로필 사진</p>
+                            <p className="pl-4 text-[12px] text-amber-400/80 mt-1">
+                                ※ 회사는 카카오 OAuth로부터 전달받는 프로필 사진을 저장하지 않습니다.
+                                회원이 프로필 설정 페이지에서 직접 업로드한 사진만 저장·노출되며,
+                                회원은 언제든지 사진을 삭제할 수 있습니다.
+                            </p>
 
                             <p className="text-white font-bold mt-4">② 경매 낙찰 시</p>
                             <p className="pl-4">- 낙찰 내역, 낙찰 금액, 낙찰 일시</p>
