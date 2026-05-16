@@ -128,10 +128,12 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
-  // 닉네임 단계 진입 시 랜덤 닉네임 자동 생성
+  // 닉네임 단계 진입 시 입력값 초기화
   useEffect(() => {
-    if (step === "nickname" && !nicknameInput) {
-      applyRandomNickname();
+    if (step === "nickname") {
+      setNicknameInput("");
+      setNicknameError(null);
+      setNicknameOk(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
@@ -705,7 +707,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   type="text"
                   value={nicknameInput}
                   maxLength={16}
-                  placeholder="닉네임 입력"
+                  placeholder="닉네임을 입력해주세요"
                   onChange={(e) => {
                     const val = e.target.value;
                     setNicknameInput(val);
@@ -724,11 +726,21 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                       else { setNicknameError(null); setNicknameOk(true); }
                     } finally { setNicknameChecking(false); }
                   }}
-                  className="w-full h-12 px-4 pr-12 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
+                  className="w-full h-12 px-4 pr-20 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-500 tabular-nums pointer-events-none">
-                  {nicknameInput.length}/16
-                </span>
+                {/* 글자수 + 자동생성 버튼 */}
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <span className="text-[11px] text-neutral-600 tabular-nums">{nicknameInput.length}/16</span>
+                  <button
+                    type="button"
+                    onClick={applyRandomNickname}
+                    disabled={nicknameChecking}
+                    title="랜덤 닉네임"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-500 hover:text-neutral-300 hover:bg-neutral-700 transition-colors disabled:opacity-40"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${nicknameChecking ? "animate-spin" : ""}`} />
+                  </button>
+                </div>
               </div>
 
               {nicknameError && (
@@ -737,19 +749,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               {nicknameOk && !nicknameError && (
                 <p className="text-[12px] text-green-400 font-medium px-1">사용 가능한 닉네임이에요 ✓</p>
               )}
-              {nicknameChecking && (
+              {nicknameChecking && !nicknameError && (
                 <p className="text-[12px] text-neutral-500 px-1">중복 확인 중...</p>
               )}
             </div>
-
-            <button
-              type="button"
-              onClick={applyRandomNickname}
-              className="w-full h-10 rounded-xl border border-neutral-700 text-neutral-400 text-[13px] font-medium hover:border-neutral-500 hover:text-neutral-300 transition-colors flex items-center justify-center gap-2"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              랜덤 닉네임
-            </button>
 
             <div className="flex gap-2">
               <Button
