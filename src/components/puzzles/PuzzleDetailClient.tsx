@@ -57,6 +57,8 @@ const AGE_LABEL: Record<AgePref, string | null> = {
   early_20s: "20초",
   late_20s: "20후",
   "30s": "30대",
+  early_30s: "30초",
+  mid_30s: "30중",
   any: null,
 };
 const VIBE_LABEL: Record<VibePref, string | null> = {

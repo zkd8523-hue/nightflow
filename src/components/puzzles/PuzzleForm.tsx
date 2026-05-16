@@ -37,7 +37,8 @@ const GENDER_OPTIONS_RECRUIT: { value: GenderPref; label: string }[] = [
 const AGE_OPTIONS: { value: AgePref; label: string }[] = [
   { value: "early_20s", label: "20초" },
   { value: "late_20s", label: "20후" },
-  { value: "30s", label: "30대" },
+  { value: "early_30s", label: "30초" },
+  { value: "mid_30s", label: "30중" },
   { value: "any", label: "상관없음" },
 ];
 
