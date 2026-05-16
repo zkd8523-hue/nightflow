@@ -232,7 +232,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                             <div className="flex-1 space-y-1">
                                 <p className="text-sm font-bold text-red-500">활동이 일시 정지되었습니다</p>
                                 <p className="text-xs text-red-500/80 leading-relaxed">
-                                    운영 정책 위반으로 경매 등록이 제한됩니다.
+                                    운영 정책 위반으로 조각 등록이 제한됩니다.
                                     {user.md_suspended_until && (
                                         <> 정지 해제 예정: <span className="font-semibold">
                                             {new Date(user.md_suspended_until).toLocaleDateString("ko-KR")}
@@ -889,7 +889,7 @@ function EmptyState({ label, description }: { label: string, description?: React
             <Link href="/md/auctions/new">
                 <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">
                     <Plus className="w-4 h-4 mr-1" />
-                    경매 등록하기
+                    조각 등록하기
                 </Button>
             </Link>
         </div>

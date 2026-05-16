@@ -198,14 +198,14 @@ export default function FAQPage() {
 
                         <AccordionItem value="md-2" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
                             <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                경매는 어떻게 등록하나요?
+                                조각은 어떻게 등록하나요?
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>1. MD 대시보드 → "경매 등록하기" 클릭</p>
+                                <p>1. MD 대시보드 → "조각 등록하기" 클릭</p>
                                 <p>2. 클럽, 테이블 타입, 인원, 포함 서비스, 이벤트 날짜를 입력합니다.</p>
-                                <p>3. 시작가를 설정합니다.</p>
-                                <p>4. 경매 시작/종료 시간을 설정합니다.</p>
-                                <p>5. "등록하기" 클릭 시 경매가 시작됩니다.</p>
+                                <p>3. 인당 가격을 설정합니다.</p>
+                                <p>4. 방문일과 마감 시각을 설정합니다.</p>
+                                <p>5. "조각 등록하기" 클릭 시 매물이 노출됩니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -382,7 +382,7 @@ export default function FAQPage() {
                             <AccordionContent className="text-neutral-400 leading-relaxed">
                                 <p>다음과 같은 경우 MD를 신고할 수 있습니다:</p>
                                 <p className="pl-4 mt-2">- 반복적 미응답 또는 무단 취소</p>
-                                <p className="pl-4">- 허위 경매 등록 (존재하지 않는 테이블 등)</p>
+                                <p className="pl-4">- 허위 조각 등록 (존재하지 않는 테이블 등)</p>
                                 <p className="pl-4">- 불친절하거나 부적절한 언행</p>
                                 <p className="pl-4">- 플랫폼 외 결제 강요</p>
                                 <p className="mt-3">고객센터(maddawids@gmail.com)로 신고해주시면 <span className="text-white font-bold">운영팀이 조사 후 경고, 활동 정지, 영구 차단</span> 등의 조치를 취합니다.</p>
