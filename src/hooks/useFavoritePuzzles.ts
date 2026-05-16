@@ -20,7 +20,7 @@ export function useFavoritePuzzles(userId: string | undefined) {
     const fetchFavorites = async () => {
       const { data } = await supabase
         .from("puzzle_interests")
-        .select("*, puzzle:puzzles(*, leader:users!puzzles_leader_id_fkey(id, name, display_name, profile_image, deal_count_total, created_at))")
+        .select("*, puzzle:puzzles(*, leader:users!puzzles_leader_id_fkey(id, name, display_name, profile_image, deal_count_total, created_at, gender))")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -63,7 +63,7 @@ export function useFavoritePuzzles(userId: string | undefined) {
           const { data, error } = await supabase
             .from("puzzle_interests")
             .insert({ user_id: userId, puzzle_id: puzzleId })
-            .select("*, puzzle:puzzles(*, leader:users!puzzles_leader_id_fkey(id, name, display_name, profile_image, deal_count_total, created_at))")
+            .select("*, puzzle:puzzles(*, leader:users!puzzles_leader_id_fkey(id, name, display_name, profile_image, deal_count_total, created_at, gender))")
             .single();
 
           if (error) {

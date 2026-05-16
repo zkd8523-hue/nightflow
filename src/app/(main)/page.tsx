@@ -52,7 +52,7 @@ export default async function HomePage() {
   // 오픈 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
   const { data: puzzles } = await supabase
     .from("puzzles")
-    .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, created_at)")
+    .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, created_at, gender)")
     .eq("status", "open")
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false })

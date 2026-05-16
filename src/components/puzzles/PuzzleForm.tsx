@@ -21,19 +21,6 @@ import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 const BUDGET_PRESETS_RECRUIT = [100000, 50000, 10000]; // 퍼즐(인당) +10만/+5만/+1만
 const BUDGET_PRESETS_FIXED = [500000, 100000, 50000]; // 깃발(총액) +50만/+10만/+5만
 
-// 모집 OFF (인원 확정 깃발): 본인 일행 구성 명세 - 혼성 제거 (남/녀만)
-const GENDER_OPTIONS_FIXED: { value: GenderPref; label: string }[] = [
-  { value: "male_only", label: "남" },
-  { value: "female_only", label: "녀" },
-];
-
-// 모집 ON (파티원 모집): 원하는 상대 - 상관없음 포함
-const GENDER_OPTIONS_RECRUIT: { value: GenderPref; label: string }[] = [
-  { value: "male_only", label: "남" },
-  { value: "female_only", label: "녀" },
-  { value: "any", label: "상관없음" },
-];
-
 const AGE_OPTIONS: { value: AgePref; label: string }[] = [
   { value: "early_20s", label: "20초" },
   { value: "late_20s", label: "20후" },
@@ -118,6 +105,48 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const [genderPref, setGenderPref] = useState<GenderPref>(
     puzzle?.gender_pref ?? (draft?.genderPref as GenderPref) ?? "male_only"
   );
+  // Migration 184: 성별 슬롯 분리
+  const [myGender, setMyGender] = useState<'male' | 'female' | null>(null);
+  const [genderLoaded, setGenderLoaded] = useState(false);
+  const [genderModalOpen, setGenderModalOpen] = useState(false);
+  const [targetMale, setTargetMale] = useState<number>(
+    puzzle?.target_male ?? (draft?.targetMale as number) ?? 0
+  );
+  const [targetFemale, setTargetFemale] = useState<number>(
+    puzzle?.target_female ?? (draft?.targetFemale as number) ?? 0
+  );
+  // 본인 성별 로드 (1회만)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('users')
+        .select('gender')
+        .eq('id', userId)
+        .maybeSingle();
+      if (cancelled) return;
+      const g = (data?.gender as 'male' | 'female' | null) ?? null;
+      setMyGender(g);
+      setGenderLoaded(true);
+      if (!g) setGenderModalOpen(true);
+    })();
+    return () => { cancelled = true; };
+  }, [userId, supabase]);
+
+  // 본인 성별 저장 핸들러
+  const handleSaveMyGender = async (g: 'male' | 'female') => {
+    const { error } = await supabase
+      .from('users')
+      .update({ gender: g })
+      .eq('id', userId);
+    if (error) {
+      toast.error('성별 저장에 실패했어요. 다시 시도해주세요');
+      return;
+    }
+    setMyGender(g);
+    setGenderModalOpen(false);
+    trackEvent('user_gender_set', { source: 'puzzle_form', gender: g });
+  };
   // Migration 171: 복수 선택 지원. ['any'] = 전체. 빈 배열은 불가.
   const [agePref, setAgePref] = useState<AgePref[]>(() => {
     if (puzzle?.age_pref && puzzle.age_pref.length > 0) return puzzle.age_pref;
@@ -216,6 +245,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             isRecruitingParty,
             totalPeople,
             targetCount,
+            targetMale,
+            targetFemale,
             hasGuest,
             guestCount,
             genderPref,
@@ -241,6 +272,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     isRecruitingParty,
     totalPeople,
     targetCount,
+    targetMale,
+    targetFemale,
     hasGuest,
     guestCount,
     genderPref,
@@ -301,11 +334,62 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const maxDateStr = maxObj.toISOString().split("T")[0];
 
   // 모드별 인원/예산 파생값
-  const effectiveTargetCount = isRecruitingParty ? targetCount : totalPeople;
-  const effectiveGuestCount = isRecruitingParty ? (hasGuest ? guestCount : 0) : Math.max(0, totalPeople - 1);
-  const effectiveCurrentCount = isRecruitingParty ? 1 + effectiveGuestCount : totalPeople;
+  // Migration 184: ON 모드만 슬롯 picker 사용. OFF 모드는 기존 totalPeople 그대로.
+  const isHostMale = myGender !== 'female'; // null이면 일단 남자로 가정 (게이트로 진입 막힘)
+  const slotTotal = targetMale + targetFemale;
+  const effectiveTargetCount = isRecruitingParty
+    ? (slotTotal > 0 ? slotTotal : targetCount)
+    : totalPeople;
+  const effectiveGuestCount = isRecruitingParty ? (hasGuest ? guestCount : 0) : Math.max(0, effectiveTargetCount - 1);
+  const effectiveCurrentCount = isRecruitingParty ? 1 + effectiveGuestCount : effectiveTargetCount;
   // OFF: budgetAmount = 총액, ON: budgetAmount = 인당
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
+
+  // 슬롯 제약 헬퍼 (ON 모드 전용)
+  const hostMinSlot = 1 + (hasGuest ? guestCount : 0);
+  const minMale   = isHostMale  ? hostMinSlot : 0;
+  const minFemale = !isHostMale ? hostMinSlot : 0;
+  const canIncrementMale   = slotTotal < 6;
+  const canIncrementFemale = slotTotal < 6;
+  const canDecrementMale   = targetMale   > minMale   && slotTotal > 2;
+  const canDecrementFemale = targetFemale > minFemale && slotTotal > 2;
+
+  // ON 모드일 때만 슬롯 합과 targetCount 동기화
+  useEffect(() => {
+    if (!isRecruitingParty) return;
+    if (slotTotal === 0) return;
+    if (targetCount !== slotTotal) setTargetCount(slotTotal);
+  }, [slotTotal, isRecruitingParty, targetCount]);
+
+  // gender 로드 후 슬롯 초기화 (ON 모드 + 신규 등록 + draft 없음)
+  useEffect(() => {
+    if (!genderLoaded || !myGender) return;
+    if (puzzle) return;
+    if (!isRecruitingParty) return; // OFF 모드는 슬롯 picker 미사용
+    if (targetMale + targetFemale > 0) return;
+    if (myGender === 'male') {
+      setTargetMale(targetCount);
+      setTargetFemale(0);
+    } else {
+      setTargetMale(0);
+      setTargetFemale(targetCount);
+    }
+  }, [genderLoaded, myGender, puzzle, isRecruitingParty, targetCount, targetMale, targetFemale]);
+
+  // guestCount 변경 시 본인 슬롯이 최소값 미달이면 자동 보정 (ON 모드만)
+  useEffect(() => {
+    if (!myGender) return;
+    if (!isRecruitingParty) return;
+    if (isHostMale && targetMale < hostMinSlot) {
+      const deficit = hostMinSlot - targetMale;
+      setTargetMale(targetMale + deficit);
+      setTargetFemale(Math.max(0, targetFemale - deficit));
+    } else if (!isHostMale && targetFemale < hostMinSlot) {
+      const deficit = hostMinSlot - targetFemale;
+      setTargetFemale(targetFemale + deficit);
+      setTargetMale(Math.max(0, targetMale - deficit));
+    }
+  }, [hostMinSlot, isHostMale, myGender, targetMale, targetFemale, isRecruitingParty]);
 
   // offer_deadline: 오퍼 마감 오후 5시 KST (08:00 UTC)
   // expires_at: 유저 검토 마감 오후 6시 30분 KST (09:30 UTC)
@@ -386,9 +470,27 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     if (effectiveIsRecruiting && effectiveCurrentCount > effectiveTargetCount) {
       return fail('headcount_overflow', '일행 인원이 모집 인원을 초과합니다');
     }
-    if (!effectiveIsRecruiting && totalPeople < 2) {
+    if (!effectiveIsRecruiting && effectiveTargetCount < 2) {
       return fail('headcount_min', '인원 확정 깃발은 2명 이상이어야 합니다');
     }
+    if (!myGender) {
+      return fail('gender_required', '성별을 먼저 입력해주세요');
+    }
+    // ON 모드만 슬롯 검증. OFF 모드는 submit 직전에 본인 성별로 자동 매핑.
+    if (effectiveIsRecruiting) {
+      if (targetMale + targetFemale !== effectiveTargetCount) {
+        return fail('slot_mismatch', '슬롯 구성이 총 인원과 맞지 않아요');
+      }
+      if (isHostMale && targetMale < hostMinSlot) {
+        return fail('host_slot', `본인 포함 남자 슬롯이 ${hostMinSlot}명 이상이어야 해요`);
+      }
+      if (!isHostMale && targetFemale < hostMinSlot) {
+        return fail('host_slot', `본인 포함 여자 슬롯이 ${hostMinSlot}명 이상이어야 해요`);
+      }
+    }
+    // OFF 모드: totalPeople 전체를 본인 성별 슬롯에 매핑
+    const submitMaleSlot   = effectiveIsRecruiting ? targetMale   : (isHostMale  ? effectiveTargetCount : 0);
+    const submitFemaleSlot = effectiveIsRecruiting ? targetFemale : (!isHostMale ? effectiveTargetCount : 0);
 
     setSubmitting(true);
     try {
@@ -410,9 +512,11 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             total_budget: totalBudget,
             budget_per_person: effectiveIsRecruiting
               ? budgetAmount
-              : Math.round(budgetAmount / totalPeople),
+              : Math.round(budgetAmount / effectiveTargetCount),
             target_count: effectiveTargetCount,
             current_count: effectiveCurrentCount,
+            target_male: submitMaleSlot,
+            target_female: submitFemaleSlot,
             notes: notes.trim() || null,
             // 날짜 변경 시에만 마감 시각 갱신. 미변경 시 기존 깃발(자정 마감 등) 보호.
             ...(isEventDateChanged ? {
@@ -464,9 +568,11 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           total_budget: totalBudget,
           budget_per_person: effectiveIsRecruiting
             ? budgetAmount
-            : Math.round(budgetAmount / totalPeople), // 하위 호환용
+            : Math.round(budgetAmount / effectiveTargetCount), // 하위 호환용
           target_count: effectiveTargetCount,
           current_count: effectiveCurrentCount,
+          target_male: targetMale,
+          target_female: targetFemale,
           is_recruiting_party: effectiveIsRecruiting,
           notes: notes.trim() || null,
           offer_deadline: getOfferDeadline(eventDate),
@@ -481,12 +587,14 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       }
 
       // 대표자를 puzzle_members에도 추가 (fire-and-forget — 네비게이션 블로킹 X)
+      // gender는 트리거가 users.gender에서 자동 스냅샷하지만 명시적으로도 전달
       supabase
         .from("puzzle_members")
         .insert({
           puzzle_id: created.id,
           user_id: userId,
           guest_count: effectiveGuestCount,
+          gender: myGender,
         })
         .then(({ error: memberError }) => {
           if (memberError) console.error("puzzle_members insert error:", memberError);
@@ -517,6 +625,41 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
   return (
     <div className="space-y-8 pb-12">
+      {/* Migration 184: 성별 입력 게이트 (필수, 1회) */}
+      <Sheet open={genderModalOpen} onOpenChange={() => { /* 닫기 차단 */ }}>
+        <SheetContent
+          side="bottom"
+          className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl text-white"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <SheetHeader>
+            <SheetTitle className="text-white text-[18px] font-black">
+              퍼즐 매칭을 위해 성별을 알려주세요
+            </SheetTitle>
+            <SheetDescription className="text-neutral-400 text-[12px]">
+              한 번 설정하면 변경할 수 없어요
+            </SheetDescription>
+          </SheetHeader>
+          <div className="grid grid-cols-2 gap-3 pt-6 pb-2">
+            {([
+              { value: 'male', label: '남자', emoji: '🧑', color: 'green' },
+              { value: 'female', label: '여자', emoji: '👩', color: 'pink' },
+            ] as const).map(({ value, label, emoji, color }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => handleSaveMyGender(value)}
+                className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all bg-neutral-800 border-neutral-700 hover:${color === 'pink' ? 'border-pink-500 bg-pink-500/10' : 'border-green-500 bg-green-500/10'}`}
+              >
+                <span className="text-2xl">{emoji}</span>
+                <span className="text-[15px] font-bold text-white">{label}</span>
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Phase 1: 파티원 모집 옵트인 (디폴트: OFF=깃발 / ON=퍼즐) */}
       {!isEditMode && (
         <section className="space-y-4">
@@ -730,6 +873,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
           {!isRecruitingParty ? (
+            /* OFF 모드 (깃발): 기존 totalPeople 단일 picker */
             <div className="space-y-2">
               <p className="text-[11px] text-neutral-400">총 일행 수 (본인 포함)</p>
               <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
@@ -751,72 +895,67 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               </div>
             </div>
           ) : (
+            /* ON 모드 (퍼즐): 슬롯 기반 picker (Migration 184) */
             <>
-              {/* 파티원 성별 */}
-              <div className="space-y-2">
-                <p className="text-[11px] text-neutral-400">파티원 성별</p>
-                <div className="flex gap-2">
-                  {GENDER_OPTIONS_RECRUIT.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setGenderPref(opt.value)}
-                      className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
-                        genderPref === opt.value
-                          ? "bg-white text-black"
-                          : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                {genderPref === "female_only" && (
-                  <label className="flex items-center justify-between gap-2 cursor-pointer pt-1">
-                    <span className="text-[12px] font-bold text-white">
-                      💜 방장님도 여성이신가요?
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={leaderFemaleConfirmed}
-                      onChange={(e) => setLeaderFemaleConfirmed(e.target.checked)}
-                      className="w-4 h-4 rounded accent-pink-400"
-                    />
-                  </label>
-                )}
-              </div>
-
-              {/* 목표 인원 */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <p className="text-[11px] text-neutral-400">목표 인원 (본인 포함)</p>
+                  <p className="text-[11px] text-neutral-400">목표 성비 (본인 포함)</p>
                   <p className="text-[11px] text-neutral-500">최소 2명, 최대 6명</p>
                 </div>
-                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = Math.max(2, targetCount - 1);
-                      setTargetCount(next);
-                      if (hasGuest) setGuestCount((g) => Math.min(g, next - 1));
-                    }}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
-                  >
-                    <Minus className="w-3.5 h-3.5 text-white" />
-                  </button>
-                  <span className="text-[15px] font-black text-white">{targetCount}명</span>
-                  <button
-                    type="button"
-                    onClick={() => setTargetCount(Math.min(6, targetCount + 1))}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-white" />
-                  </button>
+                <div className="grid grid-cols-2 gap-2">
+                  {/* 남자 슬롯 */}
+                  <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                    <button
+                      type="button"
+                      onClick={() => canDecrementMale && setTargetMale(targetMale - 1)}
+                      disabled={!canDecrementMale}
+                      className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Minus className="w-3.5 h-3.5 text-white" />
+                    </button>
+                    <span className="text-[14px] font-black text-green-400">🧑 {targetMale}</span>
+                    <button
+                      type="button"
+                      onClick={() => canIncrementMale && setTargetMale(targetMale + 1)}
+                      disabled={!canIncrementMale}
+                      className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-white" />
+                    </button>
+                  </div>
+                  {/* 여자 슬롯 */}
+                  <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                    <button
+                      type="button"
+                      onClick={() => canDecrementFemale && setTargetFemale(targetFemale - 1)}
+                      disabled={!canDecrementFemale}
+                      className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Minus className="w-3.5 h-3.5 text-white" />
+                    </button>
+                    <span className="text-[14px] font-black text-pink-400">👩 {targetFemale}</span>
+                    <button
+                      type="button"
+                      onClick={() => canIncrementFemale && setTargetFemale(targetFemale + 1)}
+                      disabled={!canIncrementFemale}
+                      className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-white" />
+                    </button>
+                  </div>
                 </div>
+                <p className="text-[11px] text-neutral-500">
+                  총 <span className="text-white font-bold">{slotTotal}명</span>
+                  {myGender && (
+                    <> · 본인은 <span className={isHostMale ? "text-green-400" : "text-pink-400"}>
+                      {isHostMale ? "남자" : "여자"} 슬롯
+                    </span> 차지</>
+                  )}
+                </p>
               </div>
 
               {/* 동행 일행 */}
-              <div className="space-y-3">
+              <div className="space-y-3 pt-3 border-t border-neutral-800">
                 <label className="flex items-center justify-between gap-3 cursor-pointer">
                   <span className="text-[13px] font-bold text-white">이미 일행이 있나요?</span>
                   <input
@@ -829,7 +968,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                     className="w-4 h-4 rounded accent-white"
                   />
                 </label>
-                  {hasGuest && (
+                {hasGuest && (
+                  <>
                     <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
                       <button
                         type="button"
@@ -841,19 +981,23 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                       <span className="text-[15px] font-black text-white">일행 {guestCount}명</span>
                       <button
                         type="button"
-                        onClick={() => setGuestCount(Math.min(targetCount - 1, guestCount + 1))}
+                        onClick={() => setGuestCount(Math.min(slotTotal - 1, guestCount + 1))}
                         className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
                       >
                         <Plus className="w-3.5 h-3.5 text-white" />
                       </button>
                     </div>
-                  )}
+                    <p className="text-[11px] text-neutral-500">
+                      일행은 본인과 같은 {isHostMale ? "남자" : "여자"} 슬롯으로 카운트돼요
+                    </p>
+                  </>
+                )}
               </div>
 
-              {/* 모집 요약 안내 (일행이 있을 때만 표시) */}
-              {hasGuest && effectiveTargetCount - effectiveCurrentCount > 0 && (
+              {/* 모집 요약 */}
+              {slotTotal - effectiveCurrentCount > 0 && (
                 <p className="text-[12px] text-green-400 font-bold">
-                  🧩 총 {effectiveTargetCount - effectiveCurrentCount}명의 파티원을 구해요
+                  🧩 총 {slotTotal - effectiveCurrentCount}명의 파티원을 구해요
                 </p>
               )}
             </>
@@ -1110,7 +1254,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             }
             setShowSubmitConfirm(true);
           }}
-          disabled={submitting || (isEditMode && !isDirty)}
+          disabled={submitting || (isEditMode && !isDirty) || !myGender}
           className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
           {submitting ? (isEditMode ? "수정 중..." : "등록 중...") : (

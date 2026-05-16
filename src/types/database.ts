@@ -621,7 +621,7 @@ export type MusicPref = 'hiphop' | 'edm' | 'any';
 export interface Puzzle {
   id: string;
   leader_id: string;
-  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'deal_count_total' | 'created_at'>;
+  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'deal_count_total' | 'created_at' | 'gender'>;
   area: Area;
   event_date: string;
   kakao_open_chat_url: string | null; // 오퍼 수락 시점에 입력, MD에게만 공개
@@ -637,6 +637,11 @@ export interface Puzzle {
   total_budget: number | null;
   target_count: number;
   current_count: number;
+  /** Migration 184: 성별 슬롯. target_male + target_female = target_count */
+  target_male: number;
+  target_female: number;
+  current_male: number;
+  current_female: number;
   /** true: 파티원 추가 모집(조각모음). false: 인원 확정 깃발 (target = current). Migration 125 */
   is_recruiting_party: boolean;
   status: PuzzleStatus;
@@ -695,6 +700,8 @@ export interface PuzzleMember {
   puzzle_id: string;
   user_id: string;
   guest_count: number;
+  /** Migration 184: 합류 시점 users.gender 스냅샷 (guest도 동성으로 카운트) */
+  gender: 'male' | 'female' | null;
   user?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'gender' | 'birthday'>;
   joined_at: string;
   /** V2: MD가 방문 확인 시 개별 노쇼 체크 */

@@ -15,7 +15,7 @@ import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
 import { SecretOfferCard } from "./SecretOfferCard";
-import { PuzzlePiece } from "./PuzzleCard";
+import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
@@ -596,14 +596,15 @@ export function PuzzleDetailClient({
                 <span className="text-[13px] text-neutral-400">
                   {puzzle.current_count >= puzzle.target_count
                     ? "퍼즐 완성!"
-                    : `파티원 ${puzzle.current_count}/${puzzle.target_count}명`}
+                    : `파티원 ${puzzle.current_count}/${puzzle.target_count}명 (🧑 ${puzzle.current_male ?? 0}/${puzzle.target_male ?? 0} · 👩 ${puzzle.current_female ?? 0}/${puzzle.target_female ?? 0})`}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {Array.from({ length: puzzle.target_count }).map((_, i) => (
+                  {buildPuzzleSlotLayout(puzzle).map((slot, i) => (
                     <PuzzlePiece
                       key={i}
-                      filled={i < puzzle.current_count}
-                      isLeader={i === 0}
+                      filled={slot.filled}
+                      isLeader={slot.isLeader}
+                      gender={slot.gender}
                     />
                   ))}
                 </div>

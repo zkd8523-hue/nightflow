@@ -51,25 +51,86 @@ const MUSIC_LABEL: Record<MusicPref, string | null> = {
 };
 
 
-export function PuzzlePiece({ filled, isLeader, small }: { filled: boolean; isLeader?: boolean; small?: boolean }) {
+export function PuzzlePiece({
+  filled,
+  isLeader,
+  small,
+  gender,
+}: {
+  filled: boolean;
+  isLeader?: boolean;
+  small?: boolean;
+  /** Migration 184: 슬롯 성별. 'female'은 분홍, 그 외는 초록 */
+  gender?: 'male' | 'female' | null;
+}) {
   const size = small ? "w-8 h-8" : "w-10 h-10";
   const iconSize = small ? "w-4 h-4" : "w-5 h-5";
+  const isFemale = gender === 'female';
+
+  const filledClass = isFemale
+    ? isLeader
+      ? "bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.4)]"
+      : "bg-pink-500/80"
+    : isLeader
+      ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]"
+      : "bg-green-500/80";
+
+  const emptyClass = isFemale
+    ? "bg-neutral-800/50 border border-dashed border-pink-500/40"
+    : "bg-neutral-800/50 border border-dashed border-neutral-600";
 
   return (
-    <div className={`
-      relative ${size} rounded-lg flex items-center justify-center transition-all
-      ${filled
-        ? isLeader
-          ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]"
-          : "bg-green-500/80"
-        : "bg-neutral-800/50 border border-dashed border-neutral-600"
-      }
-    `}>
-      <svg viewBox="0 0 24 24" className={`${iconSize} ${filled ? "text-black/40" : "text-neutral-700"}`}>
+    <div className={`relative ${size} rounded-lg flex items-center justify-center transition-all ${filled ? filledClass : emptyClass}`}>
+      <svg viewBox="0 0 24 24" className={`${iconSize} ${filled ? "text-black/40" : isFemale ? "text-pink-500/40" : "text-neutral-700"}`}>
         <path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-2 .9-2 2v3.8h1.5c1.38 0 2.5 1.12 2.5 2.5S4.88 15.8 3.5 15.8H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/>
       </svg>
     </div>
   );
+}
+
+/**
+ * 슬롯 배치 순서 계산: 남자 슬롯 먼저, 여자 슬롯 뒤.
+ * 각 슬롯에서 채워진 만큼은 filled=true, 나머지는 빈 슬롯.
+ * 방장은 본인 성별 슬롯의 첫 자리에 배치 (isLeader=true).
+ */
+export function buildPuzzleSlotLayout(puzzle: {
+  target_male?: number;
+  target_female?: number;
+  current_male?: number;
+  current_female?: number;
+  target_count: number;
+  current_count: number;
+  leader?: { gender?: 'male' | 'female' | null } | null;
+}): { gender: 'male' | 'female'; filled: boolean; isLeader: boolean }[] {
+  const tM = puzzle.target_male ?? 0;
+  const tF = puzzle.target_female ?? 0;
+  // 슬롯 데이터가 비어있는 레거시 퍼즐: 모두 동일 색 (구 동작 보존)
+  if (tM + tF === 0) {
+    return Array.from({ length: puzzle.target_count }).map((_, i) => ({
+      gender: 'male' as const,
+      filled: i < puzzle.current_count,
+      isLeader: i === 0,
+    }));
+  }
+  const cM = Math.min(puzzle.current_male ?? 0, tM);
+  const cF = Math.min(puzzle.current_female ?? 0, tF);
+  const leaderGender = puzzle.leader?.gender ?? null;
+  // 방장 성별 슬롯에 isLeader 첫 자리 부여
+  let leaderAssigned = false;
+  const out: { gender: 'male' | 'female'; filled: boolean; isLeader: boolean }[] = [];
+  for (let i = 0; i < tM; i++) {
+    const filled = i < cM;
+    const isLeader = filled && !leaderAssigned && leaderGender === 'male';
+    if (isLeader) leaderAssigned = true;
+    out.push({ gender: 'male', filled, isLeader });
+  }
+  for (let i = 0; i < tF; i++) {
+    const filled = i < cF;
+    const isLeader = filled && !leaderAssigned && leaderGender === 'female';
+    if (isLeader) leaderAssigned = true;
+    out.push({ gender: 'female', filled, isLeader });
+  }
+  return out;
 }
 
 export const PuzzleCard = memo(function PuzzleCard({
@@ -192,11 +253,12 @@ export const PuzzleCard = memo(function PuzzleCard({
                 </span>
               )}
               <div className="flex flex-wrap gap-1.5">
-                {Array.from({ length: puzzle.target_count }).map((_, i) => (
+                {buildPuzzleSlotLayout(puzzle).map((slot, i) => (
                   <PuzzlePiece
                     key={i}
-                    filled={i < puzzle.current_count}
-                    isLeader={i === 0}
+                    filled={slot.filled}
+                    isLeader={slot.isLeader}
+                    gender={slot.gender}
                     small={isSmall}
                   />
                 ))}

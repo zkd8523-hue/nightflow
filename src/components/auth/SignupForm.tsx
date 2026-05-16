@@ -22,7 +22,9 @@ interface SignupFormProps {
   mdReferrer?: string | null;
 }
 
-type Step = "agree" | "phone" | "otp";
+type Step = "agree" | "phone" | "otp" | "gender";
+
+type Gender = "male" | "female";
 
 const RESEND_COOLDOWN_SEC = 60;
 
@@ -88,12 +90,15 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [resendIn, setResendIn] = useState(0);
+  // OTP 검증 후 gender 단계로 넘기기 위해 보관
+  const [verifiedPhoneState, setVerifiedPhoneState] = useState<string | null>(null);
+  const [selectedGender, setSelectedGender] = useState<Gender | null>(null);
   // 가입 완료 후 중복 호출/토스트 차단용 가드
   const completedRef = useRef(false);
 
   const requiredMet = agreeAge && agreeTerms && agreePrivacy;
 
-  const isDirty = (step !== "agree" || phoneInput.length > 0) && !otpVerifying && !loading;
+  const isDirty = (step !== "agree" || phoneInput.length > 0) && !otpVerifying && !loading && !completedRef.current;
   const { showConfirm, setShowConfirm, confirmLeave, cancelLeave } = useLeaveConfirm(isDirty);
 
   useEffect(() => {
@@ -193,9 +198,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     await handleSendOtp();
   };
 
-  const handleVerifyAndSignup = async () => {
+  const handleVerifyOtp = async () => {
     if (!authUser) return;
-    if (completedRef.current) return; // 이미 가입 완료 → 중복 호출 차단
+    if (completedRef.current) return;
     if (!/^\d{6}$/.test(otpCode)) {
       toast.error("6자리 숫자를 입력해주세요");
       return;
@@ -220,7 +225,30 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
       const verifiedPhone: string = verifyData.phone;
       trackEvent("signup_phone_verified");
+      setVerifiedPhoneState(verifiedPhone);
+      setStep("gender");
+    } catch (error: unknown) {
+      logger.error("OTP verify error:", error);
+      toast.error(error instanceof Error ? error.message : "인증 중 오류가 발생했습니다");
+    } finally {
+      setOtpVerifying(false);
+    }
+  };
 
+  const handleCompleteSignup = async () => {
+    if (!authUser) return;
+    if (completedRef.current) return;
+    if (!verifiedPhoneState) {
+      toast.error("인증 정보가 만료됐어요. 처음부터 다시 시도해주세요");
+      setStep("phone");
+      return;
+    }
+    if (!selectedGender) {
+      toast.error("성별을 선택해주세요");
+      return;
+    }
+    try {
+      const verifiedPhone = verifiedPhoneState;
       setLoading(true);
       const displayName = await generateRandomNickname(supabase);
       const meta = authUser.user_metadata ?? {};
@@ -273,6 +301,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             .update({
               display_name: displayName,
               phone: verifiedPhone,
+              gender: selectedGender,
               alimtalk_consent: agreeMarketing,
               alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
             })
@@ -282,6 +311,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             kakao_id: meta.provider_id || authUser.id,
             display_name: displayName,
             phone: verifiedPhone,
+            gender: selectedGender,
             profile_image: normalizeProfileImage(meta.avatar_url),
             role: "user",
             alimtalk_consent: agreeMarketing,
@@ -302,6 +332,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         signup_source: signupSource,
         has_referrer: !!referredById,
         marketing_consent: agreeMarketing,
+        gender: selectedGender,
       });
       completedRef.current = true;
       toast.success(`어서오세요, ${displayName}님!`);
@@ -312,7 +343,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       toast.error(error instanceof Error ? error.message : "가입 중 오류가 발생했습니다");
     } finally {
       setLoading(false);
-      setOtpVerifying(false);
     }
   };
 
@@ -456,11 +486,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 className="w-full h-14 px-4 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-center text-[20px] tracking-[0.5em] placeholder-neutral-600 focus:outline-none focus:border-white transition-colors"
               />
               <Button
-                onClick={handleVerifyAndSignup}
+                onClick={handleVerifyOtp}
                 disabled={otpCode.length !== 6 || otpVerifying || loading}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
-                {otpVerifying || loading ? "확인 중..." : "확인"}
+                {otpVerifying ? "확인 중..." : "확인"}
               </Button>
             </div>
 
@@ -481,6 +511,49 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 {resendIn > 0 ? `다시 받기 (${resendIn}s)` : "다시 받기"}
               </button>
             </div>
+          </>
+        )}
+
+        {step === "gender" && (
+          <>
+            <div className="space-y-2 text-center">
+              <p className="text-[18px] font-bold text-white">퍼즐 매칭을 위해 성별을 알려주세요</p>
+              <p className="text-[12px] text-neutral-500">한 번 설정하면 변경할 수 없어요</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { value: "male", label: "남자", emoji: "🧑" },
+                { value: "female", label: "여자", emoji: "👩" },
+              ] as const).map(({ value, label, emoji }) => {
+                const active = selectedGender === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSelectedGender(value)}
+                    className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
+                      active
+                        ? value === "female"
+                          ? "bg-pink-500/15 border-pink-500 text-pink-300"
+                          : "bg-green-500/15 border-green-500 text-green-300"
+                        : "bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-500"
+                    }`}
+                  >
+                    <span className="text-2xl">{emoji}</span>
+                    <span className="text-[15px] font-bold">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <Button
+              onClick={handleCompleteSignup}
+              disabled={!selectedGender || loading}
+              className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+            >
+              {loading ? "가입 중..." : "가입 완료"}
+            </Button>
           </>
         )}
       </Card>
