@@ -752,6 +752,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               {nicknameChecking && !nicknameError && (
                 <p className="text-[12px] text-neutral-500 px-1">중복 확인 중...</p>
               )}
+              {!nicknameError && !nicknameOk && !nicknameChecking && (
+                <p className="text-[11px] text-neutral-500 px-1">
+                  🔄 버튼을 누르면 랜덤 닉네임이 만들어져요
+                </p>
+              )}
             </div>
 
             <div className="flex gap-2">
