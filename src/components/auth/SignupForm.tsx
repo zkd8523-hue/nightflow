@@ -676,7 +676,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 </div>
               </button>
               <p className="text-[11px] text-neutral-500">
-                {profileImageFile ? "사진 변경하기" : "사진 선택 (선택)"}
+                {profileImageFile ? "사진 변경하기" : "프로필사진 (선택)"}
               </p>
               <input
                 ref={imageInputRef}
