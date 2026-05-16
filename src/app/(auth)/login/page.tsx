@@ -292,7 +292,7 @@ function LoginContent() {
             <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500 whitespace-nowrap">
               <span>⛳ 깃발</span>
               <span>·</span>
-              <span>📅 얼리버드 경매</span>
+              <span>🧩 조각</span>
               {isInstantEnabled() && (
                 <>
                   <span>·</span>
