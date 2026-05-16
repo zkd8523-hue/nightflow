@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction, PriceRecommendation } from "@/types/database";
-import { Calendar, Wine, Check, ArrowRight, ImageIcon, ChevronDown, MapPin, X, RefreshCw, Building2, Users, Bookmark } from "lucide-react";
+import { Calendar, Wine, Check, ArrowRight, ImageIcon, ChevronDown, MapPin, X, RefreshCw, Building2, Users, Bookmark, Minus, Plus, Coins, MessageCircle } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 dayjs.locale("ko");
@@ -64,8 +64,8 @@ const formSchema = z.object({
         if (!data.price_per_seat) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "인당 가격을 입력해주세요.", path: ["price_per_seat"] });
         }
-        if (!data.share_deadline) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "모집 마감 시각을 선택해주세요.", path: ["share_deadline"] });
+        if (!data.event_date) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "방문일시를 선택해주세요.", path: ["event_date"] });
         }
         return; // 조각 모드에서는 아래 auction/instant 검증 스킵
     }
@@ -167,6 +167,13 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [showShareSheet, setShowShareSheet] = useState(false);
     const [createdAuctionId, setCreatedAuctionId] = useState<string | null>(null);
     const [createdShareData, setCreatedShareData] = useState<{ total_seats: number; price_per_seat: number; main_alcohol: string } | null>(null);
+    const initialTotalPrice = (initialData?.price_per_seat && initialData?.total_seats)
+        ? initialData.price_per_seat * initialData.total_seats : 0;
+    const [totalPrice, setTotalPrice] = useState(initialTotalPrice);
+    const [totalPriceInputStr, setTotalPriceInputStr] = useState(initialTotalPrice ? initialTotalPrice.toLocaleString() : "");
+    const initialSeats = Math.min(initialData?.total_seats ?? 2, 6);
+    const [targetMale, setTargetMale] = useState(Math.ceil(initialSeats / 2));
+    const [targetFemale, setTargetFemale] = useState(Math.floor(initialSeats / 2));
     const [showTemplateSavePrompt, setShowTemplateSavePrompt] = useState(false);
     const [templateSaving, setTemplateSaving] = useState(false);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
@@ -225,20 +232,29 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             const url = await uploadImage(file, `floor-plans/club/${selectedClub.id}`, {
                 maxWidth: 2048, quality: 0.85,
             });
-            if (!url) throw new Error("업로드 실패");
+            if (!url) {
+                // uploadImage 내부에서 이미 toast 노출 — 중복 방지를 위해 여기선 스킵
+                return;
+            }
 
             const res = await fetch("/api/md/clubs/update-image", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ clubId: selectedClub.id, field: "floor_plan_url", value: url }),
             });
-            if (!res.ok) throw new Error("저장 실패");
+            if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                console.error("[FloorPlan] API error:", res.status, body);
+                toast.error(`플로어맵 저장 실패 (${res.status})`);
+                return;
+            }
 
             setLocalFloorPlanUrls(prev => ({ ...prev, [selectedClub.id]: url }));
             setFloorPlanExpanded(false);
             toast.success("플로어맵이 등록되었습니다!");
-        } catch {
-            toast.error("플로어맵 업로드에 실패했습니다.");
+        } catch (err) {
+            console.error("[FloorPlan] Unexpected error:", err);
+            toast.error("플로어맵 업로드 중 오류가 발생했습니다.");
         } finally {
             setFloorPlanUploading(false);
         }
@@ -293,8 +309,39 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         setIsClubImage(false);
     }, [selectedClubId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Watch auction mode to auto-reset fields when switching between modes
+    // 성별 슬롯 변경 시 total_seats 동기화
     useEffect(() => {
+        if (!isShareMode) return;
+        setValue("total_seats", targetMale + targetFemale);
+    }, [targetMale, targetFemale]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 총가격 or 정원 변경 시 price_per_seat 자동 계산
+    const watchedTotalSeats = watch("total_seats");
+    useEffect(() => {
+        if (!isShareMode) return;
+        const seats = watchedTotalSeats || 2;
+        if (totalPrice > 0 && seats > 0) {
+            setValue("price_per_seat", Math.floor(totalPrice / seats));
+        } else {
+            setValue("price_per_seat", undefined as unknown as number);
+        }
+    }, [totalPrice, watchedTotalSeats]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Watch auction mode to auto-reset fields when switching between modes
+    // 신규 등록: 마운트 시 listing_type을 share로 강제 (defaultValues 초기화 타이밍 안전망)
+    useEffect(() => {
+        if (!initialData) {
+            setValue("listing_type", "share");
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        // 신규 등록 + share 모드면 listing_type 덮어쓰기 금지 (env var 무관)
+        // 옛 auction/instant 매물 수정 모드에서만 토글이 의미 있음
+        const isOldListingEdit = initialData?.listing_type === "auction" || initialData?.listing_type === "instant";
+        if (!isOldListingEdit) return;
+
         const isToday = auctionMode === "today";
         const currentDuration = watch("duration_minutes");
 
@@ -799,83 +846,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 {errors.club_id && <p className="text-red-500 text-xs">{errors.club_id?.message?.toString()}</p>}
             </section>
 
-
-            {/* 2. 입장 일시 */}
-            <section className="space-y-4">
-                <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Calendar className="w-4 h-4 text-green-500" />
-                    <span>입장 일시</span>
-                </div>
-                <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div className="flex flex-col gap-0.5">
-                            </div>
-                            {auctionMode === "today" && (
-                            <label className="flex items-center gap-1.5 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={instantEntry}
-                                    onChange={(e) => {
-                                        const checked = e.target.checked;
-                                        setInstantEntry(checked);
-                                        setValue("entry_time", checked ? null : "22:00");
-                                    }}
-                                    className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
-                                />
-                                <span className="text-[10px] text-white font-bold">즉시 입장</span>
-                            </label>
-                            )}
-                        </div>
-                        {instantEntry ? (
-                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
-                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "예약 후 즉시 입장 가능" : "낙찰 후 즉시 입장 가능"}</span>
-                            </div>
-                        ) : auctionMode === "today" ? (
-                            <DateTimeSheet
-                                label="입장 일시 선택"
-                                mode="date-2"
-                                dateOptions={[
-                                    { label: `${dayjs(getClubEventDate()).format("M/D (ddd)")} 저녁`, value: getClubEventDate(), minTime: "18:00", maxTime: "23:59", defaultTime: "22:00" },
-                                    { label: `${dayjs(getClubEventDate()).add(1, "day").format("M/D (ddd)")} 새벽`, value: dayjs(getClubEventDate()).add(1, "day").format("YYYY-MM-DD"), minTime: "00:00", maxTime: "05:59", defaultTime: "01:00" },
-                                ]}
-                                value={`${watch("event_date")}T${watch("entry_time") || "22:00"}`}
-                                onChange={(val) => {
-                                    const picked = dayjs(val);
-                                    setValue("event_date", picked.format("YYYY-MM-DD"));
-                                    setValue("entry_time", picked.format("HH:mm"));
-                                    clearErrors("entry_time");
-                                }}
-                            />
-                        ) : (
-                            <>
-                                <DateTimeSheet
-                                    label="입장 일시 선택"
-                                    value={(() => {
-                                        const t = watch("entry_time") || "22:00";
-                                        const d = watch("event_date");
-                                        return dayjs(`${d}T${t}`).format("YYYY-MM-DDTHH:mm");
-                                    })()}
-                                    min={dayjs().add(2, "day").set("hour", 0).set("minute", 0).format("YYYY-MM-DDTHH:mm")}
-                                    max={dayjs().add(EARLYBIRD_MAX_EVENT_DAYS_AHEAD, "day").set("hour", 23).set("minute", 59).format("YYYY-MM-DDTHH:mm")}
-                                    onChange={(val) => {
-                                        const picked = dayjs(val);
-                                        const pickedTime = picked.format("HH:mm");
-                                        const eventDate = picked.hour() < 4
-                                            ? picked.subtract(1, "day").format("YYYY-MM-DD")
-                                            : picked.format("YYYY-MM-DD");
-                                        setValue("event_date", eventDate);
-                                        setValue("entry_time", pickedTime);
-                                        clearErrors("entry_time");
-                                    }}
-                                />
-                            </>
-                        )}
-                        {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date?.message?.toString()}</p>}
-                        {errors.entry_time && <p className="text-red-500 text-[11px]">{errors.entry_time?.message?.toString()}</p>}
-                </div>
-            </section>
-
-            {/* 3. 테이블 위치 */}
+            {/* 2. 테이블 위치 */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
                     <MapPin className="w-4 h-4 text-green-500" />
@@ -957,8 +928,84 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 </div>
             </section>
 
-            {/* 3. 주류 선택 */}
-            <LiquorSelector
+
+            {/* 3. 입장 일시 — share 모드 숨김 (모집 마감으로 대체) */}
+            {!isShareMode && <section className="space-y-4">
+                <div className="flex items-center gap-2 text-white font-bold mb-2">
+                    <Calendar className="w-4 h-4 text-green-500" />
+                    <span>입장 일시</span>
+                </div>
+                <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <div className="flex flex-col gap-0.5">
+                            </div>
+                            {auctionMode === "today" && (
+                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={instantEntry}
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setInstantEntry(checked);
+                                        setValue("entry_time", checked ? null : "22:00");
+                                    }}
+                                    className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
+                                />
+                                <span className="text-[10px] text-white font-bold">즉시 입장</span>
+                            </label>
+                            )}
+                        </div>
+                        {instantEntry ? (
+                            <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
+                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "예약 후 즉시 입장 가능" : "낙찰 후 즉시 입장 가능"}</span>
+                            </div>
+                        ) : auctionMode === "today" ? (
+                            <DateTimeSheet
+                                label="입장 일시 선택"
+                                mode="date-2"
+                                dateOptions={[
+                                    { label: `${dayjs(getClubEventDate()).format("M/D (ddd)")} 저녁`, value: getClubEventDate(), minTime: "18:00", maxTime: "23:59", defaultTime: "22:00" },
+                                    { label: `${dayjs(getClubEventDate()).add(1, "day").format("M/D (ddd)")} 새벽`, value: dayjs(getClubEventDate()).add(1, "day").format("YYYY-MM-DD"), minTime: "00:00", maxTime: "05:59", defaultTime: "01:00" },
+                                ]}
+                                value={`${watch("event_date")}T${watch("entry_time") || "22:00"}`}
+                                onChange={(val) => {
+                                    const picked = dayjs(val);
+                                    setValue("event_date", picked.format("YYYY-MM-DD"));
+                                    setValue("entry_time", picked.format("HH:mm"));
+                                    clearErrors("entry_time");
+                                }}
+                            />
+                        ) : (
+                            <>
+                                <DateTimeSheet
+                                    label="입장 일시 선택"
+                                    value={(() => {
+                                        const t = watch("entry_time") || "22:00";
+                                        const d = watch("event_date");
+                                        return dayjs(`${d}T${t}`).format("YYYY-MM-DDTHH:mm");
+                                    })()}
+                                    min={dayjs().add(2, "day").set("hour", 0).set("minute", 0).format("YYYY-MM-DDTHH:mm")}
+                                    max={dayjs().add(EARLYBIRD_MAX_EVENT_DAYS_AHEAD, "day").set("hour", 23).set("minute", 59).format("YYYY-MM-DDTHH:mm")}
+                                    onChange={(val) => {
+                                        const picked = dayjs(val);
+                                        const pickedTime = picked.format("HH:mm");
+                                        const eventDate = picked.hour() < 4
+                                            ? picked.subtract(1, "day").format("YYYY-MM-DD")
+                                            : picked.format("YYYY-MM-DD");
+                                        setValue("event_date", eventDate);
+                                        setValue("entry_time", pickedTime);
+                                        clearErrors("entry_time");
+                                    }}
+                                />
+                            </>
+                        )}
+                        {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date?.message?.toString()}</p>}
+                        {errors.entry_time && <p className="text-red-500 text-[11px]">{errors.entry_time?.message?.toString()}</p>}
+                </div>
+            </section>}
+
+            {/* 4. 주류 선택 (LiquorSelector) — share 모드 숨김 */}
+            {!isShareMode && <LiquorSelector
                 selected={selectedIncludes.filter((item: string) =>
                     LIQUOR_KEYWORDS.some((kw) => item.includes(kw))
                 )}
@@ -970,70 +1017,231 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     );
                     setValue("includes", [...liquors, ...extras]);
                 }}
-            />
+            />}
 
             {/* Smart Pricing 추천 — 숨김 처리 */}
 
-            {/* ── 조각(share) 전용 섹션 ── */}
+            {/* ── 조각(share) 전용 섹션 (PuzzleForm 파티원 모집과 통일) ── */}
             {isShareMode && (
-              <section className="space-y-4">
-                <div className="flex items-center gap-2 text-white font-bold mb-2">
-                  <Users className="w-4 h-4 text-amber-500" />
-                  <span>조각 설정</span>
-                </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
-                  {/* 인당 가격 */}
-                  <div>
-                    <label className="text-sm text-neutral-400 font-medium mb-1 block">인당 가격</label>
+              <>
+                {/* 1. 방문일시 */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 text-white font-bold mb-2">
+                    <Calendar className="w-4 h-4 text-green-500" />
+                    <span>방문일시</span>
+                  </div>
+                  <DateTimeSheet
+                    mode="date-only"
+                    label="날짜 선택"
+                    value={watch("event_date") || ""}
+                    min={dayjs().format("YYYY-MM-DD")}
+                    max={dayjs().add(30, "day").format("YYYY-MM-DD")}
+                    onChange={(val) => setValue("event_date", val)}
+                    placeholder="최대 30일 뒤까지 선택 가능"
+                  />
+                  {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date.message?.toString()}</p>}
+                </section>
+
+                {/* 2. 총 가격 */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 text-white font-bold mb-2">
+                    <Coins className="w-4 h-4 text-amber-500" />
+                    <span>총 가격</span>
+                  </div>
+                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
                     <div className="relative">
-                      <input
-                        type="number"
-                        placeholder="50000"
-                        className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white text-lg font-bold placeholder:text-neutral-600 focus:outline-none focus:border-amber-500"
-                        {...register("price_per_seat", { valueAsNumber: true })}
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="예) 1,000,000"
+                        value={totalPriceInputStr}
+                        onChange={(e) => {
+                          const raw = e.target.value.replace(/[^0-9]/g, "");
+                          if (raw === "") { setTotalPrice(0); setTotalPriceInputStr(""); return; }
+                          const num = Number(raw);
+                          if (!isNaN(num)) { setTotalPrice(num); setTotalPriceInputStr(num.toLocaleString()); }
+                        }}
+                        onBlur={() => {
+                          if (totalPrice > 0) setTotalPriceInputStr(totalPrice.toLocaleString());
+                        }}
                         disabled={hasBids}
+                        className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500"
                       />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 text-sm">원</span>
                     </div>
-                    {errors.price_per_seat && <p className="text-xs text-red-400 mt-1">{errors.price_per_seat.message}</p>}
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {[500000, 100000, 50000].map((preset) => (
+                        <Button
+                          key={preset}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={hasBids}
+                          onClick={() => {
+                            const next = totalPrice + preset;
+                            setTotalPrice(next);
+                            setTotalPriceInputStr(next.toLocaleString());
+                          }}
+                          className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-[13px]"
+                        >
+                          +{preset / 10000}만
+                        </Button>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={hasBids}
+                        onClick={() => { setTotalPrice(0); setTotalPriceInputStr(""); }}
+                        className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-[13px]"
+                      >
+                        초기화
+                      </Button>
+                    </div>
+                    {totalPrice > 0 && (
+                      <p className="text-[13px] font-bold text-white">
+                        총 <span className="text-amber-400">{totalPrice.toLocaleString()}원</span>
+                        {" "}÷ {watch("total_seats") || 2}명 = 인당{" "}
+                        <span className="text-green-400">
+                          {Math.floor(totalPrice / (watch("total_seats") || 2)).toLocaleString()}원
+                        </span>
+                      </p>
+                    )}
+                    {errors.price_per_seat && <p className="text-red-500 text-[11px]">{errors.price_per_seat.message?.toString()}</p>}
                   </div>
-                  {/* 정원 */}
-                  <div>
-                    <label className="text-sm text-neutral-400 font-medium mb-1 block">정원 (2~20명)</label>
-                    <input
-                      type="number"
-                      min={2}
-                      max={20}
-                      placeholder="6"
-                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white font-bold placeholder:text-neutral-600 focus:outline-none focus:border-amber-500"
-                      {...register("total_seats", { valueAsNumber: true })}
-                      disabled={hasBids}
-                    />
-                    {errors.total_seats && <p className="text-xs text-red-400 mt-1">{errors.total_seats.message}</p>}
+                </section>
+
+                {/* 3. 정원 */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 text-white font-bold mb-2">
+                    <Users className="w-4 h-4 text-green-500" />
+                    <span>정원</span>
                   </div>
-                  {/* 주류 */}
-                  <div>
-                    <label className="text-sm text-neutral-400 font-medium mb-1 block">메인 주류</label>
-                    <input
+                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-neutral-400">성별 구성</p>
+                      <p className="text-[11px] text-neutral-500">최소 2명, 최대 6명</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {/* 남자 슬롯 */}
+                      <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                        <button
+                          type="button"
+                          disabled={hasBids || (targetMale === 0 && targetMale + targetFemale <= 2)}
+                          onClick={() => {
+                            if (targetMale > 0 && targetMale + targetFemale > 2) setTargetMale(targetMale - 1);
+                          }}
+                          className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Minus className="w-3.5 h-3.5 text-white" />
+                        </button>
+                        <span className="text-[14px] font-black text-green-400">🧑 {targetMale}</span>
+                        <button
+                          type="button"
+                          disabled={hasBids || targetMale + targetFemale >= 6}
+                          onClick={() => {
+                            if (targetMale + targetFemale < 20) setTargetMale(targetMale + 1);
+                          }}
+                          className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-white" />
+                        </button>
+                      </div>
+                      {/* 여자 슬롯 */}
+                      <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                        <button
+                          type="button"
+                          disabled={hasBids || (targetFemale === 0 && targetMale + targetFemale <= 2)}
+                          onClick={() => {
+                            if (targetFemale > 0 && targetMale + targetFemale > 2) setTargetFemale(targetFemale - 1);
+                          }}
+                          className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Minus className="w-3.5 h-3.5 text-white" />
+                        </button>
+                        <span className="text-[14px] font-black text-pink-400">👩 {targetFemale}</span>
+                        <button
+                          type="button"
+                          disabled={hasBids || targetMale + targetFemale >= 6}
+                          onClick={() => {
+                            if (targetMale + targetFemale < 20) setTargetFemale(targetFemale + 1);
+                          }}
+                          className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-white" />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-neutral-500">
+                      총 <span className="text-white font-bold">{targetMale + targetFemale}명</span>
+                    </p>
+                    {errors.total_seats && <p className="text-red-500 text-[11px]">{errors.total_seats.message?.toString()}</p>}
+                  </div>
+                </section>
+
+                {/* 4. 메인 주류 */}
+                <section className="space-y-4">
+                  <div className="flex items-center gap-2 text-white font-bold mb-2">
+                    <Wine className="w-4 h-4 text-purple-500" />
+                    <span>메인 주류</span>
+                  </div>
+                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-4 py-3 space-y-2.5">
+                    <div className="flex items-center gap-3">
+                      <p className="text-[11px] text-neutral-400 w-8 shrink-0">추천</p>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {["발렌타인17", "시바스리갈18", "임페리얼12", "조니워커블랙", "글렌피딕12"].map((item) => {
+                          const selected = watch("main_alcohol") === item;
+                          return (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => setValue("main_alcohol", selected ? "" : item)}
+                              aria-pressed={selected}
+                              className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
+                                selected
+                                  ? "bg-white text-black"
+                                  : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                              }`}
+                            >
+                              {item}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <Input
                       type="text"
-                      placeholder="예: 발렌타인17, 시바스리갈18"
-                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500"
-                      {...register("main_alcohol")}
+                      placeholder="직접 입력 (예: 맥캘란12)"
+                      value={watch("main_alcohol") || ""}
+                      onChange={(e) => setValue("main_alcohol", e.target.value)}
+                      className="bg-neutral-900 border-neutral-800 h-11 text-[13px] font-bold text-white placeholder:text-neutral-600 placeholder:font-normal focus:ring-amber-500"
                     />
                   </div>
-                  {/* 모집 마감 시각 */}
-                  <div>
-                    <label className="text-sm text-neutral-400 font-medium mb-1 block">모집 마감 시각</label>
-                    <input
-                      type="datetime-local"
-                      className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500"
-                      {...register("share_deadline")}
-                    />
-                    {errors.share_deadline && <p className="text-xs text-red-400 mt-1">{errors.share_deadline.message}</p>}
-                    <p className="text-xs text-neutral-600 mt-1">마감 후 남은 인원은 MD 재량으로 처리됩니다.</p>
+                </section>
+
+                {/* 5. MD 한마디 */}
+                <section className="space-y-4">
+                  <div className="flex items-baseline gap-2 text-white font-bold mb-2">
+                    <MessageCircle className="w-4 h-4 text-purple-500 self-center" />
+                    <span>MD 한마디</span>
+                    <span className="text-[11px] text-neutral-500 font-normal">
+                      유저가 첫인상으로 읽어요{" "}
+                      <span className={(watch("md_message") || "").length >= 60 ? "text-amber-500" : ""}>
+                        ({(watch("md_message") || "").length}/60)
+                      </span>
+                    </span>
                   </div>
-                </div>
-              </section>
+                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
+                    <Input
+                      type="text"
+                      value={watch("md_message") || ""}
+                      onChange={(e) => setValue("md_message", e.target.value)}
+                      placeholder="예) 4명, 메인테이블, 분위기 좋은 자리"
+                      maxLength={60}
+                      className="bg-neutral-900 border-neutral-800 h-12 text-[14px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal"
+                    />
+                  </div>
+                </section>
+              </>
             )}
 
             {/* 4. 가격 설정 (경매/즉시구매 전용) */}

@@ -91,14 +91,16 @@ export async function POST(request: NextRequest) {
       .eq("id", clubId);
 
     if (updateError) {
+      console.error("[update-image] DB update error:", updateError);
       return NextResponse.json(
-        { error: "업데이트에 실패했습니다." },
+        { error: "업데이트에 실패했습니다.", detail: updateError.message },
         { status: 500 }
       );
     }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error("[update-image] Unexpected error:", err);
     return NextResponse.json(
       { error: "서버 오류가 발생했습니다." },
       { status: 500 }
