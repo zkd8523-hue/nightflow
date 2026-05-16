@@ -16,7 +16,6 @@ import { BidHistory } from "./BidHistory";
 import { BidPanel, type BidPanelRef } from "./BidPanel";
 import { InstantBuyPanel } from "./InstantBuyPanel";
 import { ShareJoinPanel } from "./ShareJoinPanel";
-import { MDExternalAttendeesPanel } from "./MDExternalAttendeesPanel";
 import { BidCompetitionIndicator } from "./BidCompetitionIndicator";
 import { useCountdown } from "@/hooks/useCountdown";
 import { BidderProfile } from "@/components/md/BidderProfile";
@@ -491,7 +490,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
           </div>
 
-          <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} isInstant={isInstant} />
+          {!isShare && <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} isInstant={isInstant} />}
 
           {/* 마감 임박 시 연장 안내 (경매만) */}
           {isActive && !isInstant && (
@@ -516,7 +515,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             </div>
             <div className="flex items-center gap-3">
               <p className="text-[16px] text-white font-bold">{formatEventDate(displayAuction.event_date)}</p>
-              {displayAuction.entry_time ? (
+              {!isShare && (displayAuction.entry_time ? (
                 <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full mt-0.5">
                   <Clock className="w-3 h-3 text-blue-400" />
                   <span className="text-[11px] font-bold text-blue-400">{formatEntryTime(displayAuction.entry_time, displayAuction.event_date)}</span>
@@ -525,7 +524,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 <div className="flex items-center bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
                   <span className="text-[11px] font-bold text-green-500">즉시 입장 가능</span>
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
@@ -620,7 +619,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                         href={`https://instagram.com/${md.instagram}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-[12px] text-neutral-400 font-bold hover:text-white transition-colors"
+                        className="flex items-center gap-1.5 text-[12px] font-bold bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1.5 rounded-full transition-colors"
                       >
                         <Instagram className="w-3.5 h-3.5" />
                         @{md.instagram}
@@ -640,7 +639,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         </Card>
 
         {/* 6. Bid History (Compact) - 경매만 표시 */}
-        {!isInstant && (
+        {!isInstant && !isShare && (
           <div className="space-y-3 pt-4">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-[16px] font-bold text-white flex items-center gap-2">
@@ -694,11 +693,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         {/* 입찰/예약/조각 패널 */}
         {isShare ? (
           <div className="mt-4">
-            {isMdOwner ? (
-              <MDExternalAttendeesPanel auction={displayAuction} />
-            ) : (
-              <ShareJoinPanel auction={displayAuction} currentUserId={user?.id} />
-            )}
+            <ShareJoinPanel auction={displayAuction} currentUserId={user?.id} />
           </div>
         ) : isActive && (
           <div className="mt-4">

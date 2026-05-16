@@ -12,7 +12,8 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Auction, ShareClaimError } from "@/types/database";
 import { formatNumber } from "@/lib/utils/format";
-import { Users, Zap, ExternalLink, Loader2 } from "lucide-react";
+import { Zap, ExternalLink, Loader2 } from "lucide-react";
+import { PuzzlePiece } from "@/components/puzzles/PuzzleCard";
 
 interface ShareJoinPanelProps {
   auction: Auction;
@@ -49,6 +50,15 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
   const seatsLeft = totalSeats - totalFilled;
   const isFull = seatsLeft <= 0;
   const isOpen = auction.status === "active" && !isFull;
+
+  // 성별 슬롯 레이아웃: 남자 먼저, 여자 뒤. 채워진 순서대로 fill
+  const tM = auction.target_male ?? 0;
+  const tF = auction.target_female ?? 0;
+  const hasGenderSlot = tM + tF === totalSeats && totalSeats > 0;
+  const slotLayout = Array.from({ length: totalSeats }).map((_, i) => ({
+    gender: hasGenderSlot ? (i < tM ? "male" : "female") as "male" | "female" : null,
+    filled: i < totalFilled,
+  }));
 
   // 내 참여 여부 확인
   useEffect(() => {
@@ -126,14 +136,13 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
       {/* 좌석 현황 */}
       <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-neutral-400" />
-            <span className="text-sm text-neutral-300 font-medium">
-              {totalFilled}/{totalSeats} 자리 채워짐
-            </span>
+          <div className="flex flex-wrap gap-1.5">
+            {slotLayout.map((slot, i) => (
+              <PuzzlePiece key={i} filled={slot.filled} gender={slot.gender} />
+            ))}
           </div>
           {isOpen && seatsLeft <= 2 && (
-            <span className={`flex items-center gap-0.5 text-xs font-bold px-2.5 py-1 rounded-full ${
+            <span className={`flex items-center gap-0.5 text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${
               seatsLeft === 1
                 ? "bg-red-500/20 text-red-400 border border-red-500/30"
                 : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
@@ -143,16 +152,8 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
             </span>
           )}
           {isFull && (
-            <span className="text-xs font-bold text-neutral-500 bg-neutral-800 px-2.5 py-1 rounded-full">마감</span>
+            <span className="text-xs font-bold text-neutral-500 bg-neutral-800 px-2.5 py-1 rounded-full flex-shrink-0">마감</span>
           )}
-        </div>
-
-        {/* 진행 바 */}
-        <div className="w-full h-2 bg-neutral-800 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${isFull ? "bg-neutral-600" : seatsLeft <= 2 ? "bg-amber-500" : "bg-white"}`}
-            style={{ width: `${totalSeats > 0 ? Math.min(100, (totalFilled / totalSeats) * 100) : 0}%` }}
-          />
         </div>
 
         {/* 성비 안내 */}

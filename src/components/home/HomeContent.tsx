@@ -96,6 +96,27 @@ const SECRET_OFFER_INTRO_USER = {
 };
 
 // MD 전용 퍼즐 이용방법 (시크릿 오퍼 핵심 가치 강조)
+const SHARE_ONBOARDING_STEPS = [
+  {
+    title: "1. 조각 선택",
+    desc: "MD가 세팅한 테이블에서\n원하는 조각을 골라요.",
+    icon: <span className="text-[20px]">🧩</span>,
+    color: "bg-green-500/10",
+  },
+  {
+    title: "2. 참여 신청",
+    desc: "참여하기 버튼을 누르면\n오픈채팅방에 바로 입장해요.",
+    icon: <span className="text-[20px]">✋</span>,
+    color: "bg-emerald-500/10",
+  },
+  {
+    title: "3. 현장 N빵",
+    desc: "인원이 다 모이면 당일 클럽에서\nMD에게 인당 금액 직접 결제!",
+    icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
+    color: "bg-blue-500/10",
+  },
+];
+
 const PUZZLE_ONBOARDING_STEPS_MD = [
   {
     title: "1. 입맛 다시기",
@@ -382,6 +403,8 @@ export function HomeContent({
             ? (isMdOrAdmin ? PUZZLE_ONBOARDING_STEPS_MD : PUZZLE_ONBOARDING_STEPS)
             : currentTab === "advance"
             ? EARLYBIRD_ONBOARDING_STEPS
+            : currentTab === "share"
+            ? SHARE_ONBOARDING_STEPS
             : ONBOARDING_STEPS;
           const handleToggleSecretOffer = () => {
             setGuideMode("secret-offer");
@@ -500,6 +523,7 @@ export function HomeContent({
               userBidMap={userBidMap}
               userInterestedSet={userInterestedSet}
               userRole={user?.role as "user" | "md" | "admin" | undefined}
+              currentUserId={user?.id}
               initialTab={currentTab}
               onTabChange={handleTabChange}
               onShowGuide={() => {

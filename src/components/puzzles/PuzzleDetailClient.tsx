@@ -524,10 +524,16 @@ export function PuzzleDetailClient({
                   <button
                     type="button"
                     onClick={() => setShowLeaderInfo(true)}
-                    className="inline-flex items-center gap-1 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2 py-1 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2 py-1 transition-colors"
                   >
-                    <User className="w-3 h-3" />
-                    유저 정보
+                    {puzzle.leader.profile_image ? (
+                      <img src={puzzle.leader.profile_image} alt="" className="w-4 h-4 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-4 h-4 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
+                        {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
+                      </div>
+                    )}
+                    {puzzle.leader.display_name || puzzle.leader.name || "방장"}
                   </button>
                 )}
                 {puzzle.leader && (() => {

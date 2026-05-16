@@ -100,6 +100,9 @@ interface PuzzleListProps {
   /** "파티원 모집만" 토글: 외부(부모)에서 컨트롤할 때 사용. 미지정 시 내부 상태 */
   partyOnly?: boolean;
   onPartyOnlyChange?: (v: boolean) => void;
+  popularSort?: boolean;
+  recentSort?: boolean;
+  budgetSort?: boolean;
 }
 
 export function PuzzleList({
@@ -113,6 +116,9 @@ export function PuzzleList({
   resetRef,
   partyOnly: partyOnlyProp,
   onPartyOnlyChange,
+  popularSort = false,
+  recentSort = false,
+  budgetSort = false,
 }: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
@@ -163,7 +169,7 @@ export function PuzzleList({
   // Phase 1: 3종 필터 (엔비/자리/날짜) + 파티원 모집만 토글. 지역은 부모(AuctionList).
   // partyOnly=false(기본): 혼합. partyOnly=true: 파티원 모집중 퍼즐만.
   const filteredPuzzles = useMemo(() => {
-    return puzzles.filter((p) => {
+    const base = puzzles.filter((p) => {
       if (partyOnly && !p.is_recruiting_party) return false;
       return (
         matchesNbi(p, nbiFilter) &&
@@ -171,7 +177,9 @@ export function PuzzleList({
         matchesDatePuzzle(p, dateFilter)
       );
     });
-  }, [puzzles, nbiFilter, seatFilter, dateFilter, partyOnly]);
+    if (popularSort) return [...base].sort((a, b) => (offerCounts[b.id] || 0) - (offerCounts[a.id] || 0));
+    return base;
+  }, [puzzles, nbiFilter, seatFilter, dateFilter, partyOnly, popularSort, offerCounts]);
 
   const eventDates = useMemo(() => {
     return Array.from(new Set(puzzles.map((p) => p.event_date)));
@@ -200,42 +208,8 @@ export function PuzzleList({
 
   const togglePartyOnly = () => setPartyOnly(!partyOnly);
 
-  const cycleSortMode = () => {
-    setSortMode((cur) => (cur === "registered" ? "desc" : cur === "desc" ? "asc" : "registered"));
-  };
-
-  const sortLabel =
-    sortMode === "registered" ? "등록순" : sortMode === "desc" ? "높은순 ↑" : "낮은순 ↓";
-
-  // "파티원 모집만" + 정렬 토글: 첫 그룹 헤더 우측에 같이 표시
-  const toggleButton = (
-    <div className="flex items-center gap-1.5 flex-shrink-0">
-      <button
-        onClick={togglePartyOnly}
-        className={`h-7 px-3 inline-flex items-center rounded-full text-[12px] leading-none font-bold transition-colors ${
-          partyOnly
-            ? "bg-white text-black"
-            : "bg-neutral-800 text-neutral-400"
-        }`}
-        aria-pressed={partyOnly}
-      >
-        파티원 모집만
-      </button>
-      {/* 정렬은 MD/Admin 전용 */}
-      {isMd && (
-        <button
-          onClick={cycleSortMode}
-          className={`h-7 px-3 inline-flex items-center rounded-full text-[12px] leading-none font-bold transition-colors ${
-            sortMode === "registered"
-              ? "bg-neutral-800 text-neutral-400"
-              : "bg-white text-black"
-          }`}
-        >
-          {sortLabel}
-        </button>
-      )}
-    </div>
-  );
+  // 정렬 버튼 (빈 div — 헤더 레이아웃 유지용)
+  const toggleButton = <div />;
 
   return (
     <div className="relative">
@@ -380,8 +354,64 @@ export function PuzzleList({
             )}
           </div>
         </div>
+      ) : (popularSort || recentSort || budgetSort) ? (
+        /* 인기순/최신순/예산순: 날짜 그룹 헤더 유지 + 정렬 */
+        <div className="space-y-8 pb-24 pt-3">
+          {Object.entries(
+            filteredPuzzles.reduce((groups, puzzle) => {
+              const date = puzzle.event_date;
+              if (!groups[date]) groups[date] = [];
+              groups[date].push(puzzle);
+              return groups;
+            }, {} as Record<string, Puzzle[]>)
+          )
+            .sort(([, aItems], [, bItems]) => {
+              if (recentSort) {
+                const maxA = Math.max(...aItems.map(p => new Date(p.created_at).getTime()));
+                const maxB = Math.max(...bItems.map(p => new Date(p.created_at).getTime()));
+                return maxB - maxA;
+              }
+              if (budgetSort) {
+                const getBudget = (p: Puzzle) => p.total_budget ?? (p.budget_per_person * p.target_count);
+                const maxA = Math.max(...aItems.map(getBudget));
+                const maxB = Math.max(...bItems.map(getBudget));
+                return maxB - maxA;
+              }
+              const maxA = Math.max(...aItems.map(p => offerCounts[p.id] || 0));
+              const maxB = Math.max(...bItems.map(p => offerCounts[p.id] || 0));
+              return maxB - maxA;
+            })
+            .map(([date, items]) => {
+              const getBudget = (p: Puzzle) => p.total_budget ?? (p.budget_per_person * p.target_count);
+              const sorted = recentSort
+                ? [...items].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                : budgetSort
+                  ? [...items].sort((a, b) => getBudget(b) - getBudget(a))
+                  : [...items].sort((a, b) => (offerCounts[b.id] || 0) - (offerCounts[a.id] || 0));
+              const d = new Date(date + "T00:00:00");
+              const days = ["일","월","화","수","목","금","토"];
+              const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+              const dday = getDDay(date);
+              return (
+                <div key={date} className="space-y-4">
+                  <div className="flex items-center gap-2.5 px-1">
+                    <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
+                    <h3 className="text-[16px] font-black text-white tracking-tight">{dateLabel}</h3>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>{dday}</span>
+                  </div>
+                  {sorted.map((puzzle) => (
+                    <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); }}>
+                      <PuzzleCard puzzle={puzzle} userRole={userRole} offerCount={offerCounts[puzzle.id] || 0}
+                        isMember={myPuzzleIds.has(puzzle.id)} hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
+                        onJoin={(p) => setJoinTarget(p)} onUnlock={(p) => setUnlockTarget(p)} />
+                    </Link>
+                  ))}
+                </div>
+              );
+            })}
+        </div>
       ) : (
-        <div className="space-y-12 pb-24">
+        <div className="space-y-12 pb-24 pt-3">
           {/* 🆕 방금 올라온 퍼즐/깃발 — 상단 별도 섹션 */}
           {(() => {
             // 베타 기간 한정 12h (정상 등록량 도달 시 6h로 환원)
@@ -428,24 +458,46 @@ export function PuzzleList({
                       )}
                     </div>
                     {!recentCollapsed && (
-                      <div className="space-y-4">
-                        {recentPuzzles.map((puzzle) => (
-                          <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); trackEvent('puzzle_card_click', { puzzle_id: puzzle.id, area: puzzle.area, is_recruiting: puzzle.is_recruiting_party, source: 'recent' }); }}>
-                            <PuzzleCard
-                              puzzle={puzzle}
-                              userRole={userRole}
-                              offerCount={offerCounts[puzzle.id] || 0}
-                              isMember={myPuzzleIds.has(puzzle.id)}
-                              hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
-                              onJoin={(p) => setJoinTarget(p)}
-                              onUnlock={(p) => setUnlockTarget(p)}
-                            />
-                          </Link>
-                        ))}
+                      <div className="space-y-6">
+                        {Object.entries(
+                          recentPuzzles.reduce((groups, puzzle) => {
+                            const date = puzzle.event_date;
+                            if (!groups[date]) groups[date] = [];
+                            groups[date].push(puzzle);
+                            return groups;
+                          }, {} as Record<string, Puzzle[]>)
+                        )
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([date, items]) => {
+                            const d = new Date(date + "T00:00:00");
+                            const days = ["일","월","화","수","목","금","토"];
+                            const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+                            const dday = getDDay(date);
+                            return (
+                              <div key={date} className="space-y-3">
+                                <div className="flex items-center gap-2 px-1">
+                                  <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
+                                  <span className="text-[14px] font-black text-white tracking-tight">{dateLabel}</span>
+                                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>{dday}</span>
+                                </div>
+                                {items.map((puzzle) => (
+                                  <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); trackEvent('puzzle_card_click', { puzzle_id: puzzle.id, area: puzzle.area, is_recruiting: puzzle.is_recruiting_party, source: 'recent' }); }}>
+                                    <PuzzleCard puzzle={puzzle} userRole={userRole} offerCount={offerCounts[puzzle.id] || 0}
+                                      isMember={myPuzzleIds.has(puzzle.id)} hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
+                                      onJoin={(p) => setJoinTarget(p)} onUnlock={(p) => setUnlockTarget(p)} />
+                                  </Link>
+                                ))}
+                              </div>
+                            );
+                          })}
                       </div>
                     )}
+                  {recentPuzzles.length > 0 && rest.length > 0 && (
+                    <div className="border-t border-neutral-800 mt-2" />
+                  )}
                   </div>
                 )}
+                <div className="-mt-6">
                 {Object.entries(
                   rest.reduce((groups, puzzle) => {
                     const date = puzzle.event_date;
@@ -456,13 +508,7 @@ export function PuzzleList({
                 )
             .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
             .map(([date, rawItems], groupIdx) => {
-              const items = isMd && sortMode !== "registered"
-                ? [...rawItems].sort((a, b) =>
-                    sortMode === "desc"
-                      ? getBudget(b) - getBudget(a)
-                      : getBudget(a) - getBudget(b)
-                  )
-                : rawItems;
+              const items = rawItems;
               const d = new Date(date + "T00:00:00");
               const m = d.getMonth() + 1;
               const day = d.getDate();
@@ -520,6 +566,7 @@ export function PuzzleList({
                 </div>
               );
             })}
+              </div>
               </>
             );
           })()}

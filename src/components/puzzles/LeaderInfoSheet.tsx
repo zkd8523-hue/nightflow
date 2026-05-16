@@ -8,10 +8,12 @@ import { ChevronDown, ChevronUp, History, Store, Users } from "lucide-react";
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    /** 닉네임/사진은 의도적으로 사용하지 않음 (비공개). 등급/신규 판별용 필드만 활용. */
     leader: {
         deal_count_total?: number | null;
         created_at?: string | null;
+        display_name?: string | null;
+        name?: string | null;
+        profile_image?: string | null;
     } | null;
 }
 
@@ -74,12 +76,17 @@ export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
                 <div className="space-y-5 pb-8">
                     {/* 프로필 헤더 */}
                     <div className="flex items-start gap-3">
-                        <div className="w-14 h-14 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center shrink-0">
-                            <span className="text-2xl text-neutral-500">👤</span>
+                        <div className="w-14 h-14 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center shrink-0 overflow-hidden">
+                            {leader?.profile_image
+                                ? <img src={leader.profile_image} alt="" className="w-full h-full object-cover" />
+                                : <span className="text-2xl text-neutral-500">👤</span>
+                            }
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
-                                <h3 className="text-white font-black text-lg">방장</h3>
+                                <h3 className="text-white font-black text-lg">
+                                    {leader?.display_name || leader?.name || "방장"}
+                                </h3>
                                 {signedUpShort && (
                                     <span className="text-[10px] text-neutral-600 font-medium shrink-0 mt-1">
                                         가입일: {signedUpShort}

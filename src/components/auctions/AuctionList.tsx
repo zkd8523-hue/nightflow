@@ -31,8 +31,8 @@ import {
 const SHARE_NBI_CHIPS: { value: NbiFilter; label: string }[] = [
   { value: "all", label: "전체" },
   { value: "value", label: "가성비 ~9만" },
-  { value: "standard", label: "스탠다드 10~15만" },
-  { value: "premium", label: "프리미엄 15만+" },
+  { value: "standard", label: "스탠다드 10~19만" },
+  { value: "premium", label: "프리미엄 20만+" },
 ];
 const SHARE_SEAT_CHIPS: { value: SeatFilter; label: string }[] = [
   { value: "all", label: "전체" },
@@ -75,6 +75,7 @@ interface AuctionListProps {
   userBidMap?: Map<string, number>;
   userInterestedSet?: Set<string>;
   userRole?: "user" | "md" | "admin";
+  currentUserId?: string;
   initialTab?: "today" | "advance" | "puzzle" | "share";
   onTabChange?: (tab: "today" | "advance" | "puzzle" | "share") => void;
   onShowGuide?: () => void;
@@ -82,7 +83,7 @@ interface AuctionListProps {
   guideSlot?: React.ReactNode;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, currentUserId, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot }: AuctionListProps) {
   // Realtime 입찰 burst 시 필터 깜빡임 방지: deferred render
   const deferredAuctions = useDeferredValue(initialAuctions);
 
@@ -96,6 +97,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const puzzleResetRef = useRef<(() => void) | null>(null);
   // "파티원 모집만" 토글: 지역 칩 옆 필터 행에 두기 위해 부모에서 관리
   const [puzzlePartyOnly, setPuzzlePartyOnly] = useState(false);
+  const [puzzleSortMode, setPuzzleSortMode] = useState<"none" | "popular" | "budget" | "recent">("none");
+  const puzzlePopularSort = puzzleSortMode === "popular";
 
   const filterByArea = (auctions: Auction[]) => {
     if (!selectedArea) return auctions;
@@ -127,18 +130,20 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const advanceAuctionsAll = liveAndUpcoming.filter(a => a.listing_type === 'auction');
   // 조각: listing_type === 'share'
   const shareAuctions = liveAndUpcoming.filter(a => a.listing_type === 'share');
-  const [shareSort, setShareSort] = useState<"deadline" | "recent">("deadline");
+  const [shareSort, setShareSort] = useState<"deadline" | "recent" | "seats">("deadline");
   const [shareNbi, setShareNbi] = useState<NbiFilter>("all");
   const [shareSeat, setShareSeat] = useState<SeatFilter>("all");
   const [shareDateFilter, setShareDateFilter] = useState<string>("all");
   const [shareFilterOpen, setShareFilterOpen] = useState(false);
+  const [myShareOnly, setMyShareOnly] = useState(false);
 
   const shareEventDates = useMemo(() => Array.from(new Set(shareAuctions.map(a => a.event_date))), [shareAuctions]);
   const filteredShareAuctions = useMemo(() => shareAuctions.filter(a => {
+    if (myShareOnly && a.md_id !== currentUserId) return false;
     const price = a.price_per_seat ?? 0;
-    if (shareNbi === "value" && price > NBI_BANDS.value.max) return false;
-    if (shareNbi === "standard" && (price < NBI_BANDS.standard.min || price > NBI_BANDS.standard.max)) return false;
-    if (shareNbi === "premium" && price < NBI_BANDS.premium.min) return false;
+    if (shareNbi === "value" && price > 90000) return false;
+    if (shareNbi === "standard" && (price < 100000 || price > 190000)) return false;
+    if (shareNbi === "premium" && price < 200000) return false;
     const seatsLeft = (a.total_seats ?? 0) - (a.seats_claimed ?? 0) - (a.external_attendees ?? 0);
     if (shareSeat === "1" && seatsLeft !== 1) return false;
     if (shareSeat === "2" && seatsLeft !== 2) return false;
@@ -198,7 +203,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   };
 
   // 퍼즐: 지역 필터 적용 ("서울 어디든"은 강남/홍대/이태원/건대 어느 것 선택해도 매칭)
-  const filteredPuzzles = puzzles.filter((p) => matchesArea(p.area, selectedArea ?? null));
+  const filteredPuzzles = useMemo(() => {
+    const filtered = puzzles.filter((p) => matchesArea(p.area, selectedArea ?? null));
+    if (puzzleSortMode === "popular") return [...filtered].sort((a, b) => (puzzleOfferCounts[b.id] || 0) - (puzzleOfferCounts[a.id] || 0));
+    if (puzzleSortMode === "budget") return [...filtered].sort((a, b) => (b.total_budget ?? b.budget_per_person * b.target_count) - (a.total_budget ?? a.budget_per_person * a.target_count));
+    if (puzzleSortMode === "recent") return [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return filtered;
+  }, [puzzles, selectedArea, puzzleSortMode, puzzleOfferCounts]);
 
   // 오늘특가: 날짜별 그룹핑
   const { groupedInstant, sortedInstantDates } = useMemo(() => {
@@ -256,17 +267,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               🧩 조각 {shareAuctions.length > 0 && `(${shareAuctions.length})`}
             </button>
 
-            <button
-              onClick={() => setTab("advance")}
-              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "advance"
-                ? "bg-amber-500 text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                }`}
-            >
-              📅 얼리버드 경매 {advanceAuctionsAll.length > 0 && `(${advanceAuctionsAll.length})`}
-            </button>
-
-            {instantEnabled && (
+{instantEnabled && (
               <button
                 onClick={() => setTab("today")}
                 className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
@@ -363,6 +364,21 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </button>
             </div>
           </div>
+          {tab === "puzzle" && (
+            <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
+              {([
+                { key: "popular", label: "인기순" },
+                { key: "budget",  label: "예산순" },
+                { key: "recent",  label: "최신순" },
+              ] as const).map(({ key, label }) => (
+                <button key={key}
+                  onClick={() => setPuzzleSortMode(v => v === key ? "none" : key)}
+                  className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap ${puzzleSortMode === key ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           {tab === "advance" && deferredAuctions.some(a => a.listing_type === "auction") && (
             <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
               {hasAdvanceFilter && (
@@ -385,34 +401,6 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   <SlidersHorizontal className="w-4 h-4" />
                 </button>
                 {hasAdvanceFilter && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
-                )}
-              </div>
-            </div>
-          )}
-          {tab === "puzzle" && filteredPuzzles.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
-              {puzzleHasActiveFilter && (
-                <button
-                  onClick={() => puzzleResetRef.current?.()}
-                  className="text-[11px] font-bold text-neutral-400 hover:text-white transition-colors px-2"
-                >
-                  초기화
-                </button>
-              )}
-              <div className="relative">
-                <button
-                  onClick={() => setPuzzleFilterOpen(true)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                    puzzleHasActiveFilter
-                      ? "bg-white text-black"
-                      : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                  }`}
-                  aria-label="필터"
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                </button>
-                {puzzleHasActiveFilter && (
                   <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
                 )}
               </div>
@@ -579,19 +567,18 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
                 </span>
                 <span className="text-[16px] font-black text-white tracking-tight">모집 중인 조각</span>
-                <div className="flex-1 flex justify-end gap-1.5">
-                  {[{ key: "deadline", label: "마감임박순" }, { key: "recent", label: "등록순" }].map(({ key, label }) => (
-                    <button key={key} onClick={() => setShareSort(key as "deadline" | "recent")}
-                      className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors ${shareSort === key ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                      {label}
-                    </button>
-                  ))}
-                  <button onClick={() => setShareFilterOpen(true)}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${(shareNbi !== "all" || shareSeat !== "all" || shareDateFilter !== "all") ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                    <SlidersHorizontal className="w-4 h-4" />
-                  </button>
-                </div>
               </div>
+              {/* N비 필터 */}
+              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x pb-0.5">
+                {SHARE_NBI_CHIPS.map(({ value, label }) => (
+                  <button key={value}
+                    onClick={() => setShareNbi(v => v === value ? "all" : value as NbiFilter)}
+                    className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${shareNbi === value ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {/* 정렬 */}
             </div>
           )}
 
@@ -610,10 +597,15 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           ) : (
             Object.entries(
               [...filteredShareAuctions]
-                .sort((a, b) => shareSort === "recent"
-                  ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                  : new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
-                )
+                .sort((a, b) => {
+                  if (shareSort === "recent") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                  if (shareSort === "seats") {
+                    const seatsA = (a.total_seats ?? 0) - (a.seats_claimed ?? 0) - (a.external_attendees ?? 0);
+                    const seatsB = (b.total_seats ?? 0) - (b.seats_claimed ?? 0) - (b.external_attendees ?? 0);
+                    return seatsA - seatsB;
+                  }
+                  return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+                })
                 .reduce((groups, auction) => {
                   const date = auction.event_date;
                   if (!groups[date]) groups[date] = [];
@@ -621,59 +613,52 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   return groups;
                 }, {} as Record<string, Auction[]>)
             )
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([date, items]) => {
+              .sort(([, aItems], [, bItems]) => {
+                if (shareSort === "recent") {
+                  const maxA = Math.max(...aItems.map(a => new Date(a.created_at).getTime()));
+                  const maxB = Math.max(...bItems.map(b => new Date(b.created_at).getTime()));
+                  return maxB - maxA;
+                }
+                return aItems[0].event_date.localeCompare(bItems[0].event_date);
+              })
+              .map(([date, items], groupIdx) => {
                 const d = new Date(date + "T00:00:00");
                 const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${["일","월","화","수","목","금","토"][d.getDay()]})`;
                 const dday = getDDayShare(date);
                 return (
                   <div key={date} className="space-y-3">
-                    <div className="flex flex-col gap-1.5 px-1 py-1">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
-                        <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
-                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>
-                          {dday}
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2.5 px-1 py-1">
+                      <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
+                      <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>
+                        {dday}
+                      </span>
+                      {groupIdx === 0 && (
+                        <div className="flex-1 flex justify-end items-center gap-1.5">
+                          {userRole && ["md", "admin"].includes(userRole) && (
+                            <button onClick={() => setMyShareOnly(v => !v)}
+                              className={`text-[11px] font-bold px-3 py-1 rounded-full transition-colors whitespace-nowrap ${myShareOnly ? "bg-green-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                              내 조각
+                            </button>
+                          )}
+                          {[{ key: "seats", label: "마감임박순" }, { key: "recent", label: "최신순" }].map(({ key, label }) => (
+                            <button key={key}
+                              onClick={() => setShareSort(v => v === key ? "deadline" : key as "seats" | "recent")}
+                              className={`text-[11px] font-bold px-3 py-1 rounded-full transition-colors whitespace-nowrap ${shareSort === key ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     {items.map(auction => (
-                      <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} />
+                      <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} currentUserId={currentUserId} />
                     ))}
                   </div>
                 );
               })
           )}
 
-          {/* 필터 Sheet */}
-          <Sheet open={shareFilterOpen} onOpenChange={setShareFilterOpen}>
-            <SheetContent side="bottom" showCloseButton={false} className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
-              <SheetHeader className="pt-2 pb-4">
-                <SheetTitle className="text-white font-black text-lg text-left">필터</SheetTitle>
-              </SheetHeader>
-              <div className="space-y-5">
-                <ShareFilterRow label="엔비" chips={SHARE_NBI_CHIPS} value={shareNbi} onChange={(v) => setShareNbi(v as NbiFilter)} />
-                <ShareFilterRow label="자리" chips={SHARE_SEAT_CHIPS} value={shareSeat} onChange={(v) => setShareSeat(v as SeatFilter)} />
-                {shareEventDates.length > 1 && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">날짜</span>
-                    <DateFilterChips eventDates={shareEventDates} value={shareDateFilter} onChange={setShareDateFilter} />
-                  </div>
-                )}
-                <div className="flex justify-end pt-1">
-                  <button
-                    onClick={() => { setShareNbi("all"); setShareSeat("all"); setShareDateFilter("all"); }}
-                    disabled={shareNbi === "all" && shareSeat === "all" && shareDateFilter === "all"}
-                    className="text-[12px] font-bold text-neutral-400 hover:text-white transition-colors disabled:text-transparent disabled:pointer-events-none"
-                  >초기화</button>
-                </div>
-                <button onClick={() => setShareFilterOpen(false)}
-                  className="w-full h-16 bg-white text-black font-black text-[14px] rounded-2xl">
-                  {filteredShareAuctions.length}건 보기
-                </button>
-              </div>
-            </SheetContent>
-          </Sheet>
         </div>
       )}
 
@@ -689,6 +674,9 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           resetRef={puzzleResetRef}
           partyOnly={puzzlePartyOnly}
           onPartyOnlyChange={setPuzzlePartyOnly}
+          popularSort={puzzlePopularSort}
+          recentSort={puzzleSortMode === "recent"}
+          budgetSort={puzzleSortMode === "budget"}
         />
       )}
 

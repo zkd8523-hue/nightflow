@@ -225,7 +225,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
                 >
                   <Plus className="w-3.5 h-3.5 text-black" />
-                  <span className="text-[12px] font-black text-black whitespace-nowrap">경매 등록</span>
+                  <span className="text-[12px] font-black text-black whitespace-nowrap">조각 등록</span>
                 </Link>
               )}
               {user.md_status === "pending" && (

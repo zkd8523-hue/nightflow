@@ -6,10 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Auction } from "@/types/database";
 import { formatNumber, formatTime, formatCountdown, formatCountdownLong, categorizeLiquor, formatRelativeTime } from "@/lib/utils/format";
+import { createClient } from "@/lib/supabase/client";
+import { useState, useCallback } from "react";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES } from "@/lib/constants/timer-urgency";
-import { Gavel, Zap, BadgeCheck, Flame, Users } from "lucide-react";
+import { Gavel, Zap, BadgeCheck, Flame, Users, Minus, Plus, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
@@ -20,9 +23,10 @@ interface AuctionCardProps {
   userBidAmount?: number;
   isUserInterested?: boolean;
   priority?: boolean;
+  currentUserId?: string;
 }
 
-export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, isUserInterested, priority }: AuctionCardProps) {
+export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, isUserInterested, priority, currentUserId }: AuctionCardProps) {
   const club = auction.club;
   const displayStatus = getAuctionDisplayStatus(auction);
   const isActive = displayStatus === 'active';
@@ -62,6 +66,58 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
     const totalBudget = (auction.price_per_seat ?? 0) * totalSeats;
     const currentBudget = (auction.price_per_seat ?? 0) * totalFilled;
     const isNew = Date.now() - new Date(auction.created_at).getTime() < 6 * 60 * 60 * 1000;
+    const isOwner = !!currentUserId && currentUserId === auction.md_id;
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [extCount, setExtCount] = useState(auction.external_attendees ?? 0);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [extMale, setExtMale] = useState(auction.external_male ?? 0);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [extFemale, setExtFemale] = useState(auction.external_female ?? 0);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [saving, setSaving] = useState(false);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const [saved, setSaved] = useState(false);
+    const tM = auction.target_male ?? 0;
+    const tF = auction.target_female ?? 0;
+    const hasGenderSlot = tM + tF === totalSeats && totalSeats > 0;
+    // 로컬 state 기준 실시간 표시
+    const localFilled = isOwner
+      ? (auction.seats_claimed ?? 0) + (hasGenderSlot ? extMale + extFemale : extCount)
+      : totalFilled;
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const confirmExt = useCallback(async () => {
+      setSaving(true);
+      const m = hasGenderSlot ? extMale : extCount;
+      const f = hasGenderSlot ? extFemale : 0;
+      const supabase = createClient();
+      await supabase.from("auctions").update({ external_attendees: hasGenderSlot ? extMale + extFemale : extCount, external_male: m, external_female: f }).eq("id", auction.id);
+      setSaving(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }, [extMale, extFemale, extCount, hasGenderSlot, auction.id]);
+    const slotLayout = hasGenderSlot
+      ? (() => {
+          const filledMale = isOwner ? extMale : (auction.external_male ?? 0);
+          const filledFemale = isOwner ? extFemale : (auction.external_female ?? 0);
+          const maleSurplus = Math.max(0, filledMale - tM);
+          return Array.from({ length: totalSeats }).map((_, i) => {
+            if (i < tM) {
+              // 남자 슬롯
+              return { gender: "male" as const, filled: i < filledMale };
+            } else {
+              // 여자 슬롯 — 남자 초과분이 앞에서부터 차지, 여자는 그 뒤부터
+              const femaleIdx = i - tM;
+              if (femaleIdx < maleSurplus) {
+                return { gender: "male" as const, filled: true };
+              }
+              return { gender: "female" as const, filled: (femaleIdx - maleSurplus) < filledFemale };
+            }
+          });
+        })()
+      : Array.from({ length: totalSeats }).map((_, i) => ({
+          gender: null as null,
+          filled: i < localFilled,
+        }));
 
     return (
       <Link href={`/auctions/${auction.id}`}>
@@ -71,7 +127,50 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
               NEW!
             </div>
           )}
-          <div className="absolute top-3 right-3 z-10">
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={async (e) => {
+                e.preventDefault(); e.stopPropagation();
+                const url = `${window.location.origin}/auctions/${auction.id}`;
+                const title = `${club?.name || ""} 조각 모집`;
+                const text = `N ${(auction.price_per_seat ?? 0).toLocaleString()}원 · ${auction.total_seats ?? 0}명`;
+                // 1순위: Web Share API (모바일)
+                if (typeof navigator.share === "function") {
+                  try {
+                    await navigator.share({ title, text, url });
+                    return;
+                  } catch (err) {
+                    // 사용자 취소(AbortError)는 무시, 그 외는 fallback
+                    if (err instanceof Error && err.name === "AbortError") return;
+                  }
+                }
+                // 2순위: Clipboard API
+                if (typeof navigator.clipboard?.writeText === "function") {
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    toast.success("링크가 복사됐어요");
+                    return;
+                  } catch {}
+                }
+                // 3순위: execCommand fallback (구형 브라우저)
+                try {
+                  const el = document.createElement("textarea");
+                  el.value = url;
+                  el.style.position = "fixed"; el.style.opacity = "0";
+                  document.body.appendChild(el);
+                  el.focus(); el.select();
+                  document.execCommand("copy");
+                  document.body.removeChild(el);
+                  toast.success("링크가 복사됐어요");
+                } catch {
+                  toast.error("링크 복사에 실패했어요");
+                }
+              }}
+              className="w-7 h-7 rounded-full bg-neutral-800/80 flex items-center justify-center hover:bg-neutral-700 transition-colors"
+            >
+              <Share2 className="w-3.5 h-3.5 text-neutral-400" />
+            </button>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
               🧩 조각
             </span>
@@ -105,39 +204,125 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
               {isShareFull && (
                 <span className="text-[13px] text-green-400 font-bold">조각 완성! 🎉</span>
               )}
-              <div className="flex flex-wrap gap-1.5">
-                {Array.from({ length: totalSeats }).map((_, i) => (
-                  <PuzzlePiece key={i} filled={i < totalFilled} />
-                ))}
-              </div>
+              {(() => {
+                const remaining = totalSeats - localFilled;
+                return (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {slotLayout.map((slot, i) => (
+                      <PuzzlePiece key={i} filled={slot.filled} gender={slot.gender} />
+                    ))}
+                    {remaining > 0 && (
+                      <span className={`text-[11px] font-bold ml-1 ${remaining === 1 ? "text-red-400" : "text-neutral-400"}`}>
+                        {remaining === 1 ? "마지막 1자리" : `${remaining}자리 남음`}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
-          {/* 주류 */}
+          {/* 주류 알약 + 시간 */}
           {(() => {
             const all = auction.includes || [];
             const { liquor } = categorizeLiquor(all);
-            const liquorOnly = all.filter(item => liquor.includes(item));
-            const hasExtras = all.length > liquorOnly.length;
-            if (liquorOnly.length === 0) return null;
+            const sorted = [...all].sort((a, b) => {
+              const aL = liquor.includes(a); const bL = liquor.includes(b);
+              return aL === bL ? 0 : aL ? -1 : 1;
+            });
             return (
-              <span className="text-[10px] text-neutral-500">
-                {liquorOnly.map((item, i) => (
-                  <span key={item}>
-                    {i > 0 && <span className="text-neutral-600 mx-1">&middot;</span>}
-                    <span className="text-amber-400/90 font-medium">{item.replace(/병$/, "")}</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {sorted.slice(0, 3).map((item) => (
+                  <span key={item}
+                    className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold border ${
+                      liquor.includes(item)
+                        ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                        : "bg-neutral-800/50 text-neutral-400 border-neutral-700/30"
+                    }`}>
+                    {item}
                   </span>
                 ))}
-                {hasExtras && <span className="text-neutral-600 ml-1">+α</span>}
-              </span>
+                {sorted.length > 3 && (
+                  <span className="text-[11px] text-neutral-500 font-bold">+{sorted.length - 3}</span>
+                )}
+                <span className="ml-auto text-[10px] text-neutral-500 whitespace-nowrap pointer-events-none" suppressHydrationWarning>
+                  {formatRelativeTime(auction.created_at)}
+                </span>
+              </div>
             );
           })()}
 
+          {/* 작성자 전용: 확정 인원 스테퍼 */}
+          {isOwner && (
+            <div className="space-y-1.5" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+              {hasGenderSlot ? (
+                // 성별 분리 스테퍼
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { label: "🧑 남자", count: extMale, onInc: () => setExtMale(m => m + 1), onDec: () => setExtMale(m => Math.max(0, m - 1)), color: "text-blue-400" },
+                    { label: "👩 여자", count: extFemale, onInc: () => setExtFemale(f => f + 1), onDec: () => setExtFemale(f => Math.max(0, f - 1)), color: "text-pink-400" },
+                  ].map(({ label, count, onInc, onDec, color }) => (
+                    <div key={label} className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl px-3 h-10">
+                      <span className={`text-[11px] font-bold ${saving ? "text-neutral-500" : color}`}>{label} {count}</span>
+                      <div className="flex items-center gap-1.5">
+                        <button type="button" disabled={count <= 0 || saving} onClick={onDec}
+                          className="w-5 h-5 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 transition-colors">
+                          <Minus className="w-2.5 h-2.5 text-white" />
+                        </button>
+                        <button type="button" disabled={(extMale + extFemale) >= totalSeats || saving} onClick={onInc}
+                          className="w-5 h-5 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 transition-colors">
+                          <Plus className="w-2.5 h-2.5 text-white" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                // 단순 스테퍼
+                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl px-4 h-10">
+                  <span className={`text-[12px] font-bold ${saving ? "text-neutral-500" : "text-neutral-300"}`}>확정 {extCount}명</span>
+                  <div className="flex items-center gap-2">
+                    <button type="button" disabled={extCount <= 0}
+                      onClick={() => setExtCount(c => Math.max(0, c - 1))}
+                      className="w-6 h-6 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 transition-colors">
+                      <Minus className="w-3 h-3 text-white" />
+                    </button>
+                    <button type="button" disabled={extCount + (auction.seats_claimed ?? 0) >= totalSeats}
+                      onClick={() => setExtCount(c => c + 1)}
+                      className="w-6 h-6 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 transition-colors">
+                      <Plus className="w-3 h-3 text-white" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* CTA */}
-          <div className="relative">
-            <p className="absolute -top-5 right-1 text-[10px] text-neutral-500 whitespace-nowrap pointer-events-none" suppressHydrationWarning>
-              {formatRelativeTime(auction.created_at)}
-            </p>
+          {isOwner ? (
+            <div className="space-y-2" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
+              <p className="text-[11px] text-neutral-500 leading-relaxed">
+                인스타·카톡 등 외부에서 인원을 모집했다면 바로 업데이트해보세요!
+              </p>
+              <Button
+                disabled={saving}
+                onClick={confirmExt}
+                className={`w-full h-11 font-black text-[13px] rounded-xl transition-colors active:scale-[0.98] disabled:opacity-50 ${
+                  saved
+                    ? "bg-green-500 text-white pointer-events-none"
+                    : "bg-white hover:bg-neutral-200 text-black"
+                }`}
+              >
+                {saving ? "저장 중..." : saved
+                  ? (() => {
+                      const confirmed = hasGenderSlot ? extMale + extFemale : extCount;
+                      const remaining = totalSeats - (auction.seats_claimed ?? 0) - confirmed;
+                      return remaining > 0 ? `추가됐어요! · ${remaining}자리 남았어요` : "추가됐어요! · 꽉 찼어요 🎉";
+                    })()
+                  : "직접 모집 반영하기"}
+              </Button>
+            </div>
+          ) : (
             <Button
               className={`w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] ${
                 isShareFull
@@ -147,7 +332,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
             >
               {isShareFull ? "마감" : "참여하기"}
             </Button>
-          </div>
+          )}
         </div>
       </Link>
     );
@@ -346,8 +531,8 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 >
                   {isShareFull ? "마감" : "참여하기"}
                 </Button>
-              </div>
             </div>
+          </div>
           ) : (
           /* Bottom Bar: 경매/즉시구매 전용 (기존 코드) */
           <div className="flex items-center justify-between mt-1 gap-2">

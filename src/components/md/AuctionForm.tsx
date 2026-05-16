@@ -528,6 +528,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     table_type: "Standard",
                     min_people: values.total_seats || targetCount,
                     max_people: values.total_seats || targetCount,
+                    target_male: useGenderSlot ? targetMale : 0,
+                    target_female: useGenderSlot ? targetFemale : 0,
                     start_price: values.price_per_seat || 0,
                     original_price: values.price_per_seat || 0,
                     reserve_price: 0,
@@ -542,6 +544,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     bid_increment: 0,
                     seats_claimed: 0,
                     external_attendees: hasExternal ? (useGenderSlot ? externalMale + externalFemale : externalCount) : 0,
+                    external_male: hasExternal && useGenderSlot ? externalMale : 0,
+                    external_female: hasExternal && useGenderSlot ? externalFemale : 0,
                     kakao_open_chat_url: kakaoUrl.trim() || null,
                 };
                 if (thumbnailUrl) shareData.thumbnail_url = thumbnailUrl;

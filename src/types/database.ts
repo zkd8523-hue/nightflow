@@ -376,9 +376,13 @@ export interface Auction {
   price_per_seat: number | null;
   share_deadline: string | null;
   external_attendees: number;
+  external_male: number;   // Migration 189
+  external_female: number;
   main_alcohol: string | null;
   share_date: string | null;
   kakao_open_chat_url: string | null; // Migration 187: 조각 오픈채팅 링크
+  target_male: number;   // Migration 188: 성별 슬롯
+  target_female: number;
 
   // JOIN 관계
   club?: Club;

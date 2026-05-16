@@ -72,16 +72,18 @@ export function PuzzlePiece({
       ? "bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.4)]"
       : "bg-pink-500/80"
     : isLeader
-      ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]"
-      : "bg-green-500/80";
+      ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
+      : "bg-blue-500/80";
 
   const emptyClass = isFemale
     ? "bg-neutral-800/50 border border-dashed border-pink-500/40"
-    : "bg-neutral-800/50 border border-dashed border-neutral-600";
+    : gender === 'male'
+      ? "bg-neutral-800/50 border border-dashed border-blue-500/40"
+      : "bg-neutral-800/50 border border-dashed border-neutral-600";
 
   return (
     <div className={`relative ${size} rounded-lg flex items-center justify-center transition-all ${filled ? filledClass : emptyClass}`}>
-      <svg viewBox="0 0 24 24" className={`${iconSize} ${filled ? "text-black/40" : isFemale ? "text-pink-500/40" : "text-neutral-700"}`}>
+      <svg viewBox="0 0 24 24" className={`${iconSize} ${filled ? "text-black/40" : isFemale ? "text-pink-500/40" : gender === 'male' ? "text-blue-500/40" : "text-neutral-700"}`}>
         <path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-2 .9-2 2v3.8h1.5c1.38 0 2.5 1.12 2.5 2.5S4.88 15.8 3.5 15.8H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/>
       </svg>
     </div>
@@ -182,39 +184,9 @@ export const PuzzleCard = memo(function PuzzleCard({
           NEW!
         </div>
       )}
-      {/* 모드 라벨 뱃지 🧩 퍼즐 / 🚩 깃발 — 카드 우측 상단, 알림 버튼은 배지 아래 */}
-      <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
-        {isRecruitingParty && !isFull ? (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
-            🧩 퍼즐
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-bold">
-            🚩 깃발
-          </span>
-        )}
-        {canFavorite && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              toggleFavoritePuzzle(puzzle.id);
-            }}
-            className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${
-              isFavorited
-                ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
-                : "bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700 hover:text-amber-300"
-            }`}
-            aria-label={isFavorited ? "알림 해제" : "알림받기"}
-          >
-            <Bell className={`w-3.5 h-3.5 ${isFavorited ? "fill-current" : ""}`} />
-          </button>
-        )}
-      </div>
       {/* 상단: 메모(방 제목) + 지역 + 거래 등급 배지 (찜 자리) */}
       <div className="flex items-start justify-between">
-        <div className="flex flex-col gap-1 flex-1 pr-4">
+        <div className="flex flex-col gap-1 flex-1 pr-3">
           <div className="text-[18px] font-black leading-snug break-keep tracking-tight">
             <span className="text-white">{puzzle.notes || `${puzzle.area}에서 모여요`}</span>
             {puzzle.notes && (
@@ -229,12 +201,32 @@ export const PuzzleCard = memo(function PuzzleCard({
             </p>
           )}
         </div>
-        <span
-          className="inline-flex items-center justify-center shrink-0 min-w-8 h-8"
-          title={`거래 ${puzzle.leader?.deal_count_total ?? 0}회`}
-        >
-          <TrustBadge tier={leaderTier} size="md" />
-        </span>
+        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+          {isRecruitingParty && !isFull ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
+              🧩 퍼즐
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-bold">
+              🚩 깃발
+            </span>
+          )}
+          <div className="flex items-center gap-1">
+            {canFavorite && (
+              <button
+                type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavoritePuzzle(puzzle.id); }}
+                className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors ${isFavorited ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25" : "bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700 hover:text-amber-300"}`}
+                aria-label={isFavorited ? "알림 해제" : "알림받기"}
+              >
+                <Bell className={`w-3.5 h-3.5 ${isFavorited ? "fill-current" : ""}`} />
+              </button>
+            )}
+            <span className="inline-flex items-center justify-center shrink-0 min-w-8 h-8" title={`거래 ${puzzle.leader?.deal_count_total ?? 0}회`}>
+              <TrustBadge tier={leaderTier} size="md" />
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* 예산 및 인원 정보 그룹 */}
