@@ -67,15 +67,10 @@ const formSchema = z.object({
         }
         if (!data.event_date) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "방문일시를 선택해주세요.", path: ["event_date"] });
-        } else if (!isEventDateWithinWindow(data.event_date)) {
-            // 과거 날짜 또는 너무 먼 미래 차단 (메인 페이지 노출 조건과 일치시킴)
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: `방문일은 오늘부터 ${EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내로 선택해주세요.`,
-                path: ["event_date"],
-            });
         }
-        return; // 조각 모드에서는 아래 auction/instant 검증 스킵
+        // 방문일 window 검증은 schema에서 안 함 — 수정 모드(initialData)는 통과시키고
+        // 신규 등록 시에만 onSubmit에서 분기 검증.
+        return;
     }
     // 얼리버드 (listing_type='auction'): 이벤트일 윈도우 + 마감 시각 규칙 강제
     if (data.listing_type === "auction") {
@@ -458,6 +453,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     };
 
     const onSubmit = async (values: FormValues) => {
+        // 조각 신규 등록 시 방문일 윈도우 검증 — 수정 모드는 통과
+        if (isShareMode && !initialData && values.event_date && !isEventDateWithinWindow(values.event_date)) {
+            toast.error(`방문일은 오늘부터 ${EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내로 선택해주세요.`);
+            return;
+        }
         // 가격 확인 (신규 등록 OR 수정 시 입찰 없으면, share 모드 제외)
         if (!isShareMode && (!initialData || (initialData && initialData.bid_count === 0))) {
             const ABSOLUTE_MIN = 50000;
