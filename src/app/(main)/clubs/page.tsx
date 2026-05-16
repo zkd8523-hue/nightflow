@@ -36,7 +36,8 @@ export default async function ClubsIndexPage() {
     supabase
       .from("clubs")
       .select("id, name, area, thumbnail_url")
-      .is("deleted_at", null),
+      .is("deleted_at", null)
+      .not("name", "ilike", "%운영자%"),
     supabase
       .from("auctions")
       .select("club_id")

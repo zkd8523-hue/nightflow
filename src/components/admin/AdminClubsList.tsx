@@ -234,7 +234,11 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
 
   const renderClubCard = (club: Club) => {
     const isExpanded = expandedClubId === club.id;
-    const hs = getHealthScore(club.md?.id);
+    // Phase 4(Migration 182): club.md 제거 — club_partners 의 owner(또는 첫 번째) 사용
+    const primaryPartner = club.partners?.find(p => p.role === "owner") ?? club.partners?.[0];
+    const primaryMd = primaryPartner?.user;
+    const primaryMdId = primaryPartner?.md_id;
+    const hs = getHealthScore(primaryMdId);
     const healthStatus = hs ? computeHealthStatus(hs) : undefined;
     const isDeleted = !!club.deleted_at;
 
@@ -314,7 +318,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
             </div>
           )}
 
-          {club.md && (
+          {primaryMd && (
             <button
               onClick={() => toggleExpand(club.id)}
               className="mt-3 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-bold"
@@ -324,7 +328,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
             </button>
           )}
 
-          {isExpanded && club.md && (
+          {isExpanded && primaryMd && (
             <div className="mt-4 pt-4 border-t border-neutral-800/30">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-neutral-900/50 rounded-2xl p-4 border border-neutral-800/30 space-y-3">
@@ -334,40 +338,40 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                   <div className="flex items-center gap-3">
                     <div className="relative w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-sm font-black text-neutral-400 shrink-0 overflow-hidden">
                       <span className="absolute inset-0 flex items-center justify-center">
-                        {club.md.name?.substring(0, 1)}
+                        {primaryMd?.name?.substring(0, 1)}
                       </span>
-                      {club.md.profile_image && (
+                      {primaryMd?.profile_image && (
                         <img
-                          src={normalizeProfileImage(club.md.profile_image)!}
-                          alt={club.md.name || "MD"}
+                          src={normalizeProfileImage(primaryMd?.profile_image)!}
+                          alt={primaryMd?.name || "MD"}
                           className="relative w-full h-full object-cover"
                           onError={(e) => { e.currentTarget.style.display = "none"; }}
                         />
                       )}
                     </div>
-                    <p className="text-sm font-black text-white">{club.md.name}</p>
+                    <p className="text-sm font-black text-white">{primaryMd?.name}</p>
                   </div>
                   <div className="space-y-1.5">
-                    {club.md.area && (
+                    {primaryMd?.area && (
                       <div className="flex items-center gap-1.5 text-xs text-neutral-400">
-                        <MapPin className="w-3 h-3 shrink-0" /> {Array.isArray(club.md.area) ? club.md.area.join(", ") : club.md.area}
+                        <MapPin className="w-3 h-3 shrink-0" /> {Array.isArray(primaryMd.area) ? primaryMd.area.join(", ") : primaryMd.area}
                       </div>
                     )}
-                    {club.md.created_at && (
+                    {primaryMd?.created_at && (
                       <div className="flex items-center gap-1.5 text-xs text-neutral-400">
                         <Calendar className="w-3 h-3 shrink-0" />
-                        가입 {dayjs(club.md.created_at).format("YYYY-MM-DD")}
-                        <span className="text-neutral-600">({dayjs(club.md.created_at).fromNow()})</span>
+                        가입 {dayjs(primaryMd?.created_at).format("YYYY-MM-DD")}
+                        <span className="text-neutral-600">({dayjs(primaryMd?.created_at).fromNow()})</span>
                       </div>
                     )}
-                    {club.md.instagram ? (
+                    {primaryMd?.instagram ? (
                       <a
-                        href={`https://instagram.com/${club.md.instagram}`}
+                        href={`https://instagram.com/${primaryMd?.instagram}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors"
                       >
-                        <Instagram className="w-3 h-3 shrink-0" /> @{club.md.instagram}
+                        <Instagram className="w-3 h-3 shrink-0" /> @{primaryMd?.instagram}
                         <ExternalLink className="w-2.5 h-2.5" />
                       </a>
                     ) : (
@@ -378,7 +382,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                   </div>
                   <div className="space-y-1.5">
                     <p className="text-[10px] text-neutral-600 font-bold">명함 사진</p>
-                    <ImagePreview url={club.md.business_card_url} label="명함" onPreview={setPreviewImage} />
+                    <ImagePreview url={primaryMd?.business_card_url} label="명함" onPreview={setPreviewImage} />
                   </div>
                 </div>
 
@@ -431,8 +435,8 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                   )}
                 </div>
               </div>
-              {club.md && (
-                <Link href={`/admin/mds/${club.md.id}`} className="mt-3 flex items-center gap-1.5 text-xs font-bold text-neutral-400 hover:text-white transition-colors">
+              {primaryMdId && (
+                <Link href={`/admin/mds/${primaryMdId}`} className="mt-3 flex items-center gap-1.5 text-xs font-bold text-neutral-400 hover:text-white transition-colors">
                   MD 상세 보기 <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               )}

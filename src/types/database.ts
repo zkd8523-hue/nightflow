@@ -36,6 +36,43 @@ export type NotificationStatus = "pending" | "sent" | "failed";
 export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed" | "puzzle_seat_adjusted" | "puzzle_cancelled" | "puzzle_offer_received" | "puzzle_offer_accepted" | "puzzle_offer_rejected" | "puzzle_leader_changed" | "puzzle_member_joined" | "puzzle_visit_pending" | "puzzle_visit_confirmed" | "puzzle_promoted_to_flag";
 export type TableType = "Standard" | "VIP" | "Premium";
 
+/** Migration 175: 깃발 취소 설문 */
+export type PuzzleCancelReason =
+  | "schedule_change"
+  | "no_preferred_venue"
+  | "weak_offers"
+  | "mind_change"
+  | "forgot_about_it"
+  | "other"
+  | "no_answer";
+
+export type PuzzleSurveyTrigger = "self_cancelled" | "selecting_expired";
+
+export interface PuzzleCancellationSurvey {
+  id: string;
+  puzzle_id: string;
+  user_id: string;
+  trigger_type: PuzzleSurveyTrigger;
+  reason_categories: PuzzleCancelReason[];
+  reason_text: string | null;
+  responded_at: string;
+}
+
+export interface PendingCancellationSurvey {
+  puzzle_id: string;
+  trigger_type: PuzzleSurveyTrigger;
+  club_label: string;
+  event_date: string;
+  occurred_at: string;
+}
+
+export interface CancellationSurveyStatRow {
+  reason_category: PuzzleCancelReason;
+  label: string;
+  cnt: number;
+  ratio: number;
+}
+
 export interface TablePosition {
   id: string;
   x: number;  // 0~100 (이미지 대비 퍼센트)
@@ -202,7 +239,7 @@ export interface NotificationLog {
  * Migration 174: 클럽-MD 다대다 조인 테이블
  * 한 클럽에 여러 MD가 파트너로 참여할 수 있다.
  * Phase 3(Migration 178): 코드/RLS가 club_partners 기반으로 동작.
- *   clubs.md_id 는 Phase 4 제거 전까지 양립 유지.
+ * Phase 4(Migration 182): clubs.md_id 컬럼 / 관련 RLS·트리거 제거 완료.
  */
 export interface ClubPartner {
   id: string;
@@ -216,23 +253,6 @@ export interface ClubPartner {
 
 export interface Club {
   id: string;
-  /**
-   * @deprecated Phase 4 제거 예정. 신규 코드는 club_partners 를 사용한다.
-   * Migration 174~178 동안 양립 모드로 유지.
-   */
-  md_id: string | null;
-  md?: {  // Joined MD info (optional, used in Admin pages)
-    id: string;
-    name: string;
-    phone: string;
-    profile_image?: string | null;
-    md_status?: string | null;
-    area?: string | null;
-    instagram?: string | null;
-    business_card_url?: string | null;
-    verification_club_name?: string | null;
-    created_at?: string;
-  } | null;
   name: string;
   address: string;
   address_detail: string | null;  // Floor, unit number, etc.
@@ -261,7 +281,7 @@ export interface Club {
   deleted_at: string | null;
   deleted_by: string | null;
 
-  /** Migration 174~178: 조인해서 가져올 때만 채워짐. 멀티 MD 표시용. */
+  /** Migration 174~182: 조인해서 가져올 때만 채워짐. 멀티 MD 표시 및 상세 정보용. */
   partners?: Array<{
     md_id: string;
     role: ClubPartner["role"];
@@ -270,6 +290,13 @@ export interface Club {
       name: string | null;
       display_name: string | null;
       phone: string | null;
+      profile_image?: string | null;
+      md_status?: string | null;
+      area?: string | null;
+      instagram?: string | null;
+      business_card_url?: string | null;
+      verification_club_name?: string | null;
+      created_at?: string;
     } | null;
   }>;
 }
@@ -586,7 +613,7 @@ export type PuzzleStatus = 'open' | 'selecting' | 'matched' | 'cancelled' | 'exp
 export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'expired';
 
 export type GenderPref = 'male_only' | 'female_only' | 'any';
-export type AgePref = 'early_20s' | 'late_20s' | '30s' | 'any';
+export type AgePref = 'early_20s' | 'late_20s' | '30s' | 'early_30s' | 'mid_30s' | 'any';
 export type VibePref = 'chill' | 'active' | 'any';
 // Migration 156: 음악 선호. NULL = 상관없음(필터 시 모두 통과)
 export type MusicPref = 'hiphop' | 'edm' | 'any';
