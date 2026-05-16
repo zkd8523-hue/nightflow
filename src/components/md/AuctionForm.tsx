@@ -67,6 +67,13 @@ const formSchema = z.object({
         }
         if (!data.event_date) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "방문일시를 선택해주세요.", path: ["event_date"] });
+        } else if (!isEventDateWithinWindow(data.event_date)) {
+            // 과거 날짜 또는 너무 먼 미래 차단 (메인 페이지 노출 조건과 일치시킴)
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: `방문일은 오늘부터 ${EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내로 선택해주세요.`,
+                path: ["event_date"],
+            });
         }
         return; // 조각 모드에서는 아래 auction/instant 검증 스킵
     }
