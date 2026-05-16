@@ -602,7 +602,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "gender" && (
           <>
             <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-white">퍼즐 매칭을 위해 성별을 알려주세요</p>
+              <p className="text-[16px] sm:text-[18px] font-bold text-white whitespace-nowrap tracking-tight">조각 매치를 위해 성별을 알려주세요</p>
               <p className="text-[12px] text-neutral-500">한 번 설정하면 변경할 수 없어요</p>
             </div>
 
