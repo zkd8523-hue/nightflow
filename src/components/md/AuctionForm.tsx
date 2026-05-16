@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction, PriceRecommendation } from "@/types/database";
+import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { Calendar, Wine, Check, ArrowRight, ImageIcon, ChevronDown, MapPin, X, RefreshCw, Building2, Users, Bookmark, Minus, Plus, Coins, MessageCircle } from "lucide-react";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
@@ -171,7 +172,15 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         ? initialData.price_per_seat * initialData.total_seats : 0;
     const [totalPrice, setTotalPrice] = useState(initialTotalPrice);
     const [totalPriceInputStr, setTotalPriceInputStr] = useState(initialTotalPrice ? initialTotalPrice.toLocaleString() : "");
-    const initialSeats = Math.min(initialData?.total_seats ?? 2, 6);
+    const initialSeats = Math.min(initialData?.total_seats ?? 4, 6);
+    const [targetCount, setTargetCount] = useState(initialSeats);
+    const [useGenderSlot, setUseGenderSlot] = useState(false);
+    const [mdMessageEverEdited, setMdMessageEverEdited] = useState(!!(initialData?.md_message));
+    const [kakaoUrl, setKakaoUrl] = useState(initialData?.kakao_open_chat_url ?? "");
+    const [hasExternal, setHasExternal] = useState(!!(initialData?.external_attendees && initialData.external_attendees > 0));
+    const [externalCount, setExternalCount] = useState(initialData?.external_attendees || 1);
+    const [externalMale, setExternalMale] = useState(1);
+    const [externalFemale, setExternalFemale] = useState(0);
     const [targetMale, setTargetMale] = useState(Math.ceil(initialSeats / 2));
     const [targetFemale, setTargetFemale] = useState(Math.floor(initialSeats / 2));
     const [showTemplateSavePrompt, setShowTemplateSavePrompt] = useState(false);
@@ -309,13 +318,35 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         setIsClubImage(false);
     }, [selectedClubId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // 성별 슬롯 변경 시 total_seats 동기화
+    // 인원 변경 시 total_seats 동기화 (성비 모드 여부에 따라 분기)
     useEffect(() => {
         if (!isShareMode) return;
-        setValue("total_seats", targetMale + targetFemale);
-    }, [targetMale, targetFemale]); // eslint-disable-line react-hooks/exhaustive-deps
+        setValue("total_seats", useGenderSlot ? targetMale + targetFemale : targetCount);
+    }, [targetCount, targetMale, targetFemale, useGenderSlot]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // 총가격 or 정원 변경 시 price_per_seat 자동 계산
+    // MD 한마디 자동 채움 (수동 입력 전까지만)
+    useEffect(() => {
+        if (!isShareMode || mdMessageEverEdited) return;
+        const eventDate = watch("event_date");
+        const clubName = selectedClub?.name || "";
+        const seats = useGenderSlot ? targetMale + targetFemale : targetCount;
+        const perPerson = totalPrice > 0 && seats > 0 ? Math.floor(totalPrice / seats) : 0;
+        const parts = [
+            clubName,
+            seats > 0 ? `${seats}명` : "",
+            perPerson > 0 ? `N${Math.round(perPerson / 10000)}만` : "",
+        ].filter(Boolean);
+        if (eventDate) {
+            const d = new Date(eventDate + "T00:00:00");
+            const days = ["일", "월", "화", "수", "목", "금", "토"];
+            const datePart = `${d.getMonth() + 1}/${d.getDate()}(${days[d.getDay()]})`;
+            setValue("md_message", `${datePart} ${parts.join(" ")}`);
+        } else if (parts.length > 0) {
+            setValue("md_message", parts.join(" "));
+        }
+    }, [watch("event_date"), selectedClub?.name, targetCount, targetMale, targetFemale, useGenderSlot, totalPrice, mdMessageEverEdited, isShareMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 목표 매출 or 정원 변경 시 price_per_seat 자동 계산
     const watchedTotalSeats = watch("total_seats");
     useEffect(() => {
         if (!isShareMode) return;
@@ -420,8 +451,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     };
 
     const onSubmit = async (values: FormValues) => {
-        // 가격 확인 (신규 등록 OR 수정 시 입찰 없으면)
-        if (!initialData || (initialData && initialData.bid_count === 0)) {
+        // 가격 확인 (신규 등록 OR 수정 시 입찰 없으면, share 모드 제외)
+        if (!isShareMode && (!initialData || (initialData && initialData.bid_count === 0))) {
             const ABSOLUTE_MIN = 50000;
             const hasSmartPricing = priceRec?.sufficient_data && priceRec?.suggested_start_price;
             const recommendedPrice = priceRec?.suggested_start_price || 0;
@@ -488,12 +519,15 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     total_seats: values.total_seats,
                     price_per_seat: values.price_per_seat,
                     main_alcohol: values.main_alcohol || null,
-                    share_deadline: values.share_deadline,
+                    share_deadline: values.event_date ? dayjs(values.event_date).endOf("day").toISOString() : new Date().toISOString(),
                     includes: values.includes || [],
                     md_comment: values.md_comment || null,
                     md_message: values.md_message || null,
                     status: "active",
                     // 경매 필수 컬럼 (legacy, 기본값)
+                    table_type: "Standard",
+                    min_people: values.total_seats || targetCount,
+                    max_people: values.total_seats || targetCount,
                     start_price: values.price_per_seat || 0,
                     original_price: values.price_per_seat || 0,
                     reserve_price: 0,
@@ -501,13 +535,14 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     bid_count: 0,
                     bidder_count: 0,
                     auction_start_at: new Date().toISOString(),
-                    auction_end_at: values.share_deadline,
+                    auction_end_at: values.event_date ? dayjs(values.event_date).endOf("day").toISOString() : new Date().toISOString(),
                     duration_minutes: 0,
                     auto_extend_min: 0,
                     max_extensions: 0,
                     bid_increment: 0,
                     seats_claimed: 0,
-                    external_attendees: 0,
+                    external_attendees: hasExternal ? (useGenderSlot ? externalMale + externalFemale : externalCount) : 0,
+                    kakao_open_chat_url: kakaoUrl.trim() || null,
                 };
                 if (thumbnailUrl) shareData.thumbnail_url = thumbnailUrl;
 
@@ -921,7 +956,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         {...register("table_info")}
                         type="text"
                         disabled={!isTermsEditable}
-                        placeholder="테이블 위치를 입력하세요. 예) A3"
+                        placeholder="예) A3, B~C열"
                         className={`bg-neutral-900 border-neutral-800 h-11 rounded-lg text-white ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                     {errors.table_info && <p className="text-red-500 text-xs">{errors.table_info?.message?.toString()}</p>}
@@ -1042,14 +1077,17 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                   {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date.message?.toString()}</p>}
                 </section>
 
-                {/* 2. 총 가격 */}
+                {/* 2. 매출설정 */}
                 <section className="space-y-4">
                   <div className="flex items-center gap-2 text-white font-bold mb-2">
                     <Coins className="w-4 h-4 text-amber-500" />
-                    <span>총 가격</span>
+                    <span>조각 설정</span>
                   </div>
-                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
-                    <div className="relative">
+                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-5">
+
+                    {/* 목표 매출 */}
+                    <div className="space-y-3">
+                      <p className="text-[12px] text-neutral-400 font-medium">목표 매출</p>
                       <Input
                         type="text"
                         inputMode="numeric"
@@ -1067,154 +1105,315 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         disabled={hasBids}
                         className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500"
                       />
-                    </div>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {[500000, 100000, 50000].map((preset) => (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[500000, 100000, 50000].map((preset) => (
+                          <Button
+                            key={preset}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={hasBids}
+                            onClick={() => {
+                              const next = totalPrice + preset;
+                              setTotalPrice(next);
+                              setTotalPriceInputStr(next.toLocaleString());
+                            }}
+                            className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-[13px]"
+                          >
+                            +{preset / 10000}만
+                          </Button>
+                        ))}
                         <Button
-                          key={preset}
                           type="button"
                           variant="outline"
                           size="sm"
                           disabled={hasBids}
-                          onClick={() => {
-                            const next = totalPrice + preset;
-                            setTotalPrice(next);
-                            setTotalPriceInputStr(next.toLocaleString());
-                          }}
-                          className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-[13px]"
+                          onClick={() => { setTotalPrice(0); setTotalPriceInputStr(""); }}
+                          className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-[13px]"
                         >
-                          +{preset / 10000}만
+                          초기화
                         </Button>
-                      ))}
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={hasBids}
-                        onClick={() => { setTotalPrice(0); setTotalPriceInputStr(""); }}
-                        className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-[13px]"
-                      >
-                        초기화
-                      </Button>
+                      </div>
+                      {errors.price_per_seat && <p className="text-red-500 text-[11px]">{errors.price_per_seat.message?.toString()}</p>}
                     </div>
-                    {totalPrice > 0 && (
-                      <p className="text-[13px] font-bold text-white">
-                        총 <span className="text-amber-400">{totalPrice.toLocaleString()}원</span>
-                        {" "}÷ {watch("total_seats") || 2}명 = 인당{" "}
-                        <span className="text-green-400">
-                          {Math.floor(totalPrice / (watch("total_seats") || 2)).toLocaleString()}원
-                        </span>
-                      </p>
-                    )}
-                    {errors.price_per_seat && <p className="text-red-500 text-[11px]">{errors.price_per_seat.message?.toString()}</p>}
-                  </div>
-                </section>
 
-                {/* 3. 정원 */}
-                <section className="space-y-4">
-                  <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Users className="w-4 h-4 text-green-500" />
-                    <span>정원</span>
-                  </div>
-                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[11px] text-neutral-400">성별 구성</p>
-                      <p className="text-[11px] text-neutral-500">최소 2명, 최대 6명</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {/* 남자 슬롯 */}
-                      <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                    <div className="border-t border-neutral-800" />
+
+                    {/* 인원 */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-[12px] text-neutral-400 font-medium">인원</p>
+                        <p className="text-[11px] text-neutral-500">최소 2명, 최대 6명</p>
+                      </div>
+                      {/* 목표 인원 수 picker */}
+                      <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
                         <button
                           type="button"
-                          disabled={hasBids || (targetMale === 0 && targetMale + targetFemale <= 2)}
+                          disabled={hasBids || targetCount <= 2}
                           onClick={() => {
-                            if (targetMale > 0 && targetMale + targetFemale > 2) setTargetMale(targetMale - 1);
+                            const next = Math.max(2, targetCount - 1);
+                            setTargetCount(next);
+                            setTargetMale(Math.ceil(next / 2));
+                            setTargetFemale(Math.floor(next / 2));
                           }}
                           className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <Minus className="w-3.5 h-3.5 text-white" />
                         </button>
-                        <span className="text-[14px] font-black text-green-400">🧑 {targetMale}</span>
+                        <span className="text-[15px] font-black text-white">{targetCount}명</span>
                         <button
                           type="button"
-                          disabled={hasBids || targetMale + targetFemale >= 6}
+                          disabled={hasBids || targetCount >= 6}
                           onClick={() => {
-                            if (targetMale + targetFemale < 20) setTargetMale(targetMale + 1);
+                            const next = Math.min(6, targetCount + 1);
+                            setTargetCount(next);
+                            setTargetMale(Math.ceil(next / 2));
+                            setTargetFemale(Math.floor(next / 2));
                           }}
                           className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <Plus className="w-3.5 h-3.5 text-white" />
                         </button>
                       </div>
-                      {/* 여자 슬롯 */}
-                      <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
-                        <button
-                          type="button"
-                          disabled={hasBids || (targetFemale === 0 && targetMale + targetFemale <= 2)}
-                          onClick={() => {
-                            if (targetFemale > 0 && targetMale + targetFemale > 2) setTargetFemale(targetFemale - 1);
-                          }}
-                          className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          <Minus className="w-3.5 h-3.5 text-white" />
-                        </button>
-                        <span className="text-[14px] font-black text-pink-400">👩 {targetFemale}</span>
-                        <button
-                          type="button"
-                          disabled={hasBids || targetMale + targetFemale >= 6}
-                          onClick={() => {
-                            if (targetMale + targetFemale < 20) setTargetFemale(targetFemale + 1);
-                          }}
-                          className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                          <Plus className="w-3.5 h-3.5 text-white" />
-                        </button>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-neutral-500">
-                      총 <span className="text-white font-bold">{targetMale + targetFemale}명</span>
-                    </p>
-                    {errors.total_seats && <p className="text-red-500 text-[11px]">{errors.total_seats.message?.toString()}</p>}
-                  </div>
-                </section>
-
-                {/* 4. 메인 주류 */}
-                <section className="space-y-4">
-                  <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Wine className="w-4 h-4 text-purple-500" />
-                    <span>메인 주류</span>
-                  </div>
-                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-4 py-3 space-y-2.5">
-                    <div className="flex items-center gap-3">
-                      <p className="text-[11px] text-neutral-400 w-8 shrink-0">추천</p>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {["발렌타인17", "시바스리갈18", "임페리얼12", "조니워커블랙", "글렌피딕12"].map((item) => {
-                          const selected = watch("main_alcohol") === item;
-                          return (
+                      {/* 확정 인원 */}
+                      <div className="pt-1 border-t border-neutral-800 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[13px] font-bold text-white">이미 확정된 인원이 있나요?</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = !hasExternal;
+                              setHasExternal(next);
+                              if (!next) { setExternalCount(1); setExternalMale(1); setExternalFemale(0); }
+                            }}
+                            className={`relative w-11 h-6 rounded-full transition-colors ${hasExternal ? "bg-white" : "bg-neutral-700"}`}
+                          >
+                            <span className={`absolute top-1 w-4 h-4 rounded-full bg-black transition-all ${hasExternal ? "left-6" : "left-1"}`} />
+                          </button>
+                        </div>
+                        {hasExternal && !useGenderSlot && (
+                          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
                             <button
-                              key={item}
                               type="button"
-                              onClick={() => setValue("main_alcohol", selected ? "" : item)}
-                              aria-pressed={selected}
-                              className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
-                                selected
-                                  ? "bg-white text-black"
-                                  : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                              }`}
+                              disabled={externalCount <= 1}
+                              onClick={() => setExternalCount(Math.max(1, externalCount - 1))}
+                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
-                              {item}
+                              <Minus className="w-3.5 h-3.5 text-white" />
                             </button>
-                          );
-                        })}
+                            <span className="text-[15px] font-black text-white">확정 {externalCount}명</span>
+                            <button
+                              type="button"
+                              disabled={externalCount >= targetCount - 1}
+                              onClick={() => setExternalCount(Math.min(targetCount - 1, externalCount + 1))}
+                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Plus className="w-3.5 h-3.5 text-white" />
+                            </button>
+                          </div>
+                        )}
+                        {hasExternal && useGenderSlot && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                              <button
+                                type="button"
+                                disabled={externalMale <= 0}
+                                onClick={() => setExternalMale(externalMale - 1)}
+                                className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Minus className="w-3.5 h-3.5 text-white" />
+                              </button>
+                              <span className="text-[14px] font-black text-green-400">🧑 {externalMale}</span>
+                              <button
+                                type="button"
+                                disabled={externalMale + externalFemale >= targetCount - 1}
+                                onClick={() => setExternalMale(externalMale + 1)}
+                                className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Plus className="w-3.5 h-3.5 text-white" />
+                              </button>
+                            </div>
+                            <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                              <button
+                                type="button"
+                                disabled={externalFemale <= 0}
+                                onClick={() => setExternalFemale(externalFemale - 1)}
+                                className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Minus className="w-3.5 h-3.5 text-white" />
+                              </button>
+                              <span className="text-[14px] font-black text-pink-400">👩 {externalFemale}</span>
+                              <button
+                                type="button"
+                                disabled={externalMale + externalFemale >= targetCount - 1}
+                                onClick={() => setExternalFemale(externalFemale + 1)}
+                                className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Plus className="w-3.5 h-3.5 text-white" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
+
+                      {/* 성비 설정 토글 */}
+                      <div className="flex items-center justify-between gap-3 pt-1 border-t border-neutral-800">
+                        <span className="text-[13px] font-bold text-white">성비를 설정하시겠습니까?</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = !useGenderSlot;
+                            setUseGenderSlot(next);
+                            if (next) {
+                              setTargetMale(Math.ceil(targetCount / 2));
+                              setTargetFemale(Math.floor(targetCount / 2));
+                              setExternalMale(externalCount);
+                              setExternalFemale(0);
+                            }
+                          }}
+                          className={`relative w-11 h-6 rounded-full transition-colors ${useGenderSlot ? "bg-white" : "bg-neutral-700"}`}
+                        >
+                          <span className={`absolute top-1 w-4 h-4 rounded-full bg-black transition-all ${useGenderSlot ? "left-6" : "left-1"}`} />
+                        </button>
+                      </div>
+                      {/* 성비 슬롯 picker — 항상 합계 = targetCount */}
+                      {useGenderSlot && (
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                            <button
+                              type="button"
+                              disabled={hasBids || targetMale <= 0}
+                              onClick={() => { const m = targetMale - 1; setTargetMale(m); setTargetFemale(targetCount - m); }}
+                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Minus className="w-3.5 h-3.5 text-white" />
+                            </button>
+                            <span className="text-[14px] font-black text-green-400">🧑 {targetMale}</span>
+                            <button
+                              type="button"
+                              disabled={hasBids || targetMale >= targetCount}
+                              onClick={() => { const m = targetMale + 1; setTargetMale(m); setTargetFemale(targetCount - m); }}
+                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Plus className="w-3.5 h-3.5 text-white" />
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                            <button
+                              type="button"
+                              disabled={hasBids || targetFemale <= 0}
+                              onClick={() => { const f = targetFemale - 1; setTargetFemale(f); setTargetMale(targetCount - f); }}
+                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Minus className="w-3.5 h-3.5 text-white" />
+                            </button>
+                            <span className="text-[14px] font-black text-pink-400">👩 {targetFemale}</span>
+                            <button
+                              type="button"
+                              disabled={hasBids || targetFemale >= targetCount}
+                              onClick={() => { const f = targetFemale + 1; setTargetFemale(f); setTargetMale(targetCount - f); }}
+                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                              <Plus className="w-3.5 h-3.5 text-white" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {(() => {
+                        const confirmed = hasExternal
+                          ? (useGenderSlot ? externalMale + externalFemale : externalCount)
+                          : 0;
+                        const seeking = targetCount - confirmed;
+                        const perPerson = totalPrice > 0
+                          ? Math.floor(totalPrice / (useGenderSlot ? (targetMale + targetFemale || 1) : (targetCount || 1)))
+                          : null;
+                        return (
+                          <div className="flex items-center justify-between">
+                            <p className="text-[12px] text-green-400 font-bold">
+                              {seeking > 0
+                                ? useGenderSlot
+                                  ? (() => {
+                                      const sm = targetMale - (hasExternal ? externalMale : 0);
+                                      const sf = targetFemale - (hasExternal ? externalFemale : 0);
+                                      const parts = [...(sm > 0 ? [`남자${sm}`] : []), ...(sf > 0 ? [`여자${sf}`] : [])];
+                                      return `🧩 ${parts.join("/")}명의 조각을 구해요`;
+                                    })()
+                                  : `🧩 총 ${seeking}명의 조각을 구해요`
+                                : "🧩 정원이 꽉 찼어요"}
+                            </p>
+                            {perPerson !== null ? (
+                              <p className="text-[15px] font-black text-green-400">
+                                {perPerson.toLocaleString()}원
+                                <span className="text-[11px] text-neutral-500 font-normal ml-1">/인</span>
+                              </p>
+                            ) : (
+                              <p className="text-[11px] text-neutral-600">N비 미설정</p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      {useGenderSlot && (
+                        <p className="text-[11px] text-neutral-500">성비는 목표값이에요. 초과 인원도 MD 재량으로 승인할 수 있어요.<br />(ex: 세팅값 남자3·여자1. 현재 남자3·여자0 일때, 남자가 신청시 승인 가능. 최종 남자4·여자0)</p>
+                      )}
+                      {errors.total_seats && <p className="text-red-500 text-[11px]">{errors.total_seats.message?.toString()}</p>}
                     </div>
-                    <Input
-                      type="text"
-                      placeholder="직접 입력 (예: 맥캘란12)"
-                      value={watch("main_alcohol") || ""}
-                      onChange={(e) => setValue("main_alcohol", e.target.value)}
-                      className="bg-neutral-900 border-neutral-800 h-11 text-[13px] font-bold text-white placeholder:text-neutral-600 placeholder:font-normal focus:ring-amber-500"
-                    />
+
+                  </div>
+                </section>
+
+                {/* 4. 주류 & 테이블 구성 */}
+                <LiquorSelector
+                  selected={selectedIncludes.filter((item: string) =>
+                    LIQUOR_KEYWORDS.some((kw) => item.includes(kw))
+                  )}
+                  onSelect={(liquors) => {
+                    const extras = selectedIncludes.filter(
+                      (item: string) => !LIQUOR_KEYWORDS.some((kw) => item.includes(kw))
+                    );
+                    setValue("includes", [...liquors, ...extras]);
+                  }}
+                />
+                <section className="space-y-3">
+                  <div className="flex items-center gap-2 text-white font-bold mb-1">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span>테이블 구성</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {EXTRAS_OPTIONS.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => toggleInclude(item)}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap flex items-center gap-1 transition-all flex-shrink-0 ${
+                          selectedIncludes.includes(item)
+                            ? "bg-green-500 text-black"
+                            : "bg-neutral-900 text-neutral-500 border border-neutral-800"
+                        }`}
+                      >
+                        {selectedIncludes.includes(item) && <Check className="w-3 h-3" />}
+                        {item}
+                      </button>
+                    ))}
+                    {selectedIncludes
+                      .filter((item: string) => !EXTRAS_OPTIONS.includes(item as typeof EXTRAS_OPTIONS[number]) && !LIQUOR_KEYWORDS.some(kw => item.includes(kw)))
+                      .map((item: string) => (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() => toggleInclude(item)}
+                          className="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap flex items-center gap-1 transition-all flex-shrink-0 bg-green-500 text-black"
+                        >
+                          <X className="w-3 h-3" />
+                          {item}
+                        </button>
+                      ))}
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomExtraSheet(true)}
+                      className="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-neutral-900 text-neutral-400 border border-neutral-800 hover:border-neutral-600 hover:text-white transition-all flex-shrink-0"
+                    >
+                      + 직접 입력
+                    </button>
                   </div>
                 </section>
 
@@ -1234,11 +1433,39 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     <Input
                       type="text"
                       value={watch("md_message") || ""}
-                      onChange={(e) => setValue("md_message", e.target.value)}
-                      placeholder="예) 4명, 메인테이블, 분위기 좋은 자리"
+                      onChange={(e) => {
+                        setValue("md_message", e.target.value);
+                        setMdMessageEverEdited(true);
+                      }}
+                      placeholder="예) 5/17(토) 아레나 4명 N25만"
                       maxLength={60}
                       className="bg-neutral-900 border-neutral-800 h-12 text-[14px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal"
                     />
+                  </div>
+                </section>
+
+                {/* 6. 카톡 오픈채팅 */}
+                <section className="space-y-4">
+                  <div className="flex items-baseline gap-2 text-white font-bold mb-2">
+                    <MessageCircle className="w-4 h-4 text-yellow-400 self-center" />
+                    <span>카톡 오픈채팅 링크</span>
+                    {initialData && (
+                      <span className="text-[11px] text-neutral-500 font-normal">수정 불가</span>
+                    )}
+                  </div>
+                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
+                    <Input
+                      type="url"
+                      value={kakaoUrl}
+                      onChange={(e) => setKakaoUrl(e.target.value)}
+                      placeholder="https://open.kakao.com/..."
+                      readOnly={!!initialData}
+                      disabled={!!initialData}
+                      className="bg-neutral-900 border-neutral-800 h-11 text-[13px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal disabled:opacity-70 disabled:cursor-not-allowed"
+                    />
+                    {!initialData && (
+                      <KakaoOpenChatGuide suggestedTitle={`[나플] ${selectedClub?.name || ""} ${watch("event_date") ? watch("event_date").slice(5).replace("-", "/") : ""} ${targetCount}명`} />
+                    )}
                   </div>
                 </section>
               </>
@@ -1324,62 +1551,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 </div>
             </section>}
 
-            {/* 테이블 구성 */}
-            <section className={`space-y-3 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
-                <div className="flex items-center gap-2 text-white font-bold mb-1">
-                    <Check className="w-4 h-4 text-green-500" />
-                    <span>테이블 구성</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                    {EXTRAS_OPTIONS.map((item) => (
-                        <button
-                            key={item}
-                            type="button"
-                            onClick={() => toggleInclude(item)}
-                            className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap flex items-center gap-1 transition-all flex-shrink-0 ${selectedIncludes.includes(item)
-                                ? "bg-green-500 text-black"
-                                : "bg-neutral-900 text-neutral-500 border border-neutral-800"
-                                }`}
-                        >
-                            {selectedIncludes.includes(item) && <Check className="w-3 h-3" />}
-                            {item}
-                        </button>
-                    ))}
-                    {/* 직접 추가된 커스텀 항목 */}
-                    {selectedIncludes
-                        .filter((item: string) => !EXTRAS_OPTIONS.includes(item) && !LIQUOR_KEYWORDS.some(kw => item.includes(kw)))
-                        .map((item: string) => (
-                            <button
-                                key={item}
-                                type="button"
-                                onClick={() => toggleInclude(item)}
-                                className="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap flex items-center gap-1 transition-all flex-shrink-0 bg-green-500 text-black"
-                            >
-                                <X className="w-3 h-3" />
-                                {item}
-                            </button>
-                        ))}
-                    {/* 직접 입력 버튼 */}
-                    <button
-                        type="button"
-                        onClick={() => setShowCustomExtraSheet(true)}
-                        className="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-neutral-900 text-neutral-400 border border-neutral-800 hover:border-neutral-600 hover:text-white transition-all flex-shrink-0"
-                    >
-                        + 직접 입력
-                    </button>
-                </div>
-
-                {/* 주류 변경 안내 */}
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 space-y-1">
-                    <p className="text-[11px] text-amber-500 font-bold">주류 변경 안내</p>
-                    <p className="text-[10px] text-amber-500/80">• 현장에서 동급 브랜드 변경 가능</p>
-                    <p className="text-[10px] text-amber-500/80">• {isInstantMode ? "예약가" : "낙찰가"} 이하 환불 불가</p>
-                </div>
-                {errors.includes && <p className="text-red-500 text-[11px]">{errors.includes?.message?.toString()}</p>}
-            </section>
-
             {/* 7. 경매 마감 */}
-            <section className="space-y-4">
+            {!isShareMode && <section className="space-y-4">
                 <div className="flex items-center gap-2 text-white font-bold mb-2">
                     <Calendar className="w-4 h-4 text-green-500" />
                     <span>경매 마감</span>
@@ -1485,49 +1658,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         {errors.auction_end_at && <p className="text-red-500 text-[11px] mt-2">{errors.auction_end_at?.message?.toString()}</p>}
                     </div>
                 </div>
-            </section>
+            </section>}
 
-            {/* MD 메시지: 제목 + 한마디 */}
-            <section className="space-y-3">
-                <div className="flex items-center gap-2 text-white font-bold">
-                    <span>MD 메시지</span>
-                    <span className="text-[11px] text-neutral-500 font-normal">(필수x)</span>
-                </div>
-
-                {/* 제목 (카드 + 상세 헤드라인, 15자) */}
-                <div className="space-y-1">
-                    <label className="text-[11px] text-neutral-500 font-medium">제목 (카드에 노출)</label>
-                    <div className="relative">
-                        <Input
-                            type="text"
-                            maxLength={15}
-                            placeholder="(예) 오늘 서비스 넉넉해요! 🔥"
-                            {...register("md_comment")}
-                            className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] pr-10"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-neutral-600 pointer-events-none">
-                            {watch("md_comment")?.length || 0}/15
-                        </span>
-                    </div>
-                </div>
-
-                {/* 한마디 본문 (상세에만 노출, 60자) */}
-                <div className="space-y-1">
-                    <label className="text-[11px] text-neutral-500 font-medium">한마디 (상세페이지에 노출)</label>
-                    <div className="relative">
-                        <Textarea
-                            maxLength={60}
-                            rows={2}
-                            placeholder="(예) 오늘 시그니처 풀세팅, 디제이 라인업도 빵빵해요 🔥"
-                            {...register("md_message")}
-                            className="bg-neutral-900 border-neutral-800 text-white text-[13px] pr-12 resize-none"
-                        />
-                        <span className="absolute right-3 bottom-2 text-[10px] text-neutral-600 pointer-events-none">
-                            {watch("md_message")?.length || 0}/60
-                        </span>
-                    </div>
-                </div>
-            </section>
 
             <div className="mt-12 px-1">
                 <div className="max-w-lg mx-auto">

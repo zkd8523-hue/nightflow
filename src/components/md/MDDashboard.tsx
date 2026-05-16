@@ -173,6 +173,10 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
         a.listing_type === "auction" && isCompleted(a) && !["won", "contacted"].includes(a.status)
     );
 
+    // 조각: share 타입
+    const shareAuctions = auctions.filter(a => a.listing_type === "share" && !isCompleted(a));
+    const completedShareAuctions = auctions.filter(a => a.listing_type === "share" && isCompleted(a));
+
     // 오늘특가 정렬: active 먼저 → 마감 임박순
     const sortedTodayAuctions = [...activeTodayAuctions].sort((a, b) => {
         const aActive = isAuctionActive(a) ? 0 : 1;
@@ -293,16 +297,11 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
 
             {/* Auction Tabs + Register Button */}
             <div className="px-4 mt-1">
-                <Tabs defaultValue="puzzle" className="w-full">
+                <Tabs defaultValue="share" className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">
-                            {showTodayTab && (
-                                <TabsTrigger value="today" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
-                                    🔥 오늘특가 {activeTodayAuctions.length > 0 && <span className="ml-0.5 text-amber-500">{activeTodayAuctions.length}</span>}
-                                </TabsTrigger>
-                            )}
-                            <TabsTrigger value="earlybird" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
-                                📅 얼리버드 {sortedEarlyBirdTop.length > 0 && <span className="ml-0.5 text-amber-500">{sortedEarlyBirdTop.length}</span>}
+                            <TabsTrigger value="share" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
+                                🧩 조각 {shareAuctions.length > 0 && <span className="ml-0.5 text-green-400">{shareAuctions.length}</span>}
                             </TabsTrigger>
                             <TabsTrigger value="puzzle" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
                                 ⛳ 깃발 {initialPuzzleOffers.length > 0 && <span className="ml-0.5 text-amber-400">{initialPuzzleOffers.length}</span>}
@@ -509,6 +508,33 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                                     </Link>
                                 </div>
                             ) : null}
+                        </TabsContent>
+
+                        {/* 조각 탭 */}
+                        <TabsContent value="share" className="space-y-3 m-0">
+                            {shareAuctions.length > 0 ? (
+                                shareAuctions.map(auction => (
+                                    <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} favoriteCount={clubFavCounts[auction.club_id || ""] || 0} />
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
+                                    <p className="text-3xl">🧩</p>
+                                    <p className="text-neutral-400 text-sm font-medium">등록된 조각이 없습니다</p>
+                                    <Link href="/md/auctions/new">
+                                        <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">
+                                            조각 등록하기
+                                        </Button>
+                                    </Link>
+                                </div>
+                            )}
+                            {completedShareAuctions.length > 0 && (
+                                <div className="mt-4 space-y-2">
+                                    <p className="text-[11px] text-neutral-600 font-bold px-1">종료된 조각</p>
+                                    {completedShareAuctions.map(auction => (
+                                        <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} favoriteCount={clubFavCounts[auction.club_id || ""] || 0} />
+                                    ))}
+                                </div>
+                            )}
                         </TabsContent>
 
                     </div>

@@ -378,6 +378,7 @@ export interface Auction {
   external_attendees: number;
   main_alcohol: string | null;
   share_date: string | null;
+  kakao_open_chat_url: string | null; // Migration 187: 조각 오픈채팅 링크
 
   // JOIN 관계
   club?: Club;

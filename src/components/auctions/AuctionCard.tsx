@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Auction } from "@/types/database";
-import { formatNumber, formatTime, formatCountdown, formatCountdownLong, categorizeLiquor } from "@/lib/utils/format";
+import { formatNumber, formatTime, formatCountdown, formatCountdownLong, categorizeLiquor, formatRelativeTime } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES } from "@/lib/constants/timer-urgency";
@@ -13,6 +13,7 @@ import { Gavel, Zap, BadgeCheck, Flame, Users } from "lucide-react";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
+import { PuzzlePiece } from "@/components/puzzles/PuzzleCard";
 
 interface AuctionCardProps {
   auction: Auction;
@@ -55,6 +56,102 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
     : (!isCompleted && !isExpired && auction.bid_count > 0
       ? `${auction.bidder_count || auction.bid_count}명 입찰 중`
       : null);
+
+  // 조각(share) 전용 레이아웃 — PuzzleCard와 동일한 구조
+  if (isShare) {
+    const totalBudget = (auction.price_per_seat ?? 0) * totalSeats;
+    const currentBudget = (auction.price_per_seat ?? 0) * totalFilled;
+    const isNew = Date.now() - new Date(auction.created_at).getTime() < 6 * 60 * 60 * 1000;
+
+    return (
+      <Link href={`/auctions/${auction.id}`}>
+        <div className="relative bg-[#1C1C1E] rounded-2xl p-4 space-y-3 active:scale-[0.98] transition-all cursor-pointer">
+          {isNew && (
+            <div className="animate-new-badge pointer-events-none absolute -top-4 -right-2.5 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none">
+              NEW!
+            </div>
+          )}
+          <div className="absolute top-3 right-3 z-10">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
+              🧩 조각
+            </span>
+          </div>
+
+          {/* 제목 + 지역 */}
+          <div className="flex items-start justify-between">
+            <div className="flex flex-col gap-1 flex-1 pr-16">
+              <div className="text-[18px] font-black leading-snug break-keep tracking-tight">
+                <span className="text-white">{club?.name}</span>
+                {club?.area && (
+                  <span className="text-neutral-500 text-[14px] ml-1.5 font-bold tracking-normal align-middle">
+                    {club.area}
+                  </span>
+                )}
+              </div>
+              {auction.md_message && (
+                <p className="text-[13px] text-neutral-400 font-medium leading-snug">{auction.md_message}</p>
+              )}
+            </div>
+          </div>
+
+          {/* 가격 + 퍼즐 피스 */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-baseline gap-1">
+              <span className="text-[18px] font-black text-green-400">
+                N {(auction.price_per_seat ?? 0).toLocaleString()}원
+              </span>
+            </div>
+            <div className="space-y-1">
+              {isShareFull && (
+                <span className="text-[13px] text-green-400 font-bold">조각 완성! 🎉</span>
+              )}
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from({ length: totalSeats }).map((_, i) => (
+                  <PuzzlePiece key={i} filled={i < totalFilled} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 주류 */}
+          {(() => {
+            const all = auction.includes || [];
+            const { liquor } = categorizeLiquor(all);
+            const liquorOnly = all.filter(item => liquor.includes(item));
+            const hasExtras = all.length > liquorOnly.length;
+            if (liquorOnly.length === 0) return null;
+            return (
+              <span className="text-[10px] text-neutral-500">
+                {liquorOnly.map((item, i) => (
+                  <span key={item}>
+                    {i > 0 && <span className="text-neutral-600 mx-1">&middot;</span>}
+                    <span className="text-amber-400/90 font-medium">{item.replace(/병$/, "")}</span>
+                  </span>
+                ))}
+                {hasExtras && <span className="text-neutral-600 ml-1">+α</span>}
+              </span>
+            );
+          })()}
+
+          {/* CTA */}
+          <div className="relative">
+            <p className="absolute -top-5 right-1 text-[10px] text-neutral-500 whitespace-nowrap pointer-events-none" suppressHydrationWarning>
+              {formatRelativeTime(auction.created_at)}
+            </p>
+            <Button
+              className={`w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] ${
+                isShareFull
+                  ? "bg-neutral-800 text-neutral-500 cursor-not-allowed pointer-events-none"
+                  : "bg-amber-500 hover:bg-amber-400 text-black"
+              }`}
+            >
+              {isShareFull ? "마감" : "참여하기"}
+            </Button>
+          </div>
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <div>
@@ -142,8 +239,17 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 </div>
               </div>
 
-              {/* 타이머/상태 */}
-              <div className="flex items-center mt-1 -ml-1">
+              {/* share: 퍼즐 슬롯 아이콘 */}
+              {isShare && (
+                <div className="flex items-center gap-1 mt-2 flex-wrap">
+                  {Array.from({ length: totalSeats }).map((_, i) => (
+                    <PuzzlePiece key={i} filled={i < totalFilled} />
+                  ))}
+                </div>
+              )}
+
+              {/* 타이머/상태 (share 제외) */}
+              {!isShare && <div className="flex items-center mt-1 -ml-1">
                 {isActive && countdown.level === 'idle' && (
                   <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${timerStyles.bg}`}>
                     <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
@@ -181,7 +287,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                     취소
                   </Badge>
                 )}
-              </div>
+              </div>}
             </div>
           </div>
 
@@ -196,16 +302,9 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
           {/* Bottom Bar: share 전용 */}
           {isShare ? (
             <div className="mt-2 space-y-1.5">
-              {/* 좌석 진행 상황 */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-neutral-400" />
-                  <span className="text-[12px] text-neutral-300 font-medium">
-                    {totalFilled}/{totalSeats}자리 채워짐
-                  </span>
-                </div>
-                {/* 라스트 N 강조 */}
-                {isShareActive && seatsLeft <= 2 && (
+              {/* 라스트 N 강조 */}
+              <div className="flex justify-end">
+                {isShareActive && totalFilled > 0 && (seatsLeft <= 2 || seatsLeft / totalSeats <= 0.34) && (
                   <span className={`flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${
                     seatsLeft === 1
                       ? "bg-red-500/20 text-red-400 border border-red-500/30"

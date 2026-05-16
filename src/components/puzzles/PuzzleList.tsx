@@ -392,9 +392,8 @@ export function PuzzleList({
             const recentPuzzles = filteredPuzzles
               .filter(p => now - new Date(p.created_at).getTime() < RECENT_THRESHOLD_MS)
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            const recentTitle = "방금 등록된 퍼즐";
-            const recentIdSet = new Set(recentPuzzles.map(p => p.id));
-            const rest = filteredPuzzles.filter(p => !recentIdSet.has(p.id));
+            const recentTitle = "방금 꽂힌 깃발";
+            const rest = filteredPuzzles;
 
             const recentDeadline = getPuzzleGroupDeadline(recentPuzzles);
 

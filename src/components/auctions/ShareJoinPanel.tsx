@@ -155,6 +155,11 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
           />
         </div>
 
+        {/* 성비 안내 */}
+        {auction.total_seats && auction.total_seats > 0 && (
+          <p className="text-[11px] text-neutral-500">성비 목표 외 인원도 MD 승인 시 참여 가능해요.</p>
+        )}
+
         {/* 인당 가격 */}
         <div className="flex items-baseline gap-1">
           <span className="text-2xl font-bold text-white">

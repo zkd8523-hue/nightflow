@@ -105,14 +105,12 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
                     </Link>
                     <div className="space-y-0.5">
                         <h1 className="text-2xl font-black text-white tracking-tight">
-                            {repostFrom ? "경매 재등록" : "새 경매 등록"}
+                            {repostFrom ? "조각 재등록" : "조각 등록"}
                         </h1>
                         <p className="text-neutral-500 text-sm font-medium">
                             {repostFrom
-                                ? "유찰된 경매를 다시 등록합니다. 가격을 조정해보세요."
-                                : isInstantEnabled()
-                                    ? "오늘 밤 주인공이 될 테이블을 올려주세요."
-                                    : "다음 주말 테이블을 미리 올려 입찰 경쟁을 받아보세요."}
+                                ? "설정 그대로, 한 번 더 채워보세요."
+                                : "올리면 저절로 모이는 조각 시스템."}
                         </p>
                     </div>
                 </div>

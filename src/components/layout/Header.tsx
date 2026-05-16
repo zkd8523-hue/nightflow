@@ -219,15 +219,6 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
         ) : user ? (
           <>
             <div className="flex items-center gap-1">
-              {!hideDashboardLink && ((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
-                <Link
-                  href="/md/dashboard"
-                  className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
-                  aria-label="대시보드"
-                >
-                  <LayoutDashboard className="w-[18px] h-[18px] text-blue-400" />
-                </Link>
-              )}
               {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
                 <Link
                   href="/md/auctions/new"

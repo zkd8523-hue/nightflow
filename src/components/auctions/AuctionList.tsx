@@ -16,6 +16,8 @@ import { SlidersHorizontal } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DateFilterCalendar } from "./filters/DateFilterCalendar";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
+import { DateFilterChips } from "./filters/DateFilterChips";
+import { type NbiFilter, type SeatFilter, NBI_BANDS } from "@/lib/utils/puzzleFilters";
 import {
   PRICE_MIN,
   PRICE_MAX,
@@ -26,6 +28,44 @@ import {
 } from "@/lib/utils/auctionFilters";
 
 
+const SHARE_NBI_CHIPS: { value: NbiFilter; label: string }[] = [
+  { value: "all", label: "전체" },
+  { value: "value", label: "가성비 ~9만" },
+  { value: "standard", label: "스탠다드 10~15만" },
+  { value: "premium", label: "프리미엄 15만+" },
+];
+const SHARE_SEAT_CHIPS: { value: SeatFilter; label: string }[] = [
+  { value: "all", label: "전체" },
+  { value: "1", label: "1자리" },
+  { value: "2", label: "2자리" },
+  { value: "3+", label: "3자리+" },
+];
+function ShareFilterRow({ label, chips, value, onChange }: { label: string; chips: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x">
+      <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">{label}</span>
+      {chips.map((chip) => {
+        const active = chip.value === value;
+        return (
+          <button key={chip.value} onClick={() => onChange(chip.value)}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${active ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+            {chip.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+function getDDayShare(eventDate: string): string {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const event = new Date(eventDate); event.setHours(0,0,0,0);
+  const diff = Math.round((event.getTime() - today.getTime()) / (1000*60*60*24));
+  if (diff === 0) return "오늘";
+  if (diff === 1) return "내일";
+  if (diff > 0) return `D-${diff}`;
+  return `D+${Math.abs(diff)}`;
+}
+
 interface AuctionListProps {
   activeAuctions: Auction[];
   puzzles?: Puzzle[];
@@ -35,10 +75,10 @@ interface AuctionListProps {
   userBidMap?: Map<string, number>;
   userInterestedSet?: Set<string>;
   userRole?: "user" | "md" | "admin";
-  initialTab?: "today" | "advance" | "puzzle";
-  onTabChange?: (tab: "today" | "advance" | "puzzle") => void;
+  initialTab?: "today" | "advance" | "puzzle" | "share";
+  onTabChange?: (tab: "today" | "advance" | "puzzle" | "share") => void;
   onShowGuide?: () => void;
-  tabPromises?: Record<"today" | "advance" | "puzzle", { content: React.ReactNode; note?: React.ReactNode }>;
+  tabPromises?: Partial<Record<"today" | "advance" | "puzzle" | "share", { content: React.ReactNode; note?: React.ReactNode }>>;
   guideSlot?: React.ReactNode;
 }
 
@@ -85,6 +125,27 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const todayAuctions = liveAndUpcoming.filter(a => a.listing_type === 'instant');
   // 얼리버드 경매: listing_type === 'auction' (경매)
   const advanceAuctionsAll = liveAndUpcoming.filter(a => a.listing_type === 'auction');
+  // 조각: listing_type === 'share'
+  const shareAuctions = liveAndUpcoming.filter(a => a.listing_type === 'share');
+  const [shareSort, setShareSort] = useState<"deadline" | "recent">("deadline");
+  const [shareNbi, setShareNbi] = useState<NbiFilter>("all");
+  const [shareSeat, setShareSeat] = useState<SeatFilter>("all");
+  const [shareDateFilter, setShareDateFilter] = useState<string>("all");
+  const [shareFilterOpen, setShareFilterOpen] = useState(false);
+
+  const shareEventDates = useMemo(() => Array.from(new Set(shareAuctions.map(a => a.event_date))), [shareAuctions]);
+  const filteredShareAuctions = useMemo(() => shareAuctions.filter(a => {
+    const price = a.price_per_seat ?? 0;
+    if (shareNbi === "value" && price > NBI_BANDS.value.max) return false;
+    if (shareNbi === "standard" && (price < NBI_BANDS.standard.min || price > NBI_BANDS.standard.max)) return false;
+    if (shareNbi === "premium" && price < NBI_BANDS.premium.min) return false;
+    const seatsLeft = (a.total_seats ?? 0) - (a.seats_claimed ?? 0) - (a.external_attendees ?? 0);
+    if (shareSeat === "1" && seatsLeft !== 1) return false;
+    if (shareSeat === "2" && seatsLeft !== 2) return false;
+    if (shareSeat === "3+" && seatsLeft < 3) return false;
+    if (shareDateFilter !== "all" && a.event_date !== shareDateFilter) return false;
+    return true;
+  }), [shareAuctions, shareNbi, shareSeat, shareDateFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 날짜·가격 필터 적용 (얼리버드 한정)
   const advanceAuctions = useMemo(
@@ -124,14 +185,14 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const instantEnabled = isInstantEnabled();
 
   // 경매가 있는 탭을 기본으로 선택 (instant off일 때 today 후보 제외)
-  const [tab, setTabRaw] = useState<"today" | "advance" | "puzzle">(() => {
+  const [tab, setTabRaw] = useState<"today" | "advance" | "puzzle" | "share">(() => {
     if (initialTab && (initialTab !== "today" || instantEnabled)) return initialTab;
     if (instantEnabled && todayAuctions.length > 0) return "today";
     if (advanceAuctions.length > 0) return "advance";
     return "puzzle";
   });
 
-  const setTab = (t: "today" | "advance" | "puzzle") => {
+  const setTab = (t: "today" | "advance" | "puzzle" | "share") => {
     setTabRaw(t);
     onTabChange?.(t);
   };
@@ -186,6 +247,16 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             </button>
 
             <button
+              onClick={() => setTab("share")}
+              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "share"
+                ? "bg-amber-500 text-black"
+                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                }`}
+            >
+              🧩 조각 {shareAuctions.length > 0 && `(${shareAuctions.length})`}
+            </button>
+
+            <button
               onClick={() => setTab("advance")}
               className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "advance"
                 ? "bg-amber-500 text-black"
@@ -207,13 +278,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </button>
             )}
 
-            {onShowGuide && (tab === "advance" || (tab === "puzzle" && userRole !== "md" && userRole !== "admin")) && (
+            {onShowGuide && (tab === "advance" || tab === "puzzle" || tab === "share") && (
               <button
                 onClick={onShowGuide}
                 className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap px-1"
               >
                 <span className="text-[13px]">ⓘ</span>
-                {tab === "puzzle" ? "깃발 이용안내" : "얼리버드란?"}
+                {tab === "puzzle" ? "깃발 이용안내" : tab === "share" ? "조각 이용안내" : "얼리버드란?"}
               </button>
             )}
           </div>
@@ -494,6 +565,115 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {tab === "share" && (
+        <div className="space-y-3">
+          {/* 헤더 + 필터 버튼 */}
+          {shareAuctions.length > 0 && (
+            <div className="flex flex-col gap-1.5 px-1 py-1">
+              <div className="flex items-center gap-2.5">
+                <span className="relative flex h-2.5 w-2.5 mt-[1px] flex-shrink-0">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 animate-ping" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+                </span>
+                <span className="text-[16px] font-black text-white tracking-tight">모집 중인 조각</span>
+                <div className="flex-1 flex justify-end gap-1.5">
+                  {[{ key: "deadline", label: "마감임박순" }, { key: "recent", label: "등록순" }].map(({ key, label }) => (
+                    <button key={key} onClick={() => setShareSort(key as "deadline" | "recent")}
+                      className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors ${shareSort === key ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                      {label}
+                    </button>
+                  ))}
+                  <button onClick={() => setShareFilterOpen(true)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${(shareNbi !== "all" || shareSeat !== "all" || shareDateFilter !== "all") ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                    <SlidersHorizontal className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 날짜별 그룹 */}
+          {shareAuctions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
+              <p className="text-2xl">🧩</p>
+              <p className="text-neutral-400 text-sm font-medium">등록된 조각이 없어요</p>
+            </div>
+          ) : filteredShareAuctions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
+              <p className="text-neutral-400 text-sm font-medium">조건에 맞는 조각이 없어요</p>
+              <button onClick={() => { setShareNbi("all"); setShareSeat("all"); setShareDateFilter("all"); }}
+                className="text-[12px] font-bold text-neutral-500 hover:text-white transition-colors">필터 초기화</button>
+            </div>
+          ) : (
+            Object.entries(
+              [...filteredShareAuctions]
+                .sort((a, b) => shareSort === "recent"
+                  ? new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                  : new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+                )
+                .reduce((groups, auction) => {
+                  const date = auction.event_date;
+                  if (!groups[date]) groups[date] = [];
+                  groups[date].push(auction);
+                  return groups;
+                }, {} as Record<string, Auction[]>)
+            )
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([date, items]) => {
+                const d = new Date(date + "T00:00:00");
+                const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${["일","월","화","수","목","금","토"][d.getDay()]})`;
+                const dday = getDDayShare(date);
+                return (
+                  <div key={date} className="space-y-3">
+                    <div className="flex flex-col gap-1.5 px-1 py-1">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
+                        <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
+                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>
+                          {dday}
+                        </span>
+                      </div>
+                    </div>
+                    {items.map(auction => (
+                      <AuctionCard key={auction.id} auction={auction} userBidAmount={userBidMap?.get(auction.id)} />
+                    ))}
+                  </div>
+                );
+              })
+          )}
+
+          {/* 필터 Sheet */}
+          <Sheet open={shareFilterOpen} onOpenChange={setShareFilterOpen}>
+            <SheetContent side="bottom" showCloseButton={false} className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
+              <SheetHeader className="pt-2 pb-4">
+                <SheetTitle className="text-white font-black text-lg text-left">필터</SheetTitle>
+              </SheetHeader>
+              <div className="space-y-5">
+                <ShareFilterRow label="엔비" chips={SHARE_NBI_CHIPS} value={shareNbi} onChange={(v) => setShareNbi(v as NbiFilter)} />
+                <ShareFilterRow label="자리" chips={SHARE_SEAT_CHIPS} value={shareSeat} onChange={(v) => setShareSeat(v as SeatFilter)} />
+                {shareEventDates.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">날짜</span>
+                    <DateFilterChips eventDates={shareEventDates} value={shareDateFilter} onChange={setShareDateFilter} />
+                  </div>
+                )}
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={() => { setShareNbi("all"); setShareSeat("all"); setShareDateFilter("all"); }}
+                    disabled={shareNbi === "all" && shareSeat === "all" && shareDateFilter === "all"}
+                    className="text-[12px] font-bold text-neutral-400 hover:text-white transition-colors disabled:text-transparent disabled:pointer-events-none"
+                  >초기화</button>
+                </div>
+                <button onClick={() => setShareFilterOpen(false)}
+                  className="w-full h-16 bg-white text-black font-black text-[14px] rounded-2xl">
+                  {filteredShareAuctions.length}건 보기
+                </button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       )}
 

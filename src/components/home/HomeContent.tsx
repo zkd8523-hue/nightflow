@@ -119,7 +119,7 @@ const PUZZLE_ONBOARDING_STEPS_MD = [
 
 type TabPromise = { content: React.ReactNode; note?: React.ReactNode };
 
-const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
+const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise> = {
   today: { content: "지금 비어있는 자리, 한눈에" },
   advance: {
     content: (
@@ -154,9 +154,19 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle", TabPromise> = {
     ),
     note: "💡 모든 서비스 무료",
   },
+  share: {
+    content: (
+      <>
+        MD가 미리 세팅한 테이블에 <span className="text-green-400">조각</span>으로 참여해요!
+        <br />
+        인원이 다 모이면 바로 입장 가능해요.
+      </>
+    ),
+    note: "🧩 선입금 없음 · 현장 N빵",
+  },
 };
 
-const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle", TabPromise> = {
+const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromise> = {
   today: { content: "지금 비어있는 자리, 한눈에" },
   advance: {
     content: "주말 빈 테이블 걱정이시죠?\n최소 수익을 미리 확정하고, 최고가를 발견해봐요! 🎯",
@@ -166,6 +176,10 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle", TabPromise> = {
     // content는 HomeContent 내부에서 JSX로 재정의 (시크릿오퍼란? 버튼 포함)
     content: "유저들의 예산이 기다리고 있어요 💰\n시크릿 오퍼로 매출을 올려봐요!",
     note: "💰 제안 무료 · 매칭 시 직접 거래",
+  },
+  share: {
+    content: "올리면 저절로 모이는 조각 시스템.\n빈 자리를 조각으로 채워 매출을 높여요! 💰",
+    note: "🧩 수수료 0% · 현장 직접 수령",
   },
 };
 
@@ -195,20 +209,21 @@ export function HomeContent({
 
   const instantEnabled = isInstantEnabled();
   const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
-  const normalizeTab = (t: string | null): "today" | "advance" | "puzzle" => {
+  const normalizeTab = (t: string | null): "today" | "advance" | "puzzle" | "share" => {
     if (t === "today" && instantEnabled) return "today";
     if (t === "advance") return "advance";
     if (t === "puzzle") return "puzzle";
+    if (t === "share") return "share";
     return "puzzle";
   };
 
   // URL에서 탭 상태 읽어오기 (instant off 시 today → puzzle)
-  const [currentTab, setCurrentTab] = useState<"today" | "advance" | "puzzle">(() => {
+  const [currentTab, setCurrentTab] = useState<"today" | "advance" | "puzzle" | "share">(() => {
     return normalizeTab(searchParams.get("tab"));
   });
 
   // 탭 변경 시 URL 업데이트
-  const handleTabChange = (tab: "today" | "advance" | "puzzle") => {
+  const handleTabChange = (tab: "today" | "advance" | "puzzle" | "share") => {
     const safe = normalizeTab(tab);
     setCurrentTab(safe);
     const params = new URLSearchParams(searchParams.toString());

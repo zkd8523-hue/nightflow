@@ -88,7 +88,7 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
                 handleCustomAdd();
               }
             }}
-            placeholder="예: 돔페3, 모엣2, 하드1, 데킬라1"
+            placeholder="예: 돔페3, 모엣2, 샴3, 하드1, 데킬라1"
             className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] flex-1"
           />
           <Button

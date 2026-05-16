@@ -11,7 +11,8 @@ import type { Auction } from "@/types/database";
 import { formatNumber, formatTime } from "@/lib/utils/format";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { InlineTimer } from "@/components/auctions/InlineTimer";
-import { Edit2, MoreVertical, Trash2, Share2, RotateCcw, Phone, Heart } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { Edit2, MoreVertical, Trash2, Share2, RotateCcw, Phone, Heart, Minus, Plus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
     DropdownMenu,
@@ -45,6 +46,17 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     };
 
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [externalCount, setExternalCount] = useState(auction.external_attendees ?? 0);
+    const [savingExternal, setSavingExternal] = useState(false);
+
+    const updateExternalCount = async (next: number) => {
+        setSavingExternal(true);
+        setExternalCount(next);
+        const supabase = createClient();
+        await supabase.from("auctions").update({ external_attendees: next }).eq("id", auction.id);
+        setSavingExternal(false);
+        router.refresh();
+    };
     const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
     const [saleChannel, setSaleChannel] = useState<"nightflow" | "other" | null>(null);
     const [completing, setCompleting] = useState(false);
@@ -260,9 +272,36 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
 
                         <div className="text-right">
                             {isShare ? (
-                                <div className="text-right">
-                                    <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">현황</div>
-                                    <div className="text-[13px] text-neutral-300 font-bold">{totalFilled}/{totalSeats}명</div>
+                                <div className="text-right space-y-1.5">
+                                    <div>
+                                        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">현황</div>
+                                        <div className="text-[13px] text-neutral-300 font-bold">{(auction.seats_claimed ?? 0) + externalCount}/{totalSeats}명</div>
+                                    </div>
+                                    {/* 확정 인원 스테퍼 */}
+                                    <div>
+                                        <div className="text-[10px] text-neutral-500 font-bold mb-0.5">확정 인원</div>
+                                        <div className="flex items-center gap-1.5 justify-end">
+                                            <button
+                                                type="button"
+                                                disabled={externalCount <= 0 || savingExternal}
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateExternalCount(Math.max(0, externalCount - 1)); }}
+                                                className="w-6 h-6 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                <Minus className="w-3 h-3 text-white" />
+                                            </button>
+                                            <span className={`text-[13px] font-black w-4 text-center ${savingExternal ? "text-neutral-500" : "text-white"}`}>
+                                                {externalCount}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                disabled={externalCount + (auction.seats_claimed ?? 0) >= totalSeats || savingExternal}
+                                                onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateExternalCount(externalCount + 1); }}
+                                                className="w-6 h-6 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                <Plus className="w-3 h-3 text-white" />
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : (
                                 <>
