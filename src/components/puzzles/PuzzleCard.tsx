@@ -223,6 +223,11 @@ export const PuzzleCard = memo(function PuzzleCard({
               </span>
             )}
           </div>
+          {puzzle.leader?.display_name && (
+            <p className="text-[12px] text-neutral-500 font-medium">
+              방장 · {puzzle.leader.display_name}
+            </p>
+          )}
         </div>
         <span
           className="inline-flex items-center justify-center shrink-0 min-w-8 h-8"
