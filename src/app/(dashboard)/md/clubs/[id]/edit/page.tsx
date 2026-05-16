@@ -16,18 +16,19 @@ export default async function EditClubPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Fetch club (with ownership check via RLS)
-  const { data: club, error } = await supabase
+  // Fetch club — Migration 177(club_partners) 기반 (옛 clubs.md_id 단일 매핑은 다중 파트너 시 누락 발생)
+  const { data: clubRaw, error } = await supabase
     .from("clubs")
-    .select("*")
+    .select("*, club_partners!inner(md_id)")
     .eq("id", id)
-    .eq("md_id", user.id)
+    .eq("club_partners.md_id", user.id)
     .is("deleted_at", null)
     .single();
 
-  if (error || !club) {
+  if (error || !clubRaw) {
     notFound();
   }
+  const { club_partners: _, ...club } = clubRaw;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">

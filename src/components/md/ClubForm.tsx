@@ -368,16 +368,24 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
             targetType="club"
             initialFloorPlanUrl={initialData.floor_plan_url}
             onSave={async (url) => {
-              const { error } = await supabase.rpc("update_club_image", {
-                p_club_id: initialData.id,
-                p_field: "floor_plan_url",
-                p_value: url,
+              // Migration 182 이후 clubs.md_id 컬럼 제거 → 옛 update_club_image RPC가
+              // 정책/함수 내 md_id 참조로 실패. club_partners 기반 API로 라우팅.
+              const res = await fetch("/api/md/clubs/update-image", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  clubId: initialData.id,
+                  field: "floor_plan_url",
+                  value: url,
+                }),
               });
 
-              if (error) {
-                logError(error, "ClubForm.floorPlanSave");
-                toast.error(`플로어맵 저장 실패: ${error.message || error.code || JSON.stringify(error)}`);
-                throw error;
+              if (!res.ok) {
+                const body = await res.json().catch(() => ({}));
+                const msg = body?.error || body?.detail || "알 수 없는 오류";
+                logError(new Error(msg), "ClubForm.floorPlanSave");
+                toast.error(`플로어맵 저장 실패: ${msg}`);
+                throw new Error(msg);
               }
             }}
           />

@@ -50,6 +50,17 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
 
+    const editTitle = auction.listing_type === "share"
+        ? "조각 정보 수정"
+        : auction.listing_type === "instant"
+            ? "오늘특가 정보 수정"
+            : "경매 정보 수정";
+    const editDesc = auction.listing_type === "share"
+        ? "등록된 조각 내용을 수정합니다."
+        : auction.listing_type === "instant"
+            ? "등록된 오늘특가 내용을 수정합니다."
+            : "등록된 경매 내용을 수정합니다.";
+
     return (
         <div className="min-h-screen bg-[#0A0A0A] pb-20">
             <div className="max-w-lg mx-auto p-6 pt-12">
@@ -58,8 +69,8 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
                         <ChevronLeft className="w-5 h-5 text-neutral-400" />
                     </Link>
                     <div className="space-y-0.5">
-                        <h1 className="text-2xl font-black text-white tracking-tight">경매 정보 수정</h1>
-                        <p className="text-neutral-500 text-sm font-medium">등록된 경매 내용을 수정합니다.</p>
+                        <h1 className="text-2xl font-black text-white tracking-tight">{editTitle}</h1>
+                        <p className="text-neutral-500 text-sm font-medium">{editDesc}</p>
                     </div>
                 </div>
 

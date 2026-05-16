@@ -4,10 +4,10 @@
 //
 // 트리거:
 //   #1 첫 오퍼 도착     → 방장에게 1회
-//   #2 마감 임박        → 방장에게 1회 (20:00~20:09 KST 시간대 체크)
-//   #3 방장 위임        → 새 방장에게 1회
-//   #4 매칭 성사        → 조각원 전원에게
-//   #5 MD 낙찰          → 낙찰 MD에게
+//   #2 방장 위임        → 새 방장에게 1회
+//   #3 매칭 성사        → 조각원 전원에게
+//   #4 MD 낙찰          → 낙찰 MD에게
+//   #5 D-2 오퍼 리마인더 → 방장에게 1회 (19:00 KST)
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
@@ -171,46 +171,7 @@ async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
   }
 }
 
-// ============================================================
-// #2 마감 임박 (20:00~20:09 KST = 11:00~11:09 UTC)
-// ============================================================
-async function handleDeadlineReminder(supabase: ReturnType<typeof createClient>) {
-  const nowUtc = new Date();
-  const kstHour = (nowUtc.getUTCHours() + 9) % 24;
-  const kstMinute = nowUtc.getUTCMinutes();
-
-  // 20:00~20:09 KST 시간대에만 실행
-  if (kstHour !== 20 || kstMinute >= 10) return;
-
-  // 오늘 KST 날짜 (YYYY-MM-DD)
-  const kstNow = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
-  const todayKst = kstNow.toISOString().slice(0, 10);
-
-  const { data: openPuzzles } = await supabase
-    .from("puzzles")
-    .select("id, leader_id")
-    .eq("status", "open")
-    .eq("event_date", todayKst)
-    .gt("expires_at", nowUtc.toISOString());
-
-  if (!openPuzzles || openPuzzles.length === 0) return;
-
-  for (const puzzle of openPuzzles as Array<{ id: string; leader_id: string }>) {
-    if (await alreadySent(supabase, "puzzle_deadline_reminder", puzzle.id)) continue;
-
-    const { data: leader } = await supabase
-      .from("users")
-      .select("id, phone")
-      .eq("id", puzzle.leader_id)
-      .single();
-
-    if (!leader) continue;
-
-    await sendAndLog(supabase, "puzzle_deadline_reminder", puzzle.id, leader, TPL.PUZZLE_DEADLINE_REMINDER, {
-      puzzleUrl: puzzleUrl(puzzle.id),
-    });
-  }
-}
+// handleDeadlineReminder 제거됨 (D-2 리마인더 handleOfferReminder로 대체)
 
 // ============================================================
 // #3 방장 위임

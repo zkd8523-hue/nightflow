@@ -86,7 +86,7 @@ export function ShareAuctionSheet({
       await shareToKakao({
         clubName,
         tableInfo,
-        startPrice: auction.start_price,
+        startPrice: auction.listing_type === "share" ? (auction.price_per_seat ?? 0) : auction.start_price,
         auctionUrl,
         thumbnailUrl: auction.thumbnail_url || club?.thumbnail_url || undefined,
         listingType: auction.listing_type || "auction",
@@ -205,7 +205,7 @@ export function ShareAuctionSheet({
       <DrawerContent className="bg-[#1C1C1E] border-neutral-800 outline-none px-6 pb-10">
         <DrawerHeader className="text-center pt-4 pb-0">
           <DrawerTitle className="text-white font-black text-lg tracking-tight">
-            이 경매를 공유하세요
+            {auction.listing_type === "share" ? "이 조각을 공유하세요" : "이 경매를 공유하세요"}
           </DrawerTitle>
           <DrawerDescription className="text-neutral-500 text-[13px] font-medium">
             {clubName} · {tableInfo} · {formatEventDate(auction.event_date)} {formatEntryTime(auction.entry_time, auction.event_date)}

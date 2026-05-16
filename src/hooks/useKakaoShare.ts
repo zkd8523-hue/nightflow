@@ -92,6 +92,7 @@ export function useKakaoShare(): UseKakaoShareReturn {
       if (!window.Kakao || !window.Kakao.isInitialized()) return false;
 
       const isInstant = params.listingType === "instant";
+      const isShare = params.listingType === "share";
       const isMD = params.isFromMD === true;
       const price = params.startPrice.toLocaleString();
       const fallbackImage = typeof window !== "undefined"
@@ -103,18 +104,24 @@ export function useKakaoShare(): UseKakaoShareReturn {
         : "";
 
       const title = isMD
-        ? `${params.area ? `[${params.area}] ` : ""}${!isInstant && dateStr ? `${dateStr} ` : ""}${params.clubName} ${isInstant ? "오늘특가" : "테이블 경매"}`
+        ? `${params.area ? `[${params.area}] ` : ""}${!isInstant && dateStr ? `${dateStr} ` : ""}${params.clubName} ${isInstant ? "오늘특가" : isShare ? "조각 모집" : "테이블 경매"}`
         : isInstant
           ? `오늘 ${params.clubName} 어때?`
-          : `${dateStr} ${params.clubName} 같이 갈래?`;
+          : isShare
+            ? `${dateStr} ${params.clubName} 조각 같이 갈래?`
+            : `${dateStr} ${params.clubName} 같이 갈래?`;
 
       const description = isInstant
         ? (isMD ? `${price}원 | 지금 바로 예약 가능!` : `${price}원 | 나플 특가! 웨이팅 없이 바로 고?`)
-        : (isMD ? `시작가 ${price}원 | 경매 시작! 최저가 선점에 도전하세요.` : `${price}원 | 남들보다 싸게 잡을 기회! 지금 비딩 같이 가보자.`);
+        : isShare
+          ? (isMD ? `인당 ${price}원 | 자리 모집 중!` : `인당 ${price}원 | 같이 갈 사람 찾는 중`)
+          : (isMD ? `시작가 ${price}원 | 경매 시작! 최저가 선점에 도전하세요.` : `${price}원 | 남들보다 싸게 잡을 기회! 지금 비딩 같이 가보자.`);
 
       const buttonTitle = isInstant
         ? (isMD ? "예약하러 가기" : "예약 정보 확인")
-        : (isMD ? "테이블 쟁탈전 참여" : "경매 보러 가기");
+        : isShare
+          ? (isMD ? "조각 모집 보기" : "조각 참여하기")
+          : (isMD ? "테이블 쟁탈전 참여" : "경매 보러 가기");
 
       // 유입 경로 추적을 위한 UTM 파라미터 추가
       let trackingUrl = params.auctionUrl;
@@ -122,7 +129,7 @@ export function useKakaoShare(): UseKakaoShareReturn {
         const url = new URL(params.auctionUrl);
         url.searchParams.set("utm_source", "kakao");
         url.searchParams.set("utm_medium", "share");
-        url.searchParams.set("utm_campaign", isInstant ? "instant_deal" : "earlybird_auction");
+        url.searchParams.set("utm_campaign", isInstant ? "instant_deal" : isShare ? "share_listing" : "earlybird_auction");
         trackingUrl = url.toString();
       } catch (e) {
         console.error("URL parsing error:", e);

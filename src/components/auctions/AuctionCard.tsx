@@ -140,7 +140,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
                 e.preventDefault(); e.stopPropagation();
                 const url = `${window.location.origin}/auctions/${auction.id}`;
                 const title = `${club?.name || ""} 조각 모집`;
-                const text = `N ${(auction.price_per_seat ?? 0).toLocaleString()}원 · ${auction.total_seats ?? 0}명`;
+                const text = `1인 ${(auction.price_per_seat ?? 0).toLocaleString()}원 · ${auction.total_seats ?? 0}명`;
                 // 1순위: Web Share API (모바일)
                 if (typeof navigator.share === "function") {
                   try {
@@ -203,7 +203,7 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
           <div className="flex flex-col gap-1.5">
             <div className="flex items-baseline gap-1">
               <span className="text-[18px] font-black text-green-400">
-                N {(auction.price_per_seat ?? 0).toLocaleString()}원
+                1인 {(auction.price_per_seat ?? 0).toLocaleString()}원
               </span>
             </div>
             <div className="space-y-1">

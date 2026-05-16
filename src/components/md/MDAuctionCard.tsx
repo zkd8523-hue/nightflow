@@ -338,7 +338,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
             {/* Footer Actions */}
             <div className="mt-2 pt-2 border-t border-neutral-800/60 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    {isActive && (
+                    {isActive && !isShare && (
                         <div className="flex items-center gap-2 bg-neutral-900/50 px-3 py-1.5 rounded-full border border-neutral-800/50">
                             <InlineTimer endTime={endTime} status="active" />
                         </div>

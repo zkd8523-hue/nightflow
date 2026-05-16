@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,6 +64,13 @@ const formSchema = z.object({
         }
         if (!data.price_per_seat) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "인당 가격을 입력해주세요.", path: ["price_per_seat"] });
+        } else if (data.price_per_seat % 10000 !== 0) {
+            // 1인 가격은 반드시 만원 단위 (드리프트 방지 + 가독성)
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: "인당 가격은 만원 단위여야 합니다. '↑ 만원' 버튼으로 정리해주세요.",
+                path: ["price_per_seat"],
+            });
         }
         if (!data.event_date) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "방문일시를 선택해주세요.", path: ["event_date"] });
@@ -149,6 +156,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         : false
     );
 
+    // 검증 실패 시 스크롤 타겟 ref
+    const priceSectionRef = useRef<HTMLDivElement>(null);
     const [customExtra, setCustomExtra] = useState("");
     const [showCustomExtraSheet, setShowCustomExtraSheet] = useState(false);
     const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -175,16 +184,29 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [totalPrice, setTotalPrice] = useState(initialTotalPrice);
     const [totalPriceInputStr, setTotalPriceInputStr] = useState(initialTotalPrice ? initialTotalPrice.toLocaleString() : "");
     const initialSeats = Math.min(initialData?.total_seats ?? 4, 6);
+    // 수정 모드일 때 DB의 target_male/target_female 값으로 성별 슬롯 상태 복원
+    const initialUseGenderSlot = !!(
+        initialData &&
+        ((initialData.target_male ?? 0) > 0 || (initialData.target_female ?? 0) > 0)
+    );
     const [targetCount, setTargetCount] = useState(initialSeats);
-    const [useGenderSlot, setUseGenderSlot] = useState(false);
+    const [useGenderSlot, setUseGenderSlot] = useState(initialUseGenderSlot);
     const [mdMessageEverEdited, setMdMessageEverEdited] = useState(!!(initialData?.md_message));
     const [kakaoUrl, setKakaoUrl] = useState(initialData?.kakao_open_chat_url ?? "");
     const [hasExternal, setHasExternal] = useState(!!(initialData?.external_attendees && initialData.external_attendees > 0));
     const [externalCount, setExternalCount] = useState(initialData?.external_attendees || 1);
-    const [externalMale, setExternalMale] = useState(1);
-    const [externalFemale, setExternalFemale] = useState(0);
-    const [targetMale, setTargetMale] = useState(Math.ceil(initialSeats / 2));
-    const [targetFemale, setTargetFemale] = useState(Math.floor(initialSeats / 2));
+    const [externalMale, setExternalMale] = useState(initialData?.external_male ?? 1);
+    const [externalFemale, setExternalFemale] = useState(initialData?.external_female ?? 0);
+    const [targetMale, setTargetMale] = useState(
+        initialUseGenderSlot
+            ? (initialData?.target_male ?? Math.ceil(initialSeats / 2))
+            : Math.ceil(initialSeats / 2)
+    );
+    const [targetFemale, setTargetFemale] = useState(
+        initialUseGenderSlot
+            ? (initialData?.target_female ?? Math.floor(initialSeats / 2))
+            : Math.floor(initialSeats / 2)
+    );
     const [showTemplateSavePrompt, setShowTemplateSavePrompt] = useState(false);
     const [templateSaving, setTemplateSaving] = useState(false);
     const [showTemplateSelector, setShowTemplateSelector] = useState(false);
@@ -730,7 +752,22 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
     return (
         <div>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 pb-12">
+        <form
+          onSubmit={handleSubmit(onSubmit, (formErrors) => {
+            // 가격 검증 실패 시 가격 섹션으로 스크롤 + 토스트
+            if (formErrors.price_per_seat) {
+              priceSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+              toast.error(formErrors.price_per_seat.message?.toString() || "인당 가격을 확인해주세요");
+              return;
+            }
+            // 그 외 첫 에러도 토스트로
+            const firstError = Object.values(formErrors)[0];
+            if (firstError?.message) {
+              toast.error(firstError.message.toString());
+            }
+          })}
+          className="space-y-8 pb-12"
+        >
             {/* Top Toggle: Today vs Advance — instant off 시 신규 등록에서는 숨김 */}
             {showModeToggle && (
                 <div className="flex bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800">
@@ -1089,7 +1126,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 </section>
 
                 {/* 2. 매출설정 */}
-                <section className="space-y-4">
+                <section ref={priceSectionRef} className="space-y-4 scroll-mt-24">
                   <div className="flex items-center gap-2 text-white font-bold mb-2">
                     <Coins className="w-4 h-4 text-amber-500" />
                     <span>조각 설정</span>
@@ -1145,7 +1182,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                           초기화
                         </Button>
                       </div>
-                      {errors.price_per_seat && <p className="text-red-500 text-[11px]">{errors.price_per_seat.message?.toString()}</p>}
+                      {/* price_per_seat 에러는 하단 amber 박스에서 단일 표시 (중복 제거) */}
+                      {errors.price_per_seat && errors.price_per_seat.message?.toString().indexOf("만원 단위") === -1 && (
+                        <p className="text-red-500 text-[11px]">{errors.price_per_seat.message?.toString()}</p>
+                      )}
                     </div>
 
                     <div className="border-t border-neutral-800" />
@@ -1353,15 +1393,58 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 : "🧩 정원이 꽉 찼어요"}
                             </p>
                             {perPerson !== null ? (
-                              <p className="text-[15px] font-black text-green-400">
-                                {perPerson.toLocaleString()}원
-                                <span className="text-[11px] text-neutral-500 font-normal ml-1">/인</span>
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className={`text-[15px] font-black ${perPerson % 10000 === 0 ? "text-green-400" : "text-amber-400"}`}>
+                                  {perPerson.toLocaleString()}원
+                                  <span className="text-[11px] text-neutral-500 font-normal ml-1">/인</span>
+                                </p>
+                                {/* 만원 단위 올림 버튼 — 만원 단위 아니면 필수 (등록 차단) */}
+                                {perPerson % 10000 !== 0 && (
+                                  <button
+                                    type="button"
+                                    disabled={hasBids}
+                                    onClick={() => {
+                                      const seats = useGenderSlot ? (targetMale + targetFemale || 1) : (targetCount || 1);
+                                      const rounded = Math.ceil(perPerson / 10000) * 10000;
+                                      const newTotal = rounded * seats;
+                                      setTotalPrice(newTotal);
+                                      setTotalPriceInputStr(newTotal.toLocaleString());
+                                    }}
+                                    className="text-[11px] font-bold px-2.5 py-1 rounded-md bg-amber-500 text-black hover:bg-amber-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed animate-pulse"
+                                  >
+                                    ↑ 만원 단위
+                                  </button>
+                                )}
+                              </div>
                             ) : (
                               <p className="text-[11px] text-neutral-600">N비 미설정</p>
                             )}
                           </div>
                         );
+                      })()}
+                      {/* 만원 단위 안 맞을 때 안내 메시지 */}
+                      {(() => {
+                        const pp = totalPrice > 0
+                          ? Math.floor(totalPrice / (useGenderSlot ? (targetMale + targetFemale || 1) : (targetCount || 1)))
+                          : null;
+                        if (pp !== null && pp % 10000 !== 0) {
+                          const seats = useGenderSlot ? (targetMale + targetFemale || 1) : (targetCount || 1);
+                          const rounded = Math.ceil(pp / 10000) * 10000;
+                          const newTotal = rounded * seats;
+                          return (
+                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 mt-2">
+                              <p className="text-[12px] text-amber-400 font-bold">
+                                ⚠️ 인당 가격을 만원 단위로 맞춰주세요
+                              </p>
+                              <p className="text-[11px] text-amber-400/80 mt-0.5 leading-snug">
+                                현재 {pp.toLocaleString()}원/인 → <span className="font-bold">{rounded.toLocaleString()}원/인</span>으로 올리면
+                                {" "}목표 매출이 <span className="font-bold">{newTotal.toLocaleString()}원</span>이 됩니다.
+                                <br />위 <span className="font-bold">"↑ 만원 단위"</span> 버튼을 눌러 정리해주세요.
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
                       })()}
                       {useGenderSlot && (
                         <p className="text-[11px] text-neutral-500">성비는 목표값이에요. 초과 인원도 MD 재량으로 승인할 수 있어요.<br />(ex: 세팅값 남자3·여자1. 현재 남자3·여자0 일때, 남자가 신청시 승인 가능. 최종 남자4·여자0)</p>
@@ -1762,7 +1845,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 clubName={selectedClub?.name || "클럽"}
                 tableInfo={watch("table_info")}
                 eventDate={watch("event_date")}
-                startPrice={watch("start_price")}
+                startPrice={watch("listing_type") === "share" ? (watch("price_per_seat") ?? 0) : watch("start_price")}
                 onContinue={() => {
                     setCreatedAuctionId(null);
                     setShowShareSheet(false);

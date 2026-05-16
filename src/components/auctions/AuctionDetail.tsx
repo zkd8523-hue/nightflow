@@ -477,7 +477,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 space-y-2 shadow-2xl">
           <div className="space-y-0.5">
             <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">
-              {isInstant ? "예약가" : (displayAuction.bidder_count ?? 0) === 0 ? "시작가" : "현재 최고 입찰가"}
+              {isShare ? "1인" : isInstant ? "예약가" : (displayAuction.bidder_count ?? 0) === 0 ? "시작가" : "현재 최고 입찰가"}
             </p>
             <CurrentBidDisplay
               amount={displayAuction.current_bid || displayAuction.start_price}

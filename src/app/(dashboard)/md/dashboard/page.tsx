@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MDDashboard } from "@/components/md/MDDashboard";
 
-import type { User, Auction } from "@/types/database";
+import type { User, Auction, Club } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -74,15 +74,38 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         );
     }
 
-    // 4. MD의 경매 목록 조회
-    const { data: auctions } = await supabase
+    // 4. MD의 클럽 목록 조회 — Migration 177(club_partners) 기반
+    //    auctions 조회보다 먼저: 파트너 클럽 ID로 매물도 필터링.
+    const { data: clubsRaw } = await supabase
+        .from("clubs")
+        .select("*, club_partners!inner(md_id)")
+        .eq("club_partners.md_id", userId)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+    // UI에서 club_partners 필드 안 쓰니 제거 (Club 타입 호환)
+    const clubs = (clubsRaw ?? []).map(({ club_partners: _, ...rest }) => rest) as Club[];
+
+    // 5. MD의 경매 목록 조회
+    // 본인 매물 OR 파트너 클럽 매물 — 같은 클럽 다른 MD가 올린 매물도 보이게
+    const partnerClubIds = clubs.map(c => c.id);
+    let auctionsQuery = supabase
         .from("auctions")
         .select(`
       *,
       club:club_id (*)
     `)
-        .eq("md_id", userId)
         .order("created_at", { ascending: false });
+
+    if (partnerClubIds.length > 0) {
+        auctionsQuery = auctionsQuery.or(
+            `md_id.eq.${userId},club_id.in.(${partnerClubIds.join(",")})`
+        );
+    } else {
+        auctionsQuery = auctionsQuery.eq("md_id", userId);
+    }
+
+    const { data: auctions } = await auctionsQuery;
 
     // 5. 활성 경매의 최고 입찰자 조회
     const activeIds = (auctions || []).filter(a => a.status === "active").map(a => a.id);
@@ -107,15 +130,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         }
     }
 
-    // 6. MD의 클럽 목록 조회
-    const { data: clubs } = await supabase
-        .from("clubs")
-        .select("*")
-        .eq("md_id", userId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
-
-    // 7. MD의 퍼즐 오퍼 조회 (퍼즐 정보 포함)
+    // 6. MD의 퍼즐 오퍼 조회 (퍼즐 정보 포함)
     const { data: puzzleOffers, error: puzzleOffersError } = await supabase
         .from("puzzle_offers")
         .select(`
