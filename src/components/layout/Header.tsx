@@ -208,12 +208,6 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
             aria-label="나이트플로우 홈 (베타)"
           >
             NightFlow
-            <span
-              className="text-[9px] font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30 leading-none -translate-y-0.5"
-              aria-label="베타 버전"
-            >
-              BETA
-            </span>
           </Link>
           <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
             클럽을 즐기는 가장 스마트한 방식
