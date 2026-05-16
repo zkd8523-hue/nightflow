@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Auction } from "@/types/database";
 import { formatNumber, formatTime, formatCountdown, formatCountdownLong, categorizeLiquor, formatRelativeTime } from "@/lib/utils/format";
-import { createClient } from "@/lib/supabase/client";
 import { useState, useCallback } from "react";
+import { updateShareAttendees } from "@/app/actions/share-attendees";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES } from "@/lib/constants/timer-urgency";
@@ -80,20 +80,26 @@ export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, i
     const tM = auction.target_male ?? 0;
     const tF = auction.target_female ?? 0;
     const hasGenderSlot = tM + tF === totalSeats && totalSeats > 0;
-    // 로컬 state 기준 실시간 표시
-    const localFilled = isOwner
-      ? (auction.seats_claimed ?? 0) + (hasGenderSlot ? extMale + extFemale : extCount)
-      : totalFilled;
+    // 슬롯 시각화는 항상 서버값 기준 (로컬 편집 중에는 입력 UI만 반영)
+    const localFilled = totalFilled;
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const confirmExt = useCallback(async () => {
       setSaving(true);
       const m = hasGenderSlot ? extMale : extCount;
       const f = hasGenderSlot ? extFemale : 0;
-      const supabase = createClient();
-      await supabase.from("auctions").update({ external_attendees: hasGenderSlot ? extMale + extFemale : extCount, external_male: m, external_female: f }).eq("id", auction.id);
+      const total = hasGenderSlot ? extMale + extFemale : extCount;
+      // Server Action 사용 — DB update + revalidatePath('/') 한 번에 처리
+      // (직접 supabase 호출 시 ISR 캐시 안 비워져서 홈 돌아오면 빈 상태로 보였음)
+      const result = await updateShareAttendees(auction.id, {
+        external_attendees: total,
+        external_male: m,
+        external_female: f,
+      });
       setSaving(false);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      if (result.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
     }, [extMale, extFemale, extCount, hasGenderSlot, auction.id]);
     const slotLayout = hasGenderSlot
       ? (() => {
