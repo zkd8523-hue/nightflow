@@ -8,9 +8,9 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
-import { generateRandomNickname } from "@/lib/utils/displayName";
+import { validateDisplayName, isDisplayNameTaken } from "@/lib/utils/displayName";
 import { normalizeProfileImage } from "@/lib/utils/image";
-import { ChevronRight, Check, ArrowLeft } from "lucide-react";
+import { ChevronRight, Check, ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -22,7 +22,7 @@ interface SignupFormProps {
   mdReferrer?: string | null;
 }
 
-type Step = "agree" | "phone" | "otp" | "gender";
+type Step = "agree" | "phone" | "otp" | "gender" | "nickname";
 
 type Gender = "male" | "female";
 
@@ -93,6 +93,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   // OTP 검증 후 gender 단계로 넘기기 위해 보관
   const [verifiedPhoneState, setVerifiedPhoneState] = useState<string | null>(null);
   const [selectedGender, setSelectedGender] = useState<Gender | null>(null);
+  // 닉네임 단계
+  const [nicknameInput, setNicknameInput] = useState("");
+  const [nicknameError, setNicknameError] = useState<string | null>(null);
+  const [nicknameChecking, setNicknameChecking] = useState(false);
+  const [nicknameOk, setNicknameOk] = useState(false);
   // 가입 완료 후 중복 호출/토스트 차단용 가드
   const completedRef = useRef(false);
 
@@ -227,6 +232,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       trackEvent("signup_phone_verified");
       setVerifiedPhoneState(verifiedPhone);
       setStep("gender");
+      setNicknameInput("");
+      setNicknameError(null);
+      setNicknameOk(false);
     } catch (error: unknown) {
       logger.error("OTP verify error:", error);
       toast.error(error instanceof Error ? error.message : "인증 중 오류가 발생했습니다");
@@ -247,10 +255,30 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       toast.error("성별을 선택해주세요");
       return;
     }
+    const displayName = nicknameInput.trim();
+    if (!displayName) {
+      toast.error("닉네임을 입력해주세요");
+      setStep("nickname");
+      return;
+    }
+    const nameValidation = validateDisplayName(displayName);
+    if (!nameValidation.ok) {
+      toast.error(nameValidation.message);
+      setStep("nickname");
+      return;
+    }
     try {
       const verifiedPhone = verifiedPhoneState;
       setLoading(true);
-      const displayName = await generateRandomNickname(supabase);
+      const taken = await isDisplayNameTaken(supabase, displayName);
+      if (taken) {
+        toast.error("이미 사용 중인 닉네임이에요. 다른 닉네임을 입력해주세요");
+        setStep("nickname");
+        setNicknameError("이미 사용 중인 닉네임이에요");
+        setNicknameOk(false);
+        setLoading(false);
+        return;
+      }
       const meta = authUser.user_metadata ?? {};
 
       let referredById: string | null = null;
@@ -548,12 +576,107 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             </div>
 
             <Button
-              onClick={handleCompleteSignup}
-              disabled={!selectedGender || loading}
+              onClick={() => {
+                if (!selectedGender) return;
+                setStep("nickname");
+              }}
+              disabled={!selectedGender}
               className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
             >
-              {loading ? "가입 중..." : "가입 완료"}
+              다음
             </Button>
+          </>
+        )}
+
+        {step === "nickname" && (
+          <>
+            <div className="space-y-2 text-center">
+              <p className="text-[18px] font-bold text-white">닉네임을 정해주세요</p>
+              <p className="text-[12px] text-neutral-500">2~16자, 나중에 변경할 수 있어요</p>
+            </div>
+
+            <div className="space-y-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={nicknameInput}
+                  maxLength={16}
+                  placeholder="닉네임 입력"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNicknameInput(val);
+                    setNicknameOk(false);
+                    const v = validateDisplayName(val);
+                    setNicknameError(v.ok ? null : (v.message ?? null));
+                  }}
+                  onBlur={async () => {
+                    const val = nicknameInput.trim();
+                    const v = validateDisplayName(val);
+                    if (!v.ok) { setNicknameError(v.message ?? null); setNicknameOk(false); return; }
+                    setNicknameChecking(true);
+                    try {
+                      const taken = await isDisplayNameTaken(supabase, val);
+                      if (taken) { setNicknameError("이미 사용 중인 닉네임이에요"); setNicknameOk(false); }
+                      else { setNicknameError(null); setNicknameOk(true); }
+                    } finally { setNicknameChecking(false); }
+                  }}
+                  className="w-full h-12 px-4 pr-12 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-500 tabular-nums pointer-events-none">
+                  {nicknameInput.length}/16
+                </span>
+              </div>
+
+              {nicknameError && (
+                <p className="text-[12px] text-red-400 font-medium px-1">{nicknameError}</p>
+              )}
+              {nicknameOk && !nicknameError && (
+                <p className="text-[12px] text-green-400 font-medium px-1">사용 가능한 닉네임이에요 ✓</p>
+              )}
+              {nicknameChecking && (
+                <p className="text-[12px] text-neutral-500 px-1">중복 확인 중...</p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={async () => {
+                const COLORS = ["빨간","파란","초록","노란","보라","주황","하늘빛","민트빛","산호빛","금빛","달빛","별빛"];
+                const ADJECTIVES = ["신나는","빛나는","화려한","자유로운","멋진","설레는","뜨거운","찬란한","유쾌한","활기찬"];
+                const ANIMALS = ["재규어","표범","독수리","나비","여우","늑대","치타","팬더","코알라","돌고래","고래","매","올빼미","토끼","수달","라쿤","알파카","카피바라"];
+                const pick = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
+                const candidate = `${Math.random() < 0.5 ? pick(COLORS) : pick(ADJECTIVES)}${pick(ANIMALS)}`;
+                setNicknameInput(candidate);
+                setNicknameError(null);
+                setNicknameOk(false);
+                setNicknameChecking(true);
+                try {
+                  const taken = await isDisplayNameTaken(supabase, candidate);
+                  if (taken) { setNicknameOk(false); }
+                  else { setNicknameOk(true); }
+                } finally { setNicknameChecking(false); }
+              }}
+              className="w-full h-10 rounded-xl border border-neutral-700 text-neutral-400 text-[13px] font-medium hover:border-neutral-500 hover:text-neutral-300 transition-colors flex items-center justify-center gap-2"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              랜덤 닉네임
+            </button>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setStep("gender")}
+                className="h-12 px-4 font-bold text-[13px] bg-neutral-800 text-neutral-300 hover:bg-neutral-700 rounded-xl"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+              <Button
+                onClick={handleCompleteSignup}
+                disabled={!nicknameOk || loading || nicknameChecking}
+                className="flex-1 h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+              >
+                {loading ? "가입 중..." : "가입 완료"}
+              </Button>
+            </div>
           </>
         )}
       </Card>
