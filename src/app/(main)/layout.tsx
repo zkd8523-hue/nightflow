@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/Footer";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PullToRefresh } from "@/components/auctions/PullToRefresh";
 import { SelectingFlagAlertSheet } from "@/components/puzzles/SelectingFlagAlertSheet";
+import { CancellationSurveySheet } from "@/components/puzzles/CancellationSurveySheet";
 import { useRouter } from "next/navigation";
 
 export default function MainLayout({
@@ -28,6 +29,7 @@ export default function MainLayout({
         <Footer />
         <BottomNav />
         <SelectingFlagAlertSheet />
+        <CancellationSurveySheet isOtherSheetOpen={false} />
       </div>
     </PullToRefresh>
   );

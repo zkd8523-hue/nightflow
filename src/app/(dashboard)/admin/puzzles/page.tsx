@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminPuzzleRefundButton } from "@/components/admin/AdminPuzzleRefundButton";
 import { AdminPuzzleOffersDropdown } from "@/components/admin/AdminPuzzleOffersDropdown";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
+import { PuzzleCancellationSurveyView } from "@/components/admin/PuzzleCancellationSurveyView";
+import { SurveyDateRangeFilter } from "@/components/admin/SurveyDateRangeFilter";
 import { AlertTriangle, ChevronLeft, Flag, User } from "lucide-react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -11,7 +13,10 @@ import { Card } from "@/components/ui/card";
 export const dynamic = "force-dynamic";
 
 interface PageProps {
-  searchParams: Promise<{ tab?: string; area?: string; status?: string; sort?: string }>;
+  searchParams: Promise<{
+    tab?: string; area?: string; status?: string; sort?: string;
+    from?: string; to?: string; trigger?: string; category?: string; page?: string;
+  }>;
 }
 
 type SortKey = "event" | "created";
@@ -43,7 +48,10 @@ const STATUS_COLOR: Record<string, string> = {
 
 export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
   const supabase = await createClient();
-  const { tab = "list", area: areaFilter, status: statusFilter, sort: sortParam } = await searchParams;
+  const {
+    tab = "list", area: areaFilter, status: statusFilter, sort: sortParam,
+    from: fromParam, to: toParam, trigger: triggerParam, category: categoryParam, page: pageParam,
+  } = await searchParams;
   const sortKey: SortKey = sortParam === "created" ? "created" : "event";
 
   const { data: { user } } = await supabase.auth.getUser();
@@ -246,6 +254,17 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
               }`}
             >
               신고 관리{pendingReportCount > 0 ? ` (${pendingReportCount})` : ""}
+            </button>
+          </Link>
+          <Link href="?tab=surveys">
+            <button
+              className={`px-4 py-2 rounded-xl text-[13px] font-bold transition-all ${
+                tab === "surveys"
+                  ? "bg-white text-black"
+                  : "bg-neutral-800 text-neutral-400 border border-neutral-700"
+              }`}
+            >
+              취소 설문
             </button>
           </Link>
         </div>
@@ -634,6 +653,98 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
             )}
           </div>
         )}
+        {/* 취소 설문 탭 */}
+        {tab === "surveys" && (() => {
+          const today = new Date().toISOString().slice(0, 10);
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+          const from = fromParam || thirtyDaysAgo;
+          const to = toParam || today;
+          const trigger = triggerParam || "";
+          const category = categoryParam || "";
+          const page = Math.max(1, parseInt(pageParam || "1", 10));
+
+          const buildSurveyHref = (overrides: Record<string, string | null>) => {
+            const params = new URLSearchParams({ tab: "surveys" });
+            const vals: Record<string, string> = { from, to, trigger, category, page: "1" };
+            Object.entries(overrides).forEach(([k, v]) => { if (v) vals[k] = v; else delete vals[k]; });
+            Object.entries(vals).forEach(([k, v]) => { if (v) params.set(k, v); });
+            return `?${params.toString()}`;
+          };
+
+          return (
+            <div className="space-y-5">
+              {/* 필터 바 */}
+              <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
+                {/* 기간 */}
+                <SurveyDateRangeFilter
+                  from={from}
+                  to={to}
+                  preservedParams={{
+                    ...(trigger ? { trigger } : {}),
+                    ...(category ? { category } : {}),
+                  }}
+                />
+
+                {/* 트리거 필터 */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] text-neutral-500 font-bold w-8">구분</span>
+                  {[
+                    { value: "", label: "전체" },
+                    { value: "self_cancelled", label: "직접 취소" },
+                    { value: "selecting_expired", label: "선택 만료" },
+                  ].map(({ value, label }) => (
+                    <Link key={value} href={buildSurveyHref({ trigger: value || null })}>
+                      <button
+                        className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
+                          trigger === value
+                            ? "bg-amber-500 text-black"
+                            : "bg-neutral-800 text-neutral-400 border border-neutral-700"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* 사유 필터 */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] text-neutral-500 font-bold w-8">사유</span>
+                  {[
+                    { value: "", label: "전체" },
+                    { value: "schedule_change", label: "일정 변경" },
+                    { value: "no_preferred_venue", label: "원하는 장소 없음" },
+                    { value: "weak_offers", label: "오퍼 별로" },
+                    { value: "mind_change", label: "변심" },
+                    { value: "forgot_about_it", label: "잊어버림" },
+                    { value: "other", label: "기타" },
+                    { value: "no_answer", label: "이유 모름" },
+                  ].map(({ value, label }) => (
+                    <Link key={value} href={buildSurveyHref({ category: value || null })}>
+                      <button
+                        className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${
+                          category === value
+                            ? "bg-purple-500 text-white"
+                            : "bg-neutral-800 text-neutral-400 border border-neutral-700"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <PuzzleCancellationSurveyView
+                from={from}
+                to={to}
+                trigger={trigger}
+                category={category}
+                page={page}
+              />
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

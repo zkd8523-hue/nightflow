@@ -127,10 +127,15 @@
      "JS scrollTo 는 동작하는데 wheel/touch 로는 viewport 가 안 움직이는" 증상이 발생함.
      가로 흔들림 방지는 body 단에서만 처리. */
 
+  html {
+    overscroll-behavior-x: none; /* Capacitor WebView 가로 overscroll bounce 방지 */
+  }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-sans);
     overscroll-behavior-y: none; /* iOS Pull-to-Refresh 방지 */
+    overscroll-behavior-x: none; /* 가로 overscroll bounce 방지 (Android WebView) */
     overflow-x: hidden; /* 좌우 흔들림(가로 스크롤) 방지 */
   }
 }
