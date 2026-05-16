@@ -152,8 +152,9 @@ async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
     countMap[row.puzzle_id].count++;
   }
 
-  for (const [puzzleId, { leaderId, count }] of Object.entries(countMap)) {
-    if (count !== 1) continue;
+  for (const [puzzleId, { leaderId }] of Object.entries(countMap)) {
+    // count !== 1 가드는 제거: cron이 5분 간격이라 그 사이 두 번째 오퍼가 도착하면
+    // count가 2가 되어 영영 안 발송됐던 버그. alreadySent 만으로 중복 발송 충분히 방지.
     if (await alreadySent(supabase, "puzzle_first_offer", puzzleId)) continue;
 
     const { data: leader } = await supabase
