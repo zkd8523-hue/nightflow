@@ -14,11 +14,13 @@ CREATE TABLE clubs_md_id_backup_phase4 AS
   SELECT id, md_id FROM clubs WHERE md_id IS NOT NULL;
 ALTER TABLE clubs_md_id_backup_phase4 ENABLE ROW LEVEL SECURITY;
 
--- 2. md_id 기반 RLS 정책 DROP
+-- 2. md_id 기반 RLS 정책 DROP (clubs.md_id 참조하는 모든 정책)
 DROP POLICY IF EXISTS "MD can create pending clubs" ON clubs;
 DROP POLICY IF EXISTS "MD can update own pending clubs" ON clubs;
 DROP POLICY IF EXISTS "MD can delete own pending clubs" ON clubs;
 DROP POLICY IF EXISTS "MD via club_partners can update clubs" ON clubs;
+DROP POLICY IF EXISTS "MD can update own approved clubs" ON clubs;
+DROP POLICY IF EXISTS "MD can update own approved club images" ON clubs;
 
 -- 3. 새 RLS 정책: md_id 대신 role 기반 (INSERT 허용 후 코드가 club_partners INSERT)
 CREATE POLICY "MD can create clubs" ON clubs
