@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowLeft, MapPin, ExternalLink } from "lucide-react";
@@ -15,6 +15,7 @@ import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction } from "@/types/database";
+import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
 interface ClubDetailContentProps {
   club: Club;
@@ -23,8 +24,12 @@ interface ClubDetailContentProps {
 
 export function ClubDetailContent({
   club,
-  activeAuctions,
+  activeAuctions: rawActiveAuctions,
 }: ClubDetailContentProps) {
+  const activeAuctions = useMemo(() => {
+    return rawActiveAuctions.map(adjustMockAuctionDates);
+  }, [rawActiveAuctions]);
+
   const router = useRouter();
   const { user } = useCurrentUser();
   const supabase = createClient();

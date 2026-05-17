@@ -17,6 +17,7 @@ import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { PuzzlePiece } from "@/components/puzzles/PuzzleCard";
+import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
 interface AuctionCardProps {
   auction: Auction;
@@ -26,7 +27,8 @@ interface AuctionCardProps {
   currentUserId?: string;
 }
 
-export const AuctionCard = memo(function AuctionCard({ auction, userBidAmount, isUserInterested, priority, currentUserId }: AuctionCardProps) {
+export const AuctionCard = memo(function AuctionCard({ auction: propAuction, userBidAmount, isUserInterested, priority, currentUserId }: AuctionCardProps) {
+  const auction = adjustMockAuctionDates(propAuction);
   const club = auction.club;
   const displayStatus = getAuctionDisplayStatus(auction);
   const isActive = displayStatus === 'active';

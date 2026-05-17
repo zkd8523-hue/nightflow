@@ -40,6 +40,7 @@ import { TableDetailsCard } from "./TableDetailsCard";
 import { trackViewAuction, trackEvent } from "@/lib/analytics/events";
 import { isEarlybird } from "@/lib/utils/date";
 import { getClientId } from "@/lib/utils/clientId";
+import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
 interface AuctionDetailProps {
   auction: Auction;
@@ -138,7 +139,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   // Realtime 구독 (내부에서 Outbid 알림도 처리)
   useAuctionRealtime(auction.id, user?.id);
 
-  const displayAuction = (currentAuction?.id === auction.id) ? currentAuction : auction;
+  const rawDisplayAuction = (currentAuction?.id === auction.id) ? currentAuction : auction;
+  const displayAuction = adjustMockAuctionDates(rawDisplayAuction);
   const club = displayAuction.club;
   const md = displayAuction.md;
   const visibleMethods = getVisibleContactMethods(md as unknown as Parameters<typeof getVisibleContactMethods>[0]);

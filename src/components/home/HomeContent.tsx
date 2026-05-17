@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuctionList } from "@/components/auctions/AuctionList";
@@ -15,6 +15,7 @@ import { isAuctionExpired } from "@/lib/utils/auction";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
 import { trackEvent } from "@/lib/analytics/events";
+import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
 const GUIDE_DISMISSED_KEY = "nightflow_guide_dismissed";
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_cta_shown";
@@ -213,11 +214,15 @@ interface HomeContentProps {
 }
 
 export function HomeContent({
-  activeAuctions,
+  activeAuctions: rawActiveAuctions,
   puzzles = [],
   puzzleOfferCounts = {},
   clubs = [],
 }: HomeContentProps) {
+  const activeAuctions = useMemo(() => {
+    return rawActiveAuctions.map(adjustMockAuctionDates);
+  }, [rawActiveAuctions]);
+
   const { user, isLoading } = useCurrentUser();
   const router = useRouter();
   const searchParams = useSearchParams();

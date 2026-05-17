@@ -50,12 +50,16 @@ export default async function HomePage() {
   const activeAuctions = [...(shareAuctions ?? []), ...(legacyAuctions ?? [])];
 
   // 추천 클럽 조회 (ClubStrip용) — 순서 셔플은 클라이언트 마운트 시 수행
-  const { data: clubs } = await supabase
+  const { data: rawClubs } = await supabase
     .from("clubs")
     .select("id, name, area, thumbnail_url")
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
     .order("name");
+
+  const clubs = (rawClubs ?? []).filter(
+    (c) => c.name !== "Club ECLIPSE" && c.name !== "ORION"
+  );
 
   // 오픈 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
   const { data: puzzles } = await supabase
