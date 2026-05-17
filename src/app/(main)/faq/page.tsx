@@ -404,6 +404,17 @@ export default function FAQPage() {
                     </p>
                     <div className="flex flex-col gap-2 text-sm">
                         <p className="text-neutral-300">
+                            📸 인스타 DM:{" "}
+                            <a
+                                href="https://www.instagram.com/nightflow.kr"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-pink-400 font-bold hover:underline"
+                            >
+                                @nightflow.kr
+                            </a>
+                        </p>
+                        <p className="text-neutral-300">
                             📧 이메일: <span className="text-blue-500 font-bold">maddawids@gmail.com</span>
                         </p>
                         <p className="text-neutral-300">

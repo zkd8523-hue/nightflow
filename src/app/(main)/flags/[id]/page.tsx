@@ -139,13 +139,28 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
       }
     : puzzle;
 
+  // admin이면 leader의 마지막 접속(auth.last_sign_in_at) 추가 조회
+  let leaderLastSeenAt: string | null = null;
+  if (profile?.role === "admin" && leader) {
+    const { data } = await supabase.rpc("admin_get_user_last_sign_in_at", {
+      p_user_id: leader.id,
+    });
+    leaderLastSeenAt = (data as string | null) ?? null;
+  }
+
   return (
     <PuzzleDetailClient
       puzzle={puzzleWithLeader}
       members={members || []}
       currentUserId={authUser?.id}
       userRole={profile?.role as "user" | "md" | "admin" | undefined}
-      leader={profile?.role === "admin" ? leader ?? null : null}
+      leader={
+        profile?.role === "admin"
+          ? leader
+            ? { ...leader, last_sign_in_at: leaderLastSeenAt }
+            : null
+          : null
+      }
       currentUserKakaoUrl={profile?.kakao_open_chat_url ?? null}
     />
   );
