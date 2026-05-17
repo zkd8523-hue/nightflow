@@ -45,6 +45,7 @@ const formSchema = z.object({
     club_postal_code: z.string().optional().default(""),
     club_latitude: z.number({ error: "주소 검색으로 위치를 설정해주세요" }),
     club_longitude: z.number({ error: "주소 검색으로 위치를 설정해주세요" }),
+    club_info_consent: z.literal(true, { message: "클럽 정보 사용 동의가 필요합니다" }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -70,6 +71,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
             club_postal_code: "",
             club_latitude: null,
             club_longitude: null,
+            club_info_consent: false as unknown as true,
         },
     });
 
@@ -94,7 +96,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
             if (!res.ok) {
                 throw new Error(result.error || "신청 중 오류가 발생했습니다.");
             }
-            toast.success("MD 파트너 신청이 완료되었습니다!");
+            toast.success("MD · 파트너 신청이 완료되었습니다!");
             setSubmitted(true);
             router.replace('/md/apply');
         } catch (error: unknown) {
@@ -375,9 +377,35 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                 </div>
 
+                {/* 클럽 정보 사용 동의 */}
+                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
+                    <label className="flex items-start gap-3 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            {...form.register("club_info_consent")}
+                            className="mt-1 w-5 h-5 rounded border-neutral-700 bg-neutral-950 accent-green-500 cursor-pointer shrink-0"
+                        />
+                        <div className="flex-1 space-y-1.5">
+                            <p className="text-[13px] text-white font-bold leading-snug">
+                                클럽 정보 사용에 동의합니다 <span className="text-red-500">*</span>
+                            </p>
+                            <p className="text-[11.5px] text-neutral-400 leading-relaxed break-keep">
+                                회원이 등록한 클럽의 상호·로고·이미지·매장 사진을 NightFlow 서비스
+                                운영 및 홍보 목적(앱 내 노출, SNS, 광고)에 사용하는 것에 동의합니다.
+                                회원은 언제든지 사용 중단을 요청할 수 있으며, 회사는 즉시 조치합니다.
+                            </p>
+                        </div>
+                    </label>
+                    {form.formState.errors.club_info_consent && (
+                        <p className="text-red-500 text-[11px] font-bold mt-2 pl-8">
+                            {form.formState.errors.club_info_consent?.message?.toString()}
+                        </p>
+                    )}
+                </div>
+
                 <Button
                     type="submit"
-                    disabled={loading || form.watch("phone_verified") !== true}
+                    disabled={loading || form.watch("phone_verified") !== true || !form.watch("club_info_consent")}
                     className="w-full h-14 bg-white text-black font-black text-lg hover:bg-neutral-200 rounded-2xl flex items-center justify-center gap-2 group transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading ? "신청 정보를 전송 중..." : (

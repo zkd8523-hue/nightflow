@@ -593,9 +593,44 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
           {/* 날짜별 그룹 */}
           {shareAuctions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center space-y-2">
-              <p className="text-2xl">🧩</p>
-              <p className="text-neutral-400 text-sm font-medium">등록된 조각이 없어요</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
+              <p className="text-4xl">🧩</p>
+              {userRole && ["md", "admin"].includes(userRole) ? (
+                <>
+                  <div className="space-y-1.5">
+                    <p className="text-white text-[15px] font-black break-keep">
+                      지금이 조각 올리기 가장 유리한 타이밍
+                    </p>
+                    <p className="text-neutral-400 text-[12.5px] font-medium leading-relaxed break-keep">
+                      경쟁 조각이 없어서 유저 시선 독차지.<br />
+                      먼저 올리면 매출도 먼저 들어와요.
+                    </p>
+                  </div>
+                  <Link
+                    href="/md/auctions/new"
+                    className="inline-flex items-center gap-1.5 h-11 px-6 bg-green-500 text-black font-black text-sm rounded-full hover:bg-green-400 transition-colors active:scale-[0.98]"
+                  >
+                    조각 등록하기
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <p className="text-white text-[15px] font-black break-keep">
+                      아직 등록된 조각이 없어요
+                    </p>
+                    <p className="text-neutral-400 text-[12.5px] font-medium leading-relaxed break-keep">
+                      깃발을 꽂으면 MD가 직접 제안을 보내요.
+                    </p>
+                  </div>
+                  <Link
+                    href="/flags/new"
+                    className="inline-flex items-center gap-1.5 h-11 px-6 bg-amber-500 text-black font-black text-sm rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98]"
+                  >
+                    🚩 깃발 꽂으러 가기
+                  </Link>
+                </>
+              )}
             </div>
           ) : filteredShareAuctions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">

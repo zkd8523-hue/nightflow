@@ -27,16 +27,21 @@ export function Footer() {
             <Link href="/privacy" className="hover:text-white transition-colors">
               개인정보처리방침
             </Link>
-            <Link href="/contact" className="hover:text-white transition-colors">
+            <a
+              href="https://www.instagram.com/nightflow.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors"
+            >
               고객문의
-            </Link>
+            </a>
           </nav>
           {!isPartner && (
             <Link
               href="/md/apply"
               className="inline-block rounded-full border border-amber-500 px-5 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
             >
-              MD 파트너 모집 →
+              MD · 파트너 모집 →
             </Link>
           )}
           <Link

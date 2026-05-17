@@ -275,7 +275,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                       {user.display_name || user.name || "사용자"}
                     </SheetTitle>
                     <p className="text-[12px] text-neutral-500">
-                      {user.role === "md" ? "MD 파트너" : user.role === "admin" ? "관리자" : "일반 회원"}
+                      {user.role === "md" ? "MD · 파트너" : user.role === "admin" ? "관리자" : "일반 회원"}
                     </p>
                   </div>
                 </SheetHeader>
@@ -478,7 +478,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                       >
                         <Star className="w-5 h-5 text-amber-500" />
-                        <span className="text-[15px] font-bold">MD 파트너 신청</span>
+                        <span className="text-[15px] font-bold">MD · 파트너 신청</span>
                       </Link>
                     )}
 
