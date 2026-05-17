@@ -64,7 +64,7 @@ export async function PuzzleCancellationSurveyView({ from, to, trigger, category
   const offset = (page - 1) * PAGE_SIZE;
   let listQuery = supabase
     .from("puzzle_cancellation_surveys")
-    .select("id, puzzle_id, trigger_type, reason_categories, reason_text, responded_at")
+    .select("id, puzzle_id, trigger_type, reason_categories, reason_text, responded_at, users(name)")
     .gte("responded_at", from)
     .lte("responded_at", to + "T23:59:59")
     .order("responded_at", { ascending: false })
@@ -133,6 +133,9 @@ export async function PuzzleCancellationSurveyView({ from, to, trigger, category
             <div key={row.id} className="bg-[#1C1C1E] rounded-2xl px-4 py-4 space-y-1.5">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[12px] font-bold text-white">
+                    {(Array.isArray(row.users) ? row.users[0]?.name : (row.users as { name: string } | null)?.name) ?? "알 수 없음"}
+                  </span>
                   <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400">
                     {TRIGGER_LABEL[row.trigger_type] ?? row.trigger_type}
                   </span>
