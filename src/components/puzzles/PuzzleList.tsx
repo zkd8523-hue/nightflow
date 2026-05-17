@@ -397,7 +397,7 @@ export function PuzzleList({
               const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
               const dday = getDDay(date);
               return (
-                <div key={date} className="space-y-4">
+                <div key={date} className="space-y-2">
                   <div className="flex items-center gap-2.5 px-1">
                     <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
                     <h3 className="text-[16px] font-black text-white tracking-tight">{dateLabel}</h3>
@@ -523,7 +523,7 @@ export function PuzzleList({
               const deadline = getPuzzleGroupDeadline(items);
 
               return (
-                <div key={date} className="space-y-4">
+                <div key={date} className="space-y-2">
                   <div className="flex flex-col gap-1.5 px-1 py-1">
                     <div className="flex items-center gap-2.5">
                       <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
