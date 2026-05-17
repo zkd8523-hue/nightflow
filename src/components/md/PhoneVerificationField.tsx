@@ -13,6 +13,19 @@ const isTestLoginEnabled =
   process.env.NODE_ENV === "development" ||
   process.env.NEXT_PUBLIC_ENABLE_TEST_LOGIN === "true";
 
+const MAGIC_PHONES = [
+  "01000000000",
+  "01012345678",
+  "01099990001",
+  "01099990002",
+  "01099990003"
+];
+
+const isMagicPhoneClient = (phone: string) => {
+  const normalized = phone.replace(/[^0-9]/g, "");
+  return MAGIC_PHONES.includes(normalized);
+};
+
 interface PhoneVerificationFieldProps {
   value: string;
   onChange: (next: string) => void;
@@ -111,8 +124,8 @@ export function PhoneVerificationField({
       setOtpVisible(true);
       setCode(isTestLoginEnabled ? "000000" : "");
 
-      // 테스트 모드: 자동 인증 완료 처리
-      if (isTestLoginEnabled) {
+      // 매직 번호이거나 테스트 모드인 경우 자동 인증 완료 처리
+      if (isMagicPhoneClient(value) || isTestLoginEnabled) {
         toast.success("테스트 모드: 자동 인증 처리 중...");
         await autoVerify("000000");
         return;

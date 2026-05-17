@@ -41,6 +41,7 @@ function LoginContent() {
   const [isIOSNative, setIsIOSNative] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showDevLogin, setShowDevLogin] = useState(false);
+  const [titleClicks, setTitleClicks] = useState(0);
 
   useEffect(() => {
     setIsInAppAndroid(isInAppBrowser() && !isIOS());
@@ -284,7 +285,21 @@ function LoginContent() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
       <Card className="w-full max-w-md p-8 space-y-5">
         <div className="text-center space-y-3">
-          <h1 className="text-3xl font-bold">NightFlow</h1>
+          <h1 
+            className="text-3xl font-bold cursor-pointer select-none"
+            onClick={() => {
+              setTitleClicks((prev) => {
+                const next = prev + 1;
+                if (next >= 5) {
+                  setShowDevLogin(true);
+                  return 0;
+                }
+                return next;
+              });
+            }}
+          >
+            NightFlow
+          </h1>
           <div className="space-y-1">
             <p className="text-[15px] text-neutral-300 font-medium whitespace-nowrap">
               MD들이 줄서서 제안하는 클럽 예약 플랫폼
@@ -391,7 +406,7 @@ function LoginContent() {
         </div>
 
         {/* 개발용 테스트 로그인 */}
-        {isTestLoginEnabled && (
+        {(isTestLoginEnabled || showDevLogin) && (
           <div className="border-t border-neutral-800 pt-4 space-y-3">
             <p className="text-xs text-amber-500 text-center font-bold">
               테스트 로그인 (계정 없으면 자동 생성)

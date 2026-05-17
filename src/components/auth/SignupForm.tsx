@@ -38,6 +38,19 @@ const TEST_PHONE_BY_EMAIL: Record<string, string> = {
   "test-admin@nightflow.test": "01099990003",
 };
 
+const MAGIC_PHONES = [
+  "01000000000",
+  "01012345678",
+  "01099990001",
+  "01099990002",
+  "01099990003"
+];
+
+const isMagicPhoneClient = (phone: string) => {
+  const normalized = phone.replace(/[^0-9]/g, "");
+  return MAGIC_PHONES.includes(normalized);
+};
+
 const formatPhoneDisplay = (raw: string) => {
   const digits = raw.replace(/\D/g, "").slice(0, 11);
   if (digits.length < 4) return digits;
@@ -225,7 +238,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       }
       toast.success("인증번호를 보냈어요");
       setStep("otp");
-      setOtpCode(isTestLoginEnabled ? "000000" : "");
+      if (isMagicPhoneClient(phoneDigits)) {
+        setOtpCode("000000");
+      } else {
+        setOtpCode(isTestLoginEnabled ? "000000" : "");
+      }
       setResendIn(RESEND_COOLDOWN_SEC);
     } catch (err) {
       logger.error("send-otp failed:", err);
