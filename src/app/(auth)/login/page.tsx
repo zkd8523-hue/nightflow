@@ -227,8 +227,8 @@ function LoginContent() {
 
       // 계정이 없으면 회원가입 시도
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
+        email: loginEmail,
+        password: loginPassword,
       });
 
       if (signUpError) {
@@ -242,8 +242,8 @@ function LoginContent() {
       if (!signUpData.session) {
         console.log("[DEV Login] signUp 세션 없음 (이메일 미인증), 재로그인 시도");
         const { error: retryError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+          email: loginEmail,
+          password: loginPassword,
         });
         if (retryError) {
           setDevError("회원가입은 완료되었으나 이메일 인증이 필요합니다. Supabase Dashboard > Auth > Settings에서 'Enable email confirmations'를 끄세요.");
