@@ -10,6 +10,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, X, PartyPopper } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
+import { ClubStrip } from "@/components/home/ClubStrip";
 import { isAuctionExpired } from "@/lib/utils/auction";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
@@ -208,12 +209,14 @@ interface HomeContentProps {
   activeAuctions: Auction[];
   puzzles?: Puzzle[];
   puzzleOfferCounts?: Record<string, number>;
+  clubs?: { id: string; name: string; area: string; thumbnail_url: string | null }[];
 }
 
 export function HomeContent({
   activeAuctions,
   puzzles = [],
   puzzleOfferCounts = {},
+  clubs = [],
 }: HomeContentProps) {
   const { user, isLoading } = useCurrentUser();
   const router = useRouter();
@@ -396,6 +399,7 @@ export function HomeContent({
     <>
       <div className="space-y-4">
 
+        <ClubStrip clubs={clubs} />
 
         {(() => {
           const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
