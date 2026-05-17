@@ -13,12 +13,12 @@ async function seed() {
     // 1-1. Update actual club names and thumbnail URLs to avoid real-world trademark issues and use beautiful club images
     await supabase.from('clubs').update({ 
       name: 'Club ECLIPSE',
-      thumbnail_url: 'https://ihqztsakxczzsxfvdkpq.supabase.co/storage/v1/object/public/auction-images/club-thumbnails/103400ee-b647-428f-ae76-07131a720dc6/17790012193N.png'
+      thumbnail_url: '/mock_club_1.jpg'
     }).eq('id', '35de296e-5fdc-435b-baf2-1c7c05538687');
     
     await supabase.from('clubs').update({ 
       name: 'ORION',
-      thumbnail_url: 'https://ihqztsakxczzsxfvdkpq.supabase.co/storage/v1/object/public/auction-images/club-thumbnails/cc7db051-b75d-4c1f-9f95-29f7d8ce70d7/17790014033N.png'
+      thumbnail_url: '/mock_club_2.jpg'
     }).eq('id', 'bd820f57-46b6-4d95-822a-4f0cf8e84542');
 
     // 1. Get clubs and MDs
@@ -80,7 +80,7 @@ async function seed() {
         seats_claimed: 4,
         share_deadline: "2027-05-20T15:00:00.000Z",
         kakao_open_chat_url: "https://open.kakao.com/o/gNRAV7ui",
-        thumbnail_url: "https://ihqztsakxczzsxfvdkpq.supabase.co/storage/v1/object/public/auction-images/club-thumbnails/103400ee-b647-428f-ae76-07131a720dc6/17790012193N.png",
+        thumbnail_url: "/mock_club_1.jpg",
         target_male: 3,
         target_female: 3,
         external_male: 2,
@@ -109,7 +109,7 @@ async function seed() {
         seats_claimed: 5,
         share_deadline: "2027-05-21T15:00:00.000Z",
         kakao_open_chat_url: "https://open.kakao.com/o/gNRAV7ui",
-        thumbnail_url: "https://ihqztsakxczzsxfvdkpq.supabase.co/storage/v1/object/public/auction-images/club-thumbnails/cc7db051-b75d-4c1f-9f95-29f7d8ce70d7/17790014033N.png",
+        thumbnail_url: "/mock_club_2.jpg",
         target_male: 4,
         target_female: 4,
         external_male: 3,
@@ -138,7 +138,7 @@ async function seed() {
         seats_claimed: 2,
         share_deadline: "2027-05-22T15:00:00.000Z",
         kakao_open_chat_url: "https://open.kakao.com/o/gNRAV7ui",
-        thumbnail_url: "https://ihqztsakxczzsxfvdkpq.supabase.co/storage/v1/object/public/auction-images/club-thumbnails/bb929c21-bd6d-4766-85c6-2b51452058da/17790017603N.png",
+        thumbnail_url: "/mock_club_3.png",
         target_male: 2,
         target_female: 3,
         external_male: 1,
