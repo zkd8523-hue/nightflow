@@ -15,12 +15,20 @@ interface ClubStripProps {
   clubs: Club[];
 }
 
+const HIDDEN_CLUB_NAME_PATTERNS = [/luna/i, /prism/i, /eclipse/i];
+
+function filterHiddenClubs(list: Club[]) {
+  return list.filter(
+    (c) => !HIDDEN_CLUB_NAME_PATTERNS.some((re) => re.test(c.name)),
+  );
+}
+
 export function ClubStrip({ clubs: initialClubs }: ClubStripProps) {
   // SSR/hydration mismatch 방지: 초기엔 props 순서 그대로 → 마운트 후 셔플
-  const [clubs, setClubs] = useState(initialClubs);
+  const [clubs, setClubs] = useState(() => filterHiddenClubs(initialClubs));
 
   useEffect(() => {
-    setClubs([...initialClubs].sort(() => Math.random() - 0.5));
+    setClubs(filterHiddenClubs(initialClubs).sort(() => Math.random() - 0.5));
   }, [initialClubs]);
 
   if (clubs.length === 0) return null;
@@ -29,7 +37,7 @@ export function ClubStrip({ clubs: initialClubs }: ClubStripProps) {
     <section className="mb-1">
       <div className="flex items-center justify-between mb-3 px-1">
         <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest">
-          추천 클럽
+          함께하는 스팟
         </span>
         <Link
           href="/clubs"

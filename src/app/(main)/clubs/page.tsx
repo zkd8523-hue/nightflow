@@ -44,8 +44,9 @@ export default async function ClubsIndexPage() {
       .in("status", ["active", "scheduled"]),
   ]);
 
+  const HIDDEN_NAME_PATTERNS = [/luna/i, /prism/i, /eclipse/i, /^orion$/i];
   const clubs = (clubsRes.data ?? []).filter(
-    (c) => c.name !== "Club ECLIPSE" && c.name !== "ORION"
+    (c) => !HIDDEN_NAME_PATTERNS.some((re) => re.test(c.name))
   );
   const activeCountMap: Record<string, number> = {};
   for (const a of auctionsRes.data ?? []) {
