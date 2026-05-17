@@ -45,7 +45,7 @@ export function SecretOfferCard({
 
   const forceReveal = !isOpen || offer.status !== "pending";
   const isRevealed = forceReveal || (isLoaded && hasRevealed(offer.id));
-  const showCanvas = !isRevealed;
+  const showCanvas = !isRevealed || fadingOut;
 
   // Canvas 초기화 (잠금 상태일 때만)
   useEffect(() => {
@@ -106,8 +106,9 @@ export function SecretOfferCard({
 
     if (getTransparencyPct(canvas) >= SCRATCH_THRESHOLD) {
       scratchDone.current = true;
+      markRevealed(offer.id);
       setFadingOut(true);
-      setTimeout(() => markRevealed(offer.id), 380);
+      setTimeout(() => setFadingOut(false), 400);
     }
   }, [getTransparencyPct, markRevealed, offer.id]);
 
