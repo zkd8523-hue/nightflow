@@ -394,7 +394,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         </div>
 
       {tab === "puzzle" && (
-        <div className="flex items-center gap-1.5 px-1">
+        <div className="flex items-center gap-1.5 px-1 pb-4">
           {([
             { key: "popular", label: "인기순" },
             { key: "budget",  label: "예산순" },
