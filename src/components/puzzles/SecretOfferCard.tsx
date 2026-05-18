@@ -1,10 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, CheckCircle2, Flame, XCircle } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Flame, XCircle, ChevronRight } from "lucide-react";
 import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferButton";
 import type { PuzzleOffer } from "@/types/database";
 import { formatRelativeTime } from "@/lib/utils/format";
+import { LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
+
+function isLiquor(item: string): boolean {
+  return LIQUOR_KEYWORDS.some((kw) => item.includes(kw));
+}
 
 interface SecretOfferCardProps {
   offer: PuzzleOffer;
@@ -46,12 +52,25 @@ export function SecretOfferCard({
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-[15px] font-black text-white">
-            {club?.name || "클럽"}
-            {club?.area && (
-              <span className="text-neutral-500 font-medium"> · {club.area}</span>
-            )}
-          </p>
+          {offer.club_id ? (
+            <Link
+              href={`/clubs/${offer.club_id}`}
+              className="inline-flex items-center gap-0.5 text-[15px] font-black text-white hover:text-amber-300 transition-colors"
+            >
+              {club?.name || "클럽"}
+              {club?.area && (
+                <span className="text-neutral-500 font-medium"> · {club.area}</span>
+              )}
+              <ChevronRight className="w-3.5 h-3.5 text-neutral-500 ml-0.5" />
+            </Link>
+          ) : (
+            <p className="text-[15px] font-black text-white">
+              {club?.name || "클럽"}
+              {club?.area && (
+                <span className="text-neutral-500 font-medium"> · {club.area}</span>
+              )}
+            </p>
+          )}
         </div>
         {offer.status === "accepted" ? (
           <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold">
@@ -68,18 +87,38 @@ export function SecretOfferCard({
         <p className="text-[16px] font-black text-green-400">
           {offer.proposed_price.toLocaleString()}원
         </p>
-        {offer.includes.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {offer.includes.map((inc) => (
-              <span
-                key={inc}
-                className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700"
-              >
-                {inc}
-              </span>
-            ))}
-          </div>
-        )}
+        {offer.includes.length > 0 && (() => {
+          const liquors = offer.includes.filter(isLiquor);
+          const extras = offer.includes.filter((i) => !isLiquor(i));
+          return (
+            <div className="space-y-1.5">
+              {liquors.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {liquors.map((inc) => (
+                    <span
+                      key={inc}
+                      className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                    >
+                      🍾 {inc}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {extras.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {extras.map((inc) => (
+                    <span
+                      key={inc}
+                      className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800"
+                    >
+                      {inc}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
         {offer.comment && (
           <p className="text-[12px] text-neutral-400 italic">&ldquo;{offer.comment}&rdquo;</p>
         )}

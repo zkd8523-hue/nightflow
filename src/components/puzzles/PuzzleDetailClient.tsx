@@ -862,17 +862,18 @@ export function PuzzleDetailClient({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-neutral-400" />
-                <h2 className="text-[14px] font-bold text-neutral-300">시크릿 오퍼</h2>
+                <h2 className="text-[14px] font-bold text-neutral-300">
+                  시크릿 오퍼
+                  {pendingOffers.length > 0 && !isAccepted && (
+                    <span className="ml-1.5 text-white">{pendingOffers.length}건</span>
+                  )}
+                </h2>
               </div>
-              <span className="text-[11px] text-neutral-500">
-                {isAccepted
-                  ? "제안 마감"
-                  : pendingOffers.length === 0
-                  ? "아직 제안 없음"
-                  : !isLeader
-                  ? "방장만 모든 내용을 볼 수 있어요"
-                  : ""}
-              </span>
+              {(isAccepted || pendingOffers.length === 0) && (
+                <span className="text-[11px] text-neutral-500">
+                  {isAccepted ? "제안 마감" : "아직 제안 없음"}
+                </span>
+              )}
             </div>
 
             {/* 방장: 진행 중인(pending) 제안만 — 수락된 오퍼는 위 성사됨 카드에 이미 표시 */}
@@ -899,8 +900,8 @@ export function PuzzleDetailClient({
             {/* 비방장: 테이블타입 공개 + 주류/extras blur 처리 */}
             {!isLeader && pendingOffers.length > 0 && !isAccepted && (
               <div className="space-y-3">
-                <p className="text-[13px] text-neutral-400">
-                  <span className="text-white font-bold">MD {pendingOffers.length}명</span>이 줄서있어요
+                <p className="text-[12px] text-neutral-500">
+                  방장만 모든 내용을 볼 수 있어요
                 </p>
                 {publicOffers.map((offer, idx) => (
                   <div
@@ -916,15 +917,25 @@ export function PuzzleDetailClient({
                       </p>
                     </div>
                     <div className="space-y-1.5 blur-sm select-none pointer-events-none">
-                      {(offer.public.liquorCategories.length > 0 || offer.public.extras.length > 0) && (
-                        <div className="flex flex-wrap gap-1">
+                      {offer.public.liquorCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
                           {offer.public.liquorCategories.map((cat) => (
-                            <span key={cat} className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400">
-                              {cat}
+                            <span
+                              key={cat}
+                              className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                            >
+                              🍾 {cat}
                             </span>
                           ))}
+                        </div>
+                      )}
+                      {offer.public.extras.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
                           {offer.public.extras.map((ext) => (
-                            <span key={ext} className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700">
+                            <span
+                              key={ext}
+                              className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800"
+                            >
                               {ext}
                             </span>
                           ))}

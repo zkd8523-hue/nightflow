@@ -6,14 +6,14 @@ import { MapPin, Flame } from "lucide-react";
 export const revalidate = 60;
 
 export const metadata: Metadata = {
-  title: "강남·홍대 인기 클럽 목록 - 클럽 테이블 예약",
+  title: "전국 클럽 가이드 - 강남·홍대·이태원 클럽 정보 한눈에",
   description:
-    "강남·홍대 인기 클럽 전체 목록. 진행 중인 테이블 경매와 가격 정보를 확인하고 정가보다 저렴하게 예약하세요. Club ACE·CLUB BERMUDA 등.",
+    "우리나라 클럽 정보를 한눈에. 강남·홍대·이태원·부산·광주·대구 인기 클럽을 둘러보고, 예약 가능한 곳은 깃발로 바로 잡으세요.",
   alternates: { canonical: "https://nightflow.kr/clubs" },
   openGraph: {
-    title: "강남·홍대 인기 클럽 목록 - 나이트플로우(나플)",
+    title: "전국 클럽 가이드 - 나이트플로우(나플)",
     description:
-      "강남 6개·홍대 2개·광주 1개·부산 1개 인기 클럽 진행 중인 경매와 가격 비교.",
+      "전국 인기 클럽 정보를 한눈에 비교. 마음에 드는 클럽은 깃발 한 번으로 예약.",
     url: "https://nightflow.kr/clubs",
     type: "website",
   },
@@ -64,11 +64,11 @@ export default async function ClubsIndexPage() {
     <div className="container mx-auto max-w-3xl px-4 py-8 mb-20">
       <header className="mb-8 space-y-2">
         <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-          NightFlow 파트너 지점
+          전국 클럽 가이드
         </h1>
         <p className="text-sm text-neutral-400 leading-relaxed break-keep">
-          내 한 번의 깃발에 강남·홍대 MD들이 동시에 움직여요.
-          <br />누가 더 좋은 조건을 줄지, 비교하고 선택하세요.
+          우리나라 클럽 정보를 한눈에.
+          <br />예약 가능한 곳은 깃발로 바로 잡으세요.
         </p>
       </header>
 
