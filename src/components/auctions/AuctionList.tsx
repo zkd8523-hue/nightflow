@@ -249,7 +249,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
       {!hideTabs && (
       <div className="flex items-center gap-2 px-1">
         <div className="overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0 touch-pan-x">
-          <div className="flex gap-2 w-max pr-4">
+          <div className="flex gap-2 w-max pr-4 items-end">
             <button
               onClick={() => setTab("puzzle")}
               className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
@@ -285,10 +285,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             {onShowGuide && (tab === "advance" || tab === "puzzle" || tab === "share") && (
               <button
                 onClick={onShowGuide}
-                className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap px-1"
+                className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap px-1 pb-1"
               >
                 <span className="text-[13px]">ⓘ</span>
-                {tab === "puzzle" ? "깃발이란?" : tab === "share" ? "조각이란?" : "얼리버드란?"}
+                {tab === "puzzle" ? "깃발 이용방법" : tab === "share" ? "조각 이용방법" : "얼리버드란?"}
               </button>
             )}
           </div>

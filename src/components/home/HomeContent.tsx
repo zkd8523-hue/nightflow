@@ -475,74 +475,70 @@ export function HomeContent({
                 title: s.title.replace(/^\d+\.\s*/, ""),
               }))
             : steps;
-          const guideCard = showGuide ? (
-            <section className="px-1">
-              <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
-                <button
-                  onClick={dismissGuide}
-                  className="absolute top-3 right-3 w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors z-10"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-                {isUserSecretMode ? (
-                  <div className="space-y-4 pt-1 pr-8">
-                    <h3 className="text-[17px] font-black text-white tracking-tight">{SECRET_OFFER_INTRO_USER.title}</h3>
-                    <ol className="space-y-2.5">
-                      {SECRET_OFFER_INTRO_USER.points.map((p, i) => (
-                        <li key={i} className="flex items-center gap-2.5">
-                          <span className="shrink-0 w-5 h-5 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-[11px] font-black text-amber-400">
-                            {i + 1}
-                          </span>
-                          <span className="text-[13.5px] text-neutral-200 font-medium leading-snug break-keep">{p}</span>
-                        </li>
-                      ))}
-                    </ol>
-                    <div className="border-t border-neutral-800 pt-3 space-y-2">
-                      {SECRET_OFFER_INTRO_USER.highlights.map((h, i) => (
-                        <p key={i} className="text-[13.5px] text-emerald-400 font-bold leading-snug break-keep flex items-start gap-1.5">
-                          <span className="shrink-0">{h.emoji}</span>
-                          <span>{h.text}</span>
-                        </p>
+          const guideCard = (
+            <section className="px-1 space-y-2">
+              {/* TIP 박스 — 항시 노출 */}
+              {overriddenTabPromises[currentTab]?.content && (
+                <div className="bg-amber-500/15 border border-amber-500/30 rounded-2xl px-3 py-2.5 flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5 text-[10px] font-black text-amber-400 bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 rounded-full tracking-wider">TIP</span>
+                  <p className="text-[13.5px] text-amber-100 font-bold leading-snug whitespace-pre-line break-keep">
+                    {overriddenTabPromises[currentTab].content}
+                  </p>
+                </div>
+              )}
+              {/* 이용방법 가이드 — "깃발이란?" 클릭 시 토글 */}
+              {showGuide && (
+                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
+                  <button
+                    onClick={dismissGuide}
+                    className="absolute top-3 right-3 w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors z-10"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  {isUserSecretMode ? (
+                    <div className="space-y-4 pt-1 pr-8">
+                      <h3 className="text-[17px] font-black text-white tracking-tight">{SECRET_OFFER_INTRO_USER.title}</h3>
+                      <ol className="space-y-2.5">
+                        {SECRET_OFFER_INTRO_USER.points.map((p, i) => (
+                          <li key={i} className="flex items-center gap-2.5">
+                            <span className="shrink-0 w-5 h-5 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-[11px] font-black text-amber-400">
+                              {i + 1}
+                            </span>
+                            <span className="text-[13.5px] text-neutral-200 font-medium leading-snug break-keep">{p}</span>
+                          </li>
+                        ))}
+                      </ol>
+                      <div className="border-t border-neutral-800 pt-3 space-y-2">
+                        {SECRET_OFFER_INTRO_USER.highlights.map((h, i) => (
+                          <p key={i} className="text-[13.5px] text-emerald-400 font-bold leading-snug break-keep flex items-start gap-1.5">
+                            <span className="shrink-0">{h.emoji}</span>
+                            <span>{h.text}</span>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2 pr-8">
+                      {visibleSteps.map((step, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
+                        >
+                          <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
+                            {step.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
+                            <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep whitespace-pre-line">{step.desc}</p>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2 pb-5">
-                    {overriddenTabPromises[currentTab] && (
-                      <div className="mb-1 pr-8">
-                        <p className="text-[13.5px] text-white font-bold leading-snug whitespace-pre-line break-keep">
-                          {overriddenTabPromises[currentTab].content}
-                        </p>
-                      </div>
-                    )}
-                    {visibleSteps.map((step, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
-                      >
-                        <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
-                          {step.icon}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">
-                            {step.title}
-                          </h3>
-                          <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep whitespace-pre-line">
-                            {step.desc}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {!isUserSecretMode && overriddenTabPromises[currentTab]?.note && (
-                  <p className="absolute bottom-3 right-3 text-[10.5px] text-amber-300/70 font-medium">
-                    {overriddenTabPromises[currentTab].note}
-                  </p>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </section>
-          ) : null;
+          );
           return (
             <AuctionList
               activeAuctions={auctions.active}
