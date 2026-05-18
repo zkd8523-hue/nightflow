@@ -399,11 +399,7 @@ export function HomeContent({
   // 이용 방법 카드는 기본 닫힘. AuctionList의 "ⓘ 깃발 이용 방법" 버튼 → onShowGuide 콜백으로만 활성화.
 
   const dismissGuide = () => {
-    // 시크릿오퍼 보기 모드일 때는 전체 가이드를 닫지 않고 풀 가이드로 복귀
-    if (guideMode === "secret-offer") {
-      setGuideMode("full");
-      return;
-    }
+    setGuideMode("full");
     setShowGuide(false);
     localStorage.setItem(GUIDE_DISMISSED_KEY, "1");
   };
