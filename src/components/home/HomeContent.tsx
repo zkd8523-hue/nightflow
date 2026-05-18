@@ -65,7 +65,7 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 const PUZZLE_ONBOARDING_STEPS = [
   {
     title: "1. 깃발꽂기",
-    desc: "날짜·지역·예산만 정하면 깃발 끝!\n일행 모자라도 OK — 퍼즐🧩로 파티원 모집!",
+    desc: "날짜·지역·예산만 정하면 깃발 끝!",
     icon: <span className="text-[20px]">⛳</span>,
     color: "bg-amber-500/10",
   },
@@ -163,7 +163,6 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
         지금 바로 입찰해보세요!
       </>
     ),
-    note: "🛡 결제 없이 입찰 · 낙찰되면 MD가 안내",
   },
   puzzle: {
     content: (
@@ -175,7 +174,6 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
         <span className="text-emerald-400">가격·패키지 비교하고 골라요.</span>
       </>
     ),
-    note: "💡 모든 서비스 무료",
   },
   share: {
     content: (
@@ -185,7 +183,6 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
         인원이 다 모이면 바로 입장 가능해요.
       </>
     ),
-    note: "🧩 선입금 없음 · 현장 N빵",
   },
 };
 
@@ -417,7 +414,8 @@ export function HomeContent({
     <>
       <div className="space-y-4">
 
-        <ClubStrip clubs={clubs} />
+        {/* 홈 상단 ClubStrip 일시 숨김 — 핵심 가치 경험(깃발/조각) 흐름을 가리는 노이즈로 판단. /clubs 페이지에선 정상 노출. */}
+        {/* <ClubStrip clubs={clubs} /> */}
 
         {(() => {
           const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
@@ -451,9 +449,7 @@ export function HomeContent({
             <>
               예산 등록 → MD들이 시크릿 오퍼
               <br />
-              가격·패키지 비교하고 골라요.
-              <br />
-              <span className="text-emerald-400">지금 바로 VIP가 되어보세요!</span>{" "}
+              가격·패키지 비교하고 골라요.{" "}
               <button
                 type="button"
                 onClick={handleToggleSecretOffer}
@@ -511,17 +507,12 @@ export function HomeContent({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 pb-5">
                     {overriddenTabPromises[currentTab] && (
                       <div className="mb-1 pr-8">
                         <p className="text-[13.5px] text-white font-bold leading-snug whitespace-pre-line break-keep">
                           {overriddenTabPromises[currentTab].content}
                         </p>
-                        {overriddenTabPromises[currentTab].note && (
-                          <p className="mt-1.5 text-[10.5px] text-amber-300/70 font-medium">
-                            {overriddenTabPromises[currentTab].note}
-                          </p>
-                        )}
                       </div>
                     )}
                     {visibleSteps.map((step, idx) => (
@@ -543,6 +534,11 @@ export function HomeContent({
                       </div>
                     ))}
                   </div>
+                )}
+                {!isUserSecretMode && overriddenTabPromises[currentTab]?.note && (
+                  <p className="absolute bottom-3 right-3 text-[10.5px] text-amber-300/70 font-medium">
+                    {overriddenTabPromises[currentTab].note}
+                  </p>
                 )}
               </div>
             </section>

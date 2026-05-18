@@ -1094,6 +1094,11 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           )}
           {!submitting && !isEditMode && <ArrowRight className="w-5 h-5" />}
         </Button>
+        {!isEditMode && (
+          <p className="text-center text-[12px] text-neutral-500 font-medium mt-2.5">
+            🆓 100% 무료 · 결제 없음
+          </p>
+        )}
       </div>
 
       <ConfirmDialog

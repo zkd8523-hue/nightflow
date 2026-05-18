@@ -288,7 +288,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap px-1"
               >
                 <span className="text-[13px]">ⓘ</span>
-                {tab === "puzzle" ? "깃발 이용안내" : tab === "share" ? "조각 이용안내" : "얼리버드란?"}
+                {tab === "puzzle" ? "깃발이란?" : tab === "share" ? "조각이란?" : "얼리버드란?"}
               </button>
             )}
           </div>

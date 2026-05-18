@@ -908,13 +908,8 @@ export function PuzzleDetailClient({
                     key={offer.id}
                     className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <p className="text-[14px] font-bold text-white">Offer #{idx + 1}</p>
-                      </div>
-                      <p className="text-[11px] text-neutral-500" suppressHydrationWarning>
-                        {formatRelativeTime(offer.created_at)}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[14px] font-bold text-white">Offer #{idx + 1}</p>
                     </div>
                     <div className="space-y-1.5 blur-sm select-none pointer-events-none">
                       {offer.public.liquorCategories.length > 0 && (

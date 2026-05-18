@@ -357,6 +357,9 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                 {loading ? "처리 중..." : "입찰하기"}
               </Button>
             </div>
+            <p className="text-center text-[12px] text-neutral-500 font-medium mt-3">
+              🛡 결제 없이 입찰 · 낙찰 시 MD가 안내
+            </p>
           </div>
         </SheetContent>
       </Sheet>
