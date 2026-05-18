@@ -37,7 +37,7 @@ export function ClubStrip({ clubs: initialClubs }: ClubStripProps) {
     <section className="mb-1">
       <div className="flex items-center justify-between mb-3 px-1">
         <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest">
-          함께하는 스팟
+          이런 스팟 어때?
         </span>
         <Link
           href="/clubs"
