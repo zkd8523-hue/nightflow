@@ -134,7 +134,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       const g = (data?.gender as 'male' | 'female' | null) ?? null;
       setMyGender(g);
       setGenderLoaded(true);
-      if (!g) setGenderModalOpen(true);
+      // 깃발에서는 성별을 직접 묻지 않음. 조각 참여 시에만 묻도록 정책 변경 (2026-05-19).
+      // 기존 유저(gender=null)는 폼 상단 안내 카드로 조각 흐름 유도.
     })();
     return () => { cancelled = true; };
   }, [userId, supabase]);
@@ -569,7 +570,16 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Migration 184: 성별 입력 게이트 (필수, 1회) */}
+      {/* 깃발에서는 성별을 묻지 않음 — 기존 유저(gender=null)는 조각 흐름 안내 */}
+      {genderLoaded && !myGender && (
+        <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-2">
+          <p className="text-[13px] font-bold text-white">성별 정보가 필요해요</p>
+          <p className="text-[12px] text-neutral-400 leading-relaxed">
+            깃발은 성별 슬롯 기반으로 매칭돼요. 조각 매물에 먼저 참여하면서 성별을 설정하면 깃발도 등록할 수 있어요.
+          </p>
+        </div>
+      )}
+      {/* 성별 입력 모달 (수동 트리거 전용) */}
       <Sheet open={genderModalOpen} onOpenChange={() => { /* 닫기 차단 */ }}>
         <SheetContent
           side="bottom"

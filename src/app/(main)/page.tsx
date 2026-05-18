@@ -57,9 +57,13 @@ export default async function HomePage() {
     .not("name", "ilike", "%운영자%")
     .order("name");
 
-  const clubs = (rawClubs ?? []).filter(
-    (c) => c.name !== "Club ECLIPSE" && c.name !== "ORION"
-  );
+  const HIDDEN_FROM_RECOMMEND = ["prism", "eclipse", "luna", "orion"];
+  const clubs = (rawClubs ?? []).filter((c) => {
+    const lower = c.name.toLowerCase();
+    return !HIDDEN_FROM_RECOMMEND.some(
+      (kw) => lower.startsWith(kw) || lower.includes(`club ${kw}`)
+    );
+  });
 
   // 오픈 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
   const { data: puzzles } = await supabase

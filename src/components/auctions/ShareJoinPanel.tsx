@@ -44,6 +44,43 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
   const [kakaoUrl, setKakaoUrl] = useState<string | null>(null);
   const [hasClaim, setHasClaim] = useState(false);
   const [checkingClaim, setCheckingClaim] = useState(true);
+  // 성별 게이트: null이면 참여 전 입력 받기 (깃발 X, 조각에서만 묻기)
+  const [myGender, setMyGender] = useState<"male" | "female" | null>(null);
+  const [genderLoaded, setGenderLoaded] = useState(false);
+  const [genderSheetOpen, setGenderSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setGenderLoaded(true);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("users")
+        .select("gender")
+        .eq("id", currentUserId)
+        .maybeSingle();
+      if (cancelled) return;
+      setMyGender((data?.gender as "male" | "female" | null) ?? null);
+      setGenderLoaded(true);
+    })();
+    return () => { cancelled = true; };
+  }, [currentUserId, supabase]);
+
+  const handleSaveMyGender = async (g: "male" | "female") => {
+    if (!currentUserId) return;
+    const { error } = await supabase
+      .from("users")
+      .update({ gender: g })
+      .eq("id", currentUserId);
+    if (error) {
+      toast.error("성별 저장에 실패했어요. 다시 시도해주세요");
+      return;
+    }
+    setMyGender(g);
+    setGenderSheetOpen(false);
+  };
 
   const totalFilled = (auction.seats_claimed ?? 0) + (auction.external_attendees ?? 0);
   const totalSeats = auction.total_seats ?? 0;
@@ -51,12 +88,12 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
   const isFull = seatsLeft <= 0;
   const isOpen = auction.status === "active" && !isFull;
 
-  // 성별 슬롯 레이아웃: external_male/female 분리 사용 (AuctionCard와 동일 로직)
+  // 성별 슬롯 레이아웃: 인앱 참여자(seats_claimed_male/female) + MD 외부 입력(external_male/female) 합산 (Migration 202)
   const tM = auction.target_male ?? 0;
   const tF = auction.target_female ?? 0;
   const hasGenderSlot = tM + tF === totalSeats && totalSeats > 0;
-  const filledMale = auction.external_male ?? 0;
-  const filledFemale = auction.external_female ?? 0;
+  const filledMale = (auction.seats_claimed_male ?? 0) + (auction.external_male ?? 0);
+  const filledFemale = (auction.seats_claimed_female ?? 0) + (auction.external_female ?? 0);
   // 남자가 target 초과하면 잉여(maleSurplus)는 female 슬롯에 male로 표시
   const maleSurplus = Math.max(0, filledMale - tM);
   const slotLayout = Array.from({ length: totalSeats }).map((_, i) => {
@@ -99,6 +136,10 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
   const handleJoin = async () => {
     if (!currentUserId) {
       toast.error("로그인이 필요합니다.");
+      return;
+    }
+    if (genderLoaded && !myGender) {
+      setGenderSheetOpen(true);
       return;
     }
     setLoading(true);
@@ -259,6 +300,34 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
                 MD의 오픈채팅 정보를 불러올 수 없습니다. MD에게 직접 문의해주세요.
               </p>
             )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* 성별 게이트 (참여 전 1회) */}
+      <Sheet open={genderSheetOpen} onOpenChange={setGenderSheetOpen}>
+        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+          <SheetHeader className="text-left pb-4">
+            <SheetTitle className="text-white text-lg">조각 매치를 위해 성별을 알려주세요</SheetTitle>
+          </SheetHeader>
+          <p className="text-[12px] text-neutral-500 mb-4">한 번 설정하면 변경할 수 없어요</p>
+          <div className="grid grid-cols-2 gap-3 pb-2">
+            {([
+              { value: "male", label: "남자", emoji: "🧑" },
+              { value: "female", label: "여자", emoji: "👩" },
+            ] as const).map(({ value, label, emoji }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => handleSaveMyGender(value)}
+                className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all bg-neutral-800 border-neutral-700 ${
+                  value === "female" ? "hover:border-pink-500 hover:bg-pink-500/10" : "hover:border-green-500 hover:bg-green-500/10"
+                }`}
+              >
+                <span className="text-2xl">{emoji}</span>
+                <span className="text-[15px] font-bold text-white">{label}</span>
+              </button>
+            ))}
           </div>
         </SheetContent>
       </Sheet>

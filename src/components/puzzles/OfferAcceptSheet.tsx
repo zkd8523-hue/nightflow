@@ -42,13 +42,11 @@ type Step = "confirm" | "success";
 
 export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept }: OfferAcceptSheetProps) {
   const [step, setStep] = useState<Step>("confirm");
-  const [confirmedNoUndo, setConfirmedNoUndo] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!open) {
       setStep("confirm");
-      setConfirmedNoUndo(false);
       setSubmitting(false);
     }
   }, [open]);
@@ -79,26 +77,13 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept }:
                 제안을 수락하시겠어요?
               </SheetTitle>
               <SheetDescription className="text-neutral-400 text-[13px] mt-1.5 leading-relaxed">
-                수락하면 <strong className="text-white">MD의 닉네임과 연락처</strong>가 공개되고,
-                다른 MD 제안은 자동으로 미선택 처리됩니다.
+                수락하면 <strong className="text-white">MD의 닉네임과 연락처</strong>가 공개됩니다.
               </SheetDescription>
             </div>
 
-            <label className="flex items-start gap-3 cursor-pointer select-none rounded-2xl border border-neutral-800 bg-neutral-900/40 p-4">
-              <input
-                type="checkbox"
-                checked={confirmedNoUndo}
-                onChange={(e) => setConfirmedNoUndo(e.target.checked)}
-                className="mt-0.5 w-4 h-4 accent-white"
-              />
-              <p className="text-[13px] text-neutral-200 leading-relaxed">
-                수락 후에는 <strong className="text-white">취소할 수 없음</strong>을 확인했습니다.
-              </p>
-            </label>
-
             <Button
               onClick={handleAccept}
-              disabled={submitting || !confirmedNoUndo}
+              disabled={submitting}
               className="w-full h-14 bg-white text-black font-black text-base rounded-2xl hover:bg-neutral-200 disabled:bg-neutral-800 disabled:text-neutral-600"
             >
               {submitting ? "수락 중..." : "수락하기"}

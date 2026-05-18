@@ -28,7 +28,14 @@ const TPL = {
   PUZZLE_MATCHED:           Deno.env.get("ALIMTALK_TPL_PUZZLE_MATCHED") || "",
   PUZZLE_OFFER_WON:         Deno.env.get("ALIMTALK_TPL_PUZZLE_OFFER_WON") || "",
   PUZZLE_OFFER_REMINDER:    Deno.env.get("ALIMTALK_TPL_PUZZLE_OFFER_REMINDER") || "",
+  PUZZLE_OFFER_DEADLINE:    Deno.env.get("ALIMTALK_TPL_PUZZLE_OFFER_DEADLINE") || "",
 };
+
+// KST(YYYY-MM-DD) → "M/D" 포맷 (Deno native)
+function formatEventDate(eventDate: string): string {
+  const [, m, d] = eventDate.split("-").map(Number);
+  return `${m}/${d}`;
+}
 
 function puzzleUrl(puzzleId: string) {
   return `${APP_URL}/flags/${puzzleId}`;
@@ -174,6 +181,80 @@ async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
 // handleDeadlineReminder 제거됨 (D-2 리마인더 handleOfferReminder로 대체)
 
 // ============================================================
+// #2 오퍼 마감 (17:00 KST = 08:00 UTC)
+// status=open AND offer_deadline <= now() AND expires_at > now()
+// → status='selecting'로 전환 + 방장에게 알림톡/in-app 알림
+// ============================================================
+async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
+  const nowIso = new Date().toISOString();
+
+  // 마감 시각 도래한 깃발 조회
+  const { data: puzzles, error } = await supabase
+    .from("puzzles")
+    .select("id, leader_id, area, event_date")
+    .eq("status", "open")
+    .not("offer_deadline", "is", null)
+    .lte("offer_deadline", nowIso)
+    .gt("expires_at", nowIso);
+
+  console.log(`[offerDeadline] 마감 대상=${puzzles?.length ?? 0}, error=${error?.message ?? "none"}`);
+
+  if (!puzzles || puzzles.length === 0) return;
+
+  for (const puzzle of puzzles as Array<{ id: string; leader_id: string; area: string; event_date: string }>) {
+    // 1) 상태 전환: open → selecting (race 방지: status='open' 조건 재확인)
+    const { data: updated, error: updateErr } = await supabase
+      .from("puzzles")
+      .update({ status: "selecting" })
+      .eq("id", puzzle.id)
+      .eq("status", "open")
+      .select("id")
+      .maybeSingle();
+
+    if (updateErr || !updated) {
+      console.log(`[offerDeadline] skip ${puzzle.id} (이미 전환됨 or 에러: ${updateErr?.message ?? "race"})`);
+      continue;
+    }
+
+    // 2) pending 오퍼 수 집계
+    const { count: offerCount } = await supabase
+      .from("puzzle_offers")
+      .select("id", { count: "exact", head: true })
+      .eq("puzzle_id", puzzle.id)
+      .eq("status", "pending");
+
+    // 3) 방장 정보 로드
+    const { data: leader } = await supabase
+      .from("users")
+      .select("id, display_name, phone")
+      .eq("id", puzzle.leader_id)
+      .single();
+
+    if (!leader) continue;
+
+    // 4) in-app 알림 INSERT (알림톡과 별개로 항상 발송)
+    await supabase.from("in_app_notifications").insert({
+      user_id: puzzle.leader_id,
+      type: "puzzle_offer_deadline",
+      title: "오퍼 마감 · 검토 시작",
+      message: `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발의 MD 오퍼가 마감됐어요. 오후 6시 30분까지 선택해주세요.`,
+      action_url: `/flags/${puzzle.id}`,
+    });
+
+    // 5) 알림톡 발송 (중복 방지 + phone/template 없으면 skip)
+    if (await alreadySent(supabase, "puzzle_offer_deadline", puzzle.id)) continue;
+
+    await sendAndLog(supabase, "puzzle_offer_deadline", puzzle.id, leader as { id: string; phone: string | null }, TPL.PUZZLE_OFFER_DEADLINE, {
+      userName: (leader as { display_name?: string | null }).display_name ?? "방장",
+      area: puzzle.area,
+      eventDate: formatEventDate(puzzle.event_date),
+      offerCount: String(offerCount ?? 0),
+      puzzleUrl: puzzleUrl(puzzle.id),
+    });
+  }
+}
+
+// ============================================================
 // #3 방장 위임
 // ============================================================
 async function handleLeaderChanged(supabase: ReturnType<typeof createClient>) {
@@ -217,7 +298,9 @@ async function handleOfferReminder(supabase: ReturnType<typeof createClient>) {
   const kstMinute = nowUtc.getUTCMinutes();
 
   // 19:00~19:09 KST 시간대에만 실행
-  if (kstHour !== 19 || kstMinute >= 10) return;
+  // 테스트 시 TEST_BYPASS_TIME=true 로 시간 체크 우회 가능
+  const bypassTime = Deno.env.get("TEST_BYPASS_TIME") === "true";
+  if (!bypassTime && (kstHour !== 19 || kstMinute >= 10)) return;
 
   // D+2 KST 날짜 계산
   const kstNow = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
@@ -343,6 +426,7 @@ serve(async (req: Request) => {
 
     await Promise.allSettled([
       handleFirstOffer(supabase),
+      handleOfferDeadline(supabase),
       handleLeaderChanged(supabase),
       handleMatched(supabase),
       handleOfferReminder(supabase),

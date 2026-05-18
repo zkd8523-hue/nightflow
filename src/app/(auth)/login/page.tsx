@@ -17,10 +17,15 @@ const isTestLoginEnabled =
   isDev || process.env.NEXT_PUBLIC_ENABLE_TEST_LOGIN === "true";
 
 const TEST_PASSWORD = "test1234";
+const TEST_EMAILS = new Set([
+  "test-user@nightflow.test",
+  "test-md@nightflow.test",
+  "test-admin@nightflow.test",
+]);
 const TEST_PRESETS = [
-  { label: "유저", email: "test-user@nightflow.test", color: "bg-amber-500 hover:bg-amber-400" },
+  { label: "User", email: "test-user@nightflow.test", color: "bg-amber-500 hover:bg-amber-400" },
   { label: "MD", email: "test-md@nightflow.test", color: "bg-purple-500 hover:bg-purple-400 text-white" },
-  { label: "어드민", email: "test-admin@nightflow.test", color: "bg-red-500 hover:bg-red-400 text-white" },
+  { label: "Admin", email: "test-admin@nightflow.test", color: "bg-red-500 hover:bg-red-400 text-white" },
 ] as const;
 
 function getAuthErrorMessage(error: string | null) {
@@ -262,6 +267,26 @@ function LoginContent() {
       return;
     }
 
+    // 테스트 프리셋 계정은 가입 절차 전체를 서버에서 자동 완료
+    if (user.email && TEST_EMAILS.has(user.email)) {
+      try {
+        const res = await fetch("/api/auth/test-bootstrap", { method: "POST" });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setDevError(`테스트 계정 초기화 실패: ${data.message || data.error || res.statusText}`);
+          setLoading(false);
+          return;
+        }
+      } catch (e) {
+        setDevError(`테스트 계정 초기화 오류: ${e instanceof Error ? e.message : String(e)}`);
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      window.location.replace("/");
+      return;
+    }
+
     const { data: profile } = await supabase
       .from("users")
       .select("id")
@@ -409,7 +434,7 @@ function LoginContent() {
         {(isTestLoginEnabled || showDevLogin) && (
           <div className="border-t border-neutral-800 pt-4 space-y-3">
             <p className="text-xs text-amber-500 text-center font-bold">
-              테스트 로그인 (계정 없으면 자동 생성)
+              Test Login (auto-creates account if missing)
             </p>
             <div className="grid grid-cols-3 gap-2">
               {TEST_PRESETS.map((preset) => (
@@ -424,18 +449,18 @@ function LoginContent() {
               ))}
             </div>
             <p className="text-[10px] text-neutral-500 text-center">
-              비밀번호: <code className="text-neutral-400">{TEST_PASSWORD}</code> · 직접 입력도 가능
+              Password: <code className="text-neutral-400">{TEST_PASSWORD}</code> · or enter manually
             </p>
             <Input
               type="email"
-              placeholder="이메일"
+              placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-10 bg-neutral-900 border-neutral-800 text-white"
             />
             <Input
               type="password"
-              placeholder="비밀번호 (6자 이상)"
+              placeholder="Password (6+ chars)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="h-10 bg-neutral-900 border-neutral-800 text-white"
@@ -448,7 +473,7 @@ function LoginContent() {
               disabled={loading || !email || password.length < 6}
               className="w-full h-10 bg-amber-500 text-black font-bold hover:bg-amber-400"
             >
-              {loading ? "로그인 중..." : "테스트 로그인"}
+              {loading ? "Logging in..." : "Test Login"}
             </Button>
           </div>
         )}

@@ -27,8 +27,8 @@ serve(async (req: Request) => {
 
     const { data: expiredPuzzles, error: fetchError } = await supabase
       .from("puzzles")
-      .select("id")
-      .eq("status", "open")
+      .select("id, leader_id, area, event_date")
+      .in("status", ["open", "selecting"])
       .lt("expires_at", new Date().toISOString());
 
     if (fetchError) {
@@ -56,6 +56,22 @@ serve(async (req: Request) => {
     if (updateError) {
       console.error("❌ 퍼즐 만료 처리 실패:", updateError);
       throw updateError;
+    }
+
+    // 방장에게 in-app 알림
+    const notifRows = (expiredPuzzles as Array<{ id: string; leader_id: string; area: string; event_date: string }>).map((p) => {
+      const [, m, d] = p.event_date.split("-").map(Number);
+      return {
+        user_id: p.leader_id,
+        type: "puzzle_expired",
+        title: "깃발 만료",
+        message: `${p.area} ${m}/${d} 깃발의 시간이 끝났어요.`,
+        action_url: "/bids?tab=puzzle",
+      };
+    });
+    if (notifRows.length > 0) {
+      const { error: notifErr } = await supabase.from("in_app_notifications").insert(notifRows);
+      if (notifErr) console.error("⚠️ 만료 알림 INSERT 실패:", notifErr);
     }
 
     console.log(`✅ ${ids.length}개 퍼즐 만료 처리 완료`);

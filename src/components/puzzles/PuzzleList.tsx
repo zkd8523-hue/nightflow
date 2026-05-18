@@ -360,7 +360,7 @@ export function PuzzleList({
         </div>
       ) : (popularSort || recentSort || budgetSort) ? (
         /* 인기순/최신순/예산순: 날짜 그룹 헤더 유지 + 정렬 */
-        <div className="space-y-8 pb-24">
+        <div className="space-y-8 pb-24 -mt-3">
           {Object.entries(
             filteredPuzzles.reduce((groups, puzzle) => {
               const date = puzzle.event_date;
@@ -501,7 +501,7 @@ export function PuzzleList({
                   )}
                   </div>
                 )}
-                <div className="-mt-6">
+                <div className="-mt-3">
                 {Object.entries(
                   rest.reduce((groups, puzzle) => {
                     const date = puzzle.event_date;
@@ -577,8 +577,8 @@ export function PuzzleList({
         </div>
       )}
 
-      {/* Floating CTA 버튼 (MD 제외) — 비로그인은 베네핏 호명, 로그인은 행동 호명 */}
-      {userRole !== "md" && (
+      {/* Floating CTA 버튼 (MD 제외) — 빈 상태일 땐 인라인 CTA로 충분하므로 숨김 */}
+      {userRole !== "md" && filteredPuzzles.length > 0 && (
         <Link
           href={userRole ? "/flags/new" : "/login?redirect=/flags/new"}
           onClick={() => trackEvent("puzzle_cta_click", { source: "list_float" })}

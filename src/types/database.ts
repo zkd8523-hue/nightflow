@@ -384,6 +384,8 @@ export interface Auction {
   kakao_open_chat_url: string | null; // Migration 187: 조각 오픈채팅 링크
   target_male: number;   // Migration 188: 성별 슬롯
   target_female: number;
+  seats_claimed_male: number;   // Migration 202: 인앱 참여자 성별 카운터
+  seats_claimed_female: number;
 
   // JOIN 관계
   club?: Club;
@@ -768,6 +770,7 @@ export interface ShareClaim {
   cancelled_at: string | null;
   cancellation_count: number;
   kicked_by_md: boolean;
+  gender: 'male' | 'female' | null;   // Migration 202
   user?: User;
 }
 

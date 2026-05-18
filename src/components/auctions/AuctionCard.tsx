@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Auction } from "@/types/database";
-import { formatNumber, formatTime, formatCountdown, formatCountdownLong, categorizeLiquor, formatRelativeTime } from "@/lib/utils/format";
+import { formatNumber, formatTime, formatCountdown, formatCountdownLong, categorizeLiquor } from "@/lib/utils/format";
 import { useState, useCallback } from "react";
 import { updateShareAttendees } from "@/app/actions/share-attendees";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
@@ -105,8 +105,9 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
     }, [extMale, extFemale, extCount, hasGenderSlot, auction.id]);
     const slotLayout = hasGenderSlot
       ? (() => {
-          const filledMale = isOwner ? extMale : (auction.external_male ?? 0);
-          const filledFemale = isOwner ? extFemale : (auction.external_female ?? 0);
+          // Migration 202: 인앱 참여자(seats_claimed_male/female) + MD 외부 입력 합산
+          const filledMale = (auction.seats_claimed_male ?? 0) + (isOwner ? extMale : (auction.external_male ?? 0));
+          const filledFemale = (auction.seats_claimed_female ?? 0) + (isOwner ? extFemale : (auction.external_female ?? 0));
           const maleSurplus = Math.max(0, filledMale - tM);
           return Array.from({ length: totalSeats }).map((_, i) => {
             if (i < tM) {
@@ -253,9 +254,6 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                 {sorted.length > 3 && (
                   <span className="text-[11px] text-neutral-500 font-bold">+{sorted.length - 3}</span>
                 )}
-                <span className="ml-auto text-[10px] text-neutral-500 whitespace-nowrap pointer-events-none" suppressHydrationWarning>
-                  {formatRelativeTime(auction.created_at)}
-                </span>
               </div>
             );
           })()}

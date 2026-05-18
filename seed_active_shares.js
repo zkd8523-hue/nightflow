@@ -12,12 +12,12 @@ async function seed() {
 
     // 1-1. Update actual club names and thumbnail URLs to avoid real-world trademark issues and use beautiful club images
     await supabase.from('clubs').update({ 
-      name: 'Club ECLIPSE',
+      name: 'Club Ace',
       thumbnail_url: '/mock_club_1.jpg'
     }).eq('id', '35de296e-5fdc-435b-baf2-1c7c05538687');
     
     await supabase.from('clubs').update({ 
-      name: 'ORION',
+      name: 'OCEAN',
       thumbnail_url: '/mock_club_2.jpg'
     }).eq('id', 'bd820f57-46b6-4d95-822a-4f0cf8e84542');
 
@@ -34,8 +34,8 @@ async function seed() {
       return;
     }
 
-    const clubAce = clubs.find(c => c.name.includes("Club ECLIPSE")) || clubs[0];
-    const ocean = clubs.find(c => c.name.includes("ORION")) || clubs[0];
+    const clubAce = clubs.find(c => c.name.includes("Club Ace")) || clubs[0];
+    const ocean = clubs.find(c => c.name.includes("OCEAN")) || clubs[0];
     const md = mds[0];
 
     console.log("Using Club:", clubAce.name, "ID:", clubAce.id);
@@ -60,7 +60,7 @@ async function seed() {
       {
         md_id: md.id,
         club_id: clubAce.id,
-        title: "🔥 Club ECLIPSE 금요일 메인 돔테이블 1/N 조각",
+        title: "🔥 Club Ace 금요일 메인 돔테이블 1/N 조각",
         event_date: "2027-05-20",
         table_type: "VIP",
         min_people: 2,
@@ -89,7 +89,7 @@ async function seed() {
       {
         md_id: md.id,
         club_id: ocean.id,
-        title: "✨ ORION 토요일 메인 일렉존 테이블 조각원 구합니다",
+        title: "✨ OCEAN 토요일 메인 일렉존 테이블 조각원 구합니다",
         event_date: "2027-05-21",
         table_type: "Standard",
         min_people: 2,
@@ -118,7 +118,7 @@ async function seed() {
       {
         md_id: md.id,
         club_id: clubAce.id,
-        title: "👑 ECLIPSE 힙합존 테이블 가성비 조각 모임",
+        title: "👑 Club Ace 힙합존 테이블 가성비 조각 모임",
         event_date: "2027-05-22",
         table_type: "Standard",
         min_people: 1,

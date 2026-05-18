@@ -14,7 +14,19 @@ interface Props {
         display_name?: string | null;
         name?: string | null;
         profile_image?: string | null;
+        last_seen_at?: string | null;
     } | null;
+}
+
+// 활동 시그널: 24시간 / 3일 / 7일. 7일 초과는 미표시 (부정 시그널 방지)
+function getActivityBadge(lastSeenAt: string | null | undefined): { label: string; color: string; dot: string } | null {
+    if (!lastSeenAt) return null;
+    const diffMs = Date.now() - new Date(lastSeenAt).getTime();
+    const hours = diffMs / (1000 * 60 * 60);
+    if (hours < 24) return { label: "활동 중", color: "text-green-400", dot: "bg-green-500" };
+    if (hours < 72) return { label: "최근 활동", color: "text-yellow-400", dot: "bg-yellow-500" };
+    if (hours < 168) return { label: "이번 주 활동", color: "text-orange-400", dot: "bg-orange-500" };
+    return null;
 }
 
 const TIER_ROWS = [
@@ -61,6 +73,8 @@ export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
 
     const activeTierKey = tier ?? (leaderIsNew ? "new" : null);
 
+    const activityBadge = getActivityBadge(leader.last_seen_at);
+
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent
@@ -84,9 +98,17 @@ export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
                         </div>
                         <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
-                                <h3 className="text-white font-black text-lg">
-                                    {leader?.display_name || leader?.name || "방장"}
-                                </h3>
+                                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                    <h3 className="text-white font-black text-lg">
+                                        {leader?.display_name || leader?.name || "방장"}
+                                    </h3>
+                                    {activityBadge && (
+                                        <span className={`inline-flex items-center gap-1 text-[11px] font-bold ${activityBadge.color}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${activityBadge.dot}`} />
+                                            {activityBadge.label}
+                                        </span>
+                                    )}
+                                </div>
                                 {signedUpShort && (
                                     <span className="text-[10px] text-neutral-600 font-medium shrink-0 mt-1">
                                         가입일: {signedUpShort}

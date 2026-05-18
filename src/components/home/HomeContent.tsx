@@ -233,8 +233,16 @@ export function HomeContent({
   const [showFlagCTA, setShowFlagCTA] = useState(false);
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  // 첫 방문 시 가이드 자동 펼침. localStorage에 dismiss 기록이 있으면 닫힘 상태로 시작.
   const [showGuide, setShowGuide] = useState(false);
   const [guideMode, setGuideMode] = useState<"full" | "secret-offer">("full");
+
+  useEffect(() => {
+    try {
+      const dismissed = localStorage.getItem(GUIDE_DISMISSED_KEY);
+      if (!dismissed) setShowGuide(true);
+    } catch {}
+  }, []);
 
   const instantEnabled = isInstantEnabled();
   const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
@@ -394,6 +402,11 @@ export function HomeContent({
   // 이용 방법 카드는 기본 닫힘. AuctionList의 "ⓘ 깃발 이용 방법" 버튼 → onShowGuide 콜백으로만 활성화.
 
   const dismissGuide = () => {
+    // 시크릿오퍼 보기 모드일 때는 전체 가이드를 닫지 않고 풀 가이드로 복귀
+    if (guideMode === "secret-offer") {
+      setGuideMode("full");
+      return;
+    }
     setShowGuide(false);
     localStorage.setItem(GUIDE_DISMISSED_KEY, "1");
   };
@@ -499,6 +512,18 @@ export function HomeContent({
                   </div>
                 ) : (
                   <div className="flex flex-col gap-2">
+                    {overriddenTabPromises[currentTab] && (
+                      <div className="mb-1 pr-8">
+                        <p className="text-[13.5px] text-white font-bold leading-snug whitespace-pre-line break-keep">
+                          {overriddenTabPromises[currentTab].content}
+                        </p>
+                        {overriddenTabPromises[currentTab].note && (
+                          <p className="mt-1.5 text-[10.5px] text-amber-300/70 font-medium">
+                            {overriddenTabPromises[currentTab].note}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     {visibleSteps.map((step, idx) => (
                       <div
                         key={idx}
@@ -546,12 +571,18 @@ export function HomeContent({
         })()}
 
 
-        {!user && !isLoading && auctions.active.length > 0 && (
+        {!user && !isLoading && auctions.active.length > 0 && !(currentTab === "puzzle" && puzzles.length === 0) && (
           <div className="text-center py-6 space-y-3">
-            <p className="text-[12px] text-neutral-500">로그인하면 입찰에 참여할 수 있어요</p>
+            <p className="text-[12px] text-neutral-500">
+              {currentTab === "puzzle"
+                ? "3초만에 로그인하고 깃발꽂기"
+                : currentTab === "share"
+                ? "3초만에 로그인하고 조각잡기"
+                : "3초만에 로그인하고 입찰하기"}
+            </p>
             <Link href="/login">
               <Button className="h-10 px-8 bg-white text-black font-bold text-sm rounded-full hover:bg-neutral-200">
-                로그인하기
+                로그인
               </Button>
             </Link>
           </div>

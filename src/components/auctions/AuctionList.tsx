@@ -12,7 +12,7 @@ import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { matchesArea } from "@/lib/utils/area";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DateFilterCalendar } from "./filters/DateFilterCalendar";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
@@ -81,9 +81,11 @@ interface AuctionListProps {
   onShowGuide?: () => void;
   tabPromises?: Partial<Record<"today" | "advance" | "puzzle" | "share", { content: React.ReactNode; note?: React.ReactNode }>>;
   guideSlot?: React.ReactNode;
+  hideTabs?: boolean;
+  hideAreaFilter?: boolean;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, currentUserId, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, currentUserId, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot, hideTabs, hideAreaFilter }: AuctionListProps) {
   // Realtime 입찰 burst 시 필터 깜빡임 방지: deferred render
   const deferredAuctions = useDeferredValue(initialAuctions);
 
@@ -244,6 +246,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
   return (
     <div className="space-y-2.5">
+      {!hideTabs && (
       <div className="flex items-center gap-2 px-1">
         <div className="overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0 touch-pan-x">
           <div className="flex gap-2 w-max pr-4">
@@ -291,44 +294,20 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           </div>
         </div>
       </div>
-
-      {tabPromises && tabPromises[tab] && (
-        // Android WebView 페인트 무효화 대응:
-        // - key={tab}로 탭 전환 시 wrapper 재마운트 → 페인트 강제 갱신
-        // - transform: translateZ(0)로 별도 컴포지트 레이어 → 초기 페인트 안정화
-        // - inline rgba로 Tailwind v4 opacity-modifier 우회
-        <div
-          key={tab}
-          className="relative rounded-2xl px-4 pt-5 pb-3"
-          style={{
-            background:
-              "linear-gradient(to right, rgba(245,158,11,0.30), rgba(249,115,22,0.20), rgba(239,68,68,0.15))",
-            border: "1px solid rgba(245,158,11,0.40)",
-            transform: "translateZ(0)",
-            willChange: "transform",
-          }}
-        >
-          <span className="absolute -top-2.5 left-3 text-[10px] font-black bg-amber-500 text-black px-2 py-0.5 rounded-full">
-            Tip
-          </span>
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
-            <p className="text-[14px] text-white font-bold leading-snug whitespace-pre-line break-keep">
-              {tabPromises[tab].content}
-            </p>
-            {tabPromises[tab].note && (
-              <p className="text-[10px] text-amber-300/70 font-medium sm:whitespace-nowrap sm:flex-shrink-0">
-                {tabPromises[tab].note}
-              </p>
-            )}
-          </div>
-        </div>
       )}
 
       {guideSlot}
 
-      <div className="flex items-center gap-2">
-          <div className="overflow-x-auto scrollbar-hide pb-1 touch-pan-x flex-1 min-w-0">
-            <div className="flex gap-2 px-1 pr-3 w-max">
+      <div className="flex items-center gap-2 mb-4 h-9">
+          {!hideAreaFilter && (
+          <div
+            className="overflow-x-auto scrollbar-hide touch-pan-x flex-1 min-w-0 h-9 flex items-center"
+            style={{
+              maskImage: "linear-gradient(to right, black calc(100% - 24px), transparent 100%)",
+              WebkitMaskImage: "linear-gradient(to right, black calc(100% - 24px), transparent 100%)",
+            }}
+          >
+            <div className="flex gap-2 px-1 pr-6 w-max">
               <button
                 onClick={() => onAreaChange?.(null)}
                 className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
@@ -364,6 +343,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </button>
             </div>
           </div>
+          )}
           {tab === "advance" && deferredAuctions.some(a => a.listing_type === "auction") && (
             <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
               {hasAdvanceFilter && (
@@ -391,23 +371,26 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </div>
             </div>
           )}
+          {tab === "puzzle" && !hideTabs && (
+            <div className="flex-shrink-0 relative">
+              <select
+                value={puzzleSortMode}
+                onChange={(e) => setPuzzleSortMode(e.target.value as typeof puzzleSortMode)}
+                className={`appearance-none text-[11px] font-bold pl-3 pr-7 h-7 leading-none rounded-full transition-colors whitespace-nowrap cursor-pointer focus:outline-none box-border ${
+                  puzzleSortMode === "none"
+                    ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                    : "bg-amber-500 text-black"
+                }`}
+              >
+                <option value="none">정렬</option>
+                <option value="popular">인기순</option>
+                <option value="budget">예산순</option>
+                <option value="recent">최신순</option>
+              </select>
+              <ChevronDown className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 ${puzzleSortMode === "none" ? "text-neutral-400" : "text-black"}`} />
+            </div>
+          )}
         </div>
-
-      {tab === "puzzle" && (
-        <div className="flex items-center gap-1.5 px-1 pb-4">
-          {([
-            { key: "popular", label: "인기순" },
-            { key: "budget",  label: "예산순" },
-            { key: "recent",  label: "최신순" },
-          ] as const).map(({ key, label }) => (
-            <button key={key}
-              onClick={() => setPuzzleSortMode(v => v === key ? "none" : key)}
-              className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap ${puzzleSortMode === key ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
 
       {instantEnabled && tab === "today" && (
         <div>

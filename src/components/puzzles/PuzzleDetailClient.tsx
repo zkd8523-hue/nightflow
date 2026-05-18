@@ -583,7 +583,7 @@ export function PuzzleDetailClient({
                 <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400"}>{puzzle.area}</span>
                 {puzzle.status === "open" && (
                   <span className="text-[12px] text-neutral-400 whitespace-nowrap">
-                    ⏰ {dayjs(puzzle.event_date).format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD") ? "오늘" : dayjs(puzzle.event_date).format("M/D")} {puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감
+                    ⏰ {puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감
                   </span>
                 )}
               </p>

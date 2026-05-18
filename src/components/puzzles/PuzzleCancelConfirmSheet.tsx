@@ -65,14 +65,11 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
             <p className="text-[13px] text-neutral-400">
               제안한 MD들에게 알림이 발송됩니다
             </p>
-            <p className="text-[13px] text-amber-400 font-bold pt-1">
-              잠깐, 이유를 알려주실 수 있을까요?
-            </p>
           </div>
 
           {/* 사유 옵션 (복수선택) */}
           <div className="space-y-2 px-1">
-            <p className="text-[12px] text-neutral-500 px-1">여러 개 선택 가능</p>
+            <p className="text-[12px] text-neutral-500 px-1">이유를 선택해주세요 (여러 개 선택 가능)</p>
             {REASONS.map(({ value, label }) => {
               const active = selected.has(value);
               return (
@@ -126,7 +123,7 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
               disabled={submitting}
               className="w-full py-3 text-[14px] text-neutral-400 hover:text-white transition-colors font-bold"
             >
-              그냥 둘게요
+              오퍼 더 받아보기
             </button>
           </div>
         </div>

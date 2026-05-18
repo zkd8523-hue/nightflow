@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect } from "react";
 import { useWinNotification } from "@/hooks/useWinNotification";
 import { useAuthInit, useCurrentUser } from "@/hooks/useCurrentUser";
+import { useTouchLastSeen } from "@/hooks/useTouchLastSeen";
 import { useFavoriteClubs } from "@/hooks/useFavoriteClubs";
 import { useFavoriteMds } from "@/hooks/useFavoriteMds";
 import { useFavoritePuzzles } from "@/hooks/useFavoritePuzzles";
@@ -129,11 +130,18 @@ function DeepLinkInit() {
   return null;
 }
 
+function LastSeenInit() {
+  const { user } = useCurrentUser();
+  useTouchLastSeen(user?.id);
+  return null;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <>
       {/* AuthInit 은 반드시 최상단 — 다른 컴포넌트가 useCurrentUser() 로 store 를 읽기 전에 mount */}
       <AuthInit />
+      <LastSeenInit />
       <GlobalNotifications />
       <MixpanelInit />
       <DeepLinkInit />

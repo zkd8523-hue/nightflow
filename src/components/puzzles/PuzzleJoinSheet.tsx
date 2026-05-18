@@ -173,31 +173,13 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
           </p>
         </SheetHeader>
 
-        {/* Migration 184: 성별 미입력 시 강제 입력 */}
+        {/* 성별 미입력 시: 조각으로 안내 (깃발에선 직접 묻지 않음) */}
         {genderLoaded && !myGender && (
-          <div className="space-y-3 mb-5">
-            <p className="text-[14px] font-bold text-white">
-              퍼즐 매칭을 위해 성별을 알려주세요
+          <div className="space-y-2 mb-5 bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4">
+            <p className="text-[13px] font-bold text-white">성별 정보가 필요해요</p>
+            <p className="text-[12px] text-neutral-400 leading-relaxed">
+              깃발은 성별 슬롯 기반으로 매칭돼요. 조각 매물에 먼저 참여하면서 성별을 설정하면 깃발도 합류할 수 있어요.
             </p>
-            <p className="text-[11px] text-neutral-500">한 번 설정하면 변경할 수 없어요</p>
-            <div className="grid grid-cols-2 gap-3">
-              {([
-                { value: "male", label: "남자", emoji: "🧑" },
-                { value: "female", label: "여자", emoji: "👩" },
-              ] as const).map(({ value, label, emoji }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => handleSaveMyGender(value)}
-                  className={`h-20 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all bg-neutral-800 border-neutral-700 ${
-                    value === "female" ? "hover:border-pink-500 hover:bg-pink-500/10" : "hover:border-green-500 hover:bg-green-500/10"
-                  }`}
-                >
-                  <span className="text-xl">{emoji}</span>
-                  <span className="text-[13px] font-bold text-white">{label}</span>
-                </button>
-              ))}
-            </div>
           </div>
         )}
 

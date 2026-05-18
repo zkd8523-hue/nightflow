@@ -91,8 +91,7 @@ export function ClubDetailContent({
 
         <div className="p-4 space-y-2">
           {club.area && (
-            <span className="flex items-center gap-1 text-[13px] text-neutral-400">
-              <MapPin className="w-3.5 h-3.5" />
+            <span className="text-[13px] text-neutral-400">
               {club.area}
             </span>
           )}
@@ -118,6 +117,9 @@ export function ClubDetailContent({
       <AuctionList
         activeAuctions={activeAuctions}
         userBidMap={userBidMap}
+        hideTabs
+        hideAreaFilter
+        initialTab="share"
       />
 
       {/* 지도 앱 선택 Sheet (AuctionCard 패턴) */}
