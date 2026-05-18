@@ -36,11 +36,12 @@ export type NotificationStatus = "pending" | "sent" | "failed";
 export type InAppNotificationType = "md_approved" | "md_rejected" | "outbid" | "auction_won" | "contact_deadline_warning" | "noshow_penalty" | "fallback_won" | "feedback_request" | "md_grade_change" | "cancellation_confirmed" | "contact_expired_no_fault" | "contact_expired_user_attempted" | "md_winner_cancelled" | "md_winner_noshow" | "md_new_bid" | "md_noshow_review" | "noshow_dismissed" | "puzzle_seat_adjusted" | "puzzle_cancelled" | "puzzle_offer_received" | "puzzle_offer_accepted" | "puzzle_offer_rejected" | "puzzle_leader_changed" | "puzzle_member_joined" | "puzzle_visit_pending" | "puzzle_visit_confirmed" | "puzzle_promoted_to_flag";
 export type TableType = "Standard" | "VIP" | "Premium";
 
-/** Migration 175: 깃발 취소 설문 */
+/** Migration 175 + 198: 깃발 취소 설문 */
 export type PuzzleCancelReason =
   | "schedule_change"
   | "no_preferred_venue"
   | "weak_offers"
+  | "booked_elsewhere"
   | "mind_change"
   | "forgot_about_it"
   | "other"

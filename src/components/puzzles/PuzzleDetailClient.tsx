@@ -14,9 +14,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
+import { PuzzleCancelConfirmSheet } from "./PuzzleCancelConfirmSheet";
 import { SecretOfferCard } from "./SecretOfferCard";
 import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
-import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile } from "@/types/database";
+import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { TrustBadge } from "@/components/ui/TrustBadge";
@@ -145,6 +146,7 @@ export function PuzzleDetailClient({
   const [acceptingMd, setAcceptingMd] = useState<NonNullable<PuzzleOffer["md"]> | null>(null);
   const [showKakaoNotice, setShowKakaoNotice] = useState(false);
   const [showLeaderInfo, setShowLeaderInfo] = useState(false);
+  const [showCancelSheet, setShowCancelSheet] = useState(false);
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/flags/${puzzle.id}`;
@@ -253,17 +255,25 @@ export function PuzzleDetailClient({
     [pendingOffers, currentUserId]
   );
 
-  const handleCancel = async () => {
-    if (!confirm("깃발을 내리시겠습니까? 파티원 전원에게 알림이 발송됩니다.")) return;
+  // 방장 자가 취소: 사유 입력 시트 오픈 (사전 마찰)
+  const handleCancel = () => {
+    setShowCancelSheet(true);
+  };
+
+  const handleCancelWithReason = async (
+    reasons: PuzzleCancelReason[],
+    reasonText: string | null
+  ) => {
     setActionLoading(true);
     try {
-      // admin이 타인 깃발 내릴 때는 admin_cancel_puzzle 사용 (cancel_puzzle은 leader_id 체크)
-      const rpc = isAdmin && currentUserId !== puzzle.leader_id
-        ? "admin_cancel_puzzle"
-        : "cancel_puzzle";
-      const { data, error } = await supabase.rpc(rpc, { p_puzzle_id: puzzle.id });
+      const { data, error } = await supabase.rpc("cancel_puzzle_with_reason", {
+        p_puzzle_id: puzzle.id,
+        p_reasons: reasons,
+        p_reason_text: reasonText,
+      });
       if (error) throw error;
       if (!data?.success) { toast.error(data?.error || "취소에 실패했습니다"); return; }
+      setShowCancelSheet(false);
       toast.success("깃발을 내렸습니다");
       router.push("/?tab=puzzle");
     } catch {
@@ -573,7 +583,7 @@ export function PuzzleDetailClient({
                 <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400"}>{puzzle.area}</span>
                 {puzzle.status === "open" && (
                   <span className="text-[12px] text-neutral-400 whitespace-nowrap">
-                    ⏰ {dayjs(puzzle.event_date).format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD") ? "오늘" : dayjs(puzzle.event_date).format("M/D")} 3시 오퍼 마감
+                    ⏰ {dayjs(puzzle.event_date).format("YYYY-MM-DD") === dayjs().format("YYYY-MM-DD") ? "오늘" : dayjs(puzzle.event_date).format("M/D")} {puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감
                   </span>
                 )}
               </p>
@@ -1192,6 +1202,13 @@ export function PuzzleDetailClient({
         open={showLeaderInfo}
         onOpenChange={setShowLeaderInfo}
         leader={puzzle.leader ?? null}
+      />
+
+      <PuzzleCancelConfirmSheet
+        open={showCancelSheet}
+        onOpenChange={setShowCancelSheet}
+        submitting={actionLoading}
+        onConfirm={handleCancelWithReason}
       />
 
       <ConfirmDialog
