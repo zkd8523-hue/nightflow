@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, MapPin, ExternalLink } from "lucide-react";
+import { ArrowLeft, MapPin, ExternalLink, Instagram } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -96,19 +96,32 @@ export function ClubDetailContent({
             </span>
           )}
 
-          {club.address && (
-            <p className="text-[12px] text-neutral-500">{club.address}</p>
+          {(club.address || club.name) && (
+            <div className="flex items-center gap-3 flex-wrap">
+              {club.address && (
+                <p className="text-[12px] text-neutral-500">{club.address}</p>
+              )}
+              <button
+                onClick={() => setIsMapOpen(true)}
+                className="flex items-center gap-1 text-[12px] text-neutral-400 hover:text-white transition-colors"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                지도에서 보기
+                <ExternalLink className="w-3 h-3" />
+              </button>
+            </div>
           )}
 
-          {(club.address || club.name) && (
-            <button
-              onClick={() => setIsMapOpen(true)}
-              className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-white transition-colors mt-1"
+          {club.instagram && (
+            <a
+              href={`https://instagram.com/${club.instagram}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-pink-400 transition-colors mt-1"
             >
-              <MapPin className="w-3.5 h-3.5" />
-              지도에서 보기
-              <ExternalLink className="w-3 h-3" />
-            </button>
+              <Instagram className="w-3.5 h-3.5" />
+              @{club.instagram}
+            </a>
           )}
         </div>
       </div>

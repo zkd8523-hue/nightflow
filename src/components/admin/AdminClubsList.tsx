@@ -74,6 +74,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
   const [renamePostal, setRenamePostal] = useState<string | null>(null);
   const [renameLat, setRenameLat] = useState<number | null>(null);
   const [renameLng, setRenameLng] = useState<number | null>(null);
+  const [renameInstagram, setRenameInstagram] = useState("");
   const [addressSearchOpen, setAddressSearchOpen] = useState(false);
   const [renameSaving, setRenameSaving] = useState(false);
 
@@ -94,6 +95,17 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
     setRenamePostal(club.postal_code ?? null);
     setRenameLat(club.latitude ?? null);
     setRenameLng(club.longitude ?? null);
+    setRenameInstagram(club.instagram ?? "");
+  };
+
+  // URL/@를 떼고 핸들만 추출
+  const normalizeInstagramHandle = (raw: string): string => {
+    let v = raw.trim();
+    if (!v) return "";
+    v = v.replace(/^https?:\/\/(www\.)?instagram\.com\//i, "");
+    v = v.replace(/^@/, "");
+    v = v.split(/[/?#]/)[0];
+    return v.trim();
   };
 
   const handleRename = async () => {
@@ -125,6 +137,10 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
     if ((renameLng ?? null) !== (renameTarget.longitude ?? null)) {
       patch.longitude = renameLng;
     }
+    const nextInstagram = normalizeInstagramHandle(renameInstagram);
+    if ((nextInstagram || null) !== (renameTarget.instagram ?? null)) {
+      patch.instagram = nextInstagram || null;
+    }
 
     if (Object.keys(patch).length === 0) {
       setRenameTarget(null);
@@ -137,7 +153,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
         .from("clubs")
         .update(patch)
         .eq("id", renameTarget.id)
-        .select("id, name, address, address_detail, postal_code, latitude, longitude")
+        .select("id, name, address, address_detail, postal_code, latitude, longitude, instagram")
         .single();
       if (error) throw error;
       if (!data) throw new Error("저장 후 행을 조회하지 못했습니다");
@@ -152,6 +168,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 postal_code: data.postal_code,
                 latitude: data.latitude,
                 longitude: data.longitude,
+                instagram: data.instagram,
               }
             : c,
         ),
@@ -563,6 +580,20 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
                 disabled={renameSaving}
               />
+            </div>
+            <div>
+              <label className="text-xs text-neutral-500 mb-1 block">공식 인스타그램 (선택)</label>
+              <input
+                type="text"
+                value={renameInstagram}
+                onChange={(e) => setRenameInstagram(e.target.value)}
+                placeholder="핸들 또는 URL (예: clubaceseoul_official)"
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                disabled={renameSaving}
+              />
+              <p className="text-[10px] text-neutral-600 mt-1">
+                @, URL 입력해도 자동으로 핸들만 추출됩니다
+              </p>
             </div>
             <div className="flex gap-2 pt-1">
               <Button

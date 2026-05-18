@@ -282,6 +282,9 @@ export interface Club {
   deleted_at: string | null;
   deleted_by: string | null;
 
+  // Migration 203: 공식 인스타그램 핸들 (https://instagram.com/{handle})
+  instagram: string | null;
+
   /** Migration 174~182: 조인해서 가져올 때만 채워짐. 멀티 MD 표시 및 상세 정보용. */
   partners?: Array<{
     md_id: string;
