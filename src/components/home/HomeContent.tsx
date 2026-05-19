@@ -14,7 +14,7 @@ import { ClubStrip } from "@/components/home/ClubStrip";
 import { isAuctionExpired } from "@/lib/utils/auction";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
-import { trackEvent } from "@/lib/analytics/events";
+import { trackEvent, trackShareEvent } from "@/lib/analytics/events";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_cta_shown";
@@ -262,6 +262,12 @@ export function HomeContent({
     if (tab !== currentTab) setCurrentTab(tab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, currentTab]);
+
+  useEffect(() => {
+    if (currentTab === "share") {
+      trackShareEvent("share_tab_view", { source: "home" });
+    }
+  }, [currentTab]);
 
   useEffect(() => {
     if (!welcomeDismissed && user?.role === "md" && user?.md_status === "approved" && user?.md_welcome_shown === false) {

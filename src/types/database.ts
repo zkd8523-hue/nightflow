@@ -370,6 +370,7 @@ export interface Auction {
 
   chat_interest_count: number;
   view_count: number;
+  today_view_count: number;
 
   created_at: string;
   updated_at: string;

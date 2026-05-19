@@ -319,7 +319,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                             )}
                             <div className="flex items-center justify-end gap-2 mt-0.5">
                                 <span className="text-[11px] text-neutral-500 font-medium">
-                                    👀 {auction.view_count || 0}
+                                    👀 오늘 {auction.today_view_count || 0} · 누적 {auction.view_count || 0}
                                 </span>
                                 <span className="text-[11px] text-neutral-500 font-medium flex items-center gap-0.5">
                                     <Heart className="w-3 h-3 text-red-500 fill-red-500" /> {favoriteCount}

@@ -32,6 +32,7 @@ import { ShareSuccessSheet } from "./ShareSuccessSheet";
 import { TemplateSelector } from "./TemplateSelector";
 
 import { trackEvent } from "@/lib/analytics";
+import { trackShareEvent } from "@/lib/analytics/events";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import { isInstantEnabled } from "@/lib/features";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
@@ -592,6 +593,15 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 if (!res.ok) throw new Error(result.error || "등록에 실패했습니다.");
 
                 router.refresh();
+                trackShareEvent('share_listing_created', {
+                    auction_id: result.id,
+                    club_id: values.club_id,
+                    area: clubs.find(c => c.id === values.club_id)?.area ?? null,
+                    price_per_seat: values.price_per_seat ?? 0,
+                    total_seats: values.total_seats ?? 0,
+                    main_alcohol: values.main_alcohol ?? null,
+                    is_update: !!initialData,
+                });
                 if (initialData) {
                     toast.success("조각 매물이 수정되었습니다!");
                     setTimeout(() => router.push("/md/dashboard"), 300);

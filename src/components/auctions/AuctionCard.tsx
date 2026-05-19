@@ -11,13 +11,13 @@ import { updateShareAttendees } from "@/app/actions/share-attendees";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES } from "@/lib/constants/timer-urgency";
-import { Gavel, Zap, BadgeCheck, Flame, Users, Minus, Plus, Share2 } from "lucide-react";
-import { toast } from "sonner";
+import { Gavel, Zap, BadgeCheck, Flame, Users, Minus, Plus } from "lucide-react";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { NotifySubscribeButton } from "@/components/auctions/NotifySubscribeButton";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { PuzzlePiece } from "@/components/puzzles/PuzzleCard";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
+import { trackShareEvent } from "@/lib/analytics/events";
 
 interface AuctionCardProps {
   auction: Auction;
@@ -129,7 +129,21 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
         }));
 
     return (
-      <Link href={`/auctions/${auction.id}`}>
+      <Link
+        href={`/auctions/${auction.id}`}
+        onClick={() =>
+          trackShareEvent("share_card_click", {
+            auction_id: auction.id,
+            club_id: auction.club_id,
+            club_name: club?.name,
+            area: club?.area ?? null,
+            price_per_seat: auction.price_per_seat ?? 0,
+            total_seats: totalSeats,
+            seats_filled: totalFilled,
+            seats_left: seatsLeft,
+          })
+        }
+      >
         <div className="relative bg-[#1C1C1E] rounded-2xl p-4 space-y-3 active:scale-[0.98] transition-all cursor-pointer">
           {isNew && (
             <div className="animate-new-badge pointer-events-none absolute -top-4 -right-2.5 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none">
@@ -137,49 +151,6 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
             </div>
           )}
           <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={async (e) => {
-                e.preventDefault(); e.stopPropagation();
-                const url = `${window.location.origin}/auctions/${auction.id}`;
-                const title = `${club?.name || ""} 조각 모집`;
-                const text = `1인 ${(auction.price_per_seat ?? 0).toLocaleString()}원 · ${auction.total_seats ?? 0}명`;
-                // 1순위: Web Share API (모바일)
-                if (typeof navigator.share === "function") {
-                  try {
-                    await navigator.share({ title, text, url });
-                    return;
-                  } catch (err) {
-                    // 사용자 취소(AbortError)는 무시, 그 외는 fallback
-                    if (err instanceof Error && err.name === "AbortError") return;
-                  }
-                }
-                // 2순위: Clipboard API
-                if (typeof navigator.clipboard?.writeText === "function") {
-                  try {
-                    await navigator.clipboard.writeText(url);
-                    toast.success("링크가 복사됐어요");
-                    return;
-                  } catch {}
-                }
-                // 3순위: execCommand fallback (구형 브라우저)
-                try {
-                  const el = document.createElement("textarea");
-                  el.value = url;
-                  el.style.position = "fixed"; el.style.opacity = "0";
-                  document.body.appendChild(el);
-                  el.focus(); el.select();
-                  document.execCommand("copy");
-                  document.body.removeChild(el);
-                  toast.success("링크가 복사됐어요");
-                } catch {
-                  toast.error("링크 복사에 실패했어요");
-                }
-              }}
-              className="w-7 h-7 rounded-full bg-neutral-800/80 flex items-center justify-center hover:bg-neutral-700 transition-colors"
-            >
-              <Share2 className="w-3.5 h-3.5 text-neutral-400" />
-            </button>
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
               🧩 조각
             </span>
@@ -215,14 +186,20 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
               )}
               {(() => {
                 const remaining = totalSeats - localFilled;
+                const todayViews = auction.today_view_count ?? 0;
                 return (
                   <div className="flex flex-wrap items-center gap-1.5">
                     {slotLayout.map((slot, i) => (
                       <PuzzlePiece key={i} filled={slot.filled} gender={slot.gender} />
                     ))}
-                    {remaining > 0 && (
-                      <span className={`text-[11px] font-bold ml-1 ${remaining === 1 ? "text-red-400" : "text-neutral-400"}`}>
-                        {remaining === 1 ? "마지막 1자리" : `${remaining}자리 남음`}
+                    {remaining === 1 && (
+                      <span className="text-[11px] font-bold ml-1 text-red-400">
+                        마지막 1자리
+                      </span>
+                    )}
+                    {todayViews >= 10 && (
+                      <span className={`text-[11px] font-semibold text-amber-400/80 ${remaining === 1 ? "" : "ml-1"}`}>
+                        👀 오늘 {todayViews}명이 봤어요
                       </span>
                     )}
                   </div>
@@ -231,7 +208,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
             </div>
           </div>
 
-          {/* 주류 알약 + 시간 */}
+          {/* 주류 알약 + 참여하기 (같은 행) */}
           {(() => {
             const all = auction.includes || [];
             const { liquor } = categorizeLiquor(all);
@@ -239,20 +216,34 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
               const aL = liquor.includes(a); const bL = liquor.includes(b);
               return aL === bL ? 0 : aL ? -1 : 1;
             });
+            const maxShow = 3;
             return (
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {sorted.slice(0, 3).map((item) => (
-                  <span key={item}
-                    className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold border ${
-                      liquor.includes(item)
-                        ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                        : "bg-neutral-800/50 text-neutral-400 border-neutral-700/30"
-                    }`}>
-                    {item}
-                  </span>
-                ))}
-                {sorted.length > 3 && (
-                  <span className="text-[11px] text-neutral-500 font-bold">+{sorted.length - 3}</span>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 flex-wrap min-w-0">
+                  {sorted.slice(0, maxShow).map((item) => (
+                    <span key={item}
+                      className={`inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                        liquor.includes(item)
+                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                          : "bg-neutral-800/50 text-neutral-400 border-neutral-700/30"
+                      }`}>
+                      {item}
+                    </span>
+                  ))}
+                  {sorted.length > maxShow && (
+                    <span className="text-[10px] text-neutral-500 font-bold">+{sorted.length - maxShow}</span>
+                  )}
+                </div>
+                {!isOwner && (
+                  <Button
+                    className={`h-9 px-3 rounded-full font-black text-[12px] shrink-0 transition-all active:scale-[0.97] ${
+                      isShareFull
+                        ? "bg-neutral-800 text-neutral-500 cursor-not-allowed pointer-events-none"
+                        : "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
+                    }`}
+                  >
+                    {isShareFull ? "마감" : "참여하기"}
+                  </Button>
                 )}
               </div>
             );
@@ -328,17 +319,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                   : "직접 모집 반영하기"}
               </Button>
             </div>
-          ) : (
-            <Button
-              className={`w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] ${
-                isShareFull
-                  ? "bg-neutral-800 text-neutral-500 cursor-not-allowed pointer-events-none"
-                  : "bg-amber-500 hover:bg-amber-400 text-black"
-              }`}
-            >
-              {isShareFull ? "마감" : "참여하기"}
-            </Button>
-          )}
+          ) : null}
         </div>
       </Link>
     );
@@ -567,8 +548,8 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
             </div>
 
             <div className="flex flex-col items-end gap-1 shrink-0">
-              {!isInstant && (auction.view_count ?? 0) > 0 && (
-                <span className="text-[10px] text-neutral-500 font-medium">조회 {auction.view_count}</span>
+              {!isInstant && (auction.today_view_count ?? 0) >= 10 && (
+                <span className="text-[10px] text-amber-400/80 font-semibold">👀 오늘 {auction.today_view_count}명</span>
               )}
               {socialProof && (
                 <span className="text-[10px] text-amber-400/60 font-medium">{socialProof}</span>

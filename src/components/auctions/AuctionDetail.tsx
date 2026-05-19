@@ -116,7 +116,12 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
     if (typeof window === "undefined") return;
     const viewKey = `nightflow_viewed_${auction.id}`;
     const lastViewed = localStorage.getItem(viewKey);
-    if (lastViewed && Date.now() - Number(lastViewed) < 24 * 60 * 60 * 1000) {
+    // 영업일 기준: KST 04:00 이전이면 전날 영업일, 이후면 오늘 영업일
+    const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const businessDay = new Date(kstNow);
+    if (kstNow.getUTCHours() < 4) businessDay.setUTCDate(businessDay.getUTCDate() - 1);
+    const businessDayKey = businessDay.toISOString().slice(0, 10);
+    if (lastViewed === businessDayKey) {
       return;
     }
 
@@ -131,7 +136,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         if (error && error.code !== "23505") {
           console.warn("[AuctionDetail] View count error:", error.message);
         } else {
-          localStorage.setItem(viewKey, String(Date.now()));
+          localStorage.setItem(viewKey, businessDayKey);
         }
       });
   }, [auction.id, user?.id]);
@@ -411,9 +416,9 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 +{(displayAuction.includes?.length || 0) - 3}
               </span>
             )}
-            {(displayAuction.view_count ?? 0) >= 0 && (
-              <span className="ml-auto text-[11px] text-neutral-500 font-medium">
-                조회 {displayAuction.view_count ?? 0}
+            {(displayAuction.today_view_count ?? 0) >= 10 && (
+              <span className="ml-auto text-[11px] text-amber-400/80 font-semibold">
+                👀 오늘 {displayAuction.today_view_count}명
               </span>
             )}
           </div>
@@ -710,7 +715,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         {/* 입찰/예약/조각 패널 */}
         {isShare ? (
           <div className="mt-4">
-            <ShareJoinPanel auction={displayAuction} currentUserId={user?.id} />
+            <ShareJoinPanel auction={displayAuction} currentUserId={user?.id} onShareClick={() => setShareSheetOpen(true)} />
           </div>
         ) : isActive && (
           <div className="mt-4">

@@ -108,7 +108,7 @@ export function StoryShareView({ auction }: Props) {
               NightFlow
             </div>
             <div className="w-full">
-              <AuctionCard auction={{ ...auction, view_count: 0 }} priority />
+              <AuctionCard auction={{ ...auction, view_count: 0, today_view_count: 0 }} priority />
             </div>
           </div>
         </div>

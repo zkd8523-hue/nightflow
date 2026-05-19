@@ -8,6 +8,7 @@ import type { Auction } from "@/types/database";
 import { formatNumber } from "@/lib/utils/format";
 import { Users, ExternalLink, Loader2, X } from "lucide-react";
 import dayjs from "dayjs";
+import { trackShareEvent } from "@/lib/analytics/events";
 
 interface MyShareCardProps {
   auction: Auction;
@@ -31,6 +32,12 @@ export function MyShareCard({ auction, onCancelled }: MyShareCardProps) {
       .select("kakao_open_chat_url")
       .eq("id", auction.md_id)
       .single();
+    trackShareEvent('share_kakao_open', {
+      auction_id: auction.id,
+      club_id: auction.club_id,
+      has_kakao_url: !!md?.kakao_open_chat_url,
+      source: 'my_shares',
+    });
     if (md?.kakao_open_chat_url) {
       window.open(md.kakao_open_chat_url, "_blank");
     } else {
@@ -50,6 +57,11 @@ export function MyShareCard({ auction, onCancelled }: MyShareCardProps) {
         return;
       }
       toast.success("참여가 취소되었습니다.");
+      trackShareEvent('share_cancel', {
+        auction_id: auction.id,
+        club_id: auction.club_id,
+        source: 'my_shares',
+      });
       onCancelled();
     } catch {
       toast.error("네트워크 연결이 불안정합니다.");

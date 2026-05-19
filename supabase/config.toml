@@ -82,3 +82,10 @@ verify_jwt = false
 entrypoint = "./functions/recharge-md-credits/index.ts"
 # 크론: 매일 06:00 KST (21:00 UTC) — Dashboard > Edge Functions > recharge-md-credits > Settings > Cron Schedule
 # schedule = "0 21 * * *"
+
+[functions.reset-today-views]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/reset-today-views/index.ts"
+# 크론: 매일 04:00 KST (19:00 UTC) — Dashboard > Edge Functions > reset-today-views > Settings > Cron Schedule
+# schedule = "0 19 * * *"

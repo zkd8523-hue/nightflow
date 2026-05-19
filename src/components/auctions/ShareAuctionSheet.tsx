@@ -150,6 +150,7 @@ export function ShareAuctionSheet({
     router.push(`/share/auction/${auction.id}/story`);
   };
 
+  const isShareListing = auction.listing_type === "share";
   const shareOptions = [
     {
       id: "story",
@@ -158,7 +159,7 @@ export function ShareAuctionSheet({
       iconColor: "text-pink-400",
       bgColor: "bg-pink-500/10 border-pink-500/20",
       handler: handleStoryCard,
-      available: isFromMD,
+      available: isFromMD && !isShareListing,
     },
     {
       id: "kakao",
@@ -176,7 +177,7 @@ export function ShareAuctionSheet({
       iconColor: "text-pink-400",
       bgColor: "bg-pink-500/10 border-pink-500/20",
       handler: handleInstagramShare,
-      available: true,
+      available: !isShareListing,
     },
     {
       id: "link",
@@ -205,10 +206,12 @@ export function ShareAuctionSheet({
       <DrawerContent className="bg-[#1C1C1E] border-neutral-800 outline-none px-6 pb-10">
         <DrawerHeader className="text-center pt-4 pb-0">
           <DrawerTitle className="text-white font-black text-lg tracking-tight">
-            {auction.listing_type === "share" ? "이 조각을 공유하세요" : "이 경매를 공유하세요"}
+            {auction.listing_type === "share" ? "같이 갈 친구 데려오기" : "이 경매를 공유하세요"}
           </DrawerTitle>
           <DrawerDescription className="text-neutral-500 text-[13px] font-medium">
-            {clubName} · {tableInfo} · {formatEventDate(auction.event_date)} {formatEntryTime(auction.entry_time, auction.event_date)}
+            {auction.listing_type === "share"
+              ? "카톡·링크 누르면 바로 복사돼요"
+              : `${clubName} · ${tableInfo} · ${formatEventDate(auction.event_date)} ${formatEntryTime(auction.entry_time, auction.event_date)}`}
           </DrawerDescription>
         </DrawerHeader>
 

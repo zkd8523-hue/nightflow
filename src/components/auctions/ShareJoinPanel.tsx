@@ -12,12 +12,14 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Auction, ShareClaimError } from "@/types/database";
 import { formatNumber } from "@/lib/utils/format";
-import { Zap, ExternalLink, Loader2 } from "lucide-react";
+import { Zap, ExternalLink, Loader2, UserPlus } from "lucide-react";
 import { PuzzlePiece } from "@/components/puzzles/PuzzleCard";
+import { trackShareEvent } from "@/lib/analytics/events";
 
 interface ShareJoinPanelProps {
   auction: Auction;
   currentUserId?: string;
+  onShareClick?: () => void;
 }
 
 const ERROR_MESSAGES: Record<ShareClaimError, string> = {
@@ -36,7 +38,7 @@ const ERROR_MESSAGES: Record<ShareClaimError, string> = {
   EXCEEDS_TOTAL_SEATS: "정원을 초과할 수 없습니다.",
 };
 
-export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) {
+export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJoinPanelProps) {
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
@@ -80,6 +82,11 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
     }
     setMyGender(g);
     setGenderSheetOpen(false);
+    trackShareEvent('share_gender_set', {
+      auction_id: auction.id,
+      club_id: auction.club_id,
+      gender: g,
+    });
   };
 
   const totalFilled = (auction.seats_claimed ?? 0) + (auction.external_attendees ?? 0);
@@ -140,8 +147,21 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
     }
     if (genderLoaded && !myGender) {
       setGenderSheetOpen(true);
+      trackShareEvent('share_gender_gate_open', {
+        auction_id: auction.id,
+        club_id: auction.club_id,
+      });
       return;
     }
+    const baseParams = {
+      auction_id: auction.id,
+      club_id: auction.club_id,
+      price_per_seat: auction.price_per_seat ?? 0,
+      total_seats: totalSeats,
+      seats_filled: totalFilled,
+      seats_left: seatsLeft,
+    };
+    trackShareEvent('share_join_attempt', baseParams);
     setLoading(true);
     try {
       const { data, error } = await supabase.rpc("claim_share_seat", {
@@ -151,13 +171,24 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
       if (!data?.success) {
         const msg = ERROR_MESSAGES[data?.error as ShareClaimError] ?? "참여 중 문제가 발생했습니다.";
         toast.error(msg);
+        trackShareEvent('share_join_fail', {
+          ...baseParams,
+          error_code: data?.error ?? 'UNKNOWN',
+        });
         return;
       }
       setHasClaim(true);
       setKakaoUrl(data.kakao_open_chat_url ?? null);
       setSuccessSheet(true);
+      trackShareEvent('share_join_success', {
+        ...baseParams,
+        seats_filled: totalFilled + 1,
+        seats_left: Math.max(0, seatsLeft - 1),
+        has_kakao_url: !!data.kakao_open_chat_url,
+      });
     } catch {
       toast.error("네트워크 연결이 불안정합니다.");
+      trackShareEvent('share_join_fail', { ...baseParams, error_code: 'NETWORK' });
     } finally {
       setLoading(false);
     }
@@ -176,6 +207,11 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
       }
       setHasClaim(false);
       toast.success("참여가 취소되었습니다.");
+      trackShareEvent('share_cancel', {
+        auction_id: auction.id,
+        club_id: auction.club_id,
+        source: 'detail',
+      });
     } catch {
       toast.error("네트워크 연결이 불안정합니다.");
     } finally {
@@ -184,6 +220,12 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
   };
 
   const handleOpenChat = () => {
+    trackShareEvent('share_kakao_open', {
+      auction_id: auction.id,
+      club_id: auction.club_id,
+      has_kakao_url: !!kakaoUrl,
+      source: 'detail',
+    });
     if (kakaoUrl) window.open(kakaoUrl, "_blank");
   };
 
@@ -215,7 +257,7 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
         </div>
 
         {/* 성비 안내 */}
-        {auction.total_seats && auction.total_seats > 0 && (
+        {hasGenderSlot && (
           <p className="text-[11px] text-neutral-500">성비 목표 외 인원도 MD 승인 시 참여 가능해요.</p>
         )}
 
@@ -268,6 +310,17 @@ export function ShareJoinPanel({ auction, currentUserId }: ShareJoinPanelProps) 
             ) : (
               "참여하기"
             )}
+          </Button>
+        )}
+
+        {onShareClick && (
+          <Button
+            variant="outline"
+            className="w-full h-11 rounded-2xl border border-neutral-700 bg-transparent text-neutral-300 hover:bg-neutral-800 hover:text-white text-sm font-semibold"
+            onClick={onShareClick}
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            같이 갈 친구에게 공유
           </Button>
         )}
 
