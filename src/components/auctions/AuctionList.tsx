@@ -5,6 +5,7 @@ import Link from "next/link";
 import dayjs from "dayjs";
 import type { Auction, Puzzle } from "@/types/database";
 import { AuctionCard } from "./AuctionCard";
+import { PuzzleSocialProofBanner } from "./PuzzleSocialProofBanner";
 import { PuzzleList } from "@/components/puzzles/PuzzleList";
 import { isAuctionActive, getEffectiveEndTime } from "@/lib/utils/auction";
 import { getClubEventDate } from "@/lib/utils/date";
@@ -391,6 +392,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             </div>
           )}
         </div>
+
+      {tab === "puzzle" && <PuzzleSocialProofBanner />}
 
       {instantEnabled && tab === "today" && (
         <div>
