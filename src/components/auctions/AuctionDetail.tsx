@@ -28,7 +28,7 @@ import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
 import { FallbackOfferCard } from "./FallbackOfferCard";
 import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
-import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame, Heart } from "lucide-react";
+import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame, Heart, ChevronLeft } from "lucide-react";
 import { useFavoritesContext } from "@/components/providers";
 import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
@@ -304,6 +304,21 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-32 max-w-lg mx-auto">
+      {/* 헤더 */}
+      <div className="flex items-center gap-3 px-4 py-5">
+        <button
+          onClick={() => {
+            if (typeof window !== "undefined" && window.history.length > 1) router.back();
+            else router.push("/");
+          }}
+          aria-label="뒤로가기"
+          className="text-white -ml-1"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <h1 className="text-[17px] font-black text-white flex-1">조각 상세</h1>
+      </div>
+
       {/* 1. Hero Image Section */}
       <div className="relative h-[220px] w-full overflow-hidden">
         <AuctionImage
