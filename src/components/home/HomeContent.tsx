@@ -443,16 +443,17 @@ export function HomeContent({
           );
           const userPuzzleTipContent = (
             <>
-              예산 등록 → MD들이 시크릿 오퍼
-              <br />
-              가격·패키지 비교하고 골라요.{" "}
-              <button
-                type="button"
-                onClick={handleToggleSecretOffer}
-                className="inline-flex items-center text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors ml-1 align-baseline"
-              >
-                (시크릿 오퍼란?)
-              </button>
+              <div>예산 등록 → MD들이 시크릿 오퍼 🚩</div>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[15.5px]">가격·패키지 비교하고 골라요!</span>
+                <button
+                  type="button"
+                  onClick={handleToggleSecretOffer}
+                  className="shrink-0 text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors"
+                >
+                  (시크릿 오퍼란?)
+                </button>
+              </div>
             </>
           );
           const overriddenTabPromises = isMdOrAdmin
@@ -475,9 +476,9 @@ export function HomeContent({
             <section className="px-1 space-y-2">
               {/* TIP 박스 — 항시 노출 */}
               {overriddenTabPromises[currentTab]?.content && (
-                <div className="bg-amber-500/15 border border-amber-500/30 rounded-2xl px-3 py-2.5 flex items-start gap-2">
-                  <span className="shrink-0 mt-0.5 text-[10px] font-black text-amber-400 bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 rounded-full tracking-wider">TIP</span>
-                  <p className="text-[13.5px] text-amber-100 font-bold leading-snug whitespace-pre-line break-keep">
+                <div className="relative bg-gradient-to-br from-amber-500/35 via-amber-500/20 to-amber-600/10 border border-amber-400/70 rounded-2xl px-3 pt-4 pb-2.5">
+                  <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
+                  <p className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep">
                     {overriddenTabPromises[currentTab].content}
                   </p>
                 </div>
