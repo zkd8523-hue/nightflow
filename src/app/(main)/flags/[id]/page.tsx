@@ -101,7 +101,11 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
     .eq("id", id)
     .single();
 
-  if (!puzzle) notFound();
+  if (!puzzle) {
+    // 미인증 사용자가 RLS로 막힌 경우 → 로그인 후 돌아오도록
+    if (!authUser) redirect(`/login?redirect=${encodeURIComponent(`/flags/${id}`)}`);
+    notFound();
+  }
 
   // 나머지 3쿼리는 병렬 실행 (puzzle에 의존)
   const [{ data: leader }, { data: members }, { data: profile }] = await Promise.all([
