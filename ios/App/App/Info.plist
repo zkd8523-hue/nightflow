@@ -83,6 +83,10 @@
 		<string>remote-notification</string>
 	</array>
 
+	<!-- Export Compliance — HTTPS/TLS 등 표준 암호화만 사용 (EAR 면제) -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<!-- 권한 요청 메시지 (한국어 + 영어 병기 — App Review 영어권 리뷰어 대응) -->
 	<key>NSCameraUsageDescription</key>
 	<string>프로필 사진 등록에 카메라를 사용합니다. / Used to take a profile photo.</string>
