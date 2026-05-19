@@ -430,7 +430,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     if (!effectiveIsRecruiting && effectiveTargetCount < 2) {
       return fail('headcount_min', '인원 확정 깃발은 2명 이상이어야 합니다');
     }
-    if (!myGender) {
+    // 성별은 파티원 모집(퍼즐) 모드에서만 필수. 깃발(인원 확정)은 성별 없이도 등록 가능.
+    if (effectiveIsRecruiting && !myGender) {
       return fail('gender_required', '성별을 먼저 입력해주세요');
     }
     // 본인 성별 기반으로 슬롯 자동 매핑
@@ -570,12 +571,12 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
   return (
     <div className="space-y-8 pb-12">
-      {/* 깃발에서는 성별을 묻지 않음 — 기존 유저(gender=null)는 조각 흐름 안내 */}
-      {genderLoaded && !myGender && (
+      {/* 성별 안내는 파티원 모집(퍼즐) 모드에서만 표시. 깃발(인원 확정) 모드에서는 불필요 */}
+      {isRecruitingParty && genderLoaded && !myGender && (
         <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-2">
           <p className="text-[13px] font-bold text-white">성별 정보가 필요해요</p>
           <p className="text-[12px] text-neutral-400 leading-relaxed">
-            깃발은 성별 슬롯 기반으로 매칭돼요. 조각 매물에 먼저 참여하면서 성별을 설정하면 깃발도 등록할 수 있어요.
+            파티원 모집은 성별 슬롯 기반으로 매칭돼요. 조각 매물에 먼저 참여하면서 성별을 설정하면 모집도 시작할 수 있어요.
           </p>
         </div>
       )}
@@ -1083,7 +1084,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             }
             setShowSubmitConfirm(true);
           }}
-          disabled={submitting || (isEditMode && !isDirty) || !myGender}
+          disabled={submitting || (isEditMode && !isDirty) || (isRecruitingParty && !myGender)}
           className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
           {submitting ? (isEditMode ? "수정 중..." : "등록 중...") : (
