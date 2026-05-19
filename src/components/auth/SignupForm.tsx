@@ -22,9 +22,7 @@ interface SignupFormProps {
   mdReferrer?: string | null;
 }
 
-type Step = "agree" | "phone" | "otp" | "gender" | "nickname";
-
-type Gender = "male" | "female";
+type Step = "agree" | "phone" | "otp" | "nickname";
 
 const RESEND_COOLDOWN_SEC = 60;
 
@@ -103,9 +101,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [resendIn, setResendIn] = useState(0);
-  // OTP 검증 후 gender 단계로 넘기기 위해 보관
+  // OTP 검증 후 nickname 단계로 넘기기 위해 보관
   const [verifiedPhoneState, setVerifiedPhoneState] = useState<string | null>(null);
-  const [selectedGender, setSelectedGender] = useState<Gender | null>(null);
   // 닉네임 + 프로필 사진 단계
   const [nicknameInput, setNicknameInput] = useState("");
   const [nicknameError, setNicknameError] = useState<string | null>(null);
@@ -285,7 +282,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       const verifiedPhone: string = verifyData.phone;
       trackEvent("signup_phone_verified");
       setVerifiedPhoneState(verifiedPhone);
-      setStep("gender");
+      setStep("nickname");
       setNicknameInput("");
       setNicknameError(null);
       setNicknameOk(false);
@@ -303,10 +300,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     if (!verifiedPhoneState) {
       toast.error("인증 정보가 만료됐어요. 처음부터 다시 시도해주세요");
       setStep("phone");
-      return;
-    }
-    if (!selectedGender) {
-      toast.error("성별을 선택해주세요");
       return;
     }
     const displayName = nicknameInput.trim();
@@ -405,7 +398,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             .update({
               display_name: displayName,
               phone: verifiedPhone,
-              gender: selectedGender,
               alimtalk_consent: agreeMarketing,
               alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
             })
@@ -415,7 +407,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             kakao_id: meta.provider_id || authUser.id,
             display_name: displayName,
             phone: verifiedPhone,
-            gender: selectedGender,
             profile_image: finalProfileImage,
             role: "user",
             alimtalk_consent: agreeMarketing,
@@ -436,7 +427,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         signup_source: signupSource,
         has_referrer: !!referredById,
         marketing_consent: agreeMarketing,
-        gender: selectedGender,
       });
       completedRef.current = true;
       toast.success(`어서오세요, ${displayName}님!`);
@@ -618,65 +608,19 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
           </>
         )}
 
-        {step === "gender" && (
-          <>
-            <div className="space-y-2 text-center">
-              <p className="text-[16px] sm:text-[18px] font-bold text-white whitespace-nowrap tracking-tight">조각 매치를 위해 성별을 알려주세요</p>
-              <p className="text-[12px] text-neutral-500">한 번 설정하면 변경할 수 없어요</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {([
-                { value: "male", label: "남자", emoji: "🧑" },
-                { value: "female", label: "여자", emoji: "👩" },
-              ] as const).map(({ value, label, emoji }) => {
-                const active = selectedGender === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setSelectedGender(value)}
-                    className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all ${
-                      active
-                        ? value === "female"
-                          ? "bg-pink-500/15 border-pink-500 text-pink-300"
-                          : "bg-green-500/15 border-green-500 text-green-300"
-                        : "bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-500"
-                    }`}
-                  >
-                    <span className="text-2xl">{emoji}</span>
-                    <span className="text-[15px] font-bold">{label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            <Button
-              onClick={() => {
-                if (!selectedGender) return;
-                setStep("nickname");
-              }}
-              disabled={!selectedGender}
-              className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
-            >
-              다음
-            </Button>
-          </>
-        )}
-
         {step === "nickname" && (
-          <>
-            <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-white">닉네임만 정해, 바로 가자</p>
-              <p className="text-[12px] text-neutral-500">언제든 바꾸기 OK</p>
+          <div className="space-y-7">
+            <div className="space-y-1.5 text-center">
+              <p className="text-[22px] font-bold text-white tracking-tight">프로필을 설정해주세요</p>
+              <p className="text-[13px] text-neutral-500">언제든지 변경할 수 있습니다</p>
             </div>
 
             {/* 프로필 사진 */}
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex flex-col items-center gap-3">
               <button
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
-                className="relative w-20 h-20 rounded-full overflow-hidden bg-neutral-800 border-2 border-neutral-700 hover:border-neutral-500 transition-colors group"
+                className="relative w-24 h-24 rounded-full overflow-hidden bg-neutral-800 border border-neutral-700 hover:border-neutral-500 transition-colors group"
               >
                 {profileImagePreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -687,15 +631,15 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-neutral-500">
-                    <Camera className="w-7 h-7" />
+                    <Camera className="w-8 h-8" strokeWidth={1.5} />
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <Camera className="w-5 h-5 text-white" />
                 </div>
               </button>
-              <p className="text-[11px] text-neutral-500">
-                {profileImageFile ? "사진 변경하기" : "프로필사진 (선택)"}
+              <p className="text-[12px] text-neutral-500">
+                {profileImageFile ? "사진 변경하기" : "프로필 사진 · 선택"}
               </p>
               <input
                 ref={imageInputRef}
@@ -726,7 +670,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   type="text"
                   value={nicknameInput}
                   maxLength={16}
-                  placeholder="닉네임을 입력해주세요"
+                  placeholder="닉네임"
                   onChange={(e) => {
                     const val = e.target.value;
                     setNicknameInput(val);
@@ -773,22 +717,23 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               )}
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setStep("gender")}
-                className="h-12 px-4 font-bold text-[13px] bg-neutral-800 text-neutral-300 hover:bg-neutral-700 rounded-xl"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </Button>
+            <div className="space-y-3 pt-1">
               <Button
                 onClick={handleCompleteSignup}
                 disabled={!nicknameOk || loading || nicknameChecking || uploadingImage}
-                className="flex-1 h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
                 {uploadingImage ? "사진 업로드 중..." : loading ? "가입 중..." : "가입 완료"}
               </Button>
+              <button
+                type="button"
+                onClick={() => setStep("otp")}
+                className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> 이전
+              </button>
             </div>
-          </>
+          </div>
         )}
       </Card>
       <ConfirmDialog
