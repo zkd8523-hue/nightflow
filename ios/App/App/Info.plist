@@ -28,23 +28,6 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>armv7</string>
-	</array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 
@@ -100,11 +83,11 @@
 		<string>remote-notification</string>
 	</array>
 
-	<!-- 권한 요청 메시지 -->
+	<!-- 권한 요청 메시지 (한국어 + 영어 병기 — App Review 영어권 리뷰어 대응) -->
 	<key>NSCameraUsageDescription</key>
-	<string>프로필 사진 등록에 카메라를 사용합니다.</string>
+	<string>프로필 사진 등록에 카메라를 사용합니다. / Used to take a profile photo.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>프로필 사진 등록에 사진 라이브러리를 사용합니다.</string>
+	<string>프로필 사진 등록에 사진 라이브러리를 사용합니다. / Used to choose a profile photo from your photo library.</string>
 
 	<!-- 네트워크: Capacitor WebView 내부 컨텐츠만 cleartext 허용 (외부 도메인 접근은 HTTPS 강제) -->
 	<key>NSAppTransportSecurity</key>

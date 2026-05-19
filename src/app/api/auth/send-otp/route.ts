@@ -65,7 +65,17 @@ export async function POST(req: NextRequest) {
       try {
         await supabase.auth.admin.deleteUser(u.id);
       } catch (e) {
-        console.warn("[send-otp magic] cleanup failed for", u.id, e);
+        console.warn("[send-otp magic] auth cleanup failed for", u.id, e);
+      }
+      // public.users는 auth.users와 FK가 없어 cascade되지 않음.
+      // kakao_id(Apple sub)/phone UNIQUE 충돌로 재가입이 막히는 것을 방지하려고
+      // magic phone에 한해 잔재 row를 명시적으로 제거한다 (Apple 심사 재시도 대응).
+      const { error: pubDeleteError } = await supabase
+        .from("users")
+        .delete()
+        .eq("id", u.id);
+      if (pubDeleteError) {
+        console.warn("[send-otp magic] public.users cleanup failed for", u.id, pubDeleteError.message);
       }
     }
     const magicCode = getMagicOtpCode();
