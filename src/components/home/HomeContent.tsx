@@ -464,7 +464,7 @@ export function HomeContent({
               }))
             : steps;
           const guideCard = (
-            <section className="px-1 space-y-2">
+            <section className="space-y-2">
               {/* TIP 박스 — 항시 노출 */}
               {overriddenTabPromises[currentTab]?.content && (
                 <div className="relative bg-gradient-to-br from-amber-500/35 via-amber-500/20 to-amber-600/10 border border-amber-400/70 rounded-2xl px-3 pt-4 pb-2.5">
