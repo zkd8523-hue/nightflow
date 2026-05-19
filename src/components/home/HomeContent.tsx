@@ -17,7 +17,6 @@ import { isInstantEnabled } from "@/lib/features";
 import { trackEvent } from "@/lib/analytics/events";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
-const GUIDE_DISMISSED_KEY = "nightflow_guide_dismissed";
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_cta_shown";
 
 const ONBOARDING_STEPS = [
@@ -230,16 +229,9 @@ export function HomeContent({
   const [showFlagCTA, setShowFlagCTA] = useState(false);
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
-  // 첫 방문 시 가이드 자동 펼침. localStorage에 dismiss 기록이 있으면 닫힘 상태로 시작.
+  // 가이드는 항상 닫힘 상태로 시작. "ⓘ 깃발 이용 방법" 버튼으로만 펼침.
   const [showGuide, setShowGuide] = useState(false);
   const [guideMode, setGuideMode] = useState<"full" | "secret-offer">("full");
-
-  useEffect(() => {
-    try {
-      const dismissed = localStorage.getItem(GUIDE_DISMISSED_KEY);
-      if (!dismissed) setShowGuide(true);
-    } catch {}
-  }, []);
 
   const instantEnabled = isInstantEnabled();
   const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
@@ -401,7 +393,6 @@ export function HomeContent({
   const dismissGuide = () => {
     setGuideMode("full");
     setShowGuide(false);
-    localStorage.setItem(GUIDE_DISMISSED_KEY, "1");
   };
 
 
