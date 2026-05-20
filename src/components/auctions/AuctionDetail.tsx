@@ -28,7 +28,7 @@ import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
 import { FallbackOfferCard } from "./FallbackOfferCard";
 import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
-import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame, Heart, ChevronLeft } from "lucide-react";
+import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { useFavoritesContext } from "@/components/providers";
 import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
@@ -390,12 +390,30 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
         {/* Hero Content Overlay */}
         <div className="absolute bottom-10 left-4 right-4 space-y-0.5">
-          <div className="flex items-center gap-2 text-[13px] text-neutral-400 font-bold uppercase tracking-widest">
-            <span>{club?.area}</span>
-          </div>
-          <h1 className="text-[42px] font-black text-white tracking-tighter leading-[1.1]">
-            {club?.name}
-          </h1>
+          {club?.id && !club?.deleted_at ? (
+            <Link
+              href={`/clubs/${club.id}`}
+              className="block group active:opacity-80 transition-opacity"
+              aria-label={`${club.name} 클럽 상세 페이지로 이동`}
+            >
+              <div className="flex items-center gap-2 text-[13px] text-neutral-400 font-bold uppercase tracking-widest">
+                <span>{club?.area}</span>
+              </div>
+              <h1 className="text-[42px] font-black text-white tracking-tighter leading-[1.1] flex items-center gap-1">
+                <span>{club?.name}</span>
+                <ChevronRight className="w-7 h-7 text-white/40 group-active:text-white/70 transition-colors" strokeWidth={3} />
+              </h1>
+            </Link>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 text-[13px] text-neutral-400 font-bold uppercase tracking-widest">
+                <span>{club?.area}</span>
+              </div>
+              <h1 className="text-[42px] font-black text-white tracking-tighter leading-[1.1]">
+                {club?.name}
+              </h1>
+            </>
+          )}
           <div className="flex items-center gap-1.5 flex-wrap mt-1">
             {sortedIncludes.slice(0, 3).map((item) => {
               const isLiquor = liquorItems.includes(item);
