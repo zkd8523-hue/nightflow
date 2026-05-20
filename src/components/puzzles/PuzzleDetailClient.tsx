@@ -225,6 +225,25 @@ export function PuzzleDetailClient({
       }
     }
 
+    // 3단계: 어드민은 모든 오퍼의 MD 식별 정보 조회 (모니터링/조정용).
+    if (isAdmin) {
+      const { data: adminMdData } = await supabase
+        .from("puzzle_offers")
+        .select("id, md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, profile_image, md_deal_count, instagram, phone, kakao_open_chat_url, preferred_contact_methods)")
+        .eq("puzzle_id", puzzle.id)
+        .in("status", ["pending", "accepted"]);
+
+      if (adminMdData) {
+        const mdByOfferId = new Map(
+          adminMdData.map((row) => [row.id, row.md as unknown as PuzzleOffer["md"]]),
+        );
+        merged = merged.map((o) => {
+          const md = mdByOfferId.get(o.id);
+          return md ? ({ ...o, md } as PuzzleOffer) : o;
+        });
+      }
+    }
+
     setOffers(merged);
 
     if (currentUserId && (isMd || isAdmin)) {

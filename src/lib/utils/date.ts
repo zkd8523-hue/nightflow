@@ -27,3 +27,41 @@ export function getClubEventDateFrom(isoDateString: string): string {
 export function isEarlybird(auction: Auction): boolean {
     return getClubEventDateFrom(auction.created_at) < auction.event_date;
 }
+
+/**
+ * 제목 텍스트에서 명시적 날짜(M/D, M월 D일)를 추출해 event_date와 비교.
+ * 패턴 미발견 시 통과(한글 표현/요일/외국어는 검증 대상 아님).
+ * 첫 매치만 검사.
+ */
+export function validateTitleDateConsistency(
+    title: string,
+    eventDate: string,
+): { ok: true } | { ok: false; titleDate: string; expectedDate: string } {
+    const patterns = [
+        /(\d{1,2})\s*\/\s*(\d{1,2})/,
+        /(\d{1,2})\s*월\s*(\d{1,2})\s*일/,
+    ];
+
+    for (const pattern of patterns) {
+        const match = title.match(pattern);
+        if (!match) continue;
+
+        const month = parseInt(match[1], 10);
+        const day = parseInt(match[2], 10);
+        if (month < 1 || month > 12 || day < 1 || day > 31) continue;
+
+        const event = dayjs(eventDate);
+        if (!event.isValid()) return { ok: true };
+
+        if (month !== event.month() + 1 || day !== event.date()) {
+            return {
+                ok: false,
+                titleDate: `${month}/${day}`,
+                expectedDate: event.format("M/D"),
+            };
+        }
+        return { ok: true };
+    }
+
+    return { ok: true };
+}

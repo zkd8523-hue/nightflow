@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, CheckCircle2, Flame, XCircle, ChevronRight } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Flame, XCircle, ChevronRight, Instagram, User } from "lucide-react";
 import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferButton";
 import type { PuzzleOffer } from "@/types/database";
 import { formatRelativeTime } from "@/lib/utils/format";
@@ -156,6 +156,32 @@ export function SecretOfferCard({
             <XCircle className="w-4 h-4 mr-1.5" />
             거절
           </Button>
+        </div>
+      )}
+
+      {isAdmin && offer.md && (
+        <div className="pt-2 mt-1 border-t border-red-500/20 bg-red-500/5 -mx-4 px-4 pb-1 space-y-1">
+          <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — MD 식별 정보</p>
+          <div className="flex items-center gap-3 text-[12px] text-neutral-300 flex-wrap">
+            <span className="inline-flex items-center gap-1">
+              <User className="w-3 h-3 text-neutral-500" />
+              <span className="font-bold text-white">{offer.md.display_name || "이름 없음"}</span>
+            </span>
+            {offer.md.instagram && (
+              <a
+                href={`https://instagram.com/${offer.md.instagram.replace(/^@/, "")}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-pink-400 hover:text-pink-300"
+              >
+                <Instagram className="w-3 h-3" />
+                <span className="font-mono">@{offer.md.instagram.replace(/^@/, "")}</span>
+              </a>
+            )}
+            {!offer.md.instagram && (
+              <span className="text-neutral-600 text-[11px]">인스타 미등록</span>
+            )}
+          </div>
         </div>
       )}
 

@@ -16,6 +16,7 @@ import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle as PuzzleType } f
 import { trackEvent } from "@/lib/analytics/events";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
+import { validateTitleDateConsistency } from "@/lib/utils/date";
 
 // 빠른 추가 (만원 단위) — 모드별로 다름
 const BUDGET_PRESETS_RECRUIT = [100000, 50000, 10000]; // 퍼즐(인당) +10만/+5만/+1만
@@ -404,6 +405,13 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     }
     if (!eventDate) {
       return fail('date', '날짜를 선택해주세요');
+    }
+    const titleDateCheck = validateTitleDateConsistency(notes, eventDate);
+    if (titleDateCheck.ok === false) {
+      return fail(
+        'title_date_mismatch',
+        `제목의 날짜(${titleDateCheck.titleDate})와 설정한 모임 날짜(${titleDateCheck.expectedDate})가 다릅니다. 제목 또는 날짜를 수정해주세요.`,
+      );
     }
     if (!area) {
       return fail('area', '지역을 선택해주세요');

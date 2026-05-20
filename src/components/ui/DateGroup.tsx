@@ -52,7 +52,7 @@ export function DateGroup({ date, children, showCount = false, label: customLabe
           <span className="text-[11px] text-neutral-500 font-medium">{count}건</span>
         )}
       </div>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-7">
         {children}
       </div>
     </div>
