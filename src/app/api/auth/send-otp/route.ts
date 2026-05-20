@@ -138,7 +138,9 @@ export async function POST(req: NextRequest) {
     // md_apply: 본인이 이미 등록한 phone이면 통과 (재인증 허용)
     // 테스트 환경: 중복 체크 스킵 (동일 번호 재사용 가능)
     const isSelf = purpose === "md_apply" && existingUser.id === sessionUserId;
-    if (!isSelf && !isTestEnv()) {
+    // TEMP: 발신번호 070 테스트를 위해 중복 체크 일시 해제
+    const BYPASS_DUPLICATE_CHECK = true;
+    if (!isSelf && !isTestEnv() && !BYPASS_DUPLICATE_CHECK) {
       return NextResponse.json({ error: "phone_already_registered" }, { status: 409 });
     }
   }
