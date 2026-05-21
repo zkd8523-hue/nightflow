@@ -9,7 +9,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
-import { MessageCircle, Users, Link2, Share2, Camera } from "lucide-react";
+import { MessageCircle, Instagram, Link2, Share2, Camera } from "lucide-react";
 
 import { shareAuction, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
@@ -173,8 +173,8 @@ export function ShareAuctionSheet({
     },
     {
       id: "instagram",
-      label: isFromMD && !isShareListing ? "스토리 홍보" : "인스타",
-      icon: Users,
+      label: "인스타",
+      icon: Instagram,
       iconColor: "text-pink-400",
       bgColor: "bg-pink-500/10 border-pink-500/20",
       handler: handleInstagramShare,
