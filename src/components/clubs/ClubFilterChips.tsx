@@ -1,6 +1,6 @@
 "use client";
 
-import { FILTER_GROUPS, AREA_OPTIONS } from "@/lib/clubs/tags";
+import { FILTER_GROUPS, AREA_OPTIONS, SEOUL_AREAS } from "@/lib/clubs/tags";
 
 export interface ClubFilters {
   areas: string[];
@@ -49,6 +49,19 @@ export function ClubFilterChips({ value, onChange }: Props) {
           📍 지역
         </div>
         <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1 touch-pan-x">
+          <Chip
+            label="서울"
+            active={SEOUL_AREAS.every((a) => value.areas.includes(a))}
+            onClick={() => {
+              const allActive = SEOUL_AREAS.every((a) =>
+                value.areas.includes(a)
+              );
+              const next = allActive
+                ? value.areas.filter((a) => !SEOUL_AREAS.includes(a as never))
+                : Array.from(new Set([...value.areas, ...SEOUL_AREAS]));
+              onChange({ ...value, areas: next });
+            }}
+          />
           {AREA_OPTIONS.map((area) => (
             <Chip
               key={area}

@@ -14,7 +14,6 @@ import { toast } from "sonner";
 import { PartyPopper, MessageCircle, Instagram, Link2, Share2, ArrowRight, RotateCcw } from "lucide-react";
 
 import { shareAuction, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
-import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { useReferralCode } from "@/hooks/useReferralCode";
 
 
@@ -46,7 +45,6 @@ export function ShareSuccessSheet({
   areaName,
 }: ShareSuccessSheetProps) {
   const router = useRouter();
-  const { shareToKakao, isAvailable: kakaoAvailable } = useKakaoShare();
   const referralCode = useReferralCode();
   const [sharing, setSharing] = useState<string | null>(null);
 
@@ -61,19 +59,20 @@ export function ShareSuccessSheet({
   const handleKakaoShare = async () => {
     setSharing("kakao");
     try {
-      const success = await shareToKakao({
-        clubName,
-        tableInfo,
-        startPrice,
-        auctionUrl,
-        thumbnailUrl: shareImageUrl,
-        listingType: listingType || "auction",
-        isFromMD: true,
-        area: areaName,
-        eventDate,
-      });
-      if (!success) {
-        toast.error("카카오톡 공유에 실패했습니다");
+      const isShare = listingType === "share";
+      const title = `${areaName ? `[${areaName}] ` : ""}${clubName} ${isShare ? "조각 모집" : "테이블 경매"}`;
+      const text = isShare
+        ? `인당 ${startPrice.toLocaleString()}원 · 자리 모집 중`
+        : `시작가 ${startPrice.toLocaleString()}원 · 입찰 진행 중`;
+      if (typeof navigator !== "undefined" && navigator.share) {
+        try {
+          await navigator.share({ title, text, url: auctionUrl });
+        } catch {
+          // 사용자 취소 무시
+        }
+      } else {
+        await copyAuctionLink(auctionId, referralCode);
+        toast.success("링크가 복사됐어요. 카카오톡에 붙여넣어주세요.");
       }
     } finally {
       setSharing(null);
@@ -147,7 +146,7 @@ export function ShareSuccessSheet({
       iconColor: "text-yellow-400",
       bgColor: "bg-yellow-500/10 border-yellow-500/20",
       handler: handleKakaoShare,
-      available: kakaoAvailable,
+      available: true,
     },
     {
       id: "instagram",

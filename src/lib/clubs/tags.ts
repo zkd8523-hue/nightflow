@@ -95,6 +95,9 @@ export const AREA_OPTIONS = [
 
 export type AreaOption = (typeof AREA_OPTIONS)[number];
 
+// 서울 = 강남 ∪ 홍대 ∪ 이태원 (메타 단축 칩)
+export const SEOUL_AREAS: AreaOption[] = ["강남", "홍대", "이태원"];
+
 export function makeTag(group: ClubTagGroup, key: string): string {
   return `${group}:${key}`;
 }

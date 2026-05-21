@@ -12,7 +12,6 @@ import {
 import { MessageCircle, Instagram, Link2, Share2, Camera } from "lucide-react";
 
 import { shareAuction, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
-import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { useReferralCode } from "@/hooks/useReferralCode";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatEventDate, formatEntryTime } from "@/lib/utils/format";
@@ -30,7 +29,6 @@ export function ShareAuctionSheet({
   auction,
 }: ShareAuctionSheetProps) {
   const router = useRouter();
-  const { shareToKakao, isAvailable: kakaoAvailable } = useKakaoShare();
   const referralCode = useReferralCode();
   const currentUser = useAuthStore((s) => s.user);
   const isFromMD = currentUser?.id === auction.md_id;
@@ -85,17 +83,22 @@ export function ShareAuctionSheet({
   const handleKakaoShare = async () => {
     setSharing("kakao");
     try {
-      await shareToKakao({
-        clubName,
-        tableInfo,
-        startPrice: auction.listing_type === "share" ? (auction.price_per_seat ?? 0) : auction.start_price,
-        auctionUrl,
-        thumbnailUrl: shareImageUrl,
-        listingType: auction.listing_type || "auction",
-        isFromMD,
-        eventDate: auction.event_date,
-        area: club?.area,
-      });
+      // 깃발과 동일한 방식: OS 네이티브 공유 시트 → 사용자가 카카오톡 선택
+      // Kakao SDK 직접 호출(sendDefault)은 imageUrl/도메인 검증 이슈로 4019 발생 가능
+      const price = isShareListing ? (auction.price_per_seat ?? 0) : auction.start_price;
+      const title = `${club?.area ? `[${club.area}] ` : ""}${clubName} ${isShareListing ? "조각 모집" : "테이블 경매"}`;
+      const text = isShareListing
+        ? `인당 ${price.toLocaleString()}원 · 자리 모집 중`
+        : `시작가 ${price.toLocaleString()}원 · 입찰 진행 중`;
+      if (typeof navigator !== "undefined" && navigator.share) {
+        try {
+          await navigator.share({ title, text, url: auctionUrl });
+        } catch {
+          // 사용자 취소 무시
+        }
+      } else {
+        await copyAuctionLink(auction.id, referralCode);
+      }
     } finally {
       setSharing(null);
     }
@@ -170,7 +173,7 @@ export function ShareAuctionSheet({
       iconColor: "text-yellow-400",
       bgColor: "bg-yellow-500/10 border-yellow-500/20",
       handler: handleKakaoShare,
-      available: kakaoAvailable,
+      available: true,
     },
     {
       id: "instagram",
