@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MapPin, Wine } from "lucide-react";
+import { Wine } from "lucide-react";
 import { ClubFilterChips, type ClubFilters } from "./ClubFilterChips";
 import {
   FEATURE_GROUPS,
@@ -52,8 +53,41 @@ export function ClubList({ clubs, activeCountMap }: Props) {
     router.replace(url, { scroll: false });
   }, [filters, router]);
 
+  // 같은 클럽 중복 등록 처리 (DB 노터치, 프론트에서만 숨김)
+  // - 정규화: lowercase + "club " 접두/접미 제거
+  // - 같은 정규화명 그룹에서 이미지 있는 게 하나라도 있으면, 이미지 없는 건 숨김
+  const dedupedClubs = useMemo(() => {
+    const normalize = (name: string) =>
+      name
+        .toLowerCase()
+        .trim()
+        .replace(/^club\s+/, "")
+        .replace(/\s+club$/, "")
+        .trim();
+
+    const groups = new Map<string, ClubListItem[]>();
+    for (const c of clubs) {
+      const key = normalize(c.name);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(c);
+    }
+
+    const hiddenIds = new Set<string>();
+    for (const group of groups.values()) {
+      if (group.length <= 1) continue;
+      const hasImage = group.some((c) => c.thumbnail_url);
+      if (hasImage) {
+        for (const c of group) {
+          if (!c.thumbnail_url) hiddenIds.add(c.id);
+        }
+      }
+    }
+
+    return clubs.filter((c) => !hiddenIds.has(c.id));
+  }, [clubs]);
+
   const filtered = useMemo(() => {
-    return clubs.filter((c) => {
+    return dedupedClubs.filter((c) => {
       if (filters.areas.length && !filters.areas.includes(c.area || ""))
         return false;
       if (filters.genres.length) {
@@ -62,9 +96,7 @@ export function ClubList({ clubs, activeCountMap }: Props) {
       }
       return true;
     });
-  }, [clubs, filters]);
-
-  const anyFilter = filters.areas.length > 0 || filters.genres.length > 0;
+  }, [dedupedClubs, filters]);
 
   const byArea: Record<string, ClubListItem[]> = {};
   for (const c of filtered) {
@@ -72,9 +104,18 @@ export function ClubList({ clubs, activeCountMap }: Props) {
     (byArea[area] ||= []).push(c);
   }
 
-  const areaOrder: string[] = anyFilter
-    ? Object.keys(byArea)
-    : (AREA_OPTIONS as readonly string[]).filter((a) => byArea[a]?.length);
+  // 정렬: 깃발 많은 순 (각 area 내)
+  for (const area of Object.keys(byArea)) {
+    byArea[area].sort(
+      (a, b) => (activeCountMap[b.id] || 0) - (activeCountMap[a.id] || 0)
+    );
+  }
+
+  const orderedAreas: string[] = (AREA_OPTIONS as readonly string[]).filter(
+    (a) => byArea[a]?.length
+  );
+  // "기타"가 있다면 마지막에 추가
+  if (byArea["기타"]?.length) orderedAreas.push("기타");
 
   return (
     <div className="space-y-6">
@@ -94,33 +135,11 @@ export function ClubList({ clubs, activeCountMap }: Props) {
           </button>
         </div>
       ) : (
-        <div className="space-y-8">
-          {areaOrder.map((area) => {
+        <div className="space-y-7">
+          {orderedAreas.map((area) => {
             const list = byArea[area];
             if (!list || list.length === 0) return null;
-            return (
-              <section key={area}>
-                <h2 className="text-base font-black text-white mb-3 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-amber-500" />
-                  {area}{" "}
-                  <span className="text-neutral-500 text-xs font-medium">
-                    ({list.length})
-                  </span>
-                </h2>
-                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {list
-                    .slice()
-                    .sort(
-                      (a, b) =>
-                        (activeCountMap[b.id] || 0) -
-                        (activeCountMap[a.id] || 0)
-                    )
-                    .map((club) => (
-                      <ClubCard key={club.id} club={club} />
-                    ))}
-                </ul>
-              </section>
-            );
+            return <AreaCarousel key={area} area={area} clubs={list} />;
           })}
         </div>
       )}
@@ -128,51 +147,107 @@ export function ClubList({ clubs, activeCountMap }: Props) {
   );
 }
 
+function AreaCarousel({
+  area,
+  clubs,
+}: {
+  area: string;
+  clubs: ClubListItem[];
+}) {
+  return (
+    <section>
+      <h2 className="text-[15px] font-black text-white mb-3 px-1 flex items-baseline gap-2">
+        {area}
+        <span className="text-neutral-500 text-[11px] font-medium">
+          {clubs.length}
+        </span>
+      </h2>
+      <div className="-mx-4 px-4">
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory">
+          {clubs.map((club) => (
+            <ClubCard key={club.id} club={club} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ClubCard({ club }: { club: ClubListItem }) {
-  const featureLine: string[] = [];
-  if (club.area) featureLine.push(club.area);
-  for (const group of FEATURE_GROUPS) {
-    if (group.group === "crowd") continue; // crowd는 두 번째 줄
-    const tags = getTagsByGroup(club.tags || [], group.group);
-    if (tags.length) featureLine.push(tags.map((t) => t.label).join("/"));
+  const genres = getTagsByGroup(club.tags || [], "genre");
+  const featureGroups = FEATURE_GROUPS.filter(
+    (g) => g.group === "space" || g.group === "crowd"
+  );
+  const featureTags: string[] = [];
+  for (const g of featureGroups) {
+    const tags = getTagsByGroup(club.tags || [], g.group);
+    if (tags.length) featureTags.push(tags[0].label);
   }
 
-  const genreTags = getTagsByGroup(club.tags || [], "genre");
-  const crowdTags = getTagsByGroup(club.tags || [], "crowd");
-  const secondLine: string[] = [];
-  if (genreTags.length)
-    secondLine.push(genreTags.map((t) => `#${t.label}`).join(" "));
-  if (crowdTags.length) secondLine.push(crowdTags.map((t) => t.label).join("/"));
-  const hasMenu = !!club.drink_menu_url;
+  const metaLine = [
+    ...genres.slice(0, 2).map((g) => `#${g.label}`),
+    ...featureTags.slice(0, 1),
+  ].join(" · ");
 
   return (
-    <li>
-      <Link
-        href={`/clubs/${club.id}`}
-        className="block bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 hover:border-neutral-600 transition-colors"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1 space-y-1.5">
-            <h3 className="text-white font-bold truncate">{club.name}</h3>
-            {featureLine.length > 0 && (
-              <p className="text-[11px] text-neutral-400 truncate">
-                {featureLine.join(" · ")}
-              </p>
-            )}
-            {(secondLine.length > 0 || hasMenu) && (
-              <p className="text-[11px] text-neutral-500 truncate flex items-center gap-1.5">
-                {secondLine.join(" · ")}
-                {hasMenu && (
-                  <span className="inline-flex items-center gap-0.5 text-amber-400/80">
-                    <Wine className="w-3 h-3" />
-                    주대표
-                  </span>
-                )}
-              </p>
-            )}
+    <Link
+      href={`/clubs/${club.id}`}
+      className="flex-shrink-0 w-[152px] snap-start group"
+    >
+      <div className="relative w-[152px] h-[190px] rounded-2xl overflow-hidden bg-neutral-900">
+        {club.thumbnail_url ? (
+          <Image
+            src={club.thumbnail_url}
+            alt={club.name}
+            fill
+            sizes="152px"
+            className="object-cover group-active:scale-95 transition-transform"
+          />
+        ) : (
+          <ImageFallback name={club.name} />
+        )}
+        {club.drink_menu_url && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+            <Wine className="w-3 h-3 text-amber-400" />
+            <span className="text-[10px] font-bold text-amber-400">주대표</span>
           </div>
-        </div>
-      </Link>
-    </li>
+        )}
+        {/* 하단 그라데이션으로 텍스트 가독성 보강 */}
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent" />
+      </div>
+      <div className="mt-2 px-0.5">
+        <p className="text-white text-[14px] font-black truncate">
+          {club.name}
+        </p>
+        {metaLine && (
+          <p className="text-neutral-500 text-[11px] font-medium truncate mt-0.5">
+            {metaLine}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function ImageFallback({ name }: { name: string }) {
+  // 클럽명에서 첫 글자 + 이름 기반 색상 회전
+  const initial = name.trim().charAt(0);
+  // 이름 해시 → 0~3 인덱스
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash + name.charCodeAt(i)) % 4;
+  const gradients = [
+    "from-amber-900/40 via-neutral-900 to-black",
+    "from-purple-900/40 via-neutral-900 to-black",
+    "from-rose-900/40 via-neutral-900 to-black",
+    "from-emerald-900/40 via-neutral-900 to-black",
+  ];
+  return (
+    <div
+      className={`w-full h-full bg-gradient-to-br ${gradients[hash]} flex items-center justify-center`}
+    >
+      <span className="text-[40px] font-black text-white/40 select-none">
+        {initial}
+      </span>
+    </div>
   );
 }

@@ -2,8 +2,24 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, MapPin, ExternalLink, Instagram } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  ExternalLink,
+  Instagram,
+  Camera,
+  Loader2,
+  Globe2,
+  Sofa,
+  Users,
+  Ticket,
+  Music,
+  type LucideIcon,
+} from "lucide-react";
+import { uploadImage } from "@/lib/utils/upload";
+import { toast } from "sonner";
 import {
   Sheet,
   SheetContent,
@@ -13,6 +29,7 @@ import {
 import { AuctionList } from "@/components/auctions/AuctionList";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { DrinkMenuViewer } from "./DrinkMenuViewer";
+import { ClubProfileEditor } from "./ClubProfileEditor";
 import { FEATURE_GROUPS, getTagsByGroup } from "@/lib/clubs/tags";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
@@ -39,6 +56,47 @@ export function ClubDetailContent({
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [userBidMap, setUserBidMap] = useState<Map<string, number>>(new Map());
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(club.thumbnail_url);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [clubTags, setClubTags] = useState<string[]>(club.tags ?? []);
+  const isAdmin = user?.role === "admin";
+
+  const handleAdminThumbnailUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingThumbnail(true);
+    try {
+      const publicUrl = await uploadImage(file, `club-thumbnails/admin/${club.id}`, {
+        maxWidth: 1200,
+      });
+      if (!publicUrl) {
+        // uploadImage already toasts on failure
+        return;
+      }
+      const res = await fetch("/api/admin/clubs/update-thumbnail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clubId: club.id, thumbnailUrl: publicUrl }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        toast.error(json.error || "이미지 업데이트 실패");
+        return;
+      }
+      setThumbnailUrl(publicUrl);
+      toast.success(
+        `대표 이미지 변경됨 (게시글 ${json.cascadedAuctions ?? 0}건 반영)`
+      );
+    } catch (err) {
+      console.error("[admin thumbnail upload]", err);
+      toast.error("업로드 중 오류가 발생했습니다.");
+    } finally {
+      setUploadingThumbnail(false);
+      e.target.value = "";
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -83,56 +141,100 @@ export function ClubDetailContent({
     );
   }, [activeAuctions, blockedUserIds]);
 
-  return (
-    <div className="container mx-auto max-w-lg px-4 py-4 mb-20">
-      {/* 헤더 */}
-      <div className="flex items-center gap-3 mb-6">
-        <button
-          onClick={() => router.back()}
-          className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5 text-neutral-400" />
-        </button>
-        <h1 className="text-xl font-black text-white truncate flex-1">
-          {club.name}
-        </h1>
-        <FavoriteButton clubId={club.id} />
-      </div>
+  const flagHref = club.area
+    ? `/flags/new?area=${encodeURIComponent(club.area)}`
+    : "/flags/new";
+  const ctaHref = user ? flagHref : `/login?redirect=${encodeURIComponent(flagHref)}`;
 
+  return (
+    <div className="container mx-auto max-w-lg px-4 pt-4 pb-32">
       {/* 클럽 정보 카드 */}
       <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden mb-6">
-        {club.thumbnail_url && (
-          <div className="relative w-full h-[180px]">
-            <Image
-              src={club.thumbnail_url}
-              alt={club.name}
-              fill
-              className="object-cover"
+        <div className="relative w-full aspect-[4/3] bg-neutral-900">
+            {/* 이미지 위 플로팅: 뒤로가기 + 찜 */}
+            <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 pt-3 pointer-events-none">
+              <button
+                onClick={() => router.back()}
+                className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+              >
+                <ArrowLeft className="w-7 h-7 text-white" />
+              </button>
+              <div className="pointer-events-auto">
+                <FavoriteButton clubId={club.id} variant="overlay" />
+              </div>
+            </div>
+
+            {thumbnailUrl ? (
+              <Image
+                src={thumbnailUrl}
+                alt={club.name}
+                fill
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[12px]">
+                대표 이미지 없음
+              </div>
+            )}
+            {isAdmin && (
+              <label className="absolute bottom-2 right-2 cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingThumbnail}
+                  onChange={handleAdminThumbnailUpload}
+                />
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/70 backdrop-blur-sm text-white text-[11px] font-bold rounded-full hover:bg-black/90 transition-colors">
+                  {uploadingThumbnail ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      업로드 중...
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-3 h-3" />
+                      {thumbnailUrl ? "이미지 변경" : "이미지 추가"}
+                    </>
+                  )}
+                </span>
+              </label>
+            )}
+          </div>
+
+        <FeatureIconRow tags={clubTags} />
+
+        {isAdmin && (
+          <div className="px-4 pt-3">
+            <ClubProfileEditor
+              clubId={club.id}
+              initialTags={clubTags}
+              onSaved={setClubTags}
             />
           </div>
         )}
 
         <div className="p-4 space-y-2">
-          {club.area && (
-            <span className="text-[13px] text-neutral-400">
-              {club.area}
-            </span>
-          )}
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <h1 className="text-2xl font-black text-white tracking-tight">
+              {club.name}
+            </h1>
+            {club.area && (
+              <span className="text-[13px] text-neutral-400">
+                {club.area}
+              </span>
+            )}
+          </div>
 
-          {(club.address || club.name) && (
-            <div className="flex items-center gap-3 flex-wrap">
-              {club.address && (
-                <p className="text-[12px] text-neutral-500">{club.address}</p>
-              )}
-              <button
-                onClick={() => setIsMapOpen(true)}
-                className="flex items-center gap-1 text-[12px] text-neutral-400 hover:text-white transition-colors"
-              >
-                <MapPin className="w-3.5 h-3.5" />
-                지도에서 보기
-                <ExternalLink className="w-3 h-3" />
-              </button>
-            </div>
+          {club.address && (
+            <button
+              onClick={() => setIsMapOpen(true)}
+              className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-white transition-colors group w-full text-left"
+            >
+              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="truncate">{club.address}</span>
+              <ExternalLink className="w-3 h-3 flex-shrink-0 text-neutral-500 group-hover:text-white" />
+            </button>
           )}
 
           {club.instagram && (
@@ -147,41 +249,6 @@ export function ClubDetailContent({
             </a>
           )}
 
-          {(club.tags?.length ?? 0) > 0 && (
-            <div className="pt-2 mt-2 border-t border-neutral-800 space-y-1.5">
-              {FEATURE_GROUPS.map((g) => {
-                const tags = getTagsByGroup(club.tags || [], g.group);
-                if (tags.length === 0) return null;
-                return (
-                  <div
-                    key={g.group}
-                    className="flex items-center gap-2 text-[12px]"
-                  >
-                    <span className="text-neutral-500 w-14 flex-shrink-0">
-                      {g.emoji} {g.label}
-                    </span>
-                    <span className="text-neutral-200">
-                      {tags.map((t) => t.label).join(" · ")}
-                    </span>
-                  </div>
-                );
-              })}
-              {(() => {
-                const genres = getTagsByGroup(club.tags || [], "genre");
-                if (genres.length === 0) return null;
-                return (
-                  <div className="flex items-center gap-2 text-[12px]">
-                    <span className="text-neutral-500 w-14 flex-shrink-0">
-                      🎵 음악
-                    </span>
-                    <span className="text-neutral-200">
-                      {genres.map((t) => `#${t.label}`).join(" ")}
-                    </span>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
         </div>
 
         {club.drink_menu_url && (
@@ -201,6 +268,7 @@ export function ClubDetailContent({
         userBidMap={userBidMap}
         hideTabs
         hideAreaFilter
+        hideShareEmptyState
         initialTab="share"
       />
 
@@ -269,6 +337,73 @@ export function ClubDetailContent({
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* 플로팅 CTA - 깃발 꽂기 */}
+      <div
+        className="fixed left-0 right-0 z-40 px-4 pt-4 pb-3 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/95 to-transparent pointer-events-none"
+        style={{ bottom: user ? "60px" : 0 }}
+      >
+        <div className="max-w-lg mx-auto pointer-events-auto">
+          <Link
+            href={ctaHref}
+            className="flex items-center justify-center gap-2 w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
+          >
+            <span className="text-[18px]">⛳</span>
+            {club.area ? `${club.area}에서 놀고싶다면, 깃발 꽂기` : "깃발 꽂기"}
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const FEATURE_ICONS: Record<string, LucideIcon> = {
+  crowd: Globe2,
+  space: Sofa,
+  age: Users,
+  entry: Ticket,
+  genre: Music,
+};
+
+function FeatureIconRow({ tags }: { tags: string[] }) {
+  type Cell = { key: string; Icon: LucideIcon; value: string };
+  const cells: Cell[] = [];
+
+  for (const g of FEATURE_GROUPS) {
+    const groupTags = getTagsByGroup(tags, g.group);
+    if (groupTags.length === 0) continue;
+    const first = groupTags[0];
+    cells.push({
+      key: g.group,
+      Icon: FEATURE_ICONS[g.group] ?? Music,
+      value: first.shortLabel ?? first.label,
+    });
+  }
+  const genres = getTagsByGroup(tags, "genre");
+  if (genres.length > 0) {
+    const first = genres[0];
+    cells.push({
+      key: "genre",
+      Icon: Music,
+      value: first.shortLabel ?? first.label,
+    });
+  }
+
+  if (cells.length === 0) return null;
+
+  return (
+    <div className="border-t border-neutral-800 flex items-stretch divide-x divide-neutral-800">
+      {cells.map(({ key, Icon, value }) => (
+        <div
+          key={key}
+          className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-3 px-2"
+        >
+          <Icon className="w-5 h-5 text-white" strokeWidth={1.75} />
+          <span className="text-[11px] font-bold text-white truncate max-w-full">
+            {value}
+          </span>
+        </div>
+      ))}
     </div>
   );
 }

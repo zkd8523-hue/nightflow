@@ -8,6 +8,8 @@ export type ClubTagGroup =
 export interface ClubTagOption {
   key: string;
   label: string;
+  /** 좁은 공간에 표시할 때 사용 (예: 특징 아이콘 그리드). 미지정 시 label 사용 */
+  shortLabel?: string;
 }
 
 export interface ClubTagGroupDef {
@@ -39,8 +41,8 @@ export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
     emoji: "🌏",
     isFilter: false,
     options: [
-      { key: "local", label: "내국인 위주" },
-      { key: "foreign", label: "외국인 위주" },
+      { key: "local", label: "내국인 위주", shortLabel: "내국인" },
+      { key: "foreign", label: "외국인 위주", shortLabel: "외국인" },
       { key: "mixed", label: "믹스" },
     ],
   },
@@ -62,8 +64,8 @@ export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
     emoji: "👥",
     isFilter: false,
     options: [
-      { key: "early20s", label: "20대 초중반" },
-      { key: "late20s", label: "20대 후반~30대" },
+      { key: "early20s", label: "20대 초중반", shortLabel: "20초중" },
+      { key: "late20s", label: "20대 후반~30대", shortLabel: "20후반" },
       { key: "mixed", label: "믹스" },
     ],
   },
@@ -74,9 +76,9 @@ export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
     isFilter: false,
     options: [
       { key: "free", label: "무료" },
-      { key: "low", label: "1~2만원" },
-      { key: "mid", label: "2~3만원" },
-      { key: "high", label: "3만원+" },
+      { key: "low", label: "1~2만원", shortLabel: "1~2만" },
+      { key: "mid", label: "2~3만원", shortLabel: "2~3만" },
+      { key: "high", label: "3만원+", shortLabel: "3만+" },
     ],
   },
 ];

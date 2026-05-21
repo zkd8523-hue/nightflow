@@ -62,14 +62,11 @@ export default async function ClubsIndexPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8 mb-20">
-      <header className="mb-6 space-y-2">
-        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+    <div className="container mx-auto max-w-3xl px-4 pt-4 pb-8 mb-20">
+      <header className="mb-3">
+        <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">
           전국 클럽 가이드
         </h1>
-        <p className="text-sm text-neutral-400 leading-relaxed break-keep">
-          우리나라 클럽 정보를 한눈에.
-        </p>
       </header>
 
       <ClubList

@@ -5,12 +5,34 @@ import { useFavoritesContext } from "@/components/providers";
 
 interface FavoriteButtonProps {
   clubId: string;
+  /** "default": 작은 inline (28px). "overlay": 큰 hero overlay (36px) */
+  variant?: "default" | "overlay";
 }
 
-export function FavoriteButton({ clubId }: FavoriteButtonProps) {
+export function FavoriteButton({ clubId, variant = "default" }: FavoriteButtonProps) {
   const { isFavorited, toggleFavorite } = useFavoritesContext();
 
   const favorited = isFavorited(clubId);
+
+  if (variant === "overlay") {
+    return (
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleFavorite(clubId);
+        }}
+        className="w-12 h-12 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 active:bg-black/80 transition-colors"
+        title={favorited ? "찜 해제" : "클럽 찜하기"}
+      >
+        <Heart
+          className={`w-7 h-7 transition-colors ${
+            favorited ? "text-red-500 fill-red-500" : "text-white"
+          }`}
+        />
+      </button>
+    );
+  }
 
   return (
     <button
