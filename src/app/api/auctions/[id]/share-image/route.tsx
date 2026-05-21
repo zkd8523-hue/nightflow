@@ -1,9 +1,16 @@
 import { ImageResponse } from 'next/og';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { createClient } from '@supabase/supabase-js';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 
 export const runtime = 'edge';
+
+function createEdgeSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+}
 
 // Font loading helper
 async function loadFont() {
@@ -22,7 +29,7 @@ export async function GET(
   const format = searchParams.get('format');
 
   try {
-    const supabase = createAdminClient();
+    const supabase = createEdgeSupabase();
     const { data: auction, error } = await supabase
       .from('auctions')
       .select(`
@@ -37,8 +44,8 @@ export async function GET(
       .single();
 
     if (error || !auction) {
-      console.error('Auction fetch error:', error);
-      return new Response('Auction not found', { status: 404 });
+      console.error('Auction fetch error:', error, 'id:', id);
+      return new Response(`Auction not found: ${error?.message ?? 'no data'}`, { status: 404 });
     }
 
     const fontData = await loadFont();
