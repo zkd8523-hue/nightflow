@@ -13,7 +13,7 @@ import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { matchesArea } from "@/lib/utils/area";
-import { SlidersHorizontal, ChevronDown } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DateFilterCalendar } from "./filters/DateFilterCalendar";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
@@ -32,9 +32,9 @@ import {
 
 const SHARE_NBI_CHIPS: { value: NbiFilter; label: string }[] = [
   { value: "all", label: "전체" },
-  { value: "value", label: "가성비 ~9만" },
-  { value: "standard", label: "스탠다드 10~19만" },
-  { value: "premium", label: "프리미엄 20만+" },
+  { value: "value", label: "~9만" },
+  { value: "standard", label: "10~19만" },
+  { value: "premium", label: "20만+" },
 ];
 const SHARE_SEAT_CHIPS: { value: SeatFilter; label: string }[] = [
   { value: "all", label: "전체" },
@@ -44,7 +44,7 @@ const SHARE_SEAT_CHIPS: { value: SeatFilter; label: string }[] = [
 ];
 function ShareFilterRow({ label, chips, value, onChange }: { label: string; chips: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x">
+    <div data-no-pull-refresh className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x">
       <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">{label}</span>
       {chips.map((chip) => {
         const active = chip.value === value;
@@ -250,7 +250,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
     <div className="space-y-2.5">
       {!hideTabs && (
       <div className="flex items-center gap-2 px-1">
-        <div className="overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0 touch-pan-x">
+        <div data-no-pull-refresh className="overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0 touch-pan-x">
           <div className="flex gap-2 w-max pr-4 items-end">
             <button
               onClick={() => setTab("puzzle")}
@@ -283,26 +283,26 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 🔥 오늘특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
               </button>
             )}
-
-            {onShowGuide && (tab === "advance" || tab === "puzzle" || tab === "share") && (
-              <button
-                onClick={onShowGuide}
-                className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors flex-shrink-0 whitespace-nowrap px-1 pb-1"
-              >
-                <span className="text-[13px]">ⓘ</span>
-                {tab === "puzzle" ? "깃발 이용방법" : tab === "share" ? "조각 이용방법" : "얼리버드란?"}
-              </button>
-            )}
           </div>
         </div>
+        {onShowGuide && (tab === "advance" || tab === "puzzle" || tab === "share") && (
+          <button
+            onClick={onShowGuide}
+            aria-label={tab === "puzzle" ? "깃발 이용방법" : tab === "share" ? "조각 이용방법" : "얼리버드란?"}
+            className="flex items-center justify-center w-8 h-8 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors flex-shrink-0"
+          >
+            <span className="text-[16px] leading-none">ⓘ</span>
+          </button>
+        )}
       </div>
       )}
 
       {guideSlot}
 
-      <div className="flex items-center gap-2 mb-4 h-9">
+      <div className="flex items-center gap-2 mb-2 h-9">
           {!hideAreaFilter && (
           <div
+            data-no-pull-refresh
             className="overflow-x-auto scrollbar-hide touch-pan-x flex-1 min-w-0 h-9 flex items-center"
             style={{
               maskImage: "linear-gradient(to right, black calc(100% - 24px), transparent 100%)",
@@ -373,25 +373,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </div>
             </div>
           )}
-          {tab === "puzzle" && !hideTabs && (
-            <div className="flex-shrink-0 relative">
-              <select
-                value={puzzleSortMode}
-                onChange={(e) => setPuzzleSortMode(e.target.value as typeof puzzleSortMode)}
-                className={`appearance-none text-[11px] font-bold pl-3 pr-7 h-7 leading-none rounded-full transition-colors whitespace-nowrap cursor-pointer focus:outline-none box-border ${
-                  puzzleSortMode === "none"
-                    ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                    : "bg-amber-500 text-black"
-                }`}
-              >
-                <option value="none">정렬</option>
-                <option value="popular">인기순</option>
-                <option value="budget">예산순</option>
-                <option value="recent">최신순</option>
-              </select>
-              <ChevronDown className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 ${puzzleSortMode === "none" ? "text-neutral-400" : "text-black"}`} />
-            </div>
-          )}
+          {/* 정렬 select는 PuzzleList 내부 첫 헤더로 이동 (모바일 칩 row와 겹침 방지) */}
         </div>
 
       {tab === "puzzle" && <PuzzleSocialProofBanner />}
@@ -585,36 +567,21 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
       )}
 
       {tab === "share" && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* 헤더 + 필터 버튼 */}
           {shareAuctions.length > 0 && (
-            <div className="flex flex-col gap-1.5 px-1 py-1">
+            <div className="flex flex-col gap-1 px-1">
               <div className="flex items-center gap-2.5">
                 <span className="relative flex h-2.5 w-2.5 mt-[1px] flex-shrink-0">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 animate-ping" />
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
                 </span>
                 <span className="text-[16px] font-black text-white tracking-tight">모집 중인 조각</span>
-                <div className="flex-1 flex justify-end items-center gap-1.5">
-                  <button
-                    onClick={() => setShareSort(v => v === "seats" ? "deadline" : "seats")}
-                    className={`text-[11px] font-bold px-3 py-1 rounded-full transition-colors whitespace-nowrap ${shareSort === "seats" ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                    마감임박순
-                  </button>
-                  <button
-                    onClick={() => setShareFilterOpen(true)}
-                    aria-label="필터"
-                    className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors ${shareDateFilter !== "all" ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                    <SlidersHorizontal className="w-3.5 h-3.5" />
-                    {shareDateFilter !== "all" && (
-                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
-                    )}
-                  </button>
-                </div>
+                {/* 마감임박순·필터 버튼은 첫 날짜 헤더 우측으로 이동 */}
               </div>
               {/* N비 필터 + 내 조각 */}
               <div className="flex items-center gap-1.5 pb-0.5">
-                <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x flex-1 min-w-0">
+                <div data-no-pull-refresh className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x flex-1 min-w-0">
                   {SHARE_NBI_CHIPS.map(({ value, label }) => (
                     <button key={value}
                       onClick={() => setShareNbi(v => v === value ? "all" : value as NbiFilter)}
@@ -727,7 +694,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 }
                 return aItems[0].event_date.localeCompare(bItems[0].event_date);
               })
-              .map(([date, items]) => {
+              .map(([date, items], idx) => {
                 const d = new Date(date + "T00:00:00");
                 const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${["일","월","화","수","목","금","토"][d.getDay()]})`;
                 const dday = getDDayShare(date);
@@ -739,6 +706,26 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>
                         {dday}
                       </span>
+                      {idx === 0 && (
+                        <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+                          {/* 마감임박순 — 추후 복귀 가능, 현재 숨김
+                          <button
+                            onClick={() => setShareSort(v => v === "seats" ? "deadline" : "seats")}
+                            className={`text-[11px] font-bold px-3 py-1 rounded-full transition-colors whitespace-nowrap ${shareSort === "seats" ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                            마감임박순
+                          </button>
+                          */}
+                          <button
+                            onClick={() => setShareFilterOpen(true)}
+                            aria-label="필터"
+                            className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors ${shareDateFilter !== "all" ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                            <SlidersHorizontal className="w-3.5 h-3.5" />
+                            {shareDateFilter !== "all" && (
+                              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col gap-7">
                       {items.map(auction => (

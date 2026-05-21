@@ -27,9 +27,9 @@ import { getPuzzleGroupDeadline } from "@/lib/utils/format";
 
 const NBI_CHIPS: { value: NbiFilter; label: string }[] = [
   { value: "all", label: "전체" },
-  { value: "value", label: "가성비 ~9만" },
-  { value: "standard", label: "스탠다드 10~15만" },
-  { value: "premium", label: "프리미엄 15만+" },
+  { value: "value", label: "~9만" },
+  { value: "standard", label: "10~15만" },
+  { value: "premium", label: "15만+" },
 ];
 
 const SEAT_CHIPS: { value: SeatFilter; label: string }[] = [
@@ -51,7 +51,7 @@ function FilterRow({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x">
+    <div data-no-pull-refresh className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x">
       <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">{label}</span>
       {chips.map((chip) => {
         const active = chip.value === value;
@@ -214,6 +214,28 @@ export function PuzzleList({
 
   // 정렬 버튼 (빈 div — 헤더 레이아웃 유지용)
   const toggleButton = <div />;
+
+  // 첫 보이는 헤더 우측에 붙이는 정렬 select
+  // (모바일 칩 row와 겹침 방지 위해 헤더로 이동)
+  const sortSelectEl = onSortModeChange ? (
+    <div className="relative flex-shrink-0 ml-auto">
+      <select
+        value={externalSortMode}
+        onChange={(e) => onSortModeChange(e.target.value as "none" | "popular" | "budget" | "recent")}
+        className={`appearance-none text-[11px] font-bold pl-3 pr-7 h-7 leading-none rounded-full transition-colors whitespace-nowrap cursor-pointer focus:outline-none box-border ${
+          externalSortMode === "none"
+            ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+            : "bg-amber-500 text-black"
+        }`}
+      >
+        <option value="none">정렬</option>
+        <option value="popular">인기순</option>
+        <option value="budget">예산순</option>
+        <option value="recent">최신순</option>
+      </select>
+      <ChevronDown className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 ${externalSortMode === "none" ? "text-neutral-400" : "text-black"}`} />
+    </div>
+  ) : null;
 
   return (
     <div className="relative">
@@ -385,7 +407,7 @@ export function PuzzleList({
               const maxB = Math.max(...bItems.map(p => offerCounts[p.id] || 0));
               return maxB - maxA;
             })
-            .map(([date, items]) => {
+            .map(([date, items], idx) => {
               const getBudget = (p: Puzzle) => p.total_budget ?? (p.budget_per_person * p.target_count);
               const sorted = recentSort
                 ? [...items].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -402,6 +424,7 @@ export function PuzzleList({
                     <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
                     <h3 className="text-[16px] font-black text-white tracking-tight">{dateLabel}</h3>
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>{dday}</span>
+                    {idx === 0 && sortSelectEl}
                   </div>
                   {sorted.map((puzzle) => (
                     <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); }}>
@@ -450,7 +473,7 @@ export function PuzzleList({
                           {recentTitle}
                           {recentCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
                         </button>
-                        <div className="flex-1" />
+                        {sortSelectEl}
                       </div>
                       {recentDeadline && (
                         <p
@@ -537,7 +560,7 @@ export function PuzzleList({
                       >
                         {dday}
                       </span>
-                      {groupIdx === 0 && recentPuzzles.length === 0 && <div className="flex-1 flex justify-end">{null}</div>}
+                      {groupIdx === 0 && recentPuzzles.length === 0 && sortSelectEl}
                     </div>
                     {deadline && (
                       <p
