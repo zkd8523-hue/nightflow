@@ -25,7 +25,7 @@ export function ClubRequestCTA({ variant = "list-end", defaultArea }: ClubReques
     setError(null);
     startTransition(async () => {
       const res = await requestClub({ clubName, area: defaultArea ?? null, note });
-      if (!res.ok) {
+      if (res.ok === false) {
         setError(res.error);
         return;
       }
