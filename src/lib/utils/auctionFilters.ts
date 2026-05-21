@@ -43,6 +43,19 @@ export function matchesPrice(auction: Auction, [min, max]: [number, number]): bo
   return true;
 }
 
+export const DATE_RANGE_SEPARATOR = "..";
+
+export function formatDateRangeFilter(from: string, to: string): string {
+  return `${from}${DATE_RANGE_SEPARATOR}${to}`;
+}
+
+export function parseDateRangeFilter(filter: string): { from: string; to: string } | null {
+  if (!filter.includes(DATE_RANGE_SEPARATOR)) return null;
+  const [from, to] = filter.split(DATE_RANGE_SEPARATOR);
+  if (!from || !to) return null;
+  return { from, to };
+}
+
 export function matchesDate(auction: Auction, filter: DateFilter): boolean {
   if (filter === "all") return true;
   const date = dayjs(auction.event_date);
@@ -60,8 +73,18 @@ export function matchesDate(auction: Auction, filter: DateFilter): boolean {
       const sat = baseline.day(6).add(1, "week");
       return date.isSame(fri, "day") || date.isSame(sat, "day");
     }
-    default:
+    default: {
+      const range = parseDateRangeFilter(filter);
+      if (range) {
+        const from = dayjs(range.from);
+        const to = dayjs(range.to);
+        return (
+          (date.isSame(from, "day") || date.isAfter(from, "day")) &&
+          (date.isSame(to, "day") || date.isBefore(to, "day"))
+        );
+      }
       return date.format("YYYY-MM-DD") === filter;
+    }
   }
 }
 

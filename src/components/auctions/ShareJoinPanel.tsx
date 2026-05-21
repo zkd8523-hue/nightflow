@@ -196,7 +196,8 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
         has_kakao_url: !!data.kakao_open_chat_url,
         party_size: partySize,
       });
-    } catch {
+    } catch (err) {
+      console.error('[claim_share_seat] failed:', err);
       toast.error("네트워크 연결이 불안정합니다.");
       trackShareEvent('share_join_fail', { ...baseParams, error_code: 'NETWORK' });
     } finally {
@@ -222,7 +223,8 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
         club_id: auction.club_id,
         source: 'detail',
       });
-    } catch {
+    } catch (err) {
+      console.error('[cancel_share_claim] failed:', err);
       toast.error("네트워크 연결이 불안정합니다.");
     } finally {
       setCancelLoading(false);

@@ -9,6 +9,7 @@ import {
   CheckCircle,
   Flag,
   ShieldAlert,
+  Sparkles,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -141,6 +142,16 @@ export default async function AdminDashboardPage() {
     .eq("visit_result", "noshow")
     .is("strike_applied_at", null);
 
+  // 클럽 요청 (영업 리드) — 최근 7일
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [{ count: totalClubRequests }, { count: recentClubRequests }] = await Promise.all([
+    supabase.from("club_requests").select("id", { count: "exact", head: true }),
+    supabase
+      .from("club_requests")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", sevenDaysAgo),
+  ]);
+
   const stats = [
     {
       label: "전체 유저",
@@ -237,6 +248,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-red-500/10",
       badge: null,
       href: "/admin/abuse",
+    },
+    {
+      label: "클럽 요청 (영업 리드)",
+      value: `${totalClubRequests || 0}건`,
+      icon: Sparkles,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+      badge: recentClubRequests ? `최근 7일 ${recentClubRequests}건` : null,
+      href: "/admin/club-requests",
     },
   ];
 

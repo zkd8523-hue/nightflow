@@ -66,20 +66,27 @@ export function PuzzlePiece({
   const size = small ? "w-8 h-8" : "w-10 h-10";
   const iconSize = small ? "w-4 h-4" : "w-5 h-5";
   const isFemale = gender === 'female';
+  const isNeutral = gender == null;
 
   const filledClass = isFemale
     ? isLeader
       ? "bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.4)]"
       : "bg-pink-500/80"
-    : isLeader
-      ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
-      : "bg-blue-500/80";
+    : isNeutral
+      ? isLeader
+        ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]"
+        : "bg-green-500/80"
+      : isLeader
+        ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
+        : "bg-blue-500/80";
 
   const emptyClass = isFemale
     ? "bg-neutral-800/50 border border-dashed border-pink-500/40"
     : gender === 'male'
       ? "bg-neutral-800/50 border border-dashed border-blue-500/40"
-      : "bg-neutral-800/50 border border-dashed border-neutral-600";
+      : isNeutral
+        ? "bg-neutral-800/50 border border-dashed border-neutral-600"
+        : "bg-neutral-800/50 border border-dashed border-neutral-600";
 
   return (
     <div className={`relative ${size} rounded-lg flex items-center justify-center transition-all ${filled ? filledClass : emptyClass}`}>

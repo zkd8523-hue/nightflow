@@ -3,15 +3,20 @@
 import { useMemo } from "react";
 import dayjs from "dayjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { DateRange } from "react-day-picker";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { getClubEventDate } from "@/lib/utils/date";
-import { type DateFilter } from "@/lib/utils/auctionFilters";
+import { type DateFilter, parseDateRangeFilter, formatDateRangeFilter } from "@/lib/utils/auctionFilters";
 
 interface DateFilterCalendarProps {
   eventDates: string[]; // unique event_date 목록 (YYYY-MM-DD)
   value: DateFilter;
   onChange: (filter: DateFilter) => void;
+  /** 이 날짜 이후는 선택 불가 (YYYY-MM-DD). 미설정 시 무제한 */
+  maxDate?: string;
+  /** true: 시작일/종료일 두 번 클릭으로 범위 선택 */
+  rangeMode?: boolean;
 }
 
 const QUICK_CHIPS = ["this_weekend", "next_weekend"] as const;
@@ -20,9 +25,9 @@ const CHIP_LABELS: Record<string, string> = {
   next_weekend: "다음주(금/토)",
 };
 
-export function DateFilterCalendar({ eventDates, value, onChange }: DateFilterCalendarProps) {
+export function DateFilterCalendar({ eventDates, value, onChange, maxDate, rangeMode = false }: DateFilterCalendarProps) {
   const baseline = dayjs(getClubEventDate());
-  const eventDateSet = useMemo(() => new Set(eventDates), [eventDates]);
+  const maxDay = useMemo(() => (maxDate ? dayjs(maxDate) : null), [maxDate]);
 
   // 달력에 표시할 amber dot 날짜
   const auctionDates = useMemo(
@@ -54,11 +59,27 @@ export function DateFilterCalendar({ eventDates, value, onChange }: DateFilterCa
     if (
       value === "all" ||
       value === "this_weekend" ||
-      value === "next_weekend"
+      value === "next_weekend" ||
+      value.includes("..")
     )
       return undefined;
     return new Date(value + "T12:00:00");
   }, [value]);
+
+  // 범위 선택 (rangeMode)
+  const selectedRange = useMemo<DateRange | undefined>(() => {
+    if (!rangeMode) return undefined;
+    if (value === "all" || value === "this_weekend" || value === "next_weekend") return undefined;
+    const range = parseDateRangeFilter(value);
+    if (!range) {
+      // 단일 날짜를 from 만 채워서 표시
+      return { from: new Date(value + "T12:00:00"), to: undefined };
+    }
+    return {
+      from: new Date(range.from + "T12:00:00"),
+      to: new Date(range.to + "T12:00:00"),
+    };
+  }, [value, rangeMode]);
 
   // 달력 선택 → 특정 날짜 필터
   const handleDaySelect = (day: Date | undefined) => {
@@ -68,6 +89,21 @@ export function DateFilterCalendar({ eventDates, value, onChange }: DateFilterCa
     }
     const str = dayjs(day).format("YYYY-MM-DD");
     onChange(str === value ? "all" : str);
+  };
+
+  // 범위 선택 핸들러
+  const handleRangeSelect = (range: DateRange | undefined) => {
+    if (!range || !range.from) {
+      onChange("all");
+      return;
+    }
+    const fromStr = dayjs(range.from).format("YYYY-MM-DD");
+    if (!range.to) {
+      onChange(fromStr);
+      return;
+    }
+    const toStr = dayjs(range.to).format("YYYY-MM-DD");
+    onChange(fromStr === toStr ? fromStr : formatDateRangeFilter(fromStr, toStr));
   };
 
   return (
@@ -109,13 +145,74 @@ export function DateFilterCalendar({ eventDates, value, onChange }: DateFilterCa
       </div>
 
       {/* 달력 — 매물 있는 날 amber dot */}
+      {rangeMode ? (
+      <Calendar
+        mode="range"
+        selected={selectedRange}
+        onSelect={handleRangeSelect}
+        disabled={(day) =>
+          dayjs(day).isBefore(baseline, "day") ||
+          (!!maxDay && dayjs(day).isAfter(maxDay, "day"))
+        }
+        endMonth={maxDay ? maxDay.endOf("month").toDate() : undefined}
+        modifiers={{
+          past: (day) => dayjs(day).isBefore(baseline, "day"),
+          beyondMax: (day) => !!maxDay && dayjs(day).isAfter(maxDay, "day"),
+          hasAuction: auctionDates,
+          weekend: (day) => day.getDay() === 5 || day.getDay() === 6,
+          chipSelected: chipSelectedDates,
+          pendingStart: (day) =>
+            !!selectedRange?.from && !selectedRange?.to &&
+            dayjs(day).isSame(selectedRange.from, "day"),
+        }}
+        classNames={{
+          day: "w-10 h-10 p-0 text-center relative",
+          weekday: "text-neutral-500 font-bold text-[11px] w-10 text-center pb-1 uppercase [&:nth-child(6)]:text-red-400 [&:last-child]:text-red-400",
+        }}
+        modifiersClassNames={{
+          past: "opacity-15 pointer-events-none",
+          beyondMax: "opacity-15 pointer-events-none",
+          chipSelected: "[&>button]:bg-white [&>button]:text-black [&>button]:font-black",
+          weekend: "[&>button]:text-red-400",
+          range_start: "[&>button]:bg-white! [&>button]:text-black [&>button]:font-black [&>button]:rounded-r-none [&>button]:transition-none",
+          range_end: "[&>button]:bg-white! [&>button]:text-black [&>button]:font-black [&>button]:rounded-l-none [&>button]:transition-none",
+          range_middle: "[&>button]:bg-white/15! [&>button]:text-white [&>button]:rounded-none [&>button]:transition-none",
+          pendingStart: "[&>button]:bg-white! [&>button]:text-black [&>button]:font-black [&>button]:rounded-lg! [&>button]:transition-none",
+          today:
+            "before:content-['오늘'] before:absolute before:top-0.5 before:left-1/2 before:-translate-x-1/2 before:text-[7px] before:text-neutral-400 before:font-bold before:whitespace-nowrap before:leading-none",
+          hasAuction:
+            "after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-amber-500 after:rounded-full after:content-['']",
+        }}
+        components={{
+          Week: ({ week, children, ...props }) => {
+            const allPast = week.days.every((day) =>
+              dayjs(day.date).isBefore(baseline, "day")
+            );
+            const allBeyond = !!maxDay && week.days.every((day) =>
+              dayjs(day.date).isAfter(maxDay, "day")
+            );
+            if (allPast || allBeyond) return null;
+            return <tr {...props}>{children}</tr>;
+          },
+          Chevron: ({ orientation, className: cls, ...rest }) => {
+            const Icon = orientation === "left" ? ChevronLeft : ChevronRight;
+            return <Icon className={cn("w-4 h-4", cls)} {...rest} />;
+          },
+        }}
+      />
+      ) : (
       <Calendar
         mode="single"
         selected={selectedDate}
         onSelect={handleDaySelect}
-        disabled={(day) => dayjs(day).isBefore(baseline, "day")}
+        disabled={(day) =>
+          dayjs(day).isBefore(baseline, "day") ||
+          (!!maxDay && dayjs(day).isAfter(maxDay, "day"))
+        }
+        endMonth={maxDay ? maxDay.endOf("month").toDate() : undefined}
         modifiers={{
           past: (day) => dayjs(day).isBefore(baseline, "day"),
+          beyondMax: (day) => !!maxDay && dayjs(day).isAfter(maxDay, "day"),
           hasAuction: auctionDates,
           weekend: (day) => day.getDay() === 5 || day.getDay() === 6,
           chipSelected: chipSelectedDates,
@@ -126,6 +223,7 @@ export function DateFilterCalendar({ eventDates, value, onChange }: DateFilterCa
         }}
         modifiersClassNames={{
           past: "opacity-15 pointer-events-none",
+          beyondMax: "opacity-15 pointer-events-none",
           chipSelected: "[&>button]:bg-white [&>button]:text-black [&>button]:font-black",
           weekend: "[&>button]:text-red-400",
           selected:
@@ -140,7 +238,10 @@ export function DateFilterCalendar({ eventDates, value, onChange }: DateFilterCa
             const allPast = week.days.every((day) =>
               dayjs(day.date).isBefore(baseline, "day")
             );
-            if (allPast) return null;
+            const allBeyond = !!maxDay && week.days.every((day) =>
+              dayjs(day.date).isAfter(maxDay, "day")
+            );
+            if (allPast || allBeyond) return null;
             return <tr {...props}>{children}</tr>;
           },
           Chevron: ({ orientation, className: cls, ...rest }) => {
@@ -149,6 +250,7 @@ export function DateFilterCalendar({ eventDates, value, onChange }: DateFilterCa
           },
         }}
       />
+      )}
     </div>
   );
 }

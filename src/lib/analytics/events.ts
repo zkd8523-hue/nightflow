@@ -114,7 +114,8 @@ export const trackShareEvent = (
     | 'share_gender_gate_open'
     | 'share_gender_set'
     | 'share_kakao_open'
-    | 'share_full_reached',
+    | 'share_full_reached'
+    | 'share_card_share_click',
   params: {
     auction_id?: string;
     club_id?: string | null;

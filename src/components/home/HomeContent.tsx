@@ -196,7 +196,7 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
     note: "💰 제안 무료 · 매칭 시 직접 거래",
   },
   share: {
-    content: "올리면 저절로 모이는 조각 시스템.\n빈 자리를 조각으로 채워 매출을 높여요! 💰",
+    content: "1분만에 올리고, 최대 3주 동안 모으는 조각 시스템.\n링크 하나로 공유하고, 인원관리도 간단해요!",
     note: "🧩 수수료 0% · 현장 직접 수령",
   },
 };

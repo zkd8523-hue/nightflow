@@ -7,7 +7,7 @@ import type { Auction, Puzzle } from "@/types/database";
 import { AuctionCard } from "./AuctionCard";
 import { PuzzleSocialProofBanner } from "./PuzzleSocialProofBanner";
 import { PuzzleList } from "@/components/puzzles/PuzzleList";
-import { isAuctionActive, getEffectiveEndTime } from "@/lib/utils/auction";
+import { isAuctionActive, getEffectiveEndTime, SHARE_MAX_EVENT_DAYS_AHEAD } from "@/lib/utils/auction";
 import { getClubEventDate } from "@/lib/utils/date";
 import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
@@ -17,7 +17,7 @@ import { SlidersHorizontal, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DateFilterCalendar } from "./filters/DateFilterCalendar";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
-import { DateFilterChips } from "./filters/DateFilterChips";
+import { ClubRequestCTA } from "./ClubRequestCTA";
 import { type NbiFilter, type SeatFilter, NBI_BANDS } from "@/lib/utils/puzzleFilters";
 import {
   PRICE_MIN,
@@ -136,7 +136,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const [shareSort, setShareSort] = useState<"deadline" | "recent" | "seats">("deadline");
   const [shareNbi, setShareNbi] = useState<NbiFilter>("all");
   const [shareSeat, setShareSeat] = useState<SeatFilter>("all");
-  const [shareDateFilter, setShareDateFilter] = useState<string>("all");
+  const [shareDateFilter, setShareDateFilter] = useState<DateFilter>("all");
   const [shareFilterOpen, setShareFilterOpen] = useState(false);
   const [myShareOnly, setMyShareOnly] = useState(false);
 
@@ -151,7 +151,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
     if (shareSeat === "1" && seatsLeft !== 1) return false;
     if (shareSeat === "2" && seatsLeft !== 2) return false;
     if (shareSeat === "3+" && seatsLeft < 3) return false;
-    if (shareDateFilter !== "all" && a.event_date !== shareDateFilter) return false;
+    if (!matchesDate(a, shareDateFilter)) return false;
     return true;
   }), [shareAuctions, shareNbi, shareSeat, shareDateFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -493,6 +493,46 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         </SheetContent>
       </Sheet>
 
+      {/* 조각 필터 Sheet */}
+      <Sheet open={shareFilterOpen} onOpenChange={setShareFilterOpen}>
+        <SheetContent side="bottom" showCloseButton={false} className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
+          <SheetHeader className="pt-2 pb-4">
+            <SheetTitle className="text-white font-black text-lg text-left">필터</SheetTitle>
+          </SheetHeader>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <p className="text-[12px] font-bold text-neutral-400 px-1">날짜</p>
+              <DateFilterCalendar
+                eventDates={shareEventDates}
+                value={shareDateFilter}
+                onChange={setShareDateFilter}
+                maxDate={dayjs().add(SHARE_MAX_EVENT_DAYS_AHEAD, "day").format("YYYY-MM-DD")}
+                rangeMode
+              />
+            </div>
+            <div className="flex justify-end pt-1">
+              <button
+                onClick={() => setShareDateFilter("all")}
+                disabled={shareDateFilter === "all"}
+                className={`text-[12px] font-bold transition-colors ${
+                  shareDateFilter !== "all"
+                    ? "text-neutral-400 hover:text-white"
+                    : "text-transparent pointer-events-none"
+                }`}
+              >
+                초기화
+              </button>
+            </div>
+            <button
+              onClick={() => setShareFilterOpen(false)}
+              className="w-full h-16 bg-white text-black font-black text-[14px] rounded-2xl"
+            >
+              {filteredShareAuctions.length}건 보기
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {tab === "advance" && (
         <div className="space-y-3">
 
@@ -554,6 +594,22 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
                 </span>
                 <span className="text-[16px] font-black text-white tracking-tight">모집 중인 조각</span>
+                <div className="flex-1 flex justify-end items-center gap-1.5">
+                  <button
+                    onClick={() => setShareSort(v => v === "seats" ? "deadline" : "seats")}
+                    className={`text-[11px] font-bold px-3 py-1 rounded-full transition-colors whitespace-nowrap ${shareSort === "seats" ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                    마감임박순
+                  </button>
+                  <button
+                    onClick={() => setShareFilterOpen(true)}
+                    aria-label="필터"
+                    className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors ${shareDateFilter !== "all" ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                    <SlidersHorizontal className="w-3.5 h-3.5" />
+                    {shareDateFilter !== "all" && (
+                      <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
+                    )}
+                  </button>
+                </div>
               </div>
               {/* N비 필터 + 내 조각 */}
               <div className="flex items-center gap-1.5 pb-0.5">
@@ -619,10 +675,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               )}
             </div>
           ) : filteredShareAuctions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
+            <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
               <p className="text-neutral-400 text-sm font-medium">조건에 맞는 조각이 없어요</p>
               <button onClick={() => { setShareNbi("all"); setShareSeat("all"); setShareDateFilter("all"); }}
                 className="text-[12px] font-bold text-neutral-500 hover:text-white transition-colors">필터 초기화</button>
+              <div className="pt-2">
+                <ClubRequestCTA variant="empty" defaultArea={selectedArea ?? null} />
+              </div>
             </div>
           ) : (
             Object.entries(
@@ -651,7 +710,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 }
                 return aItems[0].event_date.localeCompare(bItems[0].event_date);
               })
-              .map(([date, items], groupIdx) => {
+              .map(([date, items]) => {
                 const d = new Date(date + "T00:00:00");
                 const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${["일","월","화","수","목","금","토"][d.getDay()]})`;
                 const dday = getDDayShare(date);
@@ -663,17 +722,6 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>
                         {dday}
                       </span>
-                      {groupIdx === 0 && (
-                        <div className="flex-1 flex justify-end items-center gap-1.5">
-                          {[{ key: "seats", label: "마감임박순" }, { key: "recent", label: "최신순" }].map(({ key, label }) => (
-                            <button key={key}
-                              onClick={() => setShareSort(v => v === key ? "deadline" : key as "seats" | "recent")}
-                              className={`text-[11px] font-bold px-3 py-1 rounded-full transition-colors whitespace-nowrap ${shareSort === key ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </div>
                     <div className="flex flex-col gap-7">
                       {items.map(auction => (
@@ -683,6 +731,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   </div>
                 );
               })
+          )}
+
+          {/* 리스트 끝: 클럽 요청 CTA — 영업 리드 수집 */}
+          {filteredShareAuctions.length > 0 && (
+            <div className="pt-2">
+              <ClubRequestCTA variant="list-end" defaultArea={selectedArea ?? null} />
+            </div>
           )}
 
         </div>
