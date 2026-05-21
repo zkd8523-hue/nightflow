@@ -32,6 +32,7 @@ dayjs.extend(relativeTime);
 dayjs.locale("ko");
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { LeaderInfoSheet } from "./LeaderInfoSheet";
+import { ContentMoreMenu } from "@/components/moderation/ContentMoreMenu";
 
 interface PuzzleLeaderInfo {
   id: string;
@@ -1185,6 +1186,20 @@ export function PuzzleDetailClient({
                 로그인하고 파티원 합류하기
               </Button>
             </Link>
+          )}
+
+          {/* 신고·차단 통합 메뉴 (Apple Guideline 1.2) */}
+          {currentUserId && currentUserId !== puzzle.leader_id && puzzle.leader_id && (
+            <div className="pt-4">
+              <ContentMoreMenu
+                contentType="puzzle"
+                contentId={puzzle.id}
+                targetUserId={puzzle.leader_id}
+                targetDisplayName={
+                  puzzle.leader?.display_name || puzzle.leader?.name || "방장"
+                }
+              />
+            </div>
           )}
         </div>
       </div>

@@ -326,16 +326,20 @@ export function HomeContent({
   // 사용자 오늘특가 관심 등록 상태
   const [userInterestedSet, setUserInterestedSet] = useState<Set<string>>(new Set());
 
-  // 유저 관심/입찰 병렬 fetch (Promise.all 로 RTT 절반 절감)
+  // 차단한 사용자 ID 집합 (Apple Guideline 1.2 — 차단 시 피드 즉시 제거)
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
+
+  // 유저 관심/입찰/차단 병렬 fetch (Promise.all 로 RTT 절감)
   useEffect(() => {
     if (!user) {
       setUserInterestedSet(new Set());
       setUserBidMap(new Map());
+      setBlockedUserIds(new Set());
       return;
     }
     const auctionIds = auctions.active.map(a => a.id);
     const fetchAll = async () => {
-      const [interestsResult, bidsResult] = await Promise.all([
+      const [interestsResult, bidsResult, blocksResult] = await Promise.all([
         supabase.from("chat_interests").select("auction_id").eq("user_id", user.id),
         auctionIds.length > 0
           ? supabase
@@ -345,6 +349,7 @@ export function HomeContent({
               .in("auction_id", auctionIds)
               .order("bid_amount", { ascending: false })
           : Promise.resolve({ data: [] as { auction_id: string; bid_amount: number }[] }),
+        supabase.from("user_blocks").select("blocked_id").eq("blocker_id", user.id),
       ]);
       if (interestsResult.data) {
         setUserInterestedSet(new Set(interestsResult.data.map((d: { auction_id: string }) => d.auction_id)));
@@ -356,9 +361,23 @@ export function HomeContent({
         }
         setUserBidMap(map);
       }
+      if (blocksResult.data) {
+        setBlockedUserIds(new Set(blocksResult.data.map((d: { blocked_id: string }) => d.blocked_id)));
+      }
     };
     fetchAll();
   }, [user, auctions.active, supabase]);
+
+  // 차단한 사용자의 경매/퍼즐 필터링
+  const visibleAuctions = useMemo(() => {
+    if (blockedUserIds.size === 0) return auctions.active;
+    return auctions.active.filter((a) => !a.md_id || !blockedUserIds.has(a.md_id));
+  }, [auctions.active, blockedUserIds]);
+
+  const visiblePuzzles = useMemo(() => {
+    if (blockedUserIds.size === 0) return puzzles;
+    return puzzles.filter((p) => !p.leader_id || !blockedUserIds.has(p.leader_id));
+  }, [puzzles, blockedUserIds]);
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
   useEffect(() => {
@@ -540,8 +559,8 @@ export function HomeContent({
           );
           return (
             <AuctionList
-              activeAuctions={auctions.active}
-              puzzles={puzzles}
+              activeAuctions={visibleAuctions}
+              puzzles={visiblePuzzles}
               puzzleOfferCounts={puzzleOfferCounts}
               selectedArea={selectedArea}
               onAreaChange={setSelectedArea}

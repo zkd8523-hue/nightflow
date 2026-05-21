@@ -10,6 +10,7 @@ import {
   Flag,
   ShieldAlert,
   Sparkles,
+  Ban,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -129,11 +130,18 @@ export default async function AdminDashboardPage() {
     }))
     .sort((a, b) => b.auctions - a.auctions);
 
-  // 신고 수 조회 (미처리만)
-  const { count: pendingReportCount } = await supabase
-    .from("auction_reports")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending");
+  // 신고 수 조회 (미처리만) — 경매 + 깃발 합산
+  const [{ count: pendingAuctionReportCount }, { count: pendingPuzzleReportCount }] = await Promise.all([
+    supabase
+      .from("auction_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    supabase
+      .from("puzzle_content_reports")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+  ]);
+  const pendingReportCount = (pendingAuctionReportCount || 0) + (pendingPuzzleReportCount || 0);
 
   // 연락 미수신 신고 큐 (visit_result=noshow, strike 미처리)
   const { count: pendingPuzzleNoshowCount } = await supabase
@@ -144,6 +152,7 @@ export default async function AdminDashboardPage() {
 
   // 클럽 요청 (영업 리드) — 최근 7일
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const [{ count: totalClubRequests }, { count: recentClubRequests }] = await Promise.all([
     supabase.from("club_requests").select("id", { count: "exact", head: true }),
     supabase
@@ -151,6 +160,27 @@ export default async function AdminDashboardPage() {
       .select("id", { count: "exact", head: true })
       .gte("created_at", sevenDaysAgo),
   ]);
+
+  // 사용자 차단 통계 (Apple Guideline 1.2 대응)
+  const [
+    { count: totalUserBlocks },
+    { count: recentUserBlocks },
+    { data: blockedTargets },
+  ] = await Promise.all([
+    supabase.from("user_blocks").select("id", { count: "exact", head: true }),
+    supabase
+      .from("user_blocks")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", oneDayAgo),
+    supabase.from("user_blocks").select("blocked_id"),
+  ]);
+
+  // 3회 이상 차단당한 사용자 수
+  const blockCountMap = new Map<string, number>();
+  (blockedTargets || []).forEach((b) => {
+    blockCountMap.set(b.blocked_id, (blockCountMap.get(b.blocked_id) || 0) + 1);
+  });
+  const dangerUserCount = Array.from(blockCountMap.values()).filter((c) => c >= 3).length;
 
   const stats = [
     {
@@ -206,11 +236,13 @@ export default async function AdminDashboardPage() {
     },
     {
       label: "미처리 신고",
-      value: `${pendingReportCount || 0}건`,
+      value: `${pendingReportCount}건`,
       icon: Flag,
       color: "text-orange-500",
       bgColor: "bg-orange-500/10",
-      badge: pendingReportCount ? `${pendingReportCount}건 대기` : null,
+      badge: pendingReportCount
+        ? `경매 ${pendingAuctionReportCount || 0} / 깃발 ${pendingPuzzleReportCount || 0}`
+        : null,
       href: "/admin/reports",
     },
     {
@@ -257,6 +289,19 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-amber-500/10",
       badge: recentClubRequests ? `최근 7일 ${recentClubRequests}건` : null,
       href: "/admin/club-requests",
+    },
+    {
+      label: "사용자 차단",
+      value: `${totalUserBlocks || 0}건`,
+      icon: Ban,
+      color: dangerUserCount > 0 ? "text-red-500" : "text-neutral-400",
+      bgColor: dangerUserCount > 0 ? "bg-red-500/10" : "bg-neutral-500/10",
+      badge: dangerUserCount > 0
+        ? `⚠ 3회+ ${dangerUserCount}명`
+        : recentUserBlocks
+        ? `24h ${recentUserBlocks}건`
+        : null,
+      href: "/admin/user-blocks",
     },
   ];
 

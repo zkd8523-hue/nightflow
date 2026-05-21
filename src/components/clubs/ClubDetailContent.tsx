@@ -38,29 +38,50 @@ export function ClubDetailContent({
 
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [userBidMap, setUserBidMap] = useState<Map<string, number>>(new Map());
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!user || activeAuctions.length === 0) {
+    if (!user) {
       setUserBidMap(new Map());
+      setBlockedUserIds(new Set());
       return;
     }
-    const fetchUserBids = async () => {
-      const { data } = await supabase
-        .from("bids")
-        .select("auction_id, bid_amount")
-        .eq("bidder_id", user.id)
-        .in("auction_id", activeAuctions.map((a) => a.id))
-        .order("bid_amount", { ascending: false });
-      if (data) {
+    const fetchAll = async () => {
+      const auctionIds = activeAuctions.map((a) => a.id);
+      const [bidsResult, blocksResult] = await Promise.all([
+        auctionIds.length > 0
+          ? supabase
+              .from("bids")
+              .select("auction_id, bid_amount")
+              .eq("bidder_id", user.id)
+              .in("auction_id", auctionIds)
+              .order("bid_amount", { ascending: false })
+          : Promise.resolve({ data: [] as { auction_id: string; bid_amount: number }[] }),
+        supabase.from("user_blocks").select("blocked_id").eq("blocker_id", user.id),
+      ]);
+      if (bidsResult.data) {
         const map = new Map<string, number>();
-        for (const bid of data) {
+        for (const bid of bidsResult.data) {
           if (!map.has(bid.auction_id)) map.set(bid.auction_id, bid.bid_amount);
         }
         setUserBidMap(map);
       }
+      if (blocksResult.data) {
+        setBlockedUserIds(
+          new Set(blocksResult.data.map((d: { blocked_id: string }) => d.blocked_id))
+        );
+      }
     };
-    fetchUserBids();
+    fetchAll();
   }, [user, activeAuctions, supabase]);
+
+  // 차단한 MD의 매물 숨김 (Apple Guideline 1.2 일관성)
+  const visibleAuctions = useMemo(() => {
+    if (blockedUserIds.size === 0) return activeAuctions;
+    return activeAuctions.filter(
+      (a) => !a.md_id || !blockedUserIds.has(a.md_id)
+    );
+  }, [activeAuctions, blockedUserIds]);
 
   return (
     <div className="container mx-auto max-w-lg px-4 py-4 mb-20">
@@ -176,7 +197,7 @@ export function ClubDetailContent({
 
       {/* 경매 목록 */}
       <AuctionList
-        activeAuctions={activeAuctions}
+        activeAuctions={visibleAuctions}
         userBidMap={userBidMap}
         hideTabs
         hideAreaFilter

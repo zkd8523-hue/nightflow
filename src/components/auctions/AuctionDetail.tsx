@@ -33,7 +33,7 @@ import { useFavoritesContext } from "@/components/providers";
 import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { ShareAuctionSheet } from "./ShareAuctionSheet";
-import { ReportAuctionButton } from "./ReportAuctionButton";
+import { ContentMoreMenu } from "@/components/moderation/ContentMoreMenu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
 import { TableDetailsCard } from "./TableDetailsCard";
@@ -755,9 +755,14 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
 
 
-        {/* 게시글 신고 */}
-        {user && !isMdOwner && (
-          <ReportAuctionButton auctionId={displayAuction.id} />
+        {/* 신고·차단 통합 메뉴 */}
+        {user && !isMdOwner && md?.id && (
+          <ContentMoreMenu
+            contentType="auction"
+            contentId={displayAuction.id}
+            targetUserId={md.id}
+            targetDisplayName={md.display_name || md.name || "MD"}
+          />
         )}
 
       </div>
