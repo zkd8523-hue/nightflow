@@ -66,7 +66,7 @@ export function ShareSuccessSheet({
         tableInfo,
         startPrice,
         auctionUrl,
-        thumbnailUrl: thumbnailUrl || shareImageUrl,
+        thumbnailUrl: (thumbnailUrl?.startsWith("http") ? thumbnailUrl : undefined) || shareImageUrl,
         listingType: listingType || "auction",
         isFromMD: true,
         area: areaName,

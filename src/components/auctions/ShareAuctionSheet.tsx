@@ -41,6 +41,13 @@ export function ShareAuctionSheet({
   const tableInfo = auction.table_info || "";
   const isShareListing = auction.listing_type === "share";
 
+  // Kakao 크롤러는 절대 https URL만 fetch 가능 — 상대경로/빈값 거르기
+  const validateAbsoluteUrl = (url?: string | null): string | undefined => {
+    if (!url) return undefined;
+    if (url.startsWith("https://") || url.startsWith("http://")) return url;
+    return undefined;
+  };
+
   // 이미지 Blob prefetch (User Gesture 만료 방지)
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
   const blobUrlRef = useRef<string | null>(null);
@@ -89,7 +96,7 @@ export function ShareAuctionSheet({
         tableInfo,
         startPrice: auction.listing_type === "share" ? (auction.price_per_seat ?? 0) : auction.start_price,
         auctionUrl,
-        thumbnailUrl: auction.thumbnail_url || club?.thumbnail_url || shareImageUrl,
+        thumbnailUrl: validateAbsoluteUrl(auction.thumbnail_url) || validateAbsoluteUrl(club?.thumbnail_url) || shareImageUrl,
         listingType: auction.listing_type || "auction",
         isFromMD,
         eventDate: auction.event_date,
