@@ -1,8 +1,10 @@
 /* eslint-disable react/no-unescaped-entities */
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { BackButton } from "@/components/ui/BackButton";
+import { AgreeBackButton } from "@/components/ui/AgreeBackButton";
 
 export const metadata: Metadata = {
   title: "개인정보처리방침",
@@ -16,11 +18,7 @@ export default function PrivacyPage() {
         <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-start pt-20 px-4 pb-20">
             <div className="max-w-3xl w-full space-y-8">
                 <div className="flex items-center gap-4 mb-8">
-                    <Link href="/">
-                        <Button variant="ghost" size="icon" className="rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400">
-                            <ArrowLeft className="w-5 h-5" />
-                        </Button>
-                    </Link>
+                    <BackButton />
                     <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
                         <ShieldCheck className="w-6 h-6 text-green-500" />
                         개인정보처리방침
@@ -336,7 +334,11 @@ export default function PrivacyPage() {
 
                 </div>
 
-                <div className="text-center pt-8">
+                <div className="pt-6">
+                    <AgreeBackButton kind="privacy" />
+                </div>
+
+                <div className="text-center">
                     <Link href="/">
                         <Button variant="link" className="text-neutral-500 hover:text-white transition-colors">
                             홈으로 돌아가기

@@ -15,6 +15,9 @@ const config: CapacitorConfig = {
       'ihqztsakxczzsxfvdkpq.supabase.co',
     ],
   },
+  ios: {
+    overScrollEnabled: false,
+  },
   plugins: {
     SplashScreen: {
       launchShowDuration: 1500,

@@ -376,7 +376,7 @@ function LoginContent() {
             </>
           ) : (
             <>
-              {isIOSNative && (
+              {(isIOSNative || isTestLoginEnabled) && (
                 <Button
                   onClick={() => handleAppleLogin()}
                   disabled={loading}

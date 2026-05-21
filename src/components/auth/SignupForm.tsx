@@ -91,9 +91,15 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [step, setStep] = useState<Step>("agree");
 
   const [agreeAll, setAgreeAll] = useState(false);
-  const [agreeAge, setAgreeAge] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(false);
-  const [agreePrivacy, setAgreePrivacy] = useState(false);
+  const [agreeAge, setAgreeAge] = useState(() =>
+    typeof window !== "undefined" && sessionStorage.getItem("nightflow_step1_age") === "1"
+  );
+  const [agreeTerms, setAgreeTerms] = useState(() =>
+    typeof window !== "undefined" && sessionStorage.getItem("nightflow_step1_terms") === "1"
+  );
+  const [agreePrivacy, setAgreePrivacy] = useState(() =>
+    typeof window !== "undefined" && sessionStorage.getItem("nightflow_step1_privacy") === "1"
+  );
   const [agreeMarketing, setAgreeMarketing] = useState(false);
 
   const [phoneInput, setPhoneInput] = useState("");
@@ -209,6 +215,40 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   useEffect(() => {
     setAgreeAll(agreeAge && agreeTerms && agreePrivacy && agreeMarketing);
   }, [agreeAge, agreeTerms, agreePrivacy, agreeMarketing]);
+
+  // 약관 페이지에서 "동의하고 돌아가기" 후 체크박스 자동 동기화
+  useEffect(() => {
+    const checkStorage = () => {
+      if (sessionStorage.getItem("nightflow_agreed_terms") === "1") {
+        setAgreeTerms(true);
+        sessionStorage.removeItem("nightflow_agreed_terms");
+      }
+      if (sessionStorage.getItem("nightflow_agreed_privacy") === "1") {
+        setAgreePrivacy(true);
+        sessionStorage.removeItem("nightflow_agreed_privacy");
+      }
+    };
+    checkStorage();
+    document.addEventListener("visibilitychange", checkStorage);
+    window.addEventListener("pageshow", checkStorage);
+    window.addEventListener("focus", checkStorage);
+    return () => {
+      document.removeEventListener("visibilitychange", checkStorage);
+      window.removeEventListener("pageshow", checkStorage);
+      window.removeEventListener("focus", checkStorage);
+    };
+  }, []);
+
+  // 체크박스 state → sessionStorage 동기화 (페이지 이동 후 remount 시 복원용)
+  useEffect(() => {
+    sessionStorage.setItem("nightflow_step1_age", agreeAge ? "1" : "0");
+  }, [agreeAge]);
+  useEffect(() => {
+    sessionStorage.setItem("nightflow_step1_terms", agreeTerms ? "1" : "0");
+  }, [agreeTerms]);
+  useEffect(() => {
+    sessionStorage.setItem("nightflow_step1_privacy", agreePrivacy ? "1" : "0");
+  }, [agreePrivacy]);
 
   const handleAgreeNext = () => {
     if (!requiredMet) return;
@@ -429,6 +469,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         marketing_consent: agreeMarketing,
       });
       completedRef.current = true;
+      // 가입 완료 후 step1 임시 state 정리
+      ["nightflow_step1_age", "nightflow_step1_terms", "nightflow_step1_privacy",
+       "nightflow_agreed_terms", "nightflow_agreed_privacy"].forEach((k) =>
+        sessionStorage.removeItem(k)
+      );
       toast.success(`어서오세요, ${displayName}님!`);
       // 하드 리다이렉트 — 세션 쿠키 새로 로드 + 뒤로가기로 /signup 재진입 시 또 가입되는 것 차단
       window.location.replace(redirectAfterSignup);
@@ -507,7 +552,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                     </span>
                   </span>
                   {href && (
-                    <Link href={href} target="_blank" className="text-neutral-500 hover:text-neutral-300 transition-colors">
+                    <Link href={href} className="text-neutral-500 hover:text-neutral-300 transition-colors">
                       <ChevronRight className="w-4 h-4" />
                     </Link>
                   )}
