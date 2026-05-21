@@ -85,9 +85,11 @@ interface AuctionListProps {
   guideSlot?: React.ReactNode;
   hideTabs?: boolean;
   hideAreaFilter?: boolean;
+  /** 조각 빈 상태(빈 리스트일 때 CTA) 숨김 — 클럽 상세 페이지 등 임베드 시 사용 */
+  hideShareEmptyState?: boolean;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, currentUserId, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot, hideTabs, hideAreaFilter }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, currentUserId, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot, hideTabs, hideAreaFilter, hideShareEmptyState }: AuctionListProps) {
   // Realtime 입찰 burst 시 필터 깜빡임 방지: deferred render
   const deferredAuctions = useDeferredValue(initialAuctions);
 
@@ -603,6 +605,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
           {/* 날짜별 그룹 */}
           {shareAuctions.length === 0 ? (
+            hideShareEmptyState ? null : (
             <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
               <p className="text-4xl">🧩</p>
               {userRole && ["md", "admin"].includes(userRole) ? (
@@ -642,6 +645,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 </>
               )}
             </div>
+            )
           ) : filteredShareAuctions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
               <p className="text-neutral-400 text-sm font-medium">
@@ -737,8 +741,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               })
           )}
 
-          {/* 리스트 끝: 유저는 깃발 꽂기 유도, MD는 기존 클럽 요청 */}
-          {filteredShareAuctions.length > 0 && (
+          {/* 리스트 끝: 유저는 깃발 꽂기 유도, MD는 기존 클럽 요청 (클럽 상세에서는 floating CTA가 대체) */}
+          {filteredShareAuctions.length > 0 && !hideShareEmptyState && (
             <div className="pt-2">
               {userRole === "md" ? (
                 <ClubRequestCTA variant="list-end" defaultArea={selectedArea ?? null} />

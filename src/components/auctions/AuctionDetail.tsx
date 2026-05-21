@@ -344,7 +344,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             {(isMdOwner || isAdmin) && (
               <Link
                 href={`/md/auctions/${displayAuction.id}/edit`}
-                className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
               >
                 <Edit2 className="w-4 h-4 text-white" />
               </Link>
@@ -352,21 +352,33 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             {canDelete && (
               <button
                 onClick={() => setDeleteSheetOpen(true)}
-                className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
               >
                 <Trash2 className="w-4 h-4 text-red-400" />
               </button>
             )}
             <button
               onClick={() => toggleFavorite(displayAuction.club_id)}
-              className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
               title={isFavorited(displayAuction.club_id) ? "찜 해제" : "클럽 찜하기"}
             >
               <Heart className={`w-5 h-5 transition-colors ${isFavorited(displayAuction.club_id) ? "text-red-500 fill-red-500" : "text-white"}`} />
             </button>
+            {club && (
+              <a
+                href={`https://map.naver.com/p/search/${encodeURIComponent(`${club.name} ${club.address ?? ""}`.trim())}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`${club.name} 네이버 지도로 보기`}
+                title="네이버 지도"
+                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+              >
+                <MapPin className="w-5 h-5 text-white" />
+              </a>
+            )}
             <button
               onClick={() => setShareSheetOpen(true)}
-              className="w-10 h-10 -m-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
+              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center active:scale-[0.92] transition-transform"
             >
               <Share2 className="w-5 h-5 text-white" />
             </button>

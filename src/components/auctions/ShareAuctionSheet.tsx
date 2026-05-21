@@ -175,15 +175,16 @@ export function ShareAuctionSheet({
       handler: handleKakaoShare,
       available: true,
     },
-    {
-      id: "instagram",
-      label: "인스타",
-      icon: Instagram,
-      iconColor: "text-pink-400",
-      bgColor: "bg-pink-500/10 border-pink-500/20",
-      handler: handleInstagramShare,
-      available: true,
-    },
+    // 인스타 공유는 현재 숨김 (UX 단순화) — 복귀 시 아래 블록 복원
+    // {
+    //   id: "instagram",
+    //   label: "인스타",
+    //   icon: Instagram,
+    //   iconColor: "text-pink-400",
+    //   bgColor: "bg-pink-500/10 border-pink-500/20",
+    //   handler: handleInstagramShare,
+    //   available: true,
+    // },
     {
       id: "link",
       label: "링크 복사",
