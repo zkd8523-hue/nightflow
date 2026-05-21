@@ -89,7 +89,7 @@ export function ShareAuctionSheet({
         tableInfo,
         startPrice: auction.listing_type === "share" ? (auction.price_per_seat ?? 0) : auction.start_price,
         auctionUrl,
-        thumbnailUrl: auction.thumbnail_url || club?.thumbnail_url || undefined,
+        thumbnailUrl: auction.thumbnail_url || club?.thumbnail_url || shareImageUrl,
         listingType: auction.listing_type || "auction",
         isFromMD,
         eventDate: auction.event_date,

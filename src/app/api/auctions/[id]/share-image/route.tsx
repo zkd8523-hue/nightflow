@@ -204,7 +204,7 @@ export async function GET(
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', display: 'flex' }}>시작가</div>
                   <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#4ADE80', display: 'flex' }}>
-                    ₩{auction.start_price.toLocaleString()}
+                    ₩{(auction.listing_type === 'share' ? (auction.price_per_seat ?? 0) : (auction.start_price ?? 0)).toLocaleString()}
                   </div>
                 </div>
                 <div
@@ -392,7 +392,7 @@ export async function GET(
                       display: 'flex',
                     }}
                   >
-                    ₩{auction.start_price.toLocaleString()}
+                    ₩{(auction.listing_type === 'share' ? (auction.price_per_seat ?? 0) : (auction.start_price ?? 0)).toLocaleString()}
                   </div>
                 </div>
                 <div style={{ marginBottom: '14px', fontSize: '24px', fontWeight: 'bold', color: 'rgba(255,255,255,0.4)', display: 'flex' }}>

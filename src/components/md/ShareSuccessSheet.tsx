@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Drawer,
@@ -11,9 +11,9 @@ import {
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { PartyPopper, MessageCircle, Instagram, Link2, Share2, ArrowRight, RotateCcw, Camera } from "lucide-react";
+import { PartyPopper, MessageCircle, Instagram, Link2, Share2, ArrowRight, RotateCcw } from "lucide-react";
 
-import { shareAuction, shareToInstagram, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
+import { shareAuction, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { useReferralCode } from "@/hooks/useReferralCode";
 
@@ -50,36 +50,6 @@ export function ShareSuccessSheet({
   const referralCode = useReferralCode();
   const [sharing, setSharing] = useState<string | null>(null);
 
-  // User Gesture 만료 방어: 마운트 즉시 이미지 prefetch → Blob state 보관
-  const [imageBlob, setImageBlob] = useState<Blob | null>(null);
-  const blobUrlRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!isOpen || !auctionId) return;
-
-    let cancelled = false;
-    const fetchImage = async () => {
-      try {
-        const res = await fetch(`/api/auctions/${auctionId}/share-image`);
-        if (!res.ok) return;
-        const blob = await res.blob();
-        if (cancelled) return;
-        setImageBlob(blob);
-        blobUrlRef.current = URL.createObjectURL(blob);
-      } catch {
-        // 이미지 로딩 실패 시 무시 — 공유는 텍스트 fallback으로 가능
-      }
-    };
-    fetchImage();
-
-    return () => {
-      cancelled = true;
-      if (blobUrlRef.current) {
-        URL.revokeObjectURL(blobUrlRef.current);
-      }
-    };
-  }, [isOpen, auctionId]);
-
   const auctionUrl = typeof window !== "undefined"
     ? appendReferralCode(`${window.location.origin}/auctions/${auctionId}`, referralCode)
     : "";
@@ -96,7 +66,7 @@ export function ShareSuccessSheet({
         tableInfo,
         startPrice,
         auctionUrl,
-        thumbnailUrl,
+        thumbnailUrl: thumbnailUrl || shareImageUrl,
         listingType: listingType || "auction",
         isFromMD: true,
         area: areaName,
@@ -113,7 +83,20 @@ export function ShareSuccessSheet({
   const handleInstagramShare = async () => {
     setSharing("instagram");
     try {
-      await shareToInstagram(auctionId, imageBlob, clubName, auctionUrl, referralCode);
+      const copied = await copyAuctionLink(auctionId, referralCode);
+      const isMobile =
+        typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+      if (isMobile) {
+        window.location.href = "instagram://story-camera";
+        setTimeout(() => {
+          window.open("https://www.instagram.com/", "_blank");
+        }, 600);
+      } else {
+        window.open("https://www.instagram.com/", "_blank");
+      }
+      if (!copied) {
+        toast.error("링크 복사에 실패했어요. 직접 복사해주세요");
+      }
     } finally {
       setSharing(null);
     }
@@ -144,10 +127,6 @@ export function ShareSuccessSheet({
     }
   };
 
-  const handleStoryCard = () => {
-    router.push(`/share/auction/${auctionId}/story`);
-  };
-
   const handleGoToDashboard = () => {
     onOpenChange(false);
     router.push("/md/dashboard");
@@ -161,15 +140,6 @@ export function ShareSuccessSheet({
   };
 
   const shareOptions = [
-    {
-      id: "story",
-      label: "스토리 카드",
-      icon: Camera,
-      iconColor: "text-pink-400",
-      bgColor: "bg-pink-500/10 border-pink-500/20",
-      handler: handleStoryCard,
-      available: true,
-    },
     {
       id: "kakao",
       label: "카카오톡",
