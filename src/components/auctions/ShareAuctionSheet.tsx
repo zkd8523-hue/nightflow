@@ -211,11 +211,13 @@ export function ShareAuctionSheet({
       <DrawerContent className="bg-[#1C1C1E] border-neutral-800 outline-none px-6 pb-10">
         <DrawerHeader className="text-center pt-4 pb-0">
           <DrawerTitle className="text-white font-black text-lg tracking-tight">
-            {auction.listing_type === "share" ? "같이 갈 친구 데려오기" : "이 경매를 공유하세요"}
+            {isShareListing
+              ? (isFromMD ? "내 조각 홍보하기" : "같이 갈 친구 데려오기")
+              : "이 경매를 공유하세요"}
           </DrawerTitle>
           <DrawerDescription className="text-neutral-500 text-[13px] font-medium">
-            {auction.listing_type === "share"
-              ? "카톡·링크 누르면 바로 복사돼요"
+            {isShareListing
+              ? "버튼을 누르면 링크·메시지가 복사돼요"
               : `${clubName} · ${tableInfo} · ${formatEventDate(auction.event_date)} ${formatEntryTime(auction.entry_time, auction.event_date)}`}
           </DrawerDescription>
         </DrawerHeader>
