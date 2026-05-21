@@ -281,48 +281,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
           <span className="text-sm text-neutral-500">/ 1인</span>
         </div>
 
-        {/* 인원 세팅 (미참여 + 모집중) */}
-        {!hasClaim && isOpen && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-neutral-300">함께 갈 인원</span>
-              <span className="text-[11px] text-neutral-500">본인 포함 · 최대 {Math.min(3, seatsLeft)}명</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[1, 2, 3].map((n) => {
-                const disabled = n > seatsLeft;
-                const active = partySize === n;
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => setPartySize(n)}
-                    className={`h-11 rounded-xl border text-sm font-bold transition-all ${
-                      disabled
-                        ? "bg-neutral-900 border-neutral-800 text-neutral-700 cursor-not-allowed"
-                        : active
-                          ? "bg-white border-white text-black"
-                          : "bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-neutral-500"
-                    }`}
-                  >
-                    {n}명
-                  </button>
-                );
-              })}
-            </div>
-            {partySize > 1 && (
-              <div className="flex items-center justify-between text-[12px] text-neutral-400 px-1">
-                <span>합계 ({partySize}명)</span>
-                <span className="text-white font-bold">
-                  {formatNumber((auction.price_per_seat ?? 0) * partySize)}원
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* CTA */}
+        {/* CTA + 인원 세팅 */}
         {hasClaim ? (
           <div className="space-y-2">
             <Button
@@ -342,27 +301,51 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
               참여 취소
             </Button>
           </div>
+        ) : isOpen && !isFull ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-neutral-300">함께 갈 인원</span>
+              <span className="text-[11px] text-neutral-500">본인 포함 · 최대 {Math.min(3, seatsLeft)}명</span>
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1 grid grid-cols-3 gap-1">
+                {[1, 2, 3].map((n) => {
+                  const disabled = n > seatsLeft;
+                  const active = partySize === n;
+                  return (
+                    <button
+                      key={n}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => setPartySize(n)}
+                      className={`h-12 rounded-2xl border text-sm font-bold transition-all ${
+                        disabled
+                          ? "bg-neutral-900 border-neutral-800 text-neutral-700 cursor-not-allowed"
+                          : active
+                            ? "bg-white border-white text-black"
+                            : "bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-neutral-500"
+                      }`}
+                    >
+                      {n}명
+                    </button>
+                  );
+                })}
+              </div>
+              <Button
+                className="flex-1 h-12 rounded-2xl font-bold text-base bg-white text-black hover:bg-neutral-100 transition-all"
+                disabled={loading}
+                onClick={handleJoin}
+              >
+                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "참여하기"}
+              </Button>
+            </div>
+          </div>
         ) : (
           <Button
-            className={`w-full h-12 rounded-2xl font-bold text-base transition-all ${
-              isFull
-                ? "bg-neutral-800 text-neutral-500 cursor-not-allowed"
-                : !isOpen
-                  ? "bg-neutral-800 text-neutral-500 cursor-not-allowed"
-                  : "bg-white text-black hover:bg-neutral-100"
-            }`}
-            disabled={!isOpen || loading}
-            onClick={handleJoin}
+            className="w-full h-12 rounded-2xl font-bold text-base bg-neutral-800 text-neutral-500 cursor-not-allowed transition-all"
+            disabled
           >
-            {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : isFull ? (
-              "마감"
-            ) : !isOpen ? (
-              "참여 불가"
-            ) : (
-              "참여하기"
-            )}
+            {isFull ? "마감" : "참여 불가"}
           </Button>
         )}
 
