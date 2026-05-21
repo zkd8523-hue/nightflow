@@ -9,7 +9,7 @@ import { formatNumber, formatTime, formatCountdown, formatCountdownLong, categor
 import { useState, useCallback } from "react";
 import { updateShareAttendees } from "@/app/actions/share-attendees";
 import { toast } from "sonner";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { ShareAuctionSheet } from "@/components/auctions/ShareAuctionSheet";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { useCountdown } from "@/hooks/useCountdown";
 import { URGENCY_STYLES } from "@/lib/constants/timer-urgency";
@@ -27,136 +27,6 @@ interface AuctionCardProps {
   isUserInterested?: boolean;
   priority?: boolean;
   currentUserId?: string;
-}
-
-function copyToClipboardWithFallback(value: string): Promise<boolean> {
-  return new Promise(async (resolve) => {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(value);
-        resolve(true);
-        return;
-      }
-    } catch {
-      /* fallthrough */
-    }
-    try {
-      const el = document.createElement("textarea");
-      el.value = value;
-      el.setAttribute("readonly", "");
-      el.style.position = "fixed";
-      el.style.top = "-1000px";
-      el.style.opacity = "0";
-      document.body.appendChild(el);
-      el.focus();
-      el.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(el);
-      resolve(ok);
-    } catch {
-      resolve(false);
-    }
-  });
-}
-
-function ShareSheet({
-  open,
-  onOpenChange,
-  url,
-  title,
-  text,
-}: {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
-  url: string;
-  title: string;
-  text: string;
-}) {
-  const isMobile =
-    typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
-
-  const shareInstagram = async () => {
-    const copied = await copyToClipboardWithFallback(url);
-    if (isMobile) {
-      window.location.href = "instagram://direct-inbox";
-      setTimeout(() => {
-        window.open("https://www.instagram.com/direct/inbox/", "_blank");
-      }, 600);
-    } else {
-      window.open("https://www.instagram.com/direct/inbox/", "_blank");
-    }
-    toast.success(copied ? "링크 복사됨! 인스타에 붙여넣기 하세요" : "인스타가 열렸어요. 링크를 직접 복사해주세요");
-    onOpenChange(false);
-  };
-
-  const shareKakao = async () => {
-    const copied = await copyToClipboardWithFallback(`${title}\n${text}\n${url}`);
-    // 카톡 친구목록(공유 채팅창 선택)으로 이동: kakaotalk:// 스킴
-    if (isMobile) {
-      window.location.href = "kakaotalk://inappbrowser";
-      setTimeout(() => {
-        window.open("https://accounts.kakao.com", "_blank");
-      }, 600);
-    } else {
-      window.open("https://web.whale.naver.com/static/talk/index.html", "_blank");
-    }
-    toast.success(copied ? "내용 복사됨! 카톡에 붙여넣기 하세요" : "카톡이 열렸어요. 링크를 직접 복사해주세요");
-    onOpenChange(false);
-  };
-
-  const shareCopy = async () => {
-    const copied = await copyToClipboardWithFallback(url);
-    toast[copied ? "success" : "error"](
-      copied ? "링크가 복사됐어요" : "복사에 실패했어요. 주소창에서 직접 복사해주세요."
-    );
-    onOpenChange(false);
-  };
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        showCloseButton={false}
-        className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10 pt-4"
-      >
-        <SheetHeader className="p-0 mb-4">
-          <div className="w-10 h-1 bg-neutral-700 rounded-full mx-auto mb-3" />
-          <SheetTitle className="text-white text-base font-black text-center">
-            내 테이블 공유하기
-          </SheetTitle>
-          <SheetDescription className="text-neutral-400 text-[12px] text-center">
-            어디로 공유할까요?
-          </SheetDescription>
-        </SheetHeader>
-        <div className="grid grid-cols-3 gap-3 max-w-sm mx-auto">
-          <button
-            type="button"
-            onClick={shareInstagram}
-            className="flex flex-col items-center gap-2 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 transition-colors active:scale-[0.97]"
-          >
-            <span className="text-2xl">📷</span>
-            <span className="text-[12px] font-bold text-white">인스타</span>
-          </button>
-          <button
-            type="button"
-            onClick={shareKakao}
-            className="flex flex-col items-center gap-2 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 transition-colors active:scale-[0.97]"
-          >
-            <span className="text-2xl">💬</span>
-            <span className="text-[12px] font-bold text-white">카카오톡</span>
-          </button>
-          <button
-            type="button"
-            onClick={shareCopy}
-            className="flex flex-col items-center gap-2 py-3 rounded-2xl bg-neutral-900 hover:bg-neutral-800 transition-colors active:scale-[0.97]"
-          >
-            <span className="text-2xl">🔗</span>
-            <span className="text-[12px] font-bold text-white">링크 복사</span>
-          </button>
-        </div>
-      </SheetContent>
-    </Sheet>
-  );
 }
 
 export const AuctionCard = memo(function AuctionCard({ auction: propAuction, userBidAmount, isUserInterested, priority, currentUserId }: AuctionCardProps) {
@@ -495,12 +365,10 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
         </div>
       </Link>
       {isOwner && (
-        <ShareSheet
-          open={shareSheetOpen}
+        <ShareAuctionSheet
+          isOpen={shareSheetOpen}
           onOpenChange={setShareSheetOpen}
-          url={`${typeof window !== "undefined" ? window.location.origin : ""}/auctions/${auction.id}`}
-          title={`${club?.name ?? "조각"} ${club?.area ?? ""}`.trim()}
-          text={`1인 ${(auction.price_per_seat ?? 0).toLocaleString()}원 · 조각 모집 중`}
+          auction={auction}
         />
       )}
       </>
