@@ -55,7 +55,7 @@ export function ShareSuccessSheet({
     : "";
 
   const shareImageUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/api/auctions/${auctionId}/share-image`
+    ? `${window.location.origin}/api/auctions/${auctionId}/share-image?format=kakao`
     : "";
 
   const handleKakaoShare = async () => {

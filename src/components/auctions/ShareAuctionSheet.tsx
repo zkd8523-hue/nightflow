@@ -78,7 +78,7 @@ export function ShareAuctionSheet({
 
   const shareImageUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/api/auctions/${auction.id}/share-image`
+      ? `${window.location.origin}/api/auctions/${auction.id}/share-image?format=kakao`
       : "";
 
   const handleKakaoShare = async () => {
