@@ -15,9 +15,8 @@ const config: CapacitorConfig = {
       'ihqztsakxczzsxfvdkpq.supabase.co',
     ],
   },
-  ios: {
-    overScrollEnabled: false,
-  },
+  // ios overscroll bounce 방지는 globals.css의 overscroll-behavior + PullToRefresh JS 처리로 제어
+  // (Capacitor config에 native overscroll 직접 옵션 없음 — overScrollEnabled는 Android 전용)
   plugins: {
     SplashScreen: {
       launchShowDuration: 1500,
