@@ -676,11 +676,27 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             </div>
           ) : filteredShareAuctions.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-              <p className="text-neutral-400 text-sm font-medium">조건에 맞는 조각이 없어요</p>
+              <p className="text-neutral-400 text-sm font-medium">
+                {userRole === "md" ? "아직 올라온 조각이 없어요" : "조건에 맞는 조각이 없어요"}
+              </p>
               <button onClick={() => { setShareNbi("all"); setShareSeat("all"); setShareDateFilter("all"); }}
                 className="text-[12px] font-bold text-neutral-500 hover:text-white transition-colors">필터 초기화</button>
               <div className="pt-2">
-                <ClubRequestCTA variant="empty" defaultArea={selectedArea ?? null} />
+                {userRole === "md" ? (
+                  <div className="flex flex-col items-center gap-2">
+                    <p className="text-[12px] text-neutral-500 font-medium">
+                      지금 선점하면 손님이 제일 먼저 봐요
+                    </p>
+                    <Link
+                      href="/md/auctions/new"
+                      className="inline-flex items-center gap-1.5 h-11 px-5 bg-amber-500 text-black font-black text-[13px] rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98]"
+                    >
+                      🧩 내 조각 먼저 올리기
+                    </Link>
+                  </div>
+                ) : (
+                  <ClubRequestCTA variant="empty" defaultArea={selectedArea ?? null} />
+                )}
               </div>
             </div>
           ) : (
