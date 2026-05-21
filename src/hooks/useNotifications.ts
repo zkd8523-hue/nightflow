@@ -96,6 +96,28 @@ export function useNotifications(userId: string | undefined) {
                       }
                     : undefined,
                 });
+              } else if (
+                newNotification.type === "admin_puzzle_expired" ||
+                newNotification.type === "admin_puzzle_cancelled" ||
+                newNotification.type === "admin_match_expired" ||
+                newNotification.type === "admin_match_cancelled"
+              ) {
+                if (typeof navigator !== "undefined" && navigator.vibrate) {
+                  navigator.vibrate([200, 100, 200]);
+                }
+                toast.warning(newNotification.title, {
+                  description: newNotification.message,
+                  duration: 8000,
+                  position: "top-center",
+                  action: newNotification.action_url
+                    ? {
+                        label: "확인하기",
+                        onClick: () => {
+                          window.location.href = newNotification.action_url!;
+                        },
+                      }
+                    : undefined,
+                });
               }
             });
           }
