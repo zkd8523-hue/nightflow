@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/drawer";
 import { MessageCircle, Users, Link2, Share2, Camera } from "lucide-react";
 
-import { shareAuction, shareToInstagram, shareInvite, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
+import { shareAuction, copyAuctionLink, appendReferralCode } from "@/lib/utils/share";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { useReferralCode } from "@/hooks/useReferralCode";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -39,6 +39,7 @@ export function ShareAuctionSheet({
   const club = auction.club;
   const clubName = club?.name || "클럽";
   const tableInfo = auction.table_info || "";
+  const isShareListing = auction.listing_type === "share";
 
   // 이미지 Blob prefetch (User Gesture 만료 방지)
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
@@ -102,18 +103,19 @@ export function ShareAuctionSheet({
   const handleInstagramShare = async () => {
     setSharing("instagram");
     try {
-      if (isFromMD) {
-        // MD: 화려한 스토리 포스터 홍보
-        await shareToInstagram(auction.id, imageBlob, clubName, auctionUrl, referralCode);
+      const copied = await copyAuctionLink(auction.id, referralCode);
+      const isMobile =
+        typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+      if (isMobile) {
+        window.location.href = "instagram://story-camera";
+        setTimeout(() => {
+          window.open("https://www.instagram.com/", "_blank");
+        }, 600);
       } else {
-        // 유저: OS 공유 시트로 친구 초대
-        await shareInvite({
-          auctionId: auction.id,
-          clubName,
-          tableInfo,
-          eventDate: auction.event_date,
-          referralCode,
-        });
+        window.open("https://www.instagram.com/", "_blank");
+      }
+      if (!copied) {
+        // 토스트는 copyAuctionLink 내부에서 처리됨
       }
     } finally {
       setSharing(null);
@@ -150,7 +152,6 @@ export function ShareAuctionSheet({
     router.push(`/share/auction/${auction.id}/story`);
   };
 
-  const isShareListing = auction.listing_type === "share";
   const shareOptions = [
     {
       id: "story",
@@ -172,12 +173,12 @@ export function ShareAuctionSheet({
     },
     {
       id: "instagram",
-      label: isFromMD ? "스토리 홍보" : "공유하기",
+      label: isFromMD && !isShareListing ? "스토리 홍보" : "인스타",
       icon: Users,
       iconColor: "text-pink-400",
       bgColor: "bg-pink-500/10 border-pink-500/20",
       handler: handleInstagramShare,
-      available: !isShareListing,
+      available: true,
     },
     {
       id: "link",
