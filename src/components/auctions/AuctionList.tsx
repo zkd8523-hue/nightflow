@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { DateFilterCalendar } from "./filters/DateFilterCalendar";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
 import { ClubRequestCTA } from "./ClubRequestCTA";
+import { FlagPlantCTA } from "./FlagPlantCTA";
 import { type NbiFilter, type SeatFilter, NBI_BANDS } from "@/lib/utils/puzzleFilters";
 import {
   PRICE_MIN,
@@ -695,7 +696,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                     </Link>
                   </div>
                 ) : (
-                  <ClubRequestCTA variant="empty" defaultArea={selectedArea ?? null} />
+                  <FlagPlantCTA variant="empty" isLoggedIn={!!currentUserId} />
                 )}
               </div>
             </div>
@@ -749,10 +750,14 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               })
           )}
 
-          {/* 리스트 끝: 클럽 요청 CTA — 영업 리드 수집 */}
+          {/* 리스트 끝: 유저는 깃발 꽂기 유도, MD는 기존 클럽 요청 */}
           {filteredShareAuctions.length > 0 && (
             <div className="pt-2">
-              <ClubRequestCTA variant="list-end" defaultArea={selectedArea ?? null} />
+              {userRole === "md" ? (
+                <ClubRequestCTA variant="list-end" defaultArea={selectedArea ?? null} />
+              ) : (
+                <FlagPlantCTA variant="list-end" isLoggedIn={!!currentUserId} />
+              )}
             </div>
           )}
 

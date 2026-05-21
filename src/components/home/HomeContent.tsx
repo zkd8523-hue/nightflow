@@ -70,7 +70,7 @@ const PUZZLE_ONBOARDING_STEPS = [
   },
   {
     title: "2. 시크릿 오퍼 받기",
-    desc: "오퍼는 오직 방장만 볼 수 있어요 → MD들 눈치 0%, 진짜 경쟁\n클럽명·조건을 보고 베스트 픽!",
+    desc: "선택한 지역의 클럽·MD들이\n맞춤 패키지를 제안해요!",
     icon: <span className="text-[20px]">📨</span>,
     color: "bg-emerald-500/10",
   },
@@ -196,7 +196,12 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
     note: "💰 제안 무료 · 매칭 시 직접 거래",
   },
   share: {
-    content: "1분만에 올리고, 최대 3주 동안 모으는 조각 시스템.\n링크 하나로 공유하고, 인원관리도 간단해요!",
+    content: (
+      <>
+        <div className="text-white">다음 3주까지, 조각을 미리 올려보세요!</div>
+        <div className="text-[15.5px] text-white">링크 하나로 공유하고, 인원관리도 초간단!</div>
+      </>
+    ),
     note: "🧩 수수료 0% · 현장 직접 수령",
   },
 };
@@ -425,16 +430,17 @@ export function HomeContent({
           // MD 전용 puzzle tip: 본 카피 + "(시크릿오퍼란?)" 버튼
           const mdPuzzleTipContent = (
             <>
-              유저들의 예산이 기다리고 있어요 💰
-              <br />
-              시크릿 오퍼로 매출을 올려봐요!{" "}
-              <button
-                type="button"
-                onClick={handleToggleSecretOffer}
-                className="inline-flex items-center text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors ml-1 align-baseline"
-              >
-                (시크릿오퍼란?)
-              </button>
+              <div>유저들의 예산이 기다리고 있어요 💰</div>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-[15.5px]">시크릿 오퍼로 매출을 올려봐요!</span>
+                <button
+                  type="button"
+                  onClick={handleToggleSecretOffer}
+                  className="shrink-0 text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors"
+                >
+                  (시크릿오퍼란?)
+                </button>
+              </div>
             </>
           );
           const userPuzzleTipContent = (
@@ -556,18 +562,22 @@ export function HomeContent({
         })()}
 
 
-        {!user && !isLoading && auctions.active.length > 0 && !(currentTab === "puzzle" && puzzles.length === 0) && (
-          <div className="text-center py-6 space-y-3">
+        {!user && !isLoading && auctions.active.length > 0 && !(currentTab === "puzzle" && puzzles.length === 0) && currentTab !== "share" && (
+          <div className="text-center -mt-20 pb-3 space-y-1">
             <p className="text-[12px] text-neutral-500">
               {currentTab === "puzzle"
-                ? "3초만에 로그인하고 깃발꽂기"
-                : currentTab === "share"
-                ? "3초만에 로그인하고 조각잡기"
+                ? "다음 주말, 어디갈지 정했어?"
                 : "3초만에 로그인하고 입찰하기"}
             </p>
-            <Link href="/login">
-              <Button className="h-10 px-8 bg-white text-black font-bold text-sm rounded-full hover:bg-neutral-200">
-                로그인
+            <Link href={currentTab === "puzzle" ? "/login?redirect=/flags/new" : "/login"}>
+              <Button
+                className={
+                  currentTab === "puzzle"
+                    ? "h-10 px-8 bg-amber-500 text-black font-bold text-sm rounded-full hover:bg-amber-400"
+                    : "h-10 px-8 bg-white text-black font-bold text-sm rounded-full hover:bg-neutral-200"
+                }
+              >
+                {currentTab === "puzzle" ? "⛳ 나도 깃발꽂기" : "로그인"}
               </Button>
             </Link>
           </div>

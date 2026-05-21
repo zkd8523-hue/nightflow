@@ -415,7 +415,7 @@ export function PuzzleList({
             })}
         </div>
       ) : (
-        <div className="space-y-12 pb-24">
+        <div className="space-y-8 pb-24">
           {/* 🆕 방금 올라온 퍼즐/깃발 — 상단 별도 섹션 */}
           {(() => {
             // 베타 기간 한정 12h (정상 등록량 도달 시 6h로 환원)
@@ -501,7 +501,7 @@ export function PuzzleList({
                   )}
                   </div>
                 )}
-                <div className="-mt-3">
+                <div className="-mt-3 space-y-12">
                 {Object.entries(
                   rest.reduce((groups, puzzle) => {
                     const date = puzzle.event_date;

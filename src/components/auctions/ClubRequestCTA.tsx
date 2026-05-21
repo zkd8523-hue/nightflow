@@ -9,7 +9,7 @@ import { Sparkles } from "lucide-react";
 import { requestClub } from "@/app/actions/club-requests";
 
 interface ClubRequestCTAProps {
-  variant?: "list-end" | "empty";
+  variant?: "list-end" | "empty" | "text-link";
   defaultArea?: string | null;
 }
 
@@ -40,7 +40,11 @@ export function ClubRequestCTA({ variant = "list-end", defaultArea }: ClubReques
   };
 
   const triggerNode =
-    variant === "empty" ? (
+    variant === "text-link" ? (
+      <button className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors underline underline-offset-2">
+        원하는 클럽 입점 요청하기
+      </button>
+    ) : variant === "empty" ? (
       <button className="inline-flex items-center gap-1.5 h-11 px-5 bg-amber-500 text-black font-black text-[13px] rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98]">
         <Sparkles className="w-4 h-4" />
         원하는 클럽 요청하기
