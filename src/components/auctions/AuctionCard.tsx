@@ -242,7 +242,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                         : "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
                     }`}
                   >
-                    {isShareFull ? "마감" : "참여하기"}
+                    {isShareFull ? "마감" : "자세히 보기"}
                   </Button>
                 )}
               </div>
@@ -516,7 +516,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                         : "bg-white text-black hover:bg-neutral-100"
                   }`}
                 >
-                  {isShareFull ? "마감" : "참여하기"}
+                  {isShareFull ? "마감" : "자세히 보기"}
                 </Button>
             </div>
           </div>

@@ -285,6 +285,11 @@ export interface Club {
   // Migration 203: 공식 인스타그램 핸들 (https://instagram.com/{handle})
   instagram: string | null;
 
+  // Migration 208: 클럽지도 필터/특징 태그 + 주대표
+  tags: string[];  // prefix-grouped: 'genre:hiphop', 'crowd:foreign', etc.
+  drink_menu_url: string | null;
+  drink_menu_updated_at: string | null;
+
   /** Migration 174~182: 조인해서 가져올 때만 채워짐. 멀티 MD 표시 및 상세 정보용. */
   partners?: Array<{
     md_id: string;
@@ -791,7 +796,8 @@ export type ShareClaimError =
   | "CLAIM_NOT_FOUND"
   | "NOT_OWNER"
   | "NEGATIVE_NOT_ALLOWED"
-  | "EXCEEDS_TOTAL_SEATS";
+  | "EXCEEDS_TOTAL_SEATS"
+  | "INVALID_PARTY_SIZE";
 
 export interface AuctionTemplate {
   id: string;

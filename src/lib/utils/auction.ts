@@ -19,6 +19,7 @@ export const EARLYBIRD_END_HOUR_KST = 21;
 export const EARLYBIRD_MIN_BUFFER_DAYS = 1;
 export const EARLYBIRD_MAX_DAYS_BEFORE = 3;
 export const EARLYBIRD_MAX_EVENT_DAYS_AHEAD = 14;
+export const SHARE_MAX_EVENT_DAYS_AHEAD = 21;
 export const CONTACT_TIMER_MINUTES = 60;
 const KST = "Asia/Seoul";
 
@@ -96,6 +97,17 @@ export function isEventDateWithinWindow(eventDate: string): boolean {
   const event = dayjs.tz(eventDate, KST).startOf("day");
   const daysAhead = event.diff(today, "day");
   return daysAhead >= 0 && daysAhead <= EARLYBIRD_MAX_EVENT_DAYS_AHEAD;
+}
+
+/**
+ * 조각(share) 방문일이 등록 허용 범위 내인지 검증
+ * - 오늘부터 SHARE_MAX_EVENT_DAYS_AHEAD 이내 (KST 기준)
+ */
+export function isShareEventDateWithinWindow(eventDate: string): boolean {
+  const today = dayjs().tz(KST).startOf("day");
+  const event = dayjs.tz(eventDate, KST).startOf("day");
+  const daysAhead = event.diff(today, "day");
+  return daysAhead >= 0 && daysAhead <= SHARE_MAX_EVENT_DAYS_AHEAD;
 }
 
 /**

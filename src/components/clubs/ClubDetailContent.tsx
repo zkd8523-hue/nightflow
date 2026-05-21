@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/sheet";
 import { AuctionList } from "@/components/auctions/AuctionList";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
+import { DrinkMenuViewer } from "./DrinkMenuViewer";
+import { FEATURE_GROUPS, getTagsByGroup } from "@/lib/clubs/tags";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction } from "@/types/database";
@@ -123,7 +125,53 @@ export function ClubDetailContent({
               @{club.instagram}
             </a>
           )}
+
+          {(club.tags?.length ?? 0) > 0 && (
+            <div className="pt-2 mt-2 border-t border-neutral-800 space-y-1.5">
+              {FEATURE_GROUPS.map((g) => {
+                const tags = getTagsByGroup(club.tags || [], g.group);
+                if (tags.length === 0) return null;
+                return (
+                  <div
+                    key={g.group}
+                    className="flex items-center gap-2 text-[12px]"
+                  >
+                    <span className="text-neutral-500 w-14 flex-shrink-0">
+                      {g.emoji} {g.label}
+                    </span>
+                    <span className="text-neutral-200">
+                      {tags.map((t) => t.label).join(" · ")}
+                    </span>
+                  </div>
+                );
+              })}
+              {(() => {
+                const genres = getTagsByGroup(club.tags || [], "genre");
+                if (genres.length === 0) return null;
+                return (
+                  <div className="flex items-center gap-2 text-[12px]">
+                    <span className="text-neutral-500 w-14 flex-shrink-0">
+                      🎵 음악
+                    </span>
+                    <span className="text-neutral-200">
+                      {genres.map((t) => `#${t.label}`).join(" ")}
+                    </span>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </div>
+
+        {club.drink_menu_url && (
+          <div className="p-4 pt-0">
+            <DrinkMenuViewer
+              url={club.drink_menu_url}
+              updatedAt={club.drink_menu_updated_at}
+              clubName={club.name}
+            />
+          </div>
+        )}
       </div>
 
       {/* 경매 목록 */}

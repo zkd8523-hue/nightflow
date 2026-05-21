@@ -177,9 +177,8 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
   share: {
     content: (
       <>
-        MD가 미리 세팅한 테이블에 <span className="text-green-400">조각</span>으로 참여해요!
-        <br />
-        인원이 다 모이면 바로 입장 가능해요.
+        <div className="text-white">조각, 이제 당일에 구하지 마세요!</div>
+        <div className="text-[15.5px] text-white">3주까지 넉넉하게, 일행까지 간단하게!</div>
       </>
     ),
   },

@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { MergeClubDialog } from "@/components/admin/MergeClubDialog";
 import Link from "next/link";
+import { CLUB_TAG_GROUPS, makeTag } from "@/lib/clubs/tags";
+import { Wine } from "lucide-react";
 
 const AddressSearchModal = dynamic(
   () => import("@/components/md/AddressSearchModal").then((m) => ({ default: m.AddressSearchModal })),
@@ -75,6 +77,10 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
   const [renameLat, setRenameLat] = useState<number | null>(null);
   const [renameLng, setRenameLng] = useState<number | null>(null);
   const [renameInstagram, setRenameInstagram] = useState("");
+  const [renameTags, setRenameTags] = useState<string[]>([]);
+  const [renameDrinkMenuUrl, setRenameDrinkMenuUrl] = useState<string | null>(null);
+  const [renameDrinkMenuUpdatedAt, setRenameDrinkMenuUpdatedAt] = useState<string | null>(null);
+  const [drinkMenuUploading, setDrinkMenuUploading] = useState(false);
   const [addressSearchOpen, setAddressSearchOpen] = useState(false);
   const [renameSaving, setRenameSaving] = useState(false);
 
@@ -96,6 +102,42 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
     setRenameLat(club.latitude ?? null);
     setRenameLng(club.longitude ?? null);
     setRenameInstagram(club.instagram ?? "");
+    setRenameTags(club.tags ?? []);
+    setRenameDrinkMenuUrl(club.drink_menu_url ?? null);
+    setRenameDrinkMenuUpdatedAt(club.drink_menu_updated_at ?? null);
+  };
+
+  const toggleTag = (tag: string) => {
+    setRenameTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  const handleDrinkMenuUpload = async (file: File) => {
+    if (!renameTarget) return;
+    setDrinkMenuUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${renameTarget.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("club-menus")
+        .upload(path, file, { cacheControl: "3600", upsert: false });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("club-menus").getPublicUrl(path);
+      setRenameDrinkMenuUrl(pub.publicUrl);
+      setRenameDrinkMenuUpdatedAt(new Date().toISOString());
+      toast.success("주대표 업로드됨 (저장 버튼을 눌러주세요)");
+    } catch (error: unknown) {
+      logError(error, "AdminClubsList.handleDrinkMenuUpload");
+      toast.error(getErrorMessage(error) || "업로드 실패");
+    } finally {
+      setDrinkMenuUploading(false);
+    }
+  };
+
+  const handleDrinkMenuRemove = () => {
+    setRenameDrinkMenuUrl(null);
+    setRenameDrinkMenuUpdatedAt(null);
   };
 
   // URL/@를 떼고 핸들만 추출
@@ -142,6 +184,18 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
       patch.instagram = nextInstagram || null;
     }
 
+    const currentTags = [...(renameTarget.tags ?? [])].sort().join("|");
+    const nextTags = [...renameTags].sort().join("|");
+    if (currentTags !== nextTags) {
+      patch.tags = renameTags;
+    }
+    if ((renameDrinkMenuUrl ?? null) !== (renameTarget.drink_menu_url ?? null)) {
+      patch.drink_menu_url = renameDrinkMenuUrl;
+      patch.drink_menu_updated_at = renameDrinkMenuUrl
+        ? renameDrinkMenuUpdatedAt ?? new Date().toISOString()
+        : null;
+    }
+
     if (Object.keys(patch).length === 0) {
       setRenameTarget(null);
       return;
@@ -153,7 +207,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
         .from("clubs")
         .update(patch)
         .eq("id", renameTarget.id)
-        .select("id, name, address, address_detail, postal_code, latitude, longitude, instagram")
+        .select("id, name, address, address_detail, postal_code, latitude, longitude, instagram, tags, drink_menu_url, drink_menu_updated_at")
         .single();
       if (error) throw error;
       if (!data) throw new Error("저장 후 행을 조회하지 못했습니다");
@@ -169,6 +223,9 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 latitude: data.latitude,
                 longitude: data.longitude,
                 instagram: data.instagram,
+                tags: data.tags ?? [],
+                drink_menu_url: data.drink_menu_url,
+                drink_menu_updated_at: data.drink_menu_updated_at,
               }
             : c,
         ),
@@ -595,6 +652,111 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 @, URL 입력해도 자동으로 핸들만 추출됩니다
               </p>
             </div>
+
+            <div>
+              <label className="text-xs text-neutral-500 mb-2 block">
+                태그 (필터/특징)
+              </label>
+              <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                {CLUB_TAG_GROUPS.map((g) => (
+                  <div key={g.group}>
+                    <div className="text-[10px] text-neutral-600 mb-1">
+                      {g.emoji} {g.label}
+                      {g.isFilter && (
+                        <span className="ml-1 text-blue-400">(필터)</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {g.options.map((opt) => {
+                        const tag = makeTag(g.group, opt.key);
+                        const active = renameTags.includes(tag);
+                        return (
+                          <button
+                            key={opt.key}
+                            type="button"
+                            onClick={() => toggleTag(tag)}
+                            disabled={renameSaving}
+                            className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-colors ${
+                              active
+                                ? "bg-white text-black"
+                                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs text-neutral-500 mb-1 block flex items-center gap-1.5">
+                <Wine className="w-3.5 h-3.5 text-amber-400" />
+                주대표 (주류 가격표)
+              </label>
+              {renameDrinkMenuUrl ? (
+                <div className="space-y-2">
+                  <div className="relative rounded-xl overflow-hidden border border-neutral-800">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={renameDrinkMenuUrl}
+                      alt="주대표"
+                      className="w-full max-h-48 object-contain bg-neutral-950"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <label className="flex-1 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={drinkMenuUploading || renameSaving}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleDrinkMenuUpload(f);
+                          e.target.value = "";
+                        }}
+                      />
+                      <div className="text-center text-xs font-bold bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg py-2">
+                        {drinkMenuUploading ? "업로드 중..." : "교체"}
+                      </div>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleDrinkMenuRemove}
+                      disabled={renameSaving}
+                      className="flex-1 text-xs font-bold bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg py-2"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <label className="block cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    disabled={drinkMenuUploading || renameSaving}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleDrinkMenuUpload(f);
+                      e.target.value = "";
+                    }}
+                  />
+                  <div className="h-20 bg-neutral-900 rounded-xl border border-dashed border-neutral-700 flex items-center justify-center text-xs text-neutral-500 hover:border-amber-500/40 hover:text-amber-400 transition-colors">
+                    {drinkMenuUploading ? "업로드 중..." : "주대표 이미지 업로드"}
+                  </div>
+                </label>
+              )}
+              <p className="text-[10px] text-neutral-600 mt-1">
+                인스타에 올라간 메뉴 이미지를 그대로 올리세요
+              </p>
+            </div>
+
             <div className="flex gap-2 pt-1">
               <Button
                 variant="ghost"

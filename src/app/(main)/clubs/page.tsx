@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { createServerClient } from "@supabase/ssr";
-import { MapPin, Flame } from "lucide-react";
+import { ClubList } from "@/components/clubs/ClubList";
 
 export const revalidate = 60;
 
@@ -19,8 +18,6 @@ export const metadata: Metadata = {
   },
 };
 
-const AREA_ORDER = ["강남", "홍대", "이태원", "광주", "부산", "대구"] as const;
-
 function createAnonClient() {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,21 +29,31 @@ function createAnonClient() {
 export default async function ClubsIndexPage() {
   const supabase = createAnonClient();
 
-  const [clubsRes, auctionsRes] = await Promise.all([
-    supabase
+  // 신규 컬럼 (tags, drink_menu_url)을 먼저 시도하고, 마이그레이션 미적용 환경에서는
+  // 기본 컬럼만 사용. 컬럼 없을 때 PostgREST가 전체 쿼리를 실패시키므로 fallback 필요.
+  let clubsRes: { data: Array<Record<string, unknown>> | null; error: unknown } =
+    await supabase
+      .from("clubs")
+      .select("id, name, area, thumbnail_url, tags, drink_menu_url")
+      .is("deleted_at", null)
+      .not("name", "ilike", "%운영자%");
+
+  if (clubsRes.error) {
+    clubsRes = await supabase
       .from("clubs")
       .select("id, name, area, thumbnail_url")
       .is("deleted_at", null)
-      .not("name", "ilike", "%운영자%"),
-    supabase
-      .from("auctions")
-      .select("club_id")
-      .in("status", ["active", "scheduled"]),
-  ]);
+      .not("name", "ilike", "%운영자%");
+  }
+
+  const auctionsRes = await supabase
+    .from("auctions")
+    .select("club_id")
+    .in("status", ["active", "scheduled"]);
 
   const HIDDEN_NAME_PATTERNS = [/luna/i, /prism/i, /eclipse/i, /^orion$/i];
   const clubs = (clubsRes.data ?? []).filter(
-    (c) => !HIDDEN_NAME_PATTERNS.some((re) => re.test(c.name))
+    (c: { name: string }) => !HIDDEN_NAME_PATTERNS.some((re) => re.test(c.name))
   );
   const activeCountMap: Record<string, number> = {};
   for (const a of auctionsRes.data ?? []) {
@@ -54,76 +61,28 @@ export default async function ClubsIndexPage() {
     activeCountMap[a.club_id] = (activeCountMap[a.club_id] || 0) + 1;
   }
 
-  const byArea: Record<string, typeof clubs> = {};
-  for (const c of clubs) {
-    const area = c.area || "기타";
-    (byArea[area] ||= []).push(c);
-  }
-
   return (
     <div className="container mx-auto max-w-3xl px-4 py-8 mb-20">
-      <header className="mb-8 space-y-2">
+      <header className="mb-6 space-y-2">
         <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
           전국 클럽 가이드
         </h1>
         <p className="text-sm text-neutral-400 leading-relaxed break-keep">
           우리나라 클럽 정보를 한눈에.
-          <br />예약 가능한 곳은 깃발로 바로 잡으세요.
         </p>
       </header>
 
-      <div className="space-y-10">
-        {AREA_ORDER.map((area) => {
-          const list = byArea[area];
-          if (!list || list.length === 0) return null;
-          return (
-            <section key={area}>
-              <h2 className="text-lg font-black text-white mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5 text-amber-500" />
-                {area}{" "}
-                <span className="text-neutral-500 text-sm font-medium">
-                  ({list.length})
-                </span>
-              </h2>
-              <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {list
-                  .slice()
-                  .sort((a, b) =>
-                    (activeCountMap[b.id] || 0) - (activeCountMap[a.id] || 0)
-                  )
-                  .map((club) => {
-                    const cnt = activeCountMap[club.id] || 0;
-                    return (
-                      <li key={club.id}>
-                        <Link
-                          href={`/clubs/${club.id}`}
-                          className="block bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 hover:border-neutral-600 transition-colors"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0 flex-1">
-                              <h3 className="text-white font-bold truncate">
-                                {club.name}
-                              </h3>
-                              <p className="text-xs text-neutral-500 mt-0.5">
-                                {area}
-                              </p>
-                            </div>
-                            {cnt > 0 && (
-                              <span className="flex items-center gap-1 text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-full whitespace-nowrap">
-                                <Flame className="w-3 h-3" />
-                                {cnt}건
-                              </span>
-                            )}
-                          </div>
-                        </Link>
-                      </li>
-                    );
-                  })}
-              </ul>
-            </section>
-          );
-        })}
-      </div>
+      <ClubList
+        clubs={clubs.map((c: Record<string, unknown>) => ({
+          id: c.id as string,
+          name: c.name as string,
+          area: (c.area as string | null) ?? null,
+          thumbnail_url: (c.thumbnail_url as string | null) ?? null,
+          tags: (c.tags as string[] | undefined) ?? [],
+          drink_menu_url: (c.drink_menu_url as string | null | undefined) ?? null,
+        }))}
+        activeCountMap={activeCountMap}
+      />
     </div>
   );
 }

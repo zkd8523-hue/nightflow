@@ -268,7 +268,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
             >
-              🧩 조각 {shareAuctions.length > 0 && `(${shareAuctions.length})`}
+              🧩 얼리버드 조각 {shareAuctions.length > 0 && `(${shareAuctions.length})`}
             </button>
 
 {instantEnabled && (

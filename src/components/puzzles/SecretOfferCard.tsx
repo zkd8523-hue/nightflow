@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, CheckCircle2, Flame, XCircle, ChevronRight, Instagram, User } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Flame, XCircle, ChevronRight, Instagram, User, Pencil } from "lucide-react";
 import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferButton";
 import type { PuzzleOffer } from "@/types/database";
 import { formatRelativeTime } from "@/lib/utils/format";
@@ -23,6 +23,7 @@ interface SecretOfferCardProps {
   onAccept: (offerId: string) => void;
   onReject: (offerId: string) => void;
   onWithdrawn: () => void;
+  onAdminEdit?: (offer: PuzzleOffer) => void;
 }
 
 export function SecretOfferCard({
@@ -36,6 +37,7 @@ export function SecretOfferCard({
   onAccept,
   onReject,
   onWithdrawn,
+  onAdminEdit,
 }: SecretOfferCardProps) {
   const club = offer.club as { name?: string; area?: string } | null;
   const dealCount = offer.md?.md_deal_count ?? null;
@@ -186,7 +188,18 @@ export function SecretOfferCard({
       )}
 
       {isAdmin && offer.status === "pending" && (
-        <div className="pt-1 flex justify-end">
+        <div className="pt-1 flex justify-end gap-2">
+          {onAdminEdit && (
+            <button
+              type="button"
+              onClick={() => onAdminEdit(offer)}
+              disabled={actionLoading}
+              className="h-8 px-3 rounded-lg border border-neutral-700 bg-transparent text-neutral-300 hover:bg-neutral-800 font-bold text-[12px] inline-flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              수정
+            </button>
+          )}
           <AdminWithdrawOfferButton offerId={offer.id} variant="full" onWithdrawn={onWithdrawn} />
         </div>
       )}

@@ -36,6 +36,7 @@ const ERROR_MESSAGES: Record<ShareClaimError, string> = {
   NOT_OWNER: "권한이 없습니다.",
   NEGATIVE_NOT_ALLOWED: "유효하지 않은 요청입니다.",
   EXCEEDS_TOTAL_SEATS: "정원을 초과할 수 없습니다.",
+  INVALID_PARTY_SIZE: "참여 인원은 1~3명만 선택할 수 있어요.",
 };
 
 export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJoinPanelProps) {
@@ -50,6 +51,13 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
   const [myGender, setMyGender] = useState<"male" | "female" | null>(null);
   const [genderLoaded, setGenderLoaded] = useState(false);
   const [genderSheetOpen, setGenderSheetOpen] = useState(false);
+  const [partySize, setPartySize] = useState(1);
+
+  useEffect(() => {
+    const totalFilled = (auction.seats_claimed ?? 0) + (auction.external_attendees ?? 0);
+    const left = (auction.total_seats ?? 0) - totalFilled;
+    if (partySize > left && left > 0) setPartySize(left);
+  }, [auction.seats_claimed, auction.external_attendees, auction.total_seats, partySize]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -166,6 +174,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
     try {
       const { data, error } = await supabase.rpc("claim_share_seat", {
         p_auction_id: auction.id,
+        p_party_size: partySize,
       });
       if (error) throw error;
       if (!data?.success) {
@@ -182,9 +191,10 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
       setSuccessSheet(true);
       trackShareEvent('share_join_success', {
         ...baseParams,
-        seats_filled: totalFilled + 1,
-        seats_left: Math.max(0, seatsLeft - 1),
+        seats_filled: totalFilled + partySize,
+        seats_left: Math.max(0, seatsLeft - partySize),
         has_kakao_url: !!data.kakao_open_chat_url,
+        party_size: partySize,
       });
     } catch {
       toast.error("네트워크 연결이 불안정합니다.");
@@ -269,6 +279,47 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
           <span className="text-sm text-neutral-500">/ 1인</span>
         </div>
 
+        {/* 인원 세팅 (미참여 + 모집중) */}
+        {!hasClaim && isOpen && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[13px] font-semibold text-neutral-300">함께 갈 인원</span>
+              <span className="text-[11px] text-neutral-500">본인 포함 · 최대 {Math.min(3, seatsLeft)}명</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {[1, 2, 3].map((n) => {
+                const disabled = n > seatsLeft;
+                const active = partySize === n;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => setPartySize(n)}
+                    className={`h-11 rounded-xl border text-sm font-bold transition-all ${
+                      disabled
+                        ? "bg-neutral-900 border-neutral-800 text-neutral-700 cursor-not-allowed"
+                        : active
+                          ? "bg-white border-white text-black"
+                          : "bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-neutral-500"
+                    }`}
+                  >
+                    {n}명
+                  </button>
+                );
+              })}
+            </div>
+            {partySize > 1 && (
+              <div className="flex items-center justify-between text-[12px] text-neutral-400 px-1">
+                <span>합계 ({partySize}명)</span>
+                <span className="text-white font-bold">
+                  {formatNumber((auction.price_per_seat ?? 0) * partySize)}원
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* CTA */}
         {hasClaim ? (
           <div className="space-y-2">
@@ -339,6 +390,11 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
             <p className="text-neutral-400 text-sm leading-relaxed">
               MD의 오픈채팅방에 참여해서 최종 안내를 받으세요.
               현장에서 인당 {formatNumber(auction.price_per_seat ?? 0)}원을 MD에게 직접 전달합니다.
+              {partySize > 1 && (
+                <>
+                  {" "}일행 포함 <span className="text-white font-bold">{partySize}명</span>으로 신청했어요.
+                </>
+              )}
             </p>
             <Button
               className="w-full h-12 rounded-2xl font-bold text-base bg-amber-500 text-black hover:bg-amber-400"

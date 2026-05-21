@@ -21,8 +21,10 @@ import {
     getBidIncrement,
     isEarlybirdEndValid,
     isEventDateWithinWindow,
+    isShareEventDateWithinWindow,
     getEarlybirdEndDateOptions,
     EARLYBIRD_MAX_EVENT_DAYS_AHEAD,
+    SHARE_MAX_EVENT_DAYS_AHEAD,
 } from "@/lib/utils/auction";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -477,8 +479,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
     const onSubmit = async (values: FormValues) => {
         // 조각 신규 등록 시 방문일 윈도우 검증 — 수정 모드는 통과
-        if (isShareMode && !initialData && values.event_date && !isEventDateWithinWindow(values.event_date)) {
-            toast.error(`방문일은 오늘부터 ${EARLYBIRD_MAX_EVENT_DAYS_AHEAD}일 이내로 선택해주세요.`);
+        if (isShareMode && !initialData && values.event_date && !isShareEventDateWithinWindow(values.event_date)) {
+            toast.error(`방문일은 오늘부터 ${SHARE_MAX_EVENT_DAYS_AHEAD}일 이내로 선택해주세요.`);
             return;
         }
         // 가격 확인 (신규 등록 OR 수정 시 입찰 없으면, share 모드 제외)
@@ -1128,9 +1130,16 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     label="날짜 선택"
                     value={watch("event_date") || ""}
                     min={dayjs().format("YYYY-MM-DD")}
-                    max={dayjs().add(30, "day").format("YYYY-MM-DD")}
+                    max={dayjs().add(SHARE_MAX_EVENT_DAYS_AHEAD, "day").format("YYYY-MM-DD")}
                     onChange={(val) => setValue("event_date", val)}
-                    placeholder="최대 30일 뒤까지 선택 가능"
+                    placeholder={`최대 ${SHARE_MAX_EVENT_DAYS_AHEAD}일 뒤까지 선택 가능`}
+                    hint={
+                      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-amber-200">
+                        <span className="font-bold text-amber-300">이번 주말만 올리시려구요?</span>
+                        <br />
+                        다음 주·다다음 주까지 미리 올리면 <span className="font-bold text-amber-300">당일까지 쭉~ 노출</span>됩니다
+                      </div>
+                    }
                   />
                   {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date.message?.toString()}</p>}
                 </section>

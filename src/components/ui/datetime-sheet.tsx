@@ -31,6 +31,8 @@ interface DateTimeSheetProps {
   fixedDate?: string;
   /** date-2 모드에서 보여줄 날짜 옵션 2개 */
   dateOptions?: { label: string; value: string; minTime?: string; maxTime?: string; defaultTime?: string }[];
+  /** 시트 상단에 표시할 넛지 배너 (제목 ↔ 캘린더 사이) */
+  hint?: React.ReactNode;
 }
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -59,6 +61,7 @@ export function DateTimeSheet({
   mode = "datetime",
   fixedDate,
   dateOptions,
+  hint,
 }: DateTimeSheetProps) {
   const isTimeOnly = mode === "time-only";
   const isDate2 = mode === "date-2";
@@ -167,6 +170,8 @@ export function DateTimeSheet({
               날짜와 시간을 선택한 후 확인 버튼을 눌러주세요
             </SheetDescription>
           </SheetHeader>
+
+          {hint && <div className="mb-3">{hint}</div>}
 
           {/* 날짜 2버튼 (date-2 모드) */}
           {isDate2 && dateOptions && (

@@ -637,6 +637,13 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           onChange={(val) => setEventDate(val)}
           label="날짜 선택"
           placeholder="최대 30일 뒤까지 선택 가능"
+          hint={
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-amber-200">
+              <span className="font-bold text-amber-300">이번 주말만 올리시려구요?</span>
+              <br />
+              다음 주·다다음 주까지 미리 올리면 <span className="font-bold text-amber-300">당일까지 쭉~ 노출</span>됩니다
+            </div>
+          }
         />
       </section>
 

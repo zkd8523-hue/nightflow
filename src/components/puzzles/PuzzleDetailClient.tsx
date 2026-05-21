@@ -911,6 +911,7 @@ export function PuzzleDetailClient({
                     onAccept={handleAcceptOffer}
                     onReject={handleRejectOffer}
                     onWithdrawn={loadOffers}
+                    onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
                   />
                 ))}
               </div>
