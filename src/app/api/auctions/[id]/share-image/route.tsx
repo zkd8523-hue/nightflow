@@ -1,16 +1,10 @@
 import { ImageResponse } from 'next/og';
-import { createClient } from '@supabase/supabase-js';
+import { createAdminClient } from '@/lib/supabase/admin';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 
-export const runtime = 'edge';
-
-function createEdgeSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
+// edge runtime에서 service role key 접근 불가 → nodejs runtime으로 전환
+export const runtime = 'nodejs';
 
 // Font loading helper
 async function loadFont() {
@@ -29,7 +23,7 @@ export async function GET(
   const format = searchParams.get('format');
 
   try {
-    const supabase = createEdgeSupabase();
+    const supabase = createAdminClient();
     const { data: auction, error } = await supabase
       .from('auctions')
       .select(`
