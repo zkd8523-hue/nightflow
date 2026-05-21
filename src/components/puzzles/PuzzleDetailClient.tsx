@@ -711,9 +711,9 @@ export function PuzzleDetailClient({
                         💰 {acceptedOffer.proposed_price.toLocaleString()}원
                       </p>
                       {acceptedOffer.includes.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 w-full">
                           {acceptedOffer.includes.map((inc) => (
-                            <span key={inc} className="text-[11px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                            <span key={inc} className="text-[11px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 break-words max-w-full">
                               {inc}
                             </span>
                           ))}
@@ -991,9 +991,9 @@ export function PuzzleDetailClient({
                   {myOffer.proposed_price.toLocaleString()}원
                 </p>
                 {myOffer.includes?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 w-full">
                     {myOffer.includes.map((item: string) => (
-                      <span key={item} className="text-[11px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400">{item}</span>
+                      <span key={item} className="text-[11px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 break-words max-w-full">{item}</span>
                     ))}
                   </div>
                 )}

@@ -161,11 +161,11 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
               </p>
 
               {offer.includes.length > 0 && (
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 w-full">
                   {offer.includes.map((inc) => (
                     <span
                       key={inc}
-                      className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700"
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700 break-words max-w-full"
                     >
                       {inc}
                     </span>

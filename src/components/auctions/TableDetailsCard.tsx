@@ -52,12 +52,12 @@ export function TableDetailsCard({ includes, notes }: TableDetailsCardProps) {
               <ShieldCheck className="w-4 h-4 text-green-500" />
               테이블 구성
             </h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 w-full">
               {liquorItems.map((item) => (
                 <Badge
                   key={item}
                   variant="secondary"
-                  className="bg-amber-500/10 text-amber-400 border-amber-500/30 px-4 py-2 font-bold text-[14px]"
+                  className="bg-amber-500/10 text-amber-400 border-amber-500/30 px-4 py-2 font-bold text-[14px] whitespace-normal break-words h-auto"
                 >
                   {item}
                 </Badge>
@@ -66,7 +66,7 @@ export function TableDetailsCard({ includes, notes }: TableDetailsCardProps) {
                 <Badge
                   key={item}
                   variant="secondary"
-                  className="bg-neutral-900/50 text-neutral-400 border-neutral-800 px-4 py-2 font-bold text-[14px]"
+                  className="bg-neutral-900/50 text-neutral-400 border-neutral-800 px-4 py-2 font-bold text-[14px] whitespace-normal break-words h-auto"
                 >
                   {item}
                 </Badge>
