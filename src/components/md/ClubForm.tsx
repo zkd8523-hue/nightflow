@@ -36,15 +36,17 @@ type FormValues = z.infer<typeof formSchema>;
 interface ClubFormProps {
   mdId: string;
   initialData?: Club;
+  /** Migration 216: 같은 클럽이라도 MD 각자 본인 대표 이미지 (club_partners.thumbnail_url) */
+  initialPartnerThumbnailUrl?: string | null;
 }
 
-export function ClubForm({ mdId, initialData }: ClubFormProps) {
+export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: ClubFormProps) {
   const router = useRouter();
   const supabase = createClient();
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [showOtherCities, setShowOtherCities] = useState(false);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(initialData?.thumbnail_url || null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(initialPartnerThumbnailUrl ?? null);
   const [thumbnailUploading, setThumbnailUploading] = useState(false);
   const mainAreas = ["강남", "홍대", "이태원", "건대"] as const;
   const otherCities = ["부산", "대구", "인천", "광주", "대전", "울산", "세종"] as const;
@@ -66,7 +68,7 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
       latitude: initialData?.latitude || null,
       longitude: initialData?.longitude || null,
       phone: initialData?.phone || "",
-      thumbnail_url: initialData?.thumbnail_url || "",
+      thumbnail_url: initialPartnerThumbnailUrl || "",
     },
   });
 
@@ -110,6 +112,7 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
         return;
       }
 
+      // Migration 216: clubs.thumbnail_url은 admin 전용. MD 본인 이미지는 club_partners.thumbnail_url
       const clubData = {
         name: values.name,
         area: values.area,
@@ -119,10 +122,11 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
         latitude: values.latitude,
         longitude: values.longitude,
         phone: values.phone || null,
-        thumbnail_url: values.thumbnail_url || null,
       };
+      const partnerThumbnail = values.thumbnail_url || null;
 
       // Phase 4(Migration 182): clubs.md_id 제거 — 신규 INSERT 시 club_partners 명시 등록.
+      let targetClubId: string | undefined = initialData?.id;
       if (initialData) {
         const { error } = await supabase.from("clubs").update(clubData).eq("id", initialData.id);
         if (error) throw error;
@@ -134,14 +138,37 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
           .single();
         if (error) throw error;
         if (inserted) {
+          targetClubId = inserted.id;
           const { error: partnerError } = await supabase
             .from("club_partners")
-            .insert({ club_id: inserted.id, md_id: mdId, role: "owner" });
+            .insert({
+              club_id: inserted.id,
+              md_id: mdId,
+              role: "owner",
+              thumbnail_url: partnerThumbnail,
+            });
           if (partnerError) {
             // 롤백
             await supabase.from("clubs").delete().eq("id", inserted.id);
             throw partnerError;
           }
+        }
+      }
+
+      // 수정 모드: MD 본인의 partner thumbnail 업데이트 (API 경유)
+      if (initialData && targetClubId) {
+        const res = await fetch("/api/md/clubs/update-partner-thumbnail", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clubId: targetClubId,
+            thumbnailUrl: partnerThumbnail,
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          console.error("[ClubForm] partner thumbnail update failed:", body);
+          toast.error("대표이미지 저장 실패 — 다른 정보는 저장됨");
         }
       }
 
@@ -289,12 +316,15 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
           </div>
         </section>
 
-        {/* 3. Image */}
+        {/* 3. Image (MD 본인의 대표이미지) */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-white font-bold mb-2">
+          <div className="flex items-center gap-2 text-white font-bold mb-1">
             <ImageIcon className="w-4 h-4 text-blue-500" />
-            <span>클럽 대표이미지</span>
+            <span>내 대표이미지</span>
           </div>
+          <p className="text-[11px] text-neutral-500 -mt-1 leading-relaxed">
+            같은 클럽이라도 MD마다 자유롭게 설정할 수 있어요. 경매·조각 등록 시 기본 이미지로 사용됩니다.
+          </p>
 
           <input
             ref={thumbnailInputRef}
@@ -321,7 +351,7 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
                 )}
                 <div className="text-center">
                   <p className="text-sm text-white font-bold">
-                    {thumbnailUploading ? "업로드 중..." : "클럽 썸네일 업로드"}
+                    {thumbnailUploading ? "업로드 중..." : "대표이미지 업로드"}
                   </p>
                   <p className="text-[11px] text-neutral-500 mt-1">
                     5MB 이하 · JPG, PNG, WebP · 선택사항
@@ -332,9 +362,10 @@ export function ClubForm({ mdId, initialData }: ClubFormProps) {
           ) : (
             <div className="space-y-3">
               <div className="relative rounded-xl overflow-hidden border-2 border-neutral-800">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={thumbnailPreview}
-                  alt="클럽 썸네일"
+                  alt="MD 대표이미지"
                   className="w-full h-48 object-cover"
                 />
               </div>

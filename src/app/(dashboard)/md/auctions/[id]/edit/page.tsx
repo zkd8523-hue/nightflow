@@ -43,12 +43,20 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
 
     // 3. 클럽 목록: 경매 owner의 클럽 로드 (Migration 177: club_partners 기반)
     //    admin이 남의 경매 수정 시에도 owner(md_id)의 partner 클럽 풀을 사용.
+    //    Migration 216: MD 본인의 club_partners.thumbnail_url 같이 조회
     const { data: clubs } = await supabase
         .from("clubs")
-        .select("*, club_partners!inner(md_id)")
+        .select("*, club_partners!inner(md_id, thumbnail_url)")
         .eq("club_partners.md_id", auction.md_id)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
+
+    const partnerThumbnailMap: Record<string, string | null> = {};
+    for (const c of clubs ?? []) {
+        const partners = (c as { club_partners?: Array<{ md_id: string; thumbnail_url: string | null }> }).club_partners ?? [];
+        const own = partners.find((p) => p.md_id === auction.md_id);
+        partnerThumbnailMap[c.id] = own?.thumbnail_url ?? null;
+    }
 
     const editTitle = auction.listing_type === "share"
         ? "조각 정보 수정"
@@ -79,6 +87,7 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
                     mdId={auction.md_id}
                     initialData={auction}
                     defaultClubId={userData.default_club_id}
+                    partnerThumbnailMap={partnerThumbnailMap}
                 />
             </div>
         </div>

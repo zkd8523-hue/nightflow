@@ -126,6 +126,8 @@ interface AuctionFormProps {
     initialData?: Auction;
     repostFrom?: Auction | null;
     defaultClubId?: string | null;
+    /** Migration 216: 각 MD의 club_partners.thumbnail_url 맵 (per-MD per-club). 기본 이미지로 사용. */
+    partnerThumbnailMap?: Record<string, string | null>;
 }
 
 import { LiquorSelector } from "./LiquorSelector";
@@ -134,7 +136,7 @@ import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
 
 
 
-export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubId }: AuctionFormProps) {
+export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubId, partnerThumbnailMap }: AuctionFormProps) {
     // 재등록 시 원본 데이터를 기본값 소스로 사용 (날짜/시간 제외)
     const prefill = repostFrom || null;
     const router = useRouter();
@@ -167,7 +169,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(initialData?.thumbnail_url || null);
     const [isClubImage, setIsClubImage] = useState(false);
     const [localFloorPlanUrls, setLocalFloorPlanUrls] = useState<Record<string, string>>({});
-    const [setAsClubDefault, setSetAsClubDefault] = useState(false);
     const [floorPlanUploading, setFloorPlanUploading] = useState(false);
     const [floorPlanExpanded, setFloorPlanExpanded] = useState(false);
     // 얼리버드 마감 옵션 토글 (기본은 -2일 카드만, 클릭 시 -3/-4일 펼침)
@@ -462,7 +463,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         setThumbnailFile(file);
         setThumbnailPreview(URL.createObjectURL(file));
         setIsClubImage(false);
-        setSetAsClubDefault(false);
     };
 
     const uploadThumbnail = async (): Promise<string | null> => {
@@ -688,16 +688,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             auctionData.buy_now_price = isInstantMode ? values.start_price : null;
 
             // 썸네일 처리: 있으면 저장, 수정 모드에서 제거했으면 명시적 null
+            // 클럽 대표 이미지(clubs.thumbnail_url)는 admin 전용이므로 여기서 건드리지 않음
             if (thumbnailUrl) {
                 auctionData.thumbnail_url = thumbnailUrl;
-                // "기본으로 설정" 체크 시에만 클럽 대표 이미지 업데이트
-                if (thumbnailFile && setAsClubDefault) {
-                    const supabase = createClient();
-                    await supabase
-                        .from("clubs")
-                        .update({ thumbnail_url: thumbnailUrl })
-                        .eq("id", values.club_id);
-                }
             } else if (initialData) {
                 auctionData.thumbnail_url = null;
             }
@@ -877,9 +870,12 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     if (thumbnailPreview) {
                                         return <img src={thumbnailPreview} alt="대표 이미지" className="w-full h-full object-cover" />;
                                     }
-                                    const clubImg = selectedClub?.thumbnail_url;
+                                    // Migration 216: clubs.thumbnail_url(admin 전용) 대신 MD 본인의 partner thumbnail 사용
+                                    const partnerImg = selectedClub
+                                        ? partnerThumbnailMap?.[selectedClub.id] ?? null
+                                        : null;
                                     const drinkImg = getDrinkCategoryImage(selectedIncludes);
-                                    const fallbackUrl = clubImg || drinkImg;
+                                    const fallbackUrl = partnerImg || drinkImg;
                                     if (fallbackUrl) {
                                         return <img src={fallbackUrl} alt="기본 이미지" className="w-full h-full object-cover" />;
                                     }
@@ -893,8 +889,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             <p className="flex-1 min-w-0 text-[11px] text-neutral-500 truncate">
                                 {thumbnailPreview
                                     ? "대표이미지 · 커스텀 적용 중"
-                                    : selectedClub.thumbnail_url
-                                        ? "대표이미지 · 클럽 기본"
+                                    : partnerThumbnailMap?.[selectedClub.id]
+                                        ? "대표이미지 · 내 기본"
                                         : getDrinkCategoryImage(selectedIncludes)
                                             ? "대표이미지 · 주류 기본"
                                             : "대표이미지 · 미설정"
@@ -902,18 +898,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             </p>
                             {thumbnailPreview && thumbnailFile ? (
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                    <label className="flex items-center gap-1 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={setAsClubDefault}
-                                            onChange={(e) => setSetAsClubDefault(e.target.checked)}
-                                            className="w-3 h-3 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
-                                        />
-                                        <span className="text-[10px] text-neutral-400 font-medium whitespace-nowrap">기본으로 설정</span>
-                                    </label>
                                     <button
                                         type="button"
-                                        onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); setIsClubImage(false); setSetAsClubDefault(false); }}
+                                        onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); setIsClubImage(false); }}
                                         className="w-7 h-7 flex items-center justify-center rounded-md text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
                                     >
                                         <X className="w-3.5 h-3.5" />
@@ -932,7 +919,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     htmlFor="thumbnail-upload"
                                     className="text-[11px] text-neutral-500 font-medium px-2.5 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 cursor-pointer transition-colors shrink-0"
                                 >
-                                    {selectedClub.thumbnail_url || getDrinkCategoryImage(selectedIncludes) ? "변경" : "등록"}
+                                    {partnerThumbnailMap?.[selectedClub.id] || getDrinkCategoryImage(selectedIncludes) ? "변경" : "등록"}
                                 </label>
                             )}
                         </div>

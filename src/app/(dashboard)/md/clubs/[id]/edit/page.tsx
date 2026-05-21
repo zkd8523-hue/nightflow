@@ -17,9 +17,10 @@ export default async function EditClubPage({
   if (!user) redirect("/login");
 
   // Fetch club — Migration 177(club_partners) 기반 (옛 clubs.md_id 단일 매핑은 다중 파트너 시 누락 발생)
+  // Migration 216: club_partners.thumbnail_url (MD 본인의 클럽 대표 이미지) 같이 조회
   const { data: clubRaw, error } = await supabase
     .from("clubs")
-    .select("*, club_partners!inner(md_id)")
+    .select("*, club_partners!inner(md_id, thumbnail_url)")
     .eq("id", id)
     .eq("club_partners.md_id", user.id)
     .is("deleted_at", null)
@@ -28,7 +29,10 @@ export default async function EditClubPage({
   if (error || !clubRaw) {
     notFound();
   }
-  const { club_partners: _, ...club } = clubRaw;
+  const { club_partners, ...club } = clubRaw;
+  const partnerThumbnailUrl =
+    (club_partners as Array<{ md_id: string; thumbnail_url: string | null }>)?.[0]
+      ?.thumbnail_url ?? null;
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
@@ -46,7 +50,11 @@ export default async function EditClubPage({
         </div>
 
         <div className="px-6">
-          <ClubForm mdId={user.id} initialData={club as Club} />
+          <ClubForm
+            mdId={user.id}
+            initialData={club as Club}
+            initialPartnerThumbnailUrl={partnerThumbnailUrl}
+          />
         </div>
       </div>
     </div>

@@ -242,11 +242,37 @@ export interface NotificationLog {
  * Phase 3(Migration 178): 코드/RLS가 club_partners 기반으로 동작.
  * Phase 4(Migration 182): clubs.md_id 컬럼 / 관련 RLS·트리거 제거 완료.
  */
+/** Migration 217: 클럽 리뷰 — 긍정 태그 다중선택, 클럽당 유저 1회 */
+export interface ClubReview {
+  id: string;
+  club_id: string;
+  user_id: string;
+  tags: string[];
+  source: "verified" | "self";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClubReviewTagCount {
+  club_id: string;
+  tag: string;
+  cnt: number;
+  verified_cnt: number;
+}
+
+export interface ClubReviewSummary {
+  club_id: string;
+  total_reviews: number;
+  verified_reviews: number;
+}
+
 export interface ClubPartner {
   id: string;
   club_id: string;
   md_id: string;
   role: "owner" | "manager" | "partner";
+  /** Migration 216: 각 MD가 본인만의 클럽 대표 이미지 (clubs.thumbnail_url과는 무관) */
+  thumbnail_url: string | null;
   joined_at: string;
   created_at: string;
   updated_at: string;

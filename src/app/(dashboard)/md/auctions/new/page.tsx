@@ -50,14 +50,21 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
     }
 
     // 2. 선택 가능한 클럽 목록 조회 (Migration 177: club_partners 기반 N:N)
+    // Migration 216: MD 본인의 club_partners.thumbnail_url 함께 조회 (per-MD 대표이미지)
     const { data: allClubs } = await supabase
         .from("clubs")
-        .select("*, club_partners!inner(md_id)")
+        .select("*, club_partners!inner(md_id, thumbnail_url)")
         .eq("club_partners.md_id", user.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: true });
 
     const approvedClubs = allClubs || [];
+    const partnerThumbnailMap: Record<string, string | null> = {};
+    for (const c of approvedClubs) {
+        const partners = (c as { club_partners?: Array<{ md_id: string; thumbnail_url: string | null }> }).club_partners ?? [];
+        const own = partners.find((p) => p.md_id === user.id);
+        partnerThumbnailMap[c.id] = own?.thumbnail_url ?? null;
+    }
 
     // 클럽 없음 → 신청 유도
     if (approvedClubs.length === 0) {
@@ -120,6 +127,7 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
                     mdId={user.id}
                     repostFrom={repostFrom}
                     defaultClubId={userData.default_club_id}
+                    partnerThumbnailMap={partnerThumbnailMap}
                 />
             </div>
         </div>
