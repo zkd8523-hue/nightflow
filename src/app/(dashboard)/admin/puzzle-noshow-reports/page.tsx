@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
-import { ArrowLeft, AlertTriangle, CheckCircle2, XCircle, ExternalLink } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, XCircle, ExternalLink, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
@@ -73,6 +73,23 @@ export default function AdminPuzzleNoshowReportsPage() {
       setReports((prev) => prev.filter((r) => r.id !== offerId));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "처리 중 오류");
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const handleDelete = async (offerId: string) => {
+    if (!confirm("이 신고(제안 기록)를 완전히 삭제합니다.\n관련 노쇼 표시까지 함께 사라지며 되돌릴 수 없어요. 진행할까요?")) return;
+    setProcessing(offerId);
+    try {
+      const { data, error } = await supabase.rpc("admin_delete_puzzle_offer", { p_offer_id: offerId });
+      if (error) throw error;
+      const res = data as { success: boolean; error?: string };
+      if (!res.success) throw new Error(res.error || "삭제 실패");
+      toast.success("신고 기록이 삭제됐습니다.");
+      setReports((prev) => prev.filter((r) => r.id !== offerId));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "삭제 중 오류");
     } finally {
       setProcessing(null);
     }
@@ -193,6 +210,15 @@ export default function AdminPuzzleNoshowReportsPage() {
                     >
                       <XCircle className="w-3.5 h-3.5" />
                       기각
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      disabled={processing === r.id}
+                      className="px-3 py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-600/40 text-red-300 font-black text-[12px] rounded-xl transition-colors disabled:opacity-40 flex items-center gap-1"
+                      title="신고 기록 완전 삭제"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      삭제
                     </button>
                   </div>
                 </div>

@@ -4,6 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { AdminPuzzleRefundButton } from "@/components/admin/AdminPuzzleRefundButton";
 import { AdminPuzzleOffersDropdown } from "@/components/admin/AdminPuzzleOffersDropdown";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
+import { AdminDeletePuzzleButton } from "@/components/admin/AdminDeletePuzzleButton";
+import { AdminDeleteOfferButton } from "@/components/admin/AdminDeleteOfferButton";
+import { AdminDeletePuzzleReportButton } from "@/components/admin/AdminDeletePuzzleReportButton";
 import { PuzzleCancellationSurveyView } from "@/components/admin/PuzzleCancellationSurveyView";
 import { SurveyDateRangeFilter } from "@/components/admin/SurveyDateRangeFilter";
 import { AlertTriangle, ChevronLeft, Flag, User } from "lucide-react";
@@ -503,12 +506,13 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                           </div>
                         </div>
 
-                        {/* 깃발 취소 (종료된 상태 제외) */}
-                        {!["cancelled", "expired"].includes(puzzle.status) && (
-                          <div className="flex justify-end border-t border-neutral-800 pt-3">
+                        {/* 깃발 취소 + 기록 삭제 */}
+                        <div className="flex justify-end gap-2 border-t border-neutral-800 pt-3">
+                          {!["cancelled", "expired"].includes(puzzle.status) && (
                             <AdminCancelPuzzleButton puzzleId={puzzle.id} />
-                          </div>
-                        )}
+                          )}
+                          <AdminDeletePuzzleButton puzzleId={puzzle.id} />
+                        </div>
 
                         {/* 오퍼 드롭다운 */}
                         <AdminPuzzleOffersDropdown
@@ -583,6 +587,9 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                         {offer.comment}
                       </p>
                     )}
+                    <div className="flex justify-end mt-2">
+                      <AdminDeleteOfferButton offerId={offer.id} />
+                    </div>
                   </Card>
                 );
               })
@@ -639,12 +646,15 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                       {reportList.map((report) => (
                         <div
                           key={report!.id}
-                          className="bg-neutral-900 rounded-lg px-3 py-2 text-[12px] text-neutral-300"
+                          className="bg-neutral-900 rounded-lg px-3 py-2 text-[12px] text-neutral-300 flex items-start justify-between gap-2"
                         >
-                          <span className="text-neutral-500 mr-2">
-                            {new Date(report!.created_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}
-                          </span>
-                          {report!.reason}
+                          <div className="min-w-0 flex-1">
+                            <span className="text-neutral-500 mr-2">
+                              {new Date(report!.created_at).toLocaleDateString("ko-KR", { timeZone: "Asia/Seoul" })}
+                            </span>
+                            {report!.reason}
+                          </div>
+                          <AdminDeletePuzzleReportButton reportId={report!.id} />
                         </div>
                       ))}
                     </div>

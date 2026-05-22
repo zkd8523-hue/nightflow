@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, BadgeCheck, Flame, Instagram, MessageCircle, Phone } from "lucide-react";
 import { AdminWithdrawOfferButton } from "./AdminWithdrawOfferButton";
+import { AdminDeleteOfferButton } from "./AdminDeleteOfferButton";
 
 interface OfferData {
   id: string;
@@ -177,11 +178,12 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
                 <p className="text-[11px] text-neutral-400 italic">"{offer.comment}"</p>
               )}
 
-              {offer.status === "pending" && (
-                <div className="pt-1 border-t border-neutral-800/60 flex justify-end">
+              <div className="pt-1 border-t border-neutral-800/60 flex justify-end gap-2">
+                {offer.status === "pending" && (
                   <AdminWithdrawOfferButton offerId={offer.id} />
-                </div>
-              )}
+                )}
+                <AdminDeleteOfferButton offerId={offer.id} />
+              </div>
 
               {offer.md?.display_name && (
                 <div className="flex items-center justify-between gap-2 pt-1 border-t border-neutral-800/60 flex-wrap">
