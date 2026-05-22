@@ -146,20 +146,20 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
   advance: {
     content: (
       <>
-        먼저 예약하는 당신,
-        <br />
-        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 align-middle whitespace-normal">
-          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            주대는
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-black tracking-wider bg-red-500/15 text-red-400 border border-red-500/30">↓ DOWN</span>
+        <div className="text-[14.5px]">먼저 예약하는 당신,</div>
+        <div className="text-[14.5px]">
+          <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1 align-middle whitespace-normal">
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              주대는
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-black tracking-wider bg-red-500/15 text-red-400 border border-red-500/30">↓ DOWN</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+              서비스는
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-black tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">↑ UP</span>
+            </span>
           </span>
-          <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            서비스는
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-black tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">↑ UP</span>
-          </span>
-        </span>
-        <br />
-        지금 바로 입찰해보세요!
+        </div>
+        <div className="text-[15.5px]">지금 바로 입찰해보세요!</div>
       </>
     ),
   },
@@ -177,7 +177,7 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
   share: {
     content: (
       <>
-        <div className="text-white">서울 핫플 조각 다 모였다!</div>
+        <div className="text-[14.5px] text-white">서울 핫플 조각 다 모였다!</div>
         <div className="text-[15.5px] text-white">클릭 한번에 참가, 방장비 X</div>
       </>
     ),
@@ -187,7 +187,12 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
 const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromise> = {
   today: { content: "지금 비어있는 자리, 한눈에" },
   advance: {
-    content: "주말 빈 테이블 걱정이시죠?\n최소 수익을 미리 확정하고, 최고가를 발견해봐요! 🎯",
+    content: (
+      <>
+        <div className="text-[14.5px]">주말 빈 테이블 걱정이시죠?</div>
+        <div className="text-[15.5px]">최소 수익을 미리 확정하고, 최고가를 발견해봐요! 🎯</div>
+      </>
+    ),
     note: "💰 수수료 0% · MD 직접 수령",
   },
   puzzle: {
@@ -198,7 +203,7 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
   share: {
     content: (
       <>
-        <div className="text-white">다음 3주까지, 조각을 미리 올려보세요!</div>
+        <div className="text-[14.5px] text-white">다음 3주까지, 조각을 미리 올려보세요!</div>
         <div className="text-[15.5px] text-white">링크 하나로 공유하고, 인원관리도 초간단!</div>
       </>
     ),
@@ -446,13 +451,13 @@ export function HomeContent({
           // MD 전용 puzzle tip
           const mdPuzzleTipContent = (
             <>
-              <div>유저들의 예산이 기다리고 있어요 💰</div>
+              <div className="text-[14.5px]">유저들의 예산이 기다리고 있어요 💰</div>
               <div className="text-[15.5px]">시크릿오퍼로 매출을 올려봐요!</div>
             </>
           );
           const userPuzzleTipContent = (
             <>
-              <div>예산 등록 → MD들이 시크릿오퍼로 경쟁</div>
+              <div className="text-[14.5px]">예산 등록 → MD들이 시크릿오퍼로 경쟁</div>
               <div className="text-[15.5px]">가격·패키지 비교하고 골라요!</div>
             </>
           );
@@ -512,7 +517,7 @@ export function HomeContent({
                           {step.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
+                          <h3 className="text-[14.5px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
                           <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
                             {step.desc.split("\n").map((line, lineIdx, arr) => {
                               const parts = line.split(/(\*\*[^*]+\*\*)/g);
@@ -566,7 +571,7 @@ export function HomeContent({
 
         {!user && !isLoading && auctions.active.length > 0 && !(currentTab === "puzzle" && puzzles.length === 0) && currentTab !== "share" && (
           <div className="text-center -mt-20 pb-3 relative z-10">
-            <p className="text-[14px] text-neutral-200 font-semibold mb-1">
+            <p className="text-[14.5px] text-neutral-200 font-semibold mb-1">
               {currentTab === "puzzle"
                 ? "어떤 오퍼가 올지 궁금하다면?"
                 : "3초만에 로그인하고 입찰하기"}
