@@ -160,8 +160,8 @@ function AreaCarousel({
   const scrollBy = (dir: 1 | -1) => {
     const el = scrollRef.current;
     if (!el) return;
-    // 카드 너비(152) + gap(12) ≈ 164. 한 번에 2.5 카드 정도
-    el.scrollBy({ left: dir * 320, behavior: "smooth" });
+    // 카드 너비(140) + gap(12) = 152. 한 번에 카드 1개씩 이동
+    el.scrollBy({ left: dir * 152, behavior: "smooth" });
   };
 
   return (
