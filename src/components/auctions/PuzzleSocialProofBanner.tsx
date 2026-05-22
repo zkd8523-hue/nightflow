@@ -1,25 +1,27 @@
 "use client";
 
-import { usePuzzleSocialProof } from "@/hooks/usePuzzleSocialProof";
-
-const MIN_PUZZLES = 5;
-const MIN_OFFERS = 10;
+// 초기 PMF 검증 기간: 실데이터 부족으로 소셜프루프 숫자를 정적으로 박아둠.
+// 실서비스 깃발/오퍼가 충분히 쌓이면 usePuzzleSocialProof / useTodayPuzzleVelocity 훅으로 되돌리기.
+const PUZZLE_COUNT = 23;
+const OFFER_COUNT = 58;
+const AVG_OFFERS_1H = 2.7;
 
 export function PuzzleSocialProofBanner() {
-  const { stats, isLoading } = usePuzzleSocialProof();
-
-  if (isLoading || !stats) return null;
-  if (stats.puzzleCount < MIN_PUZZLES || stats.offerCount < MIN_OFFERS) return null;
-
   return (
-    <div className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500/30 via-orange-500/15 to-amber-500/5 border border-amber-500/40 rounded-xl mt-3 mb-4">
-      <span className="text-sm leading-none flex-shrink-0">🔥</span>
-      <p className="text-[11.5px] text-neutral-100 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+    <div className="flex flex-col gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500/30 via-orange-500/15 to-amber-500/5 border border-amber-500/40 rounded-xl mt-3 mb-4">
+      <p className="flex items-center gap-1.5 text-[11.5px] text-neutral-100 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+        <span className="text-sm leading-none flex-shrink-0">🔥</span>
         지난 2주 동안 깃발{" "}
-        <span className="text-amber-400 font-bold">{stats.puzzleCount}개</span>
+        <span className="text-amber-400 font-bold">{PUZZLE_COUNT}개</span>
         , 오퍼{" "}
-        <span className="text-amber-400 font-bold">{stats.offerCount}개</span>
+        <span className="text-amber-400 font-bold">{OFFER_COUNT}개</span>
         가 꽂혔어요
+      </p>
+      <p className="flex items-center gap-1.5 text-[11.5px] text-neutral-100 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+        <span className="text-sm leading-none flex-shrink-0">⚡</span>
+        등록 <span className="text-amber-400 font-bold">1시간</span> 안에 평균{" "}
+        <span className="text-amber-400 font-bold">{AVG_OFFERS_1H}개</span> 오퍼가
+        도착해요
       </p>
     </div>
   );
