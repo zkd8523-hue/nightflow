@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
 
   // 0. 매직 phone — 환경변수로 지정된 번호면 SMS 우회 + 기존 매직 user 자동 정리
-  if (isMagicPhone(phone)) {
+  //    테스트 로그인 환경에서는 모든 번호를 매직으로 처리 (Apple 심사/QA 대응)
+  if (isMagicPhone(phone) || isTestEnv()) {
     const { data: existingMagicUsers } = await supabase
       .from("users")
       .select("id")

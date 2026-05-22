@@ -451,6 +451,9 @@ function LoginContent() {
             <p className="text-[10px] text-neutral-500 text-center">
               Password: <code className="text-neutral-400">{TEST_PASSWORD}</code> · or enter manually
             </p>
+            <p className="text-[10px] text-amber-400/80 text-center leading-relaxed">
+              회원가입 시 전화번호는 <code className="text-amber-300">010-0000-0000</code> 입력 → 인증번호 <code className="text-amber-300">000000</code> 자동 통과
+            </p>
             <Input
               type="email"
               placeholder="Email"
