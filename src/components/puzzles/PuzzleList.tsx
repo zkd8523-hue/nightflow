@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { Plus, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
 import { PuzzleCard } from "./PuzzleCard";
@@ -147,6 +147,10 @@ export function PuzzleList({
   const [recentCollapsed, setRecentCollapsed] = useState(false);
   const isMd = userRole === "md" || userRole === "admin";
 
+  // 리스트 끝에서 floating CTA 숨기기 (인라인 CTA와 시각적 중복 방지)
+  const listEndRef = useRef<HTMLDivElement | null>(null);
+  const [listEndVisible, setListEndVisible] = useState(false);
+
   // 마감 시간 배지가 분 단위로 갱신되도록 30초마다 강제 rerender
   const [, setDeadlineTick] = useState(0);
   useEffect(() => {
@@ -196,6 +200,17 @@ export function PuzzleList({
   useEffect(() => {
     onActiveFilterChange?.(hasActiveFilter);
   }, [hasActiveFilter, onActiveFilterChange]);
+
+  useEffect(() => {
+    const el = listEndRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setListEndVisible(entry.isIntersecting),
+      { rootMargin: "0px 0px -80px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [filteredPuzzles.length]);
 
   useEffect(() => {
     if (resetRef) {
@@ -600,12 +615,19 @@ export function PuzzleList({
         </div>
       )}
 
-      {/* Floating CTA 버튼 (MD 제외) — 빈 상태일 땐 인라인 CTA로 충분하므로 숨김 */}
+      {/* 리스트 끝 sentinel — floating CTA fade-out 트리거 */}
+      {filteredPuzzles.length > 0 && (
+        <div ref={listEndRef} aria-hidden className="h-px w-full" />
+      )}
+
+      {/* Floating CTA 버튼 (MD 제외) — 빈 상태/리스트 끝 도달 시 숨김 */}
       {userRole !== "md" && filteredPuzzles.length > 0 && (
         <Link
           href={userRole ? "/flags/new" : "/login?redirect=/flags/new"}
           onClick={() => trackEvent("puzzle_cta_click", { source: "list_float" })}
-          className="fixed bottom-24 right-4 flex items-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-full pl-4 pr-3 py-3 shadow-lg z-40 transition-colors border-2 border-black"
+          className={`fixed bottom-24 right-4 flex items-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-full pl-4 pr-3 py-3 shadow-lg z-40 border-2 border-black transition-opacity duration-200 ${
+            listEndVisible ? "opacity-0 pointer-events-none" : "opacity-100"
+          }`}
         >
           <span className="text-black text-sm font-semibold whitespace-nowrap">
             나도 MD 줄세우기
