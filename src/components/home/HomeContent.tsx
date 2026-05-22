@@ -65,20 +65,20 @@ const PUZZLE_ONBOARDING_STEPS = [
   {
     title: "1. 깃발꽂기",
     desc: "날짜·지역·예산만 정해요!",
-    icon: <span className="text-[20px]">⛳</span>,
+    icon: <span className="text-[20px]">🚩</span>,
     color: "bg-amber-500/10",
   },
   {
     title: "2. 시크릿오퍼 받기",
-    desc: "클럽·MD들이 맞춤 패키지를 제안해요!\n• 오퍼는 본인에게만 공개돼요\n• MD끼리도 서로 못 봐요\n• 오직 클럽명 + 조건으로 승부\n→ **현장보다 무조건 좋은 패키지**",
-    icon: <span className="text-[20px]">📨</span>,
+    desc: "클럽·MD가 맞춤 패키지를 제안해요!\n• 오퍼는 본인에게만 공개돼요\n• MD끼리도 서로 못 봐요\n• 오직 클럽명 + 조건으로 승부\n→ **현장보다 무조건 좋은 패키지**",
+    icon: <span className="text-[20px]">💌</span>,
     color: "bg-emerald-500/10",
   },
   {
     title: "3. 예약 확정",
     desc: "마음에 드는 오퍼 수락 → MD 연락처 공개\n바로 연락해서 예약 확정!",
-    icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
-    color: "bg-blue-500/10",
+    icon: <span className="text-[20px]">🎉</span>,
+    color: "bg-rose-500/10",
   },
 ];
 
@@ -497,6 +497,11 @@ export function HomeContent({
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
+                  {currentTab === "puzzle" && !isMdOrAdmin && (
+                    <span className="absolute bottom-2 right-3 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-full leading-none z-10 shadow-md">
+                      모든 서비스 무료
+                    </span>
+                  )}
                   <div className="flex flex-col gap-2">
                     {visibleSteps.map((step, idx) => (
                       <div
