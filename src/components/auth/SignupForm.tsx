@@ -533,7 +533,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 { state: agreeAge, set: setAgreeAge, label: "만 19세 이상입니다", required: true, href: null },
                 { state: agreeTerms, set: setAgreeTerms, label: "서비스 이용약관 동의", required: true, href: "/terms" },
                 { state: agreePrivacy, set: setAgreePrivacy, label: "개인정보 처리방침 동의", required: true, href: "/privacy" },
-                { state: agreeMarketing, set: setAgreeMarketing, label: "마케팅 알림 수신 동의", required: false, href: null },
+                { state: agreeMarketing, set: setAgreeMarketing, label: "마케팅 정보 수신 동의 (알림톡·SMS·앱 푸시)", required: false, href: "/marketing-consent" },
               ].map(({ state, set, label, required, href }) => (
                 <div key={label} className="flex items-center gap-3 px-3 py-3">
                   <button

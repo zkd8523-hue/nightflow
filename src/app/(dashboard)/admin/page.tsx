@@ -11,6 +11,7 @@ import {
   ShieldAlert,
   Sparkles,
   Ban,
+  Megaphone,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -44,6 +45,7 @@ export default async function AdminDashboardPage() {
     { count: pendingAppeals },
     { count: totalPuzzles },
     { count: activePuzzles },
+    { count: marketingConsented },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "md"),
@@ -64,6 +66,12 @@ export default async function AdminDashboardPage() {
     supabase.from("penalty_appeals").select("*", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("puzzles").select("*", { count: "exact", head: true }),
     supabase.from("puzzles").select("*", { count: "exact", head: true }).eq("status", "open"),
+    supabase
+      .from("users")
+      .select("*", { count: "exact", head: true })
+      .eq("alimtalk_consent", true)
+      .is("deleted_at", null)
+      .neq("role", "admin"),
   ]);
 
   // 시간 기반 필터: 종료 시간이 아직 안 지난 경매만 카운트
@@ -233,6 +241,15 @@ export default async function AdminDashboardPage() {
       color: "text-red-500",
       bgColor: "bg-red-500/10",
       href: "/admin/users",
+    },
+    {
+      label: "마케팅 수신 동의",
+      value: `${marketingConsented || 0}명`,
+      icon: Megaphone,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+      badge: null,
+      href: "/admin/marketing",
     },
     {
       label: "미처리 신고",
