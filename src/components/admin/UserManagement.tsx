@@ -476,6 +476,21 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                               </Button>
                             </>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteConfirm(user);
+                              setDeleteConfirmText("");
+                            }}
+                            disabled={loading}
+                            className="text-xs bg-transparent border-red-700/40 text-red-400 hover:bg-red-700/20"
+                            title="유저 영구 삭제 (auth + DB 완전 제거)"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" />
+                            삭제
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -797,22 +812,18 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                 </p>
               )}
             </div>
-            <div className="space-y-2">
-              <p className="text-xs text-neutral-500">
-                확인을 위해 표시 이름{" "}
-                <span className="font-mono font-black text-white">
-                  {deleteConfirm.display_name || deleteConfirm.name || deleteConfirm.id.slice(0, 8)}
-                </span>
-                {" "}을 그대로 입력하세요.
-              </p>
-              <Input
-                value={deleteConfirmText}
-                onChange={(e) => setDeleteConfirmText(e.target.value)}
-                placeholder="이름 입력"
-                className="bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-600"
+            <label className="flex items-start gap-3 p-3 rounded-xl bg-neutral-900 border border-neutral-800 cursor-pointer hover:border-red-500/40 transition-colors">
+              <input
+                type="checkbox"
+                checked={deleteConfirmText === "yes"}
+                onChange={(e) => setDeleteConfirmText(e.target.checked ? "yes" : "")}
+                className="mt-0.5 w-4 h-4 rounded accent-red-500"
                 autoFocus
               />
-            </div>
+              <span className="text-[13px] text-neutral-300 leading-relaxed">
+                위 내용을 모두 확인했으며, <span className="font-black text-white">복구할 수 없음</span>을 이해합니다.
+              </span>
+            </label>
             <div className="flex gap-2">
               <Button
                 onClick={() => { setDeleteConfirm(null); setDeleteConfirmText(""); }}
@@ -823,11 +834,7 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
               </Button>
               <Button
                 onClick={() => handleDelete(deleteConfirm.id)}
-                disabled={
-                  loading ||
-                  deleteConfirmText.trim() !==
-                    (deleteConfirm.display_name || deleteConfirm.name || deleteConfirm.id.slice(0, 8))
-                }
+                disabled={loading || deleteConfirmText !== "yes"}
                 className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black disabled:opacity-30"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "영구 삭제"}
