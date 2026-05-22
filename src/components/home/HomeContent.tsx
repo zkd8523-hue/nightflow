@@ -177,8 +177,8 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
   share: {
     content: (
       <>
-        <div className="text-white">조각, 이제 당일에 구하지 마세요!</div>
-        <div className="text-[15.5px] text-white">3주까지 넉넉하게, 일행까지 간단하게!</div>
+        <div className="text-white">서울 핫플 조각 다 모였다!</div>
+        <div className="text-[15.5px] text-white">클릭 한번에 참가, 방장비 X</div>
       </>
     ),
   },
@@ -451,20 +451,20 @@ export function HomeContent({
             <>
               <div>유저들의 예산이 기다리고 있어요 💰</div>
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[15.5px]">시크릿 오퍼로 매출을 올려봐요!</span>
+                <span className="text-[15.5px]">시크릿오퍼로 매출을 올려봐요!</span>
                 <button
                   type="button"
                   onClick={handleToggleSecretOffer}
                   className="shrink-0 text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors"
                 >
-                  (시크릿오퍼란?)
+                  시크릿오퍼
                 </button>
               </div>
             </>
           );
           const userPuzzleTipContent = (
             <>
-              <div>예산 등록 → MD들이 시크릿 오퍼 🚩</div>
+              <div>예산 등록 → MD들이 시크릿오퍼 📨</div>
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-[15.5px]">가격·패키지 비교하고 골라요!</span>
                 <button
@@ -472,7 +472,7 @@ export function HomeContent({
                   onClick={handleToggleSecretOffer}
                   className="shrink-0 text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors"
                 >
-                  (시크릿 오퍼란?)
+                  시크릿오퍼
                 </button>
               </div>
             </>

@@ -290,10 +290,11 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         {onShowGuide && (tab === "advance" || tab === "puzzle" || tab === "share") && (
           <button
             onClick={onShowGuide}
-            aria-label={tab === "puzzle" ? "깃발 이용방법" : tab === "share" ? "조각 이용방법" : "얼리버드란?"}
-            className="flex items-center justify-center w-8 h-8 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors flex-shrink-0"
+            aria-label={tab === "puzzle" ? "깃발이란?" : tab === "share" ? "조각이란?" : "얼리버드란?"}
+            className="flex items-center justify-center gap-0.5 h-8 px-2 rounded-full text-[11px] font-bold text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors flex-shrink-0 whitespace-nowrap"
           >
-            <span className="text-[16px] leading-none">ⓘ</span>
+            <span className="text-[12px] leading-none">ⓘ</span>
+            {tab === "puzzle" ? "깃발?" : tab === "share" ? "조각?" : "얼리버드?"}
           </button>
         )}
       </div>
