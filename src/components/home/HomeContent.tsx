@@ -498,7 +498,7 @@ export function HomeContent({
                     <X className="w-3.5 h-3.5" />
                   </button>
                   {currentTab === "puzzle" && !isMdOrAdmin && (
-                    <span className="absolute bottom-2 right-3 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-full leading-none z-10 shadow-md">
+                    <span className="absolute bottom-4 right-4 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-tl-xl rounded-br-2xl rounded-tr-none rounded-bl-none leading-none z-10">
                       모든 서비스 무료
                     </span>
                   )}
