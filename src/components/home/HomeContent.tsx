@@ -565,8 +565,8 @@ export function HomeContent({
 
 
         {!user && !isLoading && auctions.active.length > 0 && !(currentTab === "puzzle" && puzzles.length === 0) && currentTab !== "share" && (
-          <div className="text-center -mt-20 pb-3 space-y-1 relative z-10">
-            <p className="text-[12px] text-neutral-500">
+          <div className="text-center -mt-20 pb-3 relative z-10">
+            <p className="text-[14px] text-neutral-200 font-semibold mb-1">
               {currentTab === "puzzle"
                 ? "어떤 오퍼가 올지 궁금하다면?"
                 : "3초만에 로그인하고 입찰하기"}
@@ -582,6 +582,11 @@ export function HomeContent({
                 {currentTab === "puzzle" ? "⛳ 나도 깃발꽂기" : "로그인"}
               </Button>
             </Link>
+            {currentTab === "puzzle" && (
+              <p className="text-[10px] text-neutral-600 mt-2">
+                평생 무료 · 1분 가입
+              </p>
+            )}
           </div>
         )}
       </div>
