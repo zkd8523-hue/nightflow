@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Wine } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight } from "lucide-react";
+import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, type ClubFilters } from "./ClubFilterChips";
 import {
   FEATURE_GROUPS,
@@ -154,6 +155,15 @@ function AreaCarousel({
   area: string;
   clubs: ClubListItem[];
 }) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollBy = (dir: 1 | -1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // 카드 너비(152) + gap(12) ≈ 164. 한 번에 2.5 카드 정도
+    el.scrollBy({ left: dir * 320, behavior: "smooth" });
+  };
+
   return (
     <section>
       <h2 className="text-[15px] font-black text-white mb-3 px-1 flex items-baseline gap-2">
@@ -162,12 +172,29 @@ function AreaCarousel({
           {clubs.length}
         </span>
       </h2>
-      <div className="-mx-4 px-4">
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory">
+      <div className="-mx-4 px-4 relative group">
+        <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory">
           {clubs.map((club) => (
             <ClubCard key={club.id} club={club} />
           ))}
         </div>
+        {/* 데스크톱 전용 좌우 버튼 */}
+        <button
+          type="button"
+          onClick={() => scrollBy(-1)}
+          aria-label="이전"
+          className="hidden md:flex absolute left-1 top-[95px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button
+          type="button"
+          onClick={() => scrollBy(1)}
+          aria-label="다음"
+          className="hidden md:flex absolute right-1 top-[95px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
       </div>
     </section>
   );
@@ -206,8 +233,12 @@ function ClubCard({ club }: { club: ClubListItem }) {
         ) : (
           <ImageFallback name={club.name} />
         )}
+        {/* 찜 버튼 */}
+        <div className="absolute top-2 right-2">
+          <FavoriteButton clubId={club.id} />
+        </div>
         {club.drink_menu_url && (
-          <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
+          <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
             <Wine className="w-3 h-3 text-amber-400" />
             <span className="text-[10px] font-bold text-amber-400">주대표</span>
           </div>

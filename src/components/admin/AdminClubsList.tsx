@@ -77,6 +77,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
   const [renameLat, setRenameLat] = useState<number | null>(null);
   const [renameLng, setRenameLng] = useState<number | null>(null);
   const [renameInstagram, setRenameInstagram] = useState("");
+  const [renameOperatingHours, setRenameOperatingHours] = useState("");
   const [renameTags, setRenameTags] = useState<string[]>([]);
   const [renameDrinkMenuUrl, setRenameDrinkMenuUrl] = useState<string | null>(null);
   const [renameDrinkMenuUpdatedAt, setRenameDrinkMenuUpdatedAt] = useState<string | null>(null);
@@ -102,6 +103,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
     setRenameLat(club.latitude ?? null);
     setRenameLng(club.longitude ?? null);
     setRenameInstagram(club.instagram ?? "");
+    setRenameOperatingHours(club.operating_hours ?? "");
     setRenameTags(club.tags ?? []);
     setRenameDrinkMenuUrl(club.drink_menu_url ?? null);
     setRenameDrinkMenuUpdatedAt(club.drink_menu_updated_at ?? null);
@@ -183,6 +185,10 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
     if ((nextInstagram || null) !== (renameTarget.instagram ?? null)) {
       patch.instagram = nextInstagram || null;
     }
+    const nextOperatingHours = renameOperatingHours.trim();
+    if ((nextOperatingHours || null) !== (renameTarget.operating_hours ?? null)) {
+      patch.operating_hours = nextOperatingHours || null;
+    }
 
     const currentTags = [...(renameTarget.tags ?? [])].sort().join("|");
     const nextTags = [...renameTags].sort().join("|");
@@ -207,7 +213,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
         .from("clubs")
         .update(patch)
         .eq("id", renameTarget.id)
-        .select("id, name, address, address_detail, postal_code, latitude, longitude, instagram, tags, drink_menu_url, drink_menu_updated_at")
+        .select("id, name, address, address_detail, postal_code, latitude, longitude, instagram, operating_hours, tags, drink_menu_url, drink_menu_updated_at")
         .single();
       if (error) throw error;
       if (!data) throw new Error("저장 후 행을 조회하지 못했습니다");
@@ -223,6 +229,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 latitude: data.latitude,
                 longitude: data.longitude,
                 instagram: data.instagram,
+                operating_hours: data.operating_hours,
                 tags: data.tags ?? [],
                 drink_menu_url: data.drink_menu_url,
                 drink_menu_updated_at: data.drink_menu_updated_at,
@@ -582,13 +589,13 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
       />
 
       <Dialog open={!!renameTarget} onOpenChange={(open) => !open && setRenameTarget(null)}>
-        <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-md">
-          <DialogHeader>
+        <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-md max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-3 flex-shrink-0">
             <DialogTitle className="text-white flex items-center gap-2">
               <Pencil className="w-4 h-4 text-blue-400" /> 클럽 정보 수정
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-3 px-6 overflow-y-auto flex-1">
             <div>
               <label className="text-xs text-neutral-500 mb-1 block">클럽명</label>
               <input
@@ -651,6 +658,18 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
               <p className="text-[10px] text-neutral-600 mt-1">
                 @, URL 입력해도 자동으로 핸들만 추출됩니다
               </p>
+            </div>
+
+            <div>
+              <label className="text-xs text-neutral-500 mb-1 block">영업시간</label>
+              <input
+                type="text"
+                value={renameOperatingHours}
+                onChange={(e) => setRenameOperatingHours(e.target.value)}
+                placeholder="예: 금/토 22:00-05:00"
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                disabled={renameSaving}
+              />
             </div>
 
             <div>
@@ -756,24 +775,24 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 인스타에 올라간 메뉴 이미지를 그대로 올리세요
               </p>
             </div>
+          </div>
 
-            <div className="flex gap-2 pt-1">
-              <Button
-                variant="ghost"
-                onClick={() => setRenameTarget(null)}
-                disabled={renameSaving}
-                className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-white"
-              >
-                취소
-              </Button>
-              <Button
-                onClick={handleRename}
-                disabled={renameSaving || !renameValue.trim() || !renameAddress.trim()}
-                className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold disabled:opacity-40"
-              >
-                {renameSaving ? "저장 중..." : "저장"}
-              </Button>
-            </div>
+          <div className="flex gap-2 px-6 py-4 border-t border-neutral-800 flex-shrink-0 bg-[#1C1C1E]">
+            <Button
+              variant="ghost"
+              onClick={() => setRenameTarget(null)}
+              disabled={renameSaving}
+              className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-white"
+            >
+              취소
+            </Button>
+            <Button
+              onClick={handleRename}
+              disabled={renameSaving || !renameValue.trim() || !renameAddress.trim()}
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold disabled:opacity-40"
+            >
+              {renameSaving ? "저장 중..." : "저장"}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

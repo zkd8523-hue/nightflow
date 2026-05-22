@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
 import { ClubList } from "@/components/clubs/ClubList";
+import { ClubsAdminFab } from "@/components/clubs/ClubsAdminFab";
 
 export const revalidate = 60;
 
@@ -69,6 +70,7 @@ export default async function ClubsIndexPage() {
         </h1>
       </header>
 
+      <ClubsAdminFab />
       <ClubList
         clubs={clubs.map((c: Record<string, unknown>) => ({
           id: c.id as string,

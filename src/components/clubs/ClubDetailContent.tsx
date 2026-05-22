@@ -11,6 +11,7 @@ import {
   Instagram,
   Camera,
   Loader2,
+  Clock,
   Globe2,
   Sofa,
   Users,
@@ -58,7 +59,13 @@ export function ClubDetailContent({
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(club.thumbnail_url);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [clubTags, setClubTags] = useState<string[]>(club.tags ?? []);
+  const [clubName, setClubName] = useState<string>(club.name);
+  const [clubAddress, setClubAddress] = useState<string>(club.address ?? "");
+  const [clubOperatingHours, setClubOperatingHours] = useState<string>(club.operating_hours ?? "");
+  const [clubEntryFeeDetail, setClubEntryFeeDetail] = useState<string>(club.entry_fee_detail ?? "");
+  const [clubInstagram, setClubInstagram] = useState<string>(club.instagram ?? "");
   const isAdmin = user?.role === "admin";
 
   const handleAdminThumbnailUpload = async (
@@ -150,7 +157,25 @@ export function ClubDetailContent({
     <div className="container mx-auto max-w-lg px-4 pt-4 pb-32">
       {/* 클럽 정보 카드 */}
       <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden mb-6">
-        <div className="relative w-full aspect-[4/3] bg-neutral-900">
+        <div
+          className="relative w-full aspect-[4/3] bg-neutral-900"
+          onDragOver={(e) => { if (!isAdmin) return; e.preventDefault(); setIsDraggingOver(true); }}
+          onDragLeave={() => setIsDraggingOver(false)}
+          onDrop={(e) => {
+            if (!isAdmin) return;
+            e.preventDefault();
+            setIsDraggingOver(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file?.type.startsWith("image/")) {
+              handleAdminThumbnailUpload({ target: { files: e.dataTransfer.files } } as unknown as React.ChangeEvent<HTMLInputElement>);
+            }
+          }}
+        >
+          {isDraggingOver && isAdmin && (
+            <div className="absolute inset-0 z-20 bg-amber-500/40 border-2 border-dashed border-amber-400 flex items-center justify-center pointer-events-none">
+              <p className="text-white font-black text-[15px]">여기에 놓으세요</p>
+            </div>
+          )}
             {/* 이미지 위 플로팅: 뒤로가기 + 찜 */}
             <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 pt-3 pointer-events-none">
               <button
@@ -209,7 +234,19 @@ export function ClubDetailContent({
             <ClubProfileEditor
               clubId={club.id}
               initialTags={clubTags}
-              onSaved={setClubTags}
+              initialName={clubName}
+              initialAddress={clubAddress}
+              initialOperatingHours={clubOperatingHours}
+              initialEntryFeeDetail={clubEntryFeeDetail}
+              initialInstagram={clubInstagram}
+              onSaved={(next) => {
+                setClubTags(next.tags);
+                setClubName(next.name);
+                setClubAddress(next.address);
+                setClubOperatingHours(next.operatingHours);
+                setClubEntryFeeDetail(next.entryFeeDetail);
+                setClubInstagram(next.instagram);
+              }}
             />
           </div>
         )}
@@ -217,7 +254,7 @@ export function ClubDetailContent({
         <div className="p-4 space-y-2">
           <div className="flex items-baseline gap-2 flex-wrap">
             <h1 className="text-2xl font-black text-white tracking-tight">
-              {club.name}
+              {clubName}
             </h1>
             {club.area && (
               <span className="text-[13px] text-neutral-400">
@@ -226,26 +263,40 @@ export function ClubDetailContent({
             )}
           </div>
 
-          {club.address && (
+          {clubAddress && (
             <button
               onClick={() => setIsMapOpen(true)}
               className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-white transition-colors group w-full text-left"
             >
               <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="truncate">{club.address}</span>
+              <span className="truncate">{clubAddress}</span>
               <ExternalLink className="w-3 h-3 flex-shrink-0 text-neutral-500 group-hover:text-white" />
             </button>
           )}
 
-          {club.instagram && (
+          {clubOperatingHours && (
+            <div className="flex items-center gap-1.5 text-[12px] text-neutral-400">
+              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{clubOperatingHours}</span>
+            </div>
+          )}
+
+          {clubEntryFeeDetail && (
+            <div className="flex items-center gap-1.5 text-[12px] text-neutral-400">
+              <Ticket className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{clubEntryFeeDetail}</span>
+            </div>
+          )}
+
+          {clubInstagram && (
             <a
-              href={`https://instagram.com/${club.instagram}`}
+              href={`https://instagram.com/${clubInstagram}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-pink-400 transition-colors mt-1"
             >
               <Instagram className="w-3.5 h-3.5" />
-              @{club.instagram}
+              @{clubInstagram}
             </a>
           )}
 

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AdminClubsList } from "@/components/admin/AdminClubsList";
 import Link from "next/link";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Plus } from "lucide-react";
 import type { MDHealthScore } from "@/types/database";
 
 export default async function AdminClubsPage() {

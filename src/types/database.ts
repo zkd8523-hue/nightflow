@@ -316,6 +316,12 @@ export interface Club {
   drink_menu_url: string | null;
   drink_menu_updated_at: string | null;
 
+  // Migration 218: 영업시간 자유 텍스트 (예: "금/토 22:00-05:00")
+  operating_hours: string | null;
+
+  // Migration 223: 입장료 상세 텍스트 (예: "남 15,000 / 여 10,000")
+  entry_fee_detail: string | null;
+
   /** Migration 174~182: 조인해서 가져올 때만 채워짐. 멀티 MD 표시 및 상세 정보용. */
   partners?: Array<{
     md_id: string;

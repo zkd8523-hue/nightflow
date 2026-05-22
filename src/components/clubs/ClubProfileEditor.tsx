@@ -14,15 +14,49 @@ import { CLUB_TAG_GROUPS, makeTag } from "@/lib/clubs/tags";
 interface Props {
   clubId: string;
   initialTags: string[];
-  onSaved: (newTags: string[]) => void;
+  initialName: string;
+  initialAddress: string;
+  initialOperatingHours: string;
+  initialEntryFeeDetail: string;
+  initialInstagram: string;
+  onSaved: (next: {
+    tags: string[];
+    name: string;
+    address: string;
+    operatingHours: string;
+    entryFeeDetail: string;
+    instagram: string;
+  }) => void;
 }
 
-export function ClubProfileEditor({ clubId, initialTags, onSaved }: Props) {
+export function ClubProfileEditor({ clubId, initialTags, initialName, initialAddress, initialOperatingHours, initialEntryFeeDetail, initialInstagram, onSaved }: Props) {
   const [open, setOpen] = useState(false);
   const [tags, setTags] = useState<string[]>(initialTags);
+  const [name, setName] = useState(initialName);
+  const [address, setAddress] = useState(initialAddress);
+  const [operatingHours, setOperatingHours] = useState(initialOperatingHours);
+  const [entryFeeDetail, setEntryFeeDetail] = useState(initialEntryFeeDetail);
+  const [instagram, setInstagram] = useState(initialInstagram);
   const [saving, setSaving] = useState(false);
 
-  const reset = () => setTags(initialTags);
+  // URL/@ 제거하고 핸들만 추출
+  const normalizeInstagramHandle = (raw: string): string => {
+    let v = raw.trim();
+    if (!v) return "";
+    v = v.replace(/^https?:\/\/(www\.)?instagram\.com\//i, "");
+    v = v.replace(/^@/, "");
+    v = v.split(/[/?#]/)[0];
+    return v.trim();
+  };
+
+  const reset = () => {
+    setTags(initialTags);
+    setName(initialName);
+    setAddress(initialAddress);
+    setOperatingHours(initialOperatingHours);
+    setEntryFeeDetail(initialEntryFeeDetail);
+    setInstagram(initialInstagram);
+  };
 
   const toggleTag = (tag: string) => {
     setTags((prev) =>
@@ -31,8 +65,39 @@ export function ClubProfileEditor({ clubId, initialTags, onSaved }: Props) {
   };
 
   const handleSave = async () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) { toast.error("클럽명을 입력해주세요"); return; }
     setSaving(true);
     try {
+      // 기본 정보 변경 (name + address + operating_hours + entry_fee_detail + instagram)
+      const trimmedAddress = address.trim();
+      const trimmedHours = operatingHours.trim();
+      const trimmedFee = entryFeeDetail.trim();
+      const trimmedInstagram = normalizeInstagramHandle(instagram);
+      const baseChanged = trimmedName !== initialName
+        || trimmedAddress !== initialAddress
+        || trimmedHours !== initialOperatingHours
+        || trimmedFee !== initialEntryFeeDetail
+        || trimmedInstagram !== initialInstagram;
+      if (baseChanged) {
+        const res = await fetch(`/api/admin/clubs/update-name`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            clubId,
+            name: trimmedName,
+            address: trimmedAddress,
+            operating_hours: trimmedHours,
+            entry_fee_detail: trimmedFee,
+            instagram: trimmedInstagram,
+          }),
+        });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          toast.error(j.error || "기본 정보 변경 실패"); return;
+        }
+      }
+      // 태그 변경
       const res = await fetch("/api/admin/clubs/update-tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,7 +108,14 @@ export function ClubProfileEditor({ clubId, initialTags, onSaved }: Props) {
         toast.error(json.error || "저장 실패");
         return;
       }
-      onSaved(json.tags ?? tags);
+      onSaved({
+        tags: json.tags ?? tags,
+        name: trimmedName,
+        address: trimmedAddress,
+        operatingHours: trimmedHours,
+        entryFeeDetail: trimmedFee,
+        instagram: trimmedInstagram,
+      });
       toast.success("클럽 프로필이 저장됐어요");
       setOpen(false);
     } catch (err) {
@@ -90,6 +162,62 @@ export function ClubProfileEditor({ clubId, initialTags, onSaved }: Props) {
           </SheetHeader>
 
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+            <div>
+              <div className="text-[12px] text-neutral-400 font-bold mb-2">클럽명</div>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                disabled={saving}
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+              />
+            </div>
+            <div>
+              <div className="text-[12px] text-neutral-400 font-bold mb-2">주소</div>
+              <input
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="예: 강남구 도산대로 539 B1"
+                disabled={saving}
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+              />
+            </div>
+            <div>
+              <div className="text-[12px] text-neutral-400 font-bold mb-2">영업시간</div>
+              <input
+                type="text"
+                value={operatingHours}
+                onChange={(e) => setOperatingHours(e.target.value)}
+                placeholder="예: 금/토 22:00-05:00"
+                disabled={saving}
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+              />
+            </div>
+            <div>
+              <div className="text-[12px] text-neutral-400 font-bold mb-2">입장료 상세</div>
+              <input
+                type="text"
+                value={entryFeeDetail}
+                onChange={(e) => setEntryFeeDetail(e.target.value)}
+                placeholder="예: 남 15,000 / 여 10,000"
+                disabled={saving}
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+              />
+              <p className="text-[10px] text-neutral-600 mt-1">남녀별·요일별 차등 있으면 자유롭게 입력</p>
+            </div>
+            <div>
+              <div className="text-[12px] text-neutral-400 font-bold mb-2">공식 인스타그램</div>
+              <input
+                type="text"
+                value={instagram}
+                onChange={(e) => setInstagram(e.target.value)}
+                placeholder="핸들 또는 URL (예: coreseoul)"
+                disabled={saving}
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+              />
+              <p className="text-[10px] text-neutral-600 mt-1">@, URL 입력해도 자동으로 핸들만 추출됨</p>
+            </div>
             {CLUB_TAG_GROUPS.map((g) => (
               <div key={g.group}>
                 <div className="text-[12px] text-neutral-400 font-bold mb-2 flex items-center gap-1.5">
