@@ -64,19 +64,19 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 const PUZZLE_ONBOARDING_STEPS = [
   {
     title: "1. 깃발꽂기",
-    desc: "날짜·지역·예산만 정하면 깃발 끝!",
+    desc: "날짜·지역·예산만 정해요!",
     icon: <span className="text-[20px]">⛳</span>,
     color: "bg-amber-500/10",
   },
   {
-    title: "2. 시크릿 오퍼 받기",
-    desc: "선택한 지역의 클럽·MD들이\n맞춤 패키지를 제안해요!",
+    title: "2. 시크릿오퍼 받기",
+    desc: "클럽·MD들이 맞춤 패키지를 제안해요!\n• 오퍼는 본인에게만 공개돼요\n• MD끼리도 서로 못 봐요\n• 오직 클럽명 + 조건으로 승부\n→ **현장보다 무조건 좋은 패키지**",
     icon: <span className="text-[20px]">📨</span>,
     color: "bg-emerald-500/10",
   },
   {
     title: "3. 예약 확정",
-    desc: "마음에 드는 오퍼 수락 → MD 연락처 공개\n바로 연락해서 예약 확정하면 끝!",
+    desc: "마음에 드는 오퍼 수락 → MD 연락처 공개\n바로 연락해서 예약 확정!",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },
@@ -235,7 +235,8 @@ export function HomeContent({
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   // 가이드는 항상 닫힘 상태로 시작. "ⓘ 깃발 이용 방법" 버튼으로만 펼침.
   const [showGuide, setShowGuide] = useState(false);
-  const [guideMode, setGuideMode] = useState<"full" | "secret-offer">("full");
+  // 가이드 모드는 단일 (full만) — 시크릿오퍼는 PUZZLE_ONBOARDING_STEPS 2단계에 통합됨
+  const [guideMode, setGuideMode] = useState<"full">("full");
 
   const instantEnabled = isInstantEnabled();
   const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
@@ -442,39 +443,17 @@ export function HomeContent({
             : currentTab === "share"
             ? SHARE_ONBOARDING_STEPS
             : ONBOARDING_STEPS;
-          const handleToggleSecretOffer = () => {
-            setGuideMode("secret-offer");
-            setShowGuide((v) => !(v && guideMode === "secret-offer"));
-          };
-          // MD 전용 puzzle tip: 본 카피 + "(시크릿오퍼란?)" 버튼
+          // MD 전용 puzzle tip
           const mdPuzzleTipContent = (
             <>
               <div>유저들의 예산이 기다리고 있어요 💰</div>
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[15.5px]">시크릿오퍼로 매출을 올려봐요!</span>
-                <button
-                  type="button"
-                  onClick={handleToggleSecretOffer}
-                  className="shrink-0 text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors"
-                >
-                  시크릿오퍼
-                </button>
-              </div>
+              <div className="text-[15.5px]">시크릿오퍼로 매출을 올려봐요!</div>
             </>
           );
           const userPuzzleTipContent = (
             <>
-              <div>예산 등록 → MD들이 시크릿오퍼 📨</div>
-              <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[15.5px]">가격·패키지 비교하고 골라요!</span>
-                <button
-                  type="button"
-                  onClick={handleToggleSecretOffer}
-                  className="shrink-0 text-[12px] font-bold text-amber-300 underline underline-offset-2 hover:text-amber-200 transition-colors"
-                >
-                  시크릿오퍼
-                </button>
-              </div>
+              <div>예산 등록 → MD들이 시크릿오퍼로 경쟁</div>
+              <div className="text-[15.5px]">가격·패키지 비교하고 골라요!</div>
             </>
           );
           const overriddenTabPromises = isMdOrAdmin
@@ -486,25 +465,29 @@ export function HomeContent({
                 ...TAB_PROMISES,
                 puzzle: { ...TAB_PROMISES.puzzle, content: userPuzzleTipContent },
               };
-          const isUserSecretMode = guideMode === "secret-offer" && currentTab === "puzzle" && !isMdOrAdmin;
-          const visibleSteps = guideMode === "secret-offer" && currentTab === "puzzle"
-            ? steps.filter((s) => s.title.includes("시크릿 오퍼")).map((s) => ({
-                ...s,
-                title: s.title.replace(/^\d+\.\s*/, ""),
-              }))
-            : steps;
+          const visibleSteps = steps;
           const guideCard = (
             <section className="space-y-2">
               {/* TIP 박스 — 항시 노출 */}
               {overriddenTabPromises[currentTab]?.content && (
                 <div className="relative bg-gradient-to-br from-amber-500/35 via-amber-500/20 to-amber-600/10 border border-amber-400/70 rounded-2xl px-3 pt-4 pb-2.5">
                   <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
-                  <p className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep">
+                  <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep">
                     {overriddenTabPromises[currentTab].content}
-                  </p>
+                  </div>
+                  {(currentTab === "puzzle" || currentTab === "share" || currentTab === "advance") && (
+                    <button
+                      type="button"
+                      onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
+                      className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10.5px] font-bold text-amber-200/90 hover:text-white transition-colors"
+                    >
+                      <span className="text-[11px] leading-none">ⓘ</span>
+                      이용방법
+                    </button>
+                  )}
                 </div>
               )}
-              {/* 이용방법 가이드 — "깃발이란?" 클릭 시 토글 */}
+              {/* 이용방법 가이드 — "ⓘ 이용방법" 클릭 시 토글 */}
               {showGuide && (
                 <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
                   <button
@@ -513,46 +496,40 @@ export function HomeContent({
                   >
                     <X className="w-4 h-4" />
                   </button>
-                  {isUserSecretMode ? (
-                    <div className="space-y-4 pt-1 pr-8">
-                      <h3 className="text-[17px] font-black text-white tracking-tight">{SECRET_OFFER_INTRO_USER.title}</h3>
-                      <ol className="space-y-2.5">
-                        {SECRET_OFFER_INTRO_USER.points.map((p, i) => (
-                          <li key={i} className="flex items-center gap-2.5">
-                            <span className="shrink-0 w-5 h-5 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-[11px] font-black text-amber-400">
-                              {i + 1}
-                            </span>
-                            <span className="text-[13.5px] text-neutral-200 font-medium leading-snug break-keep">{p}</span>
-                          </li>
-                        ))}
-                      </ol>
-                      <div className="border-t border-neutral-800 pt-3 space-y-2">
-                        {SECRET_OFFER_INTRO_USER.highlights.map((h, i) => (
-                          <p key={i} className="text-[13.5px] text-emerald-400 font-bold leading-snug break-keep flex items-start gap-1.5">
-                            <span className="shrink-0">{h.emoji}</span>
-                            <span>{h.text}</span>
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2 pr-8">
-                      {visibleSteps.map((step, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
-                        >
-                          <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
-                            {step.icon}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
-                            <p className="text-[12px] text-neutral-400 font-medium leading-snug break-keep whitespace-pre-line">{step.desc}</p>
-                          </div>
+                  <div className="flex flex-col gap-2 pr-8">
+                    {visibleSteps.map((step, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
+                      >
+                        <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
+                          {step.icon}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-[14px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
+                          <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
+                            {step.desc.split("\n").map((line, lineIdx, arr) => {
+                              const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                              return (
+                                <span key={lineIdx}>
+                                  {parts.map((part, pIdx) =>
+                                    /^\*\*[^*]+\*\*$/.test(part) ? (
+                                      <span key={pIdx} className="text-neutral-200 font-semibold">
+                                        {part.slice(2, -2)}
+                                      </span>
+                                    ) : (
+                                      <span key={pIdx}>{part}</span>
+                                    )
+                                  )}
+                                  {lineIdx < arr.length - 1 && "\n"}
+                                </span>
+                              );
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </section>
@@ -582,10 +559,10 @@ export function HomeContent({
 
 
         {!user && !isLoading && auctions.active.length > 0 && !(currentTab === "puzzle" && puzzles.length === 0) && currentTab !== "share" && (
-          <div className="text-center -mt-20 pb-3 space-y-1">
+          <div className="text-center -mt-20 pb-3 space-y-1 relative z-10">
             <p className="text-[12px] text-neutral-500">
               {currentTab === "puzzle"
-                ? "다음 주말, 어디갈지 정했어?"
+                ? "어떤 오퍼가 올지 궁금하다면?"
                 : "3초만에 로그인하고 입찰하기"}
             </p>
             <Link href={currentTab === "puzzle" ? "/login?redirect=/flags/new" : "/login"}>
