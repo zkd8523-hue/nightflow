@@ -71,6 +71,10 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
   const [statsLoading, setStatsLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<User | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleteAck, setBulkDeleteAck] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     if (!focusId) return;
@@ -179,6 +183,39 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setLoading(true);
+    setBulkProgress({ done: 0, total: ids.length });
+    let success = 0;
+    let failed = 0;
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i];
+      try {
+        const res = await fetch(`/api/admin/users/${id}/delete`, { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        success++;
+      } catch (error) {
+        failed++;
+        logError(error, "UserManagement.handleBulkDelete");
+      }
+      setBulkProgress({ done: i + 1, total: ids.length });
+    }
+    setLoading(false);
+    setBulkProgress(null);
+    setBulkDeleteOpen(false);
+    setBulkDeleteAck(false);
+    setSelectedIds(new Set());
+    if (failed === 0) {
+      toast.success(`${success}명 영구 삭제 완료`);
+    } else {
+      toast.error(`${success}명 성공 / ${failed}명 실패`);
+    }
+    window.location.reload();
   };
 
   const handleResetPenalty = async (userId: string, type: "noshow" | "strike") => {
@@ -324,12 +361,56 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
         </Select>
       </div>
 
+      {/* 일괄 선택 액션 바 */}
+      {selectedIds.size > 0 && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="text-sm text-white font-bold">
+            <span className="text-red-400">{selectedIds.size}명</span> 선택됨
+          </div>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setSelectedIds(new Set())}
+              className="bg-transparent border-neutral-700 text-neutral-300 hover:bg-neutral-800"
+            >
+              선택 해제
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => { setBulkDeleteOpen(true); setBulkDeleteAck(false); }}
+              className="bg-red-600 hover:bg-red-700 text-white font-bold"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+              선택 {selectedIds.size}명 영구 삭제
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* 유저 목록 */}
       <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-neutral-800">
+                <th className="w-10 p-4">
+                  <input
+                    type="checkbox"
+                    aria-label="전체 선택"
+                    checked={filteredUsers.length > 0 && filteredUsers.every(u => selectedIds.has(u.id))}
+                    onChange={(e) => {
+                      const next = new Set(selectedIds);
+                      if (e.target.checked) {
+                        filteredUsers.forEach(u => next.add(u.id));
+                      } else {
+                        filteredUsers.forEach(u => next.delete(u.id));
+                      }
+                      setSelectedIds(next);
+                    }}
+                    className="w-6 h-6 rounded accent-red-500 cursor-pointer"
+                  />
+                </th>
                 <th className="text-left p-4 text-sm font-bold text-neutral-400">이름</th>
                 <th className="text-left p-4 text-sm font-bold text-neutral-400">연락처</th>
                 <th className="text-center p-4 text-sm font-bold text-neutral-400">상태</th>
@@ -342,7 +423,7 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12 text-neutral-500">
+                  <td colSpan={8} className="text-center py-12 text-neutral-500">
                     유저가 없습니다
                   </td>
                 </tr>
@@ -351,9 +432,25 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                   return (
                     <tr
                       key={user.id}
-                      className="border-b border-neutral-800/50 hover:bg-neutral-900/50 transition-colors cursor-pointer"
+                      className={`border-b border-neutral-800/50 hover:bg-neutral-900/50 transition-colors cursor-pointer ${
+                        selectedIds.has(user.id) ? "bg-red-500/5" : ""
+                      }`}
                       onClick={() => setSelectedUser(user)}
                     >
+                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          aria-label={`${user.name || user.id} 선택`}
+                          checked={selectedIds.has(user.id)}
+                          onChange={(e) => {
+                            const next = new Set(selectedIds);
+                            if (e.target.checked) next.add(user.id);
+                            else next.delete(user.id);
+                            setSelectedIds(next);
+                          }}
+                          className="w-6 h-6 rounded accent-red-500 cursor-pointer"
+                        />
+                      </td>
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="relative w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
@@ -838,6 +935,80 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                 className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black disabled:opacity-30"
               >
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "영구 삭제"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 일괄 영구 삭제 확인 다이얼로그 */}
+      {bulkDeleteOpen && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={() => { if (!loading) { setBulkDeleteOpen(false); setBulkDeleteAck(false); } }}
+        >
+          <div
+            className="bg-[#1C1C1E] border border-red-500/30 rounded-3xl p-6 max-w-md w-full space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 text-red-400">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="text-lg font-black">선택 {selectedIds.size}명 영구 삭제</h3>
+            </div>
+            <div className="space-y-2 text-sm text-neutral-300">
+              <p>
+                선택한 <span className="font-black text-white">{selectedIds.size}명</span>의 유저를 한 번에 영구 삭제합니다.
+              </p>
+              <p className="text-red-400 text-xs leading-relaxed">
+                ⚠️ 30일 grace period 없이 즉시 삭제됩니다. 각 유저의 클럽·경매·입찰·거래·정산·VIP·찜 등 모든 데이터가 같이 삭제되며 복구할 수 없습니다.
+              </p>
+              <p className="text-amber-400 text-xs">
+                ※ MD 계정도 포함되어 있으면 해당 MD의 클럽과 경매 내역도 같이 삭제됩니다. Admin 계정은 자동으로 건너뜁니다.
+              </p>
+            </div>
+
+            {bulkProgress && (
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs text-neutral-400">
+                  <span>진행 중…</span>
+                  <span>{bulkProgress.done} / {bulkProgress.total}</span>
+                </div>
+                <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-red-500 transition-all"
+                    style={{ width: `${(bulkProgress.done / bulkProgress.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <label className="flex items-start gap-3 p-3 rounded-xl bg-neutral-900 border border-neutral-800 cursor-pointer hover:border-red-500/40 transition-colors">
+              <input
+                type="checkbox"
+                checked={bulkDeleteAck}
+                onChange={(e) => setBulkDeleteAck(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded accent-red-500"
+                autoFocus
+              />
+              <span className="text-[13px] text-neutral-300 leading-relaxed">
+                위 내용을 모두 확인했으며, <span className="font-black text-white">{selectedIds.size}명 일괄 삭제 + 복구 불가</span>임을 이해합니다.
+              </span>
+            </label>
+
+            <div className="flex gap-2">
+              <Button
+                onClick={() => { setBulkDeleteOpen(false); setBulkDeleteAck(false); }}
+                disabled={loading}
+                className="flex-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold"
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleBulkDelete}
+                disabled={loading || !bulkDeleteAck}
+                className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black disabled:opacity-30"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : `${selectedIds.size}명 영구 삭제`}
               </Button>
             </div>
           </div>
