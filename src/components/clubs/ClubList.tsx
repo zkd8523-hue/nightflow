@@ -178,12 +178,14 @@ function AreaCarousel({
             <ClubCard key={club.id} club={club} />
           ))}
         </div>
+        {/* "더 있어요" 시각 힌트 — 우측 그라데이션 페이드 */}
+        <div className="pointer-events-none absolute top-0 right-0 h-[175px] w-8 bg-gradient-to-l from-[#0A0A0A] to-transparent" />
         {/* 데스크톱 전용 좌우 버튼 */}
         <button
           type="button"
           onClick={() => scrollBy(-1)}
           aria-label="이전"
-          className="hidden md:flex absolute left-1 top-[95px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
+          className="hidden md:flex absolute left-1 top-[88px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -191,7 +193,7 @@ function AreaCarousel({
           type="button"
           onClick={() => scrollBy(1)}
           aria-label="다음"
-          className="hidden md:flex absolute right-1 top-[95px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
+          className="hidden md:flex absolute right-1 top-[88px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -219,9 +221,9 @@ function ClubCard({ club }: { club: ClubListItem }) {
   return (
     <Link
       href={`/clubs/${club.id}`}
-      className="flex-shrink-0 w-[152px] snap-start group"
+      className="flex-shrink-0 w-[140px] snap-start group"
     >
-      <div className="relative w-[152px] h-[190px] rounded-2xl overflow-hidden bg-neutral-900">
+      <div className="relative w-[140px] h-[175px] rounded-2xl overflow-hidden bg-neutral-900">
         {club.thumbnail_url ? (
           <Image
             src={club.thumbnail_url}
