@@ -12,13 +12,13 @@ export function PuzzleSocialProofBanner() {
       <p className="flex items-center gap-1.5 text-[11.5px] text-neutral-100 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
         <span className="text-sm leading-none flex-shrink-0">🔥</span>
         <span>
-          지난 2주 동안 깃발 <span className="text-amber-400 font-bold">{PUZZLE_COUNT}개</span>, 오퍼 <span className="text-amber-400 font-bold">{OFFER_COUNT}개</span>가 꽂혔어요
+          지난 2주, 깃발 <span className="text-amber-400 font-bold">{PUZZLE_COUNT}개</span> · 오퍼 <span className="text-amber-400 font-bold">{OFFER_COUNT}개</span>
         </span>
       </p>
       <p className="flex items-center gap-1.5 text-[11.5px] text-neutral-100 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
         <span className="text-sm leading-none flex-shrink-0">⚡</span>
         <span>
-          등록 <span className="text-amber-400 font-bold">1시간</span> 안에 평균 <span className="text-amber-400 font-bold">{AVG_OFFERS_1H}개</span> 오퍼가 도착해요
+          등록 <span className="text-amber-400 font-bold">1시간</span> 내 평균 <span className="text-amber-400 font-bold">{AVG_OFFERS_1H}개</span> 오퍼 도착
         </span>
       </p>
     </div>
