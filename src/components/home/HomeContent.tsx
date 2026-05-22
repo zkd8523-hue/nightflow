@@ -492,11 +492,12 @@ export function HomeContent({
                 <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
                   <button
                     onClick={dismissGuide}
-                    className="absolute top-3 right-3 w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-colors z-10"
+                    aria-label="가이드 닫기"
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
-                  <div className="flex flex-col gap-2 pr-8">
+                  <div className="flex flex-col gap-2">
                     {visibleSteps.map((step, idx) => (
                       <div
                         key={idx}
