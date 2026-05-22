@@ -261,7 +261,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
             >
-              ⛳ 깃발 {filteredPuzzles.length > 0 && `(${filteredPuzzles.length})`}
+              🚩 깃발
             </button>
 
             <button
@@ -271,7 +271,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
             >
-              🧩 얼리버드 조각 {shareAuctions.length > 0 && `(${shareAuctions.length})`}
+              🧩 얼리버드 조각
             </button>
 
 {instantEnabled && (

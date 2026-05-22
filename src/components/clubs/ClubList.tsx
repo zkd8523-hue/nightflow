@@ -160,8 +160,10 @@ function AreaCarousel({
   const scrollBy = (dir: 1 | -1) => {
     const el = scrollRef.current;
     if (!el) return;
-    // 카드 너비(140) + gap(12) = 152. 한 번에 카드 1개씩 이동
-    el.scrollBy({ left: dir * 152, behavior: "smooth" });
+    const STEP = 152; // 카드 너비(140) + gap(12)
+    const currentCard = Math.round(el.scrollLeft / STEP);
+    const nextCard = Math.max(0, currentCard + dir);
+    el.scrollTo({ left: nextCard * STEP, behavior: "smooth" });
   };
 
   return (
@@ -173,7 +175,7 @@ function AreaCarousel({
         </span>
       </h2>
       <div className="-mx-4 px-4 relative group">
-        <div ref={scrollRef} className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory">
+        <div ref={scrollRef} data-no-pull-refresh className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory touch-pan-x">
           {clubs.map((club) => (
             <ClubCard key={club.id} club={club} />
           ))}
@@ -221,7 +223,7 @@ function ClubCard({ club }: { club: ClubListItem }) {
   return (
     <Link
       href={`/clubs/${club.id}`}
-      className="flex-shrink-0 w-[140px] snap-start group"
+      className="flex-shrink-0 w-[140px] snap-start snap-always group"
     >
       <div className="relative w-[140px] h-[175px] rounded-2xl overflow-hidden bg-neutral-900">
         {club.thumbnail_url ? (
