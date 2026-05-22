@@ -23,15 +23,17 @@ type SortKey = "event" | "created";
 
 const STATUS_FILTER_LABEL: Record<string, string> = {
   open: "모집 중",
+  selecting: "선택 중",
   expired: "만료",
   accepted: "성사",
   matched: "마감",
   cancelled: "취소",
 };
-const STATUS_FILTER_ORDER = ["open", "expired", "accepted", "matched", "cancelled"];
+const STATUS_FILTER_ORDER = ["open", "selecting", "expired", "accepted", "matched", "cancelled"];
 
 const STATUS_LABEL: Record<string, string> = {
   open: "모집 중",
+  selecting: "선택 중",
   matched: "마감",
   accepted: "성사됨",
   cancelled: "취소됨",
@@ -40,6 +42,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_COLOR: Record<string, string> = {
   open: "bg-green-500/20 text-green-400",
+  selecting: "bg-purple-500/20 text-purple-400",
   matched: "bg-amber-500/20 text-amber-400",
   accepted: "bg-amber-500/20 text-amber-400",
   cancelled: "bg-neutral-700 text-neutral-400",
