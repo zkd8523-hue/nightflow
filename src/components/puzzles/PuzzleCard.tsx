@@ -181,8 +181,14 @@ export const PuzzleCard = memo(function PuzzleCard({
   const isFavorited = isFavoritedPuzzle(puzzle.id);
   const canFavorite = isMd && isRecruitingParty;
 
+  // 카드 전체 클릭 가능 여부: 인원 확정 깃발(자세히 보기 모드) + 비-MD
+  const isCardClickable = !isMd && !isRecruitingParty;
+
   return (
-    <div className="relative bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
+    <div
+      className={`relative bg-[#1C1C1E] rounded-2xl p-3 space-y-2 ${isCardClickable ? "cursor-pointer hover:bg-neutral-900/60 transition-colors" : ""}`}
+      onClick={isCardClickable ? () => router.push(`/flags/${puzzle.id}`) : undefined}
+    >
       {isNew && !hideNewBadge && (
         <div
           className="animate-new-badge pointer-events-none absolute -top-4 -right-2.5 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none"
@@ -208,7 +214,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             </p>
           )}
         </div>
-        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+        <div className="flex flex-col items-end gap-1 flex-shrink-0">
           {isRecruitingParty && !isFull ? (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
               🧩 퍼즐
@@ -218,6 +224,12 @@ export const PuzzleCard = memo(function PuzzleCard({
               🚩 깃발
             </span>
           )}
+          <p
+            className="text-[9px] text-neutral-500 whitespace-nowrap mr-1.5"
+            suppressHydrationWarning
+          >
+            {formatRelativeTime(puzzle.created_at)}
+          </p>
           <div className="flex items-center gap-1">
             {canFavorite && (
               <button
@@ -289,7 +301,8 @@ export const PuzzleCard = memo(function PuzzleCard({
         <p className="text-[12px] text-amber-400 font-bold tabular-nums">
           {offerCount} {offerCount === 1 ? "offer" : "offers"}
         </p>
-      ) : offerCount > 0 ? (
+      ) : offerCount > 0 && isRecruitingParty ? (
+        // 모집 중 깃발은 위쪽에 별도로 표시. 인원 확정 깃발은 자세히 보기 버튼 옆으로 이동.
         <p className="text-[12px] text-amber-400 font-bold">
           MD {offerCount}명이 줄서있어요
         </p>
@@ -309,14 +322,8 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
       )}
 
-      {/* CTA 버튼 (등록일시는 우측 상단에 absolute로 띄움) */}
-      <div className="relative">
-        <p
-          className="absolute -top-5 right-1 text-[10px] text-neutral-500 whitespace-nowrap pointer-events-none"
-          suppressHydrationWarning
-        >
-          {formatRelativeTime(puzzle.created_at)}
-        </p>
+      {/* CTA 버튼 (작성날짜는 카드 상단 깃발 배지 아래로 이동) */}
+      <div className="relative -mt-2">
       {isMd ? (
         hasOffered ? (
           <Button
@@ -334,13 +341,22 @@ export const PuzzleCard = memo(function PuzzleCard({
           </Button>
         )
       ) : !isRecruitingParty ? (
-        // 인원 확정 깃발: 참여 불가, 상세로 이동
-        <Button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-          className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-neutral-900 border border-neutral-800 text-neutral-300 hover:bg-neutral-800"
-        >
-          자세히 보기
-        </Button>
+        // 인원 확정 깃발: 참여 불가, 상세로 이동 — 버튼은 absolute로 텍스트 아랫선에 맞춤 (위로 올라가는 느낌)
+        <div className="relative">
+          {offerCount > 0 ? (
+            <p className="text-[12px] text-amber-400 font-bold">
+              MD {offerCount}명이 줄서있어요
+            </p>
+          ) : (
+            <p className="text-[12px] invisible">.</p>
+          )}
+          <Button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
+            className="absolute right-0 bottom-0 h-9 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all active:scale-[0.97]"
+          >
+            자세히 보기
+          </Button>
+        </div>
       ) : isFull ? (
         <div className="space-y-2">
           <p className="text-[12px] text-neutral-500 font-medium text-center">파티 마감</p>
