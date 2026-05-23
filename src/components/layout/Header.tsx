@@ -119,18 +119,28 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
   // (hydration mismatch 회피: 초기 상태는 서버와 동일하게)
   const [isOnClubMapView, setIsOnClubMapView] = useState(false);
   useEffect(() => {
-    const check = () => {
-      const isMap =
-        pathname === "/clubs" &&
-        new URLSearchParams(window.location.search).get("view") === "map";
-      setIsOnClubMapView(isMap);
+    if (pathname !== "/clubs") {
+      setIsOnClubMapView(false);
+      return;
+    }
+    setIsOnClubMapView(
+      new URLSearchParams(window.location.search).get("view") === "map"
+    );
+    const onChange = (e: Event) => {
+      const detail = (e as CustomEvent<{ view?: string }>).detail;
+      if (detail?.view) {
+        setIsOnClubMapView(detail.view === "map");
+      } else {
+        setIsOnClubMapView(
+          new URLSearchParams(window.location.search).get("view") === "map"
+        );
+      }
     };
-    check();
-    window.addEventListener("club-view-change", check);
-    window.addEventListener("popstate", check);
+    window.addEventListener("club-view-change", onChange);
+    window.addEventListener("popstate", onChange);
     return () => {
-      window.removeEventListener("club-view-change", check);
-      window.removeEventListener("popstate", check);
+      window.removeEventListener("club-view-change", onChange);
+      window.removeEventListener("popstate", onChange);
     };
   }, [pathname]);
   const [menuOpen, setMenuOpen] = useState(false);

@@ -64,9 +64,11 @@ export function ClubList({ clubs, activeCountMap }: Props) {
     const qs = params.toString();
     const url = qs ? `/clubs?${qs}` : "/clubs";
     router.replace(url, { scroll: false });
-    // Header가 view 변경을 감지해 자기 표시 여부를 다시 계산
+    // Header/layout이 view 변경을 감지해 자기 표시 여부를 다시 계산
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("club-view-change"));
+      window.dispatchEvent(
+        new CustomEvent("club-view-change", { detail: { view } })
+      );
     }
   }, [filters, view, router]);
 

@@ -17,21 +17,38 @@ export default function MainLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  // 클럽지도(view=map)에서 Header 자체를 마운트하지 않음 (hydration 영향 없음)
+  // 클럽지도(view=map)에서 Header 자체를 마운트하지 않음.
+  // URL search 폴링은 일부 환경에서 동기화 지연이 있어,
+  // ClubList가 직접 보내주는 'club-view-change' 이벤트의 detail.view를 우선 사용.
   const [isClubMapView, setIsClubMapView] = useState(false);
   useEffect(() => {
-    const check = () => {
-      const isMap =
-        pathname === "/clubs" &&
-        new URLSearchParams(window.location.search).get("view") === "map";
-      setIsClubMapView(isMap);
+    // /clubs를 떠나면 무조건 false로 리셋
+    if (pathname !== "/clubs") {
+      setIsClubMapView(false);
+      return;
+    }
+    // 진입 시점 URL 기반 1차 판정 (직접 ?view=map URL 접속 케이스)
+    const urlIsMap =
+      new URLSearchParams(window.location.search).get("view") === "map";
+    setIsClubMapView(urlIsMap);
+
+    // 이벤트 기반 후속 동기화 (토글 변경)
+    const onChange = (e: Event) => {
+      const detail = (e as CustomEvent<{ view?: string }>).detail;
+      if (detail?.view) {
+        setIsClubMapView(detail.view === "map");
+      } else {
+        // detail 없으면 URL 재조회 fallback
+        setIsClubMapView(
+          new URLSearchParams(window.location.search).get("view") === "map"
+        );
+      }
     };
-    check();
-    window.addEventListener("club-view-change", check);
-    window.addEventListener("popstate", check);
+    window.addEventListener("club-view-change", onChange);
+    window.addEventListener("popstate", onChange);
     return () => {
-      window.removeEventListener("club-view-change", check);
-      window.removeEventListener("popstate", check);
+      window.removeEventListener("club-view-change", onChange);
+      window.removeEventListener("popstate", onChange);
     };
   }, [pathname]);
 
