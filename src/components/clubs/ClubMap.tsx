@@ -249,7 +249,7 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
   };
 
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-neutral-900" style={{ height: "calc(100vh - 140px)" }}>
+    <div className="relative rounded-2xl overflow-hidden bg-neutral-900" style={{ height: "calc(100vh - 120px)" }}>
       <div
         ref={mapRef}
         data-no-pull-refresh

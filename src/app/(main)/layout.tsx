@@ -45,9 +45,9 @@ export default function MainLayout({
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-neutral-950 flex flex-col">
         {!isClubMapView && <Header />}
-        <main className="flex-1 pb-16">{children}</main>
-        <Footer />
-        <BottomNav />
+        <main className={`flex-1 ${isClubMapView ? "" : "pb-16"}`}>{children}</main>
+        {!isClubMapView && <Footer />}
+        {!isClubMapView && <BottomNav />}
         <SelectingFlagAlertSheet />
         <CancellationSurveySheet isOtherSheetOpen={false} />
       </div>
