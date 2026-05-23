@@ -31,8 +31,8 @@ interface Props {
 
 // 2단계 스냅 포인트 (viewport 높이 비율)
 const SNAP_POINTS = {
-  collapsed: 0.2, // 핸들 + 카드 한 줄 살짝
-  expanded: 0.7,  // 전체 리스트 보기
+  collapsed: 0.38, // 큰 카드 1개 정확히 보임 (여기어때 패턴)
+  expanded: 0.78,  // 전체 리스트 보기
 };
 
 type Snap = keyof typeof SNAP_POINTS;
