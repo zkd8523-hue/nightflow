@@ -21,6 +21,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/ko";
+
+dayjs.extend(relativeTime);
+dayjs.locale("ko");
 import {
   Search,
   ShieldBan,
@@ -64,17 +69,13 @@ interface UserManagementProps {
 export function UserManagement({ users, focusId }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "recent_seen" | "long_inactive">("newest");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<UserActivityStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<User | null>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [bulkDeleteAck, setBulkDeleteAck] = useState(false);
-  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
 
   useEffect(() => {
     if (!focusId) return;
@@ -185,39 +186,6 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
     }
   };
 
-  const handleBulkDelete = async () => {
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
-    setLoading(true);
-    setBulkProgress({ done: 0, total: ids.length });
-    let success = 0;
-    let failed = 0;
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
-      try {
-        const res = await fetch(`/api/admin/users/${id}/delete`, { method: "POST" });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-        success++;
-      } catch (error) {
-        failed++;
-        logError(error, "UserManagement.handleBulkDelete");
-      }
-      setBulkProgress({ done: i + 1, total: ids.length });
-    }
-    setLoading(false);
-    setBulkProgress(null);
-    setBulkDeleteOpen(false);
-    setBulkDeleteAck(false);
-    setSelectedIds(new Set());
-    if (failed === 0) {
-      toast.success(`${success}명 영구 삭제 완료`);
-    } else {
-      toast.error(`${success}명 성공 / ${failed}명 실패`);
-    }
-    window.location.reload();
-  };
-
   const handleResetPenalty = async (userId: string, type: "noshow" | "strike") => {
     setLoading(true);
     try {
@@ -268,6 +236,15 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
 
     return matchesSearch && matchesStatus;
   }).sort((a, b) => {
+    if (sortOrder === "recent_seen" || sortOrder === "long_inactive") {
+      // last_seen_at 기준 (null은 항상 맨 뒤로)
+      const aVal = a.last_seen_at ? dayjs(a.last_seen_at).valueOf() : 0;
+      const bVal = b.last_seen_at ? dayjs(b.last_seen_at).valueOf() : 0;
+      if (aVal === 0 && bVal === 0) return 0;
+      if (aVal === 0) return 1;
+      if (bVal === 0) return -1;
+      return sortOrder === "recent_seen" ? bVal - aVal : aVal - bVal;
+    }
     const diff = dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf();
     return sortOrder === "newest" ? diff : -diff;
   });
@@ -350,80 +327,37 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
             <SelectItem value="md">MD만</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as "newest" | "oldest")}>
-          <SelectTrigger className="w-[140px] bg-[#1C1C1E] border-neutral-800 text-white">
+        <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as typeof sortOrder)}>
+          <SelectTrigger className="w-[170px] bg-[#1C1C1E] border-neutral-800 text-white">
             <SelectValue placeholder="정렬" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="newest">최신순</SelectItem>
-            <SelectItem value="oldest">오래된순</SelectItem>
+            <SelectItem value="newest">가입 최신순</SelectItem>
+            <SelectItem value="oldest">가입 오래된순</SelectItem>
+            <SelectItem value="recent_seen">접속 최근순</SelectItem>
+            <SelectItem value="long_inactive">접속 오래된순</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* 일괄 선택 액션 바 */}
-      {selectedIds.size > 0 && (
-        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
-          <div className="text-sm text-white font-bold">
-            <span className="text-red-400">{selectedIds.size}명</span> 선택됨
-          </div>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setSelectedIds(new Set())}
-              className="bg-transparent border-neutral-700 text-neutral-300 hover:bg-neutral-800"
-            >
-              선택 해제
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => { setBulkDeleteOpen(true); setBulkDeleteAck(false); }}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold"
-            >
-              <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-              선택 {selectedIds.size}명 영구 삭제
-            </Button>
-          </div>
-        </div>
-      )}
-
       {/* 유저 목록 */}
       <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+        <div className="overflow-x-auto landscape:max-md:overflow-x-visible">
+          <table className="w-full landscape:max-md:table-fixed">
             <thead>
-              <tr className="border-b border-neutral-800">
-                <th className="w-10 p-4">
-                  <input
-                    type="checkbox"
-                    aria-label="전체 선택"
-                    checked={filteredUsers.length > 0 && filteredUsers.every(u => selectedIds.has(u.id))}
-                    onChange={(e) => {
-                      const next = new Set(selectedIds);
-                      if (e.target.checked) {
-                        filteredUsers.forEach(u => next.add(u.id));
-                      } else {
-                        filteredUsers.forEach(u => next.delete(u.id));
-                      }
-                      setSelectedIds(next);
-                    }}
-                    className="w-6 h-6 rounded accent-red-500 cursor-pointer"
-                  />
-                </th>
-                <th className="text-left p-4 text-sm font-bold text-neutral-400">이름</th>
-                <th className="text-left p-4 text-sm font-bold text-neutral-400">연락처</th>
-                <th className="text-center p-4 text-sm font-bold text-neutral-400">상태</th>
-                <th className="text-center p-4 text-sm font-bold text-neutral-400">스트라이크</th>
-                <th className="text-center p-4 text-sm font-bold text-neutral-400">레거시</th>
-                <th className="text-left p-4 text-sm font-bold text-neutral-400">가입일</th>
-                <th className="text-center p-4 text-sm font-bold text-neutral-400">액션</th>
+              <tr className="border-b border-neutral-800 landscape:max-md:text-[11px]">
+                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">이름</th>
+                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">연락처</th>
+                <th className="text-center p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">상태</th>
+                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">가입일</th>
+                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">최근 접속</th>
+                <th className="text-center p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">액션</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-neutral-500">
+                  <td colSpan={6} className="text-center py-12 text-neutral-500">
                     유저가 없습니다
                   </td>
                 </tr>
@@ -432,26 +366,10 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                   return (
                     <tr
                       key={user.id}
-                      className={`border-b border-neutral-800/50 hover:bg-neutral-900/50 transition-colors cursor-pointer ${
-                        selectedIds.has(user.id) ? "bg-red-500/5" : ""
-                      }`}
+                      className="border-b border-neutral-800/50 hover:bg-neutral-900/50 transition-colors cursor-pointer"
                       onClick={() => setSelectedUser(user)}
                     >
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="checkbox"
-                          aria-label={`${user.name || user.id} 선택`}
-                          checked={selectedIds.has(user.id)}
-                          onChange={(e) => {
-                            const next = new Set(selectedIds);
-                            if (e.target.checked) next.add(user.id);
-                            else next.delete(user.id);
-                            setSelectedIds(next);
-                          }}
-                          className="w-6 h-6 rounded accent-red-500 cursor-pointer"
-                        />
-                      </td>
-                      <td className="p-4">
+                      <td className="p-4 landscape:max-md:p-2">
                         <div className="flex items-center gap-3">
                           <div className="relative w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
                             <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-neutral-500 uppercase">{user.name?.substring(0, 1)}</span>
@@ -465,42 +383,31 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                             )}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white flex items-center gap-1.5">
+                            <p className="text-sm font-bold text-white flex items-center gap-1.5 flex-wrap">
                               {user.display_name || user.name}
                               {user.role === "md" && (
                                 <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">MD</span>
+                              )}
+                              {(user.strike_count || 0) > 0 && (
+                                <span
+                                  className="text-[9px] font-black px-1.5 py-0.5 rounded bg-red-500/20 text-red-400"
+                                  title={`스트라이크 ${user.strike_count}회`}
+                                >
+                                  스트라이크 {user.strike_count}
+                                </span>
                               )}
                             </p>
                             <p className="text-[10px] text-neutral-500 font-mono">{user.kakao_id}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="p-4">
+                      <td className="p-4 landscape:max-md:p-2">
                         <p className="text-sm text-neutral-400">{user.phone || "-"}</p>
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="p-4 landscape:max-md:p-2 text-center">
                         {getStatusBadge(user)}
                       </td>
-                      {/* Model B 스트라이크 (주요) */}
-                      <td className="p-4 text-center">
-                        <div className="flex flex-col items-center gap-0.5">
-                          <span className={`text-lg font-black ${(user.strike_count || 0) > 0 ? "text-red-500" : "text-neutral-600"}`}>
-                            {user.strike_count || 0}S
-                          </span>
-                          {(user.strike_count || 0) > 0 && (
-                            <span className="text-[9px] text-red-400 font-medium uppercase">Active</span>
-                          )}
-                        </div>
-                      </td>
-                      {/* 레거시 노쇼 */}
-                      <td className="p-4 text-center">
-                        <div className="text-xs text-neutral-500">
-                          <span className={`font-bold ${user.noshow_count > 0 ? "text-amber-500" : ""}`}>
-                            {user.noshow_count}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4">
+                      <td className="p-4 landscape:max-md:p-2">
                         <p className="text-xs text-neutral-400">
                           {dayjs(user.created_at).format("YYYY-MM-DD")}
                         </p>
@@ -510,7 +417,21 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                           </p>
                         )}
                       </td>
-                      <td className="p-4 text-center">
+                      <td className="p-4 landscape:max-md:p-2">
+                        {user.last_seen_at ? (
+                          <>
+                            <p className="text-xs text-neutral-300">
+                              {dayjs(user.last_seen_at).format("YYYY-MM-DD")}
+                            </p>
+                            <p className="text-[10px] text-neutral-500 mt-0.5">
+                              {dayjs(user.last_seen_at).fromNow()}
+                            </p>
+                          </>
+                        ) : (
+                          <span className="text-xs text-neutral-600">-</span>
+                        )}
+                      </td>
+                      <td className="p-4 landscape:max-md:p-2 text-center">
                         <div className="flex items-center justify-center gap-1.5">
                           {user.is_blocked ? (
                             <Button
@@ -573,21 +494,6 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                               </Button>
                             </>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteConfirm(user);
-                              setDeleteConfirmText("");
-                            }}
-                            disabled={loading}
-                            className="text-xs bg-transparent border-red-700/40 text-red-400 hover:bg-red-700/20"
-                            title="유저 영구 삭제 (auth + DB 완전 제거)"
-                          >
-                            <Trash2 className="w-3 h-3 mr-1" />
-                            삭제
-                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -941,79 +847,6 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
         </div>
       )}
 
-      {/* 일괄 영구 삭제 확인 다이얼로그 */}
-      {bulkDeleteOpen && (
-        <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={() => { if (!loading) { setBulkDeleteOpen(false); setBulkDeleteAck(false); } }}
-        >
-          <div
-            className="bg-[#1C1C1E] border border-red-500/30 rounded-3xl p-6 max-w-md w-full space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-2 text-red-400">
-              <AlertTriangle className="w-5 h-5" />
-              <h3 className="text-lg font-black">선택 {selectedIds.size}명 영구 삭제</h3>
-            </div>
-            <div className="space-y-2 text-sm text-neutral-300">
-              <p>
-                선택한 <span className="font-black text-white">{selectedIds.size}명</span>의 유저를 한 번에 영구 삭제합니다.
-              </p>
-              <p className="text-red-400 text-xs leading-relaxed">
-                ⚠️ 30일 grace period 없이 즉시 삭제됩니다. 각 유저의 클럽·경매·입찰·거래·정산·VIP·찜 등 모든 데이터가 같이 삭제되며 복구할 수 없습니다.
-              </p>
-              <p className="text-amber-400 text-xs">
-                ※ MD 계정도 포함되어 있으면 해당 MD의 클럽과 경매 내역도 같이 삭제됩니다. Admin 계정은 자동으로 건너뜁니다.
-              </p>
-            </div>
-
-            {bulkProgress && (
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-xs text-neutral-400">
-                  <span>진행 중…</span>
-                  <span>{bulkProgress.done} / {bulkProgress.total}</span>
-                </div>
-                <div className="h-1.5 bg-neutral-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-red-500 transition-all"
-                    style={{ width: `${(bulkProgress.done / bulkProgress.total) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <label className="flex items-start gap-3 p-3 rounded-xl bg-neutral-900 border border-neutral-800 cursor-pointer hover:border-red-500/40 transition-colors">
-              <input
-                type="checkbox"
-                checked={bulkDeleteAck}
-                onChange={(e) => setBulkDeleteAck(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded accent-red-500"
-                autoFocus
-              />
-              <span className="text-[13px] text-neutral-300 leading-relaxed">
-                위 내용을 모두 확인했으며, <span className="font-black text-white">{selectedIds.size}명 일괄 삭제 + 복구 불가</span>임을 이해합니다.
-              </span>
-            </label>
-
-            <div className="flex gap-2">
-              <Button
-                onClick={() => { setBulkDeleteOpen(false); setBulkDeleteAck(false); }}
-                disabled={loading}
-                className="flex-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold"
-              >
-                취소
-              </Button>
-              <Button
-                onClick={handleBulkDelete}
-                disabled={loading || !bulkDeleteAck}
-                className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black disabled:opacity-30"
-              >
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : `${selectedIds.size}명 영구 삭제`}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

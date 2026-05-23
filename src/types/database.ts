@@ -174,6 +174,8 @@ export interface User {
 
   created_at: string;
   updated_at: string;
+  /** Migration 201: 마지막 접속 시각. 인증된 사용자가 본인 row만 갱신. */
+  last_seen_at: string | null;
   /** 회원탈퇴 시점 (Soft Delete). null이면 활성 계정. */
   deleted_at: string | null;
 }
