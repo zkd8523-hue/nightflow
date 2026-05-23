@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -114,26 +114,26 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
   // 깃발 등록/수정 페이지에선 헤더의 "깃발 꽂기" CTA 숨김
   const isOnFlagNewPage = pathname === "/flags/new" || /^\/flags\/[^/]+\/edit$/.test(pathname);
   // 클럽지도(view=map)에서는 화면을 지도에 양보.
-  // useSearchParams는 정적 prerender를 깨므로 mount 후 window.location 직접 사용.
+  // useSearchParams는 정적 prerender를 깨므로 window.location 직접 사용.
   // ClubList가 view 토글 시 dispatch하는 커스텀 이벤트 'club-view-change'를 청취.
-  const [isOnClubMapView, setIsOnClubMapView] = useState(false);
+  const computeIsMapView = useCallback(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      pathname === "/clubs" &&
+      new URLSearchParams(window.location.search).get("view") === "map"
+    );
+  }, [pathname]);
+  const [isOnClubMapView, setIsOnClubMapView] = useState(computeIsMapView);
   useEffect(() => {
-    const check = () => {
-      if (typeof window === "undefined") return;
-      const isMap =
-        pathname === "/clubs" &&
-        new URLSearchParams(window.location.search).get("view") === "map";
-      setIsOnClubMapView(isMap);
-    };
-    check();
-    const onChange = () => check();
+    setIsOnClubMapView(computeIsMapView());
+    const onChange = () => setIsOnClubMapView(computeIsMapView());
     window.addEventListener("club-view-change", onChange);
     window.addEventListener("popstate", onChange);
     return () => {
       window.removeEventListener("club-view-change", onChange);
       window.removeEventListener("popstate", onChange);
     };
-  }, [pathname]);
+  }, [computeIsMapView]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
