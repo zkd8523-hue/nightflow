@@ -64,6 +64,10 @@ export function ClubList({ clubs, activeCountMap }: Props) {
     const qs = params.toString();
     const url = qs ? `/clubs?${qs}` : "/clubs";
     router.replace(url, { scroll: false });
+    // Header가 view 변경을 감지해 자기 표시 여부를 다시 계산
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("club-view-change"));
+    }
   }, [filters, view, router]);
 
   // 같은 클럽 중복 등록 처리 (DB 노터치, 프론트에서만 숨김)
