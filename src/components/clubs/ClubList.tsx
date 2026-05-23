@@ -4,9 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Wine, ChevronLeft, ChevronRight } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, type ClubFilters } from "./ClubFilterChips";
+import { ClubMap } from "./ClubMap";
 import {
   FEATURE_GROUPS,
   getTagsByGroup,
@@ -21,7 +22,11 @@ interface ClubListItem {
   thumbnail_url: string | null;
   tags: string[];
   drink_menu_url: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
 }
+
+type ViewMode = "list" | "map";
 
 interface Props {
   clubs: ClubListItem[];
@@ -44,15 +49,19 @@ export function ClubList({ clubs, activeCountMap }: Props) {
     areas: parseList(searchParams.get("area")),
     genres: parseList(searchParams.get("genre")),
   }));
+  const [view, setView] = useState<ViewMode>(
+    () => (searchParams.get("view") === "map" ? "map" : "list")
+  );
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (filters.areas.length) params.set("area", filters.areas.join(","));
     if (filters.genres.length) params.set("genre", filters.genres.join(","));
+    if (view === "map") params.set("view", "map");
     const qs = params.toString();
     const url = qs ? `/clubs?${qs}` : "/clubs";
     router.replace(url, { scroll: false });
-  }, [filters, router]);
+  }, [filters, view, router]);
 
   // 같은 클럽 중복 등록 처리 (DB 노터치, 프론트에서만 숨김)
   // - 정규화: lowercase + "club " 접두/접미 제거
@@ -118,11 +127,50 @@ export function ClubList({ clubs, activeCountMap }: Props) {
   // "기타"가 있다면 마지막에 추가
   if (byArea["기타"]?.length) orderedAreas.push("기타");
 
+  const mappableCount = filtered.filter((c) => c.latitude != null && c.longitude != null).length;
+
   return (
     <div className="space-y-6">
-      <ClubFilterChips value={filters} onChange={setFilters} />
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <ClubFilterChips value={filters} onChange={setFilters} />
+        </div>
+        <div className="flex items-center bg-neutral-900 rounded-full p-0.5 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setView("list")}
+            aria-label="리스트 보기"
+            aria-pressed={view === "list"}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
+              view === "list" ? "bg-white text-black" : "text-neutral-400"
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("map")}
+            aria-label="지도 보기"
+            aria-pressed={view === "map"}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
+              view === "map" ? "bg-white text-black" : "text-neutral-400"
+            }`}
+          >
+            <MapIcon className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
 
-      {filtered.length === 0 ? (
+      {view === "map" ? (
+        <div className="space-y-2">
+          <ClubMap clubs={filtered} activeCountMap={activeCountMap} />
+          {mappableCount < filtered.length && (
+            <p className="text-[11px] text-neutral-500 text-center px-2">
+              좌표 미등록 클럽 {filtered.length - mappableCount}곳은 지도에 표시되지 않아요
+            </p>
+          )}
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <p className="text-neutral-400 text-sm">
             조건에 맞는 클럽이 없습니다

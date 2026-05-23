@@ -97,6 +97,29 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
           toast.error(j.error || "기본 정보 변경 실패"); return;
         }
       }
+      // 주소가 변경됐다면 geocoding → 좌표 저장 (실패해도 다음 단계 진행)
+      if (trimmedAddress && trimmedAddress !== initialAddress) {
+        try {
+          const geoRes = await fetch("/api/admin/geocode", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ address: trimmedAddress }),
+          });
+          if (geoRes.ok) {
+            const geo = await geoRes.json() as { lat: number; lng: number };
+            await fetch("/api/admin/clubs/update-coords", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ clubId, lat: geo.lat, lng: geo.lng }),
+            });
+          } else {
+            toast.warning("좌표 변환 실패 (주소만 저장됨)");
+          }
+        } catch (geoErr) {
+          console.warn("[geocode]", geoErr);
+        }
+      }
+
       // 태그 변경
       const res = await fetch("/api/admin/clubs/update-tags", {
         method: "POST",
