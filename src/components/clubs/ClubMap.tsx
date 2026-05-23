@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { Flag, MapPin } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { MapPin, LocateFixed, Loader2, ArrowLeft } from "lucide-react";
+import { ClubMapSheet } from "./ClubMapSheet";
 
 interface ClubMapItem {
   id: string;
@@ -13,6 +14,9 @@ interface ClubMapItem {
   latitude?: number | null;
   longitude?: number | null;
   tags?: string[];
+  drink_menu_url?: string | null;
+  operating_hours?: string | null;
+  entry_fee_detail?: string | null;
 }
 
 interface Props {
@@ -67,14 +71,84 @@ function loadKakaoSdk(): Promise<void> {
 }
 
 export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
+  const router = useRouter();
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [selectedClub, setSelectedClub] = useState<ClubMapItem | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [sheetRatio, setSheetRatio] = useState(0.5);
+  const userPinRef = useRef<any>(null);
 
-  const withCoords = clubs.filter((c) => c.latitude != null && c.longitude != null);
+  const handleLocate = useCallback((opts: { silent?: boolean } = {}) => {
+    if (!mapInstanceRef.current) return;
+    if (!("geolocation" in navigator)) {
+      if (!opts.silent) toast.error("이 브라우저는 위치 기능을 지원하지 않아요");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const map = mapInstanceRef.current;
+        const latlng = new window.kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+        map.setLevel(5);
+        map.panTo(latlng);
+
+        // 내 위치 핀 (파란 점)
+        if (userPinRef.current) userPinRef.current.setMap(null);
+        const dot = document.createElement("div");
+        dot.innerHTML = `
+          <div class="relative">
+            <div class="absolute -inset-2 rounded-full bg-blue-500/30 animate-ping"></div>
+            <div class="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-lg"></div>
+          </div>
+        `;
+        const overlay = new window.kakao.maps.CustomOverlay({
+          position: latlng,
+          content: dot,
+          yAnchor: 0.5,
+          xAnchor: 0.5,
+          zIndex: 100,
+        });
+        overlay.setMap(map);
+        userPinRef.current = overlay;
+        setLocating(false);
+      },
+      (err) => {
+        setLocating(false);
+        if (opts.silent) return; // 자동 시도 실패 시 조용히 무시
+        if (err.code === err.PERMISSION_DENIED) {
+          toast.error("위치 권한이 필요해요. 브라우저 설정을 확인해주세요");
+        } else {
+          toast.error("위치를 가져올 수 없어요");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }, []);
+
+  // 페이지 진입 시 권한이 이미 허용된 경우만 자동으로 내 위치 이동
+  useEffect(() => {
+    if (status !== "ready") return;
+    if (typeof navigator === "undefined" || !navigator.permissions) return;
+    navigator.permissions
+      .query({ name: "geolocation" as PermissionName })
+      .then((result) => {
+        if (result.state === "granted") {
+          handleLocate({ silent: true });
+        }
+      })
+      .catch(() => { /* permissions API 미지원 브라우저는 무시 */ });
+  }, [status, handleLocate]);
+
+  // ClubList에서 검색·필터가 적용된 clubs를 받음
+  const filtered = useMemo(
+    () => clubs.filter((c) => c.latitude != null && c.longitude != null),
+    [clubs]
+  );
+  const withCoords = filtered;
 
   useEffect(() => {
     let cancelled = false;
@@ -106,15 +180,19 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
     overlaysRef.current.forEach((o) => o.setMap(null));
     overlaysRef.current = [];
 
-    withCoords.forEach((c) => {
+    filtered.forEach((c) => {
       const pos = new window.kakao.maps.LatLng(c.latitude!, c.longitude!);
-      const flagCount = activeCountMap[c.id] || 0;
+      const isSelected = selectedClub?.id === c.id;
 
       const el = document.createElement("div");
       el.className = "cursor-pointer transition-transform hover:scale-110 active:scale-95";
       el.style.transform = "translate(-50%, -100%)";
       el.innerHTML = `
-        <div class="px-2.5 py-1 rounded-full shadow-lg text-[11px] font-black whitespace-nowrap bg-amber-500 text-black">
+        <div class="px-2.5 py-1 rounded-full shadow-lg text-[11px] font-black whitespace-nowrap ${
+          isSelected
+            ? "bg-white text-black ring-2 ring-amber-400 scale-110"
+            : "bg-amber-500 text-black"
+        }">
           ${escapeHtml(c.name)}
         </div>
       `;
@@ -128,14 +206,27 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
         position: pos,
         content: el,
         yAnchor: 1,
+        zIndex: isSelected ? 50 : 1,
       });
       overlay.setMap(map);
       overlaysRef.current.push(overlay);
     });
 
-    // 초기 줌은 수도권 고정 (DEFAULT_LEVEL). 비수도권 클럽도 마커는 표시되고
-    // 유저가 줌아웃/팬 하면 볼 수 있음.
-  }, [status, withCoords, activeCountMap]);
+    // 필터/검색 결과가 좁혀지면 자동 줌; 전체일 때는 초기 줌(DEFAULT_LEVEL) 유지
+    if (filtered.length > 0 && filtered.length < 10) {
+      if (filtered.length === 1) {
+        const c = filtered[0];
+        map.setLevel(4);
+        map.panTo(new window.kakao.maps.LatLng(c.latitude!, c.longitude!));
+      } else {
+        const bounds = new window.kakao.maps.LatLngBounds();
+        filtered.forEach((c) => {
+          bounds.extend(new window.kakao.maps.LatLng(c.latitude!, c.longitude!));
+        });
+        map.setBounds(bounds);
+      }
+    }
+  }, [status, filtered, activeCountMap, selectedClub]);
 
   if (status === "error") {
     return (
@@ -149,14 +240,23 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
     );
   }
 
+  const handleCardClick = (clubId: string) => {
+    const c = filtered.find((x) => x.id === clubId);
+    if (!c || !mapInstanceRef.current) return;
+    setSelectedClub(c);
+    const pos = new window.kakao.maps.LatLng(c.latitude!, c.longitude!);
+    mapInstanceRef.current.panTo(pos);
+  };
+
   return (
-    <div className="relative">
+    <div className="relative h-[85vh] rounded-2xl overflow-hidden bg-neutral-900">
       <div
         ref={mapRef}
         data-no-pull-refresh
-        className="w-full h-[70vh] rounded-2xl bg-neutral-900 overflow-hidden"
+        className="w-full h-full"
         style={{ touchAction: "pan-x pan-y" }}
       />
+
       {status === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <p className="text-xs text-neutral-500">지도 불러오는 중…</p>
@@ -172,56 +272,44 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
         </div>
       )}
 
-      {selectedClub && (
-        <SelectedClubCard
-          club={selectedClub}
-          flagCount={activeCountMap[selectedClub.id] || 0}
-          onClose={() => setSelectedClub(null)}
+      {/* 뒤로가기 버튼 (좌상단 floating) */}
+      <button
+        type="button"
+        onClick={() => router.back()}
+        aria-label="뒤로가기"
+        style={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
+        className="absolute left-3 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-black/90 active:scale-95 transition-transform z-30"
+      >
+        <ArrowLeft className="w-5 h-5 text-white" />
+      </button>
+
+      {/* 내 위치 버튼 (시트 위에 떠 있음) */}
+      {status === "ready" && (
+        <button
+          type="button"
+          onClick={() => handleLocate()}
+          disabled={locating}
+          aria-label="내 위치로 이동"
+          style={{ bottom: `calc(${sheetRatio * 100}vh + 12px)` }}
+          className="absolute right-3 w-11 h-11 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-neutral-100 active:scale-95 transition-all disabled:opacity-60 z-30"
+        >
+          {locating ? (
+            <Loader2 className="w-5 h-5 text-neutral-700 animate-spin" />
+          ) : (
+            <LocateFixed className="w-5 h-5 text-neutral-700" />
+          )}
+        </button>
+      )}
+
+      {status === "ready" && (
+        <ClubMapSheet
+          clubs={filtered}
+          activeCountMap={activeCountMap}
+          selectedClubId={selectedClub?.id ?? null}
+          onCardClick={handleCardClick}
+          onHeightChange={setSheetRatio}
         />
       )}
-    </div>
-  );
-}
-
-function SelectedClubCard({
-  club,
-  flagCount,
-  onClose,
-}: {
-  club: ClubMapItem;
-  flagCount: number;
-  onClose: () => void;
-}) {
-  return (
-    <div className="absolute left-3 right-3 bottom-3 bg-[#1C1C1E] rounded-2xl p-3 shadow-2xl border border-neutral-800">
-      <button
-        onClick={onClose}
-        aria-label="닫기"
-        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-neutral-800 text-neutral-400 text-xs flex items-center justify-center"
-      >
-        ✕
-      </button>
-      <Link href={`/clubs/${club.id}`} className="flex gap-3 items-center pr-7">
-        <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-neutral-900 flex-shrink-0">
-          {club.thumbnail_url ? (
-            <Image src={club.thumbnail_url} alt={club.name} fill sizes="64px" className="object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-[20px] font-black text-white/30">
-              {club.name.charAt(0)}
-            </div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-white text-[14px] font-black truncate">{club.name}</p>
-          <p className="text-neutral-500 text-[11px] font-medium truncate">{club.area || "기타"}</p>
-          {flagCount > 0 && (
-            <div className="mt-1 inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-              <Flag className="w-3 h-3" />
-              깃발 {flagCount}건
-            </div>
-          )}
-        </div>
-      </Link>
     </div>
   );
 }

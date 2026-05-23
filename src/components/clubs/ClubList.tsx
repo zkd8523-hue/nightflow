@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
@@ -24,6 +24,8 @@ interface ClubListItem {
   drink_menu_url: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  operating_hours?: string | null;
+  entry_fee_detail?: string | null;
 }
 
 type ViewMode = "list" | "map";
@@ -52,6 +54,7 @@ export function ClubList({ clubs, activeCountMap }: Props) {
   const [view, setView] = useState<ViewMode>(
     () => (searchParams.get("view") === "map" ? "map" : "list")
   );
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -96,6 +99,7 @@ export function ClubList({ clubs, activeCountMap }: Props) {
     return clubs.filter((c) => !hiddenIds.has(c.id));
   }, [clubs]);
 
+  const normalizedQuery = query.trim().toLowerCase();
   const filtered = useMemo(() => {
     return dedupedClubs.filter((c) => {
       if (filters.areas.length && !filters.areas.includes(c.area || ""))
@@ -104,9 +108,14 @@ export function ClubList({ clubs, activeCountMap }: Props) {
         const wanted = filters.genres.map((g) => makeTag("genre", g));
         if (!wanted.some((t) => c.tags?.includes(t))) return false;
       }
+      if (normalizedQuery) {
+        const name = c.name.toLowerCase();
+        const area = (c.area || "").toLowerCase();
+        if (!name.includes(normalizedQuery) && !area.includes(normalizedQuery)) return false;
+      }
       return true;
     });
-  }, [dedupedClubs, filters]);
+  }, [dedupedClubs, filters, normalizedQuery]);
 
   const byArea: Record<string, ClubListItem[]> = {};
   for (const c of filtered) {
@@ -131,34 +140,71 @@ export function ClubList({ clubs, activeCountMap }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <ClubFilterChips value={filters} onChange={setFilters} />
-        </div>
-        <div className="flex items-center bg-neutral-900 rounded-full p-0.5 flex-shrink-0">
+      {view === "list" && (
+        <header className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setView("list")}
-            aria-label="리스트 보기"
-            aria-pressed={view === "list"}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
-              view === "list" ? "bg-white text-black" : "text-neutral-400"
-            }`}
+            onClick={() => router.back()}
+            aria-label="뒤로가기"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-900 -ml-2"
           >
-            <LayoutGrid className="w-3.5 h-3.5" />
+            <ArrowLeft className="w-5 h-5 text-white" />
           </button>
-          <button
-            type="button"
-            onClick={() => setView("map")}
-            aria-label="지도 보기"
-            aria-pressed={view === "map"}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold transition-colors ${
-              view === "map" ? "bg-white text-black" : "text-neutral-400"
-            }`}
-          >
-            <MapIcon className="w-3.5 h-3.5" />
-          </button>
+          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">
+            전국 클럽 가이드
+          </h1>
+        </header>
+      )}
+      {/* 통합 상단바: 검색 + 필터 + view 토글 하나의 카드처럼 */}
+      <div className="bg-[#1C1C1E] rounded-2xl p-2.5 space-y-2 shadow-sm">
+        <div className="flex items-center gap-2">
+          <div className="flex-1 flex items-center bg-neutral-900 rounded-full pl-3 pr-1.5 h-9">
+            <Search className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="클럽명·지역 검색"
+              className="flex-1 bg-transparent border-0 outline-none px-2 text-[13px] font-medium text-white placeholder:text-neutral-500 min-w-0"
+              aria-label="클럽 검색"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="검색어 지우기"
+                className="w-6 h-6 flex items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-800"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <div className="flex items-center bg-neutral-900 rounded-full p-0.5 flex-shrink-0 h-9">
+            <button
+              type="button"
+              onClick={() => setView("list")}
+              aria-label="리스트 보기"
+              aria-pressed={view === "list"}
+              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                view === "list" ? "bg-white text-black" : "text-neutral-400"
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("map")}
+              aria-label="지도 보기"
+              aria-pressed={view === "map"}
+              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                view === "map" ? "bg-white text-black" : "text-neutral-400"
+              }`}
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
+        <ClubFilterChips value={filters} onChange={setFilters} />
       </div>
 
       {view === "map" ? (

@@ -13,7 +13,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Menu,
   Gavel,
@@ -110,9 +110,12 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
   } = useNotifications(user?.id);
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const supabase = createClient();
   // 깃발 등록/수정 페이지에선 헤더의 "깃발 꽂기" CTA 숨김
   const isOnFlagNewPage = pathname === "/flags/new" || /^\/flags\/[^/]+\/edit$/.test(pathname);
+  // 클럽지도(view=map)에서는 화면을 지도에 양보
+  const isOnClubMapView = pathname === "/clubs" && searchParams.get("view") === "map";
   const [menuOpen, setMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -194,6 +197,8 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
     e.stopPropagation();
     await deleteNotification(notificationId);
   };
+
+  if (isOnClubMapView) return null;
 
   return (
     <header

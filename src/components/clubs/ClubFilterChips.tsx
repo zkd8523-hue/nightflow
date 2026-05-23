@@ -1,6 +1,6 @@
 "use client";
 
-import { FILTER_GROUPS, AREA_OPTIONS, SEOUL_AREAS } from "@/lib/clubs/tags";
+import { FILTER_GROUPS, AREA_OPTIONS } from "@/lib/clubs/tags";
 
 export interface ClubFilters {
   areas: string[];
@@ -37,8 +37,9 @@ function Chip({
 }
 
 export function ClubFilterChips({ value, onChange }: Props) {
-  const toggle = (arr: string[], key: string) =>
-    arr.includes(key) ? arr.filter((k) => k !== key) : [...arr, key];
+  // 단일 선택: 이미 선택된 칩 클릭 시 해제, 아니면 그 하나만 활성
+  const selectSingle = (arr: string[], key: string) =>
+    arr.length === 1 && arr[0] === key ? [] : [key];
 
   const genreGroup = FILTER_GROUPS.find((g) => g.group === "genre");
   const hasAnyFilter = value.areas.length > 0 || value.genres.length > 0;
@@ -46,27 +47,13 @@ export function ClubFilterChips({ value, onChange }: Props) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
-        <span className="text-[11px] text-neutral-500 flex-shrink-0">📍</span>
-        <Chip
-          label="서울"
-          active={SEOUL_AREAS.every((a) => value.areas.includes(a))}
-          onClick={() => {
-            const allActive = SEOUL_AREAS.every((a) =>
-              value.areas.includes(a)
-            );
-            const next = allActive
-              ? value.areas.filter((a) => !SEOUL_AREAS.includes(a as never))
-              : Array.from(new Set([...value.areas, ...SEOUL_AREAS]));
-            onChange({ ...value, areas: next });
-          }}
-        />
         {AREA_OPTIONS.map((area) => (
           <Chip
             key={area}
             label={area}
             active={value.areas.includes(area)}
             onClick={() =>
-              onChange({ ...value, areas: toggle(value.areas, area) })
+              onChange({ ...value, areas: selectSingle(value.areas, area) })
             }
           />
         ))}
@@ -74,14 +61,13 @@ export function ClubFilterChips({ value, onChange }: Props) {
 
       {genreGroup && (
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
-          <span className="text-[11px] text-neutral-500 flex-shrink-0">🎵</span>
           {genreGroup.options.map((opt) => (
             <Chip
               key={opt.key}
               label={opt.label}
               active={value.genres.includes(opt.key)}
               onClick={() =>
-                onChange({ ...value, genres: toggle(value.genres, opt.key) })
+                onChange({ ...value, genres: selectSingle(value.genres, opt.key) })
               }
             />
           ))}
