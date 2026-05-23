@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -114,26 +114,25 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
   // 깃발 등록/수정 페이지에선 헤더의 "깃발 꽂기" CTA 숨김
   const isOnFlagNewPage = pathname === "/flags/new" || /^\/flags\/[^/]+\/edit$/.test(pathname);
   // 클럽지도(view=map)에서는 화면을 지도에 양보.
-  // useSearchParams는 정적 prerender를 깨므로 window.location 직접 사용.
-  // ClubList가 view 토글 시 dispatch하는 커스텀 이벤트 'club-view-change'를 청취.
-  const computeIsMapView = useCallback(() => {
-    if (typeof window === "undefined") return false;
-    return (
-      pathname === "/clubs" &&
-      new URLSearchParams(window.location.search).get("view") === "map"
-    );
-  }, [pathname]);
-  const [isOnClubMapView, setIsOnClubMapView] = useState(computeIsMapView);
+  // SSR 시점엔 window가 없으므로 항상 false → 헤더 렌더.
+  // 클라이언트 mount 후 effect에서 실제 view 감지 → 필요 시 헤더 숨김.
+  // (hydration mismatch 회피: 초기 상태는 서버와 동일하게)
+  const [isOnClubMapView, setIsOnClubMapView] = useState(false);
   useEffect(() => {
-    setIsOnClubMapView(computeIsMapView());
-    const onChange = () => setIsOnClubMapView(computeIsMapView());
-    window.addEventListener("club-view-change", onChange);
-    window.addEventListener("popstate", onChange);
-    return () => {
-      window.removeEventListener("club-view-change", onChange);
-      window.removeEventListener("popstate", onChange);
+    const check = () => {
+      const isMap =
+        pathname === "/clubs" &&
+        new URLSearchParams(window.location.search).get("view") === "map";
+      setIsOnClubMapView(isMap);
     };
-  }, [computeIsMapView]);
+    check();
+    window.addEventListener("club-view-change", check);
+    window.addEventListener("popstate", check);
+    return () => {
+      window.removeEventListener("club-view-change", check);
+      window.removeEventListener("popstate", check);
+    };
+  }, [pathname]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { ClubList } from "@/components/clubs/ClubList";
 import { ClubsAdminFab } from "@/components/clubs/ClubsAdminFab";
@@ -65,6 +66,7 @@ export default async function ClubsIndexPage() {
   return (
     <div className="container mx-auto max-w-3xl px-4 pt-4 pb-8 mb-20">
       <ClubsAdminFab />
+      <Suspense fallback={null}>
       <ClubList
         clubs={clubs.map((c: Record<string, unknown>) => ({
           id: c.id as string,
@@ -80,6 +82,7 @@ export default async function ClubsIndexPage() {
         }))}
         activeCountMap={activeCountMap}
       />
+      </Suspense>
     </div>
   );
 }
