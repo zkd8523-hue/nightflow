@@ -1,12 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { PullToRefresh } from "@/components/auctions/PullToRefresh";
 import { SelectingFlagAlertSheet } from "@/components/puzzles/SelectingFlagAlertSheet";
 import { CancellationSurveySheet } from "@/components/puzzles/CancellationSurveySheet";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function MainLayout({
   children,
@@ -14,6 +15,25 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+
+  // 클럽지도(view=map)에서 Header 자체를 마운트하지 않음 (hydration 영향 없음)
+  const [isClubMapView, setIsClubMapView] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const isMap =
+        pathname === "/clubs" &&
+        new URLSearchParams(window.location.search).get("view") === "map";
+      setIsClubMapView(isMap);
+    };
+    check();
+    window.addEventListener("club-view-change", check);
+    window.addEventListener("popstate", check);
+    return () => {
+      window.removeEventListener("club-view-change", check);
+      window.removeEventListener("popstate", check);
+    };
+  }, [pathname]);
 
   const handleRefresh = async () => {
     router.refresh();
@@ -24,7 +44,7 @@ export default function MainLayout({
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-neutral-950 flex flex-col">
-        <Header />
+        {!isClubMapView && <Header />}
         <main className="flex-1 pb-16">{children}</main>
         <Footer />
         <BottomNav />
