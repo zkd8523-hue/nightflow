@@ -241,6 +241,35 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
       action_url: `/flags/${puzzle.id}`,
     });
 
+    // 4-1) FCM 푸시 — pending 오퍼 ≥ 1건일 때만 방장에게 발송
+    if ((offerCount ?? 0) > 0) {
+      try {
+        await fetch(
+          `${Deno.env.get("SUPABASE_URL")}/functions/v1/push-dispatch`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+            },
+            body: JSON.stringify({
+              user_id: puzzle.leader_id,
+              title: "⏰ 오퍼 마감 · 검토 시간",
+              body: `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발 · 오퍼 ${offerCount}건 · 90분 안에 선택하세요`,
+              data: {
+                type: "puzzle_review_started",
+                puzzle_id: puzzle.id,
+              },
+              url: `/flags/${puzzle.id}`,
+            }),
+          }
+        );
+        console.log(`📲 FCM 푸시 발송 (puzzle=${puzzle.id}, leader=${puzzle.leader_id})`);
+      } catch (e) {
+        console.error(`❌ FCM 푸시 실패 (puzzle=${puzzle.id}):`, e);
+      }
+    }
+
     // 5) 알림톡 발송 (중복 방지 + phone/template 없으면 skip)
     if (await alreadySent(supabase, "puzzle_offer_deadline", puzzle.id)) continue;
 
