@@ -167,6 +167,17 @@ export interface User {
   alimtalk_consent: boolean;
   alimtalk_consent_at: string | null;
 
+  // 푸시 카테고리 토글 (Migration 230)
+  notify_offer_arrived: boolean;
+  notify_new_puzzle: boolean;
+  notify_offer_response: boolean;
+  notify_marketing: boolean;
+
+  // 방해금지 시간대 (푸시 only)
+  quiet_hours_enabled: boolean;
+  quiet_hours_start: number | null;  // 0-23
+  quiet_hours_end: number | null;    // 0-23
+
   // Referral (백그라운드 추적, 유저에게 비노출)
   referral_code: string | null;
   referred_by: string | null;
