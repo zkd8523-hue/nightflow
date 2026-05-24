@@ -166,9 +166,6 @@ export function HotdealHomeSection() {
                   </p>
                   <p className="text-neutral-300 text-[10px]">
                     {item.club_area ?? "기타"}
-                    {item.md_count > 0 && (
-                      <span className="text-neutral-500"> · MD {item.md_count}명</span>
-                    )}
                   </p>
                 </div>
               </div>
