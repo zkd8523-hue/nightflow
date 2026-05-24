@@ -21,32 +21,39 @@ export function HotdealHomeSection() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // KST 기준 오늘 날짜
+      // KST 기준 오늘 요일 + 이번 주 월요일
       const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-      const todayKstISO = kstNow.toISOString().slice(0, 10);
+      const dowIdx = kstNow.getUTCDay(); // 0=일~6=토
+      const DOW_KEYS_KST = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+      const todayDowKey = DOW_KEYS_KST[dowIdx];
+      const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
+      const thisMonday = new Date(kstNow);
+      thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
+      const thisWeekISO = thisMonday.toISOString().slice(0, 10);
 
       const { data, error } = await supabase
         .from("weekly_hotdeal_slots")
-        .select("club_id, benefit_text, expires_at, clubs(name, area, thumbnail_url)")
-        .eq("slot_date", todayKstISO)
-        .not("benefit_text", "is", null);
+        .select("club_id, benefits_by_dow, expires_at, clubs(name, area, thumbnail_url)")
+        .eq("week_start", thisWeekISO);
       if (error || cancelled) return;
 
       const now = new Date();
       type SlotRow = {
         club_id: string;
-        benefit_text: string | null;
+        benefits_by_dow: Record<string, string | undefined> | null;
         expires_at: string;
         clubs: { name: string; area: string | null; thumbnail_url: string | null } | null;
       };
       const rows = (data ?? []) as unknown as SlotRow[];
       const out: HotdealItem[] = [];
       for (const r of rows) {
-        if (!r.benefit_text || !r.clubs) continue;
+        if (!r.clubs) continue;
         if (new Date(r.expires_at) <= now) continue;
+        const todayText = (r.benefits_by_dow ?? {})[todayDowKey];
+        if (!todayText || todayText.trim().length === 0) continue;
         out.push({
           club_id: r.club_id,
-          benefit_text: r.benefit_text,
+          benefit_text: todayText,
           club_name: r.clubs.name,
           club_area: r.clubs.area,
           club_thumbnail: r.clubs.thumbnail_url,

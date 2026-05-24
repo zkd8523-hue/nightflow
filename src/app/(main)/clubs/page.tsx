@@ -53,14 +53,20 @@ export default async function ClubsIndexPage() {
     .select("club_id")
     .in("status", ["active", "scheduled"]);
 
-  // 오늘 활성 HOT DEAL 슬롯 (KST 기준 오늘 날짜)
+  // 오늘 활성 HOT DEAL 슬롯 (이번 주 슬롯에서 오늘 요일 혜택 추출)
   const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const todayKstISO = kstNow.toISOString().slice(0, 10);
+  const dowIdx = kstNow.getUTCDay(); // 0=일~6=토
+  const DOW_KEYS_KST = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+  const todayDowKey = DOW_KEYS_KST[dowIdx];
+  const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
+  const thisMonday = new Date(kstNow);
+  thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
+  const thisWeekISO = thisMonday.toISOString().slice(0, 10);
+
   const hotdealRes = await supabase
     .from("weekly_hotdeal_slots")
-    .select("club_id, benefit_text, expires_at")
-    .eq("slot_date", todayKstISO)
-    .not("benefit_text", "is", null);
+    .select("club_id, benefits_by_dow, expires_at")
+    .eq("week_start", thisWeekISO);
 
   const HIDDEN_NAME_PATTERNS = [/luna/i, /prism/i, /eclipse/i, /^orion$/i];
   const clubs = (clubsRes.data ?? []).filter(
@@ -74,10 +80,12 @@ export default async function ClubsIndexPage() {
 
   const hotdealMap: Record<string, string> = {};
   for (const h of hotdealRes.data ?? []) {
-    if (!h.club_id || !h.benefit_text) continue;
-    // 만료 안 지난 것만
-    if (new Date(h.expires_at) > new Date()) {
-      hotdealMap[h.club_id] = h.benefit_text;
+    if (!h.club_id) continue;
+    if (new Date(h.expires_at) <= new Date()) continue;
+    const byDow = (h.benefits_by_dow ?? {}) as Record<string, string | undefined>;
+    const todayText = byDow[todayDowKey];
+    if (todayText && todayText.trim().length > 0) {
+      hotdealMap[h.club_id] = todayText;
     }
   }
 
