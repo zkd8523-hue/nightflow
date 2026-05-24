@@ -181,8 +181,8 @@ export const PuzzleCard = memo(function PuzzleCard({
   const isFavorited = isFavoritedPuzzle(puzzle.id);
   const canFavorite = isMd && isRecruitingParty;
 
-  // 카드 전체 클릭 가능 여부: 인원 확정 깃발(자세히 보기 모드) + 비-MD
-  const isCardClickable = !isMd && !isRecruitingParty;
+  // 카드 전체 클릭 가능 — 내부 액션 버튼들은 stopPropagation으로 보호됨
+  const isCardClickable = true;
 
   return (
     <div
@@ -341,22 +341,12 @@ export const PuzzleCard = memo(function PuzzleCard({
           </Button>
         )
       ) : !isRecruitingParty ? (
-        // 인원 확정 깃발: 참여 불가, 상세로 이동 — 버튼은 absolute로 텍스트 아랫선에 맞춤 (위로 올라가는 느낌)
-        <div className="relative">
-          {offerCount > 0 ? (
-            <p className="text-[12px] text-amber-400 font-bold">
-              MD {offerCount}명이 줄서있어요
-            </p>
-          ) : (
-            <p className="text-[12px] invisible">.</p>
-          )}
-          <Button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="absolute right-0 bottom-0 h-9 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all active:scale-[0.97]"
-          >
-            자세히 보기
-          </Button>
-        </div>
+        // 인원 확정 깃발: 카드 전체 클릭으로 상세 이동 (별도 버튼 불필요)
+        offerCount > 0 ? (
+          <p className="text-[12px] text-amber-400 font-bold">
+            MD {offerCount}명이 줄서있어요
+          </p>
+        ) : null
       ) : isFull ? (
         <div className="space-y-2">
           <p className="text-[12px] text-neutral-500 font-medium text-center">파티 마감</p>
