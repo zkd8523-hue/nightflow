@@ -121,7 +121,7 @@ export function HotdealHomeSection() {
           href="/clubs"
           className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
         >
-          전체
+          Map
           <ChevronRight className="w-3 h-3" />
         </Link>
       </div>

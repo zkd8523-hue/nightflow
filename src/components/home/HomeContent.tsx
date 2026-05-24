@@ -588,7 +588,7 @@ export function HomeContent({
 
           {/* Tip 박스 + 이용방법 토글 */}
           {visibleCompactTip && (
-            <section className="space-y-2 -mx-4 mb-3">
+            <section className="space-y-2 -mx-2 mb-3">
               <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 pb-2.5">
                 <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
                 <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
@@ -674,7 +674,9 @@ export function HomeContent({
           )}
 
           {/* HOT DEAL 섹션 (하단, 비어있으면 자동 숨김) */}
-          <HotdealHomeSection />
+          <div className="mt-4">
+            <HotdealHomeSection />
+          </div>
 
           {/* MD 전용 안내: 깃발 응대 유도 */}
           {isMdOrAdmin && currentTab === "puzzle" && visiblePuzzles.length > 0 && (
@@ -734,7 +736,7 @@ export function HomeContent({
               };
           const visibleSteps = steps;
           const guideCard = (
-            <section className="space-y-2 -mx-4 mb-3">
+            <section className="space-y-2 -mx-2 mb-3">
               {/* TIP 박스 — 항시 노출 */}
               {overriddenTabPromises[currentTab]?.content && (
                 <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 pb-2.5">
