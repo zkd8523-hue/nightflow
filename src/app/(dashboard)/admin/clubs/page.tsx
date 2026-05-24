@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AdminClubsList } from "@/components/admin/AdminClubsList";
+import { GeocodeMissingButton } from "@/components/admin/GeocodeMissingButton";
 import Link from "next/link";
 import { ChevronLeft, Plus } from "lucide-react";
 import type { MDHealthScore } from "@/types/database";
@@ -81,6 +82,7 @@ export default async function AdminClubsPage() {
                     <ChevronLeft className="w-5 h-5 text-neutral-400" />
                 </Link>
                 <h1 className="text-xl font-black text-white flex-1">클럽 관리</h1>
+                <GeocodeMissingButton />
                 <Link
                     href="/admin/clubs/search-misses"
                     className="px-3 py-1.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-[12px] text-white font-bold"
