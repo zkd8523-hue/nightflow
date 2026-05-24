@@ -11,8 +11,7 @@ import { MDAuctionCard } from "./MDAuctionCard";
 import { AcceptedPuzzleVisitCard } from "./AcceptedPuzzleVisitCard";
 import { AreaOnboardingSheet } from "./AreaOnboardingSheet";
 import type { Auction, User, Club, PuzzleOffer } from "@/types/database";
-import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink, Coins } from "lucide-react";
-import { Header } from "@/components/layout/Header";
+import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink, Coins } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -228,8 +227,16 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
 
     return (
         <div className="max-w-lg mx-auto pb-24">
-            {/* Top Navigation */}
-            <Header hideDashboardLink />
+            {/* 간소 헤더: 뒤로가기 + 타이틀 (고정 X) */}
+            <div className="flex items-center gap-2 px-3 pt-3 pb-1" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}>
+                <Link
+                    href="/"
+                    aria-label="홈으로"
+                    className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-neutral-800 transition-colors"
+                >
+                    <ChevronLeft className="w-5 h-5 text-white" />
+                </Link>
+            </div>
 
             {/* Header Profile Section */}
             <div className="px-6 py-4 space-y-4 text-white">
