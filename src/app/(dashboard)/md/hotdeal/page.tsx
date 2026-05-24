@@ -64,6 +64,7 @@ export default async function MDHotdealPage() {
   return (
     <HotdealSlotBoard
       currentUserId={user.id}
+      isAdmin={userRow.role === "admin"}
       clubs={(clubs ?? []).map((c) => ({
         id: c.id,
         name: c.name,

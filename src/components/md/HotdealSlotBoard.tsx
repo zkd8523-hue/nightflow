@@ -34,6 +34,7 @@ interface MyWeekSlot {
 
 interface Props {
   currentUserId: string;
+  isAdmin?: boolean;
   clubs: ClubLite[];
   slots: SlotLite[];
   myWeekSlot: MyWeekSlot | null;
@@ -70,6 +71,7 @@ function isBeforeOpen(weekStartISO: string): boolean {
 
 export function HotdealSlotBoard({
   currentUserId,
+  isAdmin = false,
   clubs,
   slots,
   myWeekSlot,
@@ -84,7 +86,7 @@ export function HotdealSlotBoard({
   const [claimingKey, setClaimingKey] = useState<string | null>(null); // "clubId|date"
 
   const today = todayKstISO();
-  const preOpen = isBeforeOpen(weekStartISO);
+  const preOpen = !isAdmin && isBeforeOpen(weekStartISO);
   const weekDates = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStartISO, i)),
     [weekStartISO]
