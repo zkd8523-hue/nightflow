@@ -1,10 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { MapPin, LocateFixed, Loader2, ArrowLeft } from "lucide-react";
-import { ClubMapSheet } from "./ClubMapSheet";
+import { MapPin, LocateFixed, Loader2 } from "lucide-react";
+import { ClubMapSheet, type ClubMapSheetHandle } from "./ClubMapSheet";
 
 interface ClubMapItem {
   id: string;
@@ -23,6 +22,8 @@ interface Props {
   clubs: ClubMapItem[];
   activeCountMap: Record<string, number>;
   initialCenter?: { lat: number; lng: number };
+  /** 좌표 미등록으로 지도에 표시 못한 클럽 수 (있으면 시트 상단에 작게 안내) */
+  unmappedCount?: number;
 }
 
 declare global {
@@ -70,8 +71,7 @@ function loadKakaoSdk(): Promise<void> {
   return sdkPromise;
 }
 
-export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
-  const router = useRouter();
+export function ClubMap({ clubs, activeCountMap, initialCenter, unmappedCount = 0 }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]);
@@ -81,6 +81,7 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
   const [locating, setLocating] = useState(false);
   const [sheetRatio, setSheetRatio] = useState(0.5);
   const userPinRef = useRef<any>(null);
+  const sheetRef = useRef<ClubMapSheetHandle | null>(null);
 
   const handleLocate = useCallback((opts: { silent?: boolean } = {}) => {
     if (!mapInstanceRef.current) return;
@@ -115,6 +116,8 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
         overlay.setMap(map);
         userPinRef.current = overlay;
         setLocating(false);
+        // 여기어때 패턴: GPS 후 시트 최소화해서 지도 거의 풀화면 노출
+        sheetRef.current?.setSnap("minimized");
       },
       (err) => {
         setLocating(false);
@@ -249,7 +252,7 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
   };
 
   return (
-    <div className="relative rounded-2xl overflow-hidden bg-neutral-900" style={{ height: "calc(100vh - 120px)" }}>
+    <div className="fixed inset-0 overflow-hidden bg-neutral-900 z-10">
       <div
         ref={mapRef}
         data-no-pull-refresh
@@ -272,17 +275,6 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
         </div>
       )}
 
-      {/* 뒤로가기 버튼 (좌상단 floating) */}
-      <button
-        type="button"
-        onClick={() => router.back()}
-        aria-label="뒤로가기"
-        style={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
-        className="absolute left-3 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm shadow-lg flex items-center justify-center hover:bg-black/90 active:scale-95 transition-transform z-30"
-      >
-        <ArrowLeft className="w-5 h-5 text-white" />
-      </button>
-
       {/* 내 위치 버튼 (시트 위에 떠 있음) */}
       {status === "ready" && (
         <button
@@ -303,11 +295,13 @@ export function ClubMap({ clubs, activeCountMap, initialCenter }: Props) {
 
       {status === "ready" && (
         <ClubMapSheet
+          ref={sheetRef}
           clubs={filtered}
           activeCountMap={activeCountMap}
           selectedClubId={selectedClub?.id ?? null}
           onCardClick={handleCardClick}
           onHeightChange={setSheetRatio}
+          unmappedCount={unmappedCount}
         />
       )}
     </div>

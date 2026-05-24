@@ -52,7 +52,7 @@ export function ClubList({ clubs, activeCountMap }: Props) {
     genres: parseList(searchParams.get("genre")),
   }));
   const [view, setView] = useState<ViewMode>(
-    () => (searchParams.get("view") === "map" ? "map" : "list")
+    () => (searchParams.get("view") === "list" ? "list" : "map")
   );
   const [query, setQuery] = useState("");
 
@@ -60,7 +60,7 @@ export function ClubList({ clubs, activeCountMap }: Props) {
     const params = new URLSearchParams();
     if (filters.areas.length) params.set("area", filters.areas.join(","));
     if (filters.genres.length) params.set("genre", filters.genres.join(","));
-    if (view === "map") params.set("view", "map");
+    if (view === "list") params.set("view", "list");
     const qs = params.toString();
     const url = qs ? `/clubs?${qs}` : "/clubs";
     router.replace(url, { scroll: false });
@@ -145,7 +145,7 @@ export function ClubList({ clubs, activeCountMap }: Props) {
   const mappableCount = filtered.filter((c) => c.latitude != null && c.longitude != null).length;
 
   return (
-    <div className="space-y-6">
+    <div className={view === "map" ? "space-y-0" : "space-y-6"}>
       {view === "list" && (
         <header className="flex items-center gap-2">
           <button
@@ -161,8 +161,20 @@ export function ClubList({ clubs, activeCountMap }: Props) {
           </h1>
         </header>
       )}
-      {/* 통합 상단바: 검색 + 필터 + view 토글 하나의 카드처럼 */}
-      <div className="bg-[#1C1C1E] rounded-2xl p-2.5 space-y-2 shadow-sm">
+      {/* 통합 상단바: 검색 + 필터 + view 토글 하나의 카드처럼
+          map 모드에서는 지도 위 floating overlay로 표시 */}
+      <div
+        className={`${
+          view === "map"
+            ? "fixed left-0 right-0 z-30 bg-[#1C1C1E]/85 backdrop-blur-md p-2.5 space-y-2 shadow-lg"
+            : "bg-[#1C1C1E] p-2.5 space-y-2 shadow-sm rounded-2xl"
+        }`}
+        style={
+          view === "map"
+            ? { top: "calc(env(safe-area-inset-top, 0px))" }
+            : undefined
+        }
+      >
         <div className="flex items-center gap-2">
           <div className="flex-1 flex items-center bg-neutral-900 rounded-full pl-3 pr-1.5 h-9">
             <Search className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
@@ -214,14 +226,11 @@ export function ClubList({ clubs, activeCountMap }: Props) {
       </div>
 
       {view === "map" ? (
-        <div className="space-y-2">
-          <ClubMap clubs={filtered} activeCountMap={activeCountMap} />
-          {mappableCount < filtered.length && (
-            <p className="text-[11px] text-neutral-500 text-center px-2">
-              좌표 미등록 클럽 {filtered.length - mappableCount}곳은 지도에 표시되지 않아요
-            </p>
-          )}
-        </div>
+        <ClubMap
+          clubs={filtered}
+          activeCountMap={activeCountMap}
+          unmappedCount={filtered.length - mappableCount}
+        />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-3">
           <p className="text-neutral-400 text-sm">

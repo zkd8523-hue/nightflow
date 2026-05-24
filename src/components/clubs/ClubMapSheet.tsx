@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Flag, Wine } from "lucide-react";
+import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { getTagsByGroup } from "@/lib/clubs/tags";
 import { getOpeningStatus } from "@/lib/clubs/openingStatus";
 
@@ -27,24 +28,33 @@ interface Props {
   onCardClick: (clubId: string) => void;
   /** 시트가 차지하는 viewport 비율 (0~1) */
   onHeightChange?: (ratio: number) => void;
+  /** 좌표 미등록으로 지도에 표시 못한 클럽 수 */
+  unmappedCount?: number;
 }
 
-// 2단계 스냅 포인트 (viewport 높이 비율)
+// 3단계 스냅 포인트 (viewport 높이 비율)
 const SNAP_POINTS = {
+  minimized: 0.13, // 헤더 + 첫 카드 일부만 (GPS 사용 시 자동 진입)
   collapsed: 0.38, // 큰 카드 1개 정확히 보임 (여기어때 패턴)
   expanded: 0.78,  // 전체 리스트 보기
 };
 
-type Snap = keyof typeof SNAP_POINTS;
+export type Snap = keyof typeof SNAP_POINTS;
 
-export function ClubMapSheet({
+export interface ClubMapSheetHandle {
+  setSnap: (s: Snap) => void;
+}
+
+export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubMapSheet({
   clubs,
   activeCountMap,
   selectedClubId,
   onCardClick,
   onHeightChange,
-}: Props) {
+  unmappedCount = 0,
+}, ref) {
   const [snap, setSnap] = useState<Snap>("collapsed");
+  useImperativeHandle(ref, () => ({ setSnap }), []);
   const [dragOffset, setDragOffset] = useState(0);
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const dragStartY = useRef<number | null>(null);
@@ -91,8 +101,13 @@ export function ClubMapSheet({
         closest = key;
       }
     }
-    if (Math.abs(dy) > 80) {
-      closest = dy < 0 ? "expanded" : "collapsed";
+    if (Math.abs(dy) > 100) {
+      const order: Snap[] = ["minimized", "collapsed", "expanded"];
+      const fromIdx = order.indexOf(dragStartSnap.current);
+      const toIdx = dy < 0
+        ? Math.min(order.length - 1, fromIdx + 1)
+        : Math.max(0, fromIdx - 1);
+      closest = order[toIdx];
     }
     setSnap(closest);
     setDragOffset(0);
@@ -157,15 +172,22 @@ export function ClubMapSheet({
 
       {/* 헤더 */}
       <div className="flex-shrink-0 px-4 pb-2 flex items-center justify-between">
-        <p className="text-[13px] text-neutral-400 font-bold">
-          {clubs.length}곳
-        </p>
+        <div className="flex items-baseline gap-2 min-w-0">
+          <p className="text-[13px] text-neutral-400 font-bold flex-shrink-0">
+            {clubs.length}곳
+          </p>
+          {unmappedCount > 0 && (
+            <p className="text-[10px] text-neutral-600 truncate">
+              좌표 미등록 {unmappedCount}곳 제외
+            </p>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
-          className="text-[11px] text-neutral-500 font-medium"
+          className="text-[11px] text-neutral-500 font-medium flex-shrink-0"
         >
-          {snap === "expanded" ? "축소" : "전체 보기"}
+          {snap === "expanded" ? "지도 더보기" : "전체 보기"}
         </button>
       </div>
 
@@ -194,7 +216,7 @@ export function ClubMapSheet({
       </div>
     </div>
   );
-}
+});
 
 /** 카드 전체가 상세 페이지 링크. 한 카드에 정보 압축. 구분선은 divide-y로 부모에서. */
 function DetailCard({
@@ -234,40 +256,49 @@ function DetailCard({
         )}
       </div>
       <div className="flex-1 min-w-0 space-y-1">
-        <p className="text-white text-[15px] font-black truncate">
-          {club.name}
-        </p>
+        <div className="flex items-start gap-2">
+          <p className="text-white text-[15px] font-black truncate flex-1">
+            {club.name}
+          </p>
+          <FavoriteButton clubId={club.id} />
+        </div>
 
         {/* Line 2: 영업 상태 · 지역 */}
         <div className="flex items-center gap-1.5 text-[12px] font-medium">
-          {opening === "open" && (
+          {opening === "open" ? (
             <span className="inline-flex items-center gap-1 text-green-500">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
               영업중
             </span>
-          )}
-          {opening === "closed" && (
+          ) : opening === "closed" ? (
             <span className="inline-flex items-center gap-1 text-neutral-500">
               <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
               영업종료
             </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-neutral-600">
+              <span className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
+              영업시간 준비중
+            </span>
           )}
-          {opening !== "unknown" && <span className="text-neutral-700">·</span>}
+          <span className="text-neutral-700">·</span>
           <span className="text-neutral-500 truncate">{club.area || "기타"}</span>
         </div>
 
         {/* Line 3: 장르 · 입장료 */}
-        {(genreLine || club.entry_fee_detail) && (
-          <p className="text-neutral-400 text-[11px] font-medium truncate">
-            {genreLine}
-            {genreLine && club.entry_fee_detail && (
-              <span className="text-neutral-700 mx-1.5">·</span>
-            )}
-            {club.entry_fee_detail && (
-              <span className="text-neutral-300">{club.entry_fee_detail}</span>
-            )}
-          </p>
-        )}
+        <p className="text-neutral-400 text-[11px] font-medium truncate">
+          {genreLine ? (
+            <span>{genreLine}</span>
+          ) : (
+            <span className="text-neutral-600">장르 준비중</span>
+          )}
+          <span className="text-neutral-700 mx-1.5">·</span>
+          {club.entry_fee_detail ? (
+            <span className="text-neutral-300">{club.entry_fee_detail}</span>
+          ) : (
+            <span className="text-neutral-600">입장료 준비중</span>
+          )}
+        </p>
 
         {/* Line 4: 깃발 · 주대표 */}
         {(flagCount > 0 || club.drink_menu_url) && (
