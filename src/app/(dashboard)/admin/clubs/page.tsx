@@ -80,7 +80,13 @@ export default async function AdminClubsPage() {
                 <Link href="/" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800">
                     <ChevronLeft className="w-5 h-5 text-neutral-400" />
                 </Link>
-                <h1 className="text-xl font-black text-white">클럽 관리</h1>
+                <h1 className="text-xl font-black text-white flex-1">클럽 관리</h1>
+                <Link
+                    href="/admin/clubs/search-misses"
+                    className="px-3 py-1.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-[12px] text-white font-bold"
+                >
+                    검색 실패 로그
+                </Link>
             </div>
             <AdminClubsList initialClubs={clubs || []} authUserId={authUser.id} healthScores={healthScores || []} clubMdLists={clubMdLists} />
         </div>

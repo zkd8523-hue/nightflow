@@ -335,6 +335,9 @@ export interface Club {
   // Migration 223: 입장료 상세 텍스트 (예: "남 15,000 / 여 10,000")
   entry_fee_detail: string | null;
 
+  // Migration 231: 검색 별칭 (예: ["에이스", "ace", "club ace"])
+  aliases: string[];
+
   /** Migration 174~182: 조인해서 가져올 때만 채워짐. 멀티 MD 표시 및 상세 정보용. */
   partners?: Array<{
     md_id: string;

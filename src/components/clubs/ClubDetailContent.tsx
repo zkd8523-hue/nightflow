@@ -66,6 +66,7 @@ export function ClubDetailContent({
   const [clubOperatingHours, setClubOperatingHours] = useState<string>(club.operating_hours ?? "");
   const [clubEntryFeeDetail, setClubEntryFeeDetail] = useState<string>(club.entry_fee_detail ?? "");
   const [clubInstagram, setClubInstagram] = useState<string>(club.instagram ?? "");
+  const [clubAliases, setClubAliases] = useState<string[]>(club.aliases ?? []);
   const isAdmin = user?.role === "admin";
 
   const handleAdminThumbnailUpload = async (
@@ -239,6 +240,7 @@ export function ClubDetailContent({
               initialOperatingHours={clubOperatingHours}
               initialEntryFeeDetail={clubEntryFeeDetail}
               initialInstagram={clubInstagram}
+              initialAliases={clubAliases}
               onSaved={(next) => {
                 setClubTags(next.tags);
                 setClubName(next.name);
@@ -246,6 +248,7 @@ export function ClubDetailContent({
                 setClubOperatingHours(next.operatingHours);
                 setClubEntryFeeDetail(next.entryFeeDetail);
                 setClubInstagram(next.instagram);
+                setClubAliases(next.aliases);
               }}
             />
           </div>

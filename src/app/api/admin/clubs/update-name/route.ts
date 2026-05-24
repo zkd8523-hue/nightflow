@@ -28,22 +28,34 @@ export async function POST(request: NextRequest) {
     const { data: userRow } = await supabaseAdmin.from("users").select("role").eq("id", authUser.id).single();
     if (!userRow || userRow.role !== "admin") return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
 
-    const { clubId, name, address, operating_hours, entry_fee_detail, instagram } = await request.json() as {
+    const { clubId, name, address, operating_hours, entry_fee_detail, instagram, aliases } = await request.json() as {
       clubId: string;
       name?: string;
       address?: string;
       operating_hours?: string | null;
       entry_fee_detail?: string | null;
       instagram?: string | null;
+      aliases?: string[];
     };
     if (!clubId) return NextResponse.json({ error: "clubId 누락" }, { status: 400 });
 
-    const patch: Record<string, string | null> = {};
+    const patch: Record<string, string | string[] | null> = {};
     if (name?.trim()) patch.name = name.trim();
     if (address?.trim()) patch.address = address.trim();
     if (operating_hours !== undefined) patch.operating_hours = operating_hours?.trim() || null;
     if (entry_fee_detail !== undefined) patch.entry_fee_detail = entry_fee_detail?.trim() || null;
     if (instagram !== undefined) patch.instagram = instagram?.trim() || null;
+    if (aliases !== undefined) {
+      // 빈 문자열·중복·대소문자 통일
+      const cleaned = Array.from(
+        new Set(
+          (aliases || [])
+            .map((a) => (a || "").toLowerCase().trim().replace(/\s+/g, " "))
+            .filter((a) => a.length > 0)
+        )
+      );
+      patch.aliases = cleaned;
+    }
     if (Object.keys(patch).length === 0) return NextResponse.json({ success: true });
 
     const { error } = await supabaseAdmin.from("clubs").update(patch).eq("id", clubId);

@@ -19,6 +19,7 @@ interface Props {
   initialOperatingHours: string;
   initialEntryFeeDetail: string;
   initialInstagram: string;
+  initialAliases?: string[];
   onSaved: (next: {
     tags: string[];
     name: string;
@@ -26,10 +27,11 @@ interface Props {
     operatingHours: string;
     entryFeeDetail: string;
     instagram: string;
+    aliases: string[];
   }) => void;
 }
 
-export function ClubProfileEditor({ clubId, initialTags, initialName, initialAddress, initialOperatingHours, initialEntryFeeDetail, initialInstagram, onSaved }: Props) {
+export function ClubProfileEditor({ clubId, initialTags, initialName, initialAddress, initialOperatingHours, initialEntryFeeDetail, initialInstagram, initialAliases = [], onSaved }: Props) {
   const [open, setOpen] = useState(false);
   const [tags, setTags] = useState<string[]>(initialTags);
   const [name, setName] = useState(initialName);
@@ -37,7 +39,19 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
   const [operatingHours, setOperatingHours] = useState(initialOperatingHours);
   const [entryFeeDetail, setEntryFeeDetail] = useState(initialEntryFeeDetail);
   const [instagram, setInstagram] = useState(initialInstagram);
+  const [aliases, setAliases] = useState<string[]>(initialAliases);
+  const [aliasInput, setAliasInput] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const addAlias = (raw: string) => {
+    const v = raw.toLowerCase().trim().replace(/\s+/g, " ");
+    if (!v) return;
+    setAliases((prev) => (prev.includes(v) ? prev : [...prev, v]));
+    setAliasInput("");
+  };
+  const removeAlias = (v: string) => {
+    setAliases((prev) => prev.filter((a) => a !== v));
+  };
 
   // URL/@ 제거하고 핸들만 추출
   const normalizeInstagramHandle = (raw: string): string => {
@@ -56,6 +70,8 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
     setOperatingHours(initialOperatingHours);
     setEntryFeeDetail(initialEntryFeeDetail);
     setInstagram(initialInstagram);
+    setAliases(initialAliases);
+    setAliasInput("");
   };
 
   const toggleTag = (tag: string) => {
@@ -74,11 +90,15 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       const trimmedHours = operatingHours.trim();
       const trimmedFee = entryFeeDetail.trim();
       const trimmedInstagram = normalizeInstagramHandle(instagram);
+      const aliasesChanged =
+        aliases.length !== initialAliases.length ||
+        aliases.some((a, i) => a !== initialAliases[i]);
       const baseChanged = trimmedName !== initialName
         || trimmedAddress !== initialAddress
         || trimmedHours !== initialOperatingHours
         || trimmedFee !== initialEntryFeeDetail
-        || trimmedInstagram !== initialInstagram;
+        || trimmedInstagram !== initialInstagram
+        || aliasesChanged;
       if (baseChanged) {
         const res = await fetch(`/api/admin/clubs/update-name`, {
           method: "POST",
@@ -90,6 +110,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
             operating_hours: trimmedHours,
             entry_fee_detail: trimmedFee,
             instagram: trimmedInstagram,
+            aliases,
           }),
         });
         if (!res.ok) {
@@ -138,6 +159,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
         operatingHours: trimmedHours,
         entryFeeDetail: trimmedFee,
         instagram: trimmedInstagram,
+        aliases,
       });
       toast.success("클럽 프로필이 저장됐어요");
       setOpen(false);
@@ -240,6 +262,58 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
                 className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
               />
               <p className="text-[10px] text-neutral-600 mt-1">@, URL 입력해도 자동으로 핸들만 추출됨</p>
+            </div>
+            <div>
+              <div className="text-[12px] text-neutral-400 font-bold mb-2">검색 별칭</div>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {aliases.map((a) => (
+                  <span
+                    key={a}
+                    className="inline-flex items-center gap-1 bg-neutral-800 text-white text-[11px] font-bold px-2 py-1 rounded-full"
+                  >
+                    {a}
+                    <button
+                      type="button"
+                      onClick={() => removeAlias(a)}
+                      disabled={saving}
+                      className="w-4 h-4 inline-flex items-center justify-center rounded-full hover:bg-neutral-700 text-neutral-400 hover:text-white"
+                      aria-label={`${a} 제거`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+                {aliases.length === 0 && (
+                  <span className="text-[11px] text-neutral-600">등록된 별칭이 없어요</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={aliasInput}
+                  onChange={(e) => setAliasInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === ",") {
+                      e.preventDefault();
+                      addAlias(aliasInput);
+                    }
+                  }}
+                  placeholder="예: 에이스, ace, club ace"
+                  disabled={saving}
+                  className="flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => addAlias(aliasInput)}
+                  disabled={saving || !aliasInput.trim()}
+                  className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-[12px] font-black disabled:opacity-50"
+                >
+                  추가
+                </button>
+              </div>
+              <p className="text-[10px] text-neutral-600 mt-1">
+                자주 잘못 검색되는 표기를 등록해두면 그 검색어로도 노출돼요 (Enter·쉼표로 추가)
+              </p>
             </div>
             {CLUB_TAG_GROUPS.map((g) => (
               <div key={g.group}>

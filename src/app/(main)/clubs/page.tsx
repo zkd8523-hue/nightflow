@@ -36,7 +36,7 @@ export default async function ClubsIndexPage() {
   let clubsRes: { data: Array<Record<string, unknown>> | null; error: unknown } =
     await supabase
       .from("clubs")
-      .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail")
+      .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases")
       .is("deleted_at", null)
       .not("name", "ilike", "%운영자%");
 
@@ -79,6 +79,7 @@ export default async function ClubsIndexPage() {
           longitude: (c.longitude as number | null | undefined) ?? null,
           operating_hours: (c.operating_hours as string | null | undefined) ?? null,
           entry_fee_detail: (c.entry_fee_detail as string | null | undefined) ?? null,
+          aliases: (c.aliases as string[] | undefined) ?? [],
         }))}
         activeCountMap={activeCountMap}
       />

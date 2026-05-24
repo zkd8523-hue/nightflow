@@ -8,6 +8,7 @@ import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X,
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
+import { createClient } from "@/lib/supabase/client";
 import {
   FEATURE_GROUPS,
   getTagsByGroup,
@@ -26,6 +27,12 @@ interface ClubListItem {
   longitude?: number | null;
   operating_hours?: string | null;
   entry_fee_detail?: string | null;
+  aliases?: string[];
+}
+
+/** 검색용 정규화 — 소문자 + 양끝 공백 제거 + 연속 공백 1개 */
+function normalizeSearch(s: string): string {
+  return s.toLowerCase().trim().replace(/\s+/g, " ");
 }
 
 type ViewMode = "list" | "map";
@@ -105,7 +112,7 @@ export function ClubList({ clubs, activeCountMap }: Props) {
     return clubs.filter((c) => !hiddenIds.has(c.id));
   }, [clubs]);
 
-  const normalizedQuery = query.trim().toLowerCase();
+  const normalizedQuery = normalizeSearch(query);
   const filtered = useMemo(() => {
     return dedupedClubs.filter((c) => {
       if (filters.areas.length && !filters.areas.includes(c.area || ""))
@@ -115,13 +122,38 @@ export function ClubList({ clubs, activeCountMap }: Props) {
         if (!wanted.some((t) => c.tags?.includes(t))) return false;
       }
       if (normalizedQuery) {
-        const name = c.name.toLowerCase();
-        const area = (c.area || "").toLowerCase();
-        if (!name.includes(normalizedQuery) && !area.includes(normalizedQuery)) return false;
+        const haystack = [
+          c.name,
+          c.area || "",
+          ...(c.aliases || []),
+        ]
+          .map(normalizeSearch)
+          .join("  ");
+        if (!haystack.includes(normalizedQuery)) return false;
       }
       return true;
     });
   }, [dedupedClubs, filters, normalizedQuery]);
+
+  // 검색 실패 로깅: 쿼리 입력 후 500ms 안정 + 결과 0건이면 1회 기록
+  useEffect(() => {
+    if (!normalizedQuery) return;
+    if (normalizedQuery.length < 2) return;
+    if (filtered.length > 0) return;
+    const timer = setTimeout(async () => {
+      try {
+        const supabase = createClient();
+        await supabase.rpc("log_search_miss", {
+          p_query: query,
+          p_normalized: normalizedQuery,
+          p_result_count: 0,
+        });
+      } catch {
+        // 로깅 실패는 조용히 무시 (UX 영향 X)
+      }
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [normalizedQuery, filtered.length, query]);
 
   const byArea: Record<string, ClubListItem[]> = {};
   for (const c of filtered) {
