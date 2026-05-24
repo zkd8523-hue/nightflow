@@ -569,14 +569,14 @@ export function HomeContent({
         })()}
 
 
-        {!user && !isLoading && auctions.active.length > 0 && !(currentTab === "puzzle" && puzzles.length === 0) && currentTab !== "share" && (
+        {!isLoading && !(currentTab === "puzzle" && puzzles.length === 0) && currentTab !== "share" && (currentTab === "puzzle" || !user) && (auctions.active.length > 0 || currentTab === "puzzle") && (
           <div className="text-center -mt-20 pb-3 relative z-10">
             <p className="text-[14.5px] text-neutral-200 font-semibold mb-1">
               {currentTab === "puzzle"
                 ? "어떤 오퍼가 올지 궁금하다면?"
                 : "3초만에 로그인하고 입찰하기"}
             </p>
-            <Link href={currentTab === "puzzle" ? "/login?redirect=/flags/new" : "/login"}>
+            <Link href={currentTab === "puzzle" ? (user ? "/flags/new" : "/login?redirect=/flags/new") : "/login"}>
               <Button
                 className={
                   currentTab === "puzzle"
