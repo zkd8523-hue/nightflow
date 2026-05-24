@@ -102,7 +102,7 @@ const SECRET_OFFER_INTRO_USER = {
 // MD 전용 퍼즐 이용방법 (시크릿 오퍼 핵심 가치 강조)
 const SHARE_ONBOARDING_STEPS = [
   {
-    title: "1. 조각 선택",
+    title: "1. 파티 선택",
     desc: "MD가 세팅한 테이블에서\n원하는 조각을 골라요.",
     icon: <span className="text-[20px]">🧩</span>,
     color: "bg-green-500/10",
@@ -180,8 +180,8 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
   share: {
     content: (
       <>
-        <div className="text-[14.5px] text-white">서울 핫플 조각 다 모였다!</div>
-        <div className="text-[15.5px] text-white">클릭 한번에 참가, 방장비 X</div>
+        <div className="text-[14.5px] text-white">예산은 있는데, 인원이 모자라다면?</div>
+        <div className="text-[15.5px] text-white">클릭 한 번으로 파티 참가!</div>
       </>
     ),
   },
@@ -532,8 +532,8 @@ export function HomeContent({
     // 탭별 Tip 콘텐츠 (풀 화면과 일관)
     const userPuzzleTipContent = (
       <>
-        <div className="text-[14.5px]">예산 등록 → MD들이 시크릿오퍼로 경쟁</div>
-        <div className="text-[15.5px]">가격·패키지 비교하고 골라요!</div>
+        <div className="text-[14.5px] text-white">예산 등록 → MD들이 시크릿오퍼로 경쟁!</div>
+        <div className="text-[15.5px] text-white">가격·패키지 비교하고 골라요</div>
       </>
     );
     const mdPuzzleTipContent = (
@@ -559,39 +559,39 @@ export function HomeContent({
 
     return (
       <>
-        <div className="space-y-6">
+        <div className="flex flex-col">
           {/* 탭 (깃발 / 조각) — 자세히로 갈 때도 그대로 전달 */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 -mx-4 px-4 mb-4">
             <button
               type="button"
               onClick={() => handleTabChange("puzzle")}
-              className={`px-4 py-2 rounded-full text-[14px] font-black transition-colors ${
+              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
                 currentTab === "puzzle"
                   ? "bg-amber-500 text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
             >
-              🚩 깃발
+              <span className="text-[18px] leading-none">🚩</span> 깃발
             </button>
             <button
               type="button"
               onClick={() => handleTabChange("share")}
-              className={`px-4 py-2 rounded-full text-[14px] font-black transition-colors ${
+              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
                 currentTab === "share"
                   ? "bg-amber-500 text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
             >
-              🧩 조각
+              <span className="text-[16px] leading-none">🧩</span> 조각
             </button>
           </div>
 
           {/* Tip 박스 + 이용방법 토글 */}
           {visibleCompactTip && (
-            <section className="space-y-2">
-              <div className="relative bg-gradient-to-br from-amber-500/35 via-amber-500/20 to-amber-600/10 rounded-2xl px-3 pt-4 pb-2.5">
+            <section className="space-y-2 -mx-4 mb-3">
+              <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 pb-2.5">
                 <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
-                <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep">
+                <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
                   {visibleCompactTip}
                 </div>
                 <button
@@ -669,6 +669,7 @@ export function HomeContent({
               shares={visibleAuctions.filter((a) => a.listing_type === "share")}
               currentUserId={user?.id}
               detailHref={detailHref("share")}
+              newFlagHref={newFlagHref}
             />
           )}
 
@@ -695,7 +696,7 @@ export function HomeContent({
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="flex flex-col">
 
         {/* 홈 상단 ClubStrip 일시 숨김 — 핵심 가치 경험(깃발/조각) 흐름을 가리는 노이즈로 판단. /clubs 페이지에선 정상 노출. */}
         {/* <ClubStrip clubs={clubs} /> */}
@@ -718,8 +719,8 @@ export function HomeContent({
           );
           const userPuzzleTipContent = (
             <>
-              <div className="text-[14.5px]">예산 등록 → MD들이 시크릿오퍼로 경쟁</div>
-              <div className="text-[15.5px]">가격·패키지 비교하고 골라요!</div>
+              <div className="text-[14.5px] text-white">예산 등록 → MD들이 시크릿오퍼로 경쟁!</div>
+              <div className="text-[15.5px] text-white">가격·패키지 비교하고 골라요</div>
             </>
           );
           const overriddenTabPromises = isMdOrAdmin
@@ -733,12 +734,12 @@ export function HomeContent({
               };
           const visibleSteps = steps;
           const guideCard = (
-            <section className="space-y-2">
+            <section className="space-y-2 -mx-4 mb-3">
               {/* TIP 박스 — 항시 노출 */}
               {overriddenTabPromises[currentTab]?.content && (
-                <div className="relative bg-gradient-to-br from-amber-500/35 via-amber-500/20 to-amber-600/10 border border-amber-400/70 rounded-2xl px-3 pt-4 pb-2.5">
+                <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 pb-2.5">
                   <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
-                  <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep">
+                  <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
                     {overriddenTabPromises[currentTab].content}
                   </div>
                   {(currentTab === "puzzle" || currentTab === "share" || currentTab === "advance") && (
@@ -825,6 +826,7 @@ export function HomeContent({
               }}
               tabPromises={overriddenTabPromises}
               guideSlot={guideCard}
+              onBack={() => router.push(`/?tab=${currentTab}`)}
             />
           );
         })()}

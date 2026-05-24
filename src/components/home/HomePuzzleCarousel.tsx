@@ -32,7 +32,7 @@ export function HomePuzzleCarousel({
 
   if (puzzles.length === 0) {
     return (
-      <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3">
+      <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
         <p className="text-[15px] text-white font-bold">아직 등록된 깃발이 없어요</p>
         <p className="text-[12px] text-neutral-500">
           예산·인원·날짜만 정하면 MD들이 시크릿 오퍼를 보내요
@@ -54,12 +54,12 @@ export function HomePuzzleCarousel({
       <div
         ref={scrollRef}
         data-no-pull-refresh
-        className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x pb-1 -mx-4 px-4"
+        className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x touch-pan-y pb-1 -mx-4 px-4"
       >
         {visible.map((puzzle) => (
           <div
             key={puzzle.id}
-            className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always [&>div]:h-full"
+            className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always"
           >
             <PuzzleCard
               puzzle={puzzle}

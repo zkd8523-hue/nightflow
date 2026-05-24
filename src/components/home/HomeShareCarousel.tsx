@@ -11,6 +11,7 @@ interface Props {
   userInterestedSet?: Set<string>;
   currentUserId?: string;
   detailHref: string;
+  newFlagHref?: string;
 }
 
 const MAX_CARDS = 5;
@@ -21,14 +22,25 @@ export function HomeShareCarousel({
   userInterestedSet,
   currentUserId,
   detailHref,
+  newFlagHref,
 }: Props) {
   if (shares.length === 0) {
     return (
-      <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3">
-        <p className="text-[15px] text-white font-bold">아직 등록된 조각이 없어요</p>
-        <p className="text-[12px] text-neutral-500">
-          모르는 사람들과 모여서 1테이블을 함께 차지해요
-        </p>
+      <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center -mx-4">
+        <p className="text-[15px] text-white font-bold mb-3">아직 등록된 조각이 없어요</p>
+        {newFlagHref && (
+          <>
+            <Link
+              href={newFlagHref}
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-amber-500 text-black text-[13px] font-black active:scale-95 transition"
+            >
+              ⛳ 내가 깃발 꽂기
+            </Link>
+            <p className="text-[11px] text-neutral-500 mt-1">
+              MD들이 24시간 대기하고 있어요
+            </p>
+          </>
+        )}
       </div>
     );
   }
@@ -40,7 +52,7 @@ export function HomeShareCarousel({
     <div>
       <div
         data-no-pull-refresh
-        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x pb-1 -mx-4 px-4"
+        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x touch-pan-y pb-1 -mx-4 px-4"
       >
         {visible.map((share) => (
           <div

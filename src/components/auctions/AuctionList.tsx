@@ -13,7 +13,7 @@ import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { matchesArea } from "@/lib/utils/area";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, ArrowLeft } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DateFilterCalendar } from "./filters/DateFilterCalendar";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
@@ -87,9 +87,11 @@ interface AuctionListProps {
   hideAreaFilter?: boolean;
   /** 조각 빈 상태(빈 리스트일 때 CTA) 숨김 — 클럽 상세 페이지 등 임베드 시 사용 */
   hideShareEmptyState?: boolean;
+  /** 탭 좌측에 뒤로가기 버튼 표시 (풀 모드 진입 시) */
+  onBack?: () => void;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, currentUserId, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot, hideTabs, hideAreaFilter, hideShareEmptyState }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, currentUserId, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot, hideTabs, hideAreaFilter, hideShareEmptyState, onBack }: AuctionListProps) {
   // Realtime 입찰 burst 시 필터 깜빡임 방지: deferred render
   const deferredAuctions = useDeferredValue(initialAuctions);
 
@@ -249,10 +251,20 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
 
   return (
-    <div className="space-y-2.5">
+    <div className="flex flex-col">
       {!hideTabs && (
-      <div className="flex items-center gap-2 px-1">
-        <div data-no-pull-refresh className="overflow-x-auto pb-2 scrollbar-hide flex-1 min-w-0 touch-pan-x">
+      <div className="flex items-center gap-2 -mx-4 px-4 mb-4">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            aria-label="뒤로가기"
+            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-neutral-800 transition-colors flex-shrink-0"
+          >
+            <ArrowLeft className="w-4 h-4 text-white" />
+          </button>
+        )}
+        <div data-no-pull-refresh className="overflow-x-auto scrollbar-hide flex-1 min-w-0 touch-pan-x">
           <div className="flex gap-2 w-max pr-4 items-end">
             <button
               onClick={() => setTab("puzzle")}
@@ -261,7 +273,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
             >
-              <span className="text-[18px] leading-none">⛳</span> 깃발
+              <span className="text-[18px] leading-none">🚩</span> 깃발
             </button>
 
             <button
