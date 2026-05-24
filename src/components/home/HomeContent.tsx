@@ -529,6 +529,34 @@ export function HomeContent({
     const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
     const newFlagHref = user ? "/flags/new" : "/login?redirect=/flags/new";
 
+    // 탭별 Tip 콘텐츠 (풀 화면과 일관)
+    const userPuzzleTipContent = (
+      <>
+        <div className="text-[14.5px]">예산 등록 → MD들이 시크릿오퍼로 경쟁</div>
+        <div className="text-[15.5px]">가격·패키지 비교하고 골라요!</div>
+      </>
+    );
+    const mdPuzzleTipContent = (
+      <>
+        <div className="text-[14.5px]">유저들의 예산이 기다리고 있어요 💰</div>
+        <div className="text-[15.5px]">시크릿오퍼로 매출을 올려봐요!</div>
+      </>
+    );
+    const compactTipContent: Record<"puzzle" | "share", React.ReactNode> = {
+      puzzle: isMdOrAdmin ? mdPuzzleTipContent : userPuzzleTipContent,
+      share: TAB_PROMISES.share.content,
+    };
+    const compactSteps =
+      currentTab === "puzzle"
+        ? isMdOrAdmin
+          ? PUZZLE_ONBOARDING_STEPS_MD
+          : PUZZLE_ONBOARDING_STEPS
+        : SHARE_ONBOARDING_STEPS;
+    const visibleCompactTip =
+      currentTab === "puzzle" || currentTab === "share"
+        ? compactTipContent[currentTab]
+        : null;
+
     return (
       <>
         <div className="space-y-6">
@@ -557,6 +585,71 @@ export function HomeContent({
               🧩 조각
             </button>
           </div>
+
+          {/* Tip 박스 + 이용방법 토글 */}
+          {visibleCompactTip && (
+            <section className="space-y-2">
+              <div className="relative bg-gradient-to-br from-amber-500/35 via-amber-500/20 to-amber-600/10 border border-amber-400/70 rounded-2xl px-3 pt-4 pb-2.5">
+                <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
+                <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep">
+                  {visibleCompactTip}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
+                  className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10.5px] font-bold text-amber-200/90 hover:text-white transition-colors"
+                >
+                  <span className="text-[11px] leading-none">ⓘ</span>
+                  이용방법
+                </button>
+              </div>
+              {showGuide && (
+                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
+                  <button
+                    onClick={() => { setGuideMode("full"); setShowGuide(false); }}
+                    aria-label="가이드 닫기"
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="flex flex-col gap-2">
+                    {compactSteps.map((step, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3"
+                      >
+                        <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
+                          {step.icon}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-[14.5px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
+                          <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
+                            {step.desc.split("\n").map((line, lineIdx, arr) => {
+                              const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                              return (
+                                <span key={lineIdx}>
+                                  {parts.map((part, pIdx) =>
+                                    /^\*\*[^*]+\*\*$/.test(part) ? (
+                                      <span key={pIdx} className="text-neutral-200 font-semibold">
+                                        {part.slice(2, -2)}
+                                      </span>
+                                    ) : (
+                                      <span key={pIdx}>{part}</span>
+                                    )
+                                  )}
+                                  {lineIdx < arr.length - 1 && "\n"}
+                                </span>
+                              );
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
 
           {/* 깃발 캐러셀 */}
           {currentTab === "puzzle" && (
@@ -593,6 +686,9 @@ export function HomeContent({
           {/* 비로그인 유저용 깃발 꽂기 CTA */}
           {!user && currentTab === "puzzle" && visiblePuzzles.length > 0 && (
             <div className="text-center pt-2">
+              <p className="text-[14.5px] text-neutral-200 font-semibold mb-2">
+                어떤 오퍼가 올지 궁금하다면?
+              </p>
               <Link href={newFlagHref}>
                 <Button className="h-10 px-8 bg-amber-500 text-black font-bold text-sm rounded-full hover:bg-amber-400">
                   ⛳ 나도 깃발꽂기
