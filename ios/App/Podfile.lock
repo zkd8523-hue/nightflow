@@ -17,6 +17,9 @@ PODS:
   - CapacitorBrowser (8.0.3):
     - Capacitor
   - CapacitorCordova (8.3.3)
+  - CapacitorGeolocation (8.2.0):
+    - Capacitor
+    - IONGeolocationLib (= 2.1.0)
   - CapacitorHaptics (8.0.2):
     - Capacitor
   - CapacitorKakaoLoginPlugin (3.0.0):
@@ -70,6 +73,7 @@ PODS:
     - AppAuth/Core (~> 2.0)
     - GTMSessionFetcher/Core (< 4.0, >= 3.3)
   - GTMSessionFetcher/Core (3.5.0)
+  - IONGeolocationLib (2.1.0)
   - KakaoSDKAuth (2.18.2):
     - KakaoSDKCommon (= 2.18.2)
   - KakaoSDKCommon (2.18.2):
@@ -98,6 +102,7 @@ DEPENDENCIES:
   - "CapacitorApp (from `../../node_modules/@capacitor/app`)"
   - "CapacitorBrowser (from `../../node_modules/@capacitor/browser`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorGeolocation (from `../../node_modules/@capacitor/geolocation`)"
   - "CapacitorHaptics (from `../../node_modules/@capacitor/haptics`)"
   - CapacitorKakaoLoginPlugin (from `../../node_modules/capacitor-kakao-login-plugin`)
   - "CapacitorNetwork (from `../../node_modules/@capacitor/network`)"
@@ -120,6 +125,7 @@ SPEC REPOS:
     - GoogleUtilities
     - GTMAppAuth
     - GTMSessionFetcher
+    - IONGeolocationLib
     - KakaoSDKAuth
     - KakaoSDKCommon
     - KakaoSDKShare
@@ -138,6 +144,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/browser"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
+  CapacitorGeolocation:
+    :path: "../../node_modules/@capacitor/geolocation"
   CapacitorHaptics:
     :path: "../../node_modules/@capacitor/haptics"
   CapacitorKakaoLoginPlugin:
@@ -163,6 +171,7 @@ SPEC CHECKSUMS:
   CapacitorApp: 449ffe26375e96f8aaaee625ac6e01e5c57c8650
   CapacitorBrowser: c987c73d09d8bd3b5ec13f06338b1e14d5d2be69
   CapacitorCordova: 71cde252d2c3c3e73a9586e85d2354fc8bbf0209
+  CapacitorGeolocation: b36f6287bfc9f2eefa04dc900496f2c8ae666136
   CapacitorHaptics: 296f771ecd89c7a1bd92a7b6826a7d268e2e70f5
   CapacitorKakaoLoginPlugin: 037a574f18ef7dfe4ee984b68b7a175ba12f3c10
   CapacitorNetwork: 8812ce60d11fb63d8f2e4ba51a49b2e59892ebe2
@@ -179,6 +188,7 @@ SPEC CHECKSUMS:
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMAppAuth: 217a876b249c3c585a54fd6f73e6b58c4f5c4238
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
+  IONGeolocationLib: 6a7b6f76063fb1b01cfb14fae7d0f526e3c9b271
   KakaoSDKAuth: 3daf72ec463876e0fe6d0d37c7d6b0b2729169f1
   KakaoSDKCommon: 516f68bc6b223ed502c34a362d6ecc9145e0dcc0
   KakaoSDKShare: 8980e83a3a80bd805ab859c102dd41ed6801424e
@@ -188,6 +198,6 @@ SPEC CHECKSUMS:
   KakaoSDKUser: 5b0826033381d314f550dd90fbf70d3612044ad6
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
-PODFILE CHECKSUM: 9d668fdfe530768d197fc750965ce545afa29697
+PODFILE CHECKSUM: 29f764fe492cc17e5fabcde856002f5f55eb37b3
 
 COCOAPODS: 1.16.2

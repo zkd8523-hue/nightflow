@@ -83,47 +83,110 @@ export function ClubMap({ clubs, activeCountMap, initialCenter, unmappedCount = 
   const userPinRef = useRef<any>(null);
   const sheetRef = useRef<ClubMapSheetHandle | null>(null);
 
-  const handleLocate = useCallback((opts: { silent?: boolean } = {}) => {
+  const handleLocate = useCallback(async (opts: { silent?: boolean } = {}) => {
     if (!mapInstanceRef.current) return;
+
+    const applyPosition = (lat: number, lng: number) => {
+      const map = mapInstanceRef.current;
+      const latlng = new window.kakao.maps.LatLng(lat, lng);
+      map.setLevel(5);
+      map.panTo(latlng);
+
+      if (userPinRef.current) userPinRef.current.setMap(null);
+      const dot = document.createElement("div");
+      dot.innerHTML = `
+        <div class="relative">
+          <div class="absolute -inset-2 rounded-full bg-blue-500/30 animate-ping"></div>
+          <div class="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-lg"></div>
+        </div>
+      `;
+      const overlay = new window.kakao.maps.CustomOverlay({
+        position: latlng,
+        content: dot,
+        yAnchor: 0.5,
+        xAnchor: 0.5,
+        zIndex: 100,
+      });
+      overlay.setMap(map);
+      userPinRef.current = overlay;
+      sheetRef.current?.setSnap("minimized");
+    };
+
+    const showPermissionToast = async () => {
+      if (opts.silent) return;
+      const { Capacitor } = await import("@capacitor/core");
+      const isNative = Capacitor.isNativePlatform();
+      toast.error("위치 권한이 필요해요", {
+        description: isNative
+          ? "설정에서 위치 권한을 허용해주세요"
+          : "브라우저 설정에서 위치 권한을 허용해주세요",
+        action: {
+          label: "설정 열기",
+          onClick: () => {
+            if (!isNative) return;
+            try {
+              const platform = Capacitor.getPlatform();
+              const url =
+                platform === "ios"
+                  ? "app-settings:"
+                  : "intent://settings#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=kr.nightflow.app;end";
+              window.open(url, "_system");
+            } catch {
+              toast.error("설정 앱을 열 수 없어요");
+            }
+          },
+        },
+      });
+    };
+
+    setLocating(true);
+    try {
+      const { Capacitor } = await import("@capacitor/core");
+      if (Capacitor.isNativePlatform()) {
+        const { Geolocation } = await import("@capacitor/geolocation");
+        const perm = await Geolocation.checkPermissions();
+        let granted =
+          perm.location === "granted" || perm.coarseLocation === "granted";
+        if (!granted) {
+          const req = await Geolocation.requestPermissions({
+            permissions: ["location"],
+          });
+          granted =
+            req.location === "granted" || req.coarseLocation === "granted";
+        }
+        if (!granted) {
+          setLocating(false);
+          await showPermissionToast();
+          return;
+        }
+        const pos = await Geolocation.getCurrentPosition({
+          enableHighAccuracy: true,
+          timeout: 8000,
+          maximumAge: 60000,
+        });
+        applyPosition(pos.coords.latitude, pos.coords.longitude);
+        setLocating(false);
+        return;
+      }
+    } catch (e) {
+      // Capacitor 로드 실패 시 웹 fallback으로 진행
+    }
+
     if (!("geolocation" in navigator)) {
+      setLocating(false);
       if (!opts.silent) toast.error("이 브라우저는 위치 기능을 지원하지 않아요");
       return;
     }
-    setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const map = mapInstanceRef.current;
-        const latlng = new window.kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
-        map.setLevel(5);
-        map.panTo(latlng);
-
-        // 내 위치 핀 (파란 점)
-        if (userPinRef.current) userPinRef.current.setMap(null);
-        const dot = document.createElement("div");
-        dot.innerHTML = `
-          <div class="relative">
-            <div class="absolute -inset-2 rounded-full bg-blue-500/30 animate-ping"></div>
-            <div class="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-white shadow-lg"></div>
-          </div>
-        `;
-        const overlay = new window.kakao.maps.CustomOverlay({
-          position: latlng,
-          content: dot,
-          yAnchor: 0.5,
-          xAnchor: 0.5,
-          zIndex: 100,
-        });
-        overlay.setMap(map);
-        userPinRef.current = overlay;
+        applyPosition(pos.coords.latitude, pos.coords.longitude);
         setLocating(false);
-        // 여기어때 패턴: GPS 후 시트 최소화해서 지도 거의 풀화면 노출
-        sheetRef.current?.setSnap("minimized");
       },
-      (err) => {
+      async (err) => {
         setLocating(false);
-        if (opts.silent) return; // 자동 시도 실패 시 조용히 무시
+        if (opts.silent) return;
         if (err.code === err.PERMISSION_DENIED) {
-          toast.error("위치 권한이 필요해요. 브라우저 설정을 확인해주세요");
+          await showPermissionToast();
         } else {
           toast.error("위치를 가져올 수 없어요");
         }
