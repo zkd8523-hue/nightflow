@@ -72,7 +72,7 @@ export function HomePuzzleCarousel({
           <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
             <div className="text-center w-full">
               <p className="text-[14.5px] text-neutral-200 font-semibold mb-3">
-                어떤 오퍼가 올지 궁금하다면?
+                같은 돈으로 더 크게 놀고싶다면?
               </p>
               <Link href={newFlagHref}>
                 <Button className="h-12 px-8 bg-amber-500 text-black font-black text-[15px] rounded-full hover:bg-amber-400">
