@@ -83,6 +83,14 @@ export default async function AdminClubsPage() {
                 </Link>
                 <h1 className="text-xl font-black text-white flex-1">클럽 관리</h1>
                 <GeocodeMissingButton />
+                {clubs && clubs.length > 0 && (
+                    <Link
+                        href={`/admin/clubs/${clubs[0].id}/edit`}
+                        className="px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-[12px] text-black font-bold"
+                    >
+                        빠른 편집
+                    </Link>
+                )}
                 <Link
                     href="/admin/clubs/search-misses"
                     className="px-3 py-1.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-[12px] text-white font-bold"
