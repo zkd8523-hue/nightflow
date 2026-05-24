@@ -40,6 +40,7 @@ type ViewMode = "list" | "map";
 interface Props {
   clubs: ClubListItem[];
   activeCountMap: Record<string, number>;
+  hotdealMap?: Record<string, string>;
 }
 
 function parseList(v: string | null): string[] {
@@ -50,7 +51,7 @@ function parseList(v: string | null): string[] {
     .filter(Boolean);
 }
 
-export function ClubList({ clubs, activeCountMap }: Props) {
+export function ClubList({ clubs, activeCountMap, hotdealMap = {} }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -271,6 +272,7 @@ export function ClubList({ clubs, activeCountMap }: Props) {
         <ClubMap
           clubs={filtered}
           activeCountMap={activeCountMap}
+          hotdealMap={hotdealMap}
           unmappedCount={filtered.length - mappableCount}
         />
       ) : filtered.length === 0 ? (

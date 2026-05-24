@@ -53,6 +53,15 @@ export default async function ClubsIndexPage() {
     .select("club_id")
     .in("status", ["active", "scheduled"]);
 
+  // 오늘 활성 HOT DEAL 슬롯 (KST 기준 오늘 날짜)
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const todayKstISO = kstNow.toISOString().slice(0, 10);
+  const hotdealRes = await supabase
+    .from("weekly_hotdeal_slots")
+    .select("club_id, benefit_text, expires_at")
+    .eq("slot_date", todayKstISO)
+    .not("benefit_text", "is", null);
+
   const HIDDEN_NAME_PATTERNS = [/luna/i, /prism/i, /eclipse/i, /^orion$/i];
   const clubs = (clubsRes.data ?? []).filter(
     (c: { name: string }) => !HIDDEN_NAME_PATTERNS.some((re) => re.test(c.name))
@@ -61,6 +70,15 @@ export default async function ClubsIndexPage() {
   for (const a of auctionsRes.data ?? []) {
     if (!a.club_id) continue;
     activeCountMap[a.club_id] = (activeCountMap[a.club_id] || 0) + 1;
+  }
+
+  const hotdealMap: Record<string, string> = {};
+  for (const h of hotdealRes.data ?? []) {
+    if (!h.club_id || !h.benefit_text) continue;
+    // 만료 안 지난 것만
+    if (new Date(h.expires_at) > new Date()) {
+      hotdealMap[h.club_id] = h.benefit_text;
+    }
   }
 
   return (
@@ -82,6 +100,7 @@ export default async function ClubsIndexPage() {
           aliases: (c.aliases as string[] | undefined) ?? [],
         }))}
         activeCountMap={activeCountMap}
+        hotdealMap={hotdealMap}
       />
       </Suspense>
     </div>

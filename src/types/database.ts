@@ -864,3 +864,19 @@ export interface AuctionTemplate {
   updated_at: string;
   club?: Club;
 }
+
+// ============================================================================
+// HOT DEAL 슬롯 (Migration 234)
+// ============================================================================
+export interface WeeklyHotdealSlot {
+  id: string;
+  club_id: string;
+  md_id: string;
+  /** "YYYY-MM-DD" — 슬롯 적용 날짜 */
+  slot_date: string;
+  benefit_text: string | null;
+  /** ISO timestamp — slot_date 다음날 00:00 KST */
+  expires_at: string;
+  claimed_at: string;
+  updated_at: string;
+}

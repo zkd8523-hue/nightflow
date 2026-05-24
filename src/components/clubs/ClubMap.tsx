@@ -21,6 +21,7 @@ interface ClubMapItem {
 interface Props {
   clubs: ClubMapItem[];
   activeCountMap: Record<string, number>;
+  hotdealMap?: Record<string, string>;
   initialCenter?: { lat: number; lng: number };
   /** 좌표 미등록으로 지도에 표시 못한 클럽 수 (있으면 시트 상단에 작게 안내) */
   unmappedCount?: number;
@@ -71,7 +72,7 @@ function loadKakaoSdk(): Promise<void> {
   return sdkPromise;
 }
 
-export function ClubMap({ clubs, activeCountMap, initialCenter, unmappedCount = 0 }: Props) {
+export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter, unmappedCount = 0 }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]);
@@ -249,17 +250,23 @@ export function ClubMap({ clubs, activeCountMap, initialCenter, unmappedCount = 
     filtered.forEach((c) => {
       const pos = new window.kakao.maps.LatLng(c.latitude!, c.longitude!);
       const isSelected = selectedClub?.id === c.id;
+      const hasHotdeal = !!hotdealMap[c.id];
 
       const el = document.createElement("div");
       el.className = "cursor-pointer transition-transform hover:scale-110 active:scale-95";
       el.style.transform = "translate(-50%, -100%)";
+      const fireBadge = hasHotdeal
+        ? `<span class="inline-block mr-0.5">🔥</span>`
+        : "";
       el.innerHTML = `
         <div class="px-2.5 py-1 rounded-full shadow-lg text-[11px] font-black whitespace-nowrap ${
           isSelected
             ? "bg-white text-black ring-2 ring-amber-400 scale-110"
+            : hasHotdeal
+            ? "bg-amber-500 text-black ring-1 ring-amber-300"
             : "bg-amber-500 text-black"
         }">
-          ${escapeHtml(c.name)}
+          ${fireBadge}${escapeHtml(c.name)}
         </div>
       `;
       el.addEventListener("click", (e) => {
@@ -292,7 +299,7 @@ export function ClubMap({ clubs, activeCountMap, initialCenter, unmappedCount = 
         map.setBounds(bounds);
       }
     }
-  }, [status, filtered, activeCountMap, selectedClub]);
+  }, [status, filtered, activeCountMap, hotdealMap, selectedClub]);
 
   if (status === "error") {
     return (
@@ -361,6 +368,7 @@ export function ClubMap({ clubs, activeCountMap, initialCenter, unmappedCount = 
           ref={sheetRef}
           clubs={filtered}
           activeCountMap={activeCountMap}
+          hotdealMap={hotdealMap}
           selectedClubId={selectedClub?.id ?? null}
           onCardClick={handleCardClick}
           onHeightChange={setSheetRatio}

@@ -24,6 +24,7 @@ interface ClubItem {
 interface Props {
   clubs: ClubItem[];
   activeCountMap: Record<string, number>;
+  hotdealMap?: Record<string, string>;
   selectedClubId: string | null;
   onCardClick: (clubId: string) => void;
   /** 시트가 차지하는 viewport 비율 (0~1) */
@@ -48,6 +49,7 @@ export interface ClubMapSheetHandle {
 export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubMapSheet({
   clubs,
   activeCountMap,
+  hotdealMap = {},
   selectedClubId,
   onCardClick,
   onHeightChange,
@@ -208,6 +210,7 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
                 key={c.id}
                 club={c}
                 flagCount={activeCountMap[c.id] || 0}
+                hotdealText={hotdealMap[c.id]}
                 isSelected={selectedClubId === c.id}
               />
             ))}
@@ -222,10 +225,12 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
 function DetailCard({
   club,
   flagCount,
+  hotdealText,
   isSelected,
 }: {
   club: ClubItem;
   flagCount: number;
+  hotdealText?: string;
   isSelected: boolean;
 }) {
   const genres = getTagsByGroup(club.tags || [], "genre");
@@ -262,6 +267,16 @@ function DetailCard({
           </p>
           <FavoriteButton clubId={club.id} />
         </div>
+
+        {/* HOT DEAL 한 줄 (있을 때만) */}
+        {hotdealText && (
+          <div className="flex items-start gap-1.5 mt-1">
+            <span className="text-[11px] leading-tight">🔥</span>
+            <p className="text-amber-300 text-[12px] font-bold leading-snug line-clamp-2">
+              {hotdealText}
+            </p>
+          </div>
+        )}
 
         {/* Line 2: 영업 상태 · 지역 */}
         <div className="flex items-center gap-1.5 text-[12px] font-medium">
