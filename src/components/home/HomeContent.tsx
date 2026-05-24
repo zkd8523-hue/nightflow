@@ -64,7 +64,7 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 const PUZZLE_ONBOARDING_STEPS = [
   {
     title: "1. 깃발꽂기",
-    desc: "날짜·지역·예산만 정해요!",
+    desc: "날짜·지역·예산을 자유롭게 정해요!",
     icon: <span className="text-[20px]">🚩</span>,
     color: "bg-amber-500/10",
   },
@@ -76,7 +76,7 @@ const PUZZLE_ONBOARDING_STEPS = [
   },
   {
     title: "3. 예약 확정",
-    desc: "마음에 드는 오퍼 수락 → MD 연락처 공개\n바로 연락해서 예약 확정!",
+    desc: "마음에 드는 오퍼 수락 → MD 연락처 공개\n바로 연락해서 예약 확정!\n💡 마음에 안 들면 그냥 안 골라도 돼요",
     icon: <span className="text-[20px]">🎉</span>,
     color: "bg-rose-500/10",
   },

@@ -630,7 +630,7 @@ export function PuzzleList({
           }`}
         >
           <span className="text-black text-sm font-semibold whitespace-nowrap">
-            나도 MD 줄세우기
+            나도 깃발꽂기
           </span>
           <Plus className="w-5 h-5 text-black" />
         </Link>
