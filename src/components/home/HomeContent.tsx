@@ -16,6 +16,9 @@ import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
 import { trackEvent, trackShareEvent } from "@/lib/analytics/events";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
+import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
+import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
+import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_cta_shown";
 
@@ -258,6 +261,9 @@ export function HomeContent({
     return normalizeTab(searchParams.get("tab"));
   });
 
+  // ?detail=1이면 기존 풀 화면(Tip/지역탭/통계/전체 카드), 없으면 compact (첫 카드 캐러셀)
+  const isDetailMode = searchParams.get("detail") === "1";
+
   // 탭 변경 시 URL 업데이트
   const handleTabChange = (tab: "today" | "advance" | "puzzle" | "share") => {
     const safe = normalizeTab(tab);
@@ -430,7 +436,178 @@ export function HomeContent({
     setShowGuide(false);
   };
 
+  // Compact/Full 모드 공통 Sheet들 (MD 승인 축하 + 깃발 CTA)
+  const renderHomeSheets = () => (
+    <>
+      {/* MD 파트너 승인 축하 Sheet (최초 1회) */}
+      <Sheet open={showMDWelcome} onOpenChange={(open) => { if (!open) handleDismissMDWelcome(); }}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-6 pb-10"
+        >
+          <SheetHeader className="text-center pt-2">
+            <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <PartyPopper className="w-8 h-8 text-amber-500" />
+            </div>
+            <SheetTitle className="text-white font-black text-2xl">
+              축하합니다!
+            </SheetTitle>
+            <SheetDescription className="text-neutral-400 text-sm leading-relaxed mt-2">
+              NightFlow 파트너로 승인되었습니다.
+              <br />
+              지금 바로 테이블을 등록하고 첫 매출을 만들어보세요.
+            </SheetDescription>
+          </SheetHeader>
 
+          <div className="space-y-3 mt-6">
+            <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
+              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">1</div>
+              <p className="text-[13px] text-neutral-300 font-medium">
+                <span className="text-white font-bold">주말(공휴일) 테이블</span>을 경매로 올리세요
+              </p>
+            </div>
+            <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
+              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">2</div>
+              <p className="text-[13px] text-neutral-300 font-medium">
+                유저들이 실시간으로 <span className="text-white font-bold">입찰 경쟁</span>합니다
+              </p>
+            </div>
+            <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
+              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">3</div>
+              <p className="text-[13px] text-neutral-300 font-medium">
+                낙찰되면 <span className="text-white font-bold">유저가 직접 연락</span>드려요
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3 mt-6">
+            <Button
+              onClick={handleGoToCreateAuction}
+              className="w-full h-14 bg-white hover:bg-neutral-200 text-black font-black text-base rounded-2xl transition-all active:scale-[0.98]"
+            >
+              경매 올리기
+            </Button>
+            <button
+              onClick={handleDismissMDWelcome}
+              className="w-full text-center text-sm text-neutral-500 hover:text-neutral-300 transition-colors py-2 font-medium"
+            >
+              나중에 둘러볼게요
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* 깃발 CTA - 신규 유저 1회 표시 */}
+      <Sheet open={showFlagCTA} onOpenChange={(o) => { if (!o) handleDismissFlagCTA(); }}>
+        <SheetContent side="bottom" className="rounded-t-3xl bg-[#1C1C1E] border-t border-neutral-800 pb-10">
+          <div className="flex flex-col items-center text-center pt-2 pb-4 gap-4">
+            <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center text-3xl">⛳</div>
+            <div>
+              <SheetTitle className="text-amber-400 font-black text-2xl">클럽을 즐기는 가장 스마트한 방식</SheetTitle>
+              <SheetDescription className="text-neutral-400 text-sm mt-1">
+                날짜·지역만 찍으면 MD들이 알아서 붙어요
+              </SheetDescription>
+            </div>
+            <Button onClick={handleGoToFlagNew} className="w-full h-14 bg-white text-black font-black text-base rounded-2xl">
+              지금 깃발 꽂으러 가기 →
+            </Button>
+            <button onClick={handleDismissFlagCTA} className="text-sm text-neutral-500 py-1">
+              나중에 둘러볼게요
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+
+
+
+  // Compact 모드: 깃발/조각 첫 카드 캐러셀 + HOT DEAL 섹션 (기본 홈)
+  if (!isDetailMode) {
+    const detailHref = (tab: string) => `/?tab=${tab}&detail=1`;
+    const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
+    const newFlagHref = user ? "/flags/new" : "/login?redirect=/flags/new";
+
+    return (
+      <>
+        <div className="space-y-6">
+          {/* 탭 (깃발 / 조각) — 자세히로 갈 때도 그대로 전달 */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleTabChange("puzzle")}
+              className={`px-4 py-2 rounded-full text-[14px] font-black transition-colors ${
+                currentTab === "puzzle"
+                  ? "bg-amber-500 text-black"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+              }`}
+            >
+              🚩 깃발
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange("share")}
+              className={`px-4 py-2 rounded-full text-[14px] font-black transition-colors ${
+                currentTab === "share"
+                  ? "bg-amber-500 text-black"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+              }`}
+            >
+              🧩 조각
+            </button>
+          </div>
+
+          {/* 깃발 캐러셀 */}
+          {currentTab === "puzzle" && (
+            <HomePuzzleCarousel
+              puzzles={visiblePuzzles}
+              offerCounts={puzzleOfferCounts}
+              userRole={user?.role as "user" | "md" | "admin" | undefined}
+              detailHref={detailHref("puzzle")}
+              emptyHref={newFlagHref}
+            />
+          )}
+
+          {/* 조각 캐러셀 */}
+          {currentTab === "share" && (
+            <HomeShareCarousel
+              shares={visibleAuctions.filter((a) => a.listing_type === "share")}
+              currentUserId={user?.id}
+              detailHref={detailHref("share")}
+            />
+          )}
+
+          {/* HOT DEAL 섹션 (하단, 비어있으면 자동 숨김) */}
+          <HotdealHomeSection />
+
+          {/* MD 전용 안내: 깃발 응대 유도 */}
+          {isMdOrAdmin && currentTab === "puzzle" && visiblePuzzles.length > 0 && (
+            <div className="text-center pt-2">
+              <p className="text-[12px] text-neutral-500">
+                유저들의 예산이 기다리고 있어요. 시크릿 오퍼로 매출을 올려봐요.
+              </p>
+            </div>
+          )}
+
+          {/* 비로그인 유저용 깃발 꽂기 CTA */}
+          {!user && currentTab === "puzzle" && visiblePuzzles.length > 0 && (
+            <div className="text-center pt-2">
+              <Link href={newFlagHref}>
+                <Button className="h-10 px-8 bg-amber-500 text-black font-bold text-sm rounded-full hover:bg-amber-400">
+                  ⛳ 나도 깃발꽂기
+                </Button>
+              </Link>
+              <p className="text-[10px] text-neutral-600 mt-2">평생 무료 · 1분 가입</p>
+            </div>
+          )}
+        </div>
+
+        {/* MD 파트너 승인 축하 Sheet, 깃발 CTA Sheet는 풀 모드와 공유 */}
+        {renderHomeSheets()}
+      </>
+    );
+  }
 
   return (
     <>
@@ -596,86 +773,7 @@ export function HomeContent({
         )}
       </div>
 
-
-      {/* MD 파트너 승인 축하 Sheet (최초 1회) */}
-      <Sheet open={showMDWelcome} onOpenChange={(open) => { if (!open) handleDismissMDWelcome(); }}>
-        <SheetContent
-          side="bottom"
-          showCloseButton={false}
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-6 pb-10"
-        >
-          <SheetHeader className="text-center pt-2">
-            <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <PartyPopper className="w-8 h-8 text-amber-500" />
-            </div>
-            <SheetTitle className="text-white font-black text-2xl">
-              축하합니다!
-            </SheetTitle>
-            <SheetDescription className="text-neutral-400 text-sm leading-relaxed mt-2">
-              NightFlow 파트너로 승인되었습니다.
-              <br />
-              지금 바로 테이블을 등록하고 첫 매출을 만들어보세요.
-            </SheetDescription>
-          </SheetHeader>
-
-          <div className="space-y-3 mt-6">
-            <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
-              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">1</div>
-              <p className="text-[13px] text-neutral-300 font-medium">
-                <span className="text-white font-bold">주말(공휴일) 테이블</span>을 경매로 올리세요
-              </p>
-            </div>
-            <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
-              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">2</div>
-              <p className="text-[13px] text-neutral-300 font-medium">
-                유저들이 실시간으로 <span className="text-white font-bold">입찰 경쟁</span>합니다
-              </p>
-            </div>
-            <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
-              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">3</div>
-              <p className="text-[13px] text-neutral-300 font-medium">
-                낙찰되면 <span className="text-white font-bold">유저가 직접 연락</span>드려요
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3 mt-6">
-            <Button
-              onClick={handleGoToCreateAuction}
-              className="w-full h-14 bg-white hover:bg-neutral-200 text-black font-black text-base rounded-2xl transition-all active:scale-[0.98]"
-            >
-              경매 올리기
-            </Button>
-            <button
-              onClick={handleDismissMDWelcome}
-              className="w-full text-center text-sm text-neutral-500 hover:text-neutral-300 transition-colors py-2 font-medium"
-            >
-              나중에 둘러볼게요
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
-
-      {/* 깃발 CTA - 신규 유저 1회 표시 */}
-      <Sheet open={showFlagCTA} onOpenChange={(o) => { if (!o) handleDismissFlagCTA(); }}>
-        <SheetContent side="bottom" className="rounded-t-3xl bg-[#1C1C1E] border-t border-neutral-800 pb-10">
-          <div className="flex flex-col items-center text-center pt-2 pb-4 gap-4">
-            <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center text-3xl">⛳</div>
-            <div>
-              <SheetTitle className="text-amber-400 font-black text-2xl">클럽을 즐기는 가장 스마트한 방식</SheetTitle>
-              <SheetDescription className="text-neutral-400 text-sm mt-1">
-                날짜·지역만 찍으면 MD들이 알아서 붙어요
-              </SheetDescription>
-            </div>
-            <Button onClick={handleGoToFlagNew} className="w-full h-14 bg-white text-black font-black text-base rounded-2xl">
-              지금 깃발 꽂으러 가기 →
-            </Button>
-            <button onClick={handleDismissFlagCTA} className="text-sm text-neutral-500 py-1">
-              나중에 둘러볼게요
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {renderHomeSheets()}
     </>
   );
 }

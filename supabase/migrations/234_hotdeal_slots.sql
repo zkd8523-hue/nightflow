@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS weekly_hotdeal_slots (
 );
 
 CREATE INDEX IF NOT EXISTS idx_hotdeal_md_date ON weekly_hotdeal_slots(md_id, slot_date);
+-- Postgres는 인덱스 predicate에 now() 같은 STABLE/VOLATILE 함수 금지 → 단순 복합 인덱스
 CREATE INDEX IF NOT EXISTS idx_hotdeal_club_active
-  ON weekly_hotdeal_slots(club_id, slot_date)
-  WHERE expires_at > now();
+  ON weekly_hotdeal_slots(club_id, slot_date, expires_at);
 
 COMMENT ON TABLE weekly_hotdeal_slots IS
   'HOT DEAL 주 단위 슬롯 (클럽×요일=MD 1명, Phase 1 무료 선착순)';
