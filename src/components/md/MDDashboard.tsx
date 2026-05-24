@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MDAuctionCard } from "./MDAuctionCard";
 import { AcceptedPuzzleVisitCard } from "./AcceptedPuzzleVisitCard";
+import { AreaOnboardingSheet } from "./AreaOnboardingSheet";
 import type { Auction, User, Club, PuzzleOffer } from "@/types/database";
 import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink, Coins } from "lucide-react";
 import { Header } from "@/components/layout/Header";
@@ -63,7 +64,28 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
     const [favoriteMdCount, setFavoriteMdCount] = useState<number>(0);
     const [clubFavCounts, setClubFavCounts] = useState<Record<string, number>>({});
     const [mdCredits, setMdCredits] = useState<number | null>(null);
+    const [showAreaOnboarding, setShowAreaOnboarding] = useState(false);
     const supabase = createClient();
+
+    // 관심 지역 온보딩: 승인된 MD가 아직 시트를 안 봤고 구독도 0건이면 노출
+    useEffect(() => {
+        if (user.role !== "md" && user.role !== "admin") return;
+        if (user.md_status !== "approved") return;
+        if (user.md_onboarding_areas_seen) return;
+        let cancelled = false;
+        (async () => {
+            const { count } = await supabase
+                .from("md_puzzle_area_subs")
+                .select("id", { count: "exact", head: true })
+                .eq("md_id", user.id);
+            if (!cancelled && (count ?? 0) === 0) {
+                setShowAreaOnboarding(true);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [user.id, user.role, user.md_status, user.md_onboarding_areas_seen, supabase]);
 
     // 나를 찜한 유저 수 + 크레딧 잔액
     useEffect(() => {
@@ -658,6 +680,13 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                     </div>
                 </SheetContent>
             </Sheet>
+
+            {showAreaOnboarding && (
+                <AreaOnboardingSheet
+                    userId={user.id}
+                    onClose={() => setShowAreaOnboarding(false)}
+                />
+            )}
         </div>
     );
 }
