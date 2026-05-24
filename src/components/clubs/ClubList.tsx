@@ -208,6 +208,16 @@ export function ClubList({ clubs, activeCountMap }: Props) {
         }
       >
         <div className="flex items-center gap-2">
+          {view === "map" && (
+            <button
+              type="button"
+              onClick={() => router.back()}
+              aria-label="뒤로가기"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-neutral-900 hover:bg-neutral-800 active:scale-95 transition flex-shrink-0"
+            >
+              <ArrowLeft className="w-4 h-4 text-white" />
+            </button>
+          )}
           <div className="flex-1 flex items-center bg-neutral-900 rounded-full pl-3 pr-1.5 h-9">
             <Search className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
             <input
