@@ -271,7 +271,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
             >
-              <span className="text-[16px] leading-none">🧩</span> 얼리버드 조각
+              <span className="text-[16px] leading-none">🧩</span> 조각
             </button>
 
 {instantEnabled && (
