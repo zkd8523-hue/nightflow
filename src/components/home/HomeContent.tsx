@@ -658,7 +658,8 @@ export function HomeContent({
               offerCounts={puzzleOfferCounts}
               userRole={user?.role as "user" | "md" | "admin" | undefined}
               detailHref={detailHref("puzzle")}
-              emptyHref={newFlagHref}
+              newFlagHref={newFlagHref}
+              showFlagCTA={!user}
             />
           )}
 
@@ -683,20 +684,7 @@ export function HomeContent({
             </div>
           )}
 
-          {/* 비로그인 유저용 깃발 꽂기 CTA */}
-          {!user && currentTab === "puzzle" && visiblePuzzles.length > 0 && (
-            <div className="text-center pt-2">
-              <p className="text-[14.5px] text-neutral-200 font-semibold mb-2">
-                어떤 오퍼가 올지 궁금하다면?
-              </p>
-              <Link href={newFlagHref}>
-                <Button className="h-10 px-8 bg-amber-500 text-black font-bold text-sm rounded-full hover:bg-amber-400">
-                  ⛳ 나도 깃발꽂기
-                </Button>
-              </Link>
-              <p className="text-[10px] text-neutral-600 mt-2">평생 무료 · 1분 가입</p>
-            </div>
-          )}
+          {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
 
         {/* MD 파트너 승인 축하 Sheet, 깃발 CTA Sheet는 풀 모드와 공유 */}

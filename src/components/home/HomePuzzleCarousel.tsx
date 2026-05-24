@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef } from "react";
 import { ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
 import type { Puzzle } from "@/types/database";
 
@@ -11,7 +12,10 @@ interface Props {
   offerCounts: Record<string, number>;
   userRole?: "user" | "md" | "admin";
   detailHref: string;
-  emptyHref: string;
+  /** 비로그인 → /login?redirect, 로그인 → /flags/new */
+  newFlagHref: string;
+  /** 마지막 카드 자리에 노출할 CTA. 없으면 "자세히 보기" 카드 노출. */
+  showFlagCTA?: boolean;
 }
 
 const MAX_CARDS = 5;
@@ -21,7 +25,8 @@ export function HomePuzzleCarousel({
   offerCounts,
   userRole,
   detailHref,
-  emptyHref,
+  newFlagHref,
+  showFlagCTA = false,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -33,7 +38,7 @@ export function HomePuzzleCarousel({
           예산·인원·날짜만 정하면 MD들이 시크릿 오퍼를 보내요
         </p>
         <Link
-          href={emptyHref}
+          href={newFlagHref}
           className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-amber-500 text-black text-[13px] font-black active:scale-95 transition"
         >
           ⛳ 깃발 꽂기
@@ -43,7 +48,6 @@ export function HomePuzzleCarousel({
   }
 
   const visible = puzzles.slice(0, MAX_CARDS);
-  const hasMore = puzzles.length > visible.length || visible.length === MAX_CARDS;
 
   return (
     <div>
@@ -64,19 +68,19 @@ export function HomePuzzleCarousel({
             />
           </div>
         ))}
-        {hasMore && (
-          <div className="flex-shrink-0 w-[60%] max-w-[280px] snap-start snap-always">
-            <Link
-              href={detailHref}
-              className="flex flex-col items-center justify-center h-full min-h-[200px] rounded-3xl border-2 border-dashed border-neutral-700 hover:border-amber-500/50 text-neutral-400 hover:text-white transition-colors px-4 py-8 gap-2"
-            >
-              <ChevronRight className="w-7 h-7" />
-              <span className="text-[13px] font-bold text-center">
-                자세히 보기
-                <br />
-                <span className="text-[10px] text-neutral-600">{puzzles.length}개 전체</span>
-              </span>
-            </Link>
+        {showFlagCTA && (
+          <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
+            <div className="text-center w-full">
+              <p className="text-[14.5px] text-neutral-200 font-semibold mb-3">
+                어떤 오퍼가 올지 궁금하다면?
+              </p>
+              <Link href={newFlagHref}>
+                <Button className="h-12 px-8 bg-amber-500 text-black font-black text-[15px] rounded-full hover:bg-amber-400">
+                  ⛳ 나도 깃발꽂기
+                </Button>
+              </Link>
+              <p className="text-[10px] text-neutral-600 mt-2">평생 무료 · 1분 가입</p>
+            </div>
           </div>
         )}
       </div>
