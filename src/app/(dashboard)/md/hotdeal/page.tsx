@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 import { HotdealSlotBoard } from "@/components/md/HotdealSlotBoard";
 import type { HotdealBenefitsByDow } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "HOT DEAL 슬롯 — NightFlow",
 };
