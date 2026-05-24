@@ -124,15 +124,15 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
       return;
     }
     setIsOnClubMapView(
-      new URLSearchParams(window.location.search).get("view") === "map"
+      new URLSearchParams(window.location.search).get("view") !== "list"
     );
     const onChange = (e: Event) => {
       const detail = (e as CustomEvent<{ view?: string }>).detail;
       if (detail?.view) {
-        setIsOnClubMapView(detail.view === "map");
+        setIsOnClubMapView(detail.view !== "list");
       } else {
         setIsOnClubMapView(
-          new URLSearchParams(window.location.search).get("view") === "map"
+          new URLSearchParams(window.location.search).get("view") !== "list"
         );
       }
     };
