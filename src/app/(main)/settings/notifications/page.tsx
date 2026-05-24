@@ -81,10 +81,11 @@ export default function NotificationSettingsPage() {
   });
   const [savingCategory, setSavingCategory] = useState<PushCategory | null>(null);
 
-  // 방해금지 시간대
-  const [quietEnabled, setQuietEnabled] = useState(false);
+  // 야간알림 수신 (내부적으로는 quiet_hours, 토글 의미 반전: ON=수신, OFF=차단)
+  const [nightEnabled, setNightEnabled] = useState(true);
   const [quietStart, setQuietStart] = useState<number>(0);
   const [quietEnd, setQuietEnd] = useState<number>(8);
+  const [quietScope, setQuietScope] = useState<'everyday' | 'weekends'>('everyday');
   const [savingQuiet, setSavingQuiet] = useState(false);
 
   // MD 깃발 구독 지역
@@ -103,7 +104,8 @@ export default function NotificationSettingsPage() {
       notify_offer_response: user.notify_offer_response ?? true,
       notify_marketing: user.notify_marketing ?? true,
     });
-    setQuietEnabled(user.quiet_hours_enabled ?? false);
+    setNightEnabled(!(user.quiet_hours_enabled ?? false));
+    setQuietScope(user.quiet_hours_scope ?? 'everyday');
     setQuietStart(user.quiet_hours_start ?? 0);
     setQuietEnd(user.quiet_hours_end ?? 8);
   }, [user]);
@@ -179,6 +181,7 @@ export default function NotificationSettingsPage() {
 
   const handleSaveQuietHours = async () => {
     if (!user) return;
+    const quietEnabled = !nightEnabled;
     if (quietEnabled && quietStart === quietEnd) {
       toast.error("시작 시각과 종료 시각이 같을 수 없어요");
       return;
@@ -191,11 +194,12 @@ export default function NotificationSettingsPage() {
           quiet_hours_enabled: quietEnabled,
           quiet_hours_start: quietEnabled ? quietStart : null,
           quiet_hours_end: quietEnabled ? quietEnd : null,
+          quiet_hours_scope: quietEnabled ? quietScope : 'everyday',
         })
         .eq("id", user.id);
       if (error) throw error;
       refetch();
-      toast.success("방해금지 시간대가 저장되었습니다");
+      toast.success(nightEnabled ? "야간알림 수신이 켜졌어요" : "야간 시간대 알림이 꺼졌어요");
     } catch (error: unknown) {
       logError(error, "Save quiet hours");
       toast.error(getErrorMessage(error));
@@ -420,32 +424,69 @@ export default function NotificationSettingsPage() {
           </div>
         )}
 
-        {/* Section: 방해금지 시간대 */}
+        {/* Section: 야간알림 수신 */}
         <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Moon className="w-4 h-4 text-blue-400 shrink-0" />
-              <h2 className="text-[15px] font-bold text-white">방해금지 시간대</h2>
+              <h2 className="text-[15px] font-bold text-white">야간알림 수신</h2>
             </div>
             <button
-              onClick={() => setQuietEnabled(!quietEnabled)}
+              onClick={() => setNightEnabled(!nightEnabled)}
               className={`w-12 h-7 rounded-full relative transition-colors ${
-                quietEnabled ? "bg-green-500" : "bg-neutral-700"
+                nightEnabled ? "bg-green-500" : "bg-neutral-700"
               }`}
             >
               <div
                 className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-transform ${
-                  quietEnabled ? "translate-x-6" : "translate-x-1"
+                  nightEnabled ? "translate-x-6" : "translate-x-1"
                 }`}
               />
             </button>
           </div>
-          <p className="text-[12px] text-neutral-400 leading-relaxed mb-4">
-            지정한 시간대에는 푸시 알림을 받지 않아요. (알림톡은 영향 없음)
-          </p>
 
-          {quietEnabled && (
-            <div className="space-y-3">
+          {nightEnabled ? (
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 mb-4">
+              <p className="text-[12px] text-amber-300 font-bold leading-relaxed">
+                🔥 야간 특가 알림을 받고 있어요
+              </p>
+              <p className="text-[11px] text-amber-200/80 leading-relaxed mt-1">
+                클럽 테이블 특가는 보통 밤 10시 ~ 새벽 4시에 풀려요. 깃발·조각 핫딜을 놓치지 마세요.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 mb-4">
+              <p className="text-[12px] text-neutral-400 leading-relaxed">
+                지정한 시간대에는 푸시 알림을 받지 않아요. (알림톡은 영향 없음)
+              </p>
+
+              <div>
+                <p className="text-[12px] text-neutral-500 mb-2">적용 요일</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { key: 'everyday', label: '매일' },
+                    { key: 'weekends', label: '주말만 (금/토)' },
+                  ] as const).map((opt) => (
+                    <button
+                      key={opt.key}
+                      onClick={() => setQuietScope(opt.key)}
+                      className={`py-2 rounded-lg text-[13px] font-bold transition-colors ${
+                        quietScope === opt.key
+                          ? 'bg-white text-black'
+                          : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] text-neutral-600 leading-snug mt-2">
+                  {quietScope === 'weekends'
+                    ? '금/토요일 밤에만 차단돼요. 일~목은 알림을 받아요'
+                    : '매일 같은 시간대에 알림이 차단돼요'}
+                </p>
+              </div>
+
               <div className="flex items-center gap-3">
                 <label className="text-[12px] text-neutral-500 w-12">시작</label>
                 <select
@@ -481,15 +522,18 @@ export default function NotificationSettingsPage() {
                   ? `매일 ${String(quietStart).padStart(2, "0")}:00 ~ 다음날 ${String(quietEnd).padStart(2, "0")}:00 동안 알림이 차단돼요`
                   : "시작과 종료가 같으면 적용되지 않아요"}
               </p>
+              <p className="text-[11px] text-red-400/80 leading-snug">
+                ⚠️ 클럽 특가는 대부분 밤 10시 ~ 새벽 4시에 풀려요. 차단 시 핫딜을 놓칠 수 있어요.
+              </p>
             </div>
           )}
 
           <button
             onClick={handleSaveQuietHours}
             disabled={savingQuiet}
-            className="w-full bg-white text-black font-black py-3 rounded-xl text-[14px] disabled:opacity-50 mt-4"
+            className="w-full bg-white text-black font-black py-3 rounded-xl text-[14px] disabled:opacity-50"
           >
-            {savingQuiet ? "저장 중..." : "방해금지 저장"}
+            {savingQuiet ? "저장 중..." : "야간알림 설정 저장"}
           </button>
         </div>
 

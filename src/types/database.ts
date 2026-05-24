@@ -106,6 +106,7 @@ export interface User {
 
   // MD 전용
   md_status: MDStatus | null;
+  md_onboarding_areas_seen: boolean;
   md_rejection_reason: string | null;
   md_unique_slug: string | null;
   bank_account: string | null;
@@ -177,6 +178,7 @@ export interface User {
   quiet_hours_enabled: boolean;
   quiet_hours_start: number | null;  // 0-23
   quiet_hours_end: number | null;    // 0-23
+  quiet_hours_scope: 'everyday' | 'weekends';
 
   // Referral (백그라운드 추적, 유저에게 비노출)
   referral_code: string | null;
