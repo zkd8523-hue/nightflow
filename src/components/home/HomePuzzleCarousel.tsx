@@ -54,12 +54,12 @@ export function HomePuzzleCarousel({
       <div
         ref={scrollRef}
         data-no-pull-refresh
-        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x pb-1 -mx-4 px-4"
+        className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x pb-1 -mx-4 px-4"
       >
         {visible.map((puzzle) => (
           <div
             key={puzzle.id}
-            className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always"
+            className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always [&>div]:h-full"
           >
             <PuzzleCard
               puzzle={puzzle}

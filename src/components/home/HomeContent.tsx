@@ -589,7 +589,7 @@ export function HomeContent({
           {/* Tip 박스 + 이용방법 토글 */}
           {visibleCompactTip && (
             <section className="space-y-2">
-              <div className="relative bg-gradient-to-br from-amber-500/35 via-amber-500/20 to-amber-600/10 border border-amber-400/70 rounded-2xl px-3 pt-4 pb-2.5">
+              <div className="relative bg-gradient-to-br from-amber-500/35 via-amber-500/20 to-amber-600/10 rounded-2xl px-3 pt-4 pb-2.5">
                 <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
                 <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep">
                   {visibleCompactTip}
