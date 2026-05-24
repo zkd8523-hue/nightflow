@@ -54,7 +54,8 @@ export function HomePuzzleCarousel({
       <div
         ref={scrollRef}
         data-no-pull-refresh
-        className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory touch-pan-x touch-pan-y pb-1 -mx-4 px-4"
+        className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x pb-1 -mx-4 px-4"
+        style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
       >
         {visible.map((puzzle) => (
           <div

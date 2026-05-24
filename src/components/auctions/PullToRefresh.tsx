@@ -40,7 +40,10 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
   }, []);
 
   useEffect(() => {
+    // iOS Safari에서 body position:fixed가 가로 스크롤 깨뜨림 → iOS는 락 skip
+    const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
     const lockPageScroll = () => {
+      if (isIOS) return; // iOS는 락 안 걸고 native 가로 스크롤에 맡김
       if (lockedScrollYRef.current !== null) return;
       const y = window.scrollY;
       lockedScrollYRef.current = y;
