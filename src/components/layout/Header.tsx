@@ -111,8 +111,6 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
-  // 깃발 등록/수정 페이지에선 헤더의 "깃발 꽂기" CTA 숨김
-  const isOnFlagNewPage = pathname === "/flags/new" || /^\/flags\/[^/]+\/edit$/.test(pathname);
   // 클럽지도(view=map)에서는 화면을 지도에 양보.
   // SSR 시점엔 window가 없으므로 항상 false → 헤더 렌더.
   // 클라이언트 mount 후 effect에서 실제 view 감지 → 필요 시 헤더 숨김.
@@ -253,7 +251,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
             <div className="flex items-center gap-1">
               {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
                 <Link
-                  href="/md"
+                  href="/md/dashboard"
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5 text-black" />
@@ -267,15 +265,6 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                 >
                   <Clock className="w-3.5 h-3.5 text-amber-500" />
                   <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
-                </Link>
-              )}
-              {user.role === "user" && !isOnFlagNewPage && (
-                <Link
-                  href="/flags/new"
-                  className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
-                >
-                  <span className="text-[14px]">🚩</span>
-                  <span className="text-[12px] font-black text-black">깃발 꽂기</span>
                 </Link>
               )}
               <button

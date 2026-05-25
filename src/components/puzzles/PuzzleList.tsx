@@ -381,7 +381,7 @@ export function PuzzleList({
                   {selectedArea && selectedArea !== "다른지역" ? `${selectedArea} ` : ""}MD들이 24시간 기다리고 있어요
                 </p>
                 <p className="text-[12px] text-neutral-400 leading-relaxed">
-                  어떤 시크릿 오퍼가 쏟아질지 궁금하죠?
+                  어떤 시크릿오퍼가 쏟아질지 궁금하죠?
                 </p>
                 <Link
                   href={userRole ? "/flags/new" : "/login?redirect=/flags/new"}

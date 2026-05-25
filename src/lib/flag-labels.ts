@@ -7,7 +7,7 @@ export const FLAG_LABELS = {
   verb_join: "파티원 합류하기",
   party: "파티원",
   party_toggle: "파티원도 모으기",
-  empty_hint: "퍼즐을 올리면 MD 시크릿 오퍼가 쏟아져요",
+  empty_hint: "퍼즐을 올리면 MD 시크릿오퍼가 쏟아져요",
   list_section: "올라와 있는 퍼즐",
   detail_title: "퍼즐 상세",
   cancel: "퍼즐 내리기",

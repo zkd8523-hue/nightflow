@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 const STORAGE_PREFIX = "nightflow:revealed_offers";
 
 /**
- * 시크릿 오퍼 긁기 결과 영속화.
+ * 시크릿오퍼 긁기 결과 영속화.
  * - localStorage = 즉시 렌더용 캐시 (재방문 시 깜빡임 방지)
  * - puzzle_offer_reveals 테이블 = 진실의 원천 (multi-device 동기화)
  *

@@ -382,7 +382,6 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           {/* 정렬 select는 PuzzleList 내부 첫 헤더로 이동 (모바일 칩 row와 겹침 방지) */}
         </div>
 
-      {tab === "puzzle" && <PuzzleSocialProofBanner />}
 
       {instantEnabled && tab === "today" && (
         <div>
@@ -466,7 +465,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                     이 날 경매가 없나요? 괜찮아요!
                   </span>
                   <span className="text-[14px] font-black text-center leading-tight">
-                    깃발 꽂고 시크릿 오퍼 받기 ⛳
+                    깃발 꽂고 시크릿오퍼 받기 ⛳
                   </span>
                 </button>
               </Link>
@@ -610,22 +609,21 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           {/* 날짜별 그룹 */}
           {shareAuctions.length === 0 ? (
             hideShareEmptyState ? null : (
-            <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-              <p className="text-4xl">🧩</p>
+            <div className="flex flex-col items-center justify-center py-14 text-center space-y-5">
+              <span className="text-[40px] leading-none opacity-90">🧩</span>
               {userRole && ["md", "admin"].includes(userRole) ? (
                 <>
                   <div className="space-y-1.5">
-                    <p className="text-white text-[15px] font-black break-keep">
-                      지금이 조각 올리기 가장 유리한 타이밍
+                    <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
+                      지금은 다른 조각이 없어요!
                     </p>
-                    <p className="text-neutral-400 text-[12.5px] font-medium leading-relaxed break-keep">
-                      경쟁 조각이 없어서 유저 시선 독차지.<br />
-                      먼저 올리면 매출도 먼저 들어와요.
+                    <p className="text-neutral-500 text-[12.5px] font-medium leading-relaxed break-keep">
+                      경쟁 조각이 없어서 유저 시선 독차지
                     </p>
                   </div>
                   <Link
                     href="/md/auctions/new"
-                    className="inline-flex items-center gap-1.5 h-11 px-6 bg-green-500 text-black font-black text-sm rounded-full hover:bg-green-400 transition-colors active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 h-11 px-6 bg-green-500 text-black font-black text-[13.5px] rounded-full hover:bg-green-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
                     조각 등록하기
                   </Link>
@@ -633,16 +631,16 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               ) : (
                 <>
                   <div className="space-y-1.5">
-                    <p className="text-white text-[15px] font-black break-keep">
+                    <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
                       아직 등록된 조각이 없어요
                     </p>
-                    <p className="text-neutral-400 text-[12.5px] font-medium leading-relaxed break-keep">
-                      깃발을 꽂으면 MD가 직접 제안을 보내요.
+                    <p className="text-neutral-500 text-[12.5px] font-medium leading-relaxed break-keep">
+                      깃발을 꽂으면 MD가 직접 제안을 보내요
                     </p>
                   </div>
                   <Link
                     href="/flags/new"
-                    className="inline-flex items-center gap-1.5 h-11 px-6 bg-amber-500 text-black font-black text-sm rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 h-11 px-6 bg-amber-500 text-black font-black text-[13.5px] rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
                     🚩 깃발 꽂으러 가기
                   </Link>

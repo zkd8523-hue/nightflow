@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MDDashboard } from "@/components/md/MDDashboard";
 
-import type { User, Auction, Club } from "@/types/database";
+import type { User, Auction, Club, DailyHotdeal, HotdealBenefitsByDow } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -147,6 +147,71 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     if (puzzleOffersError) console.error("puzzleOffers query error:", puzzleOffersError);
     console.log("puzzleOffers count:", puzzleOffers?.length, "userId:", userId);
 
+    // 7. 핫딜 등록용 클럽 (floor_plan_url 포함) + 본인 핫딜
+    const { data: hotdealClubsRaw } = await supabase
+        .from("clubs")
+        .select("id, name, area, thumbnail_url, floor_plan_url, club_partners!inner(md_id)")
+        .eq("club_partners.md_id", userId)
+        .is("deleted_at", null)
+        .order("name");
+    const hotdealClubs = (hotdealClubsRaw ?? []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        area: c.area,
+        thumbnail_url: c.thumbnail_url,
+        floor_plan_url: c.floor_plan_url,
+    }));
+
+    const { data: myHotdeals } = await supabase
+        .from("daily_hotdeals")
+        .select("*, club:clubs(id, name, area, thumbnail_url)")
+        .eq("md_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+    // 8. 게스트 간판 슬롯 데이터 (이번주 + 다음주)
+    const kstNowForSlot = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const dowSlot = kstNowForSlot.getUTCDay();
+    const daysFromMon = dowSlot === 0 ? 6 : dowSlot - 1;
+    const mondayKst = new Date(kstNowForSlot);
+    mondayKst.setUTCDate(kstNowForSlot.getUTCDate() - daysFromMon);
+    mondayKst.setUTCHours(0, 0, 0, 0);
+    const thisWeekISO = mondayKst.toISOString().slice(0, 10);
+    const nextWeekDate = new Date(mondayKst);
+    nextWeekDate.setUTCDate(mondayKst.getUTCDate() + 7);
+    const nextWeekISO = nextWeekDate.toISOString().slice(0, 10);
+
+    const slotClubIds = hotdealClubs.map((c) => c.id);
+    const { data: slotRows } = slotClubIds.length
+        ? await supabase
+              .from("weekly_hotdeal_slots")
+              .select("id, club_id, md_id, week_start, benefits_by_dow, expires_at")
+              .in("club_id", slotClubIds)
+              .in("week_start", [thisWeekISO, nextWeekISO])
+        : { data: [] };
+    const { data: mySlotRows } = await supabase
+        .from("weekly_hotdeal_slots")
+        .select("id, club_id, week_start, benefits_by_dow, expires_at")
+        .eq("md_id", userId)
+        .gte("week_start", thisWeekISO)
+        .lte("week_start", nextWeekISO);
+
+    const guestSignSlots = (slotRows ?? []).map((s) => ({
+        id: s.id,
+        club_id: s.club_id,
+        md_id: s.md_id,
+        week_start: s.week_start,
+        benefits_by_dow: (s.benefits_by_dow ?? {}) as HotdealBenefitsByDow,
+        expires_at: s.expires_at,
+    }));
+    const guestSignMySlots = (mySlotRows ?? []).map((s) => ({
+        id: s.id,
+        club_id: s.club_id,
+        week_start: s.week_start,
+        benefits_by_dow: (s.benefits_by_dow ?? {}) as HotdealBenefitsByDow,
+        expires_at: s.expires_at,
+    }));
+
     // 테스트 모드일 때 경매가 하나도 없으면 샘플 하나 추가 (상태 확인용)
     const displayAuctions = (testMode && (!auctions || auctions.length === 0)) ? [
         {
@@ -169,6 +234,18 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 initialClubs={clubs || []}
                 initialTopBids={topBids}
                 initialPuzzleOffers={puzzleOffers || []}
+                hotdealClubs={hotdealClubs}
+                initialMyHotdeals={(myHotdeals ?? []) as unknown as DailyHotdeal[]}
+                guestSignClubs={hotdealClubs.map((c) => ({
+                    id: c.id,
+                    name: c.name,
+                    area: c.area,
+                    thumbnail_url: c.thumbnail_url,
+                }))}
+                guestSignSlots={guestSignSlots}
+                guestSignMySlots={guestSignMySlots}
+                guestSignThisWeekISO={thisWeekISO}
+                guestSignNextWeekISO={nextWeekISO}
             />
         </div>
     );

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft, Heart } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
@@ -41,6 +41,7 @@ interface Props {
   clubs: ClubListItem[];
   activeCountMap: Record<string, number>;
   hotdealMap?: Record<string, string>;
+  favCountMap?: Record<string, number>;
 }
 
 function parseList(v: string | null): string[] {
@@ -51,7 +52,7 @@ function parseList(v: string | null): string[] {
     .filter(Boolean);
 }
 
-export function ClubList({ clubs, activeCountMap, hotdealMap = {} }: Props) {
+export function ClubList({ clubs, activeCountMap, hotdealMap = {}, favCountMap = {} }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -293,7 +294,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {} }: Props) {
           {orderedAreas.map((area) => {
             const list = byArea[area];
             if (!list || list.length === 0) return null;
-            return <AreaCarousel key={area} area={area} clubs={list} />;
+            return <AreaCarousel key={area} area={area} clubs={list} favCountMap={favCountMap} />;
           })}
         </div>
       )}
@@ -304,9 +305,11 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {} }: Props) {
 function AreaCarousel({
   area,
   clubs,
+  favCountMap = {},
 }: {
   area: string;
   clubs: ClubListItem[];
+  favCountMap?: Record<string, number>;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -330,7 +333,7 @@ function AreaCarousel({
       <div className="-mx-4 px-4 relative group">
         <div ref={scrollRef} data-no-pull-refresh className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory touch-pan-x">
           {clubs.map((club) => (
-            <ClubCard key={club.id} club={club} />
+            <ClubCard key={club.id} club={club} favCount={favCountMap[club.id] ?? 0} />
           ))}
         </div>
         {/* "더 있어요" 시각 힌트 — 우측 그라데이션 페이드 */}
@@ -357,7 +360,7 @@ function AreaCarousel({
   );
 }
 
-function ClubCard({ club }: { club: ClubListItem }) {
+function ClubCard({ club, favCount = 0 }: { club: ClubListItem; favCount?: number }) {
   const genres = getTagsByGroup(club.tags || [], "genre");
   const featureGroups = FEATURE_GROUPS.filter(
     (g) => g.group === "space" || g.group === "crowd"
@@ -404,9 +407,17 @@ function ClubCard({ club }: { club: ClubListItem }) {
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent" />
       </div>
       <div className="mt-2 px-0.5">
-        <p className="text-white text-[14px] font-black truncate">
-          {club.name}
-        </p>
+        <div className="flex items-center justify-between gap-1.5">
+          <p className="text-white text-[14px] font-black truncate flex-1">
+            {club.name}
+          </p>
+          {favCount > 0 && (
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-neutral-400 font-bold shrink-0">
+              <Heart className="w-3 h-3 text-red-500 fill-red-500" />
+              {favCount}
+            </span>
+          )}
+        </div>
         {metaLine && (
           <p className="text-neutral-500 text-[11px] font-medium truncate mt-0.5">
             {metaLine}

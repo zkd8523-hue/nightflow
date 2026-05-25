@@ -36,7 +36,7 @@ export default async function ClubsIndexPage() {
   let clubsRes: { data: Array<Record<string, unknown>> | null; error: unknown } =
     await supabase
       .from("clubs")
-      .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases")
+      .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases, seed_favorite_count")
       .is("deleted_at", null)
       .not("name", "ilike", "%운영자%");
 
@@ -68,6 +68,11 @@ export default async function ClubsIndexPage() {
     .select("club_id, benefits_by_dow, expires_at")
     .eq("week_start", thisWeekISO);
 
+  // 클럽별 좋아요(찜) 수 — Migration 243의 공개 SELECT 정책 필요
+  const favoritesRes = await supabase
+    .from("user_favorite_clubs")
+    .select("club_id");
+
   const HIDDEN_NAME_PATTERNS = [/luna/i, /prism/i, /eclipse/i, /^orion$/i];
   const clubs = (clubsRes.data ?? []).filter(
     (c: { name: string }) => !HIDDEN_NAME_PATTERNS.some((re) => re.test(c.name))
@@ -86,6 +91,20 @@ export default async function ClubsIndexPage() {
     const todayText = byDow[todayDowKey];
     if (todayText && todayText.trim().length > 0) {
       hotdealMap[h.club_id] = todayText;
+    }
+  }
+
+  const favCountMap: Record<string, number> = {};
+  // 실제 유저 찜
+  for (const f of favoritesRes.data ?? []) {
+    if (!f.club_id) continue;
+    favCountMap[f.club_id] = (favCountMap[f.club_id] || 0) + 1;
+  }
+  // 시드 카운트 합산
+  for (const c of clubs) {
+    const seed = (c.seed_favorite_count as number | undefined) ?? 0;
+    if (seed > 0) {
+      favCountMap[c.id as string] = (favCountMap[c.id as string] || 0) + seed;
     }
   }
 
@@ -109,6 +128,7 @@ export default async function ClubsIndexPage() {
         }))}
         activeCountMap={activeCountMap}
         hotdealMap={hotdealMap}
+        favCountMap={favCountMap}
       />
       </Suspense>
     </div>

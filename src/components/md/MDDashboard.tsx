@@ -10,7 +10,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { MDAuctionCard } from "./MDAuctionCard";
 import { AcceptedPuzzleVisitCard } from "./AcceptedPuzzleVisitCard";
 import { AreaOnboardingSheet } from "./AreaOnboardingSheet";
-import type { Auction, User, Club, PuzzleOffer } from "@/types/database";
+import { HotdealNowManager } from "./HotdealNowManager";
+import { HotdealSlotBoard } from "./HotdealSlotBoard";
+import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByDow } from "@/types/database";
 import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink, Coins } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,15 +47,67 @@ interface MDPuzzleOffer extends PuzzleOffer {
     club?: Pick<import("@/types/database").Club, "id" | "name" | "area"> | null;
 }
 
+interface HotdealClubLite {
+    id: string;
+    name: string;
+    area: string | null;
+    thumbnail_url: string | null;
+    floor_plan_url: string | null;
+}
+
+interface GuestSignClubLite {
+    id: string;
+    name: string;
+    area: string | null;
+    thumbnail_url: string | null;
+}
+
+interface GuestSignSlot {
+    id: string;
+    club_id: string;
+    md_id: string;
+    week_start: string;
+    benefits_by_dow: HotdealBenefitsByDow;
+    expires_at: string;
+}
+
+interface GuestSignMySlot {
+    id: string;
+    club_id: string;
+    week_start: string;
+    benefits_by_dow: HotdealBenefitsByDow;
+    expires_at: string;
+}
+
 interface MDDashboardProps {
     user: User;
     initialAuctions: Auction[];
     initialClubs: Club[];
     initialTopBids?: Record<string, TopBidInfo>;
     initialPuzzleOffers?: MDPuzzleOffer[];
+    hotdealClubs?: HotdealClubLite[];
+    initialMyHotdeals?: DailyHotdeal[];
+    guestSignClubs?: GuestSignClubLite[];
+    guestSignSlots?: GuestSignSlot[];
+    guestSignMySlots?: GuestSignMySlot[];
+    guestSignThisWeekISO?: string;
+    guestSignNextWeekISO?: string;
 }
 
-export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBids = {}, initialPuzzleOffers = [] }: MDDashboardProps) {
+export function MDDashboard({
+    user,
+    initialAuctions,
+    initialClubs,
+    initialTopBids = {},
+    initialPuzzleOffers = [],
+    hotdealClubs = [],
+    initialMyHotdeals = [],
+    guestSignClubs = [],
+    guestSignSlots = [],
+    guestSignMySlots = [],
+    guestSignThisWeekISO,
+    guestSignNextWeekISO,
+}: MDDashboardProps) {
     const [auctions, setAuctions] = useState<Auction[]>(initialAuctions);
     const [clubs, setClubs] = useState<Club[]>(initialClubs);
     const [topBids, setTopBids] = useState<Record<string, TopBidInfo>>(initialTopBids);
@@ -64,6 +118,8 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
     const [clubFavCounts, setClubFavCounts] = useState<Record<string, number>>({});
     const [mdCredits, setMdCredits] = useState<number | null>(null);
     const [showAreaOnboarding, setShowAreaOnboarding] = useState(false);
+    const [hotdealSheetOpen, setHotdealSheetOpen] = useState(false);
+    const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
     const supabase = createClient();
 
     // 관심 지역 온보딩: 승인된 MD가 아직 시트를 안 봤고 구독도 0건이면 노출
@@ -242,8 +298,8 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
             <div className="px-6 py-4 space-y-4 text-white">
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                        <h1 className="text-xl font-black tracking-tight">{user.display_name || user.name} MD님</h1>
-                        <p className="text-neutral-500 text-[13px] font-medium">오늘도 대박 낙찰 기원합니다!</p>
+                        <h1 className="text-xl font-black tracking-tight">{user.display_name || user.name} 파트너님</h1>
+                        <p className="text-neutral-500 text-[13px] font-medium">오늘 밤도 파이팅이에요!</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Link href="/profile" className="flex items-center gap-1.5 text-neutral-500 hover:text-white transition-colors">
@@ -280,7 +336,7 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
             </div>
 
             {/* Club Context Bar */}
-            <div className="px-6 pb-2">
+            <div className="px-4 pb-2">
                 {clubs.length === 0 ? (
                     <Link href="/md/clubs">
                         <div className="flex items-center gap-2 px-4 py-3 bg-[#1C1C1E] border border-dashed border-neutral-700 rounded-2xl">
@@ -324,14 +380,41 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                 )}
             </div>
 
-            {/* HOT DEAL 슬롯 (최상단 배치) */}
-            <div className="px-4 mt-3">
-                <Link href="/md/hotdeal">
-                    <Button variant="outline" className="w-full h-14 bg-[#1C1C1E] border-amber-500/30 text-white font-bold gap-2 rounded-2xl hover:bg-neutral-800 text-[14px]">
-                        <span className="text-[18px] leading-none">🔥</span>
-                        HOT DEAL 슬롯
-                        <span className="ml-auto text-[11px] text-amber-400 font-bold">베타 무료</span>
-                    </Button>
+            {/* 액션 버튼 3종 */}
+            <div className="px-4 mt-3 grid grid-cols-3 gap-2">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("[MDDashboard] Hot Deal button clicked, opening sheet");
+                        setHotdealSheetOpen(true);
+                    }}
+                    className="col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border border-amber-500/30 rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all"
+                >
+                    <span className="text-[20px] leading-none">🔥</span>
+                    <span className="text-[11px] font-black text-white">Hot Deal</span>
+                    <span className="text-[9px] text-amber-400 font-bold">당일 특가</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setGuestSignSheetOpen(true);
+                    }}
+                    className="col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border border-neutral-700 rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all"
+                >
+                    <span className="text-[20px] leading-none">🎫</span>
+                    <span className="text-[11px] font-black text-white">게스트 간판</span>
+                    <span className="text-[9px] text-neutral-400 font-bold">주 단위</span>
+                </button>
+                <Link href="/md/vip" className="col-span-1">
+                    <div className="flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border border-neutral-700 rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all">
+                        <Users className="w-5 h-5 text-amber-500" />
+                        <span className="text-[11px] font-black text-white">VIP 고객</span>
+                        <span className="text-[9px] text-neutral-400 font-bold">찜 {favoriteMdCount}명</span>
+                    </div>
                 </Link>
             </div>
 
@@ -581,16 +664,8 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                 </Tabs>
             </div>
 
-            {/* Secondary Content: VIP, Stats */}
+            {/* Secondary Content: Stats */}
             <div className="px-6 py-6 space-y-4 text-white">
-                {/* VIP 고객 */}
-                <Link href="/md/vip">
-                    <Button variant="outline" className="w-full h-14 bg-[#1C1C1E] border-neutral-800 text-white font-bold gap-2 rounded-2xl hover:bg-neutral-800 text-[14px]">
-                        <Users className="w-5 h-5 text-amber-500" />
-                        VIP 고객
-                    </Button>
-                </Link>
-
                 {/* Performance Stats */}
                 <Card className="relative overflow-hidden bg-gradient-to-br from-[#1C1C1E] to-[#0A0A0A] border-neutral-800 rounded-[28px] p-5 shadow-xl">
                     <div className="flex items-center justify-between mb-6">
@@ -705,6 +780,53 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                     onClose={() => setShowAreaOnboarding(false)}
                 />
             )}
+
+            {/* Hot Deal 등록 Sheet (페이지 이동 없이 대시보드 내에서 열림) */}
+            <Sheet open={hotdealSheetOpen} onOpenChange={setHotdealSheetOpen}>
+                <SheetContent
+                    side="bottom"
+                    className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl !h-[92vh] !max-h-[92vh] !gap-0 !p-0 !flex !flex-col"
+                    showCloseButton
+                >
+                    <SheetHeader className="sr-only">
+                        <SheetTitle>Hot Deal 등록</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-6 pb-12">
+                        <HotdealNowManager
+                            clubs={hotdealClubs}
+                            initialMyHotdeals={initialMyHotdeals}
+                            embedded
+                        />
+                    </div>
+                </SheetContent>
+            </Sheet>
+
+            {/* 게스트 간판 Sheet */}
+            <Sheet open={guestSignSheetOpen} onOpenChange={setGuestSignSheetOpen}>
+                <SheetContent
+                    side="bottom"
+                    className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl !h-[92vh] !max-h-[92vh] !gap-0 !p-0 !flex !flex-col"
+                    showCloseButton
+                >
+                    <SheetHeader className="sr-only">
+                        <SheetTitle>게스트 간판</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-6 pb-12">
+                        {guestSignThisWeekISO && guestSignNextWeekISO && (
+                            <HotdealSlotBoard
+                                currentUserId={user.id}
+                                isAdmin={user.role === "admin"}
+                                clubs={guestSignClubs}
+                                slots={guestSignSlots}
+                                mySlots={guestSignMySlots}
+                                thisWeekISO={guestSignThisWeekISO}
+                                nextWeekISO={guestSignNextWeekISO}
+                                embedded
+                            />
+                        )}
+                    </div>
+                </SheetContent>
+            </Sheet>
         </div>
     );
 }

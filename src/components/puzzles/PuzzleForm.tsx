@@ -637,13 +637,6 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           onChange={(val) => setEventDate(val)}
           label="날짜 선택"
           placeholder="최대 30일 뒤까지 선택 가능"
-          hint={
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-amber-200">
-              <span className="font-bold text-amber-300">이번 주말만 올리시려구요?</span>
-              <br />
-              다음 주·다다음 주까지 미리 올리면 <span className="font-bold text-amber-300">당일까지 쭉~ 노출</span>됩니다
-            </div>
-          }
         />
       </section>
 
@@ -722,10 +715,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             </div>
           )}
         {area === "서울 어디든" && (
-          <p className="text-[12px] text-amber-400/80 leading-relaxed px-1">
-            어떤 장소에서, 어떤 사람들을 만날까요?
-            <br />
-            알 수 없어서 더 설레요.
+          <p className="text-[12px] text-amber-400/80 leading-relaxed pl-2 mt-0.5">
+            * 상남자 PICK *
           </p>
         )}
         </div>
@@ -1129,7 +1120,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           ? "수정할까요?"
           : (isRecruitingParty
             ? "퍼즐이 완성되면 MD가 오퍼를 보내와요"
-            : "MD가 시크릿 오퍼를 보내드려요")}
+            : "MD가 시크릿오퍼를 보내드려요")}
         description={isEditMode
           ? "변경된 내용으로 갱신됩니다."
           : "오퍼 중 하나를 수락하면 그때 MD 연락처가 공개됩니다."}

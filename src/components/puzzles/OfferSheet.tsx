@@ -282,7 +282,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         <SheetHeader className="p-0 mb-3">
           <div className="flex items-center gap-2 pr-8">
             <SheetTitle className="text-white text-[17px] font-black text-left">
-              {editingOffer ? "시크릿 오퍼 수정" : "시크릿 오퍼"}
+              {editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼"}
             </SheetTitle>
             <span className="flex items-center gap-1 text-[10px] text-neutral-400 font-bold flex-shrink-0">
               <Lock className="w-3 h-3" />

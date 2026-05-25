@@ -883,7 +883,7 @@ export function PuzzleDetailClient({
               <div className="flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-neutral-400" />
                 <h2 className="text-[14px] font-bold text-neutral-300">
-                  시크릿 오퍼
+                  시크릿오퍼
                   {pendingOffers.length > 0 && !isAccepted && (
                     <span className="ml-1.5 text-white">{pendingOffers.length}건</span>
                   )}
@@ -1047,7 +1047,7 @@ export function PuzzleDetailClient({
               href={currentUserId ? "/flags/new" : "/login?redirect=/flags/new"}
               className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
             >
-              나도 시크릿 오퍼 받기 →
+              나도 시크릿오퍼 받기 →
             </Link>
           )}
 

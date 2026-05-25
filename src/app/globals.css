@@ -278,7 +278,7 @@
     transform: translateZ(0);
   }
 
-  /* 시크릿 오퍼 스크래치 애니메이션 */
+  /* 시크릿오퍼 스크래치 애니메이션 */
   @keyframes offer-card-enter {
     0%   { opacity: 0; transform: translateY(8px); }
     100% { opacity: 1; transform: translateY(0);   }
