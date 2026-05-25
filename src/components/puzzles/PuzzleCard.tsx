@@ -291,7 +291,7 @@ export const PuzzleCard = memo(function PuzzleCard({
       ) : offerCount > 0 && isRecruitingParty ? (
         // 모집 중 깃발은 위쪽에 별도로 표시. 인원 확정 깃발은 자세히 보기 버튼 옆으로 이동.
         <p className="text-[12px] text-amber-400 font-bold">
-          MD {offerCount}명이 줄서있어요
+          오퍼 {offerCount}개 받았어요
         </p>
       ) : null}
 
@@ -332,7 +332,7 @@ export const PuzzleCard = memo(function PuzzleCard({
         <div className="flex items-center justify-between gap-2">
           {offerCount > 0 ? (
             <p className="text-[12px] text-amber-400 font-bold">
-              MD {offerCount}명이 줄서있어요
+              오퍼 {offerCount}개 받았어요
             </p>
           ) : (
             <span />
