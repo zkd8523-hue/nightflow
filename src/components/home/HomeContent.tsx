@@ -67,19 +67,19 @@ const EARLYBIRD_ONBOARDING_STEPS = [
 const PUZZLE_ONBOARDING_STEPS = [
   {
     title: "1. 깃발꽂기",
-    desc: "날짜·지역·예산을 자유롭게 정해요!",
+    desc: "날짜·지역·예산을 자유롭게 정해요.",
     icon: <span className="text-[20px]">🚩</span>,
     color: "bg-amber-500/10",
   },
   {
     title: "2. 시크릿오퍼 받기",
-    desc: "클럽·MD가 맞춤 패키지를 제안해요!\n• 오퍼는 본인에게만 공개돼요\n• MD끼리도 서로 못 봐요\n• 오직 클럽명 + 조건으로 승부\n→ **현장보다 무조건 좋은 패키지**",
+    desc: "오퍼는 오직 본인에게만 공개돼요.\n→ 100% 기밀, 맞춤 패키지",
     icon: <span className="text-[20px]">💌</span>,
     color: "bg-emerald-500/10",
   },
   {
     title: "3. 예약 확정",
-    desc: "마음에 드는 오퍼 수락 → MD 연락처 공개\n바로 연락해서 예약 확정!\n💡 마음에 안 들면 그냥 안 골라도 돼요",
+    desc: "마음에 드는 오퍼 수락 → MD 매치\n바로 연락하면 예약 끝!",
     icon: <span className="text-[20px]">🎉</span>,
     color: "bg-rose-500/10",
   },
@@ -531,10 +531,7 @@ export function HomeContent({
 
     // 탭별 Tip 콘텐츠 (풀 화면과 일관)
     const userPuzzleTipContent = (
-      <>
-        <div className="text-[14.5px] text-white">예산 등록 → MD들이 시크릿오퍼로 경쟁!</div>
-        <div className="text-[15.5px] text-white">가격·패키지 비교하고 골라요</div>
-      </>
+      <div className="text-[14.5px] text-white">예산 등록 → MD들이 시크릿오퍼로 경쟁!</div>
     );
     const mdPuzzleTipContent = (
       <>
@@ -612,6 +609,11 @@ export function HomeContent({
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
+                  {currentTab === "puzzle" && !isMdOrAdmin && (
+                    <span className="absolute bottom-4 right-4 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-tl-xl rounded-br-2xl rounded-tr-none rounded-bl-none leading-none z-10">
+                      모든 서비스 무료
+                    </span>
+                  )}
                   <div className="flex flex-col gap-2">
                     {compactSteps.map((step, idx) => (
                       <div
@@ -673,21 +675,21 @@ export function HomeContent({
             />
           )}
 
-          {/* HOT DEAL 섹션 (하단, 비어있으면 자동 숨김) */}
-          <div className="mt-4">
-            <HotdealHomeSection />
-          </div>
+          {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
+        </div>
+
+        {/* HOT DEAL 섹션 + 이하 전체 배경 */}
+        <div className="-mx-4 px-4 pt-5 pb-24 bg-[#111111]">
+          <HotdealHomeSection />
 
           {/* MD 전용 안내: 깃발 응대 유도 */}
           {isMdOrAdmin && currentTab === "puzzle" && visiblePuzzles.length > 0 && (
-            <div className="text-center pt-2">
+            <div className="text-center pt-4">
               <p className="text-[12px] text-neutral-500">
                 유저들의 예산이 기다리고 있어요. 시크릿 오퍼로 매출을 올려봐요.
               </p>
             </div>
           )}
-
-          {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
 
         {/* MD 파트너 승인 축하 Sheet, 깃발 CTA Sheet는 풀 모드와 공유 */}
@@ -720,10 +722,7 @@ export function HomeContent({
             </>
           );
           const userPuzzleTipContent = (
-            <>
-              <div className="text-[14.5px] text-white">예산 등록 → MD들이 시크릿오퍼로 경쟁!</div>
-              <div className="text-[15.5px] text-white">가격·패키지 비교하고 골라요</div>
-            </>
+            <div className="text-[14.5px] text-white">예산 등록 → MD들이 시크릿오퍼로 경쟁!</div>
           );
           const overriddenTabPromises = isMdOrAdmin
             ? {

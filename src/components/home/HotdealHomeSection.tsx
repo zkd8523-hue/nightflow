@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Flame } from "lucide-react";
+import { ChevronRight, Flame, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface HotPlaceItem {
@@ -13,29 +13,69 @@ interface HotPlaceItem {
   club_thumbnail: string | null;
   md_count: number;
   hotdeal_text?: string;
+  hotdeal_id?: string;
+  hotdeal_price?: number | null;
+  hotdeal_original_price?: number | null;
+  hotdeal_ends_at?: string;
+}
+
+function formatCountdownShort(endsAtISO: string, now: number): string {
+  const diff = new Date(endsAtISO).getTime() - now;
+  if (diff <= 0) return "종료됨";
+  const h = Math.floor(diff / (1000 * 60 * 60));
+  const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  if (h >= 24) {
+    const d = Math.floor(h / 24);
+    return `${d}일 ${h % 24}시간`;
+  }
+  if (h >= 1) return `${h}시간 ${m}분`;
+  return `${m}분`;
 }
 
 const MAX_CARDS = 12;
 const HIDDEN_PATTERN = /운영자/;
+// 비프로덕션(dev/preview)에선 테스트 클럽도 노출 (admin 슬롯 디버깅용)
+const SHOW_TEST_CLUBS = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
 
 export function HotdealHomeSection() {
   const supabase = useMemo(() => createClient(), []);
   const [items, setItems] = useState<HotPlaceItem[] | null>(null);
+  const [now, setNow] = useState<number>(() => Date.now());
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      // KST 기준 오늘 요일 + 이번 주 월요일
-      const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-      const dowIdx = kstNow.getUTCDay();
-      const DOW_KEYS_KST = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-      const todayDowKey = DOW_KEYS_KST[dowIdx];
-      const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
-      const thisMonday = new Date(kstNow);
-      thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
-      const thisWeekISO = thisMonday.toISOString().slice(0, 10);
+      // 1) 활성 핫딜 먼저 조회 (미만료)
+      const { data: deals } = await supabase
+        .from("daily_hotdeals")
+        .select("id, club_id, title, thumbnail_url, ends_at, price, original_price")
+        .eq("status", "active")
+        .gt("ends_at", new Date().toISOString());
 
-      // 1) 클럽 + partners 카운트 (MD 많은 순)
+      type DealRow = {
+        id: string;
+        club_id: string;
+        title: string;
+        thumbnail_url: string | null;
+        ends_at: string;
+        price: number | null;
+        original_price: number | null;
+      };
+      const dealsByClub = new Map<string, DealRow>();
+      for (const d of ((deals ?? []) as unknown as DealRow[])) {
+        const prev = dealsByClub.get(d.club_id);
+        if (!prev || new Date(d.ends_at) < new Date(prev.ends_at)) {
+          dealsByClub.set(d.club_id, d);
+        }
+      }
+      const hotdealClubIds = [...dealsByClub.keys()];
+
+      // 2) 클럽 + partners 카운트
       const { data: clubs, error: clubsErr } = await supabase
         .from("clubs")
         .select("id, name, area, thumbnail_url, club_partners(md_id)")
@@ -52,10 +92,16 @@ export function HotdealHomeSection() {
       const rows = (clubs ?? []) as unknown as ClubRow[];
 
       // 테스트/숨김 클럽 제외
-      const filtered = rows.filter((c) => !HIDDEN_PATTERN.test(c.name));
+      const filtered = SHOW_TEST_CLUBS ? rows : rows.filter((c) => !HIDDEN_PATTERN.test(c.name));
 
-      // MD 카운트 desc, 같은 카운트면 이름 asc
+      // 핫딜 있는 클럽 최우선 → 테스트 클럽(개발) → MD 카운트 desc → 이름 asc
       filtered.sort((a, b) => {
+        const ah = hotdealClubIds.includes(a.id) ? 1 : 0;
+        const bh = hotdealClubIds.includes(b.id) ? 1 : 0;
+        if (bh !== ah) return bh - ah;
+        const at = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(a.name) ? 1 : 0;
+        const bt = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(b.name) ? 1 : 0;
+        if (at !== bt) return bt - at;
         const ma = a.club_partners?.length ?? 0;
         const mb = b.club_partners?.length ?? 0;
         if (mb !== ma) return mb - ma;
@@ -63,43 +109,28 @@ export function HotdealHomeSection() {
       });
 
       const topClubs = filtered.slice(0, MAX_CARDS);
-      const topIds = topClubs.map((c) => c.id);
-      if (topIds.length === 0) {
+      if (topClubs.length === 0) {
         if (!cancelled) setItems([]);
         return;
       }
 
-      // 2) 이번 주 슬롯 (오늘 요일 키 매칭)
-      const { data: slots } = await supabase
-        .from("weekly_hotdeal_slots")
-        .select("club_id, benefits_by_dow, expires_at")
-        .eq("week_start", thisWeekISO)
-        .in("club_id", topIds);
+      const out: HotPlaceItem[] = topClubs.map((c) => {
+        const d = dealsByClub.get(c.id);
+        return {
+          club_id: c.id,
+          club_name: c.name,
+          club_area: c.area,
+          club_thumbnail: d?.thumbnail_url || c.thumbnail_url,
+          md_count: c.club_partners?.length ?? 0,
+          hotdeal_text: d?.title,
+          hotdeal_id: d?.id,
+          hotdeal_price: d?.price,
+          hotdeal_original_price: d?.original_price,
+          hotdeal_ends_at: d?.ends_at,
+        };
+      });
 
-      const now = new Date();
-      type SlotRow = {
-        club_id: string;
-        benefits_by_dow: Record<string, string | undefined> | null;
-        expires_at: string;
-      };
-      const slotMap = new Map<string, string>();
-      for (const s of ((slots ?? []) as unknown as SlotRow[])) {
-        if (new Date(s.expires_at) <= now) continue;
-        const text = (s.benefits_by_dow ?? {})[todayDowKey];
-        if (text && text.trim().length > 0) {
-          slotMap.set(s.club_id, text);
-        }
-      }
-
-      const out: HotPlaceItem[] = topClubs.map((c) => ({
-        club_id: c.id,
-        club_name: c.name,
-        club_area: c.area,
-        club_thumbnail: c.thumbnail_url,
-        md_count: c.club_partners?.length ?? 0,
-        hotdeal_text: slotMap.get(c.id),
-      }));
-
+      // 핫딜 있는 클럽 우선
       if (!cancelled) setItems(out);
     })();
     return () => {
@@ -115,20 +146,20 @@ export function HotdealHomeSection() {
       <div className="flex items-baseline justify-between px-1">
         <h2 className="text-[16px] font-black text-white flex items-center gap-1.5">
           <Flame className="w-4 h-4 text-amber-400" />
-          오늘의 HOT PLACE
+          Hot Deal Now
         </h2>
         <Link
-          href="/clubs?view=list"
+          href="/hotdeal"
           className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
         >
-          핫딜 보기
+          더보기
           <ChevronRight className="w-3 h-3" />
         </Link>
       </div>
 
       <div
         data-no-pull-refresh
-        className="flex gap-2.5 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x pb-1 -mx-4 px-4"
+        className="flex gap-2.5 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x touch-pan-y pb-1 -ml-2 -mr-4 pr-4"
         style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
       >
         {items.map((item) => {
@@ -136,18 +167,17 @@ export function HotdealHomeSection() {
           return (
             <Link
               key={item.club_id}
-              href={`/clubs/${item.club_id}`}
-              className={`flex-shrink-0 w-[64%] max-w-[260px] snap-start snap-always bg-[#1C1C1E] rounded-2xl overflow-hidden active:scale-[0.98] transition-transform ${
-                hasHotdeal ? "border border-amber-500/40" : "border border-neutral-800"
-              }`}
+              href={item.hotdeal_id ? `/hotdeal/${item.hotdeal_id}` : `/clubs/${item.club_id}`}
+              className="flex-shrink-0 w-[44%] max-w-[180px] snap-start snap-always active:scale-[0.98] transition-transform"
             >
-              <div className="relative h-36 bg-neutral-900">
+              {/* 이미지 */}
+              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-900">
                 {item.club_thumbnail ? (
                   <Image
                     src={item.club_thumbnail}
                     alt={item.club_name}
                     fill
-                    sizes="260px"
+                    sizes="180px"
                     className="object-cover"
                   />
                 ) : (
@@ -155,28 +185,52 @@ export function HotdealHomeSection() {
                     {item.club_name.charAt(0)}
                   </div>
                 )}
-                <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/85 to-transparent" />
                 {hasHotdeal && (
-                  <div className="absolute top-2 left-2 bg-amber-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5">
-                    🔥 HOT DEAL
+                  <>
+                    {/* 상단 검정 띠: FOMO 카피 */}
+                    <div className="absolute top-0 inset-x-0 bg-black/70 backdrop-blur-sm px-2 py-1 flex items-center justify-center">
+                      <span className="text-white text-[10px] font-black tracking-tight">선착순</span>
+                    </div>
+                    {/* 하단 그라데이션 + 남은 시간 */}
+                    {item.hotdeal_ends_at && (
+                      <>
+                        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/80 to-transparent" />
+                        <div className="absolute bottom-1.5 left-2 inline-flex items-center gap-1 text-amber-300 text-[11px] font-black drop-shadow">
+                          <Clock className="w-3 h-3" />
+                          {formatCountdownShort(item.hotdeal_ends_at, now)} 남음
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* 텍스트 */}
+              <div className="mt-2 px-0.5 space-y-0.5">
+                <p className="text-white font-bold text-[13px] truncate leading-tight">
+                  {item.club_name}
+                </p>
+                <p className="text-neutral-500 text-[11px]">
+                  {item.club_area ?? "기타"}
+                </p>
+                {item.hotdeal_price != null && (
+                  <div className="pt-0.5">
+                    {item.hotdeal_original_price && item.hotdeal_original_price > item.hotdeal_price && (
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-[11px] font-black text-red-400">
+                          {Math.round((1 - item.hotdeal_price / item.hotdeal_original_price) * 100)}%
+                        </span>
+                        <span className="text-[11px] text-neutral-500 line-through">
+                          {item.hotdeal_original_price.toLocaleString()}원
+                        </span>
+                      </div>
+                    )}
+                    <span className="text-[15px] font-black text-white">
+                      {item.hotdeal_price.toLocaleString()}원
+                    </span>
                   </div>
                 )}
-                <div className="absolute left-2 bottom-1.5 right-2">
-                  <p className="text-white font-black text-[14px] truncate">
-                    {item.club_name}
-                  </p>
-                  <p className="text-neutral-300 text-[10px]">
-                    {item.club_area ?? "기타"}
-                  </p>
-                </div>
               </div>
-              {hasHotdeal && (
-                <div className="px-3 py-2">
-                  <p className="text-amber-300 text-[12px] font-bold leading-snug line-clamp-2">
-                    {item.hotdeal_text}
-                  </p>
-                </div>
-              )}
             </Link>
           );
         })}
