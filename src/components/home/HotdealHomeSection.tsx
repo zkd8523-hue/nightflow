@@ -118,10 +118,10 @@ export function HotdealHomeSection() {
           오늘의 HOT PLACE
         </h2>
         <Link
-          href="/clubs"
+          href="/clubs?view=list"
           className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
         >
-          Map
+          핫딜 보기
           <ChevronRight className="w-3 h-3" />
         </Link>
       </div>

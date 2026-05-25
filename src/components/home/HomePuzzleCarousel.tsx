@@ -80,7 +80,7 @@ export function HomePuzzleCarousel({
                   ⛳ 나도 깃발꽂기
                 </Button>
               </Link>
-              <p className="text-[10px] text-neutral-300 mt-0.5">검증된 클럽·MD만 오퍼를 보내요</p>
+              <p className="text-[10px] text-neutral-300 mt-0.5">검증된 클럽·MD가 20분 안에 오퍼 발송</p>
             </div>
           </div>
         )}

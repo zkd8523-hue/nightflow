@@ -17,6 +17,7 @@ import {
   Users,
   Ticket,
   Music,
+  Heart,
   type LucideIcon,
 } from "lucide-react";
 import { uploadImage } from "@/lib/utils/upload";
@@ -67,7 +68,23 @@ export function ClubDetailContent({
   const [clubEntryFeeDetail, setClubEntryFeeDetail] = useState<string>(club.entry_fee_detail ?? "");
   const [clubInstagram, setClubInstagram] = useState<string>(club.instagram ?? "");
   const [clubAliases, setClubAliases] = useState<string[]>(club.aliases ?? []);
+  const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
   const isAdmin = user?.role === "admin";
+
+  // 클럽 찜 카운트
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("user_favorite_clubs")
+        .select("id", { count: "exact", head: true })
+        .eq("club_id", club.id);
+      if (!cancelled) setFavoriteCount(count ?? 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [club.id, supabase]);
 
   const handleAdminThumbnailUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -262,6 +279,12 @@ export function ClubDetailContent({
             {club.area && (
               <span className="text-[13px] text-neutral-400">
                 {club.area}
+              </span>
+            )}
+            {favoriteCount !== null && favoriteCount > 0 && (
+              <span className="inline-flex items-center gap-0.5 text-[12px] text-neutral-400 font-medium">
+                <Heart className="w-3 h-3 text-red-500 fill-red-500" />
+                {favoriteCount}
               </span>
             )}
           </div>

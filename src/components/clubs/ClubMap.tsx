@@ -285,21 +285,31 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
       overlaysRef.current.push(overlay);
     });
 
-    // 필터/검색 결과가 좁혀지면 자동 줌; 전체일 때는 초기 줌(DEFAULT_LEVEL) 유지
-    if (filtered.length > 0 && filtered.length < 10) {
-      if (filtered.length === 1) {
-        const c = filtered[0];
-        map.setLevel(4);
-        map.panTo(new window.kakao.maps.LatLng(c.latitude!, c.longitude!));
-      } else {
-        const bounds = new window.kakao.maps.LatLngBounds();
-        filtered.forEach((c) => {
-          bounds.extend(new window.kakao.maps.LatLng(c.latitude!, c.longitude!));
-        });
-        map.setBounds(bounds);
-      }
-    }
   }, [status, filtered, activeCountMap, hotdealMap, selectedClub]);
+
+  // 필터/검색 결과가 바뀌면 지도 시야를 결과 클럽들에 맞춤
+  // (지역 칩, 장르 칩, 검색어 변경 시 즉시 해당 영역으로 이동)
+  const fingerprint = useMemo(
+    () => filtered.map((c) => c.id).sort().join(","),
+    [filtered]
+  );
+  useEffect(() => {
+    if (status !== "ready" || !mapInstanceRef.current) return;
+    if (filtered.length === 0) return;
+    const map = mapInstanceRef.current;
+    if (filtered.length === 1) {
+      const c = filtered[0];
+      map.setLevel(4);
+      map.panTo(new window.kakao.maps.LatLng(c.latitude!, c.longitude!));
+      return;
+    }
+    const bounds = new window.kakao.maps.LatLngBounds();
+    filtered.forEach((c) => {
+      bounds.extend(new window.kakao.maps.LatLng(c.latitude!, c.longitude!));
+    });
+    map.setBounds(bounds);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, fingerprint]);
 
   if (status === "error") {
     return (

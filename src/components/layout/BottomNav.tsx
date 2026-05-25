@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Gavel, LayoutDashboard, Heart, User } from "lucide-react";
+import { Home, Gavel, LayoutDashboard, Heart, User, MapPin } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 const USER_TABS = [
   { label: "홈", icon: Home, href: "/" },
   { label: "내 활동", icon: Gavel, href: "/bids" },
+  { label: "주변", icon: MapPin, href: "/clubs" },
   { label: "찜", icon: Heart, href: "/favorites" },
   { label: "프로필", icon: User, href: "/profile" },
 ];
@@ -16,6 +17,7 @@ const USER_TABS = [
 const MD_TABS = [
   { label: "홈", icon: Home, href: "/" },
   { label: "대시보드", icon: LayoutDashboard, href: "/md/dashboard" },
+  { label: "주변", icon: MapPin, href: "/clubs" },
   { label: "찜", icon: Heart, href: "/favorites" },
   { label: "프로필", icon: User, href: "/profile" },
 ];
