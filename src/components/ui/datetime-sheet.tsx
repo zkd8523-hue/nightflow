@@ -129,10 +129,19 @@ export function DateTimeSheet({
     setOpen(false);
   };
 
+  const isTimeInActiveRange = (() => {
+    if (!isDate2) return true;
+    const opt = dateOptions?.find((o) => o.value === tempDateStr);
+    if (!opt) return true;
+    if (opt.minTime && tempTime < opt.minTime) return false;
+    if (opt.maxTime && tempTime > opt.maxTime) return false;
+    return true;
+  })();
+
   const canConfirm = isDateOnly
     ? Boolean(tempDate)
     : isDate2
-    ? Boolean(tempDateStr) && TIME_RE.test(tempTime)
+    ? Boolean(tempDateStr) && TIME_RE.test(tempTime) && isTimeInActiveRange
     : Boolean(tempDate) && TIME_RE.test(tempTime);
 
   const displayText = value

@@ -9,6 +9,7 @@ interface LiquorSelectorProps {
   selected: string[];
   onSelect: (items: string[]) => void;
   disabled?: boolean;
+  compact?: boolean;
 }
 
 function normalize(raw: string): string | null {
@@ -33,7 +34,7 @@ function normalize(raw: string): string | null {
   return `${trimmed} 1병`;
 }
 
-export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorProps) {
+export function LiquorSelector({ selected, onSelect, disabled, compact }: LiquorSelectorProps) {
   const [customBrand, setCustomBrand] = useState("");
 
   const selectedBrandSet = new Set(selected);
@@ -66,6 +67,60 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
     setCustomBrand("");
   };
 
+  const inner = (
+    <div className={`space-y-2 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
+      <div className="flex gap-2">
+        <Input
+          type="text"
+          value={customBrand}
+          onChange={(e) => setCustomBrand(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+              e.preventDefault();
+              handleCustomAdd();
+            }
+          }}
+          placeholder="예: 돔페3, 모엣2, 샴3, 하드1, 데킬라1"
+          className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] flex-1"
+        />
+        <Button
+          type="button"
+          onClick={handleCustomAdd}
+          disabled={!customBrand.trim()}
+          className="h-11 px-4 bg-white text-black hover:bg-neutral-200 font-bold"
+        >
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
+      <p className="text-[10px] text-neutral-600">각 주류는 쉼표(,)로 구분</p>
+
+      {selected.length > 0 && (
+        <div className="pt-3 border-t border-neutral-800/50 space-y-2">
+          <p className="text-purple-400 text-[10px] font-bold">선택된 주류 ({selected.length}개)</p>
+          <div className="flex flex-wrap gap-2">
+            {selected.map((item) => (
+              <span
+                key={item}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg text-[11px] font-bold"
+              >
+                {item}
+                <button
+                  type="button"
+                  onClick={() => removeLiquor(item)}
+                  className="hover:text-white transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  if (compact) return inner;
+
   return (
     <section className={`space-y-4 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
       <div className="flex items-center gap-1.5 text-[11px] font-bold text-neutral-500 tracking-wide mb-2">
@@ -74,60 +129,8 @@ export function LiquorSelector({ selected, onSelect, disabled }: LiquorSelectorP
         <span className="text-red-500">*</span>
         <span className="text-neutral-600 font-medium">최소 1병 이상</span>
       </div>
-
-      <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-2">
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            value={customBrand}
-            onChange={(e) => setCustomBrand(e.target.value)}
-            onKeyDown={(e) => {
-              // 한글 IME 조합 중 Enter는 무시 (조합 완료 후 다시 발화됨)
-              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
-                e.preventDefault();
-                handleCustomAdd();
-              }
-            }}
-            placeholder="예: 돔페3, 모엣2, 샴3, 하드1, 데킬라1"
-            className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] flex-1"
-          />
-          <Button
-            type="button"
-            onClick={handleCustomAdd}
-            disabled={!customBrand.trim()}
-            className="h-11 px-4 bg-white text-black hover:bg-neutral-200 font-bold"
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-        <p className="text-[10px] text-neutral-600">
-          각 주류는 쉼표(,)로 구분
-        </p>
-
-        {selected.length > 0 && (
-          <div className="pt-3 border-t border-neutral-800/50 space-y-2">
-            <p className="text-purple-400 text-[10px] font-bold">
-              선택된 주류 ({selected.length}개)
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {selected.map((item) => (
-                <span
-                  key={item}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg text-[11px] font-bold"
-                >
-                  {item}
-                  <button
-                    type="button"
-                    onClick={() => removeLiquor(item)}
-                    className="hover:text-white transition-colors"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+      <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5">
+        {inner}
       </div>
     </section>
   );
