@@ -589,17 +589,17 @@ export function HomeContent({
           {/* Tip 박스 + 이용방법 토글 */}
           {visibleCompactTip && (
             <section className="space-y-2 -mx-2 mb-3">
-              <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 pb-2.5">
-                <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
-                <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
+              <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-xl px-3 pt-3 pb-2 pr-16">
+                <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm">Tip</span>
+                <div className="text-[12px] text-white font-bold leading-snug whitespace-pre-line break-keep [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
                   {visibleCompactTip}
                 </div>
                 <button
                   type="button"
                   onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
-                  className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10.5px] font-bold text-amber-200/90 hover:text-white transition-colors"
+                  className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-200/90 hover:text-white transition-colors"
                 >
-                  <span className="text-[11px] leading-none">ⓘ</span>
+                  <span className="text-[10.5px] leading-none">ⓘ</span>
                   이용방법
                 </button>
               </div>
@@ -659,7 +659,7 @@ export function HomeContent({
               userRole={user?.role as "user" | "md" | "admin" | undefined}
               detailHref={detailHref("puzzle")}
               newFlagHref={newFlagHref}
-              showFlagCTA={!user}
+              showFlagCTA
             />
           )}
 

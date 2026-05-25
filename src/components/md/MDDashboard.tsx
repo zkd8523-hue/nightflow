@@ -324,8 +324,19 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
                 )}
             </div>
 
+            {/* HOT DEAL 슬롯 (최상단 배치) */}
+            <div className="px-4 mt-3">
+                <Link href="/md/hotdeal">
+                    <Button variant="outline" className="w-full h-14 bg-[#1C1C1E] border-amber-500/30 text-white font-bold gap-2 rounded-2xl hover:bg-neutral-800 text-[14px]">
+                        <span className="text-[18px] leading-none">🔥</span>
+                        HOT DEAL 슬롯
+                        <span className="ml-auto text-[11px] text-amber-400 font-bold">베타 무료</span>
+                    </Button>
+                </Link>
+            </div>
+
             {/* Auction Tabs + Register Button */}
-            <div className="px-4 mt-1">
+            <div className="px-4 mt-3">
                 <Tabs defaultValue="share" className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">
@@ -572,15 +583,6 @@ export function MDDashboard({ user, initialAuctions, initialClubs, initialTopBid
 
             {/* Secondary Content: VIP, Stats */}
             <div className="px-6 py-6 space-y-4 text-white">
-                {/* HOT DEAL 슬롯 */}
-                <Link href="/md/hotdeal">
-                    <Button variant="outline" className="w-full h-14 bg-[#1C1C1E] border-amber-500/30 text-white font-bold gap-2 rounded-2xl hover:bg-neutral-800 text-[14px]">
-                        <span className="text-[18px] leading-none">🔥</span>
-                        HOT DEAL 슬롯
-                        <span className="ml-auto text-[11px] text-amber-400 font-bold">베타 무료</span>
-                    </Button>
-                </Link>
-
                 {/* VIP 고객 */}
                 <Link href="/md/vip">
                     <Button variant="outline" className="w-full h-14 bg-[#1C1C1E] border-neutral-800 text-white font-bold gap-2 rounded-2xl hover:bg-neutral-800 text-[14px]">

@@ -72,7 +72,7 @@ export function HomePuzzleCarousel({
         {showFlagCTA && (
           <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
             <div className="text-center w-full">
-              <p className="text-[14.5px] text-neutral-200 font-semibold mb-3">
+              <p className="text-[14.5px] text-neutral-200 font-semibold mb-1">
                 같은 돈으로 더 크게 놀고싶다면?
               </p>
               <Link href={newFlagHref}>
@@ -80,7 +80,7 @@ export function HomePuzzleCarousel({
                   ⛳ 나도 깃발꽂기
                 </Button>
               </Link>
-              <p className="text-[10px] text-neutral-600 mt-2">평생 무료 · 1분 가입</p>
+              <p className="text-[10px] text-neutral-300 mt-0.5">검증된 클럽·MD만 오퍼를 보내요</p>
             </div>
           </div>
         )}

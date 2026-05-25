@@ -253,11 +253,11 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
             <div className="flex items-center gap-1">
               {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
                 <Link
-                  href="/md/auctions/new"
+                  href="/md"
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
                 >
-                  <Plus className="w-3.5 h-3.5 text-black" />
-                  <span className="text-[12px] font-black text-black whitespace-nowrap">조각 등록</span>
+                  <LayoutDashboard className="w-3.5 h-3.5 text-black" />
+                  <span className="text-[12px] font-black text-black whitespace-nowrap">MD 대시보드</span>
                 </Link>
               )}
               {user.md_status === "pending" && (

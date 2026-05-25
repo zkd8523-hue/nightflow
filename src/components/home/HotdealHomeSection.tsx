@@ -141,7 +141,7 @@ export function HotdealHomeSection() {
                 hasHotdeal ? "border border-amber-500/40" : "border border-neutral-800"
               }`}
             >
-              <div className="relative h-28 bg-neutral-900">
+              <div className="relative h-36 bg-neutral-900">
                 {item.club_thumbnail ? (
                   <Image
                     src={item.club_thumbnail}
