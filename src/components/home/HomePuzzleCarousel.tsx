@@ -35,7 +35,7 @@ export function HomePuzzleCarousel({
       <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
         <p className="text-[15px] text-white font-bold">아직 등록된 깃발이 없어요</p>
         <p className="text-[12px] text-neutral-500">
-          예산·인원·날짜만 정하면 MD들이 시크릿 오퍼를 보내요
+          예산·인원·날짜만 정하면 MD들이 시크릿오퍼를 보내요
         </p>
         <Link
           href={newFlagHref}

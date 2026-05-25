@@ -91,6 +91,52 @@ export default async function ClubDetailPage({ params }: PageProps) {
     .order("auction_start_at", { ascending: true })
     .limit(20);
 
+  // 이번 주 게스트 간판 슬롯 + 차지 MD 정보 + 오늘 요일 혜택
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const dowIdx = kstNow.getUTCDay();
+  const DOW_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+  const todayDowKey = DOW_KEYS[dowIdx];
+  const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
+  const thisMonday = new Date(kstNow);
+  thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
+  thisMonday.setUTCHours(0, 0, 0, 0);
+  const thisWeekISO = thisMonday.toISOString().slice(0, 10);
+
+  const { data: slotRow } = await supabase
+    .from("weekly_hotdeal_slots")
+    .select("id, md_id, benefits_by_dow, expires_at")
+    .eq("club_id", id)
+    .eq("week_start", thisWeekISO)
+    .limit(1)
+    .maybeSingle();
+
+  let guestSignSlot: {
+    md: { id: string; display_name: string | null; profile_image: string | null; instagram: string | null; kakao_open_chat_url: string | null };
+    today_benefit: string | null;
+  } | null = null;
+
+  if (slotRow && new Date(slotRow.expires_at) > new Date()) {
+    const { data: mdRow } = await supabase
+      .from("users")
+      .select("id, display_name, profile_image, instagram, kakao_open_chat_url")
+      .eq("id", slotRow.md_id)
+      .maybeSingle();
+    if (mdRow) {
+      const byDow = (slotRow.benefits_by_dow ?? {}) as Record<string, string | undefined>;
+      const todayText = byDow[todayDowKey]?.trim() || null;
+      guestSignSlot = {
+        md: {
+          id: mdRow.id,
+          display_name: mdRow.display_name,
+          profile_image: mdRow.profile_image,
+          instagram: mdRow.instagram,
+          kakao_open_chat_url: mdRow.kakao_open_chat_url,
+        },
+        today_benefit: todayText,
+      };
+    }
+  }
+
   const aliases = getClubAliases(id);
   const jsonLd = {
     "@context": "https://schema.org",
@@ -119,6 +165,7 @@ export default async function ClubDetailPage({ params }: PageProps) {
       <ClubDetailContent
         club={club}
         activeAuctions={activeAuctions || []}
+        guestSignSlot={guestSignSlot}
       />
     </>
   );

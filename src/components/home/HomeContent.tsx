@@ -20,6 +20,8 @@ import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
+import { HotdealMdCta } from "@/components/home/HotdealMdCta";
+import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_cta_shown";
 
@@ -86,7 +88,7 @@ const PUZZLE_ONBOARDING_STEPS = [
   },
 ];
 
-// 유저용 "시크릿 오퍼란?" 설명 (3-포인트 + 감성 마무리)
+// 유저용 "시크릿오퍼란?" 설명 (3-포인트 + 감성 마무리)
 const SECRET_OFFER_INTRO_USER = {
   title: "시크릿오퍼",
   points: [
@@ -100,7 +102,7 @@ const SECRET_OFFER_INTRO_USER = {
   ],
 };
 
-// MD 전용 퍼즐 이용방법 (시크릿 오퍼 핵심 가치 강조)
+// MD 전용 퍼즐 이용방법 (시크릿오퍼 핵심 가치 강조)
 const SHARE_ONBOARDING_STEPS = [
   {
     title: "1. 파티 선택",
@@ -122,6 +124,28 @@ const SHARE_ONBOARDING_STEPS = [
   },
 ];
 
+// MD 전용 조각 이용방법
+const SHARE_ONBOARDING_STEPS_MD = [
+  {
+    title: "1. 조각 등록",
+    desc: "테이블·인원·가격을 입력하면\n링크 하나로 끝!",
+    icon: <span className="text-[20px]">🧩</span>,
+    color: "bg-green-500/10",
+  },
+  {
+    title: "2. 공유 & 모집",
+    desc: "유저들이 조각을 골라\n오픈채팅방에 모여요.",
+    icon: <span className="text-[20px]">🔗</span>,
+    color: "bg-emerald-500/10",
+  },
+  {
+    title: "3. 현장 N빵 수령",
+    desc: "인원이 다 차면 당일 클럽에서\n인당 금액 직접 수령!",
+    icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
+    color: "bg-blue-500/10",
+  },
+];
+
 const PUZZLE_ONBOARDING_STEPS_MD = [
   {
     title: "1. 입맛 다시기",
@@ -130,7 +154,7 @@ const PUZZLE_ONBOARDING_STEPS_MD = [
     color: "bg-amber-500/10",
   },
   {
-    title: "2. 시크릿 오퍼 제안",
+    title: "2. 시크릿오퍼 제안",
     desc: "🔒 다른 MD는 못 봐요 (가격 눈치 X)\n🤫 인스타·연락처 비공개\n👁 방장 한 명만 봐요\n⚔️ 오직 클럽명 + 조건으로 승부!",
     icon: <span className="text-[20px]">✉️</span>,
     color: "bg-emerald-500/10",
@@ -172,7 +196,7 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
       <>
         퍼즐이 다 모이면 <span className="text-amber-400">깃발</span>로 승격!
         <br />
-        깃발에는 MD들이 시크릿 오퍼
+        깃발에는 MD들이 시크릿오퍼
         <br />
         <span className="text-emerald-400">가격·패키지 비교하고 골라요.</span>
       </>
@@ -201,14 +225,14 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
   },
   puzzle: {
     // content는 HomeContent 내부에서 JSX로 재정의 (시크릿오퍼란? 버튼 포함)
-    content: "유저들의 예산이 기다리고 있어요 💰\n시크릿 오퍼로 매출을 올려봐요!",
+    content: "유저들의 예산이 기다리고 있어요 💰\n시크릿오퍼로 매출을 올려봐요!",
     note: "💰 제안 무료 · 매칭 시 직접 거래",
   },
   share: {
     content: (
       <>
-        <div className="text-[14.5px] text-white">다음 3주까지, 조각을 미리 올려보세요!</div>
-        <div className="text-[15.5px] text-white">링크 하나로 공유하고, 인원관리도 초간단!</div>
+        <div className="text-[14.5px] text-white">이번주 조각을 미리 올려보세요!</div>
+        <div className="text-[15.5px] text-white">링크 하나로 공유, 인원관리도 간편해요!</div>
       </>
     ),
     note: "🧩 수수료 0% · 현장 직접 수령",
@@ -543,16 +567,24 @@ export function HomeContent({
         <div className="text-[15.5px]">시크릿오퍼로 매출을 올려봐요!</div>
       </>
     );
+    const mdShareTipContent = (
+      <>
+        <div className="text-[14.5px] text-white">이번주 조각을 미리 올려보세요!</div>
+        <div className="text-[15.5px] text-white">링크 하나로 공유, 인원관리도 간편해요!</div>
+      </>
+    );
     const compactTipContent: Record<"puzzle" | "share", React.ReactNode> = {
       puzzle: isMdOrAdmin ? mdPuzzleTipContent : userPuzzleTipContent,
-      share: TAB_PROMISES.share.content,
+      share: isMdOrAdmin ? mdShareTipContent : TAB_PROMISES.share.content,
     };
     const compactSteps =
       currentTab === "puzzle"
         ? isMdOrAdmin
           ? PUZZLE_ONBOARDING_STEPS_MD
           : PUZZLE_ONBOARDING_STEPS
-        : SHARE_ONBOARDING_STEPS;
+        : isMdOrAdmin
+          ? SHARE_ONBOARDING_STEPS_MD
+          : SHARE_ONBOARDING_STEPS;
     const visibleCompactTip =
       currentTab === "puzzle" || currentTab === "share"
         ? compactTipContent[currentTab]
@@ -664,46 +696,47 @@ export function HomeContent({
             </section>
           )}
 
-          {/* 깃발 캐러셀 */}
-          {currentTab === "puzzle" && (
-            <HomePuzzleCarousel
-              puzzles={visiblePuzzles}
-              offerCounts={puzzleOfferCounts}
-              userRole={user?.role as "user" | "md" | "admin" | undefined}
-              detailHref={detailHref("puzzle")}
-              newFlagHref={newFlagHref}
-              showFlagCTA
-            />
-          )}
-
-          {/* 조각 캐러셀 */}
-          {currentTab === "share" && (
-            <HomeShareCarousel
-              shares={visibleAuctions.filter((a) => a.listing_type === "share")}
-              currentUserId={user?.id}
-              detailHref={detailHref("share")}
-              newFlagHref={newFlagHref}
-            />
-          )}
+          {/* 깃발 / 조각 캐러셀 */}
+          <div className="mb-5">
+            {currentTab === "puzzle" && (
+              <HomePuzzleCarousel
+                puzzles={visiblePuzzles}
+                offerCounts={puzzleOfferCounts}
+                userRole={user?.role as "user" | "md" | "admin" | undefined}
+                detailHref={detailHref("puzzle")}
+                newFlagHref={newFlagHref}
+                showFlagCTA
+              />
+            )}
+            {currentTab === "share" && (
+              <HomeShareCarousel
+                shares={visibleAuctions.filter((a) => a.listing_type === "share")}
+                currentUserId={user?.id}
+                detailHref={detailHref("share")}
+                newFlagHref={newFlagHref}
+                userRole={user?.role as "user" | "md" | "admin" | undefined}
+              />
+            )}
+          </div>
 
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
 
         {/* HOT DEAL + 오늘 어디갈래? 섹션 + 이하 전체 배경 */}
-        <div className="-mx-4 px-4 pt-5 pb-24 bg-[#111111]">
+        <div className="-mx-4 px-4 pt-3 pb-24 bg-[#111111]">
           <HotdealHomeSection />
+          {/* MD 전용 행동 유도 CTA (Hot Deal Now ↔ 오늘 어디갈래? 사이) */}
+          <div className="mt-3">
+            <HotdealMdCta />
+          </div>
           <div className="mt-6">
             <ClubBenefitSection />
           </div>
+          {/* MD 전용 게스트 간판 행동 유도 CTA */}
+          <div className="mt-3">
+            <GuestSignMdCta />
+          </div>
 
-          {/* MD 전용 안내: 깃발 응대 유도 */}
-          {isMdOrAdmin && currentTab === "puzzle" && visiblePuzzles.length > 0 && (
-            <div className="text-center pt-4">
-              <p className="text-[12px] text-neutral-500">
-                유저들의 예산이 기다리고 있어요. 시크릿 오퍼로 매출을 올려봐요.
-              </p>
-            </div>
-          )}
         </div>
 
         {/* MD 파트너 승인 축하 Sheet, 깃발 CTA Sheet는 풀 모드와 공유 */}
@@ -726,7 +759,7 @@ export function HomeContent({
             : currentTab === "advance"
             ? EARLYBIRD_ONBOARDING_STEPS
             : currentTab === "share"
-            ? SHARE_ONBOARDING_STEPS
+            ? (isMdOrAdmin ? SHARE_ONBOARDING_STEPS_MD : SHARE_ONBOARDING_STEPS)
             : ONBOARDING_STEPS;
           // MD 전용 puzzle tip
           const mdPuzzleTipContent = (

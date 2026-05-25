@@ -12,6 +12,7 @@ interface Props {
   currentUserId?: string;
   detailHref: string;
   newFlagHref?: string;
+  userRole?: "user" | "md" | "admin";
 }
 
 const MAX_CARDS = 5;
@@ -23,8 +24,26 @@ export function HomeShareCarousel({
   currentUserId,
   detailHref,
   newFlagHref,
+  userRole,
 }: Props) {
   if (shares.length === 0) {
+    const isMdOrAdmin = userRole === "md" || userRole === "admin";
+    if (isMdOrAdmin) {
+      return (
+        <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
+          <p className="text-[15px] text-white font-bold">지금은 다른 조각이 없어요!</p>
+          <p className="text-[12px] text-neutral-500">
+            경쟁 조각이 없어서 유저 시선 독차지
+          </p>
+          <Link
+            href="/md/auctions/new?type=share"
+            className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-[13px] font-black active:scale-95 transition"
+          >
+            🧩 조각 등록하기
+          </Link>
+        </div>
+      );
+    }
     return (
       <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center -mx-4">
         <p className="text-[15px] text-white font-bold mb-3">아직 등록된 조각이 없어요</p>

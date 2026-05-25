@@ -865,6 +865,26 @@ export interface AuctionTemplate {
   club?: Club;
 }
 
+// 핫딜 템플릿 (Migration 242)
+export interface HotdealTemplate {
+  id: string;
+  md_id: string;
+  name: string;
+  club_id: string | null;
+  description: string | null;
+  price: number | null;
+  original_price: number | null;
+  walk_minutes: number | null;
+  nearest_station: string | null;
+  table_info: string | null;
+  table_features: string[];
+  liquor_includes: string[];
+  last_used_at: string | null;
+  created_at: string;
+  updated_at: string;
+  club?: Pick<Club, "id" | "name" | "area">;
+}
+
 // ============================================================================
 // HOT DEAL 슬롯 (Migration 234, week 단위로 Migration 236에서 재정의)
 // ============================================================================
@@ -883,4 +903,33 @@ export interface WeeklyHotdealSlot {
   expires_at: string;
   claimed_at: string;
   updated_at: string;
+}
+
+// ============================================================================
+// daily_hotdeals (Migration 238) — 당일 특가/핫딜 카드
+// ============================================================================
+export type DailyHotdealStatus = 'active' | 'cancelled' | 'expired';
+
+export interface DailyHotdeal {
+  id: string;
+  club_id: string;
+  md_id: string;
+  title: string;
+  description: string | null;
+  thumbnail_url: string | null;
+  price: number | null;
+  original_price: number | null;
+  walk_minutes: number | null;
+  nearest_station: string | null;
+  starts_at: string;
+  ends_at: string;
+  status: DailyHotdealStatus;
+  table_info: string | null;
+  table_features: string[];
+  liquor_includes: string[];
+  created_at: string;
+  updated_at: string;
+  // joined
+  club?: Pick<Club, 'id' | 'name' | 'area' | 'thumbnail_url'>;
+  md?: { id: string; display_name: string; instagram: string | null; profile_image: string | null };
 }

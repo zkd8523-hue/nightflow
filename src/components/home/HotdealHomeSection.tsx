@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, Flame, Clock } from "lucide-react";
+import { ChevronRight, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface HotPlaceItem {
@@ -92,23 +92,36 @@ export function HotdealHomeSection() {
       const rows = (clubs ?? []) as unknown as ClubRow[];
 
       // 테스트/숨김 클럽 제외
-      const filtered = SHOW_TEST_CLUBS ? rows : rows.filter((c) => !HIDDEN_PATTERN.test(c.name));
+      const filteredAll = SHOW_TEST_CLUBS ? rows : rows.filter((c) => !HIDDEN_PATTERN.test(c.name));
 
-      // 핫딜 있는 클럽 최우선 → 테스트 클럽(개발) → MD 카운트 desc → 이름 asc
-      filtered.sort((a, b) => {
-        const ah = hotdealClubIds.includes(a.id) ? 1 : 0;
-        const bh = hotdealClubIds.includes(b.id) ? 1 : 0;
-        if (bh !== ah) return bh - ah;
-        const at = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(a.name) ? 1 : 0;
-        const bt = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(b.name) ? 1 : 0;
-        if (at !== bt) return bt - at;
-        const ma = a.club_partners?.length ?? 0;
-        const mb = b.club_partners?.length ?? 0;
-        if (mb !== ma) return mb - ma;
-        return a.name.localeCompare(b.name);
-      });
+      // 핫딜 있는 클럽 1개 이상 → 그 클럽들만 노출
+      // 핫딜 0개 → 폴백으로 전체 클럽 노출 (오늘 어디갈래? 와 동일 패턴)
+      let source = filteredAll;
+      if (hotdealClubIds.length > 0) {
+        source = filteredAll.filter((c) => hotdealClubIds.includes(c.id));
+      }
 
-      const topClubs = filtered.slice(0, MAX_CARDS);
+      // 정렬: 핫딜 있을 때 → ends_at 임박순. 폴백일 때 → 테스트 클럽(개발) → MD 카운트 desc → 이름 asc
+      if (hotdealClubIds.length > 0) {
+        source.sort((a, b) => {
+          const da = dealsByClub.get(a.id);
+          const db = dealsByClub.get(b.id);
+          if (!da || !db) return 0;
+          return new Date(da.ends_at).getTime() - new Date(db.ends_at).getTime();
+        });
+      } else {
+        source.sort((a, b) => {
+          const at = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(a.name) ? 1 : 0;
+          const bt = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(b.name) ? 1 : 0;
+          if (at !== bt) return bt - at;
+          const ma = a.club_partners?.length ?? 0;
+          const mb = b.club_partners?.length ?? 0;
+          if (mb !== ma) return mb - ma;
+          return a.name.localeCompare(b.name);
+        });
+      }
+
+      const topClubs = source.slice(0, MAX_CARDS);
       if (topClubs.length === 0) {
         if (!cancelled) setItems([]);
         return;
@@ -144,8 +157,8 @@ export function HotdealHomeSection() {
   return (
     <section className="space-y-2">
       <div className="flex items-baseline justify-between px-1">
-        <h2 className="text-[16px] font-black text-white flex items-center gap-1.5">
-          <Flame className="w-4 h-4 text-amber-400" />
+        <h2 className="text-[20px] font-black text-white flex items-center gap-1.5 tracking-tight">
+          <span className="text-[20px]">🔥</span>
           Hot Deal Now
         </h2>
         <Link
@@ -189,7 +202,7 @@ export function HotdealHomeSection() {
                   <>
                     {/* 상단 검정 띠: FOMO 카피 */}
                     <div className="absolute top-0 inset-x-0 bg-black/70 backdrop-blur-sm px-2 py-1 flex items-center justify-center">
-                      <span className="text-white text-[10px] font-black tracking-tight">선착순</span>
+                      <span className="text-white text-[10px] font-black tracking-tight">선착순 마감</span>
                     </div>
                     {/* 하단 그라데이션 + 남은 시간 */}
                     {item.hotdeal_ends_at && (

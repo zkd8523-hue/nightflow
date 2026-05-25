@@ -18,6 +18,7 @@ import {
   Ticket,
   Music,
   Heart,
+  MessageCircle,
   type LucideIcon,
 } from "lucide-react";
 import { uploadImage } from "@/lib/utils/upload";
@@ -38,14 +39,27 @@ import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction } from "@/types/database";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
+interface GuestSignSlotInfo {
+  md: {
+    id: string;
+    display_name: string | null;
+    profile_image: string | null;
+    instagram: string | null;
+    kakao_open_chat_url: string | null;
+  };
+  today_benefit: string | null;
+}
+
 interface ClubDetailContentProps {
   club: Club;
   activeAuctions: Auction[];
+  guestSignSlot?: GuestSignSlotInfo | null;
 }
 
 export function ClubDetailContent({
   club,
   activeAuctions: rawActiveAuctions,
+  guestSignSlot = null,
 }: ClubDetailContentProps) {
   const activeAuctions = useMemo(() => {
     return rawActiveAuctions.map(adjustMockAuctionDates);
@@ -288,6 +302,66 @@ export function ClubDetailContent({
               </span>
             )}
           </div>
+
+          {/* 게스트 간판 — 이번 주 차지 MD 정보 */}
+          {guestSignSlot && (
+            <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3 space-y-2 mt-1">
+              {guestSignSlot.today_benefit && (
+                <div className="-mx-3 -mt-3 bg-amber-500 px-3 py-1.5 rounded-t-2xl">
+                  <span className="text-black text-[12px] font-black tracking-tight">
+                    🎁 {guestSignSlot.today_benefit}
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-2">
+                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-800 shrink-0">
+                  {guestSignSlot.md.profile_image ? (
+                    <Image
+                      src={guestSignSlot.md.profile_image}
+                      alt={guestSignSlot.md.display_name ?? "MD"}
+                      fill
+                      sizes="40px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-white/40 font-black">
+                      {(guestSignSlot.md.display_name ?? "M").charAt(0)}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-bold text-[13px] truncate">
+                    {guestSignSlot.md.display_name ?? "담당 MD"}
+                  </p>
+                  <p className="text-neutral-500 text-[11px]">담당 MD</p>
+                </div>
+              </div>
+              <div className={`grid gap-2 pt-1 ${guestSignSlot.md.kakao_open_chat_url ? "grid-cols-2" : "grid-cols-1"}`}>
+                {guestSignSlot.md.instagram && (
+                  <a
+                    href={`https://instagram.com/${guestSignSlot.md.instagram}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gradient-to-r from-pink-500/20 to-fuchsia-500/20 border border-pink-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
+                  >
+                    <Instagram className="w-3.5 h-3.5 text-pink-400" />
+                    <span className="text-pink-300 text-[11px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
+                  </a>
+                )}
+                {guestSignSlot.md.kakao_open_chat_url && (
+                  <a
+                    href={guestSignSlot.md.kakao_open_chat_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 text-green-400" />
+                    <span className="text-green-300 text-[11px] font-bold truncate">카카오톡</span>
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
 
           {clubAddress && (
             <button
