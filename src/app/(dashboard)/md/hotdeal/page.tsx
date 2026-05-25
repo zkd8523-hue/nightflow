@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata = {
-  title: "HOT DEAL 슬롯 — NightFlow",
+  title: "게스트 간판 — NightFlow",
 };
 
 function weekStartKst(d: Date): string {
@@ -42,17 +42,35 @@ export default async function MDHotdealPage() {
     redirect("/");
   }
 
-  const { data: clubs } = await supabase
+  const { data: partnerClubs } = await supabase
     .from("clubs")
     .select("id, name, area, thumbnail_url, club_partners!inner(md_id)")
     .eq("club_partners.md_id", user.id)
     .is("deleted_at", null)
     .order("name");
 
+  // 비프로덕션(dev/preview) + admin: 운영자 테스트 클럽 추가 노출
+  const isProd = process.env.NEXT_PUBLIC_VERCEL_ENV === "production";
+  const showTestClubs = !isProd && userRow.role === "admin";
+  let clubs = partnerClubs ?? [];
+  if (showTestClubs) {
+    const { data: testClubs } = await supabase
+      .from("clubs")
+      .select("id, name, area, thumbnail_url")
+      .ilike("name", "%운영자%")
+      .is("deleted_at", null);
+    const existing = new Set(clubs.map((c) => c.id));
+    for (const tc of testClubs ?? []) {
+      if (!existing.has(tc.id)) {
+        clubs.push({ ...tc, club_partners: [] } as typeof clubs[number]);
+      }
+    }
+  }
+
   const thisWeek = weekStartKst(new Date());
   const nextWeek = addDaysISO(thisWeek, 7);
 
-  const clubIds = (clubs ?? []).map((c) => c.id);
+  const clubIds = clubs.map((c) => c.id);
   // 이번 주 + 다음 주 슬롯 동시 조회
   const { data: slots } = clubIds.length
     ? await supabase
@@ -62,12 +80,13 @@ export default async function MDHotdealPage() {
         .in("week_start", [thisWeek, nextWeek])
     : { data: [] };
 
-  // 본인 슬롯 (1MD 1주 1슬롯 — 이번주/다음주 각각 최대 1개)
+  // 본인 슬롯 (이번주/다음주). 운영자 테스트로 같은 주 여러 개 있을 수 있음.
   const { data: mySlots } = await supabase
     .from("weekly_hotdeal_slots")
     .select("id, club_id, week_start, benefits_by_dow, expires_at")
     .eq("md_id", user.id)
-    .in("week_start", [thisWeek, nextWeek]);
+    .gte("week_start", thisWeek)
+    .lte("week_start", nextWeek);
 
   return (
     <HotdealSlotBoard
