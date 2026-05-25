@@ -86,15 +86,6 @@ export function HomePuzzleCarousel({
         )}
       </div>
 
-      <div className="flex items-center justify-center mt-0">
-        <Link
-          href={detailHref}
-          className="inline-flex items-center gap-1 px-4 py-1.5 rounded-full bg-neutral-900 text-neutral-300 hover:bg-neutral-800 text-[12px] font-bold"
-        >
-          전체 보기
-          <ChevronRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, PartyPopper } from "lucide-react";
+import { CheckCircle2, X, PartyPopper, ChevronRight } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { ClubStrip } from "@/components/home/ClubStrip";
 import { isAuctionExpired } from "@/lib/utils/auction";
@@ -19,6 +19,7 @@ import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
+import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_cta_shown";
 
@@ -264,13 +265,16 @@ export function HomeContent({
   // ?detail=1이면 기존 풀 화면(Tip/지역탭/통계/전체 카드), 없으면 compact (첫 카드 캐러셀)
   const isDetailMode = searchParams.get("detail") === "1";
 
-  // 탭 변경 시 URL 업데이트
+  // 탭 변경 시 URL 업데이트 — router.replace는 서버 컴포넌트 refetch를 유발해
+  // 캐러셀이 깜빡임. URL만 history API로 갱신하고, 페이지 상태는 setCurrentTab으로 즉시 반영.
   const handleTabChange = (tab: "today" | "advance" | "puzzle" | "share") => {
     const safe = normalizeTab(tab);
     setCurrentTab(safe);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("tab", safe);
-    router.replace(`?${params.toString()}`, { scroll: false });
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", safe);
+      window.history.replaceState(null, "", `?${params.toString()}`);
+    }
   };
 
   useEffect(() => {
@@ -581,6 +585,13 @@ export function HomeContent({
             >
               <span className="text-[16px] leading-none">🧩</span> 조각
             </button>
+            <Link
+              href={detailHref(currentTab)}
+              className="ml-auto text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-end gap-0.5 pb-0.5 self-end"
+            >
+              더보기
+              <ChevronRight className="w-3 h-3" />
+            </Link>
           </div>
 
           {/* Tip 박스 + 이용방법 토글 */}
@@ -678,9 +689,12 @@ export function HomeContent({
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
 
-        {/* HOT DEAL 섹션 + 이하 전체 배경 */}
+        {/* HOT DEAL + 오늘 어디갈래? 섹션 + 이하 전체 배경 */}
         <div className="-mx-4 px-4 pt-5 pb-24 bg-[#111111]">
           <HotdealHomeSection />
+          <div className="mt-6">
+            <ClubBenefitSection />
+          </div>
 
           {/* MD 전용 안내: 깃발 응대 유도 */}
           {isMdOrAdmin && currentTab === "puzzle" && visiblePuzzles.length > 0 && (
