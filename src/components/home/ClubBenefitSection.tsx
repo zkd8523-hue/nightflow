@@ -12,8 +12,6 @@ interface ClubBenefitItem {
   club_area: string | null;
   club_thumbnail: string | null;
   benefit_text: string | null;
-  operating_hours: string | null;
-  tags: string[];
   md_count: number;
 }
 
