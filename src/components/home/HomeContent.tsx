@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuctionList } from "@/components/auctions/AuctionList";
@@ -23,7 +23,7 @@ import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { HotdealMdCta } from "@/components/home/HotdealMdCta";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 
-const FLAG_CTA_SHOWN_KEY = "nightflow_flag_cta_shown";
+const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
 
 const ONBOARDING_STEPS = [
   {
@@ -76,7 +76,7 @@ const PUZZLE_ONBOARDING_STEPS = [
   },
   {
     title: "2. 시크릿오퍼 받기",
-    desc: "오퍼는 오직 본인에게만 공개돼요.\n→ 100% 기밀, 맞춤 패키지",
+    desc: "선택한 지역의 클럽이 예산에 맞는 오퍼를 제안해요.\n오퍼는 오직 본인에게만 공개돼요.\n→ 100% 기밀, 맞춤 패키지",
     icon: <span className="text-[20px]">💌</span>,
     color: "bg-emerald-500/10",
   },
@@ -263,13 +263,22 @@ export function HomeContent({
 
   const [showMDWelcome, setShowMDWelcome] = useState(false);
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
-  const [showFlagCTA, setShowFlagCTA] = useState(false);
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
   // 가이드는 항상 닫힘 상태로 시작. "ⓘ 깃발 이용 방법" 버튼으로만 펼침.
   const [showGuide, setShowGuide] = useState(false);
+  const guideAutoOpenedRef = useRef(false);
   // 가이드 모드는 단일 (full만) — 시크릿오퍼는 PUZZLE_ONBOARDING_STEPS 2단계에 통합됨
   const [guideMode, setGuideMode] = useState<"full">("full");
+
+  // 첫 방문 시 가이드 자동 펼침 (StrictMode 이중 호출 가드)
+  useEffect(() => {
+    if (guideAutoOpenedRef.current) return;
+    guideAutoOpenedRef.current = true;
+    if (!localStorage.getItem(FLAG_CTA_SHOWN_KEY)) {
+      setShowGuide(true);
+    }
+  }, []);
 
   const instantEnabled = isInstantEnabled();
   const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
@@ -319,25 +328,6 @@ export function HomeContent({
     }
   }, [user, welcomeDismissed]);
 
-  useEffect(() => {
-    if (!isLoading && user?.role === "user") {
-      if (!localStorage.getItem(FLAG_CTA_SHOWN_KEY)) {
-        setShowFlagCTA(true);
-      }
-    }
-  }, [user, isLoading]);
-
-  const handleDismissFlagCTA = () => {
-    localStorage.setItem(FLAG_CTA_SHOWN_KEY, "1");
-    setShowFlagCTA(false);
-  };
-
-  const handleGoToFlagNew = () => {
-    trackEvent("puzzle_cta_click", { source: "home" });
-    localStorage.setItem(FLAG_CTA_SHOWN_KEY, "1");
-    setShowFlagCTA(false);
-    router.push("/flags/new");
-  };
 
   const handleDismissMDWelcome = async () => {
     setShowMDWelcome(false);
@@ -467,6 +457,7 @@ export function HomeContent({
   const dismissGuide = () => {
     setGuideMode("full");
     setShowGuide(false);
+    try { localStorage.setItem(FLAG_CTA_SHOWN_KEY, "1"); } catch {}
   };
 
   // Compact/Full 모드 공통 Sheet들 (MD 승인 축하 + 깃발 CTA)
@@ -531,26 +522,6 @@ export function HomeContent({
         </SheetContent>
       </Sheet>
 
-      {/* 깃발 CTA - 신규 유저 1회 표시 */}
-      <Sheet open={showFlagCTA} onOpenChange={(o) => { if (!o) handleDismissFlagCTA(); }}>
-        <SheetContent side="bottom" className="rounded-t-3xl bg-[#1C1C1E] border-t border-neutral-800 pb-10">
-          <div className="flex flex-col items-center text-center pt-2 pb-4 gap-4">
-            <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center text-3xl">⛳</div>
-            <div>
-              <SheetTitle className="text-amber-400 font-black text-2xl">클럽을 즐기는 가장 스마트한 방식</SheetTitle>
-              <SheetDescription className="text-neutral-400 text-sm mt-1">
-                날짜·지역만 찍으면 MD들이 알아서 붙어요
-              </SheetDescription>
-            </div>
-            <Button onClick={handleGoToFlagNew} className="w-full h-14 bg-white text-black font-black text-base rounded-2xl">
-              지금 깃발 꽂으러 가기 →
-            </Button>
-            <button onClick={handleDismissFlagCTA} className="text-sm text-neutral-500 py-1">
-              나중에 둘러볼게요
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
     </>
   );
 
@@ -564,7 +535,9 @@ export function HomeContent({
 
     // 탭별 Tip 콘텐츠 (풀 화면과 일관)
     const userPuzzleTipContent = (
-      <div className="text-[14.5px] text-white">예산 등록 → MD들이 시크릿오퍼로 경쟁!</div>
+      <div className="text-[14.5px] text-white">
+        오퍼 먼저 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
+      </div>
     );
     const mdPuzzleTipContent = (
       <>
@@ -634,24 +607,26 @@ export function HomeContent({
           {/* Tip 박스 + 이용방법 토글 */}
           {visibleCompactTip && (
             <section className="space-y-2 -mx-2 mb-3">
-              <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-xl px-3 pt-3 pb-2 pr-16">
-                <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm">Tip</span>
-                <div className="text-[12px] text-white font-bold leading-snug whitespace-pre-line break-keep [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
-                  {visibleCompactTip}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
-                  className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-200/90 hover:text-white transition-colors"
-                >
-                  <span className="text-[10.5px] leading-none">ⓘ</span>
-                  이용방법
-                </button>
-              </div>
-              {showGuide && (
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
+              {!showGuide && (
+                <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-xl px-3 pt-3 pb-2 pr-16">
+                  <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm">Tip</span>
+                  <div className="text-[12px] text-white font-bold leading-snug whitespace-pre-line break-keep [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
+                    {visibleCompactTip}
+                  </div>
                   <button
-                    onClick={() => { setGuideMode("full"); setShowGuide(false); }}
+                    type="button"
+                    onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
+                    className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-200/90 hover:text-white transition-colors"
+                  >
+                    <span className="text-[10.5px] leading-none">ⓘ</span>
+                    이용방법
+                  </button>
+                </div>
+              )}
+              {showGuide && (
+                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative">
+                  <button
+                    onClick={dismissGuide}
                     aria-label="가이드 닫기"
                     className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
                   >
@@ -662,6 +637,9 @@ export function HomeContent({
                       모든 서비스 무료
                     </span>
                   )}
+                  <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm leading-none z-10">
+                    ⓘ 이용방법
+                  </span>
                   <div className="flex flex-col gap-2">
                     {compactSteps.map((step, idx) => (
                       <div
@@ -774,7 +752,9 @@ export function HomeContent({
             </>
           );
           const userPuzzleTipContent = (
-            <div className="text-[14.5px] text-white">예산 등록 → MD들이 시크릿오퍼로 경쟁!</div>
+            <div className="text-[14.5px] text-white">
+              오퍼 먼저 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
+            </div>
           );
           const overriddenTabPromises = isMdOrAdmin
             ? {
@@ -809,7 +789,7 @@ export function HomeContent({
               )}
               {/* 이용방법 가이드 — "ⓘ 이용방법" 클릭 시 토글 */}
               {showGuide && (
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 overflow-hidden relative">
+                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative">
                   <button
                     onClick={dismissGuide}
                     aria-label="가이드 닫기"
@@ -822,6 +802,9 @@ export function HomeContent({
                       모든 서비스 무료
                     </span>
                   )}
+                  <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm leading-none z-10">
+                    ⓘ 이용방법
+                  </span>
                   <div className="flex flex-col gap-2">
                     {visibleSteps.map((step, idx) => (
                       <div
