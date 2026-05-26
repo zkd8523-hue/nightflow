@@ -55,17 +55,17 @@ export function GuestSignPreviewSheet({ open, onOpenChange }: Props) {
             </div>
             <div className="bg-black/40 rounded-xl p-3">
               <div className="flex gap-2 items-start">
-                <div className="w-[44%] max-w-[160px] flex-shrink-0">
+                <div className="w-[70%] max-w-[280px] flex-shrink-0">
                   <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-neutral-900">
                     <Image
                       src={PREVIEW_THUMBNAIL_URL}
                       alt="Club NightFlow"
                       fill
-                      sizes="160px"
+                      sizes="280px"
                       className="object-cover"
                     />
-                    <div className="absolute top-0 inset-x-0 bg-amber-500 px-2 py-1.5 z-10">
-                      <span className="text-black text-[12px] font-black tracking-tight">
+                    <div className="absolute top-0 inset-x-0 bg-amber-500 px-2.5 py-1.5 z-10">
+                      <span className="block text-black text-[12px] font-black tracking-tight leading-tight whitespace-nowrap">
                         🎁 11시 이전 프리드링크 1잔
                       </span>
                     </div>
