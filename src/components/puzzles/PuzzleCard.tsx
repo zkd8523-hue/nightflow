@@ -8,7 +8,7 @@ import type { Puzzle, GenderPref, AgePref, VibePref, MusicPref } from "@/types/d
 import { trackEvent } from "@/lib/analytics/events";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
-import { formatRelativeTime } from "@/lib/utils/format";
+import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
 import { usePuzzleFavoritesContext } from "@/components/providers";
 
 interface PuzzleCardProps {
@@ -285,9 +285,16 @@ export const PuzzleCard = memo(function PuzzleCard({
 
       {/* MD 제안 현황: MD는 컴팩트 메트릭(0/N offers), 일반 유저는 문장형 */}
       {isMd ? (
-        <p className="text-[12px] text-amber-400 font-bold tabular-nums">
-          {offerCount} {offerCount === 1 ? "offer" : "offers"}
-        </p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[12px] text-amber-400 font-bold tabular-nums">
+            {offerCount} {offerCount === 1 ? "offer" : "offers"}
+          </p>
+          {puzzle.area && (
+            <p className="text-[12px] text-neutral-400 font-medium">
+              {puzzle.area}
+            </p>
+          )}
+        </div>
       ) : offerCount > 0 && isRecruitingParty ? (
         // 모집 중 깃발은 위쪽에 별도로 표시. 인원 확정 깃발은 자세히 보기 버튼 옆으로 이동.
         <p className="text-[12px] text-amber-400 font-bold">

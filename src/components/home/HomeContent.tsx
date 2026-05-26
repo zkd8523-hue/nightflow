@@ -415,8 +415,13 @@ export function HomeContent({
   }, [auctions.active, blockedUserIds]);
 
   const visiblePuzzles = useMemo(() => {
-    if (blockedUserIds.size === 0) return puzzles;
-    return puzzles.filter((p) => !p.leader_id || !blockedUserIds.has(p.leader_id));
+    const filtered = blockedUserIds.size === 0
+      ? puzzles
+      : puzzles.filter((p) => !p.leader_id || !blockedUserIds.has(p.leader_id));
+    // 마감일(event_date) 가까운 순 — 오늘 가까운 것부터
+    return [...filtered].sort((a, b) =>
+      (a.event_date ?? "").localeCompare(b.event_date ?? "")
+    );
   }, [puzzles, blockedUserIds]);
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)

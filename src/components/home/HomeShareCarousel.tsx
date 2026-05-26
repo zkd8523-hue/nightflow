@@ -71,7 +71,7 @@ export function HomeShareCarousel({
     <div>
       <div
         data-no-pull-refresh
-        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x pb-1 -mx-2 px-2"
+        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x touch-pan-y pb-1 -mx-2 px-2"
         style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
       >
         {visible.map((share) => (
