@@ -23,7 +23,7 @@ import {
   matchesSeat,
   matchesDate as matchesDatePuzzle,
 } from "@/lib/utils/puzzleFilters";
-import { getPuzzleGroupDeadline } from "@/lib/utils/format";
+import { getPuzzleGroupDeadline, getDDayLabel } from "@/lib/utils/format";
 
 const NBI_CHIPS: { value: NbiFilter; label: string }[] = [
   { value: "all", label: "전체" },
@@ -71,18 +71,6 @@ function FilterRow({
       })}
     </div>
   );
-}
-
-function getDDay(eventDate: string): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const event = new Date(eventDate);
-  event.setHours(0, 0, 0, 0);
-  const diff = Math.round((event.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diff === 0) return "오늘";
-  if (diff === 1) return "내일";
-  if (diff > 0) return `D-${diff}`;
-  return `D+${Math.abs(diff)}`;
 }
 
 interface PuzzleListProps {
@@ -432,7 +420,7 @@ export function PuzzleList({
               const d = new Date(date + "T00:00:00");
               const days = ["일","월","화","수","목","금","토"];
               const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
-              const dday = getDDay(date);
+              const dday = getDDayLabel(date);
               return (
                 <div key={date} className="space-y-2">
                   <div className="flex items-center gap-2.5 px-1">
@@ -514,7 +502,7 @@ export function PuzzleList({
                             const d = new Date(date + "T00:00:00");
                             const days = ["일","월","화","수","목","금","토"];
                             const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
-                            const dday = getDDay(date);
+                            const dday = getDDayLabel(date);
                             return (
                               <div key={date} className="space-y-3">
                                 <div className="flex items-center gap-2 px-1">
@@ -557,7 +545,7 @@ export function PuzzleList({
               const days = ["일", "월", "화", "수", "목", "금", "토"];
               const dateLabel = `${m}월 ${day}일 (${days[d.getDay()]})`;
 
-              const dday = getDDay(date);
+              const dday = getDDayLabel(date);
               const deadline = getPuzzleGroupDeadline(items);
 
               return (

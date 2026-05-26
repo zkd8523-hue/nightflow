@@ -13,6 +13,7 @@ import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { matchesArea } from "@/lib/utils/area";
+import { getDDayLabel } from "@/lib/utils/format";
 import { SlidersHorizontal, ArrowLeft } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DateFilterCalendar } from "./filters/DateFilterCalendar";
@@ -58,16 +59,6 @@ function ShareFilterRow({ label, chips, value, onChange }: { label: string; chip
     </div>
   );
 }
-function getDDayShare(eventDate: string): string {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const event = new Date(eventDate); event.setHours(0,0,0,0);
-  const diff = Math.round((event.getTime() - today.getTime()) / (1000*60*60*24));
-  if (diff === 0) return "오늘";
-  if (diff === 1) return "내일";
-  if (diff > 0) return `D-${diff}`;
-  return `D+${Math.abs(diff)}`;
-}
-
 interface AuctionListProps {
   activeAuctions: Auction[];
   puzzles?: Puzzle[];
@@ -703,7 +694,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               .map(([date, items], idx) => {
                 const d = new Date(date + "T00:00:00");
                 const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${["일","월","화","수","목","금","토"][d.getDay()]})`;
-                const dday = getDDayShare(date);
+                const dday = getDDayLabel(date);
                 return (
                   <div key={date}>
                     <div className="flex items-center gap-2.5 px-1 py-1 mb-3">

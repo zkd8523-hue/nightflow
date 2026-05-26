@@ -98,6 +98,22 @@ export function getPuzzleGroupDeadline(puzzles: PuzzleLike[]): string | null {
   return "오후 5시에 오퍼가 마감됩니다";
 }
 
+/**
+ * 이벤트 날짜로부터 D-day 라벨 생성.
+ * "오늘" / "내일" / "D-N" / "D+N" 반환.
+ */
+export function getDDayLabel(eventDate: string): string {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const event = new Date(eventDate);
+  event.setHours(0, 0, 0, 0);
+  const diff = Math.round((event.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff === 0) return "오늘";
+  if (diff === 1) return "내일";
+  if (diff > 0) return `D-${diff}`;
+  return `D+${Math.abs(diff)}`;
+}
+
 /** 상대 시간 포맷 (당근 스타일): "방금" / "x분 전" / "x시간 전" / "x일 전" */
 export function formatRelativeTime(date: string): string {
   const now = dayjs();

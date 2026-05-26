@@ -9,18 +9,7 @@ import { ArrowLeft, Heart } from "lucide-react";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { PuzzleInterest } from "@/types/database";
-
-function getDDay(eventDate: string): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const event = new Date(eventDate);
-  event.setHours(0, 0, 0, 0);
-  const diff = Math.round((event.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diff === 0) return "오늘";
-  if (diff === 1) return "내일";
-  if (diff > 0) return `D-${diff}`;
-  return `D+${Math.abs(diff)}`;
-}
+import { getDDayLabel } from "@/lib/utils/format";
 
 function PuzzleCardList({
   items,
@@ -58,7 +47,7 @@ function PuzzleCardList({
           const day = d.getDate();
           const days = ["일", "월", "화", "수", "목", "금", "토"];
           const dateLabel = `${m}월 ${day}일 (${days[d.getDay()]})`;
-          const dday = getDDay(date);
+          const dday = getDDayLabel(date);
           return (
             <div key={date} className="space-y-4">
               <div className="flex items-center gap-2.5 px-1 py-1">
