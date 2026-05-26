@@ -76,7 +76,7 @@ const PUZZLE_ONBOARDING_STEPS = [
   },
   {
     title: "2. 시크릿오퍼 받기",
-    desc: "선택한 지역의 클럽이 예산에 맞는 오퍼를 제안해요.\n오퍼는 오직 본인에게만 공개돼요.\n→ 100% 기밀, 맞춤 패키지",
+    desc: "선택한 지역 클럽들이 오퍼를 보내요.\n→ 오퍼는 본인에게만 공개\n→ **100% 기밀, 맞춤 패키지!**",
     icon: <span className="text-[20px]">💌</span>,
     color: "bg-emerald-500/10",
   },
