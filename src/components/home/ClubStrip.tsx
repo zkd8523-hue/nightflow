@@ -46,7 +46,7 @@ export function ClubStrip({ clubs: initialClubs }: ClubStripProps) {
           전체 {clubs.length}개 →
         </Link>
       </div>
-      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-1 px-1 touch-pan-x">
+      <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-1 px-1 touch-pan-x touch-pan-y">
         {clubs.map((club) => (
           <Link
             key={club.id}

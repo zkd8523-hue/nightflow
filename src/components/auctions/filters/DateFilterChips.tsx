@@ -62,7 +62,7 @@ export function DateFilterChips({ eventDates, value, onChange }: DateFilterChips
   if (chips.length <= 1) return null; // "전체"만 있으면 숨김
 
   return (
-    <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1 touch-pan-x">
+    <div className="flex gap-2 overflow-x-auto scrollbar-hide px-1 pb-1 touch-pan-x touch-pan-y">
       {chips.map((chip) => {
         const active = chip.key === value;
         return (

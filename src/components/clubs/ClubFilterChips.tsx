@@ -5,6 +5,7 @@ import { FILTER_GROUPS, AREA_OPTIONS } from "@/lib/clubs/tags";
 export interface ClubFilters {
   areas: string[];
   genres: string[];
+  venueTypes: string[];
 }
 
 interface Props {
@@ -42,7 +43,9 @@ export function ClubFilterChips({ value, onChange }: Props) {
     arr.length === 1 && arr[0] === key ? [] : [key];
 
   const genreGroup = FILTER_GROUPS.find((g) => g.group === "genre");
-  const hasAnyFilter = value.areas.length > 0 || value.genres.length > 0;
+  const venueTypeGroup = FILTER_GROUPS.find((g) => g.group === "venue_type");
+  const hasAnyFilter =
+    value.areas.length > 0 || value.genres.length > 0 || value.venueTypes.length > 0;
 
   return (
     <div className="space-y-1.5">
@@ -59,6 +62,24 @@ export function ClubFilterChips({ value, onChange }: Props) {
         ))}
       </div>
 
+      {venueTypeGroup && (
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+          {venueTypeGroup.options.map((opt) => (
+            <Chip
+              key={opt.key}
+              label={opt.label}
+              active={value.venueTypes.includes(opt.key)}
+              onClick={() =>
+                onChange({
+                  ...value,
+                  venueTypes: selectSingle(value.venueTypes, opt.key),
+                })
+              }
+            />
+          ))}
+        </div>
+      )}
+
       {genreGroup && (
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
           {genreGroup.options.map((opt) => (
@@ -74,7 +95,7 @@ export function ClubFilterChips({ value, onChange }: Props) {
           {hasAnyFilter && (
             <button
               type="button"
-              onClick={() => onChange({ areas: [], genres: [] })}
+              onClick={() => onChange({ areas: [], genres: [], venueTypes: [] })}
               className="text-[10px] text-neutral-500 hover:text-white flex-shrink-0 ml-auto pl-2 underline underline-offset-2"
             >
               초기화

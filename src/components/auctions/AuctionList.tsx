@@ -45,7 +45,7 @@ const SHARE_SEAT_CHIPS: { value: SeatFilter; label: string }[] = [
 ];
 function ShareFilterRow({ label, chips, value, onChange }: { label: string; chips: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
-    <div data-no-pull-refresh className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x">
+    <div data-no-pull-refresh className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x touch-pan-y touch-pan-y">
       <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">{label}</span>
       {chips.map((chip) => {
         const active = chip.value === value;
@@ -255,7 +255,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             <ArrowLeft className="w-4 h-4 text-white" />
           </button>
         )}
-        <div data-no-pull-refresh className="overflow-x-auto scrollbar-hide flex-1 min-w-0 touch-pan-x">
+        <div data-no-pull-refresh className="overflow-x-auto scrollbar-hide flex-1 min-w-0 touch-pan-x touch-pan-y touch-pan-y">
           <div className="flex gap-2 w-max pr-4 items-end">
             <button
               onClick={() => setTab("puzzle")}
@@ -300,7 +300,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           {!hideAreaFilter && (
           <div
             data-no-pull-refresh
-            className="overflow-x-auto scrollbar-hide touch-pan-x flex-1 min-w-0 h-9 flex items-center"
+            className="overflow-x-auto scrollbar-hide touch-pan-x touch-pan-y flex-1 min-w-0 h-9 flex items-center"
             style={{
               maskImage: "linear-gradient(to right, black calc(100% - 24px), transparent 100%)",
               WebkitMaskImage: "linear-gradient(to right, black calc(100% - 24px), transparent 100%)",
@@ -577,7 +577,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               </div>
               {/* N비 필터 + 내 조각 */}
               <div className="flex items-center gap-1.5 pb-0.5">
-                <div data-no-pull-refresh className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x flex-1 min-w-0">
+                <div data-no-pull-refresh className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x touch-pan-y flex-1 min-w-0">
                   {SHARE_NBI_CHIPS.map(({ value, label }) => (
                     <button key={value}
                       onClick={() => setShareNbi(v => v === value ? "all" : value as NbiFilter)}

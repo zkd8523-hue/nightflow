@@ -51,7 +51,7 @@ function FilterRow({
   onChange: (v: string) => void;
 }) {
   return (
-    <div data-no-pull-refresh className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x">
+    <div data-no-pull-refresh className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x touch-pan-y">
       <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">{label}</span>
       {chips.map((chip) => {
         const active = chip.value === value;

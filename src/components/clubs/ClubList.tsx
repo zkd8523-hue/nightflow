@@ -59,6 +59,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, favCountMap =
   const [filters, setFilters] = useState<ClubFilters>(() => ({
     areas: parseList(searchParams.get("area")),
     genres: parseList(searchParams.get("genre")),
+    venueTypes: parseList(searchParams.get("venue_type")),
   }));
   const [view, setView] = useState<ViewMode>(
     () => (searchParams.get("view") === "list" ? "list" : "map")
@@ -69,6 +70,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, favCountMap =
     const params = new URLSearchParams();
     if (filters.areas.length) params.set("area", filters.areas.join(","));
     if (filters.genres.length) params.set("genre", filters.genres.join(","));
+    if (filters.venueTypes.length) params.set("venue_type", filters.venueTypes.join(","));
     if (view === "list") params.set("view", "list");
     const qs = params.toString();
     const url = qs ? `/clubs?${qs}` : "/clubs";
@@ -121,6 +123,10 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, favCountMap =
         return false;
       if (filters.genres.length) {
         const wanted = filters.genres.map((g) => makeTag("genre", g));
+        if (!wanted.some((t) => c.tags?.includes(t))) return false;
+      }
+      if (filters.venueTypes.length) {
+        const wanted = filters.venueTypes.map((v) => makeTag("venue_type", v));
         if (!wanted.some((t) => c.tags?.includes(t))) return false;
       }
       if (normalizedQuery) {
@@ -283,7 +289,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, favCountMap =
           </p>
           <button
             type="button"
-            onClick={() => setFilters({ areas: [], genres: [] })}
+            onClick={() => setFilters({ areas: [], genres: [], venueTypes: [] })}
             className="text-xs font-bold text-white bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-full"
           >
             필터 초기화
@@ -331,7 +337,7 @@ function AreaCarousel({
         </span>
       </h2>
       <div className="-mx-4 px-4 relative group">
-        <div ref={scrollRef} data-no-pull-refresh className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory touch-pan-x">
+        <div ref={scrollRef} data-no-pull-refresh className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory touch-pan-x touch-pan-y">
           {clubs.map((club) => (
             <ClubCard key={club.id} club={club} favCount={favCountMap[club.id] ?? 0} />
           ))}

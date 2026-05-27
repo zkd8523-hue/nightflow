@@ -96,7 +96,7 @@ export function HotdealList({ hotdeals }: Props) {
       </header>
 
       {/* 지역 필터 칩 */}
-      <div data-no-pull-refresh className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 touch-pan-x">
+      <div data-no-pull-refresh className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 touch-pan-x touch-pan-y">
         {AREA_FILTERS.map((a) => (
           <button
             key={a}

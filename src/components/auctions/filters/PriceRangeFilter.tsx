@@ -37,7 +37,7 @@ export function PriceRangeFilter({ value, onChange }: PriceRangeFilterProps) {
         />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 touch-pan-x">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 touch-pan-x touch-pan-y">
         {PRICE_PRESETS.map((preset) => {
           const active = preset.id === matchedPresetId;
           return (
