@@ -1,9 +1,7 @@
 export type ClubTagGroup =
+  | "venue_type"
   | "genre"
-  | "crowd"
-  | "space"
-  | "age"
-  | "entry";
+  | "smoking";
 
 export interface ClubTagOption {
   key: string;
@@ -17,10 +15,24 @@ export interface ClubTagGroupDef {
   label: string;
   emoji: string;
   isFilter: boolean;
+  /** true면 단일 선택 (같은 그룹의 다른 태그는 자동 제거) */
+  isSingle?: boolean;
   options: ClubTagOption[];
 }
 
 export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
+  {
+    group: "venue_type",
+    label: "타입",
+    emoji: "",
+    isFilter: true,
+    isSingle: true,
+    options: [
+      { key: "club", label: "클럽" },
+      { key: "lounge", label: "라운지" },
+      { key: "pub", label: "펍" },
+    ],
+  },
   {
     group: "genre",
     label: "음악",
@@ -36,49 +48,14 @@ export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
     ],
   },
   {
-    group: "crowd",
-    label: "고객층",
-    emoji: "🌏",
+    group: "smoking",
+    label: "흡연",
+    emoji: "🚬",
     isFilter: false,
+    isSingle: true,
     options: [
-      { key: "local", label: "내국인 위주", shortLabel: "내국인" },
-      { key: "foreign", label: "외국인 위주", shortLabel: "외국인" },
-      { key: "mixed", label: "믹스" },
-    ],
-  },
-  {
-    group: "space",
-    label: "공간",
-    emoji: "🏛",
-    isFilter: false,
-    options: [
-      { key: "vip", label: "VIP" },
-      { key: "standing", label: "스탠딩" },
-      { key: "lounge", label: "라운지" },
-      { key: "rooftop", label: "루프탑" },
-    ],
-  },
-  {
-    group: "age",
-    label: "연령대",
-    emoji: "👥",
-    isFilter: false,
-    options: [
-      { key: "early20s", label: "20대 초중반", shortLabel: "20초중" },
-      { key: "late20s", label: "20대 후반~30대", shortLabel: "20후반" },
-      { key: "mixed", label: "믹스" },
-    ],
-  },
-  {
-    group: "entry",
-    label: "입장료",
-    emoji: "💰",
-    isFilter: false,
-    options: [
-      { key: "free", label: "무료" },
-      { key: "low", label: "1~2만원", shortLabel: "1~2만" },
-      { key: "mid", label: "2~3만원", shortLabel: "2~3만" },
-      { key: "high", label: "3만원+", shortLabel: "3만+" },
+      { key: "allowed", label: "흡연" },
+      { key: "not_allowed", label: "금연" },
     ],
   },
 ];

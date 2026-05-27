@@ -12,13 +12,14 @@ import {
   Camera,
   Loader2,
   Clock,
-  Globe2,
-  Sofa,
-  Users,
   Ticket,
   Music,
+  Cigarette,
+  CigaretteOff,
+  Shirt,
   Heart,
   MessageCircle,
+  Disc3,
   type LucideIcon,
 } from "lucide-react";
 import { uploadImage } from "@/lib/utils/upload";
@@ -33,7 +34,9 @@ import { AuctionList } from "@/components/auctions/AuctionList";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { DrinkMenuViewer } from "./DrinkMenuViewer";
 import { ClubProfileEditor } from "./ClubProfileEditor";
-import { FEATURE_GROUPS, getTagsByGroup } from "@/lib/clubs/tags";
+import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
+import { useIsClubPartner } from "@/hooks/useIsClubPartner";
+import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import type { Club, Auction } from "@/types/database";
@@ -82,8 +85,14 @@ export function ClubDetailContent({
   const [clubEntryFeeDetail, setClubEntryFeeDetail] = useState<string>(club.entry_fee_detail ?? "");
   const [clubInstagram, setClubInstagram] = useState<string>(club.instagram ?? "");
   const [clubAliases, setClubAliases] = useState<string[]>(club.aliases ?? []);
+  const [clubDresscode, setClubDresscode] = useState<string>(club.dresscode ?? "");
   const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
   const isAdmin = user?.role === "admin";
+  const { isPartner: isPartnerOrAdmin } = useIsClubPartner(club.id);
+  // admin도 파트너 UI 노출 (테스트/일관성 — B 옵션)
+  const canPartnerEdit = isPartnerOrAdmin;
+  const [partnerEditorOpen, setPartnerEditorOpen] = useState(false);
+  const [reportSheetOpen, setReportSheetOpen] = useState(false);
 
   // 클럽 찜 카운트
   useEffect(() => {
@@ -272,6 +281,7 @@ export function ClubDetailContent({
               initialEntryFeeDetail={clubEntryFeeDetail}
               initialInstagram={clubInstagram}
               initialAliases={clubAliases}
+              initialDresscode={clubDresscode}
               onSaved={(next) => {
                 setClubTags(next.tags);
                 setClubName(next.name);
@@ -280,13 +290,15 @@ export function ClubDetailContent({
                 setClubEntryFeeDetail(next.entryFeeDetail);
                 setClubInstagram(next.instagram);
                 setClubAliases(next.aliases);
+                setClubDresscode(next.dresscode);
               }}
             />
           </div>
         )}
 
         <div className="p-4 space-y-2">
-          <div className="flex items-baseline gap-2 flex-wrap">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-baseline gap-2 flex-wrap flex-1 min-w-0">
             <h1 className="text-2xl font-black text-white tracking-tight">
               {clubName}
             </h1>
@@ -301,7 +313,32 @@ export function ClubDetailContent({
                 {favoriteCount}
               </span>
             )}
+            </div>
           </div>
+
+          {/* 파트너 MD용 편집 Sheet (트리거 없이 외부 제어) */}
+          {canPartnerEdit && (
+            <ClubProfileEditor
+              clubId={club.id}
+              initialTags={clubTags}
+              initialName={clubName}
+              initialAddress={clubAddress}
+              initialOperatingHours={clubOperatingHours}
+              initialEntryFeeDetail={clubEntryFeeDetail}
+              initialInstagram={clubInstagram}
+              initialAliases={clubAliases}
+              initialDresscode={clubDresscode}
+              mode="partner"
+              hideTrigger
+              externalOpen={partnerEditorOpen}
+              onExternalOpenChange={setPartnerEditorOpen}
+              onSaved={(next) => {
+                setClubTags(next.tags);
+                setClubOperatingHours(next.operatingHours);
+                setClubDresscode(next.dresscode);
+              }}
+            />
+          )}
 
           {/* 게스트 간판 — 이번 주 차지 MD 정보 */}
           {guestSignSlot && (
@@ -388,6 +425,13 @@ export function ClubDetailContent({
             </div>
           )}
 
+          {clubDresscode && (
+            <div className="flex items-center gap-1.5 text-[12px] text-neutral-400">
+              <Shirt className="w-3.5 h-3.5 flex-shrink-0" />
+              <span>{clubDresscode}</span>
+            </div>
+          )}
+
           {clubInstagram && (
             <a
               href={`https://instagram.com/${clubInstagram}`}
@@ -398,6 +442,20 @@ export function ClubDetailContent({
               <Instagram className="w-3.5 h-3.5" />
               @{clubInstagram}
             </a>
+          )}
+
+          {/* 단일 진입점 — 파트너 MD/admin은 편집 시트, 일반 유저는 신고 시트 */}
+          {user && (
+            <button
+              type="button"
+              onClick={() => {
+                if (canPartnerEdit) setPartnerEditorOpen(true);
+                else setReportSheetOpen(true);
+              }}
+              className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-amber-400 transition-colors mt-2 self-start underline decoration-dotted underline-offset-2"
+            >
+              잘못된 정보가 있다면? 수정하기
+            </button>
           )}
 
         </div>
@@ -412,6 +470,16 @@ export function ClubDetailContent({
           </div>
         )}
       </div>
+
+      {/* 정보 오류 신고 Sheet */}
+      {user && (
+        <ClubInfoReportSheet
+          clubId={club.id}
+          clubName={clubName}
+          open={reportSheetOpen}
+          onOpenChange={setReportSheetOpen}
+        />
+      )}
 
       {/* 경매 목록 */}
       <AuctionList
@@ -509,34 +577,51 @@ export function ClubDetailContent({
 }
 
 const FEATURE_ICONS: Record<string, LucideIcon> = {
-  crowd: Globe2,
-  space: Sofa,
-  age: Users,
-  entry: Ticket,
+  venue_type: Disc3,
   genre: Music,
+  smoking: Cigarette,
 };
 
-function FeatureIconRow({ tags }: { tags: string[] }) {
-  type Cell = { key: string; Icon: LucideIcon; value: string };
+function FeatureIconRow({
+  tags,
+  canPartnerEdit = false,
+  onEdit,
+}: {
+  tags: string[];
+  canPartnerEdit?: boolean;
+  onEdit?: () => void;
+}) {
+  type Cell = { key: string; Icon: LucideIcon; value: string | null; groupLabel: string };
   const cells: Cell[] = [];
 
-  for (const g of FEATURE_GROUPS) {
-    const groupTags = getTagsByGroup(tags, g.group);
-    if (groupTags.length === 0) continue;
-    const first = groupTags[0];
+  // 표시 순서: 타입(venue_type) → 음악(genre) → 흡연(smoking)
+  const ORDER: { key: ClubTagGroup; label: string }[] = [
+    { key: "venue_type", label: "타입" },
+    { key: "genre", label: "음악" },
+    { key: "smoking", label: "흡연" },
+  ];
+
+  for (const item of ORDER) {
+    const groupTags = getTagsByGroup(tags, item.key);
+    if (groupTags.length === 0 && !canPartnerEdit) continue;
+    // 다중 선택 그룹은 ' · ' 로 join, 단일은 첫 값만
+    const value =
+      groupTags.length === 0
+        ? null
+        : groupTags.map((t) => t.shortLabel ?? t.label).join(" · ");
+
+    // smoking은 값에 따라 아이콘 분기 (흡연=Cigarette, 금연=CigaretteOff)
+    let Icon = FEATURE_ICONS[item.key] ?? Music;
+    if (item.key === "smoking" && groupTags.length > 0) {
+      const isNotAllowed = groupTags.some((t) => t.key === "not_allowed");
+      Icon = isNotAllowed ? CigaretteOff : Cigarette;
+    }
+
     cells.push({
-      key: g.group,
-      Icon: FEATURE_ICONS[g.group] ?? Music,
-      value: first.shortLabel ?? first.label,
-    });
-  }
-  const genres = getTagsByGroup(tags, "genre");
-  if (genres.length > 0) {
-    const first = genres[0];
-    cells.push({
-      key: "genre",
-      Icon: Music,
-      value: first.shortLabel ?? first.label,
+      key: item.key,
+      Icon,
+      value,
+      groupLabel: item.label,
     });
   }
 
@@ -544,17 +629,45 @@ function FeatureIconRow({ tags }: { tags: string[] }) {
 
   return (
     <div className="border-t border-neutral-800 flex items-stretch divide-x divide-neutral-800">
-      {cells.map(({ key, Icon, value }) => (
-        <div
-          key={key}
-          className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-3 px-2"
-        >
-          <Icon className="w-5 h-5 text-white" strokeWidth={1.75} />
-          <span className="text-[11px] font-bold text-white truncate max-w-full">
-            {value}
-          </span>
-        </div>
-      ))}
+      {cells.map(({ key, Icon, value, groupLabel }) => {
+        const isEmpty = !value;
+        const content = (
+          <>
+            <Icon
+              className={`w-5 h-5 ${isEmpty ? "text-neutral-600" : "text-white"}`}
+              strokeWidth={1.75}
+            />
+            <span
+              className={`text-[11px] font-bold truncate max-w-full ${
+                isEmpty
+                  ? canPartnerEdit
+                    ? "text-amber-300/80"
+                    : "text-neutral-600"
+                  : "text-white"
+              }`}
+            >
+              {isEmpty ? (canPartnerEdit ? `+ ${groupLabel}` : groupLabel) : value}
+            </span>
+          </>
+        );
+        return isEmpty && canPartnerEdit && onEdit ? (
+          <button
+            key={key}
+            type="button"
+            onClick={onEdit}
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-3 px-2 hover:bg-neutral-900/50 transition-colors"
+          >
+            {content}
+          </button>
+        ) : (
+          <div
+            key={key}
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-3 px-2"
+          >
+            {content}
+          </div>
+        );
+      })}
     </div>
   );
 }

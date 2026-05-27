@@ -337,6 +337,9 @@ export interface Club {
   // Migration 223: 입장료 상세 텍스트 (예: "남 15,000 / 여 10,000")
   entry_fee_detail: string | null;
 
+  // Migration 246: 드레스코드 자유 텍스트 (예: "스니커즈 OK, 슬리퍼 X")
+  dresscode: string | null;
+
   // Migration 231: 검색 별칭 (예: ["에이스", "ace", "club ace"])
   aliases: string[];
 
@@ -932,4 +935,20 @@ export interface DailyHotdeal {
   // joined
   club?: Pick<Club, 'id' | 'name' | 'area' | 'thumbnail_url'>;
   md?: { id: string; display_name: string; instagram: string | null; profile_image: string | null };
+}
+
+// ============================================================================
+// 클럽 변경 이력 (Migration 245) — 파트너 MD/admin 의 clubs.tags / operating_hours 변경 자동 로깅
+// ============================================================================
+export interface ClubChangeLog {
+  id: string;
+  club_id: string;
+  changed_by: string | null;
+  field: 'tags' | 'operating_hours' | 'dresscode' | string;
+  old_value: unknown;
+  new_value: unknown;
+  created_at: string;
+  // joined
+  club?: Pick<Club, 'id' | 'name' | 'area'>;
+  changer?: { id: string; display_name: string | null; name: string | null };
 }
