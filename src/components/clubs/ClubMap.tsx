@@ -63,7 +63,7 @@ function loadKakaoSdk(): Promise<void> {
     }
     const s = document.createElement("script");
     s.id = "kakao-map-sdk";
-    s.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false`;
+    s.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${key}&autoload=false`;
     s.async = true;
     s.onload = onReady;
     s.onerror = () => reject(new Error("kakao SDK 네트워크 오류"));

@@ -108,8 +108,20 @@ export default async function ClubsIndexPage() {
     }
   }
 
+  const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_MAP_KEY;
+
   return (
     <div className="container mx-auto max-w-3xl px-4 pt-4 pb-8 mb-20">
+      {/* 카카오맵 SDK 사전 연결/프리로드 — 지도 모드 진입 전에 네트워크 준비 */}
+      <link rel="preconnect" href="https://dapi.kakao.com" crossOrigin="" />
+      <link rel="dns-prefetch" href="https://dapi.kakao.com" />
+      {kakaoKey && (
+        <link
+          rel="preload"
+          as="script"
+          href={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${kakaoKey}&autoload=false`}
+        />
+      )}
       <ClubsAdminFab />
       <Suspense fallback={null}>
       <ClubList
