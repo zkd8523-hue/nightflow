@@ -282,11 +282,15 @@ export function HomeContent({
 
   const instantEnabled = isInstantEnabled();
   const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
+  const shareCount = activeAuctions.filter(a => a.listing_type === 'share').length;
+  const isMdOrAdminUser = user?.role === "md" || user?.role === "admin";
+  // 조각 탭 노출 조건: MD/Admin은 항상, 일반/비로그인은 조각이 1개 이상일 때만
+  const showShareTab = isMdOrAdminUser || shareCount > 0;
   const normalizeTab = (t: string | null): "today" | "advance" | "puzzle" | "share" => {
     if (t === "today" && instantEnabled) return "today";
     if (t === "advance") return "advance";
     if (t === "puzzle") return "puzzle";
-    if (t === "share") return "share";
+    if (t === "share") return showShareTab ? "share" : "puzzle";
     return "puzzle";
   };
 
@@ -315,6 +319,14 @@ export function HomeContent({
     if (tab !== currentTab) setCurrentTab(tab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, currentTab]);
+
+  // 조각 탭이 숨겨진 상태에서 share 탭에 머물러 있으면 puzzle로 폴백
+  useEffect(() => {
+    if (currentTab === "share" && !showShareTab) {
+      handleTabChange("puzzle");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showShareTab, currentTab]);
 
   useEffect(() => {
     if (currentTab === "share") {
@@ -584,17 +596,19 @@ export function HomeContent({
             >
               <span className="text-[18px] leading-none">🚩</span> 깃발
             </button>
-            <button
-              type="button"
-              onClick={() => handleTabChange("share")}
-              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
-                currentTab === "share"
-                  ? "bg-amber-500 text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-              }`}
-            >
-              <span className="text-[16px] leading-none">🧩</span> 조각
-            </button>
+            {showShareTab && (
+              <button
+                type="button"
+                onClick={() => handleTabChange("share")}
+                className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
+                  currentTab === "share"
+                    ? "bg-amber-500 text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                }`}
+              >
+                <span className="text-[16px] leading-none">🧩</span> 조각
+              </button>
+            )}
             <Link
               href={detailHref(currentTab)}
               className="ml-auto text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-end gap-0.5 pb-0.5 self-end"

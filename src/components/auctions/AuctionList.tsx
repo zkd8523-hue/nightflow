@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useDeferredValue } from "react";
+import { useState, useMemo, useRef, useDeferredValue, useEffect } from "react";
 import Link from "next/link";
 import dayjs from "dayjs";
 import type { Auction, Puzzle } from "@/types/database";
@@ -201,6 +201,15 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
     onTabChange?.(t);
   };
 
+  // 조각 탭이 숨겨졌는데 share에 머물러 있으면 puzzle로 폴백
+  const canShowShareTab = userRole === "md" || userRole === "admin" || shareAuctions.length > 0;
+  useEffect(() => {
+    if (tab === "share" && !canShowShareTab) {
+      setTab("puzzle");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canShowShareTab, tab]);
+
   // 퍼즐: 지역 필터 적용 ("서울 어디든"은 강남/홍대/이태원/건대 어느 것 선택해도 매칭)
   const filteredPuzzles = useMemo(() => {
     const filtered = puzzles.filter((p) => matchesArea(p.area, selectedArea ?? null));
@@ -267,15 +276,17 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               <span className="text-[18px] leading-none">🚩</span> 깃발
             </button>
 
-            <button
-              onClick={() => setTab("share")}
-              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "share"
-                ? "bg-amber-500 text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                }`}
-            >
-              <span className="text-[16px] leading-none">🧩</span> 조각
-            </button>
+            {(userRole === "md" || userRole === "admin" || shareAuctions.length > 0) && (
+              <button
+                onClick={() => setTab("share")}
+                className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "share"
+                  ? "bg-amber-500 text-black"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  }`}
+              >
+                <span className="text-[16px] leading-none">🧩</span> 조각
+              </button>
+            )}
 
 {instantEnabled && (
               <button
