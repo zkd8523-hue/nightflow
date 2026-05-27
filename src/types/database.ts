@@ -178,7 +178,7 @@ export interface User {
   quiet_hours_enabled: boolean;
   quiet_hours_start: number | null;  // 0-23
   quiet_hours_end: number | null;    // 0-23
-  quiet_hours_scope: 'everyday' | 'weekends';
+  quiet_hours_scope: 'everyday' | 'weekends' | 'weekdays';
 
   // Referral (백그라운드 추적, 유저에게 비노출)
   referral_code: string | null;
