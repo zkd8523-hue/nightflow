@@ -200,12 +200,12 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, favCountMap =
       <div
         className={`${
           view === "map"
-            ? "fixed left-0 right-0 z-30 bg-[#1C1C1E]/85 backdrop-blur-md p-2.5 space-y-2 shadow-lg"
+            ? "fixed left-2 right-2 z-30 bg-[#1C1C1E]/90 backdrop-blur-md p-2.5 space-y-2 shadow-lg rounded-2xl"
             : "bg-[#1C1C1E] p-2.5 space-y-2 shadow-sm rounded-2xl"
         }`}
         style={
           view === "map"
-            ? { top: "calc(env(safe-area-inset-top, 0px))" }
+            ? { top: "calc(env(safe-area-inset-top, 0px) + 8px)" }
             : undefined
         }
       >
@@ -362,14 +362,8 @@ function AreaCarousel({
 
 function ClubCard({ club, favCount = 0 }: { club: ClubListItem; favCount?: number }) {
   const genres = getTagsByGroup(club.tags || [], "genre");
-  const featureGroups = FEATURE_GROUPS.filter(
-    (g) => g.group === "space" || g.group === "crowd"
-  );
+  // crowd/space 그룹 제거됨 (Migration 246). 추후 다른 feature 그룹 추가 시 여기서 합산.
   const featureTags: string[] = [];
-  for (const g of featureGroups) {
-    const tags = getTagsByGroup(club.tags || [], g.group);
-    if (tags.length) featureTags.push(tags[0].label);
-  }
 
   const metaLine = [
     ...genres.slice(0, 2).map((g) => `#${g.label}`),
