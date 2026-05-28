@@ -157,7 +157,7 @@ export function HotdealHomeSection() {
   return (
     <section className="space-y-2">
       <div className="flex items-baseline justify-between px-1">
-        <h2 className="text-[20px] font-black text-white flex items-center gap-1.5 tracking-tight">
+        <h2 className="text-[20px] font-black text-white flex items-center gap-0.5 tracking-tight">
           <span className="text-[20px]">🔥</span>
           Hot Deal Now
         </h2>

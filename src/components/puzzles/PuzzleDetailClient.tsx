@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -266,14 +266,25 @@ export function PuzzleDetailClient({
 
   const pendingOffers = offers.filter((o) => o.status === "pending");
 
-  // 비방장용: 브랜드→카테고리 변환된 공개 오퍼 (본인 오퍼 제외)
-  const publicOffers = useMemo(
-    () =>
-      pendingOffers
-        .filter((o) => o.md_id !== currentUserId)
-        .map((o) => ({ ...o, public: getPublicIncludes(o.includes) })),
-    [pendingOffers, currentUserId]
-  );
+  // 비방장용: 본인 오퍼 제외 + public 변환
+  // 같은 클럽은 1개만 클럽명 공개, 최대 3개. 나머지는 클럽명만 숨김.
+  const { publicOffers, hiddenOffers } = useMemo(() => {
+    const seenClubs = new Set<string>();
+    const publicResult: Array<PuzzleOffer & { public: ReturnType<typeof getPublicIncludes> }> = [];
+    const hiddenResult: Array<PuzzleOffer & { public: ReturnType<typeof getPublicIncludes> }> = [];
+    for (const o of pendingOffers) {
+      if (o.md_id === currentUserId) continue;
+      const enriched = { ...o, public: getPublicIncludes(o.includes) };
+      const clubKey = o.club?.id ?? `no-club-${o.id}`;
+      if (publicResult.length < 3 && !seenClubs.has(clubKey)) {
+        seenClubs.add(clubKey);
+        publicResult.push(enriched);
+      } else {
+        hiddenResult.push(enriched);
+      }
+    }
+    return { publicOffers: publicResult, hiddenOffers: hiddenResult };
+  }, [pendingOffers, currentUserId]);
 
   // 방장 자가 취소: 사유 입력 시트 오픈 (사전 마찰)
   const handleCancel = () => {
@@ -881,8 +892,8 @@ export function PuzzleDetailClient({
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-neutral-400" />
-                <h2 className="text-[14px] font-bold text-neutral-300">
+                <span className="text-[16px] leading-none">💌</span>
+                <h2 className="text-[16px] font-bold text-neutral-200">
                   시크릿오퍼
                   {pendingOffers.length > 0 && !isAccepted && (
                     <span className="ml-1.5 text-white">{pendingOffers.length}건</span>
@@ -920,17 +931,26 @@ export function PuzzleDetailClient({
 
             {/* 비방장: 테이블타입 공개 + 주류/extras blur 처리 */}
             {!isLeader && pendingOffers.length > 0 && !isAccepted && (
-              <div className="space-y-3">
-                <p className="text-[12px] text-neutral-500">
-                  방장만 모든 내용을 볼 수 있어요
+              <div className="space-y-3 -mt-2">
+                <p className="text-[13px] text-neutral-400 font-medium">
+                  클럽명 일부만 공개 ✨ 자세한 내용은 방장만
                 </p>
                 {publicOffers.map((offer, idx) => (
                   <div
                     key={offer.id}
                     className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
                   >
-                    <div className="flex items-center gap-2">
-                      <p className="text-[14px] font-bold text-white">Offer #{idx + 1}</p>
+                    <div>
+                      <p className="text-[14px] font-bold text-amber-300">Offer #{idx + 1}</p>
+                      {offer.club?.id && offer.club?.name ? (
+                        <Link
+                          href={`/clubs/${offer.club.id}`}
+                          className="inline-flex items-center gap-0.5 text-[18px] font-black text-white -mt-0.5 hover:text-neutral-300 active:opacity-70 transition-colors"
+                        >
+                          {offer.club.name}
+                          <ChevronRight className="w-4 h-4" />
+                        </Link>
+                      ) : null}
                     </div>
                     <div className="space-y-1.5 blur-sm select-none pointer-events-none">
                       {offer.public.liquorCategories.length > 0 && (
@@ -957,7 +977,48 @@ export function PuzzleDetailClient({
                           ))}
                         </div>
                       )}
-                      <p className="text-[12px] text-neutral-400 italic">"토요일 자리 확보 가능합니다"</p>
+                      {offer.comment && (
+                        <p className="text-[12px] text-neutral-400 italic">&quot;{offer.comment}&quot;</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {hiddenOffers.map((offer, i) => (
+                  <div
+                    key={offer.id}
+                    className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
+                  >
+                    <p className="text-[14px] font-bold text-amber-300">
+                      Offer #{publicOffers.length + i + 1}
+                    </p>
+                    <div className="space-y-1.5 blur-sm select-none pointer-events-none">
+                      {offer.public.liquorCategories.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {offer.public.liquorCategories.map((cat) => (
+                            <span
+                              key={cat}
+                              className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                            >
+                              🍾 {cat}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {offer.public.extras.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {offer.public.extras.map((ext) => (
+                            <span
+                              key={ext}
+                              className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800"
+                            >
+                              {ext}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {offer.comment && (
+                        <p className="text-[12px] text-neutral-400 italic">&quot;{offer.comment}&quot;</p>
+                      )}
                     </div>
                   </div>
                 ))}
