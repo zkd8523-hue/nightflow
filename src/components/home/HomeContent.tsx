@@ -283,7 +283,7 @@ export function HomeContent({
   const tipContainerRef = useRef<HTMLDivElement>(null);
   const tipSwipeRef = useRef<{ startX: number; startY: number; active: boolean; width: number } | null>(null);
   useEffect(() => {
-    const id = setInterval(() => setTipRotation((v) => (v + 1) % 2), 8000);
+    const id = setInterval(() => setTipRotation((v) => (v + 1) % 2), 5000);
     return () => clearInterval(id);
   }, [tipResetKey]);
 
@@ -759,14 +759,14 @@ export function HomeContent({
     );
     const mdPuzzleTipContent = (
       <>
-        <div className="text-[14.5px]">유저들의 예산이 기다리고 있어요 💰</div>
-        <div className="text-[15.5px]">시크릿오퍼로 매출을 올려봐요!</div>
+        <div>유저들의 예산이 기다리고 있어요 💰</div>
+        <div>시크릿오퍼로 매출을 올려봐요!</div>
       </>
     );
     const mdShareTipContent = (
       <>
-        <div className="text-[14.5px] text-white">이번주 조각을 미리 올려보세요!</div>
-        <div className="text-[15.5px] text-white">링크 하나로 공유, 인원관리도 간편해요!</div>
+        <div className="text-white">이번주 조각을 미리 올려보세요!</div>
+        <div className="text-white">링크 하나로 공유, 인원관리도 간편해요!</div>
       </>
     );
     const compactTipContent: Record<"puzzle" | "share", React.ReactNode> = {
@@ -961,6 +961,9 @@ export function HomeContent({
                           willChange: "transform",
                         }}
                       >
+                        <div className="w-full shrink-0 text-[13.5px] text-neutral-100 font-bold leading-snug whitespace-pre-line break-keep">
+                          {visibleCompactTip}
+                        </div>
                         <button
                           type="button"
                           onClick={() => setShowMatchedModal(true)}
@@ -968,9 +971,6 @@ export function HomeContent({
                         >
                           🎉 최근 매치 보기 →
                         </button>
-                        <div className="w-full shrink-0 text-[13.5px] text-neutral-100 font-bold leading-snug whitespace-pre-line break-keep">
-                          {visibleCompactTip}
-                        </div>
                       </div>
                     </div>
                   ) : (

@@ -29,8 +29,8 @@ export default async function PuzzleReviewPage({ params }: PageProps) {
   if (puzzle.leader_id !== authUser.id) {
     redirect(`/flags/${id}`);
   }
-  // 매치된 깃발만 리뷰 가능
-  if (puzzle.status !== "accepted") {
+  // 매치된 깃발만 리뷰 가능 + 수락된 오퍼 필수
+  if (puzzle.status !== "accepted" || !puzzle.accepted_offer_id) {
     redirect(`/flags/${id}`);
   }
 

@@ -140,7 +140,7 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
 
         {/* 별점 */}
         <div className="space-y-3 text-center">
-          <h2 className="text-[14px] font-bold text-neutral-300">밤은 어땠나요?</h2>
+          <h2 className="text-[14px] font-bold text-neutral-300">담당자는 어땠나요?</h2>
           <div className="flex items-center justify-center gap-1.5">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
@@ -216,8 +216,8 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
       </div>
 
       {/* 하단 고정 CTA */}
-      <div className="fixed bottom-0 inset-x-0 bg-[#0A0A0A]/95 backdrop-blur-sm border-t border-neutral-900">
-        <div className="max-w-lg mx-auto px-4 py-3" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 12px)" }}>
+      <div className="fixed inset-x-0 bg-[#0A0A0A]/95 backdrop-blur-sm border-t border-neutral-900 z-30" style={{ bottom: "calc(env(safe-area-inset-bottom) + 64px)" }}>
+        <div className="max-w-lg mx-auto px-4 py-3">
           <Button
             onClick={handleSubmit}
             disabled={rating === 0 || submitting}
