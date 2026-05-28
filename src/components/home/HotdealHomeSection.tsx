@@ -73,7 +73,6 @@ export function HotdealHomeSection() {
           dealsByClub.set(d.club_id, d);
         }
       }
-      const hotdealClubIds = [...dealsByClub.keys()];
 
       // 2) 클럽 + partners 카운트
       const { data: clubs, error: clubsErr } = await supabase
@@ -91,8 +90,12 @@ export function HotdealHomeSection() {
       };
       const rows = (clubs ?? []) as unknown as ClubRow[];
 
-      // 테스트/숨김 클럽 제외
+      // 테스트/숨김 클럽 제외 (프로덕션에서만 적용)
       const filteredAll = SHOW_TEST_CLUBS ? rows : rows.filter((c) => !HIDDEN_PATTERN.test(c.name));
+
+      // 핫딜 카운트는 노출 대상 클럽 기준으로 다시 계산 (테스트 클럽 핫딜은 프로덕션에서 무시)
+      const visibleClubIds = new Set(filteredAll.map((c) => c.id));
+      const hotdealClubIds = [...dealsByClub.keys()].filter((id) => visibleClubIds.has(id));
 
       // 핫딜 있는 클럽 1개 이상 → 그 클럽들만 노출
       // 핫딜 0개 → 폴백으로 전체 클럽 노출 (오늘 어디갈래? 와 동일 패턴)

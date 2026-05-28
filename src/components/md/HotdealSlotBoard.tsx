@@ -259,15 +259,15 @@ export function HotdealSlotBoard({
             <div className="flex items-start gap-2.5">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
               <div className="flex-1">
-                <p className="text-[12.5px] text-white font-bold leading-snug">홈 &quot;오늘 어디갈래?&quot;에 노출</p>
+                <p className="text-[12.5px] text-white font-bold leading-snug">&quot;오늘 어디갈래?&quot;에 상위 노출</p>
                 <p className="text-[11px] text-neutral-500 leading-snug">유저가 오늘 갈 클럽 고를 때 혜택 배지로 강조</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
               <div className="flex-1">
-                <p className="text-[12.5px] text-white font-bold leading-snug">한 주를 통째로 차지</p>
-                <p className="text-[11px] text-neutral-500 leading-snug">선착순 한 명의 MD가 — 그 주 홍보권을 가져가요</p>
+                <p className="text-[12.5px] text-white font-bold leading-snug">1클럽, 1파트너</p>
+                <p className="text-[11px] text-neutral-500 leading-snug">선착순 한 명의 파트너가 그 주 홍보권을 가져가요</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
@@ -376,7 +376,7 @@ export function HotdealSlotBoard({
                       ? "주 1슬롯"
                       : preOpen
                       ? "미오픈"
-                      : "차지"}
+                      : "슬롯 비었음"}
                   </button>
                 </div>
               );
