@@ -4,10 +4,11 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, X, CheckCircle2 } from "lucide-react";
+import { ChevronLeft, Loader2, X, CheckCircle2, Clock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
+import type { HotdealBenefitsByDow, HotdealDow, HotdealTimeSlot } from "@/types/database";
+import { normalizeDowSlots } from "@/lib/utils/hotdeal";
 
 interface ClubLite {
   id: string;
@@ -67,6 +68,50 @@ const DOW_PLACEHOLDERS: Record<HotdealDow, string> = {
 function isBeforeOpen(weekStartISO: string): boolean {
   const open = new Date(weekStartISO + "T18:00:00+09:00");
   return new Date() < open;
+}
+
+const DOW_OFFSET: Record<HotdealDow, number> = {
+  mon: 0, tue: 1, wed: 2, thu: 3, fri: 4, sat: 5, sun: 6,
+};
+
+function dowDateKst(weekStartISO: string, dow: HotdealDow): Date {
+  const [y, m, d] = weekStartISO.split("-").map(Number);
+  const base = new Date(Date.UTC(y, m - 1, d));
+  base.setUTCDate(base.getUTCDate() + DOW_OFFSET[dow]);
+  return base;
+}
+
+function formatMd(date: Date): string {
+  return `${date.getUTCMonth() + 1}/${date.getUTCDate()}`;
+}
+
+// 시간대 셀렉트 옵션 (저녁 시작 → 익일 새벽)
+const TIME_OPTIONS: string[] = [
+  "19:00","20:00","21:00","22:00","23:00",
+  "00:00","01:00","02:00","03:00","04:00","05:00","06:00","07:00","08:00",
+];
+const NEXT_DAY_HOURS = new Set(["00:00","01:00","02:00","03:00","04:00","05:00","06:00","07:00","08:00"]);
+function formatTimeLabel(hhmm: string): string {
+  return NEXT_DAY_HOURS.has(hhmm) ? `익일 ${hhmm}` : hhmm;
+}
+const MAX_SLOTS_PER_DOW = 3;
+
+// TIME_OPTIONS 순서 기준으로 "n칸 뒤" 시간을 반환 (없으면 마지막)
+function addHoursToHHMM(hhmm: string, hours: number): string {
+  const idx = TIME_OPTIONS.indexOf(hhmm);
+  if (idx < 0) return TIME_OPTIONS[TIME_OPTIONS.length - 1];
+  const target = Math.min(idx + hours, TIME_OPTIONS.length - 1);
+  return TIME_OPTIONS[target];
+}
+
+// 클럽 영업이 새벽까지 이어지므로 익일 07:00 이전은 전날을 "오늘"로 간주
+function currentBusinessDayKstISO(): string {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  if (kst.getUTCHours() < 7) {
+    kst.setUTCDate(kst.getUTCDate() - 1);
+  }
+  return kst.toISOString().slice(0, 10);
 }
 
 function formatWeekRange(weekStartISO: string): string {
@@ -402,28 +447,99 @@ function MyClaimedSection({
   onChanged: () => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const [drafts, setDrafts] = useState<Record<HotdealDow, string>>(() => {
-    const out: Record<HotdealDow, string> = {
-      mon: "", tue: "", wed: "", thu: "", fri: "", sat: "", sun: "",
-    };
+  const [drafts, setDrafts] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(() => {
+    const out = {} as Record<HotdealDow, HotdealTimeSlot[]>;
     for (const k of DOW_KEYS) {
-      out[k] = slot.benefits_by_dow[k] ?? "";
+      out[k] = normalizeDowSlots(slot.benefits_by_dow[k]);
     }
     return out;
   });
   const [savingDow, setSavingDow] = useState<HotdealDow | null>(null);
+  const todayISO = currentBusinessDayKstISO();
+
+  const savedSlotsFor = (dow: HotdealDow) => normalizeDowSlots(slot.benefits_by_dow[dow]);
+  const isDirty = (dow: HotdealDow) => {
+    const a = drafts[dow];
+    const b = savedSlotsFor(dow);
+    if (a.length !== b.length) return true;
+    return a.some((s, i) => (s.until ?? null) !== (b[i].until ?? null) || s.text !== b[i].text);
+  };
+
+  const updateSlot = (dow: HotdealDow, idx: number, patch: Partial<HotdealTimeSlot>) => {
+    setDrafts((prev) => {
+      const next = [...prev[dow]];
+      next[idx] = { ...next[idx], ...patch };
+      return { ...prev, [dow]: next };
+    });
+  };
+
+  const addSlot = (dow: HotdealDow) => {
+    setDrafts((prev) => {
+      const cur = prev[dow];
+      if (cur.length >= MAX_SLOTS_PER_DOW) return prev;
+      // 마지막 슬롯의 until이 null이면, 이전 슬롯의 until(또는 01:00) 기준으로 +2h를 부여
+      const last = cur[cur.length - 1];
+      let promotedUntil = last.until;
+      if (promotedUntil === null) {
+        const refIdx = cur.length - 2;
+        const refUntil = refIdx >= 0 ? cur[refIdx].until : null;
+        promotedUntil = addHoursToHHMM(refUntil ?? "01:00", 2);
+      }
+      const next = cur.map((s, i) =>
+        i === cur.length - 1 ? { ...s, until: promotedUntil } : s
+      );
+      next.push({ until: null, text: "" });
+      return { ...prev, [dow]: next };
+    });
+  };
+
+  const removeSlot = (dow: HotdealDow, idx: number) => {
+    setDrafts((prev) => {
+      const cur = prev[dow];
+      if (cur.length <= 1) return prev;
+      let next = cur.filter((_, i) => i !== idx);
+      // 마지막 슬롯의 until은 항상 null (영업종료)
+      if (next.length > 0) {
+        next = next.map((s, i) => (i === next.length - 1 ? { ...s, until: null } : s));
+      }
+      return { ...prev, [dow]: next };
+    });
+  };
+
+  const enableTimeSetup = (dow: HotdealDow) => {
+    setDrafts((prev) => {
+      const cur = prev[dow];
+      // 기본값: 첫 슬롯 01:00 + 영업종료 빈 슬롯 추가
+      if (cur.length === 0) {
+        return { ...prev, [dow]: [{ until: "01:00", text: "" }, { until: null, text: "" }] };
+      }
+      if (cur.length === 1 && cur[0].until === null) {
+        return {
+          ...prev,
+          [dow]: [{ ...cur[0], until: "01:00" }, { until: null, text: "" }],
+        };
+      }
+      return prev;
+    });
+  };
 
   const handleSaveDow = async (dow: HotdealDow) => {
     setSavingDow(dow);
-    const prev = slot.benefits_by_dow[dow] ?? "";
-    const next = drafts[dow] || "";
-    const isUpdate = prev.length > 0 && next.length > 0;
-    const isClear = prev.length > 0 && next.length === 0;
+    const prevSaved = savedSlotsFor(dow);
+    // 빈 텍스트 슬롯 제거 + 마지막 슬롯 until=null 강제
+    let cleaned = drafts[dow].filter((s) => s.text.trim().length > 0);
+    if (cleaned.length > 0) {
+      cleaned = cleaned.map((s, i, arr) =>
+        i === arr.length - 1 ? { ...s, until: null, text: s.text.trim() } : { ...s, text: s.text.trim() }
+      );
+    }
+    const isClear = prevSaved.length > 0 && cleaned.length === 0;
+    const isUpdate = prevSaved.length > 0 && cleaned.length > 0;
     try {
       const { data, error } = await supabase.rpc("update_hotdeal_benefit", {
         p_slot_id: slot.id,
         p_dow: dow,
-        p_text: drafts[dow] || null,
+        p_slots: cleaned.length > 0 ? cleaned : null,
       });
       if (error) throw error;
       const result = data as { success: boolean; error?: string };
@@ -464,51 +580,153 @@ function MyClaimedSection({
         </button>
       </div>
 
-      <div className="space-y-2 pt-2 border-t border-amber-500/20">
-        <p className="text-[11px] text-amber-300 font-bold">요일별 혜택 (안 적은 요일은 비어있음으로 노출)</p>
+      <div className="space-y-3 pt-2 border-t border-amber-500/20">
+        <div>
+          <p className="text-[11px] text-amber-300 font-bold">요일별 혜택 (안 적은 요일은 비어있음으로 노출)</p>
+          <p className="text-[10px] text-neutral-500">지난 요일은 수정할 수 없어요 · 시간대별로 다른 혜택 설정 가능 (최대 {MAX_SLOTS_PER_DOW}개)</p>
+        </div>
         {DOW_KEYS.map((dow) => {
           const saving = savingDow === dow;
-          const saved = slot.benefits_by_dow[dow] ?? "";
-          const value = drafts[dow];
-          const dirty = value !== saved;
+          const dirty = isDirty(dow);
+          const d = dowDateKst(slot.week_start, dow);
+          const dowISO = d.toISOString().slice(0, 10);
+          const isPast = dowISO < todayISO;
+          const slots = drafts[dow];
+          const hasTimeSetup = slots.length > 1 || (slots.length === 1 && slots[0].until !== null);
+          const hasAnyText = slots.some((s) => s.text.trim().length > 0);
+          const savedExists = savedSlotsFor(dow).length > 0;
+          // 항상 최소 1개 슬롯이 렌더링되도록 displaySlots 사용
+          const displaySlots: HotdealTimeSlot[] = slots.length > 0 ? slots : [{ until: null, text: "" }];
+          const onFirstTextChange = (v: string) => {
+            if (slots.length === 0) {
+              if (v) setDrafts((prev) => ({ ...prev, [dow]: [{ until: null, text: v }] }));
+            } else {
+              updateSlot(dow, 0, { text: v });
+            }
+          };
+
           return (
-            <div key={dow} className="flex items-start gap-2">
-              <div className="w-8 pt-2 flex justify-center">
-                <span className="text-[12px] font-bold text-white">{DOW_LABELS[dow]}</span>
+              <div
+                key={dow}
+                className={`flex items-start gap-2 ${isPast ? "opacity-50" : ""}`}
+              >
+                <div className="w-12 pt-1.5 flex flex-col items-center leading-tight shrink-0">
+                  <span className={`text-[12px] font-bold ${isPast ? "text-neutral-600" : "text-white"}`}>
+                    {DOW_LABELS[dow]}
+                  </span>
+                  <span className={`text-[10px] ${isPast ? "text-neutral-700" : "text-neutral-500"}`}>
+                    {formatMd(d)}
+                  </span>
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-1.5">
+                  {displaySlots.map((s, idx) => {
+                    const isLast = idx === displaySlots.length - 1;
+                    const canDelete = displaySlots.length > 1;
+                    const isFirst = idx === 0;
+                    return (
+                      <div key={idx} className="flex gap-1.5">
+                        {/* 시간 셀렉트 영역 (시간 설정 OFF면 자리만 비움 X, 자체를 안 그림) */}
+                        {hasTimeSetup && (
+                          isLast && s.until === null ? (
+                            <div className="shrink-0 w-[88px] px-2 py-1.5 rounded-lg text-[11px] text-neutral-400 bg-neutral-900 border border-neutral-800 inline-flex items-center justify-center">
+                              영업종료
+                            </div>
+                          ) : (
+                            <select
+                              value={s.until ?? ""}
+                              onChange={(e) => updateSlot(dow, idx, { until: e.target.value })}
+                              disabled={saving || isPast}
+                              className="shrink-0 w-[88px] px-2 py-1.5 rounded-lg text-[11px] text-white bg-neutral-900 border border-neutral-700 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed"
+                            >
+                              {TIME_OPTIONS.map((t) => (
+                                <option key={t} value={t}>
+                                  ~{formatTimeLabel(t)}
+                                </option>
+                              ))}
+                            </select>
+                          )
+                        )}
+
+                        <input
+                          type="text"
+                          value={s.text}
+                          onChange={(e) => (isFirst ? onFirstTextChange(e.target.value) : updateSlot(dow, idx, { text: e.target.value }))}
+                          placeholder={isFirst ? DOW_PLACEHOLDERS[dow] : "이 시간대 혜택"}
+                          disabled={saving || isPast}
+                          className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed"
+                        />
+
+                        {/* 우측 액션: 첫 줄 = 저장 / 그 외 = 삭제(또는 자리) */}
+                        {isFirst ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSaveDow(dow)}
+                            disabled={saving || !dirty || isPast || (!hasAnyText && !savedExists)}
+                            className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-black inline-flex items-center gap-1 transition-colors ${
+                              dirty
+                                ? "bg-amber-500 text-black hover:bg-amber-400 disabled:opacity-50"
+                                : savedExists
+                                ? "bg-emerald-500/20 text-emerald-400"
+                                : "bg-neutral-800 text-neutral-600"
+                            }`}
+                          >
+                            {saving ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : savedExists && !dirty ? (
+                              <CheckCircle2 className="w-3 h-3" />
+                            ) : null}
+                            {dirty
+                              ? savedExists
+                                ? hasAnyText
+                                  ? "수정"
+                                  : "비움"
+                                : "저장"
+                              : savedExists
+                              ? "저장됨"
+                              : "비움"}
+                          </button>
+                        ) : canDelete && !isPast ? (
+                          <button
+                            type="button"
+                            onClick={() => removeSlot(dow, idx)}
+                            disabled={saving}
+                            title="이 시간대 삭제"
+                            className="shrink-0 px-2 py-1.5 rounded-lg text-neutral-500 hover:text-red-400 disabled:opacity-50"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <div className="shrink-0 w-[34px]" />
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* 액션 행: 시간 설정 OFF면 🕐 토글, ON이면 + 시간대 추가 (지난 요일은 숨김) */}
+                  {!isPast && !hasTimeSetup && (
+                    <button
+                      type="button"
+                      onClick={() => enableTimeSetup(dow)}
+                      disabled={saving}
+                      className="w-full px-2 py-1.5 rounded-lg text-[11px] text-amber-300 bg-neutral-900 border border-dashed border-neutral-700 hover:border-amber-500/50 inline-flex items-center justify-center gap-1 disabled:opacity-50"
+                    >
+                      <Clock className="w-3 h-3" /> 시간대별 혜택 설정
+                    </button>
+                  )}
+                  {!isPast && hasTimeSetup && slots.length < MAX_SLOTS_PER_DOW && (
+                    <button
+                      type="button"
+                      onClick={() => addSlot(dow)}
+                      disabled={saving}
+                      className="w-full px-2 py-1.5 rounded-lg text-[11px] text-amber-300 bg-neutral-900 border border-dashed border-neutral-700 hover:border-amber-500/50 inline-flex items-center justify-center gap-1 disabled:opacity-50"
+                    >
+                      <Plus className="w-3 h-3" /> 시간대 추가
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex-1 flex gap-2">
-                <input
-                  type="text"
-                  value={value}
-                  onChange={(e) =>
-                    setDrafts((prev) => ({ ...prev, [dow]: e.target.value }))
-                  }
-                  placeholder={DOW_PLACEHOLDERS[dow]}
-                  disabled={saving}
-                  className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleSaveDow(dow)}
-                  disabled={saving || !dirty}
-                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-black inline-flex items-center gap-1 transition-colors ${
-                    dirty
-                      ? "bg-amber-500 text-black hover:bg-amber-400 disabled:opacity-50"
-                      : saved
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : "bg-neutral-800 text-neutral-600"
-                  }`}
-                >
-                  {saving ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : saved && !dirty ? (
-                    <CheckCircle2 className="w-3 h-3" />
-                  ) : null}
-                  {dirty ? (saved ? "수정" : "저장") : saved ? "저장됨" : "비움"}
-                </button>
-              </div>
-            </div>
-          );
+            );
         })}
       </div>
     </div>

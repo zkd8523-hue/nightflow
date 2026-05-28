@@ -6,6 +6,8 @@ import { ChevronRight, Sparkles, ArrowUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { GuestSignPreviewSheet } from "./GuestSignPreviewSheet";
+import { normalizeDowSlots } from "@/lib/utils/hotdeal";
+import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
 const DOW_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
 
@@ -49,14 +51,16 @@ export function GuestSignMdCta() {
         .limit(1);
       if (cancelled) return;
       const mySlot = data?.[0] as
-        | { benefits_by_dow: Record<string, string> | null; expires_at: string }
+        | { benefits_by_dow: HotdealBenefitsByDow | null; expires_at: string }
         | undefined;
       if (!mySlot) {
         setState("none");
         return;
       }
-      const benefits = mySlot.benefits_by_dow ?? {};
-      const filled = DOW_KEYS.filter((k) => (benefits[k] ?? "").trim().length > 0).length;
+      const benefits = (mySlot.benefits_by_dow ?? {}) as HotdealBenefitsByDow;
+      const filled = DOW_KEYS.filter(
+        (k) => normalizeDowSlots(benefits[k as HotdealDow]).length > 0
+      ).length;
       setState(filled >= DOW_KEYS.length ? "complete" : "partial");
     })();
     return () => {

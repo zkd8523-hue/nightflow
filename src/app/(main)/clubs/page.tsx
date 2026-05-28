@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { ClubList } from "@/components/clubs/ClubList";
 import { ClubsAdminFab } from "@/components/clubs/ClubsAdminFab";
+import { normalizeDowSlots, summarizeSlots } from "@/lib/utils/hotdeal";
+import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
 export const revalidate = 60;
 
@@ -87,10 +89,11 @@ export default async function ClubsIndexPage() {
   for (const h of hotdealRes.data ?? []) {
     if (!h.club_id) continue;
     if (new Date(h.expires_at) <= new Date()) continue;
-    const byDow = (h.benefits_by_dow ?? {}) as Record<string, string | undefined>;
-    const todayText = byDow[todayDowKey];
-    if (todayText && todayText.trim().length > 0) {
-      hotdealMap[h.club_id] = todayText;
+    const byDow = (h.benefits_by_dow ?? {}) as HotdealBenefitsByDow;
+    const todaySlots = normalizeDowSlots(byDow[todayDowKey as HotdealDow]);
+    const summary = summarizeSlots(todaySlots);
+    if (summary) {
+      hotdealMap[h.club_id] = summary;
     }
   }
 

@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ClubDetailContent } from "@/components/clubs/ClubDetailContent";
 import { getClubAliases } from "@/lib/clubs/aliases";
+import { normalizeDowSlots, summarizeSlots } from "@/lib/utils/hotdeal";
+import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 import type { Metadata } from "next";
 
 export const revalidate = 10;
@@ -122,8 +124,9 @@ export default async function ClubDetailPage({ params }: PageProps) {
       .eq("id", slotRow.md_id)
       .maybeSingle();
     if (mdRow) {
-      const byDow = (slotRow.benefits_by_dow ?? {}) as Record<string, string | undefined>;
-      const todayText = byDow[todayDowKey]?.trim() || null;
+      const byDow = (slotRow.benefits_by_dow ?? {}) as HotdealBenefitsByDow;
+      const todaySlots = normalizeDowSlots(byDow[todayDowKey as HotdealDow]);
+      const todayText = summarizeSlots(todaySlots) || null;
       guestSignSlot = {
         md: {
           id: mdRow.id,

@@ -895,7 +895,19 @@ export interface HotdealTemplate {
 // HOT DEAL 슬롯 (Migration 234, week 단위로 Migration 236에서 재정의)
 // ============================================================================
 export type HotdealDow = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
-export type HotdealBenefitsByDow = Partial<Record<HotdealDow, string>>;
+
+/** 시간대별 혜택 슬롯. until=null이면 영업종료까지 */
+export interface HotdealTimeSlot {
+  /** "HH:00" 또는 null (영업종료) */
+  until: string | null;
+  text: string;
+}
+
+/**
+ * 요일별 혜택. 신규 저장은 HotdealTimeSlot[].
+ * 레거시 string은 클라이언트 normalize 단계에서 [{until:null, text}]로 변환.
+ */
+export type HotdealBenefitsByDow = Partial<Record<HotdealDow, HotdealTimeSlot[] | string>>;
 
 export interface WeeklyHotdealSlot {
   id: string;

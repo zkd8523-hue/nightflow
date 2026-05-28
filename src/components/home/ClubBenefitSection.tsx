@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeDowSlots, summarizeSlots } from "@/lib/utils/hotdeal";
+import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
 interface ClubBenefitItem {
   club_id: string;
@@ -72,14 +74,17 @@ export function ClubBenefitSection() {
       const slotMap = new Map<string, string>();
       for (const s of (slotsRes.data ?? []) as Array<{
         club_id: string;
-        benefits_by_dow: Record<string, string> | null;
+        benefits_by_dow: HotdealBenefitsByDow | null;
         expires_at: string;
       }>) {
         if (!s.club_id) continue;
         if (new Date(s.expires_at) <= new Date()) continue;
-        const text = s.benefits_by_dow?.[todayDowKey];
-        if (text && text.trim().length > 0) {
-          slotMap.set(s.club_id, text.trim());
+        const todaySlots = normalizeDowSlots(
+          (s.benefits_by_dow ?? {})[todayDowKey as HotdealDow]
+        );
+        const summary = summarizeSlots(todaySlots);
+        if (summary) {
+          slotMap.set(s.club_id, summary);
         }
       }
 
