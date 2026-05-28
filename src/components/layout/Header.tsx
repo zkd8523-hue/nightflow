@@ -230,7 +230,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
       className="border-b border-neutral-800 bg-neutral-950/50 backdrop-blur-sm sticky top-0 z-50"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="container mx-auto max-w-lg px-4 h-[68px] flex items-center justify-between">
+      <div className="container mx-auto max-w-lg px-4 h-[52px] flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
           <Link
             href="/"
@@ -240,7 +240,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
             NightFlow
           </Link>
           <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
-            같은 돈으로 더 크게 놀자!
+            접속하는 순간, VIP
           </p>
         </div>
 

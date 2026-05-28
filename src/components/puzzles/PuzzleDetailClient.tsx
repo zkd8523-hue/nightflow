@@ -1104,12 +1104,20 @@ export function PuzzleDetailClient({
 
           {/* 비방장·비멤버·비MD: 자기 깃발 등록 유도 CTA */}
           {!isLeader && !isMember && !isMd && (
-            <Link
-              href={currentUserId ? "/flags/new" : "/login?redirect=/flags/new"}
-              className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
-            >
-              나도 시크릿오퍼 받기 →
-            </Link>
+            <div className="text-center space-y-1">
+              <p className="text-[14.5px] text-neutral-200 font-semibold">
+                최고의 밤을 선택하세요.
+              </p>
+              <Link
+                href={currentUserId ? "/flags/new" : "/login?redirect=/flags/new"}
+                className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
+              >
+                ⛳ 나도 깃발꽂기
+              </Link>
+              <p className="text-[10px] text-neutral-500">
+                100% 무료 · 부담 없이
+              </p>
+            </div>
           )}
 
           {/* 참여자 목록: 파티원 모집 중일 때만 */}

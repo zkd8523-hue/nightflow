@@ -945,7 +945,7 @@ export function HomeContent({
           <div className="text-center -mt-20 pb-3 relative z-10">
             <p className="text-[14.5px] text-neutral-200 font-semibold mb-1">
               {currentTab === "puzzle"
-                ? "어떤 오퍼가 올지 궁금하다면?"
+                ? "최고의 밤을 선택하세요."
                 : "3초만에 로그인하고 입찰하기"}
             </p>
             <Link href={currentTab === "puzzle" ? (user ? "/flags/new" : "/login?redirect=/flags/new") : "/login"}>
@@ -956,12 +956,12 @@ export function HomeContent({
                     : "h-10 px-8 bg-white text-black font-bold text-sm rounded-full hover:bg-neutral-200"
                 }
               >
-                {currentTab === "puzzle" ? "⛳ 나도 깃발꽂기" : "로그인"}
+                {currentTab === "puzzle" ? "⛳ 깃발꽂기" : "로그인"}
               </Button>
             </Link>
             {currentTab === "puzzle" && (
               <p className="text-[10px] text-neutral-600 mt-2">
-                평생 무료 · 1분 가입
+                100% 무료 · 부담 없이
               </p>
             )}
           </div>

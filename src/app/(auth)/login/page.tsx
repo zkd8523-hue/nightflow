@@ -309,9 +309,9 @@ function LoginContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
       <Card className="w-full max-w-md p-8 space-y-5">
-        <div className="text-center space-y-3">
-          <h1 
-            className="text-3xl font-bold cursor-pointer select-none"
+        <div className="text-center space-y-2">
+          <h1
+            className="text-2xl font-bold cursor-pointer select-none whitespace-nowrap"
             onClick={() => {
               setTitleClicks((prev) => {
                 const next = prev + 1;
@@ -323,23 +323,10 @@ function LoginContent() {
               });
             }}
           >
-            NightFlow
+            NightFlow : 접속하는 순간, VIP
           </h1>
-          <div className="space-y-1">
-            <p className="text-[15px] text-neutral-300 font-medium whitespace-nowrap">
-              MD들이 줄서서 제안하는 클럽 예약 플랫폼
-            </p>
-            <div className="flex items-center justify-center gap-3 text-[11px] text-neutral-500 whitespace-nowrap">
-              <span>⛳ 깃발</span>
-              <span>·</span>
-              <span>🧩 조각</span>
-              {isInstantEnabled() && (
-                <>
-                  <span>·</span>
-                  <span>🔥 오늘특가</span>
-                </>
-              )}
-            </div>
+          <div className="flex items-center justify-center text-[11px] text-white font-bold whitespace-nowrap">
+            모든 서비스 무료
           </div>
         </div>
 
