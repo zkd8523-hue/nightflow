@@ -792,6 +792,35 @@ export function PuzzleDetailClient({
                         </span>
                       </div>
                     )}
+                    {/* 리뷰 작성 안내 — 이벤트 다음날부터 노출 (방장 본인만) */}
+                    {isLeader && (() => {
+                      const eventDayEnd = new Date(puzzle.event_date + "T00:00:00");
+                      eventDayEnd.setDate(eventDayEnd.getDate() + 1);
+                      const showReviewPrompt = new Date() >= eventDayEnd;
+                      if (!showReviewPrompt) return null;
+                      return (
+                        <div className="pt-3 border-t border-amber-500/20 space-y-2">
+                          <p className="text-[13px] font-bold text-white text-center">
+                            어제 {(acceptedOffer.club as { name?: string } | null)?.name || "클럽"} 어떠셨어요?
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toast.success("기록되었어요")}
+                              className="flex-1 h-11 rounded-2xl bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 font-bold text-[13px] transition"
+                            >
+                              가지 않았어요
+                            </button>
+                            <Link
+                              href={`/flags/${puzzle.id}/review`}
+                              className="flex-1 inline-flex items-center justify-center h-11 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[13.5px] transition-all"
+                            >
+                              ⭐ 리뷰 쓰기
+                            </Link>
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </>
                 );
               })()}

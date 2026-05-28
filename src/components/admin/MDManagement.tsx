@@ -211,22 +211,45 @@ function MDApplicationCard({
                         </div>
                     </div>
 
-                    {isSimple && (
+                    {isSimple ? (
                         <div className="flex items-center gap-4 shrink-0">
                             <div className="text-right">
                                 <p className="text-[10px] text-neutral-500 font-bold uppercase mb-0.5">Application Date</p>
                                 <p className="text-xs text-neutral-400 font-medium">{dayjs(user.created_at).format("YYYY-MM-DD")}</p>
                             </div>
                             {user.md_status === "approved" && (
-                                <Link
-                                    href={`/admin/mds/${user.id}`}
-                                    className="flex items-center gap-1.5 h-10 px-4 rounded-xl bg-neutral-900 border border-neutral-800 text-xs font-bold text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors"
-                                >
-                                    상세 / 제재
-                                    <ArrowRight className="w-3.5 h-3.5" />
-                                </Link>
+                                <>
+                                    {(user as { md_unique_slug?: string | null }).md_unique_slug && (
+                                        <Link
+                                            href={`/md/${(user as { md_unique_slug: string }).md_unique_slug}`}
+                                            target="_blank"
+                                            className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-300 hover:bg-amber-500/20 hover:text-amber-200 transition-colors"
+                                        >
+                                            공개 프로필
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                        </Link>
+                                    )}
+                                    <Link
+                                        href={`/admin/mds/${user.id}`}
+                                        className="flex items-center gap-1.5 h-10 px-4 rounded-xl bg-neutral-900 border border-neutral-800 text-xs font-bold text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors"
+                                    >
+                                        상세 / 제재
+                                        <ArrowRight className="w-3.5 h-3.5" />
+                                    </Link>
+                                </>
                             )}
                         </div>
+                    ) : (
+                        user.md_status === "approved" && (user as { md_unique_slug?: string | null }).md_unique_slug && (
+                            <Link
+                                href={`/md/${(user as { md_unique_slug: string }).md_unique_slug}`}
+                                target="_blank"
+                                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-300 hover:bg-amber-500/20 hover:text-amber-200 transition-colors shrink-0 self-start"
+                            >
+                                공개 프로필
+                                <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                        )
                     )}
                 </div>
 

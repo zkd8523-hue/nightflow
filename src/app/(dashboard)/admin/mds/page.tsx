@@ -47,10 +47,33 @@ export default async function AdminMDPage() {
         .eq("md_status", "approved")
         .returns<MDHealthScore[]>();
 
+    // md_unique_slug 별도 매핑 (md_health_scores view에 없는 컬럼)
+    let healthScoresWithSlug: MDHealthScore[] = (healthScores ?? []) as MDHealthScore[];
+    try {
+        const mdIds = (healthScores ?? []).map((h) => h.md_id).filter(Boolean);
+        if (mdIds.length > 0) {
+            const { data: slugs } = await supabase
+                .from("users")
+                .select("id, md_unique_slug")
+                .in("id", mdIds);
+            const slugMap = Object.fromEntries(
+                ((slugs ?? []) as Array<{ id: string; md_unique_slug: string | null }>)
+                    .filter((s) => s.md_unique_slug)
+                    .map((s) => [s.id, s.md_unique_slug as string])
+            );
+            healthScoresWithSlug = (healthScores ?? []).map((h) => ({
+                ...h,
+                md_unique_slug: slugMap[h.md_id] ?? null,
+            })) as unknown as MDHealthScore[];
+        }
+    } catch (err) {
+        console.error("[admin/mds] slug map failed", err);
+    }
+
     return (
         <AdminMDPageClient
             initialUsers={allApplications}
-            healthScores={healthScores || undefined}
+            healthScores={healthScoresWithSlug}
         />
     );
 }

@@ -17,6 +17,7 @@ import { isInstantEnabled } from "@/lib/features";
 import { trackEvent, trackShareEvent } from "@/lib/analytics/events";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 import { getPublicIncludes } from "@/lib/utils/liquor";
+import { toast } from "sonner";
 import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
@@ -311,6 +312,53 @@ export function HomeContent({
   };
   const [recentMatchedPuzzle, setRecentMatchedPuzzle] = useState<RecentMatchedPuzzle | null>(null);
   const [showMatchedModal, setShowMatchedModal] = useState(false);
+
+  // 매치된 본인 깃발 중 이벤트 다음날 + 리뷰 미작성 → 첫 접속 시 토스트
+  const reviewToastFiredRef = useRef(false);
+  useEffect(() => {
+    if (reviewToastFiredRef.current) return;
+    if (!user?.id) return;
+    reviewToastFiredRef.current = true;
+    (async () => {
+      const today = new Date();
+      const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+      const cutoff = yesterday.toISOString().slice(0, 10); // event_date <= 어제
+      const { data: matched } = await supabase
+        .from("puzzles")
+        .select("id, event_date, accepted_offer_id")
+        .eq("leader_id", user.id)
+        .eq("status", "accepted")
+        .lte("event_date", cutoff)
+        .order("event_date", { ascending: false })
+        .limit(5);
+      const candidates = (matched ?? []) as Array<{ id: string; event_date: string; accepted_offer_id: string | null }>;
+      if (candidates.length === 0) return;
+
+      const ids = candidates.map((p) => p.id);
+      const { data: existingReviews } = await supabase
+        .from("puzzle_reviews")
+        .select("puzzle_id")
+        .eq("leader_id", user.id)
+        .in("puzzle_id", ids);
+      const reviewed = new Set(((existingReviews ?? []) as Array<{ puzzle_id: string }>).map((r) => r.puzzle_id));
+
+      const unreviewed = candidates.find((p) => !reviewed.has(p.id));
+      if (!unreviewed) return;
+
+      const sessionKey = `nightflow_review_toast_shown_${unreviewed.id}`;
+      try { if (sessionStorage.getItem(sessionKey)) return; } catch {}
+      try { sessionStorage.setItem(sessionKey, "1"); } catch {}
+
+      toast("어제 다녀온 클럽 어떠셨어요? ⭐", {
+        description: "한마디 남기면 다음 손님에게 큰 도움이 돼요.",
+        duration: 8000,
+        action: {
+          label: "리뷰 쓰기",
+          onClick: () => router.push(`/flags/${unreviewed.id}/review`),
+        },
+      });
+    })();
+  }, [user?.id, supabase, router]);
   useEffect(() => {
     let cancelled = false;
     (async () => {

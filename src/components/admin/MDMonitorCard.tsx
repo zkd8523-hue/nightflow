@@ -117,7 +117,7 @@ export function MDMonitorCard({ md, clubs = [], defaultClubId = null }: Props) {
               {md.name?.[0] || "?"}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-bold text-white">{md.name} MD</span>
                 {md.md_status === "suspended" && (
                   <span className="text-[10px] font-black text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full">
@@ -128,6 +128,16 @@ export function MDMonitorCard({ md, clubs = [], defaultClubId = null }: Props) {
                   <span className="text-[10px] font-black text-neutral-400 bg-neutral-700/40 px-2 py-0.5 rounded-full">
                     REVOKED
                   </span>
+                )}
+                {(md as unknown as { md_unique_slug?: string | null }).md_unique_slug && (
+                  <Link
+                    href={`/md/${(md as unknown as { md_unique_slug: string }).md_unique_slug}`}
+                    target="_blank"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-[10px] font-black text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded-full hover:bg-amber-500/20 transition-colors"
+                  >
+                    공개 프로필 ↗
+                  </Link>
                 )}
               </div>
               <div className="text-sm text-neutral-400">
