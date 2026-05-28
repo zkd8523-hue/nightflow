@@ -200,7 +200,7 @@ export const PuzzleCard = memo(function PuzzleCard({
       {/* 상단: 메모(방 제목) + 지역 + 거래 등급 배지 (찜 자리) */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-1 flex-1 min-w-0">
-          <div className="text-[15px] font-bold leading-snug break-keep tracking-tight line-clamp-2 text-neutral-100">
+          <div className="text-[16px] font-bold leading-snug break-keep tracking-tight line-clamp-2 text-neutral-100">
             {puzzle.notes || `${puzzle.area}에서 모여요`}
           </div>
           {puzzle.leader?.display_name && (

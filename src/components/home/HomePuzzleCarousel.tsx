@@ -76,7 +76,7 @@ export function HomePuzzleCarousel({
             >
               <div className="flex items-center gap-1.5 px-1">
                 <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
-                <h3 className="text-[16px] font-black text-white tracking-tight">
+                <h3 className="text-[18px] font-black text-white tracking-tight">
                   {formatEventDateLabel(puzzle.event_date)}
                 </h3>
                 {showDday && (

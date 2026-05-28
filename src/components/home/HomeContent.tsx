@@ -702,7 +702,7 @@ export function HomeContent({
           {visibleCompactTip && (
             <section className="space-y-2 -mt-1 mb-5">
               {!showGuide && (
-                <div className={`relative bg-neutral-900 border border-amber-400/60 rounded-xl px-3 pt-1.5 pb-1 ${showTopGuide ? "" : "pr-16"}`}>
+                <div className={`relative bg-neutral-900 border-amber-400/50 rounded-xl px-3 pt-1.5 pb-1 [border-width:0.5px] ${showTopGuide ? "" : "pr-16"}`}>
                   <span className="absolute -top-2 left-3 text-[9px] font-black text-black bg-amber-400 px-1.5 py-0.5 rounded-full leading-none shadow-sm">Tip</span>
                   <div className="text-[12px] text-neutral-100 font-semibold leading-snug whitespace-pre-line break-keep">
                     {visibleCompactTip}

@@ -307,7 +307,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {guideSlot}
 
-      <div className="flex items-center gap-2 mb-2 h-9">
+      <div className="flex items-center gap-2 mb-5 h-9">
           {!hideAreaFilter && (
           <div
             data-no-pull-refresh
