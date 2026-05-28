@@ -89,9 +89,9 @@ function LoginContent() {
 
         if (cancelled) return;
         if (profile?.phone) {
-          router.push("/"); // 가입 완료자
+          router.push(redirectPath); // 가입 완료자 → redirect 파라미터 우선
         } else {
-          router.push("/signup"); // 가입 미완료자 (고아 계정)
+          router.push(`/signup${redirectPath !== "/" ? `?next=${encodeURIComponent(redirectPath)}` : ""}`); // 가입 미완료자
         }
       }
     };

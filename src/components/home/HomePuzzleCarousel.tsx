@@ -99,16 +99,16 @@ export function HomePuzzleCarousel({
         })}
         {showFlagCTA && (
           <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
-            <div className="text-center w-full">
-              <p className="text-[14.5px] text-neutral-200 font-semibold mb-1">
+            <div className="text-center w-full mt-8">
+              <p className="text-[14.5px] text-neutral-200 font-semibold mb-0.5">
                 최고의 밤을 선택하세요.
               </p>
               <Link href={newFlagHref}>
-                <Button className="h-12 px-8 bg-amber-500 text-black font-black text-[15px] rounded-full hover:bg-amber-400">
+                <Button className="h-12 pl-7 pr-9 bg-amber-500 text-black font-black text-[15px] rounded-full hover:bg-amber-400">
                   ⛳ 깃발꽂기
                 </Button>
               </Link>
-              <p className="text-[10px] text-neutral-300 mt-0.5">100% 무료 · 부담 없이</p>
+              <p className="text-[10px] text-neutral-300 mt-0.5">모든 서비스 무료</p>
             </div>
           </div>
         )}

@@ -1115,7 +1115,7 @@ export function PuzzleDetailClient({
                 ⛳ 나도 깃발꽂기
               </Link>
               <p className="text-[10px] text-neutral-500">
-                100% 무료 · 부담 없이
+                모든 서비스 무료
               </p>
             </div>
           )}

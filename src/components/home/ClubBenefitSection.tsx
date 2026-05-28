@@ -130,8 +130,11 @@ export function ClubBenefitSection() {
         hotdealOccupied = new Set(sortedByPartner.slice(0, 3).map((c) => c.id));
       }
 
-      // Hot Deal Now 점유 클럽 제외
-      const remaining = filtered.filter((c) => !hotdealOccupied.has(c.id));
+      // Hot Deal Now 점유 클럽 제외 (단, 비프로덕션에선 테스트 클럽은 점유 제외에서 면제 → 두 섹션 모두 노출)
+      const remaining = filtered.filter((c) => {
+        if (SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(c.name)) return true;
+        return !hotdealOccupied.has(c.id);
+      });
 
       // 혜택 있는 클럽 최우선 → 혜택 없는 클럽은 셔플 (Fisher-Yates)
       const withBenefit = remaining.filter((c) => slotMap.has(c.id));
@@ -143,7 +146,14 @@ export function ClubBenefitSection() {
         const j = Math.floor(Math.random() * (i + 1));
         [withoutBenefit[i], withoutBenefit[j]] = [withoutBenefit[j], withoutBenefit[i]];
       }
-      const ordered = [...withBenefit, ...withoutBenefit];
+      let ordered = [...withBenefit, ...withoutBenefit];
+
+      // 비프로덕션: 테스트 클럽(운영자/...)을 최상위로 끌어올림 (Hot Deal Now와 동일 패턴)
+      if (SHOW_TEST_CLUBS) {
+        const testClubs = ordered.filter((c) => HIDDEN_PATTERN.test(c.name));
+        const others = ordered.filter((c) => !HIDDEN_PATTERN.test(c.name));
+        ordered = [...testClubs, ...others];
+      }
       const topClubs = ordered.slice(0, MAX_CARDS);
       if (!cancelled) {
         setItems(
