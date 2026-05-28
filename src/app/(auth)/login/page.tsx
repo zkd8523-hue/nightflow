@@ -311,7 +311,7 @@ function LoginContent() {
       <Card className="w-full max-w-md p-8 space-y-5">
         <div className="text-center space-y-2">
           <h1
-            className="text-2xl font-bold cursor-pointer select-none whitespace-nowrap"
+            className="text-xl font-bold cursor-pointer select-none whitespace-nowrap"
             onClick={() => {
               setTitleClicks((prev) => {
                 const next = prev + 1;
