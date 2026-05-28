@@ -53,6 +53,7 @@ export const BRAND_ALIASES: Record<string, string> = {
   "dom": "돔 페리뇽",
   "moet": "모엣 샹동",
   "moët": "모엣 샹동",
+  "모엣": "모엣 샹동",
   "johnny walker": "조니워커 블루라벨",
   "johnnie walker": "조니워커 블루라벨",
   "macallan": "맥캘란 12년",

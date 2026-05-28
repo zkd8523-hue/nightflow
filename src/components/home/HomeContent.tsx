@@ -16,6 +16,7 @@ import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
 import { trackEvent, trackShareEvent } from "@/lib/analytics/events";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
+import { getPublicIncludes } from "@/lib/utils/liquor";
 import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
 import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
@@ -273,6 +274,54 @@ export function HomeContent({
   // 첫 방문 시 캐러셀 위 인라인 가이드 (Tip 박스 자리). 닫으면 영구 숨김.
   const [showTopGuide, setShowTopGuide] = useState(false);
 
+  // Tip 박스 콘텐츠 로테이션 (기본 메시지 ↔ 최근 매치 보기)
+  const [tipRotation, setTipRotation] = useState(0);
+  const [tipResetKey, setTipResetKey] = useState(0);
+  const [tipDragOffset, setTipDragOffset] = useState(0);
+  const [tipIsDragging, setTipIsDragging] = useState(false);
+  const tipContainerRef = useRef<HTMLDivElement>(null);
+  const tipSwipeRef = useRef<{ startX: number; startY: number; active: boolean; width: number } | null>(null);
+  useEffect(() => {
+    const id = setInterval(() => setTipRotation((v) => (v + 1) % 2), 8000);
+    return () => clearInterval(id);
+  }, [tipResetKey]);
+
+  // Tip 박스에 data-no-pull-refresh 부착. PullToRefresh 컴포넌트가 자동으로 pull 동작 차단.
+  const tipBoxRef = useRef<HTMLDivElement>(null);
+  const changeTipRotation = (next: number | ((v: number) => number)) => {
+    setTipRotation(next);
+    setTipResetKey((k) => k + 1);
+  };
+
+  // 최근 매치된 깃발 1건 (모달용) — RPC로 안전 필드만 조회
+  type RecentMatchedPuzzle = {
+    id: string;
+    area: string;
+    event_date: string;
+    target_count: number;
+    total_budget: number | null;
+    budget_per_person: number;
+    notes: string | null;
+    matched_at: string;
+    club_name: string | null;
+    offer_includes: string[];
+    offer_comment: string | null;
+    md_display_name: string | null;
+    md_instagram: string | null;
+  };
+  const [recentMatchedPuzzle, setRecentMatchedPuzzle] = useState<RecentMatchedPuzzle | null>(null);
+  const [showMatchedModal, setShowMatchedModal] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.rpc("get_recent_matched_puzzle");
+      if (error) return;
+      const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      if (!cancelled && row) setRecentMatchedPuzzle(row as RecentMatchedPuzzle);
+    })();
+    return () => { cancelled = true; };
+  }, [supabase]);
+
   // 첫 방문 시 캐러셀 위 가이드 자동 표시 (StrictMode 이중 호출 가드)
   useEffect(() => {
     if (guideAutoOpenedRef.current) return;
@@ -482,6 +531,108 @@ export function HomeContent({
   // Compact/Full 모드 공통 Sheet들 (MD 승인 축하 + 깃발 CTA)
   const renderHomeSheets = () => (
     <>
+      {/* 최근 매치 깃발 모달 */}
+      <Sheet open={showMatchedModal} onOpenChange={setShowMatchedModal}>
+        <SheetContent
+          side="bottom"
+          className="h-auto bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pt-5 pb-8 max-h-[80vh] overflow-y-auto"
+        >
+          <SheetHeader className="text-left mb-1">
+            <SheetTitle className="text-white text-[18px] font-black flex items-center gap-2">
+              🎉 최근 매치 깃발
+            </SheetTitle>
+          </SheetHeader>
+          {recentMatchedPuzzle && (
+            <div className="space-y-3">
+              <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-2 relative">
+                <span className="absolute top-3 right-3 text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full leading-none">
+                  성사됨
+                </span>
+                <div>
+                  <p className="text-[14px] font-medium text-neutral-400 break-keep">
+                    {recentMatchedPuzzle.notes || `${recentMatchedPuzzle.area}에서 모여요`}
+                  </p>
+                  <p className="text-[11px] text-neutral-500 font-medium mt-0.5">
+                    {recentMatchedPuzzle.area} · {recentMatchedPuzzle.target_count}명
+                  </p>
+                </div>
+                <div className="text-[20px] font-black text-green-400 tracking-tight">
+                  예산 {(recentMatchedPuzzle.total_budget ?? recentMatchedPuzzle.budget_per_person * recentMatchedPuzzle.target_count).toLocaleString()}원
+                </div>
+                {recentMatchedPuzzle.club_name && (
+                  <div className="pt-2 border-t border-neutral-800 space-y-1.5">
+                    <div className="flex items-baseline gap-2 flex-wrap">
+                      <p className="text-[17px] font-black text-amber-300 tracking-tight">{recentMatchedPuzzle.club_name}</p>
+                      {recentMatchedPuzzle.md_instagram && (
+                        <p className="text-[11.5px] text-neutral-400 font-medium">
+                          @{recentMatchedPuzzle.md_instagram}
+                        </p>
+                      )}
+                    </div>
+                    {(() => {
+                      const pub = getPublicIncludes(recentMatchedPuzzle.offer_includes);
+                      // 매치 카드는 원본 이름 그대로 노출 (모엣 샹동 5병 등). 분류만 활용.
+                      const liquorItems: string[] = [];
+                      const extraItems: string[] = [];
+                      for (const item of recentMatchedPuzzle.offer_includes) {
+                        if (pub.liquorCategories.some((c) => item.includes(c.split(" ")[0])) || /\d+병/.test(item)) {
+                          liquorItems.push(item);
+                        } else {
+                          extraItems.push(item);
+                        }
+                      }
+                      return (
+                        <div className="space-y-1">
+                          {liquorItems.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {liquorItems.map((item) => (
+                                <span
+                                  key={item}
+                                  className="text-[11.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                                >
+                                  🍾 {item}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {extraItems.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {extraItems.map((ext) => (
+                                <span
+                                  key={ext}
+                                  className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-400 border border-neutral-800"
+                                >
+                                  {ext}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {recentMatchedPuzzle.offer_comment && (
+                            <p className="text-[12px] text-neutral-300 italic leading-snug pt-1">
+                              &ldquo;{recentMatchedPuzzle.offer_comment}&rdquo;
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+              <div className="text-center space-y-1">
+                <Link
+                  href={user ? "/flags/new" : "/login?redirect=/flags/new"}
+                  onClick={() => setShowMatchedModal(false)}
+                  className="flex items-center justify-center w-full h-12 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
+                >
+                  ⛳ 나도 깃발꽂기
+                </Link>
+                <p className="text-[10.5px] text-neutral-500">모든 서비스 무료</p>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
       {/* MD 파트너 승인 축하 Sheet (최초 1회) */}
       <Sheet open={showMDWelcome} onOpenChange={(open) => { if (!open) handleDismissMDWelcome(); }}>
         <SheetContent
@@ -554,7 +705,7 @@ export function HomeContent({
 
     // 탭별 Tip 콘텐츠 (풀 화면과 일관)
     const userPuzzleTipContent = (
-      <div className="text-[14.5px] text-white">
+      <div className="text-white">
         오퍼 먼저 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
       </div>
     );
@@ -702,11 +853,102 @@ export function HomeContent({
           {visibleCompactTip && (
             <section className="space-y-2 -mt-1 mb-5">
               {!showGuide && (
-                <div className={`relative bg-neutral-900 border-amber-400/50 rounded-xl px-3 pt-1.5 pb-1 [border-width:0.5px] ${showTopGuide ? "" : "pr-16"}`}>
+                <div
+                  ref={tipBoxRef}
+                  data-no-pull-refresh
+                  className={`relative bg-neutral-900 border-amber-400/50 rounded-xl px-3 [border-width:0.5px] ${showTopGuide ? "" : "pr-16"} ${recentMatchedPuzzle ? "pt-3 pb-4" : "pt-1.5 pb-1"}`}
+                >
                   <span className="absolute -top-2 left-3 text-[9px] font-black text-black bg-amber-400 px-1.5 py-0.5 rounded-full leading-none shadow-sm">Tip</span>
-                  <div className="text-[12px] text-neutral-100 font-semibold leading-snug whitespace-pre-line break-keep">
-                    {visibleCompactTip}
-                  </div>
+                  {recentMatchedPuzzle ? (
+                    <div
+                      ref={tipContainerRef}
+                      className="overflow-hidden select-none"
+                      style={{ touchAction: "pan-y" }}
+                      onPointerDown={(e) => {
+                        const width = tipContainerRef.current?.offsetWidth ?? 0;
+                        tipSwipeRef.current = { startX: e.clientX, startY: e.clientY, active: true, width };
+                        setTipIsDragging(true);
+                        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                      }}
+                      onPointerMove={(e) => {
+                        const ref = tipSwipeRef.current;
+                        if (!ref?.active) return;
+                        const dx = e.clientX - ref.startX;
+                        const dy = e.clientY - ref.startY;
+                        if (Math.abs(dx) <= Math.abs(dy)) return;
+                        // 가로 드래그 확정 → 페이지 스크롤 방지
+                        e.preventDefault();
+                        const widthPct = ref.width > 0 ? (dx / ref.width) * 100 : 0;
+                        // tipRotation=0이면 왼쪽 드래그(-100)만 허용, 오른쪽은 0까지
+                        // tipRotation=1이면 오른쪽 드래그(+100)만 허용, 왼쪽은 0까지
+                        const minOffset = tipRotation === 0 ? -100 : 0;
+                        const maxOffset = tipRotation === 0 ? 0 : 100;
+                        const offsetPct = Math.max(minOffset, Math.min(maxOffset, widthPct));
+                        setTipDragOffset(offsetPct);
+                      }}
+                      onPointerUp={(e) => {
+                        const ref = tipSwipeRef.current;
+                        if (!ref?.active) { setTipIsDragging(false); return; }
+                        const dx = e.clientX - ref.startX;
+                        const dy = e.clientY - ref.startY;
+                        tipSwipeRef.current = null;
+                        setTipIsDragging(false);
+                        setTipDragOffset(0);
+                        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+                          if (dx < 0 && tipRotation === 0) changeTipRotation(1);
+                          else if (dx > 0 && tipRotation === 1) changeTipRotation(0);
+                        }
+                      }}
+                      onPointerCancel={() => {
+                        tipSwipeRef.current = null;
+                        setTipIsDragging(false);
+                        setTipDragOffset(0);
+                      }}
+                    >
+                      <div
+                        className="flex w-full"
+                        style={{
+                          transform: `translateX(calc(-${tipRotation * 100}% + ${tipDragOffset}%))`,
+                          transition: tipIsDragging ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+                          willChange: "transform",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setShowMatchedModal(true)}
+                          className="w-full shrink-0 text-[13.5px] text-neutral-100 font-bold leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
+                        >
+                          🎉 최근 매치 보기 →
+                        </button>
+                        <div className="w-full shrink-0 text-[13.5px] text-neutral-100 font-bold leading-snug whitespace-pre-line break-keep">
+                          {visibleCompactTip}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[13.5px] text-neutral-100 font-bold leading-snug whitespace-pre-line break-keep">
+                      {visibleCompactTip}
+                    </div>
+                  )}
+                  {recentMatchedPuzzle && (
+                    <div className="absolute left-0 right-0 bottom-0.5 flex items-center justify-center gap-1 pointer-events-none">
+                      {[0, 1].map((i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          aria-label={`슬라이드 ${i + 1}`}
+                          onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
+                          className="pointer-events-auto p-1 cursor-pointer"
+                        >
+                          <span
+                            className={`block w-1.5 h-1.5 rounded-full transition-colors ${
+                              tipRotation === i ? "bg-amber-400" : "bg-neutral-600"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {!showTopGuide && (
                     <button
                       type="button"
@@ -961,7 +1203,7 @@ export function HomeContent({
             </Link>
             {currentTab === "puzzle" && (
               <p className="text-[10px] text-neutral-600 mt-2">
-                100% 무료 · 부담 없이
+                모든 서비스 무료
               </p>
             )}
           </div>
