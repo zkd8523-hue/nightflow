@@ -71,19 +71,22 @@ export function getOpeningStatus(
   const text = operatingHours.trim();
   if (!text) return "unknown";
 
-  // 1. 항상 영업
-  if (/연중무휴|24시간|24h|매일/i.test(text)) {
-    return "open";
-  }
-
-  // 2. 명시적 휴무 (단독 텍스트만)
+  // 1. 명시적 휴무 (단독 텍스트만)
   if (/^(휴무|휴업|영업\s*종료|closed)$/i.test(text)) {
     return "closed";
   }
 
+  // 2. "매일/연중무휴/24시간"은 요일 무관 플래그로만 취급.
+  //    시간 범위가 함께 있으면 시간 범위를 우선 적용 (예: "매일 22:00-05:00").
+  //    시간 범위가 없을 때만 항상 영업으로 간주.
+  const isEveryday = /연중무휴|매일/i.test(text);
+
   // 3. 요일 매칭
-  const days = extractDays(text);
+  const days = isEveryday ? null : extractDays(text);
   const timeRange = extractTimeRange(text);
+
+  // "매일 ..." + 시간 없음 → 항상 영업
+  if (isEveryday && !timeRange) return "open";
 
   // 둘 다 못 뽑으면 unknown
   if (!days && !timeRange) return "unknown";
