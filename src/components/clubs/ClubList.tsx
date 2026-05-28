@@ -412,8 +412,8 @@ function ClubCard({ club, favCount = 0 }: { club: ClubListItem; favCount?: numbe
             {club.name}
           </p>
           {favCount > 0 && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] text-neutral-400 font-bold shrink-0">
-              <Heart className="w-3 h-3 text-red-500 fill-red-500" />
+            <span className="inline-flex items-center gap-0.5 text-[11px] text-red-500 font-bold shrink-0">
+              <Heart className="w-3 h-3 fill-red-500 stroke-none" />
               {favCount}
             </span>
           )}

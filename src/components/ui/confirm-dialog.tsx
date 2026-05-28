@@ -9,7 +9,7 @@ import {
     SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, HelpCircle } from "lucide-react";
+import { AlertCircle, HelpCircle, Sparkles, type LucideIcon } from "lucide-react";
 
 interface ConfirmDialogProps {
     isOpen: boolean;
@@ -20,7 +20,7 @@ interface ConfirmDialogProps {
     description?: string;
     confirmText?: string;
     cancelText?: string;
-    variant?: "default" | "danger";
+    variant?: "default" | "danger" | "celebrate";
 }
 
 export function ConfirmDialog({
@@ -35,6 +35,7 @@ export function ConfirmDialog({
     variant = "default",
 }: ConfirmDialogProps) {
     const isDanger = variant === "danger";
+    const isCelebrate = variant === "celebrate";
     const handledByButton = useRef(false);
 
     // ESC 키, 외부 클릭 등으로 Sheet가 닫힐 때도 onCancel 호출 보장
@@ -52,9 +53,11 @@ export function ConfirmDialog({
             <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-12 outline-none">
                 <SheetHeader className="text-left space-y-3">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDanger ? "bg-red-500/10" : "bg-blue-500/10"}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDanger ? "bg-red-500/10" : isCelebrate ? "bg-amber-500/10" : "bg-blue-500/10"}`}>
                             {isDanger ? (
                                 <AlertCircle className="w-5 h-5 text-red-500" />
+                            ) : isCelebrate ? (
+                                <Sparkles className="w-5 h-5 text-amber-400" />
                             ) : (
                                 <HelpCircle className="w-5 h-5 text-blue-500" />
                             )}
@@ -64,7 +67,7 @@ export function ConfirmDialog({
                         </SheetTitle>
                     </div>
                     {description && (
-                        <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1">
+                        <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1 whitespace-pre-line">
                             {description}
                         </SheetDescription>
                     )}

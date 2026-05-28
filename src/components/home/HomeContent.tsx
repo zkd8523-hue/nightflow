@@ -270,15 +270,22 @@ export function HomeContent({
   const guideAutoOpenedRef = useRef(false);
   // 가이드 모드는 단일 (full만) — 시크릿오퍼는 PUZZLE_ONBOARDING_STEPS 2단계에 통합됨
   const [guideMode, setGuideMode] = useState<"full">("full");
+  // 첫 방문 시 캐러셀 위 인라인 가이드 (Tip 박스 자리). 닫으면 영구 숨김.
+  const [showTopGuide, setShowTopGuide] = useState(false);
 
-  // 첫 방문 시 가이드 자동 펼침 (StrictMode 이중 호출 가드)
+  // 첫 방문 시 캐러셀 위 가이드 자동 표시 (StrictMode 이중 호출 가드)
   useEffect(() => {
     if (guideAutoOpenedRef.current) return;
     guideAutoOpenedRef.current = true;
     if (!localStorage.getItem(FLAG_CTA_SHOWN_KEY)) {
-      setShowGuide(true);
+      setShowTopGuide(true);
     }
   }, []);
+
+  const dismissTopGuide = () => {
+    setShowTopGuide(false);
+    try { localStorage.setItem(FLAG_CTA_SHOWN_KEY, "1"); } catch {}
+  };
 
   const instantEnabled = isInstantEnabled();
   const advanceCount = activeAuctions.filter(a => a.listing_type === 'auction').length;
@@ -584,7 +591,7 @@ export function HomeContent({
       <>
         <div className="flex flex-col">
           {/* 탭 (깃발 / 조각) — 자세히로 갈 때도 그대로 전달 */}
-          <div className="flex items-center gap-2 -mx-4 px-4 mb-4">
+          <div className="flex items-center gap-2 -mx-4 px-4 mb-2">
             <button
               type="button"
               onClick={() => handleTabChange("puzzle")}
@@ -618,23 +625,98 @@ export function HomeContent({
             </Link>
           </div>
 
-          {/* Tip 박스 + 이용방법 토글 */}
+          {/* 첫 진입 인라인 가이드 — 캐러셀 위 (한번 닫으면 영구 숨김) */}
+          {showTopGuide && (currentTab === "puzzle" || currentTab === "share") && (
+            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative mt-4 mb-4">
+              <button
+                onClick={dismissTopGuide}
+                aria-label="가이드 닫기"
+                className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm leading-none z-10">
+                ⓘ 이용방법
+              </span>
+              <div className="flex flex-col gap-2">
+                {compactSteps.map((step, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3"
+                  >
+                    <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
+                      {step.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[14.5px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
+                      <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
+                        {step.desc.split("\n").map((line, lineIdx, arr) => {
+                          const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                          return (
+                            <span key={lineIdx}>
+                              {parts.map((part, pIdx) =>
+                                /^\*\*[^*]+\*\*$/.test(part) ? (
+                                  <span key={pIdx} className="text-neutral-200 font-semibold">
+                                    {part.slice(2, -2)}
+                                  </span>
+                                ) : (
+                                  <span key={pIdx}>{part}</span>
+                                )
+                              )}
+                              {lineIdx < arr.length - 1 && "\n"}
+                            </span>
+                          );
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 깃발 / 조각 캐러셀 */}
+          <div className="mb-3">
+            {currentTab === "puzzle" && (
+              <HomePuzzleCarousel
+                puzzles={visiblePuzzles}
+                offerCounts={puzzleOfferCounts}
+                userRole={user?.role as "user" | "md" | "admin" | undefined}
+                detailHref={detailHref("puzzle")}
+                newFlagHref={newFlagHref}
+                showFlagCTA
+              />
+            )}
+            {currentTab === "share" && (
+              <HomeShareCarousel
+                shares={visibleAuctions.filter((a) => a.listing_type === "share")}
+                currentUserId={user?.id}
+                detailHref={detailHref("share")}
+                newFlagHref={newFlagHref}
+                userRole={user?.role as "user" | "md" | "admin" | undefined}
+              />
+            )}
+          </div>
+
+          {/* Tip 박스 + 이용방법 토글 — 캐러셀 아래로 이동 (톤 다운) */}
           {visibleCompactTip && (
-            <section className="space-y-2 -mx-2 mb-3">
+            <section className="space-y-2 -mt-1 mb-5">
               {!showGuide && (
-                <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-xl px-3 pt-3 pb-2 pr-16">
-                  <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm">Tip</span>
-                  <div className="text-[12px] text-white font-bold leading-snug whitespace-pre-line break-keep [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
+                <div className={`relative bg-neutral-900 border border-amber-400/60 rounded-xl px-3 pt-1.5 pb-1 ${showTopGuide ? "" : "pr-16"}`}>
+                  <span className="absolute -top-2 left-3 text-[9px] font-black text-black bg-amber-400 px-1.5 py-0.5 rounded-full leading-none shadow-sm">Tip</span>
+                  <div className="text-[12px] text-neutral-100 font-semibold leading-snug whitespace-pre-line break-keep">
                     {visibleCompactTip}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
-                    className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-200/90 hover:text-white transition-colors"
-                  >
-                    <span className="text-[10.5px] leading-none">ⓘ</span>
-                    이용방법
-                  </button>
+                  {!showTopGuide && (
+                    <button
+                      type="button"
+                      onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
+                      className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-200/70 hover:text-white transition-colors"
+                    >
+                      <span className="text-[10.5px] leading-none">ⓘ</span>
+                      이용방법
+                    </button>
+                  )}
                 </div>
               )}
               {showGuide && (
@@ -692,29 +774,6 @@ export function HomeContent({
               )}
             </section>
           )}
-
-          {/* 깃발 / 조각 캐러셀 */}
-          <div className="mb-5">
-            {currentTab === "puzzle" && (
-              <HomePuzzleCarousel
-                puzzles={visiblePuzzles}
-                offerCounts={puzzleOfferCounts}
-                userRole={user?.role as "user" | "md" | "admin" | undefined}
-                detailHref={detailHref("puzzle")}
-                newFlagHref={newFlagHref}
-                showFlagCTA
-              />
-            )}
-            {currentTab === "share" && (
-              <HomeShareCarousel
-                shares={visibleAuctions.filter((a) => a.listing_type === "share")}
-                currentUserId={user?.id}
-                detailHref={detailHref("share")}
-                newFlagHref={newFlagHref}
-                userRole={user?.role as "user" | "md" | "admin" | undefined}
-              />
-            )}
-          </div>
 
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>

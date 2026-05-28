@@ -219,21 +219,20 @@ export function ClubBenefitSection() {
 
             {/* 텍스트 */}
             <div className="mt-2 px-0.5 space-y-0.5">
-              <p className="text-white font-bold text-[13px] truncate leading-tight">
-                {item.club_name}
-              </p>
-              <div className="flex items-center gap-1.5 text-[11px] text-neutral-500">
-                <span>{item.club_area ?? "기타"}</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <p className="text-white font-bold text-[13px] truncate leading-tight min-w-0">
+                  {item.club_name}
+                </p>
                 {item.fav_count > 0 && (
-                  <>
-                    <span className="text-neutral-700">·</span>
-                    <span className="inline-flex items-center gap-0.5 text-red-500">
-                      <Heart className="w-3 h-3 fill-red-500" />
-                      {item.fav_count}
-                    </span>
-                  </>
+                  <span className="inline-flex items-center gap-0.5 text-[11px] text-red-500 flex-shrink-0">
+                    <Heart className="w-3 h-3 fill-red-500 stroke-none" />
+                    {item.fav_count}
+                  </span>
                 )}
               </div>
+              <p className="text-[11px] text-neutral-500">
+                {item.club_area ?? "기타"}
+              </p>
             </div>
           </Link>
         ))}

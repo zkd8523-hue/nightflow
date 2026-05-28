@@ -94,7 +94,7 @@ export function ClubDetailContent({
   const [partnerEditorOpen, setPartnerEditorOpen] = useState(false);
   const [reportSheetOpen, setReportSheetOpen] = useState(false);
 
-  // 클럽 찜 카운트
+  // 클럽 찜 카운트 (실제 row + seed_favorite_count — /clubs 목록과 동일 집계)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -102,12 +102,15 @@ export function ClubDetailContent({
         .from("user_favorite_clubs")
         .select("id", { count: "exact", head: true })
         .eq("club_id", club.id);
-      if (!cancelled) setFavoriteCount(count ?? 0);
+      if (!cancelled) {
+        const seed = club.seed_favorite_count ?? 0;
+        setFavoriteCount((count ?? 0) + seed);
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [club.id, supabase]);
+  }, [club.id, club.seed_favorite_count, supabase]);
 
   const handleAdminThumbnailUpload = async (
     e: React.ChangeEvent<HTMLInputElement>
@@ -308,8 +311,8 @@ export function ClubDetailContent({
               </span>
             )}
             {favoriteCount !== null && favoriteCount > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-[12px] text-neutral-400 font-medium">
-                <Heart className="w-3 h-3 text-red-500 fill-red-500" />
+              <span className="inline-flex items-center gap-0.5 text-[12px] text-red-500 font-medium">
+                <Heart className="w-3 h-3 fill-red-500 stroke-none" />
                 {favoriteCount}
               </span>
             )}

@@ -343,6 +343,9 @@ export interface Club {
   // Migration 231: 검색 별칭 (예: ["에이스", "ace", "club ace"])
   aliases: string[];
 
+  // Migration 244: 좋아요 시드 카운트 (실제 row와 합산해 노출)
+  seed_favorite_count?: number | null;
+
   /** Migration 174~182: 조인해서 가져올 때만 채워짐. 멀티 MD 표시 및 상세 정보용. */
   partners?: Array<{
     md_id: string;

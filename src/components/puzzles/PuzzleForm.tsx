@@ -20,7 +20,7 @@ import { validateTitleDateConsistency } from "@/lib/utils/date";
 
 // 빠른 추가 (만원 단위) — 모드별로 다름
 const BUDGET_PRESETS_RECRUIT = [100000, 50000, 10000]; // 퍼즐(인당) +10만/+5만/+1만
-const BUDGET_PRESETS_FIXED = [500000, 100000, 50000]; // 깃발(총액) +50만/+10만/+5만
+const BUDGET_PRESETS_FIXED = [100000, 50000, 10000]; // 깃발(총액) +10만/+5만/+1만
 
 const GENDER_OPTIONS: { value: GenderPref; label: string }[] = [
   { value: 'any', label: '상관없음' },
@@ -845,7 +845,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               onBlur={() => {
                 if (budgetAmount > 0) setBudgetInputStr(budgetAmount.toLocaleString());
               }}
-              placeholder={isRecruitingParty ? "예) 250,000" : "예) 1,000,000"}
+              placeholder={isRecruitingParty ? "예) 250,000" : "예) 500,000"}
               className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 pr-12"
             />
             {isRecruitingParty && (
@@ -1073,13 +1073,6 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         )}
       </div>
 
-      {/* 마감 정책 안내 */}
-      {!isEditMode && (
-        <p className="text-[12px] text-neutral-400 text-center leading-relaxed px-2">
-          🚩 이벤트 당일 오후 5시에 오퍼가 마감되고, 90분간 받은 오퍼를 검토할 수 있어요
-        </p>
-      )}
-
       {/* 제출 버튼 */}
       <div className="mt-4 px-1">
         <Button
@@ -1095,8 +1088,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         >
           {submitting ? (isEditMode ? "수정 중..." : "등록 중...") : (
             <>
-              {isEditMode ? <Check className="w-5 h-5" /> : (isRecruitingParty ? <Users className="w-5 h-5" /> : <Flag className="w-5 h-5" />)}
-              {isEditMode ? "수정 완료" : (isRecruitingParty ? "파티원 모집 시작" : "깃발 올리기")}
+              {isEditMode ? <Check className="w-5 h-5" /> : (isRecruitingParty ? <Users className="w-5 h-5" /> : null)}
+              {isEditMode ? "수정 완료" : (isRecruitingParty ? "파티원 모집 시작" : "오퍼 받아보기")}
             </>
           )}
           {!submitting && !isEditMode && <ArrowRight className="w-5 h-5" />}
@@ -1120,13 +1113,13 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           ? "수정할까요?"
           : (isRecruitingParty
             ? "퍼즐이 완성되면 MD가 오퍼를 보내와요"
-            : "MD가 시크릿오퍼를 보내드려요")}
+            : "마음에 드는 오퍼만 고르면 끝!")}
         description={isEditMode
           ? "변경된 내용으로 갱신됩니다."
-          : "오퍼 중 하나를 수락하면 그때 MD 연락처가 공개됩니다."}
-        confirmText={isEditMode ? "수정 완료" : (isRecruitingParty ? "파티원 모집 시작" : "깃발 올리기")}
+          : "오퍼는 당일 5시 마감. 90분간 더 검토할 수 있어요."}
+        confirmText={isEditMode ? "수정 완료" : (isRecruitingParty ? "파티원 모집 시작" : "계속")}
         cancelText="다시 확인"
-        variant="default"
+        variant={!isEditMode && !isRecruitingParty ? "celebrate" : "default"}
       />
 
       <ConfirmDialog

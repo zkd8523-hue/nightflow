@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const normalized = tags
       .filter((t): t is string => typeof t === "string")
       .map((t) => t.trim())
-      .filter((t) => /^[a-z]+:[a-z0-9]+$/i.test(t));
+      .filter((t) => /^[a-z][a-z0-9_]*:[a-z0-9_]+$/i.test(t));
 
     const { error: updateErr } = await supabaseAdmin
       .from("clubs")
