@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface ClubBenefitItem {
@@ -13,6 +13,7 @@ interface ClubBenefitItem {
   club_thumbnail: string | null;
   benefit_text: string | null;
   md_count: number;
+  fav_count: number;
 }
 
 const MAX_CARDS = 12;
@@ -44,14 +45,14 @@ export function ClubBenefitSection() {
       const thisWeekISO = getThisWeekISO();
       const todayDowKey = getTodayDowKey();
 
-      const [slotsRes, clubsRes, hotdealsRes] = await Promise.all([
+      const [slotsRes, clubsRes, hotdealsRes, favoritesRes] = await Promise.all([
         supabase
           .from("weekly_hotdeal_slots")
           .select("club_id, benefits_by_dow, expires_at")
           .eq("week_start", thisWeekISO),
         supabase
           .from("clubs")
-          .select("id, name, area, thumbnail_url, operating_hours, tags, club_partners(md_id)")
+          .select("id, name, area, thumbnail_url, operating_hours, tags, seed_favorite_count, club_partners(md_id)")
           .is("deleted_at", null),
         // Hot Deal Now에 노출되는 클럽은 제외하기 위해 핫딜도 조회
         supabase
@@ -59,6 +60,10 @@ export function ClubBenefitSection() {
           .select("club_id")
           .eq("status", "active")
           .gt("ends_at", new Date().toISOString()),
+        // 클럽별 좋아요(찜) 카운트 — 실제 row + seed_favorite_count 합산
+        supabase
+          .from("user_favorite_clubs")
+          .select("club_id"),
       ]);
 
       if (cancelled) return;
@@ -90,9 +95,21 @@ export function ClubBenefitSection() {
         name: string;
         area: string | null;
         thumbnail_url: string | null;
+        seed_favorite_count: number | null;
         club_partners: { md_id: string }[] | null;
       };
       const rows = (clubsRes.data ?? []) as unknown as ClubRow[];
+
+      // 클럽별 좋아요 카운트 집계 (실제 row + seed_favorite_count)
+      const favCountMap: Record<string, number> = {};
+      for (const f of (favoritesRes.data ?? []) as Array<{ club_id: string }>) {
+        if (!f.club_id) continue;
+        favCountMap[f.club_id] = (favCountMap[f.club_id] || 0) + 1;
+      }
+      for (const c of rows) {
+        const seed = c.seed_favorite_count ?? 0;
+        if (seed > 0) favCountMap[c.id] = (favCountMap[c.id] || 0) + seed;
+      }
       const filtered = SHOW_TEST_CLUBS ? rows : rows.filter((c) => !HIDDEN_PATTERN.test(c.name));
 
       // Hot Deal Now가 점유하는 클럽 결정
@@ -137,6 +154,7 @@ export function ClubBenefitSection() {
             club_thumbnail: c.thumbnail_url,
             benefit_text: slotMap.get(c.id) ?? null,
             md_count: c.club_partners?.length ?? 0,
+            fav_count: favCountMap[c.id] ?? 0,
           }))
         );
       }
@@ -204,9 +222,18 @@ export function ClubBenefitSection() {
               <p className="text-white font-bold text-[13px] truncate leading-tight">
                 {item.club_name}
               </p>
-              <p className="text-neutral-500 text-[11px]">
-                {item.club_area ?? "기타"}
-              </p>
+              <div className="flex items-center gap-1.5 text-[11px] text-neutral-500">
+                <span>{item.club_area ?? "기타"}</span>
+                {item.fav_count > 0 && (
+                  <>
+                    <span className="text-neutral-700">·</span>
+                    <span className="inline-flex items-center gap-0.5 text-red-500">
+                      <Heart className="w-3 h-3 fill-red-500" />
+                      {item.fav_count}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
           </Link>
         ))}
