@@ -20,6 +20,12 @@ function createAnonClient() {
   );
 }
 
+// 프로덕션에서는 운영자/테스트 클럽 핫딜을 숨김 (HotdealHomeSection과 동일 정책)
+const HIDDEN_CLUB_PATTERN = /운영자/;
+const SHOW_TEST_CLUBS = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
+
+type HotdealRow = Parameters<typeof HotdealList>[0]["hotdeals"][number];
+
 export default async function HotdealIndexPage() {
   const supabase = createAnonClient();
 
@@ -34,10 +40,15 @@ export default async function HotdealIndexPage() {
     .gt("ends_at", new Date().toISOString())
     .order("ends_at", { ascending: true });
 
+  const rows = (hotdeals ?? []) as unknown as HotdealRow[];
+  const visible = SHOW_TEST_CLUBS
+    ? rows
+    : rows.filter((h) => !(h.club?.name && HIDDEN_CLUB_PATTERN.test(h.club.name)));
+
   return (
     <div className="container mx-auto max-w-3xl px-4 pt-4 pb-8 mb-20">
       <Suspense fallback={null}>
-        <HotdealList hotdeals={(hotdeals ?? []) as unknown as Parameters<typeof HotdealList>[0]["hotdeals"]} />
+        <HotdealList hotdeals={visible} />
       </Suspense>
     </div>
   );
