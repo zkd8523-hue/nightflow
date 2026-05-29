@@ -45,6 +45,7 @@ interface PuzzleLeaderInfo {
   strike_count: number | null;
   is_blocked: boolean | null;
   last_sign_in_at: string | null;
+  last_seen_at?: string | null;
 }
 
 interface PuzzleDetailClientProps {
@@ -895,8 +896,8 @@ export function PuzzleDetailClient({
                 <div className="bg-[#1C1C1E] rounded-lg px-3 py-2 col-span-2">
                   <p className="text-neutral-500">마지막 접속</p>
                   <p className="text-white font-mono">
-                    {leader.last_sign_in_at
-                      ? `${dayjs(leader.last_sign_in_at).format("YYYY-MM-DD HH:mm")} (${dayjs(leader.last_sign_in_at).fromNow()})`
+                    {leader.last_seen_at
+                      ? `${dayjs(leader.last_seen_at).format("YYYY-MM-DD HH:mm")} (${dayjs(leader.last_seen_at).fromNow()})`
                       : "-"}
                   </p>
                 </div>
