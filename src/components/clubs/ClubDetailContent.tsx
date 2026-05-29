@@ -22,6 +22,7 @@ import {
   Disc3,
   Copy,
   Check,
+  Pencil,
   type LucideIcon,
 } from "lucide-react";
 import { uploadImage } from "@/lib/utils/upload";
@@ -485,17 +486,26 @@ export function ClubDetailContent({
             </a>
           )}
 
-          {/* 단일 진입점 — 파트너 MD/admin은 편집 시트, 일반 유저는 신고 시트 */}
-          {user && (
+          {/* 파트너 MD/admin: 눈에 띄는 편집 버튼 */}
+          {user && canPartnerEdit && (
             <button
               type="button"
-              onClick={() => {
-                if (canPartnerEdit) setPartnerEditorOpen(true);
-                else setReportSheetOpen(true);
-              }}
+              onClick={() => setPartnerEditorOpen(true)}
+              className="mt-3 inline-flex items-center justify-center gap-1.5 w-full h-10 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-300 hover:bg-amber-500/20 active:scale-95 transition text-[13px] font-bold"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+              클럽 정보 수정하기 (해당 클럽 MD 전용)
+            </button>
+          )}
+
+          {/* 일반 유저: 잘못된 정보 신고 */}
+          {user && !canPartnerEdit && (
+            <button
+              type="button"
+              onClick={() => setReportSheetOpen(true)}
               className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-amber-400 transition-colors mt-2 self-start underline decoration-dotted underline-offset-2"
             >
-              잘못된 정보가 있다면? 수정하기
+              잘못된 정보가 있다면? 수정 요청
             </button>
           )}
 
