@@ -133,7 +133,6 @@ export function PuzzleList({
   const filterSheetOpen = filterOpen ?? internalFilterOpen;
   const setFilterSheetOpen = onFilterOpenChange ?? setInternalFilterOpen;
   const [recentCollapsed, setRecentCollapsed] = useState(false);
-  const isMd = userRole === "md" || userRole === "admin";
 
   // 리스트 끝에서 floating CTA 숨기기 (인라인 CTA와 시각적 중복 방지)
   const listEndRef = useRef<HTMLDivElement | null>(null);
@@ -356,31 +355,7 @@ export function PuzzleList({
                   필터 초기화
                 </button>
               </>
-            ) : isMd ? (
-              <>
-                <p className="text-[15px] font-bold text-neutral-300">아직 올라와 있는 퍼즐이 없어요</p>
-                <p className="text-[12px] text-neutral-500 leading-relaxed">
-                  퍼즐이 올라오면 알림으로 알려드릴게요
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="text-[15px] font-black text-white">
-                  {selectedArea && selectedArea !== "다른지역" ? `${selectedArea} ` : ""}MD들이 24시간 기다리고 있어요
-                </p>
-                <p className="text-[12px] text-neutral-400 leading-relaxed">
-                  어떤 시크릿오퍼가 쏟아질지 궁금하죠?
-                </p>
-                <Link
-                  href={userRole ? "/flags/new" : "/login?redirect=/flags/new"}
-                  onClick={() => trackEvent("puzzle_cta_click", { source: "empty_state" })}
-                  className="inline-flex items-center gap-1.5 mt-3 bg-white hover:bg-neutral-200 text-black rounded-full px-5 py-2.5 text-[13px] font-black transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                  파티원 모집하기
-                </Link>
-              </>
-            )}
+            ) : null}
           </div>
         </div>
       ) : (popularSort || recentSort || budgetSort) ? (
