@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, PartyPopper, ChevronRight } from "lucide-react";
+import { CheckCircle2, X, PartyPopper, ChevronRight, Star } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { ClubStrip } from "@/components/home/ClubStrip";
 import { isAuctionExpired } from "@/lib/utils/auction";
@@ -313,52 +313,140 @@ export function HomeContent({
   const [recentMatchedPuzzle, setRecentMatchedPuzzle] = useState<RecentMatchedPuzzle | null>(null);
   const [showMatchedModal, setShowMatchedModal] = useState(false);
 
-  // 매치된 본인 깃발 중 이벤트 다음날 + 리뷰 미작성 → 첫 접속 시 토스트
+  // 매치된 본인 깃발 중 이벤트 다음날 + 리뷰 미작성 → 첫 접속 시 시트 노출
+  // 디버그: ?forceReview=1 쿼리 있으면 세션 키 무시하고 무조건 노출 (최근 매치 1건 사용)
   const reviewToastFiredRef = useRef(false);
+  const [reviewPrompt, setReviewPrompt] = useState<{ puzzleId: string; clubName: string | null } | null>(null);
+  const [reviewPromptHover, setReviewPromptHover] = useState(0);
+  const [reviewPromptRating, setReviewPromptRating] = useState(0);
+  const [reviewPromptTags, setReviewPromptTags] = useState<string[]>([]);
+  const [reviewPromptComment, setReviewPromptComment] = useState("");
+  const [reviewPromptSubmitting, setReviewPromptSubmitting] = useState(false);
+  const REVIEW_PROMPT_TAGS = ["친절해요", "가격 만족", "분위기 좋음", "서비스 좋음", "위치 좋음", "추천해요"];
+  const REVIEW_RATING_LABELS: Record<number, string> = {
+    1: "아쉬워요",
+    2: "별로예요",
+    3: "보통이에요",
+    4: "좋아요",
+    5: "최고예요",
+  };
+  const resetReviewPrompt = () => {
+    setReviewPrompt(null);
+    setReviewPromptHover(0);
+    setReviewPromptRating(0);
+    setReviewPromptTags([]);
+    setReviewPromptComment("");
+    setReviewPromptSubmitting(false);
+  };
+  const handleReviewPromptSubmit = async () => {
+    const id = reviewPrompt?.puzzleId;
+    if (!id || reviewPromptRating === 0) return;
+    setReviewPromptSubmitting(true);
+    try {
+      const { data, error } = await supabase.rpc("submit_puzzle_review", {
+        p_puzzle_id: id,
+        p_rating: reviewPromptRating,
+        p_comment: reviewPromptComment.trim() || null,
+        p_tags: reviewPromptTags,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string } | null;
+      if (!result?.success) {
+        toast.error(result?.error || "리뷰 등록에 실패했어요");
+        setReviewPromptSubmitting(false);
+        return;
+      }
+      toast.success("리뷰가 등록되었어요. 감사합니다!");
+      resetReviewPrompt();
+    } catch (err) {
+      console.error("[reviewPrompt submit]", err);
+      toast.error("리뷰 등록에 실패했어요. 다시 시도해주세요.");
+      setReviewPromptSubmitting(false);
+    }
+  };
   useEffect(() => {
+    console.log("[reviewPrompt] useEffect entered", { hasUser: !!user?.id, fired: reviewToastFiredRef.current });
     if (reviewToastFiredRef.current) return;
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.log("[reviewPrompt] no user yet");
+      return;
+    }
     reviewToastFiredRef.current = true;
+    const forceReview = searchParams.get("forceReview") === "1";
+    console.log("[reviewPrompt] effect fired", { userId: user.id, forceReview });
     (async () => {
       const today = new Date();
       const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
-      const cutoff = yesterday.toISOString().slice(0, 10); // event_date <= 어제
-      const { data: matched } = await supabase
+      const cutoff = yesterday.toISOString().slice(0, 10);
+      const query = supabase
         .from("puzzles")
         .select("id, event_date, accepted_offer_id")
         .eq("leader_id", user.id)
         .eq("status", "accepted")
-        .lte("event_date", cutoff)
         .order("event_date", { ascending: false })
         .limit(5);
+      if (!forceReview) query.lte("event_date", cutoff);
+      const { data: matched, error: queryError } = await query;
+      console.log("[reviewPrompt] puzzles query", { count: matched?.length, error: queryError });
       const candidates = (matched ?? []) as Array<{ id: string; event_date: string; accepted_offer_id: string | null }>;
-      if (candidates.length === 0) return;
+      if (candidates.length === 0) {
+        console.log("[reviewPrompt] no candidates");
+        return;
+      }
 
-      const ids = candidates.map((p) => p.id);
-      const { data: existingReviews } = await supabase
-        .from("puzzle_reviews")
-        .select("puzzle_id")
-        .eq("leader_id", user.id)
-        .in("puzzle_id", ids);
-      const reviewed = new Set(((existingReviews ?? []) as Array<{ puzzle_id: string }>).map((r) => r.puzzle_id));
-
-      const unreviewed = candidates.find((p) => !reviewed.has(p.id));
+      let unreviewed: { id: string; accepted_offer_id: string | null } | null = null;
+      // accepted_offer_id가 NULL인 비정상 깃발은 건너뜀
+      const validCandidates = candidates.filter((p) => p.accepted_offer_id);
+      if (validCandidates.length === 0) {
+        console.log("[reviewPrompt] no valid candidates (all missing accepted_offer_id)");
+        return;
+      }
+      if (forceReview) {
+        unreviewed = validCandidates[0];
+      } else {
+        const ids = validCandidates.map((p) => p.id);
+        const { data: existingReviews } = await supabase
+          .from("puzzle_reviews")
+          .select("puzzle_id")
+          .eq("leader_id", user.id)
+          .in("puzzle_id", ids);
+        const reviewed = new Set(((existingReviews ?? []) as Array<{ puzzle_id: string }>).map((r) => r.puzzle_id));
+        unreviewed = validCandidates.find((p) => !reviewed.has(p.id)) ?? null;
+      }
+      console.log("[reviewPrompt] unreviewed", unreviewed);
       if (!unreviewed) return;
 
-      const sessionKey = `nightflow_review_toast_shown_${unreviewed.id}`;
-      try { if (sessionStorage.getItem(sessionKey)) return; } catch {}
-      try { sessionStorage.setItem(sessionKey, "1"); } catch {}
+      if (!forceReview) {
+        const sessionKey = `nightflow_review_toast_shown_${unreviewed.id}`;
+        try { if (sessionStorage.getItem(sessionKey)) { console.log("[reviewPrompt] session key present"); return; } } catch {}
+        try { sessionStorage.setItem(sessionKey, "1"); } catch {}
+      }
 
-      toast("어제 다녀온 클럽 어떠셨어요? ⭐", {
-        description: "한마디 남기면 다음 손님에게 큰 도움이 돼요.",
-        duration: 8000,
-        action: {
-          label: "리뷰 쓰기",
-          onClick: () => router.push(`/flags/${unreviewed.id}/review`),
-        },
-      });
+      let clubName: string | null = null;
+      if (unreviewed.accepted_offer_id) {
+        const { data: offer, error: offerErr } = await supabase
+          .from("puzzle_offers")
+          .select("club:clubs(name)")
+          .eq("id", unreviewed.accepted_offer_id)
+          .maybeSingle();
+        console.log("[reviewPrompt] offer query", { offer, error: offerErr });
+        const club = (offer as { club?: { name?: string } | { name?: string }[] | null } | null)?.club;
+        const c = Array.isArray(club) ? club[0] : club;
+        clubName = c?.name ?? null;
+      }
+
+      if (!clubName) {
+        console.warn("[reviewPrompt] skipped — missing club info", {
+          puzzle_id: unreviewed.id,
+          accepted_offer_id: unreviewed.accepted_offer_id,
+        });
+        return;
+      }
+
+      console.log("[reviewPrompt] showing sheet", { puzzleId: unreviewed.id, clubName });
+      setReviewPrompt({ puzzleId: unreviewed.id, clubName });
     })();
-  }, [user?.id, supabase, router]);
+  }, [user?.id, supabase, searchParams]);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -579,6 +667,96 @@ export function HomeContent({
   // Compact/Full 모드 공통 Sheet들 (MD 승인 축하 + 깃발 CTA)
   const renderHomeSheets = () => (
     <>
+      {/* 리뷰 작성 시트 (첫 접속 시 자동 노출) — 별점·태그·멘트 한 번에 */}
+      <Sheet open={!!reviewPrompt} onOpenChange={(open) => { if (!open) resetReviewPrompt(); }}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-6 pt-7 pb-8 max-w-lg mx-auto max-h-[92vh] overflow-y-auto"
+        >
+          <SheetHeader className="text-center">
+            <SheetTitle className="text-white text-[18px] font-black tracking-tight">
+              {reviewPrompt?.clubName
+                ? `${reviewPrompt.clubName}에서의 시간 어떠셨어요?`
+                : "지난번 매치 어떠셨어요?"}
+            </SheetTitle>
+            <SheetDescription className="text-neutral-400 text-[13px] font-medium mt-1.5 leading-relaxed">
+              리뷰를 남겨주시면 MD에게 큰 도움이 돼요
+            </SheetDescription>
+          </SheetHeader>
+
+          {/* 별점 */}
+          <div
+            className="mt-6 flex items-center justify-center gap-1.5"
+            onMouseLeave={() => setReviewPromptHover(0)}
+          >
+            {[1, 2, 3, 4, 5].map((n) => {
+              const active = reviewPromptHover ? n <= reviewPromptHover : n <= reviewPromptRating;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onMouseEnter={() => setReviewPromptHover(n)}
+                  onClick={() => setReviewPromptRating(n)}
+                  className="p-1 active:scale-90 transition-transform"
+                  aria-label={`${n}점`}
+                >
+                  <Star
+                    className={`w-10 h-10 transition-colors ${
+                      active ? "fill-amber-400 text-amber-400" : "fill-transparent text-neutral-700"
+                    }`}
+                    strokeWidth={1.5}
+                  />
+                </button>
+              );
+            })}
+          </div>
+          <p
+            className={`text-center text-[13px] font-bold mt-1 tracking-tight ${
+              (reviewPromptHover || reviewPromptRating) > 0 ? "text-amber-300" : "text-neutral-600"
+            }`}
+          >
+            {(reviewPromptHover || reviewPromptRating) > 0
+              ? REVIEW_RATING_LABELS[reviewPromptHover || reviewPromptRating]
+              : "별을 눌러 평가해주세요"}
+          </p>
+
+          {/* 한마디 */}
+          <div className="mt-5 space-y-2">
+            <p className="text-[13px] font-bold text-neutral-300">
+              한마디 <span className="text-[11px] text-neutral-500 font-medium">(선택)</span>
+            </p>
+            <textarea
+              value={reviewPromptComment}
+              onChange={(e) => setReviewPromptComment(e.target.value)}
+              placeholder="어떤 점이 좋았는지, 다음 손님께 추천 한마디 부탁드려요"
+              rows={3}
+              maxLength={300}
+              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 text-[13.5px] text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
+            />
+            <p className="text-[10.5px] text-neutral-600 text-right">{reviewPromptComment.length}/300</p>
+          </div>
+
+          {/* 제출 + 닫기 */}
+          <div className="mt-5 space-y-2">
+            <Button
+              onClick={handleReviewPromptSubmit}
+              disabled={reviewPromptRating === 0 || reviewPromptSubmitting}
+              className="w-full h-12 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              {reviewPromptSubmitting ? "등록 중..." : "리뷰 등록하기"}
+            </Button>
+            <button
+              type="button"
+              onClick={resetReviewPrompt}
+              className="w-full h-10 text-neutral-500 hover:text-neutral-300 font-medium text-[13px] transition-colors"
+            >
+              다음에 할게요
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* 최근 매치 깃발 모달 */}
       <Sheet open={showMatchedModal} onOpenChange={setShowMatchedModal}>
         <SheetContent

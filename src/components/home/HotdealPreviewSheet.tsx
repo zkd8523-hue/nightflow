@@ -51,7 +51,7 @@ export function HotdealPreviewSheet({ open, onOpenChange }: Props) {
           <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center">1</div>
-              <p className="text-[13px] text-white font-bold">홈 &quot;🔥 Hot Deal Now&quot; 최상단 노출</p>
+              <p className="text-[13px] text-white font-bold">홈 &quot;🔥 Hot Deal Tonight&quot; 최상단 노출</p>
             </div>
             <div className="bg-black/40 rounded-xl p-3">
               <div className="flex gap-2 items-start">

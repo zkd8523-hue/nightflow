@@ -113,6 +113,9 @@ export default async function ClubDetailPage({ params }: PageProps) {
     .maybeSingle();
 
   let guestSignSlot: {
+    slot_id?: string;
+    today_dow?: typeof todayDowKey;
+    today_slots?: ReturnType<typeof normalizeDowSlots>;
     md: { id: string; display_name: string | null; profile_image: string | null; instagram: string | null; kakao_open_chat_url: string | null };
     today_benefit: string | null;
   } | null = null;
@@ -128,6 +131,9 @@ export default async function ClubDetailPage({ params }: PageProps) {
       const todaySlots = normalizeDowSlots(byDow[todayDowKey as HotdealDow]);
       const todayText = summarizeSlots(todaySlots) || null;
       guestSignSlot = {
+        slot_id: slotRow.id,
+        today_dow: todayDowKey,
+        today_slots: todaySlots,
         md: {
           id: mdRow.id,
           display_name: mdRow.display_name,

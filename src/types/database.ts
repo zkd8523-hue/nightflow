@@ -896,11 +896,16 @@ export interface HotdealTemplate {
 // ============================================================================
 export type HotdealDow = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
 
+export type HotdealBenefitTag = 'free_entry' | 'free_drink' | string;
+
 /** 시간대별 혜택 슬롯. until=null이면 영업종료까지 */
 export interface HotdealTimeSlot {
   /** "HH:00" 또는 null (영업종료) */
   until: string | null;
+  /** MD가 자유롭게 입력하는 멘트 (예: 입구에서 "나플" 무료입장) */
   text: string;
+  /** 혜택 태그 (무료입장/프리드링크/기타 직접입력) */
+  benefits?: string[];
 }
 
 /**
@@ -945,12 +950,15 @@ export interface DailyHotdeal {
   table_info: string | null;
   table_features: string[];
   liquor_includes: string[];
+  table_zone: HotdealTableZone | null;
   created_at: string;
   updated_at: string;
   // joined
   club?: Pick<Club, 'id' | 'name' | 'area' | 'thumbnail_url'>;
   md?: { id: string; display_name: string; instagram: string | null; profile_image: string | null };
 }
+
+export type HotdealTableZone = 'bar' | 'bar_aisle' | 'sub_main' | 'main' | 'prime';
 
 // ============================================================================
 // 클럽 변경 이력 (Migration 245) — 파트너 MD/admin 의 clubs.tags / operating_hours 변경 자동 로깅

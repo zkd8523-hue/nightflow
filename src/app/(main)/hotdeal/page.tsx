@@ -6,7 +6,7 @@ import { HotdealList } from "@/components/hotdeal/HotdealList";
 export const revalidate = 30;
 
 export const metadata: Metadata = {
-  title: "Hot Deal Now - NightFlow",
+  title: "Hot Deal Tonight - NightFlow",
   description:
     "지금 진행 중인 클럽 핫딜·특가. 종료 시간이 다가오는 한정 혜택을 한눈에.",
   alternates: { canonical: "https://nightflow.kr/hotdeal" },

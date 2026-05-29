@@ -8,7 +8,7 @@ import { ChevronLeft, Loader2, X, CheckCircle2, Clock, Plus } from "lucide-react
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { HotdealBenefitsByDow, HotdealDow, HotdealTimeSlot } from "@/types/database";
-import { normalizeDowSlots } from "@/lib/utils/hotdeal";
+import { normalizeDowSlots, GUEST_SIGN_BENEFIT_PRESETS, benefitLabel } from "@/lib/utils/hotdeal";
 
 interface ClubLite {
   id: string;
@@ -29,6 +29,7 @@ interface SlotLite {
 interface MySlot {
   id: string;
   club_id: string;
+  md_id?: string;
   week_start: string;
   benefits_by_dow: HotdealBenefitsByDow;
   expires_at: string;
@@ -161,13 +162,17 @@ export function HotdealSlotBoard({
         .select("id, club_id, md_id, week_start, benefits_by_dow, expires_at")
         .in("week_start", [thisWeekISO, nextWeekISO]);
       console.log("[HotdealSlotBoard] all result:", { data, error, len: data?.length });
-      const myData = (data ?? []).filter((s: { md_id: string }) => s.md_id === currentUserId);
+      // admin은 모든 슬롯을 자기 것처럼 수정 가능
+      const myData = isAdmin
+        ? (data ?? [])
+        : (data ?? []).filter((s: { md_id: string }) => s.md_id === currentUserId);
       console.log("[HotdealSlotBoard] my filtered:", myData);
       if (!cancelled) {
         setClientMySlots(
           myData.map((s) => ({
             id: s.id,
             club_id: s.club_id,
+            md_id: s.md_id,
             week_start: s.week_start,
             benefits_by_dow: (s.benefits_by_dow ?? {}) as HotdealBenefitsByDow,
             expires_at: s.expires_at,
@@ -178,7 +183,7 @@ export function HotdealSlotBoard({
     return () => {
       cancelled = true;
     };
-  }, [supabase, currentUserId, thisWeekISO, nextWeekISO]);
+  }, [supabase, currentUserId, thisWeekISO, nextWeekISO, isAdmin]);
 
   const effectiveMySlots = clientMySlots ?? mySlots;
 
@@ -280,11 +285,11 @@ export function HotdealSlotBoard({
             대시보드
           </Link>
         )}
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-2">
           <span className="text-[20px] leading-none">🎫</span>
           <h1 className="text-2xl font-black text-white tracking-tight">게스트 간판</h1>
         </div>
-        <p className="text-[12px] text-amber-400 font-bold mb-3">
+        <p className="text-[12px] text-amber-400 font-bold mb-4">
           매주 월 18:00에 그 주 슬롯 오픈
         </p>
 
@@ -364,6 +369,8 @@ export function HotdealSlotBoard({
             busy={busy}
             onRelease={() => handleRelease(mySlotForWeek.id)}
             onChanged={() => router.refresh()}
+            isAdmin={isAdmin}
+            currentUserId={currentUserId}
           />
         )}
 
@@ -439,12 +446,16 @@ function MyClaimedSection({
   busy,
   onRelease,
   onChanged,
+  isAdmin,
+  currentUserId,
 }: {
   slot: MySlot;
   club?: ClubLite;
   busy: boolean;
   onRelease: () => void;
   onChanged: () => void;
+  isAdmin: boolean;
+  currentUserId: string;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [drafts, setDrafts] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(() => {
@@ -584,6 +595,9 @@ function MyClaimedSection({
         <div>
           <p className="text-[11px] text-amber-300 font-bold">요일별 혜택 (안 적은 요일은 비어있음으로 노출)</p>
           <p className="text-[10px] text-neutral-500">지난 요일은 수정할 수 없어요 · 시간대별로 다른 혜택 설정 가능 (최대 {MAX_SLOTS_PER_DOW}개)</p>
+          {isAdmin && slot.md_id && slot.md_id !== currentUserId && (
+            <p className="text-[10px] text-red-400 font-bold mt-1">⚠ Admin 모드 — 본인 슬롯이 아닙니다 (MD: {slot.md_id.slice(0, 8)}...)</p>
+          )}
         </div>
         {DOW_KEYS.map((dow) => {
           const saving = savingDow === dow;
@@ -625,7 +639,8 @@ function MyClaimedSection({
                     const canDelete = displaySlots.length > 1;
                     const isFirst = idx === 0;
                     return (
-                      <div key={idx} className="flex gap-1.5">
+                      <div key={idx} className="space-y-1.5">
+                      <div className="flex gap-1.5">
                         {/* 시간 셀렉트 영역 (시간 설정 OFF면 자리만 비움 X, 자체를 안 그림) */}
                         {hasTimeSetup && (
                           isLast && s.until === null ? (
@@ -650,7 +665,7 @@ function MyClaimedSection({
 
                         <input
                           type="text"
-                          value={s.text}
+                          value={isPast ? "" : s.text}
                           onChange={(e) => (isFirst ? onFirstTextChange(e.target.value) : updateSlot(dow, idx, { text: e.target.value }))}
                           placeholder={isFirst ? DOW_PLACEHOLDERS[dow] : "이 시간대 혜택"}
                           disabled={saving || isPast}
@@ -658,11 +673,11 @@ function MyClaimedSection({
                         />
 
                         {/* 우측 액션: 첫 줄 = 저장 / 그 외 = 삭제(또는 자리) */}
-                        {isFirst ? (
+                        {isFirst && !isPast ? (
                           <button
                             type="button"
                             onClick={() => handleSaveDow(dow)}
-                            disabled={saving || !dirty || isPast || (!hasAnyText && !savedExists)}
+                            disabled={saving || !dirty || (!hasAnyText && !savedExists)}
                             className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-black inline-flex items-center gap-1 transition-colors ${
                               dirty
                                 ? "bg-amber-500 text-black hover:bg-amber-400 disabled:opacity-50"
@@ -700,6 +715,16 @@ function MyClaimedSection({
                           <div className="shrink-0 w-[34px]" />
                         )}
                       </div>
+
+                      {/* 혜택 토글 칩: 입력칸 아래 */}
+                      {!isPast && (s.text.trim().length > 0 || (s.benefits?.length ?? 0) > 0) && (
+                        <BenefitChips
+                          benefits={s.benefits ?? []}
+                          disabled={saving}
+                          onChange={(next) => updateSlot(dow, idx, { benefits: next })}
+                        />
+                      )}
+                      </div>
                     );
                   })}
 
@@ -729,6 +754,110 @@ function MyClaimedSection({
             );
         })}
       </div>
+    </div>
+  );
+}
+
+function BenefitChips({
+  benefits,
+  disabled,
+  onChange,
+}: {
+  benefits: string[];
+  disabled: boolean;
+  onChange: (next: string[]) => void;
+}) {
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customText, setCustomText] = useState("");
+  const presets = GUEST_SIGN_BENEFIT_PRESETS;
+  const customs = benefits.filter((b) => !presets.some((p) => p.value === b));
+
+  const toggle = (val: string) => {
+    if (benefits.includes(val)) onChange(benefits.filter((b) => b !== val));
+    else onChange([...benefits, val]);
+  };
+
+  const addCustom = () => {
+    const t = customText.trim();
+    if (!t) return;
+    if (benefits.includes(t)) return;
+    onChange([...benefits, t]);
+    setCustomText("");
+    setCustomOpen(false);
+  };
+
+  return (
+    <div className="flex flex-wrap gap-1 pl-0.5">
+      {presets.map((p) => {
+        const active = benefits.includes(p.value);
+        return (
+          <button
+            key={p.value}
+            type="button"
+            disabled={disabled}
+            onClick={() => toggle(p.value)}
+            className={`h-7 px-2.5 rounded-full text-[11px] font-bold border transition-colors disabled:opacity-50 ${
+              active
+                ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
+                : "bg-neutral-900 text-neutral-500 border-neutral-700 hover:border-amber-500/40"
+            }`}
+          >
+            {p.emoji} {p.label}
+          </button>
+        );
+      })}
+      {customs.map((c) => (
+        <button
+          key={c}
+          type="button"
+          disabled={disabled}
+          onClick={() => toggle(c)}
+          className="h-7 px-2.5 rounded-full text-[11px] font-bold border bg-amber-500/20 text-amber-300 border-amber-500/50 inline-flex items-center gap-1 disabled:opacity-50"
+          title="클릭하여 제거"
+        >
+          {benefitLabel(c).emoji} {c}
+          <span className="text-amber-300/70">×</span>
+        </button>
+      ))}
+      {customOpen ? (
+        <div className="inline-flex items-center gap-1">
+          <input
+            autoFocus
+            type="text"
+            value={customText}
+            onChange={(e) => setCustomText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addCustom();
+              } else if (e.key === "Escape") {
+                setCustomOpen(false);
+                setCustomText("");
+              }
+            }}
+            placeholder="혜택 직접입력"
+            maxLength={20}
+            className="h-7 px-2 rounded-full bg-neutral-900 border border-amber-500/50 text-[11px] text-white placeholder:text-neutral-600 focus:outline-none w-32"
+          />
+          <button
+            type="button"
+            onClick={addCustom}
+            disabled={disabled || !customText.trim()}
+            className="h-7 px-2 rounded-full text-[11px] font-bold bg-amber-500 text-black disabled:opacity-50"
+          >
+            추가
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setCustomOpen(true)}
+          className="h-7 px-2.5 rounded-full text-[11px] font-bold border border-dashed border-neutral-700 text-neutral-500 hover:text-amber-300 hover:border-amber-500/40 disabled:opacity-50"
+        >
+          + 직접입력
+        </button>
+      )}
     </div>
   );
 }

@@ -17,7 +17,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Button } from "@/components/ui/button";
 import { getClubEventDate } from "@/lib/utils/date";
 import { uploadImage } from "@/lib/utils/upload";
-import type { DailyHotdeal, HotdealTemplate } from "@/types/database";
+import type { DailyHotdeal, HotdealTemplate, HotdealTableZone } from "@/types/database";
+import { TABLE_ZONE_OPTIONS } from "@/lib/utils/hotdeal";
 import { Bookmark } from "lucide-react";
 
 dayjs.locale("ko");
@@ -73,7 +74,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
   const [clubs, setClubs] = useState(initialClubs);
   const [myHotdeals, setMyHotdeals] = useState<DailyHotdeal[]>(initialMyHotdeals);
   // ?new=1 또는 핫딜이 0건이면 폼 자동 펼침
-  const [showForm, setShowForm] = useState(() => searchParams.get("new") === "1");
+  const [showForm, setShowForm] = useState(() => searchParams.get("new") === "1" || !!searchParams.get("edit"));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -85,6 +86,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
   const [walkMinutes, setWalkMinutes] = useState("");
   const [nearestStation, setNearestStation] = useState("");
   const [tableInfo, setTableInfo] = useState("");
+  const [tableZone, setTableZone] = useState<HotdealTableZone | "">("");
   const [tableFeatures, setTableFeatures] = useState<string[]>([]);
   const [includes, setIncludes] = useState<string[]>([]);
   const [floorPlanExpanded, setFloorPlanExpanded] = useState(false);
@@ -96,6 +98,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [showTemplateSavePrompt, setShowTemplateSavePrompt] = useState(false);
   const [templateSaving, setTemplateSaving] = useState(false);
+  const [lastCreatedHotdealId, setLastCreatedHotdealId] = useState<string | null>(null);
   // 등록 성공 직후의 폼 스냅샷 (템플릿 저장용)
   const [lastCreatedSnapshot, setLastCreatedSnapshot] = useState<{
     club_id: string;
@@ -161,6 +164,29 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
     [clubs, clubId]
   );
 
+  // 현재 선택된 클럽에서 이미 활성 상태인 자리 등급들 (편집 중인 핫딜은 제외)
+  const occupiedZones = useMemo(() => {
+    return new Set(
+      myHotdeals
+        .filter((h) =>
+          h.club_id === clubId &&
+          h.status === "active" &&
+          h.id !== editingId &&
+          h.table_zone
+        )
+        .map((h) => h.table_zone as HotdealTableZone)
+    );
+  }, [myHotdeals, clubId, editingId]);
+
+  // 클럽당 활성 핫딜 카운트 (자리별 1개 = 최대 5개)
+  const clubActiveCount = useMemo(
+    () =>
+      myHotdeals.filter(
+        (h) => h.club_id === clubId && h.status === "active" && h.id !== editingId
+      ).length,
+    [myHotdeals, clubId, editingId]
+  );
+
   const resetForm = () => {
     setEditingId(null);
     setDescription("");
@@ -169,6 +195,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
     setWalkMinutes("");
     setNearestStation("");
     setTableInfo("");
+    setTableZone("");
     setTableFeatures([]);
     setIncludes([]);
     setFloorPlanExpanded(false);
@@ -185,6 +212,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
     setWalkMinutes(h.walk_minutes ? String(h.walk_minutes) : "");
     setNearestStation(h.nearest_station ?? "");
     setTableInfo(h.table_info ?? "");
+    setTableZone(h.table_zone ?? "");
     setTableFeatures(h.table_features ?? []);
     setIncludes(h.liquor_includes ?? []);
     setFloorPlanExpanded(false);
@@ -194,8 +222,19 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
     setShowForm(true);
   };
 
+  // ?edit=ID 진입 시 자동으로 수정 모드 시작
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (!editId || editingId) return;
+    const target = initialMyHotdeals.find((h) => h.id === editId);
+    if (target) handleStartEdit(target);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, initialMyHotdeals]);
+
   const handleCreate = async () => {
-    if (!clubId) { toast.error("클럽을 선택해주세요"); return; }
+    if (!clubId || !selectedClub) { toast.error("클럽을 선택해주세요"); return; }
+    if (!selectedClub.name?.trim()) { toast.error("선택한 클럽 정보가 잘못됐어요. 다시 선택해주세요"); return; }
+    if (!tableZone) { toast.error("자리 등급을 선택해주세요"); return; }
     // 입력 단위는 만원. DB는 원 단위로 저장. 만원 상한 9999 (99,990,000원, INT 안전 범위)
     const MAX_MAN = 9999;
     const priceMan = price ? Number(price.replace(/[^0-9]/g, "")) : 0;
@@ -229,6 +268,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
       p_table_info: tableInfo.trim() || null,
       p_table_features: tableFeatures,
       p_liquor_includes: includes,
+      p_table_zone: tableZone || null,
     };
     try {
       const { data, error } = await supabase.rpc("create_daily_hotdeal", rpcArgs);
@@ -247,7 +287,23 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
         toast.error(result?.error || "등록 실패");
         return;
       }
-      toast.success("핫딜이 등록됐어요");
+      const newId = result.id ?? null;
+      setLastCreatedHotdealId(newId);
+      // 새로 등록된 핫딜을 즉시 목록에 반영 (서버 fetch로 정합성 검증)
+      if (newId) {
+        const { data: fresh } = await supabase
+          .from("daily_hotdeals")
+          .select("*, club:clubs(id, name, area, thumbnail_url)")
+          .eq("id", newId)
+          .single();
+        if (fresh) {
+          setMyHotdeals((prev) => [fresh as unknown as DailyHotdeal, ...prev]);
+        }
+      }
+      // 템플릿 저장 프롬프트가 뜨지 않는 케이스에서만 등록 토스트 표시 (시트 가림 방지)
+      if (!mdId) {
+        toast.success("핫딜이 등록됐어요");
+      }
       // 템플릿 저장 프롬프트용 스냅샷
       if (mdId) {
         setLastCreatedSnapshot({
@@ -265,7 +321,11 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
       }
       setShowForm(false);
       resetForm();
-      router.refresh();
+      // embedded(대시보드 인라인)에서는 같은 화면에 머물면서 목록만 갱신.
+      // standalone 페이지에서만 상세로 이동.
+      if (!embedded && !mdId && newId) {
+        router.push(`/hotdeal/${newId}`);
+      }
     } catch (err) {
       console.error("[create_daily_hotdeal] thrown:", err);
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
@@ -277,6 +337,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
 
   const handleUpdate = async () => {
     if (!editingId) return;
+    if (!tableZone) { toast.error("자리 등급을 선택해주세요"); return; }
     const MAX_MAN = 9999;
     const priceMan = price ? Number(price.replace(/[^0-9]/g, "")) : 0;
     if (!priceMan) { toast.error("특가를 입력해주세요"); return; }
@@ -302,14 +363,31 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
         p_table_info: tableInfo.trim() || null,
         p_table_features: tableFeatures.length > 0 ? tableFeatures : null,
         p_liquor_includes: includes.length > 0 ? includes : null,
+        p_table_zone: tableZone || null,
       });
       if (error) throw error;
       const result = data as { success: boolean; error?: string };
       if (!result?.success) { toast.error(result?.error || "수정 실패"); return; }
       toast.success("수정됐어요");
+      const targetId = editingId;
+      // 인라인: 같은 목록에서 해당 항목만 다시 가져와 갱신
+      if (embedded && targetId) {
+        const { data: fresh } = await supabase
+          .from("daily_hotdeals")
+          .select("*, club:clubs(id, name, area, thumbnail_url)")
+          .eq("id", targetId)
+          .single();
+        if (fresh) {
+          setMyHotdeals((prev) =>
+            prev.map((h) => (h.id === targetId ? (fresh as unknown as DailyHotdeal) : h))
+          );
+        }
+      }
       setShowForm(false);
       resetForm();
-      router.refresh();
+      if (!embedded) {
+        router.push(`/hotdeal/${targetId}`);
+      }
     } catch (err) {
       console.error(err);
       toast.error("요청 실패");
@@ -399,7 +477,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
           <h1 className="text-2xl font-black text-white tracking-tight">Hot Deal 등록</h1>
         </div>
         <p className="text-[12px] text-neutral-500 mb-4 leading-relaxed">
-          당일 특가·핫딜을 카드 형태로 등록해요. 종료 시간이 다가오면 카운트다운으로 노출됩니다.
+          오늘의 특가 상품을 올리고 매출을 올려보세요!
         </p>
 
         {!showForm && (
@@ -471,6 +549,11 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                   </select>
                 </div>
               </div>
+              {clubId && (
+                <p className="text-[11px] text-neutral-500">
+                  이 클럽의 활성 핫딜 {clubActiveCount}/5 (자리당 1개)
+                </p>
+              )}
             </section>
 
             {/* 2. 테이블 위치 */}
@@ -538,11 +621,49 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                     </button>
                   </>
                 )}
+                <div className="space-y-2">
+                  <p className="text-[11px] text-neutral-400 font-bold">
+                    자리 등급 <span className="text-red-400">*</span>
+                  </p>
+                  <p className="text-[10px] text-neutral-500">
+                    같은 클럽에서 자리당 활성 핫딜은 1개만 등록할 수 있어요
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {TABLE_ZONE_OPTIONS.map((opt) => {
+                      const active = tableZone === opt.value;
+                      const occupied = occupiedZones.has(opt.value);
+                      return (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => {
+                            if (occupied) {
+                              toast.error(`'${opt.label}' 자리는 이미 활성 핫딜이 있어요`);
+                              return;
+                            }
+                            setTableZone(active ? "" : opt.value);
+                          }}
+                          disabled={busy}
+                          className={`h-8 px-3 rounded-full text-[12px] font-bold border transition-colors ${
+                            active
+                              ? "bg-amber-500 border-amber-500 text-black"
+                              : occupied
+                              ? "bg-neutral-900/50 border-neutral-800 text-neutral-600 line-through"
+                              : "bg-neutral-900 border-neutral-700 text-neutral-300 hover:border-amber-500/60"
+                          }`}
+                        >
+                          {opt.label}
+                          {occupied && " (사용 중)"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <input
                   type="text"
                   value={tableInfo}
                   onChange={(e) => setTableInfo(e.target.value)}
-                  placeholder="예) A3, B~C열"
+                  placeholder="자리 번호 (선택) — 예) A3, B~C열"
                   disabled={busy}
                   className="w-full bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3 text-white text-sm placeholder:text-neutral-600"
                 />
@@ -780,7 +901,14 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
           open={showTemplateSelector}
           onOpenChange={setShowTemplateSelector}
           onSelect={(t) => {
-            if (t.club_id) setClubId(t.club_id);
+            // 폼이 닫혀있으면 열어줌
+            setShowForm(true);
+            // 템플릿의 클럽이 내 소속 클럽에 있으면 적용, 아니면 첫 번째 클럽 fallback
+            if (t.club_id && clubs.some((c) => c.id === t.club_id)) {
+              setClubId(t.club_id);
+            } else if (clubs[0]) {
+              setClubId(clubs[0].id);
+            }
             if (t.description !== null) setDescription(t.description ?? "");
             if (t.price !== null) setPrice(String(t.price / 10000));
             if (t.original_price !== null) setOriginalPrice(String(t.original_price / 10000));
@@ -804,10 +932,22 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
       {lastCreatedSnapshot && mdId && (
         <Sheet open={showTemplateSavePrompt} onOpenChange={(open) => {
           setShowTemplateSavePrompt(open);
-          if (!open) setLastCreatedSnapshot(null);
+          if (!open) {
+            setLastCreatedSnapshot(null);
+            const target = lastCreatedHotdealId;
+            setLastCreatedHotdealId(null);
+            // embedded(대시보드 인라인): 같은 화면 유지. standalone: 상세/대시보드로 이동.
+            if (!embedded) {
+              router.push(target ? `/hotdeal/${target}` : "/md/dashboard");
+            }
+          }
         }}>
           <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
             <SheetHeader className="text-left pb-2">
+              <div className="inline-flex items-center gap-1.5 text-green-400 text-[12px] font-black mb-1">
+                <span>✓</span>
+                <span>핫딜이 등록됐어요</span>
+              </div>
               <SheetTitle className="text-white text-lg">템플릿으로 저장할까요?</SheetTitle>
             </SheetHeader>
             <p className="text-neutral-400 text-sm mb-4">

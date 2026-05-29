@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Clock, Instagram, Train, MapPin } from "lucide-react";
+import { ArrowLeft, Clock, Instagram, Train, MapPin, Pencil, Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 import type { DailyHotdeal } from "@/types/database";
+import { createClient } from "@/lib/supabase/client";
+import { tableZoneLabel } from "@/lib/utils/hotdeal";
 
 type HotdealWithJoins = DailyHotdeal & {
   club: {
@@ -34,12 +38,46 @@ function formatCountdown(endsAtISO: string, now: number): string {
 
 export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
   const [now, setNow] = useState(Date.now());
+  const [isOwner, setIsOwner] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const dmMessage = useMemo(() => {
+    const zone = tableZoneLabel(h.table_zone);
+    const priceTxt = h.price ? `${h.price.toLocaleString()}원` : "";
+    const parts = [zone, h.table_info, priceTxt].filter(Boolean).join(" · ");
+    return [
+      "[나플핫딜문의] 안녕하세요!",
+      `${h.club.name}${parts ? ` ${parts}` : ""} 핫딜 예약 가능할까요?`,
+    ].join("\n");
+  }, [h]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(dmMessage);
+      setCopied(true);
+      toast.success("메시지가 복사됐어요");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
+    }
+  };
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
+      setIsOwner(!!user && user.id === h.md_id);
+    })();
+    return () => { cancelled = true; };
+  }, [supabase, h.md_id]);
 
   const thumb = h.thumbnail_url || h.club?.thumbnail_url || null;
   const countdown = formatCountdown(h.ends_at, now);
@@ -77,9 +115,24 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
         </button>
 
         {/* HOT DEAL 배지 */}
-        <div className="absolute top-3 right-3 bg-amber-500 text-black text-[11px] font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1">
+        <div
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
+          className="absolute right-3 bg-amber-500 text-black text-[11px] font-black px-2.5 py-1 rounded-full inline-flex items-center gap-1 z-30"
+        >
           🔥 HOT DEAL
         </div>
+
+        {/* MD 본인용 수정 버튼 */}
+        {isOwner && (
+          <Link
+            href={`/md/hotdeal-now?edit=${h.id}`}
+            style={{ top: "calc(env(safe-area-inset-top, 0px) + 52px)" }}
+            className="absolute right-3 bg-black/70 backdrop-blur-sm text-white text-[11px] font-black px-2.5 py-1.5 rounded-full inline-flex items-center gap-1 z-30 active:scale-95 transition-transform"
+          >
+            <Pencil className="w-3 h-3" />
+            수정
+          </Link>
+        )}
 
         {/* 하단 그라데이션 */}
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/70 to-transparent" />
@@ -229,14 +282,24 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
               </div>
             </div>
             {h.md.instagram && (
-              <a
-                href={`https://instagram.com/${h.md.instagram}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full h-11 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-95 transition-transform text-black font-black text-[13px] flex items-center justify-center"
-              >
-                MD에게 연락하기
-              </a>
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="w-full h-11 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-95 transition-transform text-white font-black text-[13px] inline-flex items-center justify-center gap-1.5"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
+                  {copied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사하기"}
+                </button>
+                <a
+                  href={`https://instagram.com/${h.md.instagram}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block w-full h-11 rounded-full bg-amber-500 hover:bg-amber-400 active:scale-95 transition-transform text-black font-black text-[13px] flex items-center justify-center"
+                >
+                  문의하기
+                </a>
+              </div>
             )}
           </div>
         )}

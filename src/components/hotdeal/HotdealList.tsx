@@ -7,17 +7,18 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Clock, MapPin, Flame, ChevronDown, Plus } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import type { DailyHotdeal } from "@/types/database";
+import { tableZoneLabel } from "@/lib/utils/hotdeal";
 
 type SortMode = "ends_at" | "price";
-type PriceFilter = "all" | "5" | "10" | "20" | "50";
+type PriceBucket = "u10" | "10_30" | "30_50" | "50_100" | "o100";
 
 const AREA_FILTERS = ["전체", "강남", "홍대", "이태원"];
-const PRICE_OPTIONS: { value: PriceFilter; label: string }[] = [
-  { value: "all", label: "전체" },
-  { value: "5", label: "5만원 이하" },
-  { value: "10", label: "10만원 이하" },
-  { value: "20", label: "20만원 이하" },
-  { value: "50", label: "50만원 이하" },
+const PRICE_BUCKETS: { value: PriceBucket; label: string; min: number; max: number | null }[] = [
+  { value: "u10", label: "~10만", min: 0, max: 10_0000 },
+  { value: "10_30", label: "10~30만", min: 10_0000, max: 30_0000 },
+  { value: "30_50", label: "30~50만", min: 30_0000, max: 50_0000 },
+  { value: "50_100", label: "50~100만", min: 50_0000, max: 100_0000 },
+  { value: "o100", label: "100만+", min: 100_0000, max: null },
 ];
 
 interface Props {
@@ -41,7 +42,7 @@ export function HotdealList({ hotdeals }: Props) {
   const router = useRouter();
   const { user } = useCurrentUser();
   const [sortMode, setSortMode] = useState<SortMode>("ends_at");
-  const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
+  const [selectedBuckets, setSelectedBuckets] = useState<Set<PriceBucket>>(new Set());
   const [areaFilter, setAreaFilter] = useState<string>("전체");
   const [now, setNow] = useState(Date.now());
 
@@ -55,9 +56,16 @@ export function HotdealList({ hotdeals }: Props) {
     if (areaFilter !== "전체") {
       list = list.filter((h) => h.club?.area === areaFilter);
     }
-    if (priceFilter !== "all") {
-      const max = Number(priceFilter) * 10000;
-      list = list.filter((h) => h.price !== null && h.price <= max);
+    if (selectedBuckets.size > 0) {
+      list = list.filter((h) => {
+        if (h.price === null) return false;
+        for (const v of selectedBuckets) {
+          const b = PRICE_BUCKETS.find((x) => x.value === v);
+          if (!b) continue;
+          if (h.price >= b.min && (b.max === null || h.price < b.max)) return true;
+        }
+        return false;
+      });
     }
     if (sortMode === "price") {
       list.sort((a, b) => (a.price ?? Infinity) - (b.price ?? Infinity));
@@ -65,7 +73,16 @@ export function HotdealList({ hotdeals }: Props) {
       list.sort((a, b) => new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime());
     }
     return list;
-  }, [hotdeals, areaFilter, priceFilter, sortMode]);
+  }, [hotdeals, areaFilter, selectedBuckets, sortMode]);
+
+  const toggleBucket = (b: PriceBucket) => {
+    setSelectedBuckets((prev) => {
+      const next = new Set(prev);
+      if (next.has(b)) next.delete(b);
+      else next.add(b);
+      return next;
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -81,7 +98,7 @@ export function HotdealList({ hotdeals }: Props) {
         <div className="flex items-center gap-1.5">
           <Flame className="w-5 h-5 text-amber-400" />
           <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">
-            Hot Deal Now
+            Hot Deal Tonight
           </h1>
         </div>
         {(user?.role === "md" || user?.role === "admin") && (
@@ -113,7 +130,7 @@ export function HotdealList({ hotdeals }: Props) {
         ))}
       </div>
 
-      {/* 정렬 + 가격 필터 */}
+      {/* 정렬 */}
       <div className="flex items-center gap-2">
         <button
           type="button"
@@ -123,20 +140,36 @@ export function HotdealList({ hotdeals }: Props) {
           {sortMode === "ends_at" ? "마감 임박순" : "가격 낮은순"}
           <ChevronDown className="w-3 h-3" />
         </button>
-        <div className="relative">
-          <select
-            value={priceFilter}
-            onChange={(e) => setPriceFilter(e.target.value as PriceFilter)}
-            className="appearance-none bg-neutral-900 text-neutral-300 text-[12px] font-bold px-3 py-1.5 pr-7 rounded-full"
+        {selectedBuckets.size > 0 && (
+          <button
+            type="button"
+            onClick={() => setSelectedBuckets(new Set())}
+            className="text-[11px] text-neutral-500 hover:text-white font-bold underline underline-offset-2"
           >
-            {PRICE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-neutral-400 pointer-events-none" />
-        </div>
+            가격 초기화
+          </button>
+        )}
+      </div>
+
+      {/* 가격 칩 (다중 선택) */}
+      <div data-no-pull-refresh className="flex gap-2 overflow-x-auto scrollbar-hide -mx-4 px-4 touch-pan-x touch-pan-y">
+        {PRICE_BUCKETS.map((b) => {
+          const active = selectedBuckets.has(b.value);
+          return (
+            <button
+              key={b.value}
+              type="button"
+              onClick={() => toggleBucket(b.value)}
+              className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+                active
+                  ? "bg-amber-500 text-black"
+                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+              }`}
+            >
+              {b.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* 카드 리스트 */}
@@ -209,17 +242,28 @@ function HotdealCard({ hotdeal: h, now }: { hotdeal: DailyHotdeal; now: number }
           </p>
         </div>
 
-        {/* 주류 + 테이블 구성 태그 */}
+        {/* 주류 (강조) + 테이블 구성 태그 */}
         {((h.liquor_includes?.length ?? 0) > 0 || (h.table_features?.length ?? 0) > 0) && (
           <div className="flex flex-wrap gap-1 mt-2">
-            {[...(h.liquor_includes ?? []), ...(h.table_features ?? [])].slice(0, 3).map((tag) => (
-              <span key={tag} className="px-1.5 py-0.5 bg-neutral-800 text-neutral-400 rounded text-[10px] font-bold">
+            {(h.liquor_includes ?? []).slice(0, 2).map((tag) => (
+              <span
+                key={`liq-${tag}`}
+                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-black"
+              >
+                🍾 {tag}
+              </span>
+            ))}
+            {(h.table_features ?? []).slice(0, 2).map((tag) => (
+              <span
+                key={`feat-${tag}`}
+                className="px-2 py-0.5 bg-neutral-800 text-neutral-400 rounded-full text-[10px] font-bold"
+              >
                 {tag}
               </span>
             ))}
-            {((h.liquor_includes?.length ?? 0) + (h.table_features?.length ?? 0)) > 3 && (
+            {((h.liquor_includes?.length ?? 0) + (h.table_features?.length ?? 0)) > 4 && (
               <span className="px-1.5 py-0.5 text-neutral-600 text-[10px]">
-                +{((h.liquor_includes?.length ?? 0) + (h.table_features?.length ?? 0)) - 3}
+                +{((h.liquor_includes?.length ?? 0) + (h.table_features?.length ?? 0)) - 4}
               </span>
             )}
           </div>
@@ -234,6 +278,13 @@ function HotdealCard({ hotdeal: h, now }: { hotdeal: DailyHotdeal; now: number }
           </div>
           {h.price !== null && (
             <div className="text-right">
+              {tableZoneLabel(h.table_zone) && (
+                <div className="flex justify-end mb-0.5">
+                  <span className="bg-amber-500 text-black text-[10px] font-black px-1.5 py-0.5 rounded-md leading-none">
+                    {tableZoneLabel(h.table_zone)}
+                  </span>
+                </div>
+              )}
               {discountPct && h.original_price && (
                 <div className="flex items-baseline justify-end gap-1.5">
                   <span className="text-[11px] font-black text-red-400">{discountPct}%</span>

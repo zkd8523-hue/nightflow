@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { normalizeDowSlots, summarizeSlots } from "@/lib/utils/hotdeal";
+import { normalizeDowSlots, summarizeSlots, benefitLabel } from "@/lib/utils/hotdeal";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
 interface ClubBenefitItem {
@@ -14,6 +14,7 @@ interface ClubBenefitItem {
   club_area: string | null;
   club_thumbnail: string | null;
   benefit_text: string | null;
+  benefit_tags: string[];
   md_count: number;
   fav_count: number;
 }
@@ -71,7 +72,7 @@ export function ClubBenefitSection() {
       if (cancelled) return;
 
       // 유효한 슬롯에서 오늘 혜택 추출
-      const slotMap = new Map<string, string>();
+      const slotMap = new Map<string, { text: string; tags: string[] }>();
       for (const s of (slotsRes.data ?? []) as Array<{
         club_id: string;
         benefits_by_dow: HotdealBenefitsByDow | null;
@@ -83,8 +84,13 @@ export function ClubBenefitSection() {
           (s.benefits_by_dow ?? {})[todayDowKey as HotdealDow]
         );
         const summary = summarizeSlots(todaySlots);
-        if (summary) {
-          slotMap.set(s.club_id, summary);
+        // 오늘 슬롯의 모든 benefits를 합쳐 unique 배열로
+        const tagSet = new Set<string>();
+        for (const slot of todaySlots) {
+          for (const b of slot.benefits ?? []) tagSet.add(b);
+        }
+        if (summary || tagSet.size > 0) {
+          slotMap.set(s.club_id, { text: summary, tags: [...tagSet] });
         }
       }
 
@@ -167,7 +173,8 @@ export function ClubBenefitSection() {
             club_name: c.name,
             club_area: c.area,
             club_thumbnail: c.thumbnail_url,
-            benefit_text: slotMap.get(c.id) ?? null,
+            benefit_text: slotMap.get(c.id)?.text || null,
+            benefit_tags: slotMap.get(c.id)?.tags ?? [],
             md_count: c.club_partners?.length ?? 0,
             fav_count: favCountMap[c.id] ?? 0,
           }))
@@ -226,7 +233,7 @@ export function ClubBenefitSection() {
               {item.benefit_text && (
                 <div className="absolute top-0 inset-x-0 bg-amber-500 px-2 py-1 flex items-center justify-center">
                   <span className="text-black text-[10px] font-black tracking-tight truncate">
-                    🎁 {item.benefit_text}
+                    {item.benefit_text}
                   </span>
                 </div>
               )}
@@ -248,6 +255,21 @@ export function ClubBenefitSection() {
               <p className="text-[11px] text-neutral-500">
                 {item.club_area ?? "기타"}
               </p>
+              {item.benefit_tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {item.benefit_tags.slice(0, 3).map((tag) => {
+                    const { label, emoji } = benefitLabel(tag);
+                    return (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[9px] font-black leading-none"
+                      >
+                        {emoji} {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </Link>
         ))}

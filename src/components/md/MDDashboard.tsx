@@ -119,7 +119,9 @@ export function MDDashboard({
     const [mdCredits, setMdCredits] = useState<number | null>(null);
     const [showAreaOnboarding, setShowAreaOnboarding] = useState(false);
     const [hotdealSheetOpen, setHotdealSheetOpen] = useState(false);
+    const [hotdealInlineOpen, setHotdealInlineOpen] = useState(false);
     const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
+    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(false);
     const supabase = createClient();
 
     // 관심 지역 온보딩: 승인된 MD가 아직 시트를 안 봤고 구독도 0건이면 노출
@@ -387,10 +389,12 @@ export function MDDashboard({
                     onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log("[MDDashboard] Hot Deal button clicked, opening sheet");
-                        setHotdealSheetOpen(true);
+                        setHotdealInlineOpen((v) => !v);
+                        setGuestSignInlineOpen(false);
                     }}
-                    className="col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border border-amber-500/30 rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all"
+                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
+                        hotdealInlineOpen ? "border-amber-500" : "border-neutral-700"
+                    }`}
                 >
                     <span className="text-[20px] leading-none">🔥</span>
                     <span className="text-[11px] font-black text-white">Hot Deal</span>
@@ -401,9 +405,12 @@ export function MDDashboard({
                     onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setGuestSignSheetOpen(true);
+                        setGuestSignInlineOpen((v) => !v);
+                        setHotdealInlineOpen(false);
                     }}
-                    className="col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border border-neutral-700 rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all"
+                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
+                        guestSignInlineOpen ? "border-amber-500" : "border-neutral-700"
+                    }`}
                 >
                     <span className="text-[20px] leading-none">🎫</span>
                     <span className="text-[11px] font-black text-white">게스트 간판</span>
@@ -417,6 +424,37 @@ export function MDDashboard({
                     </div>
                 </Link>
             </div>
+
+            {/* Hot Deal 인라인 등록 영역 */}
+            {hotdealInlineOpen && (
+                <div className="px-4 mt-3">
+                    <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-4">
+                        <HotdealNowManager
+                            clubs={hotdealClubs}
+                            initialMyHotdeals={initialMyHotdeals}
+                            embedded
+                        />
+                    </div>
+                </div>
+            )}
+
+            {/* 게스트 간판 인라인 영역 */}
+            {guestSignInlineOpen && guestSignThisWeekISO && guestSignNextWeekISO && (
+                <div className="px-4 mt-3">
+                    <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-4">
+                        <HotdealSlotBoard
+                            currentUserId={user.id}
+                            isAdmin={user.role === "admin"}
+                            clubs={guestSignClubs}
+                            slots={guestSignSlots}
+                            mySlots={guestSignMySlots}
+                            thisWeekISO={guestSignThisWeekISO}
+                            nextWeekISO={guestSignNextWeekISO}
+                            embedded
+                        />
+                    </div>
+                </div>
+            )}
 
             {/* Auction Tabs + Register Button */}
             <div className="px-4 mt-3">

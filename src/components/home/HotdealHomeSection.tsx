@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { tableZoneLabel } from "@/lib/utils/hotdeal";
+import type { HotdealTableZone } from "@/types/database";
 
 interface HotPlaceItem {
   club_id: string;
@@ -17,6 +19,7 @@ interface HotPlaceItem {
   hotdeal_price?: number | null;
   hotdeal_original_price?: number | null;
   hotdeal_ends_at?: string;
+  hotdeal_table_zone?: HotdealTableZone | null;
 }
 
 function formatCountdownShort(endsAtISO: string, now: number): string {
@@ -53,7 +56,7 @@ export function HotdealHomeSection() {
       // 1) 활성 핫딜 먼저 조회 (미만료)
       const { data: deals } = await supabase
         .from("daily_hotdeals")
-        .select("id, club_id, title, thumbnail_url, ends_at, price, original_price")
+        .select("id, club_id, title, thumbnail_url, ends_at, price, original_price, table_zone")
         .eq("status", "active")
         .gt("ends_at", new Date().toISOString());
 
@@ -65,14 +68,9 @@ export function HotdealHomeSection() {
         ends_at: string;
         price: number | null;
         original_price: number | null;
+        table_zone: HotdealTableZone | null;
       };
-      const dealsByClub = new Map<string, DealRow>();
-      for (const d of ((deals ?? []) as unknown as DealRow[])) {
-        const prev = dealsByClub.get(d.club_id);
-        if (!prev || new Date(d.ends_at) < new Date(prev.ends_at)) {
-          dealsByClub.set(d.club_id, d);
-        }
-      }
+      const dealList = ((deals ?? []) as unknown as DealRow[]);
 
       // 2) 클럽 + partners 카운트
       const { data: clubs, error: clubsErr } = await supabase
@@ -92,28 +90,49 @@ export function HotdealHomeSection() {
 
       // 테스트/숨김 클럽 제외 (프로덕션에서만 적용)
       const filteredAll = SHOW_TEST_CLUBS ? rows : rows.filter((c) => !HIDDEN_PATTERN.test(c.name));
+      const clubsById = new Map(filteredAll.map((c) => [c.id, c]));
 
-      // 핫딜 카운트는 노출 대상 클럽 기준으로 다시 계산 (테스트 클럽 핫딜은 프로덕션에서 무시)
-      const visibleClubIds = new Set(filteredAll.map((c) => c.id));
-      const hotdealClubIds = [...dealsByClub.keys()].filter((id) => visibleClubIds.has(id));
+      // 노출 가능한 클럽에 속한 핫딜만 (테스트 클럽 핫딜은 프로덕션에서 제외)
+      const visibleDeals = dealList.filter((d) => clubsById.has(d.club_id));
 
-      // 핫딜 있는 클럽 1개 이상 → 그 클럽들만 노출
-      // 핫딜 0개 → 폴백으로 전체 클럽 노출 (오늘 어디갈래? 와 동일 패턴)
-      let source = filteredAll;
-      if (hotdealClubIds.length > 0) {
-        source = filteredAll.filter((c) => hotdealClubIds.includes(c.id));
+      // 클럽당 1개만 노출: 같은 클럽이면 가장 임박한 핫딜 1개로 추림
+      const dealByClub = new Map<string, DealRow>();
+      for (const d of visibleDeals) {
+        const prev = dealByClub.get(d.club_id);
+        if (!prev || new Date(d.ends_at) < new Date(prev.ends_at)) {
+          dealByClub.set(d.club_id, d);
+        }
       }
+      const dedupedDeals = [...dealByClub.values()];
 
-      // 정렬: 핫딜 있을 때 → ends_at 임박순. 폴백일 때 → 테스트 클럽(개발) → MD 카운트 desc → 이름 asc
-      if (hotdealClubIds.length > 0) {
-        source.sort((a, b) => {
-          const da = dealsByClub.get(a.id);
-          const db = dealsByClub.get(b.id);
-          if (!da || !db) return 0;
-          return new Date(da.ends_at).getTime() - new Date(db.ends_at).getTime();
+      // 핫딜 있을 때: 클럽당 1개, 새로고침마다 셔플 (게시자 동등)
+      // 핫딜 0개일 때: 클럽 단위 폴백
+      let out: HotPlaceItem[] = [];
+      if (dedupedDeals.length > 0) {
+        // Fisher-Yates shuffle
+        for (let i = dedupedDeals.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [dedupedDeals[i], dedupedDeals[j]] = [dedupedDeals[j], dedupedDeals[i]];
+        }
+        out = dedupedDeals.slice(0, MAX_CARDS).map((d) => {
+          const c = clubsById.get(d.club_id)!;
+          return {
+            club_id: c.id,
+            club_name: c.name,
+            club_area: c.area,
+            club_thumbnail: d.thumbnail_url || c.thumbnail_url,
+            md_count: c.club_partners?.length ?? 0,
+            hotdeal_text: d.title,
+            hotdeal_id: d.id,
+            hotdeal_price: d.price,
+            hotdeal_original_price: d.original_price,
+            hotdeal_ends_at: d.ends_at,
+            hotdeal_table_zone: d.table_zone ?? null,
+          };
         });
       } else {
-        source.sort((a, b) => {
+        // 폴백: 클럽 단위. 테스트 클럽(개발) → MD 카운트 desc → 이름 asc
+        const fallback = [...filteredAll].sort((a, b) => {
           const at = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(a.name) ? 1 : 0;
           const bt = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(b.name) ? 1 : 0;
           if (at !== bt) return bt - at;
@@ -122,31 +141,15 @@ export function HotdealHomeSection() {
           if (mb !== ma) return mb - ma;
           return a.name.localeCompare(b.name);
         });
-      }
-
-      const topClubs = source.slice(0, MAX_CARDS);
-      if (topClubs.length === 0) {
-        if (!cancelled) setItems([]);
-        return;
-      }
-
-      const out: HotPlaceItem[] = topClubs.map((c) => {
-        const d = dealsByClub.get(c.id);
-        return {
+        out = fallback.slice(0, MAX_CARDS).map((c) => ({
           club_id: c.id,
           club_name: c.name,
           club_area: c.area,
-          club_thumbnail: d?.thumbnail_url || c.thumbnail_url,
+          club_thumbnail: c.thumbnail_url,
           md_count: c.club_partners?.length ?? 0,
-          hotdeal_text: d?.title,
-          hotdeal_id: d?.id,
-          hotdeal_price: d?.price,
-          hotdeal_original_price: d?.original_price,
-          hotdeal_ends_at: d?.ends_at,
-        };
-      });
+        }));
+      }
 
-      // 핫딜 있는 클럽 우선
       if (!cancelled) setItems(out);
     })();
     return () => {
@@ -162,7 +165,7 @@ export function HotdealHomeSection() {
       <div className="flex items-baseline justify-between px-1">
         <h2 className="text-[20px] font-black text-white flex items-center gap-0.5 tracking-tight">
           <span className="text-[20px]">🔥</span>
-          Hot Deal Now
+          Hot Deal Tonight
         </h2>
         <Link
           href="/hotdeal"
@@ -180,9 +183,10 @@ export function HotdealHomeSection() {
       >
         {items.map((item) => {
           const hasHotdeal = !!item.hotdeal_text;
+          const zoneLabel = tableZoneLabel(item.hotdeal_table_zone);
           return (
             <Link
-              key={item.club_id}
+              key={item.hotdeal_id ?? item.club_id}
               href={item.hotdeal_id ? `/hotdeal/${item.hotdeal_id}` : `/clubs/${item.club_id}`}
               className="flex-shrink-0 w-[44%] max-w-[180px] snap-start snap-always active:scale-[0.98] transition-transform"
             >
@@ -223,9 +227,16 @@ export function HotdealHomeSection() {
 
               {/* 텍스트 */}
               <div className="mt-2 px-0.5 space-y-0.5">
-                <p className="text-white font-bold text-[13px] truncate leading-tight">
-                  {item.club_name}
-                </p>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <p className="text-white font-bold text-[13px] truncate leading-tight">
+                    {item.club_name}
+                  </p>
+                  {zoneLabel && (
+                    <span className="shrink-0 bg-amber-500 text-black text-[9px] font-black px-1.5 py-0.5 rounded-md leading-none">
+                      {zoneLabel}
+                    </span>
+                  )}
+                </div>
                 <p className="text-neutral-500 text-[11px]">
                   {item.club_area ?? "기타"}
                 </p>

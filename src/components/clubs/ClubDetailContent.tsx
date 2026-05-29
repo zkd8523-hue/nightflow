@@ -39,10 +39,14 @@ import { useIsClubPartner } from "@/hooks/useIsClubPartner";
 import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
-import type { Club, Auction } from "@/types/database";
+import type { Club, Auction, HotdealDow, HotdealTimeSlot } from "@/types/database";
+import { GUEST_SIGN_BENEFIT_PRESETS, benefitLabel } from "@/lib/utils/hotdeal";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
 interface GuestSignSlotInfo {
+  slot_id?: string;
+  today_dow?: HotdealDow;
+  today_slots?: HotdealTimeSlot[];
   md: {
     id: string;
     display_name: string | null;
@@ -349,9 +353,16 @@ export function ClubDetailContent({
               {guestSignSlot.today_benefit && (
                 <div className="-mx-3 -mt-3 bg-amber-500 px-3 py-1.5 rounded-t-2xl">
                   <span className="text-black text-[12px] font-black tracking-tight">
-                    🎁 {guestSignSlot.today_benefit}
+                    {guestSignSlot.today_benefit}
                   </span>
                 </div>
+              )}
+              {isAdmin && guestSignSlot.slot_id && guestSignSlot.today_dow && (
+                <AdminGuestSignEditor
+                  slotId={guestSignSlot.slot_id}
+                  dow={guestSignSlot.today_dow}
+                  initialSlots={guestSignSlot.today_slots ?? []}
+                />
               )}
               <div className="flex items-center gap-2">
                 <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-800 shrink-0">
@@ -671,6 +682,178 @@ function FeatureIconRow({
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function AdminGuestSignEditor({
+  slotId,
+  dow,
+  initialSlots,
+}: {
+  slotId: string;
+  dow: HotdealDow;
+  initialSlots: HotdealTimeSlot[];
+}) {
+  const supabase = useMemo(() => createClient(), []);
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(
+    initialSlots[0]?.text ?? ""
+  );
+  const [benefits, setBenefits] = useState<string[]>(
+    initialSlots[0]?.benefits ?? []
+  );
+  const [customText, setCustomText] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const toggleBenefit = (val: string) => {
+    setBenefits((prev) =>
+      prev.includes(val) ? prev.filter((b) => b !== val) : [...prev, val]
+    );
+  };
+
+  const addCustom = () => {
+    const t = customText.trim();
+    if (!t || benefits.includes(t)) return;
+    setBenefits([...benefits, t]);
+    setCustomText("");
+  };
+
+  const handleSave = async () => {
+    if (!text.trim()) {
+      toast.error("멘트를 입력해주세요");
+      return;
+    }
+    setSaving(true);
+    try {
+      const newSlot: HotdealTimeSlot = {
+        until: null,
+        text: text.trim(),
+        benefits,
+      };
+      const { data, error } = await supabase.rpc("update_hotdeal_benefit", {
+        p_slot_id: slotId,
+        p_dow: dow,
+        p_slots: [newSlot],
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result?.success) {
+        toast.error(result?.error ?? "저장 실패");
+        return;
+      }
+      toast.success("저장됐어요. 새로고침해주세요");
+      setOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("요청 실패");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="w-full h-8 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300 text-[11px] font-black hover:bg-red-500/20"
+      >
+        ⚙ Admin 수정 (오늘 혜택)
+      </button>
+    );
+  }
+
+  const customs = benefits.filter(
+    (b) => !GUEST_SIGN_BENEFIT_PRESETS.some((p) => p.value === b)
+  );
+
+  return (
+    <div className="space-y-2 bg-neutral-900/60 border border-red-500/30 rounded-xl p-3">
+      <p className="text-[10px] text-red-300 font-black">⚙ Admin 모드 — 오늘({dow}) 혜택</p>
+      <input
+        type="text"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="예: 입구에서 '나플' 무료입장"
+        disabled={saving}
+        className="w-full h-9 rounded-lg bg-neutral-900 border border-neutral-700 px-2.5 text-[12px] text-white placeholder:text-neutral-600"
+      />
+      <div className="flex flex-wrap gap-1">
+        {GUEST_SIGN_BENEFIT_PRESETS.map((p) => {
+          const active = benefits.includes(p.value);
+          return (
+            <button
+              key={p.value}
+              type="button"
+              disabled={saving}
+              onClick={() => toggleBenefit(p.value)}
+              className={`h-7 px-2.5 rounded-full text-[11px] font-bold border ${
+                active
+                  ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
+                  : "bg-neutral-900 text-neutral-500 border-neutral-700"
+              }`}
+            >
+              {p.emoji} {p.label}
+            </button>
+          );
+        })}
+        {customs.map((c) => (
+          <button
+            key={c}
+            type="button"
+            disabled={saving}
+            onClick={() => toggleBenefit(c)}
+            className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/50 inline-flex items-center gap-1"
+          >
+            {benefitLabel(c).emoji} {c}
+            <span className="text-amber-300/70">×</span>
+          </button>
+        ))}
+      </div>
+      <div className="flex gap-1">
+        <input
+          type="text"
+          value={customText}
+          onChange={(e) => setCustomText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addCustom();
+            }
+          }}
+          placeholder="혜택 직접입력"
+          disabled={saving}
+          maxLength={20}
+          className="flex-1 h-8 rounded-lg bg-neutral-900 border border-neutral-700 px-2 text-[11px] text-white placeholder:text-neutral-600"
+        />
+        <button
+          type="button"
+          onClick={addCustom}
+          disabled={saving || !customText.trim()}
+          className="h-8 px-3 rounded-lg bg-neutral-800 text-white text-[11px] font-bold disabled:opacity-50"
+        >
+          추가
+        </button>
+      </div>
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          disabled={saving}
+          className="flex-1 h-9 rounded-lg bg-neutral-800 text-neutral-300 text-[12px] font-bold"
+        >
+          취소
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 h-9 rounded-lg bg-amber-500 text-black text-[12px] font-black disabled:opacity-50"
+        >
+          {saving ? "저장 중..." : "저장"}
+        </button>
+      </div>
     </div>
   );
 }
