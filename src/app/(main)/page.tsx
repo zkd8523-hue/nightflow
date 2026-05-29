@@ -65,14 +65,23 @@ export default async function HomePage() {
     );
   });
 
-  // 오픈 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
-  const { data: puzzles } = await supabase
+  // 오픈/검토중 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
+  // selecting 상태는 expires_at 무관하게 노출 (cron이 expired 전환할 때까지 검토중 카드 유지)
+  const nowIso = new Date().toISOString();
+  const { data: puzzlesRaw } = await supabase
     .from("puzzles")
     .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, created_at, gender)")
-    .in("status", ["open", "selecting"])
-    .gt("expires_at", new Date().toISOString())
+    .or(`and(status.eq.open,expires_at.gt.${nowIso}),status.eq.selecting`)
     .order("created_at", { ascending: false })
     .limit(50);
+
+  // selecting(검토 중)을 상단 우선 노출 — 남은 시간 짧아 긴급도 높음
+  const puzzles = (puzzlesRaw ?? []).sort((a, b) => {
+    if (a.status === b.status) return 0;
+    if (a.status === "selecting") return -1;
+    if (b.status === "selecting") return 1;
+    return 0;
+  });
 
   // 퍼즐별 오퍼 카운트 (pending만)
   const puzzleIds = (puzzles || []).map((p) => p.id);
