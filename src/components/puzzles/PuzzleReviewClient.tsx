@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -50,7 +50,10 @@ function formatEventDate(dateStr: string) {
 
 export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps) {
   const router = useRouter();
-  const [rating, setRating] = useState(0);
+  const searchParams = useSearchParams();
+  const prefilledRating = Number(searchParams.get("rating"));
+  const initialRating = prefilledRating >= 1 && prefilledRating <= 5 ? prefilledRating : 0;
+  const [rating, setRating] = useState(initialRating);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
