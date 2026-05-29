@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, MousePointerClick, Instagram, MessageCircle, Copy } from "lucide-react";
+import { ChevronLeft, MousePointerClick, Instagram, MessageCircle, Copy, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,6 +20,8 @@ interface SummaryRow {
   openchat_clicks: number;
   copy_message_clicks: number;
   total_clicks: number;
+  unique_users: number;
+  unique_clickers: number;
   last_clicked_at: string | null;
 }
 
@@ -89,9 +91,10 @@ export default async function AdminHotdealClicksPage({
       acc.openchat += Number(r.openchat_clicks || 0);
       acc.copy += Number(r.copy_message_clicks || 0);
       acc.total += Number(r.total_clicks || 0);
+      acc.uniqueUsers += Number(r.unique_users || 0);
       return acc;
     },
-    { instagram: 0, openchat: 0, copy: 0, total: 0 }
+    { instagram: 0, openchat: 0, copy: 0, total: 0, uniqueUsers: 0 }
   );
 
   return (
@@ -139,13 +142,21 @@ export default async function AdminHotdealClicksPage({
           </form>
         </header>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <Card className="bg-[#1C1C1E] border-neutral-800 p-4">
             <div className="flex items-center gap-2 text-neutral-500">
               <MousePointerClick className="w-4 h-4" />
               <span className="text-[11px] font-bold uppercase tracking-wider">총 클릭</span>
             </div>
             <span className="text-3xl font-black text-white">{totals.total.toLocaleString()}</span>
+          </Card>
+          <Card className="bg-[#1C1C1E] border-neutral-800 p-4">
+            <div className="flex items-center gap-2 text-sky-400">
+              <Users className="w-4 h-4" />
+              <span className="text-[11px] font-bold uppercase tracking-wider">유니크 유저</span>
+            </div>
+            <span className="text-3xl font-black text-sky-300">{totals.uniqueUsers.toLocaleString()}</span>
+            <span className="text-[10px] text-neutral-500 mt-1 block">로그인 유저 기준 디스팅트</span>
           </Card>
           <Card className="bg-[#1C1C1E] border-neutral-800 p-4">
             <div className="flex items-center gap-2 text-pink-400">
@@ -182,13 +193,14 @@ export default async function AdminHotdealClicksPage({
                   <th className="text-right px-4 py-3 font-bold">오픈채팅</th>
                   <th className="text-right px-4 py-3 font-bold">문의 복사</th>
                   <th className="text-right px-4 py-3 font-bold">합계</th>
+                  <th className="text-right px-4 py-3 font-bold">유니크</th>
                   <th className="text-right px-4 py-3 font-bold">마지막 클릭</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800">
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-12 text-neutral-500">
+                    <td colSpan={9} className="text-center py-12 text-neutral-500">
                       해당 주차에 등록된 게스트 간판이 없습니다.
                     </td>
                   </tr>
@@ -214,6 +226,15 @@ export default async function AdminHotdealClicksPage({
                       </td>
                       <td className="px-4 py-3 text-right font-black text-white">
                         {Number(r.total_clicks || 0).toLocaleString()}
+                      </td>
+                      <td
+                        className="px-4 py-3 text-right font-bold text-sky-300"
+                        title={`로그인 유저 ${r.unique_users}명${r.unique_clickers > r.unique_users ? " + 비로그인" : ""}`}
+                      >
+                        {Number(r.unique_users || 0).toLocaleString()}
+                        {Number(r.unique_clickers || 0) > Number(r.unique_users || 0) && (
+                          <span className="text-neutral-500 text-[10px] ml-0.5">+익명</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right text-neutral-500 text-[11px]">
                         {formatDate(r.last_clicked_at)}
