@@ -231,8 +231,8 @@ export function ClubBenefitSection() {
                 </div>
               )}
               {item.benefit_text && (
-                <div className="absolute top-0 inset-x-0 bg-amber-500 px-2 py-1 flex items-center justify-center">
-                  <span className="text-black text-[10px] font-black tracking-tight truncate">
+                <div className="absolute top-0 inset-x-0 bg-amber-500 px-2 py-1">
+                  <span className="block text-black text-[10px] font-black tracking-tight text-left leading-tight line-clamp-2">
                     {item.benefit_text}
                   </span>
                 </div>

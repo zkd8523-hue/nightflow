@@ -15,6 +15,7 @@ import {
   makeTag,
   AREA_OPTIONS,
 } from "@/lib/clubs/tags";
+import { benefitLabel } from "@/lib/utils/hotdeal";
 
 interface ClubListItem {
   id: string;
@@ -41,6 +42,7 @@ interface Props {
   clubs: ClubListItem[];
   activeCountMap: Record<string, number>;
   hotdealMap?: Record<string, string>;
+  benefitTagsMap?: Record<string, string[]>;
   favCountMap?: Record<string, number>;
 }
 
@@ -52,7 +54,7 @@ function parseList(v: string | null): string[] {
     .filter(Boolean);
 }
 
-export function ClubList({ clubs, activeCountMap, hotdealMap = {}, favCountMap = {} }: Props) {
+export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMap = {}, favCountMap = {} }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -169,11 +171,19 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, favCountMap =
     (byArea[area] ||= []).push(c);
   }
 
-  // 정렬: 깃발 많은 순 (각 area 내)
+  // 정렬 (각 area 내):
+  // 1) 오늘 혜택(hotdealMap or benefitTagsMap) 있는 클럽 최상위
+  // 2) 그 안에서 active 깃발 많은 순
+  // 3) 혜택 없는 클럽은 active 깃발 많은 순
+  const hasBenefit = (id: string) =>
+    !!hotdealMap[id] || (benefitTagsMap[id]?.length ?? 0) > 0;
   for (const area of Object.keys(byArea)) {
-    byArea[area].sort(
-      (a, b) => (activeCountMap[b.id] || 0) - (activeCountMap[a.id] || 0)
-    );
+    byArea[area].sort((a, b) => {
+      const ab = hasBenefit(a.id) ? 1 : 0;
+      const bb = hasBenefit(b.id) ? 1 : 0;
+      if (ab !== bb) return bb - ab;
+      return (activeCountMap[b.id] || 0) - (activeCountMap[a.id] || 0);
+    });
   }
 
   const orderedAreas: string[] = (AREA_OPTIONS as readonly string[]).filter(
@@ -300,7 +310,16 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, favCountMap =
           {orderedAreas.map((area) => {
             const list = byArea[area];
             if (!list || list.length === 0) return null;
-            return <AreaCarousel key={area} area={area} clubs={list} favCountMap={favCountMap} />;
+            return (
+              <AreaCarousel
+                key={area}
+                area={area}
+                clubs={list}
+                favCountMap={favCountMap}
+                hotdealMap={hotdealMap}
+                benefitTagsMap={benefitTagsMap}
+              />
+            );
           })}
         </div>
       )}
@@ -312,10 +331,14 @@ function AreaCarousel({
   area,
   clubs,
   favCountMap = {},
+  hotdealMap = {},
+  benefitTagsMap = {},
 }: {
   area: string;
   clubs: ClubListItem[];
   favCountMap?: Record<string, number>;
+  hotdealMap?: Record<string, string>;
+  benefitTagsMap?: Record<string, string[]>;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -339,7 +362,13 @@ function AreaCarousel({
       <div className="-mx-4 px-4 relative group">
         <div ref={scrollRef} data-no-pull-refresh className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory touch-pan-x touch-pan-y">
           {clubs.map((club) => (
-            <ClubCard key={club.id} club={club} favCount={favCountMap[club.id] ?? 0} />
+            <ClubCard
+              key={club.id}
+              club={club}
+              favCount={favCountMap[club.id] ?? 0}
+              benefitText={hotdealMap[club.id] ?? null}
+              benefitTags={benefitTagsMap[club.id] ?? []}
+            />
           ))}
         </div>
         {/* "더 있어요" 시각 힌트 — 우측 그라데이션 페이드 */}
@@ -366,15 +395,19 @@ function AreaCarousel({
   );
 }
 
-function ClubCard({ club, favCount = 0 }: { club: ClubListItem; favCount?: number }) {
+function ClubCard({
+  club,
+  favCount = 0,
+  benefitText = null,
+  benefitTags = [],
+}: {
+  club: ClubListItem;
+  favCount?: number;
+  benefitText?: string | null;
+  benefitTags?: string[];
+}) {
   const genres = getTagsByGroup(club.tags || [], "genre");
-  // crowd/space 그룹 제거됨 (Migration 246). 추후 다른 feature 그룹 추가 시 여기서 합산.
-  const featureTags: string[] = [];
-
-  const metaLine = [
-    ...genres.slice(0, 2).map((g) => `#${g.label}`),
-    ...featureTags.slice(0, 1),
-  ].join(" · ");
+  const metaLine = genres.slice(0, 2).map((g) => `#${g.label}`).join(" · ");
 
   return (
     <Link
@@ -394,19 +427,26 @@ function ClubCard({ club, favCount = 0 }: { club: ClubListItem; favCount?: numbe
           <ImageFallback name={club.name} />
         )}
         {/* 찜 버튼 */}
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 z-10">
           <FavoriteButton clubId={club.id} />
         </div>
+        {/* 상단 혜택 배지 — 홈(ClubBenefitSection)과 동일 디자인, 긴 문구는 2줄까지 */}
+        {benefitText && (
+          <div className="absolute top-0 inset-x-0 bg-amber-500 px-1.5 py-1">
+            <span className="block text-black text-[10px] font-black tracking-tight text-left leading-tight line-clamp-2">
+              {benefitText}
+            </span>
+          </div>
+        )}
         {club.drink_menu_url && (
           <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
             <Wine className="w-3 h-3 text-amber-400" />
             <span className="text-[10px] font-bold text-amber-400">주대표</span>
           </div>
         )}
-        {/* 하단 그라데이션으로 텍스트 가독성 보강 */}
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent" />
       </div>
-      <div className="mt-2 px-0.5">
+      <div className="mt-2 px-0.5 space-y-0.5">
         <div className="flex items-center justify-between gap-1.5">
           <p className="text-white text-[14px] font-black truncate flex-1">
             {club.name}
@@ -419,9 +459,24 @@ function ClubCard({ club, favCount = 0 }: { club: ClubListItem; favCount?: numbe
           )}
         </div>
         {metaLine && (
-          <p className="text-neutral-500 text-[11px] font-medium truncate mt-0.5">
+          <p className="text-neutral-500 text-[11px] font-medium truncate">
             {metaLine}
           </p>
+        )}
+        {benefitTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 pt-1">
+            {benefitTags.slice(0, 3).map((tag) => {
+              const { label, emoji } = benefitLabel(tag);
+              return (
+                <span
+                  key={tag}
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[9px] font-black leading-none"
+                >
+                  {emoji} {label}
+                </span>
+              );
+            })}
+          </div>
         )}
       </div>
     </Link>

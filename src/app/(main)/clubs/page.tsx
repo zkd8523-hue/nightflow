@@ -86,6 +86,7 @@ export default async function ClubsIndexPage() {
   }
 
   const hotdealMap: Record<string, string> = {};
+  const benefitTagsMap: Record<string, string[]> = {};
   for (const h of hotdealRes.data ?? []) {
     if (!h.club_id) continue;
     if (new Date(h.expires_at) <= new Date()) continue;
@@ -94,6 +95,13 @@ export default async function ClubsIndexPage() {
     const summary = summarizeSlots(todaySlots);
     if (summary) {
       hotdealMap[h.club_id] = summary;
+    }
+    const tagSet = new Set<string>();
+    for (const slot of todaySlots) {
+      for (const b of slot.benefits ?? []) tagSet.add(b);
+    }
+    if (tagSet.size > 0) {
+      benefitTagsMap[h.club_id] = [...tagSet];
     }
   }
 
@@ -143,6 +151,7 @@ export default async function ClubsIndexPage() {
         }))}
         activeCountMap={activeCountMap}
         hotdealMap={hotdealMap}
+        benefitTagsMap={benefitTagsMap}
         favCountMap={favCountMap}
       />
       </Suspense>
