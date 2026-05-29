@@ -150,9 +150,11 @@ export function ClubBenefitSection() {
       // 혜택 있는 클럽 최우선 → 혜택 없는 클럽은 셔플 (Fisher-Yates)
       const withBenefit = remaining.filter((c) => slotMap.has(c.id));
       const withoutBenefit = remaining.filter((c) => !slotMap.has(c.id));
-      // 혜택 있는 것끼리는 이름 정렬 (안정성)
-      withBenefit.sort((a, b) => a.name.localeCompare(b.name));
-      // 혜택 없는 것은 새로고침마다 다르게 노출되도록 셔플
+      // 혜택 유무 그룹 내에서 각각 셔플 (새로고침마다 다르게 노출)
+      for (let i = withBenefit.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [withBenefit[i], withBenefit[j]] = [withBenefit[j], withBenefit[i]];
+      }
       for (let i = withoutBenefit.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [withoutBenefit[i], withoutBenefit[j]] = [withoutBenefit[j], withoutBenefit[i]];
