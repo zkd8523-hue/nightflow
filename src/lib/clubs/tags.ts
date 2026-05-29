@@ -43,6 +43,8 @@ export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
       { key: "hiphop", label: "힙합" },
       { key: "rnb", label: "R&B" },
       { key: "kpop", label: "K-POP" },
+      { key: "pop", label: "팝" },
+      { key: "house", label: "하우스" },
       { key: "latin", label: "라틴" },
       { key: "techno", label: "테크노" },
       { key: "rock", label: "락" },
@@ -69,8 +71,8 @@ export const AREA_OPTIONS = [
   "강남",
   "홍대",
   "이태원",
-  "부산",
   "대구",
+  "부산",
   "광주",
 ] as const;
 
