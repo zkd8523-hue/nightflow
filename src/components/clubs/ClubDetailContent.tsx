@@ -408,10 +408,17 @@ export function ClubDetailContent({
               <div className={`grid gap-2 pt-1 ${guestSignSlot.md.kakao_open_chat_url ? "grid-cols-2" : "grid-cols-1"}`}>
                 {guestSignSlot.md.instagram && (
                   <a
-                    href={`https://instagram.com/${guestSignSlot.md.instagram}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "instagram")}
+                    href={user ? `https://instagram.com/${guestSignSlot.md.instagram}` : `/login?next=/clubs/${club.id}`}
+                    target={user ? "_blank" : undefined}
+                    rel={user ? "noopener noreferrer" : undefined}
+                    onClick={(e) => {
+                      if (!user) {
+                        e.preventDefault();
+                        router.push(`/login?next=/clubs/${club.id}`);
+                        return;
+                      }
+                      trackGuestSignClick(guestSignSlot.slot_id, "instagram");
+                    }}
                     className="bg-gradient-to-r from-pink-500/20 to-fuchsia-500/20 border border-pink-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
                   >
                     <Instagram className="w-3.5 h-3.5 text-pink-400" />
@@ -420,10 +427,17 @@ export function ClubDetailContent({
                 )}
                 {guestSignSlot.md.kakao_open_chat_url && (
                   <a
-                    href={guestSignSlot.md.kakao_open_chat_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "openchat")}
+                    href={user ? guestSignSlot.md.kakao_open_chat_url : `/login?next=/clubs/${club.id}`}
+                    target={user ? "_blank" : undefined}
+                    rel={user ? "noopener noreferrer" : undefined}
+                    onClick={(e) => {
+                      if (!user) {
+                        e.preventDefault();
+                        router.push(`/login?next=/clubs/${club.id}`);
+                        return;
+                      }
+                      trackGuestSignClick(guestSignSlot.slot_id, "openchat");
+                    }}
                     className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
                   >
                     <MessageCircle className="w-3.5 h-3.5 text-green-400" />
@@ -435,6 +449,10 @@ export function ClubDetailContent({
                 <button
                   type="button"
                   onClick={async () => {
+                    if (!user) {
+                      router.push(`/login?next=/clubs/${club.id}`);
+                      return;
+                    }
                     const benefit = guestSignSlot.today_benefit?.trim();
                     const message = [
                       "[나플 게스트 문의] 안녕하세요!",
