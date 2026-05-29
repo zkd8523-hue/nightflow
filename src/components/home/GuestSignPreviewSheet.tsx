@@ -116,7 +116,7 @@ export function GuestSignPreviewSheet({ open, onOpenChange }: Props) {
                 </div>
                 <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5">
                   <MessageCircle className="w-3.5 h-3.5 text-green-400" />
-                  <span className="text-green-300 text-[11px] font-bold truncate">카카오톡</span>
+                  <span className="text-green-300 text-[11px] font-bold truncate">오픈채팅</span>
                 </div>
               </div>
             </div>

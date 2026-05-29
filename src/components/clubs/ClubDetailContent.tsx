@@ -20,6 +20,8 @@ import {
   Heart,
   MessageCircle,
   Disc3,
+  Copy,
+  Check,
   type LucideIcon,
 } from "lucide-react";
 import { uploadImage } from "@/lib/utils/upload";
@@ -82,6 +84,7 @@ export function ClubDetailContent({
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(club.thumbnail_url);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [guestSignCopied, setGuestSignCopied] = useState(false);
   const [clubTags, setClubTags] = useState<string[]>(club.tags ?? []);
   const [clubName, setClubName] = useState<string>(club.name);
   const [clubAddress, setClubAddress] = useState<string>(club.address ?? "");
@@ -407,10 +410,34 @@ export function ClubDetailContent({
                     className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
                   >
                     <MessageCircle className="w-3.5 h-3.5 text-green-400" />
-                    <span className="text-green-300 text-[11px] font-bold truncate">카카오톡</span>
+                    <span className="text-green-300 text-[11px] font-bold truncate">오픈채팅</span>
                   </a>
                 )}
               </div>
+              {(guestSignSlot.md.instagram || guestSignSlot.md.kakao_open_chat_url) && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const benefit = guestSignSlot.today_benefit?.trim();
+                    const message = [
+                      "[나플 게스트 문의] 안녕하세요!",
+                      `${clubName}${benefit ? ` "${benefit}"` : ""} 게스트 가능할까요?`,
+                    ].join("\n");
+                    try {
+                      await navigator.clipboard.writeText(message);
+                      setGuestSignCopied(true);
+                      toast.success("메시지가 복사됐어요");
+                      setTimeout(() => setGuestSignCopied(false), 2000);
+                    } catch {
+                      toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
+                    }
+                  }}
+                  className="w-full h-10 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:scale-95 transition-transform text-white font-bold text-[12px] inline-flex items-center justify-center gap-1.5"
+                >
+                  {guestSignCopied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {guestSignCopied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사하기"}
+                </button>
+              )}
             </div>
           )}
 

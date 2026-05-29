@@ -22,7 +22,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
-import { formatRelativeTime } from "@/lib/utils/format";
+import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
 import { useCountdown } from "@/hooks/useCountdown";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -567,6 +567,28 @@ export function PuzzleDetailClient({
             </section>
           )}
 
+          {/* 날짜 헤더 — 상세에서는 한 단계 크게(22px) 위계 강화 */}
+          <div className="flex items-center gap-2.5 px-1">
+            <div className="w-1.5 h-[20px] bg-amber-500 rounded-full flex-shrink-0" />
+            <h3 className="text-[22px] font-black text-white tracking-tight">
+              {formatEventDate(puzzle.event_date)}
+            </h3>
+            {(() => {
+              const dday = getDDayLabel(puzzle.event_date);
+              return (
+                <span
+                  className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full ${
+                    dday === "오늘"
+                      ? "bg-amber-500/20 text-amber-400"
+                      : "bg-neutral-800 text-neutral-400"
+                  }`}
+                >
+                  {dday}
+                </span>
+              );
+            })()}
+          </div>
+
           {/* 기본 정보 */}
           <section className="bg-[#1C1C1E] rounded-2xl p-5 space-y-4">
             {/* 작성자 메타: 별도 행으로 분리 */}
@@ -605,14 +627,13 @@ export function PuzzleDetailClient({
               </button>
             </div>
 
-            {/* 제목 + 날짜: 풀폭 단독 행 */}
+            {/* 제목 + 지역/마감: 날짜는 상단 헤더로 분리됨 */}
             <div className="space-y-1">
               {puzzle.notes && (
                 <p className="text-[18px] font-black text-white leading-snug">{puzzle.notes}</p>
               )}
-              <p className={`${puzzle.notes ? "text-[14px] text-neutral-400" : "text-[22px] font-black text-white"} flex flex-wrap items-baseline gap-x-1`}>
-                {formatEventDate(puzzle.event_date)}{" "}
-                <span className={puzzle.notes ? "" : "text-[15px] text-neutral-400"}>{puzzle.area}</span>
+              <p className="text-[14px] text-neutral-400 flex flex-wrap items-baseline gap-x-1.5">
+                <span>{puzzle.area}</span>
                 {puzzle.status === "open" && (
                   <span className="text-[12px] text-neutral-400 whitespace-nowrap">
                     ⏰ {puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감
@@ -1134,14 +1155,11 @@ export function PuzzleDetailClient({
           {/* 비방장·비멤버·비MD: 자기 깃발 등록 유도 CTA */}
           {!isLeader && !isMember && !isMd && (
             <div className="text-center space-y-1">
-              <p className="text-[14.5px] text-neutral-200 font-semibold">
-                최고의 밤을 선택하세요.
-              </p>
               <Link
                 href={currentUserId ? "/flags/new" : "/login?redirect=/flags/new"}
                 className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
               >
-                ⛳ 나도 깃발꽂기
+                ⛳ 나도 오퍼받기
               </Link>
               <p className="text-[10px] text-neutral-500">
                 모든 서비스 무료
