@@ -69,6 +69,9 @@ export const AREA_OPTIONS = [
   "강남",
   "홍대",
   "이태원",
+  "부산",
+  "대구",
+  "광주",
 ] as const;
 
 export type AreaOption = (typeof AREA_OPTIONS)[number];
