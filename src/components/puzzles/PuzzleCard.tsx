@@ -175,6 +175,7 @@ export const PuzzleCard = memo(function PuzzleCard({
   const isFull = puzzle.current_count >= puzzle.target_count;
   const isSmall = puzzle.target_count > 8;
   const isNew = Date.now() - new Date(puzzle.created_at).getTime() < 6 * 60 * 60 * 1000;
+  const isSelecting = puzzle.status === "selecting";
 
   // MD가 퍼즐(모집 중)을 찜할 수 있음 — 인원 부족/예산 큰 거 트래킹
   const { isFavoritedPuzzle, toggleFavoritePuzzle } = usePuzzleFavoritesContext();
@@ -210,6 +211,11 @@ export const PuzzleCard = memo(function PuzzleCard({
           )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
+          {isSelecting && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-[11px] font-bold">
+              검토 중
+            </span>
+          )}
           {isRecruitingParty && !isFull ? (
             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
               🧩
@@ -319,7 +325,14 @@ export const PuzzleCard = memo(function PuzzleCard({
       {/* CTA 버튼 (작성날짜는 카드 상단 깃발 배지 아래로 이동) */}
       <div className="relative -mt-2">
       {isMd ? (
-        hasOffered ? (
+        isSelecting ? (
+          <Button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className="w-full h-11 font-black text-[13px] rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 pointer-events-none"
+          >
+            방장 검토 중
+          </Button>
+        ) : hasOffered ? (
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
             className="w-full h-11 font-black text-[13px] rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 pointer-events-none"

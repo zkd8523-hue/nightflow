@@ -69,7 +69,7 @@ export default async function HomePage() {
   const { data: puzzles } = await supabase
     .from("puzzles")
     .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, created_at, gender)")
-    .eq("status", "open")
+    .in("status", ["open", "selecting"])
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(50);
