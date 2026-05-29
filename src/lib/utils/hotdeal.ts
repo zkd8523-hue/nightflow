@@ -17,6 +17,7 @@ export function tableZoneLabel(zone: HotdealTableZone | null | undefined): strin
 export const GUEST_SIGN_BENEFIT_PRESETS: { value: string; label: string; emoji: string }[] = [
   { value: "free_entry", label: "무료입장", emoji: "🎟" },
   { value: "free_drink", label: "프리드링크", emoji: "🍸" },
+  { value: "table", label: "테이블", emoji: "🛋" },
 ];
 
 export function benefitLabel(tag: string): { label: string; emoji: string } {
