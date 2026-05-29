@@ -59,6 +59,7 @@ export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
     isSingle: true,
     options: [
       { key: "allowed", label: "흡연" },
+      { key: "vape_only", label: "전자담배" },
       { key: "not_allowed", label: "금연" },
     ],
   },

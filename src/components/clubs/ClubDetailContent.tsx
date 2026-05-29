@@ -515,11 +515,17 @@ export function ClubDetailContent({
             </button>
           )}
 
-          {/* 일반 유저: 잘못된 정보 신고 */}
-          {user && !canPartnerEdit && (
+          {/* 일반 유저: 잘못된 정보 신고 (비로그인 시 로그인 페이지로 유도) */}
+          {!canPartnerEdit && (
             <button
               type="button"
-              onClick={() => setReportSheetOpen(true)}
+              onClick={() => {
+                if (!user) {
+                  router.push(`/login?next=/clubs/${club.id}`);
+                  return;
+                }
+                setReportSheetOpen(true);
+              }}
               className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-amber-400 transition-colors mt-2 self-start underline decoration-dotted underline-offset-2"
             >
               잘못된 정보가 있다면? 수정 요청

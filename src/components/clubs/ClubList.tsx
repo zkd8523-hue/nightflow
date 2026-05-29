@@ -174,15 +174,37 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
   // 정렬 (각 area 내):
   // 1) 오늘 혜택(hotdealMap or benefitTagsMap) 있는 클럽 최상위
   // 2) 그 안에서 active 깃발 많은 순
-  // 3) 혜택 없는 클럽은 active 깃발 많은 순
+  // 3) 혜택 없는 클럽은 일별 시드 기반 셔플(매일 노출 순서 변경, 같은 날에는 안정)
   const hasBenefit = (id: string) =>
     !!hotdealMap[id] || (benefitTagsMap[id]?.length ?? 0) > 0;
+  // KST 기준 YYYYMMDD 시드 (자정에 순서 변경)
+  const kstNowForSeed = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const daySeed =
+    kstNowForSeed.getUTCFullYear() * 10000 +
+    (kstNowForSeed.getUTCMonth() + 1) * 100 +
+    kstNowForSeed.getUTCDate();
+  // id+seed → 결정적 해시 (xorshift 기반)
+  const hashForSort = (id: string, seed: number) => {
+    let h = seed >>> 0;
+    for (let i = 0; i < id.length; i++) {
+      h ^= id.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    h ^= h << 13; h >>>= 0;
+    h ^= h >> 17; h >>>= 0;
+    h ^= h << 5;  h >>>= 0;
+    return h;
+  };
   for (const area of Object.keys(byArea)) {
     byArea[area].sort((a, b) => {
       const ab = hasBenefit(a.id) ? 1 : 0;
       const bb = hasBenefit(b.id) ? 1 : 0;
       if (ab !== bb) return bb - ab;
-      return (activeCountMap[b.id] || 0) - (activeCountMap[a.id] || 0);
+      // 혜택 그룹 안에서는 active 깃발 많은 순 우선, 동률이면 일별 셔플
+      const aa = activeCountMap[a.id] || 0;
+      const bbn = activeCountMap[b.id] || 0;
+      if (aa !== bbn) return bbn - aa;
+      return hashForSort(a.id, daySeed) - hashForSort(b.id, daySeed);
     });
   }
 
