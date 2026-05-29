@@ -212,7 +212,7 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           {isSelecting && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-[11px] font-bold">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-neutral-700/60 text-neutral-300 text-[11px] font-bold">
               검토 중
             </span>
           )}
@@ -328,7 +328,7 @@ export const PuzzleCard = memo(function PuzzleCard({
         isSelecting ? (
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="w-full h-11 font-black text-[13px] rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 pointer-events-none"
+            className="w-full h-11 font-black text-[13px] rounded-xl bg-neutral-800 border border-neutral-700 text-neutral-400 pointer-events-none"
           >
             방장 검토 중
           </Button>
