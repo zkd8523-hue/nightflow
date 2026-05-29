@@ -66,12 +66,13 @@ export default async function HomePage() {
   });
 
   // 오픈/검토중 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
-  // selecting 상태는 expires_at 무관하게 노출 (cron이 expired 전환할 때까지 검토중 카드 유지)
+  // expires_at > now() 가드를 selecting에도 적용 — cron 지연/실패 시 만료된 검토중이 무기한 노출되는 문제 차단
   const nowIso = new Date().toISOString();
   const { data: puzzlesRaw } = await supabase
     .from("puzzles")
-    .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, created_at, gender)")
-    .or(`and(status.eq.open,expires_at.gt.${nowIso}),status.eq.selecting`)
+    .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender)")
+    .in("status", ["open", "selecting"])
+    .gt("expires_at", nowIso)
     .order("created_at", { ascending: false })
     .limit(50);
 

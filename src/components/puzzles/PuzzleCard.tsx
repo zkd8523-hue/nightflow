@@ -168,7 +168,7 @@ export const PuzzleCard = memo(function PuzzleCard({
     ? ([ageTag, vibeTag, musicTag].filter(Boolean) as string[])
     : [];
 
-  const leaderTier = getDealTier(puzzle.leader?.deal_count_total ?? 0);
+  const leaderTier = getDealTier(puzzle.leader?.deal_amount_total ?? 0);
 
   const isMd = userRole === "md" || userRole === "admin";
   const isRecruitingParty = puzzle.is_recruiting_party;
@@ -205,9 +205,12 @@ export const PuzzleCard = memo(function PuzzleCard({
             {puzzle.notes || `${puzzle.area}에서 모여요`}
           </div>
           {puzzle.leader?.display_name && (
-            <p className="text-[12px] text-neutral-500 font-medium">
-              방장 · {puzzle.leader.display_name}
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="text-[12px] text-neutral-500 font-medium">
+                방장 · {puzzle.leader.display_name}
+              </p>
+              {leaderTier && <TrustBadge tier={leaderTier} size="sm" />}
+            </div>
           )}
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
@@ -235,9 +238,6 @@ export const PuzzleCard = memo(function PuzzleCard({
               <Bell className={`w-3 h-3 ${isFavorited ? "fill-current" : ""}`} />
             </button>
           )}
-          <span className="inline-flex items-center justify-center shrink-0" title={`거래 ${puzzle.leader?.deal_count_total ?? 0}회`}>
-            <TrustBadge tier={leaderTier} size="sm" />
-          </span>
         </div>
       </div>
 

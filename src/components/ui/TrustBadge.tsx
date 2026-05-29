@@ -10,28 +10,30 @@ interface Props {
     className?: string;
 }
 
-const TIER_EMOJI: Record<DealTier, string> = {
-    silver: "🥈",
-    gold: "🥇",
-    diamond: "💎",
+const TIER_PILL: Record<DealTier, string> = {
+    vip: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
+    vvip: "bg-cyan-500/15 text-cyan-300 border border-cyan-400/40",
+    president: "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-black border border-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.4)]",
 };
 
 const SIZE_CONFIG = {
-    sm: { emoji: "text-[14px]", text: "text-[10px]", padding: "px-1.5 py-0", gap: "gap-0.5", newPill: "text-[9px] px-1.5 py-0.5" },
-    md: { emoji: "text-[16px]", text: "text-xs", padding: "px-2 py-0.5", gap: "gap-1", newPill: "text-[10px] px-2 py-0.5" },
-    lg: { emoji: "text-[18px]", text: "text-sm", padding: "px-2.5 py-1", gap: "gap-1.5", newPill: "text-[11px] px-2.5 py-1" },
+    sm: { pill: "text-[10px] px-1.5 py-0.5", newPill: "text-[9px] px-1.5 py-0.5" },
+    md: { pill: "text-xs px-2 py-0.5", newPill: "text-[10px] px-2 py-0.5" },
+    lg: { pill: "text-sm px-2.5 py-1", newPill: "text-[11px] px-2.5 py-1" },
 };
 
 /**
- * 거래 등급 배지 — 이모지 기반.
- * - tier='silver'|'gold'|'diamond' → 해당 이모지 (등급 우선)
- * - tier=null + isNew=true → "신규" 라벨 (가입 2주 이내)
- * - tier=null + isNew=false → 아무것도 렌더하지 않음
+ * 거래 등급 배지 — 텍스트 필(pill) 기반.
+ * - tier='vip'|'vvip'|'president' → 라벨 + 등급별 색상 (VIP 앰버 / VVIP 시안 / President 골드 그라데이션)
+ * - tier=null + isNew=true → "신규가입" 라벨
+ * - tier=null + isNew=false → 렌더하지 않음
+ *
+ * showLabel prop은 더 이상 시각적으로 구분하지 않음 (메달 이모지 제거됨).
+ * 호환성 위해 prop은 유지하되 무시함.
  */
-export function TrustBadge({ tier, size = "sm", showLabel = false, isNew = false, className = "" }: Props) {
+export function TrustBadge({ tier, size = "sm", isNew = false, className = "" }: Props) {
     const sz = SIZE_CONFIG[size];
 
-    // 등급 없을 때: 신규 회원이면 "신규가입" 라벨, 아니면 아무것도 안 보임
     if (!tier) {
         if (!isNew) return null;
         return (
@@ -44,25 +46,12 @@ export function TrustBadge({ tier, size = "sm", showLabel = false, isNew = false
         );
     }
 
-    const emoji = TIER_EMOJI[tier];
-
-    if (!showLabel) {
-        return (
-            <span
-                className={`inline-flex items-center justify-center leading-none ${sz.emoji} ${className}`}
-                title={DEAL_TIER_LABEL[tier]}
-            >
-                {emoji}
-            </span>
-        );
-    }
-
     return (
         <span
-            className={`inline-flex items-center rounded-full font-black bg-neutral-800/60 ${sz.padding} ${sz.text} ${sz.gap} ${className}`}
+            className={`inline-flex items-center rounded-full font-black leading-none ${TIER_PILL[tier]} ${sz.pill} ${className}`}
+            title={DEAL_TIER_LABEL[tier]}
         >
-            <span className={sz.emoji}>{emoji}</span>
-            <span className="text-white">{DEAL_TIER_LABEL[tier]}</span>
+            {DEAL_TIER_LABEL[tier]}
         </span>
     );
 }

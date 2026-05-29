@@ -10,6 +10,7 @@ interface Props {
     onOpenChange: (open: boolean) => void;
     leader: {
         deal_count_total?: number | null;
+        deal_amount_total?: number | null;
         created_at?: string | null;
         display_name?: string | null;
         name?: string | null;
@@ -30,18 +31,31 @@ function getActivityBadge(lastSeenAt: string | null | undefined): { label: strin
 }
 
 const TIER_ROWS = [
-    { key: "new",     label: "신규가입", desc: "가입 14일 이내",        threshold: null, color: "text-cyan-400" },
-    { key: "silver",  label: "실버",     desc: "1회 이상 거래한 유저",  threshold: 1,    color: "text-neutral-200" },
-    { key: "gold",    label: "골드",     desc: "신뢰할만한 VIP",        threshold: 3,    color: "text-amber-400" },
-    { key: "diamond", label: "다이아",   desc: "진짜 큰손",             threshold: 10,   color: "text-cyan-300" },
+    { key: "new",       label: "신규가입",  desc: "가입 14일 이내",       thresholdLabel: "—",        color: "text-cyan-400" },
+    { key: "vip",       label: "VIP",       desc: "거래 검증된 유저",     thresholdLabel: "100만원+",  color: "text-amber-400" },
+    { key: "vvip",      label: "VVIP",      desc: "신뢰할만한 큰손",      thresholdLabel: "1000만원+", color: "text-cyan-300" },
+    { key: "president", label: "President", desc: "최상위 거래자",        thresholdLabel: "5000만원+", color: "text-yellow-300" },
 ];
+
+function formatKRW(amount: number): string {
+    if (amount >= 100_000_000) {
+        const eok = amount / 100_000_000;
+        return `${Number.isInteger(eok) ? eok : eok.toFixed(1)}억원`;
+    }
+    if (amount >= 10_000) {
+        const man = Math.floor(amount / 10_000);
+        return `${man.toLocaleString("ko-KR")}만원`;
+    }
+    return `${amount.toLocaleString("ko-KR")}원`;
+}
 
 export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
     const [showTierInfo, setShowTierInfo] = useState(false);
 
     if (!leader) return null;
 
-    const tier = getDealTier(leader.deal_count_total ?? 0);
+    const dealAmount = leader.deal_amount_total ?? 0;
+    const tier = getDealTier(dealAmount);
     const dealCount = leader.deal_count_total ?? 0;
     const leaderIsNew = isNewUser(leader.created_at);
 
@@ -59,15 +73,15 @@ export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
         ? Math.floor((Date.now() - new Date(leader.created_at).getTime()) / 86400000)
         : null;
 
-    const tierLabel = tier === "diamond" ? "다이아"
-        : tier === "gold" ? "골드"
-        : tier === "silver" ? "실버"
+    const tierLabel = tier === "president" ? "President"
+        : tier === "vvip" ? "VVIP"
+        : tier === "vip" ? "VIP"
         : leaderIsNew ? "신규가입"
         : "등급 없음";
 
-    const tierColor = tier === "diamond" ? "text-cyan-300"
-        : tier === "gold" ? "text-amber-400"
-        : tier === "silver" ? "text-neutral-200"
+    const tierColor = tier === "president" ? "text-yellow-300"
+        : tier === "vvip" ? "text-cyan-300"
+        : tier === "vip" ? "text-amber-400"
         : leaderIsNew ? "text-cyan-400"
         : "text-neutral-500";
 
@@ -160,7 +174,7 @@ export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
                                                         key={`${row.key}-threshold`}
                                                         className={`text-[11px] text-right pl-3 ${isActive ? "text-neutral-500" : "text-neutral-700"}`}
                                                     >
-                                                        {row.threshold !== null ? `거래 ${row.threshold}회+` : "—"}
+                                                        {row.thresholdLabel}
                                                     </span>
                                                 </>
                                             );
@@ -180,10 +194,12 @@ export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
                             <span className="text-2xl font-black text-white">
                                 {dealCount}
                                 <span className="text-sm text-neutral-500 font-bold ml-0.5">회</span>
+                                <span className="text-neutral-600 font-bold mx-1.5">·</span>
+                                {formatKRW(dealAmount)}
                             </span>
                         </div>
                         <p className="text-[11px] text-neutral-600 mt-2 leading-relaxed">
-                            깃발 거래완료 + 경매 거래확정 합산. 양쪽이 거래완료에 동의해야 누적됩니다.
+                            깃발 거래완료 + 경매 거래확정 합산. MD가 거래완료를 마킹해야 누적됩니다.
                         </p>
                     </div>
 

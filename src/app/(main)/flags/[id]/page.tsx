@@ -111,7 +111,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
   const [{ data: leader }, { data: members }, { data: profile }] = await Promise.all([
     supabase
       .from("users")
-      .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked, deal_count_total, created_at, gender, last_seen_at")
+      .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked, deal_count_total, deal_amount_total, created_at, gender, last_seen_at")
       .eq("id", puzzle.leader_id)
       .maybeSingle(),
     supabase
@@ -137,6 +137,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
           display_name: leader.display_name,
           profile_image: leader.profile_image,
           deal_count_total: leader.deal_count_total ?? 0,
+          deal_amount_total: (leader as { deal_amount_total?: number | null }).deal_amount_total ?? 0,
           created_at: leader.created_at,
           gender: leader.gender,
           last_seen_at: (leader as { last_seen_at?: string | null }).last_seen_at ?? null,

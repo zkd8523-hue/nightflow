@@ -588,7 +588,7 @@ export function PuzzleDetailClient({
                   </button>
                 )}
                 {puzzle.leader && (() => {
-                  const tier = getDealTier(puzzle.leader.deal_count_total ?? 0);
+                  const tier = getDealTier(puzzle.leader.deal_amount_total ?? 0);
                   const leaderIsNew = isNewUser(puzzle.leader.created_at);
                   return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
                 })()}
@@ -764,7 +764,6 @@ export function PuzzleDetailClient({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-white font-bold text-[14px] truncate">{md.display_name || "나이트플로우 파트너"}</p>
-                          <TrustBadge tier={getDealTier(dealCount)} size="sm" />
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <p className="text-[11px] text-neutral-500">NightFlow 인증 파트너</p>

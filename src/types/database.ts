@@ -14,8 +14,8 @@ export type AuctionStatus =
 export type BidStatus = "active" | "outbid" | "won" | "cancelled";
 export type Area = "강남" | "홍대" | "이태원" | "건대" | "부산" | "대구" | "인천" | "광주" | "대전" | "울산" | "세종";
 export type TrustLevel = "vip" | "normal" | "caution" | "blocked";
-/** Migration 146: 거래 누적 횟수 기반 등급 (Silver 1+ / Gold 3+ / Diamond 10+) */
-export type DealTier = "silver" | "gold" | "diamond";
+/** Migration 269: 거래 누적 금액 기반 등급 (VIP 100만+ / VVIP 1000만+ / President 5000만+) */
+export type DealTier = "vip" | "vvip" | "president";
 export type ListingType = "auction" | "instant" | "share";
 export type ClubStatus = "pending" | "approved" | "rejected";
 export type NotificationEventType =
@@ -156,8 +156,10 @@ export interface User {
   strike_waiver_count: number;
   /** 경고 시스템 - 미소진 경고점 합계 (3점 = 1스트라이크) */
   warning_count: number;
-  /** Migration 146: 누적 거래 카운트 (깃발 visited + 경매 confirmed). Silver/Gold/Diamond 등급 기반. */
+  /** Migration 146: 누적 거래 카운트 (깃발 visited + 경매 confirmed). */
   deal_count_total: number;
+  /** Migration 269: 누적 거래 금액(원). VIP/VVIP/President 등급 기반. */
+  deal_amount_total: number;
 
   // 신원 정보 (Migration 114부터는 PASS 본인인증 결과로 채워짐)
   birthday: string | null;          // "YYYY-MM-DD"
@@ -563,6 +565,8 @@ export interface PublicUserProfile {
   md_deal_count: number | null;
   /** Migration 146: 누적 거래 카운트 (deal_count_total 그대로 노출) */
   deal_count_total: number | null;
+  /** Migration 269: 누적 거래 금액(원). VIP/VVIP/President 등급 기반. */
+  deal_amount_total: number | null;
 }
 
 export interface Bid {
@@ -694,7 +698,7 @@ export type MusicPref = 'hiphop' | 'edm' | 'any';
 export interface Puzzle {
   id: string;
   leader_id: string;
-  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'deal_count_total' | 'created_at' | 'gender'>;
+  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'deal_count_total' | 'deal_amount_total' | 'created_at' | 'gender'>;
   area: Area;
   event_date: string;
   kakao_open_chat_url: string | null; // 오퍼 수락 시점에 입력, MD에게만 공개
