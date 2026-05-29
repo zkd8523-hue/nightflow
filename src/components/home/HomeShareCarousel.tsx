@@ -4,6 +4,13 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { AuctionCard } from "@/components/auctions/AuctionCard";
 import type { Auction } from "@/types/database";
+import { getDDayLabel } from "@/lib/utils/format";
+
+function formatEventDateLabel(eventDate: string): string {
+  const d = new Date(eventDate + "T00:00:00");
+  const days = ["일", "월", "화", "수", "목", "금", "토"];
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+}
 
 interface Props {
   shares: Auction[];
@@ -71,22 +78,43 @@ export function HomeShareCarousel({
     <div>
       <div
         data-no-pull-refresh
-        className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x touch-pan-y pb-1 -mx-2 px-2"
+        className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x touch-pan-y pb-1 -mx-2 px-2"
         style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
       >
-        {visible.map((share) => (
-          <div
-            key={share.id}
-            className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always"
-          >
-            <AuctionCard
-              auction={share}
-              userBidAmount={userBidMap[share.id]}
-              isUserInterested={userInterestedSet?.has(share.id)}
-              currentUserId={currentUserId}
-            />
-          </div>
-        ))}
+        {visible.map((share) => {
+          const dday = getDDayLabel(share.event_date);
+          const isUrgent = dday === "오늘" || dday === "내일";
+          const ddayMatch = dday.match(/^D-(\d+)$/);
+          const showDday = isUrgent || (ddayMatch && parseInt(ddayMatch[1], 10) <= 3);
+          return (
+            <div
+              key={share.id}
+              className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always flex flex-col gap-2"
+            >
+              <div className="flex items-center gap-1.5 px-1">
+                <div className="w-1 h-[14px] bg-green-500 rounded-full flex-shrink-0" />
+                <h3 className="text-[18px] font-black text-white tracking-tight">
+                  {formatEventDateLabel(share.event_date)}
+                </h3>
+                {showDday && (
+                  <span
+                    className={`text-[10px] font-bold px-1.5 py-px rounded-full mt-px ${
+                      isUrgent ? "bg-red-500/20 text-red-400" : "bg-neutral-800 text-neutral-400"
+                    }`}
+                  >
+                    {dday}
+                  </span>
+                )}
+              </div>
+              <AuctionCard
+                auction={share}
+                userBidAmount={userBidMap[share.id]}
+                isUserInterested={userInterestedSet?.has(share.id)}
+                currentUserId={currentUserId}
+              />
+            </div>
+          );
+        })}
         {hasMore && (
           <div className="flex-shrink-0 w-[60%] max-w-[280px] snap-start snap-always">
             <Link
