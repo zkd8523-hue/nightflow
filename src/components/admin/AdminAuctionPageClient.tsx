@@ -19,7 +19,7 @@ export function AdminAuctionPageClient({ auctions }: AdminAuctionPageClientProps
           className="rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white px-6"
         >
           <Gavel className="w-4 h-4 mr-2" />
-          경매 관리
+          퍼즐 관리
         </TabsTrigger>
         <TabsTrigger
           value="monitor"

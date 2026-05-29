@@ -71,8 +71,8 @@ export default async function AdminAuctionsPage() {
                             Live Marketplace Ops
                         </div>
                     </div>
-                    <h1 className="text-4xl font-black tracking-tighter">경매 관리</h1>
-                    <p className="text-neutral-500 font-medium">경매 현황 모니터링 및 관리 작업을 수행합니다.</p>
+                    <h1 className="text-4xl font-black tracking-tighter">퍼즐 관리</h1>
+                    <p className="text-neutral-500 font-medium">퍼즐 현황 모니터링 및 관리 작업을 수행합니다.</p>
                 </header>
 
                 {/* Client-side tabs */}
