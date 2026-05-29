@@ -45,6 +45,7 @@ export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
       { key: "kpop", label: "K-POP" },
       { key: "latin", label: "라틴" },
       { key: "techno", label: "테크노" },
+      { key: "rock", label: "락" },
       { key: "mix", label: "믹스" },
     ],
   },
