@@ -50,6 +50,10 @@ interface AuctionItem {
   cancel_reason?: string | null;
   club?: { name: string; area: string } | null;
   md?: { name: string } | null;
+  /** Migration 269: 조각 참여 클릭 집계 (share_join_click_stats 뷰 기반) */
+  click_total?: number;
+  click_success?: number;
+  click_unique?: number;
 }
 
 interface AdminAuctionManagerProps {
@@ -198,6 +202,15 @@ function AuctionTable({
                       {formatPrice(a.current_bid || a.start_price)}
                     </p>
                     <p className="text-[11px] text-neutral-500 font-bold">{a.bid_count} Bids</p>
+                    {/* Migration 269: 조각 참여 클릭 — 외부 영업 vs 플랫폼 자체 모집 판별용 */}
+                    <p
+                      className={`text-[10px] font-bold mt-0.5 ${
+                        (a.click_total ?? 0) > 0 ? "text-amber-400/80" : "text-neutral-600"
+                      }`}
+                      title={`총 클릭 ${a.click_total ?? 0} · 성공 ${a.click_success ?? 0} · 유니크 ${a.click_unique ?? 0}`}
+                    >
+                      클릭 {a.click_total ?? 0} · 성공 {a.click_success ?? 0} · 유니크 {a.click_unique ?? 0}
+                    </p>
                   </div>
 
                   <div className="col-span-2 text-right">

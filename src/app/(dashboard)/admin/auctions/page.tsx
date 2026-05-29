@@ -31,6 +31,32 @@ export default async function AdminAuctionsPage() {
     `)
         .order("created_at", { ascending: false });
 
+    // 3. 조각 참여 클릭 집계 (Migration 269 share_join_click_stats 뷰)
+    const { data: clickStats } = await supabase
+        .from("share_join_click_stats")
+        .select("auction_id, total_clicks, success_clicks, unique_clickers");
+
+    const clickMap: Record<string, { total: number; success: number; unique: number }> = {};
+    for (const s of (clickStats ?? []) as Array<{
+        auction_id: string;
+        total_clicks: number;
+        success_clicks: number;
+        unique_clickers: number;
+    }>) {
+        clickMap[s.auction_id] = {
+            total: s.total_clicks ?? 0,
+            success: s.success_clicks ?? 0,
+            unique: s.unique_clickers ?? 0,
+        };
+    }
+
+    const auctionsWithClicks = (auctions ?? []).map((a) => ({
+        ...a,
+        click_total: clickMap[a.id]?.total ?? 0,
+        click_success: clickMap[a.id]?.success ?? 0,
+        click_unique: clickMap[a.id]?.unique ?? 0,
+    }));
+
     return (
         <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
             <div className="max-w-6xl mx-auto px-6 space-y-10">
@@ -50,7 +76,7 @@ export default async function AdminAuctionsPage() {
                 </header>
 
                 {/* Client-side tabs */}
-                <AdminAuctionPageClient auctions={auctions || []} />
+                <AdminAuctionPageClient auctions={auctionsWithClicks} />
             </div>
         </div>
     );

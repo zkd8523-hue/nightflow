@@ -15,6 +15,25 @@ import { formatNumber } from "@/lib/utils/format";
 import { Zap, ExternalLink, Loader2, UserPlus } from "lucide-react";
 import { PuzzlePiece } from "@/components/puzzles/PuzzleCard";
 import { trackShareEvent } from "@/lib/analytics/events";
+import { getClientId } from "@/lib/utils/clientId";
+
+/** 조각 참여 클릭을 DB에 기록 (admin 대시보드 집계용). 실패해도 UX 영향 X. */
+function logJoinClick(
+  auction_id: string,
+  result: "success" | "fail" | "gender_gate" | "login_required",
+  error_code?: string,
+) {
+  try {
+    void fetch("/api/share/click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ auction_id, result, error_code, client_id: getClientId() }),
+      keepalive: true,
+    });
+  } catch {
+    // analytics는 본 흐름을 깨면 안 됨
+  }
+}
 
 interface ShareJoinPanelProps {
   auction: Auction;
@@ -153,7 +172,9 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
       toast.error("로그인이 필요합니다.");
       return;
     }
-    if (genderLoaded && !myGender) {
+    // MD가 성별 슬롯을 지정한 경우에만 성별을 묻는다.
+    // 혼성/무관 매물(hasGenderSlot=false)에는 불필요한 마찰이라 생략.
+    if (hasGenderSlot && genderLoaded && !myGender) {
       setGenderSheetOpen(true);
       trackShareEvent('share_gender_gate_open', {
         auction_id: auction.id,
@@ -184,6 +205,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
           ...baseParams,
           error_code: data?.error ?? 'UNKNOWN',
         });
+        logJoinClick(auction.id, "fail", data?.error ?? "UNKNOWN");
         return;
       }
       setHasClaim(true);
@@ -196,10 +218,12 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
         has_kakao_url: !!data.kakao_open_chat_url,
         party_size: partySize,
       });
+      logJoinClick(auction.id, "success");
     } catch (err) {
       console.error('[claim_share_seat] failed:', err);
       toast.error("네트워크 연결이 불안정합니다.");
       trackShareEvent('share_join_fail', { ...baseParams, error_code: 'NETWORK' });
+      logJoinClick(auction.id, "fail", "NETWORK");
     } finally {
       setLoading(false);
     }
