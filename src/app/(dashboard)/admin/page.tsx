@@ -252,6 +252,15 @@ export default async function AdminDashboardPage() {
       href: "/admin/marketing",
     },
     {
+      label: "게스트 간판 클릭",
+      value: "보기",
+      icon: Megaphone,
+      color: "text-pink-400",
+      bgColor: "bg-pink-500/10",
+      badge: null,
+      href: "/admin/hotdeal-clicks",
+    },
+    {
       label: "미처리 신고",
       value: `${pendingReportCount}건`,
       icon: Flag,

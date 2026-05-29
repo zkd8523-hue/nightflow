@@ -46,6 +46,20 @@ import type { Club, Auction, HotdealDow, HotdealTimeSlot } from "@/types/databas
 import { GUEST_SIGN_BENEFIT_PRESETS, benefitLabel } from "@/lib/utils/hotdeal";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 
+function trackGuestSignClick(
+  slotId: string | undefined,
+  clickType: "instagram" | "openchat" | "copy_message"
+) {
+  if (!slotId) return;
+  // fire-and-forget — 실패해도 사용자 흐름을 막지 않음
+  fetch("/api/hotdeal-slots/track-click", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ slotId, clickType }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
 interface GuestSignSlotInfo {
   slot_id?: string;
   today_dow?: HotdealDow;
@@ -397,6 +411,7 @@ export function ClubDetailContent({
                     href={`https://instagram.com/${guestSignSlot.md.instagram}`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "instagram")}
                     className="bg-gradient-to-r from-pink-500/20 to-fuchsia-500/20 border border-pink-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
                   >
                     <Instagram className="w-3.5 h-3.5 text-pink-400" />
@@ -408,6 +423,7 @@ export function ClubDetailContent({
                     href={guestSignSlot.md.kakao_open_chat_url}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "openchat")}
                     className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
                   >
                     <MessageCircle className="w-3.5 h-3.5 text-green-400" />
@@ -428,6 +444,7 @@ export function ClubDetailContent({
                       await navigator.clipboard.writeText(message);
                       setGuestSignCopied(true);
                       toast.success("메시지가 복사됐어요");
+                      trackGuestSignClick(guestSignSlot.slot_id, "copy_message");
                       setTimeout(() => setGuestSignCopied(false), 2000);
                     } catch {
                       toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
