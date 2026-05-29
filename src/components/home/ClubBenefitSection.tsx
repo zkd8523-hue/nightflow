@@ -217,8 +217,21 @@ export function ClubBenefitSection() {
             href={`/clubs/${item.club_id}`}
             className="flex-shrink-0 w-[44%] max-w-[180px] snap-start snap-always active:scale-[0.98] transition-transform"
           >
+            {/* 혜택 띠 (이미지 위 별도 영역) */}
+            {item.benefit_text && (
+              <div className="bg-amber-500 px-2 py-1 rounded-t-2xl">
+                <span className="block text-black text-[10px] font-black tracking-tight text-left leading-tight line-clamp-2">
+                  {item.benefit_text}
+                </span>
+              </div>
+            )}
+
             {/* 이미지 */}
-            <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-900">
+            <div
+              className={`relative w-full aspect-[4/3] overflow-hidden bg-neutral-900 ${
+                item.benefit_text ? "rounded-b-2xl" : "rounded-2xl"
+              }`}
+            >
               {item.club_thumbnail ? (
                 <Image
                   src={item.club_thumbnail}
@@ -230,13 +243,6 @@ export function ClubBenefitSection() {
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-[28px] font-black text-white/30">
                   {item.club_name.charAt(0)}
-                </div>
-              )}
-              {item.benefit_text && (
-                <div className="absolute top-0 inset-x-0 bg-amber-500 px-2 py-1">
-                  <span className="block text-black text-[10px] font-black tracking-tight text-left leading-tight line-clamp-2">
-                    {item.benefit_text}
-                  </span>
                 </div>
               )}
             </div>

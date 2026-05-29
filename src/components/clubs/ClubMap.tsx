@@ -211,9 +211,17 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
   }, [status, handleLocate]);
 
   // ClubList에서 검색·필터가 적용된 clubs를 받음
+  // 좌표 있는 클럽만 → 혜택(게스트 간판/핫딜) 있는 클럽을 상위 노출
   const filtered = useMemo(
-    () => clubs.filter((c) => c.latitude != null && c.longitude != null),
-    [clubs]
+    () =>
+      clubs
+        .filter((c) => c.latitude != null && c.longitude != null)
+        .sort((a, b) => {
+          const aHot = hotdealMap[a.id] ? 1 : 0;
+          const bHot = hotdealMap[b.id] ? 1 : 0;
+          return bHot - aHot; // 혜택 있는 클럽 우선 (안정 정렬로 기존 순서 유지)
+        }),
+    [clubs, hotdealMap]
   );
   const withCoords = filtered;
 
