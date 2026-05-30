@@ -612,9 +612,9 @@ export function HomeContent({
     const filtered = blockedUserIds.size === 0
       ? puzzles
       : puzzles.filter((p) => !p.leader_id || !blockedUserIds.has(p.leader_id));
-    // 마감일(event_date) 가까운 순 — 오늘 가까운 것부터
+    // 최신순(created_at 내림차순) — 새로 올라온 깃발부터
     return [...filtered].sort((a, b) =>
-      (a.event_date ?? "").localeCompare(b.event_date ?? "")
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }, [puzzles, blockedUserIds]);
 
