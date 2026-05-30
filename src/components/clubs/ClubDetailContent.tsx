@@ -38,6 +38,7 @@ import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { DrinkMenuViewer } from "./DrinkMenuViewer";
 import { ClubProfileEditor } from "./ClubProfileEditor";
 import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
+import { OneLinerSection } from "./OneLinerSection";
 import { useIsClubPartner } from "@/hooks/useIsClubPartner";
 import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -572,6 +573,9 @@ export function ClubDetailContent({
           onOpenChange={setReportSheetOpen}
         />
       )}
+
+      {/* 한 줄 리뷰 */}
+      <OneLinerSection clubId={club.id} clubName={clubName} />
 
       {/* 경매 목록 */}
       <AuctionList

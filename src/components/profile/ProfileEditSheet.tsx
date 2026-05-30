@@ -1,0 +1,429 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { Search, X } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { toast } from "sonner";
+import {
+  MUSIC_GENRES,
+  MAX_MUSIC_GENRES,
+  MAX_PREFERRED_AREAS,
+  MAX_FAVORITE_CLUBS,
+} from "@/lib/users/musicGenres";
+import { AREA_OPTIONS } from "@/lib/clubs/tags";
+
+const MAX_BIO_LENGTH = 160;
+
+interface PinnedClubLite {
+  id: string;
+  name: string;
+  area: string;
+  thumbnail_url: string | null;
+}
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initial: {
+    bio: string;
+    genres: string[];
+    areas: string[];
+    pinnedClubs: PinnedClubLite[];
+  };
+  onSaved: (next: {
+    bio: string | null;
+    genres: string[];
+    areas: string[];
+  }) => void;
+}
+
+export function ProfileEditSheet({
+  open,
+  onOpenChange,
+  initial,
+  onSaved,
+}: Props) {
+  const { user } = useCurrentUser();
+  const [bio, setBio] = useState(initial.bio);
+  const [genres, setGenres] = useState<string[]>(initial.genres);
+  const [areas, setAreas] = useState<string[]>(initial.areas);
+  const [favClubs, setFavClubs] = useState<PinnedClubLite[]>(
+    initial.pinnedClubs
+  );
+  const [saving, setSaving] = useState(false);
+
+  // 클럽 검색
+  const [clubQuery, setClubQuery] = useState("");
+  const [clubResults, setClubResults] = useState<PinnedClubLite[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setBio(initial.bio);
+      setGenres(initial.genres);
+      setAreas(initial.areas);
+      setFavClubs(initial.pinnedClubs);
+      setClubQuery("");
+      setClubResults([]);
+    }
+  }, [open, initial]);
+
+  // 클럽 검색 (디바운스)
+  useEffect(() => {
+    if (!clubQuery.trim()) {
+      setClubResults([]);
+      return;
+    }
+    const handle = setTimeout(async () => {
+      setSearching(true);
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("clubs")
+        .select("id, name, area, thumbnail_url")
+        .ilike("name", `%${clubQuery.trim()}%`)
+        .is("deleted_at", null)
+        .limit(8);
+      setSearching(false);
+      setClubResults((data ?? []) as PinnedClubLite[]);
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [clubQuery]);
+
+  function toggleGenre(code: string) {
+    setGenres((prev) => {
+      if (prev.includes(code)) return prev.filter((g) => g !== code);
+      if (prev.length >= MAX_MUSIC_GENRES) {
+        toast.error(`음악 장르는 최대 ${MAX_MUSIC_GENRES}개까지 선택할 수 있습니다`);
+        return prev;
+      }
+      return [...prev, code];
+    });
+  }
+
+  function toggleArea(area: string) {
+    setAreas((prev) => {
+      if (prev.includes(area)) return prev.filter((a) => a !== area);
+      if (prev.length >= MAX_PREFERRED_AREAS) {
+        toast.error(`지역은 최대 ${MAX_PREFERRED_AREAS}개까지 선택할 수 있습니다`);
+        return prev;
+      }
+      return [...prev, area];
+    });
+  }
+
+  function addFavClub(club: PinnedClubLite) {
+    setFavClubs((prev) => {
+      if (prev.some((c) => c.id === club.id)) {
+        toast.info("이미 추가된 클럽입니다");
+        return prev;
+      }
+      if (prev.length >= MAX_FAVORITE_CLUBS) {
+        toast.error(`좋아하는 클럽은 최대 ${MAX_FAVORITE_CLUBS}개까지 등록할 수 있습니다`);
+        return prev;
+      }
+      return [...prev, club];
+    });
+    setClubQuery("");
+    setClubResults([]);
+  }
+
+  function removeFavClub(clubId: string) {
+    setFavClubs((prev) => prev.filter((c) => c.id !== clubId));
+  }
+
+  async function handleSave() {
+    if (!user) return;
+    if (bio.length > MAX_BIO_LENGTH) {
+      toast.error(`자기소개는 ${MAX_BIO_LENGTH}자 이하로 작성해주세요`);
+      return;
+    }
+
+    setSaving(true);
+    const supabase = createClient();
+    const newBio = bio.trim() === "" ? null : bio.trim();
+
+    // 1. users 테이블 (bio + 음악 + 지역)
+    const { error: userErr } = await supabase
+      .from("users")
+      .update({
+        bio: newBio,
+        preferred_music_genres: genres,
+        preferred_areas: areas,
+      })
+      .eq("id", user.id);
+
+    if (userErr) {
+      setSaving(false);
+      toast.error("프로필 저장에 실패했습니다");
+      console.error(userErr);
+      return;
+    }
+
+    // 2. user_pinned_clubs: 전체 삭제 후 재삽입 (간단/정확)
+    const { error: delErr } = await supabase
+      .from("user_pinned_clubs")
+      .delete()
+      .eq("user_id", user.id);
+
+    if (delErr) {
+      setSaving(false);
+      toast.error("좋아하는 클럽 저장에 실패했습니다");
+      console.error(delErr);
+      return;
+    }
+
+    if (favClubs.length > 0) {
+      const rows = favClubs.map((c, idx) => ({
+        user_id: user.id,
+        club_id: c.id,
+        sort_order: idx,
+      }));
+      const { error: insErr } = await supabase
+        .from("user_pinned_clubs")
+        .insert(rows);
+      if (insErr) {
+        setSaving(false);
+        toast.error("좋아하는 클럽 저장에 실패했습니다");
+        console.error(insErr);
+        return;
+      }
+    }
+
+    setSaving(false);
+    toast.success("프로필이 저장되었습니다");
+    onSaved({ bio: newBio, genres, areas });
+  }
+
+  const remaining = MAX_BIO_LENGTH - bio.length;
+  const isOverLimit = remaining < 0;
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="bottom"
+        className="bg-[#1C1C1E] border-neutral-800 text-white rounded-t-3xl max-w-lg mx-auto p-0 max-h-[90vh] overflow-y-auto"
+      >
+        <SheetHeader className="p-4 border-b border-neutral-800 sticky top-0 bg-[#1C1C1E] z-10">
+          <SheetTitle className="text-white text-[17px] font-bold text-left">
+            프로필 편집
+          </SheetTitle>
+        </SheetHeader>
+
+        <div className="p-4 space-y-6">
+          {/* 자기소개 */}
+          <div>
+            <label className="block text-[13px] font-bold text-neutral-400 mb-2">
+              자기소개
+            </label>
+            <textarea
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="자기소개를 입력해주세요"
+              rows={3}
+              className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl px-3 py-2.5 text-[15px] text-white placeholder-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
+              maxLength={MAX_BIO_LENGTH + 50}
+            />
+            <div
+              className={`mt-1 text-right text-[12px] ${
+                isOverLimit ? "text-red-500" : "text-neutral-500"
+              }`}
+            >
+              {bio.length} / {MAX_BIO_LENGTH}
+            </div>
+          </div>
+
+          {/* 좋아하는 음악 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[13px] font-bold text-neutral-400">
+                좋아하는 음악
+              </label>
+              <span className="text-[12px] text-neutral-500">
+                {genres.length} / {MAX_MUSIC_GENRES}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {MUSIC_GENRES.map((g) => {
+                const active = genres.includes(g.code);
+                return (
+                  <button
+                    key={g.code}
+                    onClick={() => toggleGenre(g.code)}
+                    className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
+                      active
+                        ? "bg-white text-black"
+                        : "bg-neutral-900 text-neutral-300 hover:bg-neutral-800"
+                    }`}
+                  >
+                    <span>{g.emoji}</span>
+                    <span>{g.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 주로 가는 지역 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[13px] font-bold text-neutral-400">
+                주로 가는 지역
+              </label>
+              <span className="text-[12px] text-neutral-500">
+                {areas.length} / {MAX_PREFERRED_AREAS}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {AREA_OPTIONS.map((area) => {
+                const active = areas.includes(area);
+                return (
+                  <button
+                    key={area}
+                    onClick={() => toggleArea(area)}
+                    className={`px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
+                      active
+                        ? "bg-white text-black"
+                        : "bg-neutral-900 text-neutral-300 hover:bg-neutral-800"
+                    }`}
+                  >
+                    {area}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 좋아하는 클럽 */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-[13px] font-bold text-neutral-400">
+                좋아하는 클럽
+              </label>
+              <span className="text-[12px] text-neutral-500">
+                {favClubs.length} / {MAX_FAVORITE_CLUBS}
+              </span>
+            </div>
+
+            {/* 선택된 클럽 (가로 카드) */}
+            {favClubs.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                {favClubs.map((c) => (
+                  <div key={c.id} className="relative">
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-900">
+                      {c.thumbnail_url ? (
+                        <Image
+                          src={c.thumbnail_url}
+                          alt={c.name}
+                          fill
+                          sizes="120px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-white/40 text-xl font-black">
+                          {c.name.charAt(0)}
+                        </div>
+                      )}
+                      <button
+                        onClick={() => removeFavClub(c.id)}
+                        aria-label="삭제"
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 backdrop-blur flex items-center justify-center text-white hover:bg-black"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div className="mt-1 text-[11px] font-bold text-white truncate">
+                      {c.name}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 검색 */}
+            {favClubs.length < MAX_FAVORITE_CLUBS && (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                  <input
+                    type="text"
+                    value={clubQuery}
+                    onChange={(e) => setClubQuery(e.target.value)}
+                    placeholder="클럽 이름으로 검색"
+                    className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl pl-9 pr-3 py-2.5 text-[14px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600"
+                  />
+                </div>
+
+                {searching && (
+                  <p className="mt-2 text-[12px] text-neutral-500">검색 중...</p>
+                )}
+
+                {!searching && clubResults.length > 0 && (
+                  <div className="mt-2 space-y-1 max-h-60 overflow-y-auto">
+                    {clubResults.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => addFavClub(c)}
+                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-900 text-left"
+                      >
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-neutral-900 shrink-0">
+                          {c.thumbnail_url ? (
+                            <Image
+                              src={c.thumbnail_url}
+                              alt={c.name}
+                              fill
+                              sizes="40px"
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-white/40 text-sm font-black">
+                              {c.name.charAt(0)}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[14px] font-bold text-white truncate">
+                            {c.name}
+                          </div>
+                          <div className="text-[12px] text-neutral-500">
+                            {c.area}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {!searching && clubQuery.trim() && clubResults.length === 0 && (
+                  <p className="mt-2 text-[12px] text-neutral-500">
+                    검색 결과가 없습니다
+                  </p>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* 저장 버튼 */}
+          <div className="flex gap-2 pt-2 sticky bottom-0 bg-[#1C1C1E] pb-2">
+            <button
+              onClick={() => onOpenChange(false)}
+              disabled={saving}
+              className="flex-1 h-12 rounded-full border border-neutral-700 font-bold text-[15px] hover:bg-neutral-900 disabled:opacity-50"
+            >
+              취소
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving || isOverLimit}
+              className="flex-1 h-12 rounded-full bg-white text-black font-black text-[15px] hover:bg-neutral-200 disabled:opacity-50"
+            >
+              {saving ? "저장 중..." : "저장"}
+            </button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}

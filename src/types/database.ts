@@ -104,6 +104,14 @@ export interface User {
   /** 내외국인 구분. 'LOCAL' | 'FOREIGNER' */
   nationality: "LOCAL" | "FOREIGNER" | null;
 
+  /** 공개 프로필 자기소개. 최대 160자 (Migration 279) */
+  bio: string | null;
+
+  /** 공개 프로필: 좋아하는 음악 장르 코드 (최대 3개). Migration 280 */
+  preferred_music_genres: string[] | null;
+  /** 공개 프로필: 주로 가는 지역 (최대 3개, AREA_OPTIONS와 동일). Migration 280 */
+  preferred_areas: string[] | null;
+
   // MD 전용
   md_status: MDStatus | null;
   md_onboarding_areas_seen: boolean;
@@ -567,6 +575,25 @@ export interface PublicUserProfile {
   deal_count_total: number | null;
   /** Migration 269: 누적 거래 금액(원). VIP/VVIP/President 등급 기반. */
   deal_amount_total: number | null;
+  /** Migration 279: 공개 프로필 자기소개 (최대 160자) */
+  bio: string | null;
+  /** 가입일. 공개 프로필에서 "2026년 5월 가입" 표시용 */
+  created_at: string;
+  /** Migration 280: 좋아하는 음악 장르 코드 (최대 3개) */
+  preferred_music_genres: string[] | null;
+  /** Migration 280: 주로 가는 지역 (최대 3개) */
+  preferred_areas: string[] | null;
+}
+
+/** Migration 280: 공개 프로필 노출용 좋아하는 클럽 (최대 3개)
+ * UserFavoriteClub(찜 기능, Migration 070)와 다름 */
+export interface UserPinnedClub {
+  id: string;
+  user_id: string;
+  club_id: string;
+  sort_order: number;
+  created_at: string;
+  club?: Pick<Club, "id" | "name" | "area" | "thumbnail_url">;
 }
 
 export interface Bid {
@@ -978,4 +1005,51 @@ export interface ClubChangeLog {
   // joined
   club?: Pick<Club, 'id' | 'name' | 'area'>;
   changer?: { id: string; display_name: string | null; name: string | null };
+}
+
+// ============================================================================
+// 클럽 한 줄 리뷰 (Migration 275)
+// ============================================================================
+export interface ClubOneLiner {
+  id: string;
+  club_id: string;
+  author_id: string;
+  content: string;
+  tags: string[]; // 한 줄 리뷰에 부착된 클럽 태그 코드 (Migration 278)
+  like_count: number;
+  is_deleted: boolean;
+  created_at: string;
+  updated_at: string;
+  // joined
+  author?: { id: string; display_name: string | null; profile_image: string | null };
+  // 클라이언트 계산 필드
+  liked_by_me?: boolean;
+}
+
+export interface OneLinerLike {
+  one_liner_id: string;
+  user_id: string;
+  created_at: string;
+}
+
+export type OneLinerReportReason =
+  | 'spam'
+  | 'abuse'
+  | 'false_info'
+  | 'advertising'
+  | 'other';
+
+export interface OneLinerReport {
+  id: string;
+  one_liner_id: string;
+  club_id: string;
+  reporter_id: string;
+  reason: OneLinerReportReason;
+  message: string | null;
+  status: 'pending' | 'resolved' | 'rejected';
+  admin_note: string | null;
+  action_taken: 'deleted' | 'kept' | 'warned_user' | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
 }
