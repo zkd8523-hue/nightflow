@@ -146,6 +146,30 @@ export default async function ClubDetailPage({ params }: PageProps) {
     }
   }
 
+  // SEO용: 이번 주 게스트 간판 전 요일 혜택 텍스트 생성 (sr-only 본문)
+  // 지역+클럽명 prefix로 "강남 ACE" 같은 조합 검색 매칭 강화.
+  const DOW_LABELS_KO: Record<HotdealDow, string> = {
+    mon: "월요일",
+    tue: "화요일",
+    wed: "수요일",
+    thu: "목요일",
+    fri: "금요일",
+    sat: "토요일",
+    sun: "일요일",
+  };
+  const ssrAreaPrefix = club.area ? `${club.area} ` : "";
+  const ssrWeeklyBenefits: { dow: string; text: string }[] = [];
+  if (slotRow && new Date(slotRow.expires_at) > new Date()) {
+    const byDow = (slotRow.benefits_by_dow ?? {}) as HotdealBenefitsByDow;
+    (Object.keys(DOW_LABELS_KO) as HotdealDow[]).forEach((d) => {
+      const slots = normalizeDowSlots(byDow[d]);
+      const summary = summarizeSlots(slots);
+      if (summary) {
+        ssrWeeklyBenefits.push({ dow: DOW_LABELS_KO[d], text: summary });
+      }
+    });
+  }
+
   const aliases = getClubAliases(id);
   const jsonLd = {
     "@context": "https://schema.org",
@@ -171,6 +195,24 @@ export default async function ClubDetailPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      {ssrWeeklyBenefits.length > 0 && (
+        <div className="sr-only">
+          <h2>
+            이번 주 {ssrAreaPrefix}{club.name} 게스트 간판
+          </h2>
+          <p>
+            {ssrAreaPrefix}{club.name} 이번 주 요일별 게스트 간판 혜택을 안내합니다.
+            나플(나이트플로우)에서 클럽 테이블 가격과 핫딜을 확인하고 예약하세요.
+          </p>
+          <ul>
+            {ssrWeeklyBenefits.map((b, i) => (
+              <li key={i}>
+                {ssrAreaPrefix}{club.name} {b.dow} 게스트 간판 - {b.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <ClubDetailContent
         club={club}
         activeAuctions={activeAuctions || []}

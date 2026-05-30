@@ -6,10 +6,16 @@ import { HotdealList } from "@/components/hotdeal/HotdealList";
 export const revalidate = 30;
 
 export const metadata: Metadata = {
-  title: "Hot Deal Tonight - NightFlow",
+  title: "오늘의 클럽 핫딜 - 강남·홍대 클럽 특가 (나플)",
   description:
-    "지금 진행 중인 클럽 핫딜·특가. 종료 시간이 다가오는 한정 혜택을 한눈에.",
+    "나플(나이트플로우)에서 오늘 진행 중인 강남·홍대·이태원 클럽 핫딜·특가. 종료 시간이 다가오는 한정 혜택을 한눈에. 클럽 테이블 가격 비교는 나플에서.",
   alternates: { canonical: "https://nightflow.kr/hotdeal" },
+  openGraph: {
+    title: "오늘의 클럽 핫딜 - 강남·홍대 클럽 특가 | 나플",
+    description: "강남·홍대 클럽 오늘의 핫딜·특가를 한눈에. 나플(나이트플로우).",
+    url: "https://nightflow.kr/hotdeal",
+    type: "website",
+  },
 };
 
 function createAnonClient() {
@@ -45,8 +51,41 @@ export default async function HotdealIndexPage() {
     ? rows
     : rows.filter((h) => !(h.club?.name && HIDDEN_CLUB_PATTERN.test(h.club.name)));
 
+  // SEO용 SSR 텍스트 — HotdealList가 client-only라 본문 비는 문제 보완.
+  // 지역+클럽명 prefix로 "강남 ACE", "홍대 버뮤다" 같은 조합 검색 매칭 강화.
+  const formatPrice = (n: number | null | undefined) =>
+    n ? `${Math.round(n / 10000)}만원` : "";
+
   return (
     <div className="container mx-auto max-w-3xl px-4 pt-4 pb-8 mb-20">
+      <div className="sr-only">
+        <h1>오늘의 클럽 핫딜 - 강남·홍대·이태원 클럽 특가</h1>
+        <p>
+          나플(나이트플로우)에서 오늘 진행 중인 클럽 핫딜·특가 {visible.length}건.
+          강남·홍대·이태원·부산·광주 클럽 테이블 가격을 한눈에 비교하고
+          마음에 드는 핫딜을 잡으세요.
+        </p>
+        {visible.length > 0 && (
+          <ul>
+            {visible.slice(0, 50).map((h) => {
+              const club = h.club;
+              const area = club?.area ?? "";
+              const clubName = club?.name ?? "";
+              const areaPrefix = area ? `${area} ` : "";
+              const priceLabel = formatPrice(h.price);
+              const originalLabel = formatPrice(h.original_price);
+              const title = h.title ?? "";
+              return (
+                <li key={h.id}>
+                  {areaPrefix}{clubName} 핫딜 - {title}
+                  {priceLabel ? ` ${priceLabel}` : ""}
+                  {originalLabel ? ` (정가 ${originalLabel})` : ""}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
       <Suspense fallback={null}>
         <HotdealList hotdeals={visible} />
       </Suspense>

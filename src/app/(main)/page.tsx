@@ -49,6 +49,8 @@ export default async function HomePage() {
 
   const activeAuctions = [...(shareAuctions ?? []), ...(legacyAuctions ?? [])];
 
+  const nowIso = new Date().toISOString();
+
   // 추천 클럽 조회 (ClubStrip용) — 순서 셔플은 클라이언트 마운트 시 수행
   const { data: rawClubs } = await supabase
     .from("clubs")
@@ -56,6 +58,15 @@ export default async function HomePage() {
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
     .order("name");
+
+  // SEO용: 오늘 진행 중인 핫딜 SSR 로드 (sr-only 본문에만 사용)
+  const { data: ssrHotdeals } = await supabase
+    .from("daily_hotdeals")
+    .select("id, title, price, original_price, club:clubs(name, area)")
+    .eq("status", "active")
+    .gt("ends_at", nowIso)
+    .order("ends_at", { ascending: true })
+    .limit(20);
 
   const HIDDEN_FROM_RECOMMEND = ["prism", "eclipse", "luna", "orion"];
   const clubs = (rawClubs ?? []).filter((c) => {
@@ -67,7 +78,6 @@ export default async function HomePage() {
 
   // 오픈/검토중 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
   // expires_at > now() 가드를 selecting에도 적용 — cron 지연/실패 시 만료된 검토중이 무기한 노출되는 문제 차단
-  const nowIso = new Date().toISOString();
   const { data: puzzlesRaw } = await supabase
     .from("puzzles")
     .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender)")
@@ -100,6 +110,18 @@ export default async function HomePage() {
     }
   }
 
+  // SEO용 SSR 콘텐츠 — HomeContent는 client-side 렌더링이라 본문이 비어 보이는 문제 보완.
+  // 시각엔 안 보이지만 검색엔진은 클럽 이름·진행 중 매물 정보를 읽음.
+  const ssrClubList = clubs.slice(0, 30).map((c) => {
+    const area = c.area ? `${c.area} ` : "";
+    return `${area}${c.name}`;
+  });
+  const ssrActiveCount = activeAuctions.length;
+  const ssrPuzzleCount = puzzles.length;
+  const ssrHotdealCount = (ssrHotdeals ?? []).length;
+  const formatPrice = (n: number | null | undefined) =>
+    n ? `${Math.round(n / 10000)}만원` : "";
+
   return (
     <div className="container mx-auto max-w-lg px-4 py-4 mb-20">
       <h1 className="sr-only">
@@ -114,6 +136,42 @@ export default async function HomePage() {
         가긴 부담스러우면 퍼즐(클럽 조각·합석) 기능으로 같은 클럽에 갈
         일행을 모집할 수 있습니다.
       </p>
+      <div className="sr-only">
+        <h2>지금 나플에서 진행 중인 클럽 매물</h2>
+        <p>
+          현재 나플에서 진행 중인 클럽 테이블 매물 {ssrActiveCount}건,
+          일행 모집(퍼즐) {ssrPuzzleCount}건, 오늘의 클럽 핫딜 {ssrHotdealCount}건이
+          등록되어 있습니다.
+        </p>
+        {ssrHotdealCount > 0 && (
+          <>
+            <h2>오늘 어디갈래? - 진행 중인 클럽 핫딜</h2>
+            <ul>
+              {(ssrHotdeals ?? []).slice(0, 20).map((h) => {
+                const club = h.club as unknown as { name?: string; area?: string | null } | null;
+                const area = club?.area ?? "";
+                const clubName = club?.name ?? "";
+                const areaPrefix = area ? `${area} ` : "";
+                const priceLabel = formatPrice(h.price);
+                const originalLabel = formatPrice(h.original_price);
+                return (
+                  <li key={h.id}>
+                    {areaPrefix}{clubName} 핫딜 - {h.title ?? ""}
+                    {priceLabel ? ` ${priceLabel}` : ""}
+                    {originalLabel ? ` (정가 ${originalLabel})` : ""}
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+        <h2>나플에서 만날 수 있는 클럽</h2>
+        <ul>
+          {ssrClubList.map((label, i) => (
+            <li key={i}>{label}</li>
+          ))}
+        </ul>
+      </div>
       <Suspense fallback={<div className="animate-pulse bg-neutral-900 h-64 rounded-3xl" />}>
         <HomeContent
           activeAuctions={activeAuctions || []}

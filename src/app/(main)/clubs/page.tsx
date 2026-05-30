@@ -134,6 +134,29 @@ export default async function ClubsIndexPage() {
         />
       )}
       <ClubsAdminFab />
+      {/* SEO용 SSR 텍스트 — 화면엔 안 보이지만 검색엔진은 읽음.
+          ClubList가 client-only라 SSR HTML에 클럽 이름이 빠지는 문제 보완. */}
+      <div className="sr-only">
+        <h1>전국 클럽 가이드 - 강남·홍대·이태원·부산·광주·대구 클럽 정보</h1>
+        <p>
+          나플(나이트플로우)에서 운영 중인 전국 클럽 목록입니다.
+          강남, 홍대, 이태원, 부산, 광주, 대구 지역의 인기 클럽을
+          한곳에서 둘러보고 핫딜·테이블 예약·일행 모집까지 한 번에 해결하세요.
+        </p>
+        <ul>
+          {clubs.map((c: Record<string, unknown>) => {
+            const name = c.name as string;
+            const area = (c.area as string | null) ?? "";
+            const aliases = (c.aliases as string[] | undefined) ?? [];
+            const aliasText = aliases.length > 0 ? ` (${aliases.join(", ")})` : "";
+            return (
+              <li key={c.id as string}>
+                {area ? `${area} ` : ""}{name}{aliasText}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
       <Suspense fallback={null}>
       <ClubList
         clubs={clubs.map((c: Record<string, unknown>) => ({
