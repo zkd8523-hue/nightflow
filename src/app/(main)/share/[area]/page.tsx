@@ -1,0 +1,286 @@
+import { createServerClient } from "@supabase/ssr";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import type { Metadata } from "next";
+import { Button } from "@/components/ui/button";
+import { Flag, ArrowRight } from "lucide-react";
+import { getPrimaryAlias } from "@/lib/clubs/aliases";
+
+export const revalidate = 60;
+
+// SEO 진입 전용 지역 조각 페이지.
+// /share/강남, /share/홍대, /share/이태원, /share/부산, /share/광주, /share/대구
+const SUPPORTED_AREAS = [
+  "강남",
+  "홍대",
+  "이태원",
+  "부산",
+  "광주",
+  "대구",
+] as const;
+type SupportedArea = (typeof SUPPORTED_AREAS)[number];
+
+interface PageProps {
+  params: Promise<{ area: string }>;
+}
+
+function createAnonClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => [], setAll: () => {} } }
+  );
+}
+
+function isSupportedArea(area: string): area is SupportedArea {
+  return SUPPORTED_AREAS.includes(area as SupportedArea);
+}
+
+export async function generateStaticParams() {
+  return SUPPORTED_AREAS.map((area) => ({ area }));
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { area: rawArea } = await params;
+  const area = decodeURIComponent(rawArea);
+  if (!isSupportedArea(area)) {
+    return { title: "지역을 찾을 수 없습니다 | 나플" };
+  }
+  const title = `${area} 조각 - ${area} 클럽 조각·합석 일행 모집 | 나플`;
+  const description = `${area} 클럽 조각 매물 모음. ${area} 클럽 인당 가격으로 같이 갈 일행을 모집·합류하세요. ${area} 인기 클럽 정보와 진행 중인 조각·합석 매물을 한곳에. 나플(나이트플로우)에서 확인.`;
+  const canonical = `https://nightflow.kr/share/${encodeURIComponent(area)}`;
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    keywords: [
+      `${area} 조각`,
+      `${area} 클럽 조각`,
+      `${area} 클럽 합석`,
+      `${area} 합석`,
+      `${area} 클럽 일행`,
+      `${area} 일행`,
+      `${area} 조각모임`,
+      `${area} 클럽`,
+      "클럽 조각",
+      "클럽 합석",
+      "클럽 일행",
+      "나플",
+      "나이트플로우",
+    ],
+    openGraph: {
+      title,
+      description,
+      url: canonical,
+      type: "website",
+      locale: "ko_KR",
+      siteName: "NightFlow",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
+}
+
+export default async function ShareAreaPage({ params }: PageProps) {
+  const { area: rawArea } = await params;
+  const area = decodeURIComponent(rawArea);
+
+  if (!isSupportedArea(area)) {
+    notFound();
+  }
+
+  const supabase = createAnonClient();
+  const nowIso = new Date().toISOString();
+
+  // 1. 지역의 진행 중 share 매물
+  const { data: shareRows } = await supabase
+    .from("auctions")
+    .select(
+      `
+      id, title, start_price, table_info, share_deadline,
+      club:clubs(id, name, area)
+    `
+    )
+    .eq("listing_type", "share")
+    .in("status", ["active", "scheduled"])
+    .gt("share_deadline", nowIso)
+    .order("share_deadline", { ascending: true })
+    .limit(50);
+
+  const shareItems = (shareRows ?? []).filter((r) => {
+    const club = r.club as unknown as { area?: string | null } | null;
+    return club?.area === area;
+  });
+
+  // 2. 지역의 활성 클럽 (영구 콘텐츠 — 매물 없을 때도 SEO 본문 풍부)
+  const { data: clubsRaw } = await supabase
+    .from("clubs")
+    .select("id, name, area")
+    .eq("area", area)
+    .is("deleted_at", null)
+    .not("name", "ilike", "%운영자%")
+    .order("name")
+    .limit(50);
+
+  const HIDDEN = ["prism", "eclipse", "luna", "orion"];
+  const areaClubs = (clubsRaw ?? []).filter((c) => {
+    const lower = c.name.toLowerCase();
+    return !HIDDEN.some(
+      (kw) => lower.startsWith(kw) || lower.includes(`club ${kw}`)
+    );
+  });
+
+  const formatPrice = (n: number) =>
+    new Intl.NumberFormat("ko-KR").format(n);
+
+  return (
+    <div className="container mx-auto max-w-lg px-4 py-6 mb-20">
+      {/* SEO H1 — 시각엔 작게 표시되지만 검색엔진엔 강한 신호 */}
+      <header className="mb-6 space-y-2">
+        <h1 className="text-2xl font-black text-white tracking-tight">
+          {area} 조각
+        </h1>
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          {area} 클럽 조각·합석 일행 모집 매물 모음
+        </p>
+      </header>
+
+      {/* SEO sr-only — 본문 텍스트 보강 */}
+      <div className="sr-only">
+        <h2>{area} 조각이란?</h2>
+        <p>
+          {area} 조각은 {area} 클럽에 같이 갈 일행을 모집하거나 합류하는
+          방식입니다. {area} 클럽 MD가 인당 가격으로 조각 매물을 올리면 회원이
+          한 자리씩 합류해서 같이 입장합니다. 클럽 조각·합석으로 부르기도
+          합니다.
+        </p>
+        <h2>나플(나이트플로우) {area} 조각</h2>
+        <p>
+          나플(나이트플로우)에서 {area} 조각 매물 {shareItems.length}건이 진행
+          중입니다. {area} 인기 클럽 {areaClubs.length}곳에서 조각·합석·일행
+          모집이 가능합니다.
+        </p>
+      </div>
+
+      {/* 진행 중인 조각 매물 */}
+      <section className="space-y-3 mb-8">
+        <h2 className="text-base font-bold text-white">
+          모집 중인 {area} 조각
+          {shareItems.length > 0 && (
+            <span className="text-neutral-500 text-sm font-normal ml-2">
+              ({shareItems.length}건)
+            </span>
+          )}
+        </h2>
+        {shareItems.length === 0 ? (
+          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-6 text-center">
+            <p className="text-neutral-400 text-sm mb-4">
+              현재 진행 중인 {area} 조각 매물이 없어요
+            </p>
+            <p className="text-neutral-500 text-xs mb-5">
+              깃발을 꽂으면 {area} MD가 직접 오퍼를 보냅니다
+            </p>
+            <Link href="/flags/new">
+              <Button className="bg-amber-500 text-black font-black rounded-full hover:bg-amber-400">
+                <Flag className="w-4 h-4 mr-1" />
+                깃발 꽂으러 가기
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {shareItems.map((item) => {
+              const club = item.club as unknown as {
+                id: string;
+                name: string;
+                area: string | null;
+              };
+              const primary = getPrimaryAlias(club.id);
+              const head = primary
+                ? `${club.area ? `${club.area} ` : ""}${primary}(${club.name})`
+                : `${club.area ? `${club.area} ` : ""}${club.name}`;
+              return (
+                <li key={item.id}>
+                  <Link
+                    href={`/auctions/${item.id}`}
+                    className="block bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 hover:bg-neutral-900 transition-colors"
+                  >
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-bold text-[15px] truncate">
+                          {head}
+                        </p>
+                        {item.title && (
+                          <p className="text-neutral-400 text-xs mt-1 line-clamp-2">
+                            {item.title}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-green-500 font-black text-base">
+                          ₩{formatPrice(item.start_price)}
+                        </p>
+                        <p className="text-neutral-500 text-[10px]">1인</p>
+                      </div>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* 지역 인기 클럽 — 영구 콘텐츠 */}
+      {areaClubs.length > 0 && (
+        <section className="space-y-3 mb-8">
+          <h2 className="text-base font-bold text-white">
+            {area} 인기 클럽
+            <span className="text-neutral-500 text-sm font-normal ml-2">
+              ({areaClubs.length}곳)
+            </span>
+          </h2>
+          <ul className="grid grid-cols-2 gap-2">
+            {areaClubs.slice(0, 20).map((c) => {
+              const primary = getPrimaryAlias(c.id);
+              const display = primary ?? c.name;
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={`/clubs/${c.id}`}
+                    className="block bg-[#1C1C1E] border border-neutral-800 rounded-xl px-3 py-2.5 hover:bg-neutral-900 transition-colors"
+                  >
+                    <p className="text-white font-bold text-sm truncate">
+                      {display}
+                    </p>
+                    <p className="text-neutral-500 text-[10px] mt-0.5 truncate">
+                      {c.name}
+                    </p>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {/* 전체 보기 CTA */}
+      <div className="pt-4">
+        <Link href="/">
+          <Button
+            variant="ghost"
+            className="w-full bg-neutral-900 text-white font-bold rounded-2xl h-12 hover:bg-neutral-800"
+          >
+            전체 조각 보기
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
