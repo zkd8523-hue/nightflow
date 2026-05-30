@@ -1246,19 +1246,19 @@ export function HomeContent({
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
 
-        {/* HOT DEAL + 오늘 어디갈래? 섹션 + 이하 전체 배경 */}
+        {/* 오늘 어디갈래? + HOT DEAL 섹션 + 이하 전체 배경 */}
         <div className="-mx-4 px-4 pt-3 pb-24 bg-[#111111]">
-          <HotdealHomeSection />
-          {/* MD 전용 행동 유도 CTA (Hot Deal Now ↔ 오늘 어디갈래? 사이) */}
-          <div className="mt-3">
-            <HotdealMdCta />
-          </div>
-          <div className="mt-6">
-            <ClubBenefitSection />
-          </div>
+          <ClubBenefitSection />
           {/* MD 전용 게스트 간판 행동 유도 CTA */}
           <div className="mt-3">
             <GuestSignMdCta />
+          </div>
+          <div className="mt-6">
+            <HotdealHomeSection />
+          </div>
+          {/* MD 전용 행동 유도 CTA (오늘 어디갈래? ↔ Hot Deal Tonight 사이) */}
+          <div className="mt-3">
+            <HotdealMdCta />
           </div>
 
         </div>
