@@ -30,6 +30,7 @@ import {
   Clock,
   AlertTriangle,
   User,
+  Settings,
   HelpCircle,
   MessageCircle,
   Heart,
@@ -267,6 +268,15 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                   <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
                 </Link>
               )}
+              {user.role === "user" && user.md_status !== "pending" && (
+                <Link
+                  href="/flags/new"
+                  className="h-9 px-3.5 flex items-center rounded-full bg-amber-500 hover:bg-amber-400 transition-colors shadow-sm"
+                  aria-label="깃발 꽂기"
+                >
+                  <span className="text-[12px] font-black text-black whitespace-nowrap">깃발 꽂기</span>
+                </Link>
+              )}
               <button
                 onClick={() => setMenuOpen(true)}
                 className="relative w-11 h-11 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
@@ -407,7 +417,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                     </Link>
 
                     <Link
-                      href="/profile"
+                      href="/me"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
@@ -462,6 +472,15 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                         <span className="text-[15px] font-bold">MD 대시보드</span>
                       </Link>
                     )}
+
+                    <Link
+                      href="/profile"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <Settings className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">개인 설정</span>
+                    </Link>
 
                     <Link
                       href="/faq"
