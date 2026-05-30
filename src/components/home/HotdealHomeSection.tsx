@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Clock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { tableZoneLabel } from "@/lib/utils/hotdeal";
-import type { HotdealTableZone } from "@/types/database";
+import { tableZoneLabel, normalizeDowSlots, summarizeSlots } from "@/lib/utils/hotdeal";
+import type { HotdealTableZone, HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
 interface HotPlaceItem {
   club_id: string;
@@ -39,6 +39,21 @@ const MAX_CARDS = 12;
 const HIDDEN_PATTERN = /운영자/;
 // 비프로덕션(dev/preview)에선 테스트 클럽도 노출 (admin 슬롯 디버깅용)
 const SHOW_TEST_CLUBS = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
+
+function getThisWeekISO(): string {
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const dowIdx = kstNow.getUTCDay();
+  const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
+  const thisMonday = new Date(kstNow);
+  thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
+  return thisMonday.toISOString().slice(0, 10);
+}
+
+function getTodayDowKey(): string {
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const DOW_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  return DOW_KEYS[kstNow.getUTCDay()];
+}
 
 export function HotdealHomeSection() {
   const supabase = useMemo(() => createClient(), []);
@@ -131,11 +146,41 @@ export function HotdealHomeSection() {
           };
         });
       } else {
-        // 폴백: 클럽 단위. 테스트 클럽(개발) → MD 카운트 desc → 이름 asc
+        // 핫딜 0개 → 폴백. 게스트 간판(오늘 혜택) 클럽은 "오늘 어디갈래?" 전용이므로
+        // 여기서는 후순위로 밀어 둔다 (제외가 아니라 정렬 우선순위만 뒤로 → 채울 클럽이
+        // 부족하면 간판 클럽이 뒤에서 채워져 섹션이 비지 않음).
+        const thisWeekISO = getThisWeekISO();
+        const todayDowKey = getTodayDowKey();
+        const { data: slots } = await supabase
+          .from("weekly_hotdeal_slots")
+          .select("club_id, benefits_by_dow, expires_at")
+          .eq("week_start", thisWeekISO);
+        if (cancelled) return;
+        const benefitClubIds = new Set<string>();
+        for (const s of (slots ?? []) as Array<{
+          club_id: string;
+          benefits_by_dow: HotdealBenefitsByDow | null;
+          expires_at: string;
+        }>) {
+          if (!s.club_id) continue;
+          if (new Date(s.expires_at) <= new Date()) continue;
+          const todaySlots = normalizeDowSlots(
+            (s.benefits_by_dow ?? {})[todayDowKey as HotdealDow]
+          );
+          const hasBenefit =
+            !!summarizeSlots(todaySlots) ||
+            todaySlots.some((slot) => (slot.benefits ?? []).length > 0);
+          if (hasBenefit) benefitClubIds.add(s.club_id);
+        }
+
+        // 테스트 클럽(개발) → 간판 없는 클럽 → MD 카운트 desc → 이름 asc, 간판 클럽은 후순위
         const fallback = [...filteredAll].sort((a, b) => {
           const at = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(a.name) ? 1 : 0;
           const bt = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(b.name) ? 1 : 0;
           if (at !== bt) return bt - at;
+          const ab = benefitClubIds.has(a.id) ? 1 : 0; // 게스트 간판 클럽은 후순위
+          const bb = benefitClubIds.has(b.id) ? 1 : 0;
+          if (ab !== bb) return ab - bb;
           const ma = a.club_partners?.length ?? 0;
           const mb = b.club_partners?.length ?? 0;
           if (mb !== ma) return mb - ma;

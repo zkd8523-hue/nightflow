@@ -123,26 +123,36 @@ export function ClubBenefitSection() {
       }
       const filtered = SHOW_TEST_CLUBS ? rows : rows.filter((c) => !HIDDEN_PATTERN.test(c.name));
 
-      // Hot Deal Now가 점유하는 클럽 결정
+      // Hot Deal Tonight가 점유하는 클럽 결정
       let hotdealOccupied: Set<string>;
       if (activeHotdealClubIds.size > 0) {
         hotdealOccupied = activeHotdealClubIds;
       } else {
-        // 폴백 분기: MD 카운트 desc → 상위 3개를 Hot Deal Now가 가져갈 것으로 간주
-        const sortedByPartner = [...filtered].sort((a, b) => {
+        // 폴백 분기: 핫딜 0개일 때 Hot Deal Tonight은
+        //   "게스트 간판(오늘 혜택) 없는 클럽 우선(MD desc) → 간판 클럽 후순위" 로
+        //   최대 MAX_CARDS개 노출 (HotdealHomeSection 폴백과 동일 정렬).
+        //   그 클럽들을 여기서 제외해 두 섹션 중복을 막는다.
+        //   (간판 클럽은 아래 remaining에서 어차피 제외 면제되므로 실질 영향 없음)
+        const fallbackOrder = [...filtered].sort((a, b) => {
           const at = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(a.name) ? 1 : 0;
           const bt = SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(b.name) ? 1 : 0;
           if (at !== bt) return bt - at;
+          const ab = slotMap.has(a.id) ? 1 : 0; // 게스트 간판 클럽은 후순위
+          const bb = slotMap.has(b.id) ? 1 : 0;
+          if (ab !== bb) return ab - bb;
           const ma = a.club_partners?.length ?? 0;
           const mb = b.club_partners?.length ?? 0;
           if (mb !== ma) return mb - ma;
           return a.name.localeCompare(b.name);
         });
-        hotdealOccupied = new Set(sortedByPartner.slice(0, 3).map((c) => c.id));
+        hotdealOccupied = new Set(fallbackOrder.slice(0, MAX_CARDS).map((c) => c.id));
       }
 
-      // Hot Deal Now 점유 클럽 제외 (단, 비프로덕션에선 테스트 클럽은 점유 제외에서 면제 → 두 섹션 모두 노출)
+      // Hot Deal Tonight 점유 클럽 제외. 단:
+      //  - 게스트 간판(오늘 혜택) 클럽은 무조건 노출 (제외 면제 → 항상 우선노출)
+      //  - 비프로덕션 테스트 클럽도 면제 → 두 섹션 모두 노출
       const remaining = filtered.filter((c) => {
+        if (slotMap.has(c.id)) return true;
         if (SHOW_TEST_CLUBS && HIDDEN_PATTERN.test(c.name)) return true;
         return !hotdealOccupied.has(c.id);
       });
