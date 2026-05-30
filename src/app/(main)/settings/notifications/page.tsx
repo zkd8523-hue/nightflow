@@ -77,6 +77,7 @@ export default function NotificationSettingsPage() {
   const [quietEnd, setQuietEnd] = useState<number>(8);
   const [quietScope, setQuietScope] = useState<'everyday' | 'weekends'>('everyday');
   const [savingQuiet, setSavingQuiet] = useState(false);
+  const [quietInitialized, setQuietInitialized] = useState(false);
 
   // MD 깃발 구독 지역
   const SEOUL_AREAS = ["강남", "홍대", "이태원"] as const;
@@ -106,30 +107,34 @@ export default function NotificationSettingsPage() {
       notify_offer_response: user.notify_offer_response ?? true,
       notify_marketing: user.notify_marketing ?? true,
     });
-    // 옵트인 UI 매핑:
-    //   quiet_enabled=false → 받기 ON, scope=everyday (24시간 받기)
-    //   quiet_enabled=true + scope=weekdays → 받기 ON, scope=weekends (주말만 받기)
-    //   quiet_enabled=true + scope=everyday → 받기 OFF (매일 야간 차단)
-    const dbEnabled = user.quiet_hours_enabled ?? false;
-    const dbScope = user.quiet_hours_scope ?? 'everyday';
-    let uiEnabled: boolean;
-    let uiScope: 'everyday' | 'weekends';
-    if (!dbEnabled) {
-      uiEnabled = true;
-      uiScope = 'everyday';
-    } else if (dbScope === 'weekdays') {
-      uiEnabled = true;
-      uiScope = 'weekends';
-    } else {
-      uiEnabled = false;
-      uiScope = 'everyday';
+    // 야간알림은 최초 1회만 초기화 (refetch 후 사용자 편집 내용 덮어쓰기 방지)
+    if (!quietInitialized) {
+      // 옵트인 UI 매핑:
+      //   quiet_enabled=false → 받기 ON, scope=everyday (24시간 받기)
+      //   quiet_enabled=true + scope=weekdays → 받기 ON, scope=weekends (주말만 받기)
+      //   quiet_enabled=true + scope=everyday → 받기 OFF (매일 야간 차단)
+      const dbEnabled = user.quiet_hours_enabled ?? false;
+      const dbScope = user.quiet_hours_scope ?? 'everyday';
+      let uiEnabled: boolean;
+      let uiScope: 'everyday' | 'weekends';
+      if (!dbEnabled) {
+        uiEnabled = true;
+        uiScope = 'everyday';
+      } else if (dbScope === 'weekdays') {
+        uiEnabled = true;
+        uiScope = 'weekends';
+      } else {
+        uiEnabled = false;
+        uiScope = 'everyday';
+      }
+      setNightEnabled(uiEnabled);
+      setQuietScope(uiScope);
+      setSavedNightState({ enabled: uiEnabled, scope: uiScope });
+      setQuietStart(user.quiet_hours_start ?? 22);
+      setQuietEnd(user.quiet_hours_end ?? 4);
+      setQuietInitialized(true);
     }
-    setNightEnabled(uiEnabled);
-    setQuietScope(uiScope);
-    setSavedNightState({ enabled: uiEnabled, scope: uiScope });
-    setQuietStart(user.quiet_hours_start ?? 22);
-    setQuietEnd(user.quiet_hours_end ?? 4);
-  }, [user]);
+  }, [user, quietInitialized]);
 
   // MD 구독 지역 로드
   useEffect(() => {
