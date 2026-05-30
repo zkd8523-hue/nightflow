@@ -202,6 +202,7 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
   if (!puzzles || puzzles.length === 0) return;
 
   for (const puzzle of puzzles as Array<{ id: string; leader_id: string; area: string; event_date: string }>) {
+   try {
     // 1) 상태 전환: open → selecting (race 방지: status='open' 조건 재확인)
     const { data: updated, error: updateErr } = await supabase
       .from("puzzles")
@@ -212,7 +213,10 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
       .maybeSingle();
 
     if (updateErr || !updated) {
-      console.log(`[offerDeadline] skip ${puzzle.id} (이미 전환됨 or 에러: ${updateErr?.message ?? "race"})`);
+      // 0행이면 왜 0행인지 현재 status를 재조회해서 로그로 남긴다 (race 원인 추적)
+      const { data: cur } = await supabase
+        .from("puzzles").select("status").eq("id", puzzle.id).maybeSingle();
+      console.log(`[offerDeadline] skip ${puzzle.id} (updateErr=${updateErr?.message ?? "none"}, 현재status=${cur?.status ?? "?"})`);
       continue;
     }
 
@@ -280,6 +284,10 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
       offerCount: String(offerCount ?? 0),
       puzzleUrl: puzzleUrl(puzzle.id),
     });
+   } catch (e) {
+     // 한 깃발 처리 실패가 나머지 깃발 발송을 막지 않도록 격리
+     console.error(`❌ [offerDeadline] 깃발 처리 실패 (puzzle=${puzzle.id}):`, e);
+   }
   }
 }
 
@@ -453,18 +461,30 @@ serve(async (req: Request) => {
 
     console.log("🔔 notify-puzzle-events 시작");
 
-    await Promise.allSettled([
-      handleFirstOffer(supabase),
-      handleOfferDeadline(supabase),
-      handleLeaderChanged(supabase),
-      handleMatched(supabase),
-      handleOfferReminder(supabase),
-    ]);
+    const handlers: Array<[string, Promise<unknown>]> = [
+      ["firstOffer", handleFirstOffer(supabase)],
+      ["offerDeadline", handleOfferDeadline(supabase)],
+      ["leaderChanged", handleLeaderChanged(supabase)],
+      ["matched", handleMatched(supabase)],
+      ["offerReminder", handleOfferReminder(supabase)],
+    ];
+
+    const settled = await Promise.allSettled(handlers.map(([, p]) => p));
+
+    // allSettled가 reject를 삼키는 문제: 각 핸들러의 실패 사유를 명시적으로 노출
+    const errors: Record<string, string> = {};
+    settled.forEach((r, i) => {
+      if (r.status === "rejected") {
+        const name = handlers[i][0];
+        errors[name] = String(r.reason);
+        console.error(`❌ 핸들러 실패 [${name}]:`, r.reason);
+      }
+    });
 
     console.log("✅ notify-puzzle-events 완료");
 
     return new Response(
-      JSON.stringify({ success: true }),
+      JSON.stringify({ success: true, errors: Object.keys(errors).length ? errors : undefined }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
