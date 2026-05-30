@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ClubDetailContent } from "@/components/clubs/ClubDetailContent";
-import { getClubAliases } from "@/lib/clubs/aliases";
+import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
 import { normalizeDowSlots, summarizeSlots } from "@/lib/utils/hotdeal";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 import type { Metadata } from "next";
@@ -28,14 +28,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const area = club.area || "";
-  const titleArea = area ? `${area} ` : "";
   const aliases = getClubAliases(id);
-  const titleAlias = aliases[0] ? `(${aliases[0]})` : "";
+  const primary = getPrimaryAlias(id);
+  // 메인 별칭이 있으면 "강남 에이스(Club Ace)" 형태로 노출.
+  // 없으면 등록명을 그대로 사용.
+  const headName = primary
+    ? `${area ? `${area} ` : ""}${primary}(${club.name})`
+    : `${area ? `${area} ` : ""}${club.name}`;
   const descAliases = aliases.length > 0 ? ` (${aliases.join(", ")})` : "";
 
   return {
-    title: `${club.name}${titleAlias} ${titleArea}클럽 테이블 가격·예약`,
-    description: `${club.name}${descAliases} ${area ? `${area} ` : ""}클럽 테이블 정가보다 저렴하게 예약. 잔여 테이블 실시간 가격 비교, MD 직거래로 수수료 없음. 나이트플로우(나플)에서 입찰하세요.`,
+    title: `${headName} - 클럽 테이블 가격·예약`,
+    description: `${headName}${descAliases} 테이블을 정가보다 저렴하게 예약. 잔여 테이블 실시간 가격 비교, MD 직거래로 수수료 없음. 나이트플로우(나플)에서 입찰하세요.`,
     keywords: [
       club.name,
       ...aliases,
@@ -58,8 +62,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ],
     alternates: { canonical: `https://nightflow.kr/clubs/${id}` },
     openGraph: {
-      title: `${club.name}${titleAlias} ${titleArea}클럽 테이블 가격·예약 - 나이트플로우`,
-      description: `${club.name}${descAliases} 잔여 테이블 실시간 경매. 정가보다 저렴하게.`,
+      title: `${headName} - 클럽 테이블 가격·예약 | 나플`,
+      description: `${headName}${descAliases} 잔여 테이블 실시간 경매. 정가보다 저렴하게.`,
       url: `https://nightflow.kr/clubs/${id}`,
       type: "website",
     },
@@ -200,6 +204,13 @@ export default async function ClubDetailPage({ params }: PageProps) {
     return aliasesWithArea.join(", ");
   })();
 
+  // 메인 검색 이름 ("에이스" 등). 없으면 등록명으로 폴백.
+  const ssrPrimary = getPrimaryAlias(id);
+  // 본문/H1 head 라벨: "강남 에이스(Club Ace)" 형태
+  const ssrHead = ssrPrimary
+    ? `${ssrAreaPrefix}${ssrPrimary}(${club.name})`
+    : `${ssrAreaPrefix}${club.name}`;
+
   return (
     <>
       <script
@@ -208,13 +219,13 @@ export default async function ClubDetailPage({ params }: PageProps) {
       />
       <div className="sr-only">
         <h1>
-          {ssrAreaPrefix}{club.name} - 클럽 테이블 가격·예약·핫딜 (나플)
+          {ssrHead} - 클럽 테이블 가격·예약·핫딜 (나플)
         </h1>
         {ssrAliasSentence && (
           <p>
-            {ssrAreaPrefix}{club.name}은(는) {ssrAliasSentence} 등으로도 불리는
+            {ssrHead}은(는) {ssrAliasSentence} 등으로도 불리는
             {club.area ? ` ${club.area} ` : " "}인기 클럽입니다.
-            나플(나이트플로우)에서 {ssrAreaPrefix}{club.name} 테이블 가격을 확인하고
+            나플(나이트플로우)에서 {ssrHead} 테이블 가격을 확인하고
             예약하세요.
           </p>
         )}
@@ -222,16 +233,16 @@ export default async function ClubDetailPage({ params }: PageProps) {
       {ssrWeeklyBenefits.length > 0 && (
         <div className="sr-only">
           <h2>
-            이번 주 {ssrAreaPrefix}{club.name} 게스트 간판
+            이번 주 {ssrHead} 게스트 간판
           </h2>
           <p>
-            {ssrAreaPrefix}{club.name} 이번 주 요일별 게스트 간판 혜택을 안내합니다.
+            {ssrHead} 이번 주 요일별 게스트 간판 혜택을 안내합니다.
             나플(나이트플로우)에서 클럽 테이블 가격과 핫딜을 확인하고 예약하세요.
           </p>
           <ul>
             {ssrWeeklyBenefits.map((b, i) => (
               <li key={i}>
-                {ssrAreaPrefix}{club.name} {b.dow} 게스트 간판 - {b.text}
+                {ssrHead} {b.dow} 게스트 간판 - {b.text}
               </li>
             ))}
           </ul>
