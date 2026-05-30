@@ -3,6 +3,10 @@ import { createServerClient } from "@supabase/ssr";
 
 const BASE_URL = "https://nightflow.kr";
 
+// sitemap은 1시간마다 재생성 (새 클럽/매물/핫딜 추가가 SEO에 빠르게 반영되도록).
+// 너무 짧으면 sitemap 호출마다 DB 부담, 너무 길면 신선도 떨어짐.
+export const revalidate = 3600;
+
 // sitemap.xml은 빌드/ISR 환경(쿠키 없음)에서 호출되므로
 // next/headers cookies()를 부르는 createClient 대신 빈 쿠키 어댑터 사용.
 // /clubs 페이지의 createAnonClient와 동일 패턴.
