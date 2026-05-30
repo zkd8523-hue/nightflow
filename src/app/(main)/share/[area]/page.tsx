@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { Flag, ArrowRight } from "lucide-react";
@@ -120,7 +121,7 @@ export default async function ShareAreaPage({ params }: PageProps) {
   // 2. 지역의 활성 클럽 (영구 콘텐츠 — 매물 없을 때도 SEO 본문 풍부)
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, area")
+    .select("id, name, area, thumbnail_url")
     .eq("area", area)
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -128,7 +129,12 @@ export default async function ShareAreaPage({ params }: PageProps) {
     .limit(50);
 
   const HIDDEN = ["prism", "eclipse", "luna", "orion"];
-  const areaClubs = (clubsRaw ?? []).filter((c) => {
+  const areaClubs = ((clubsRaw ?? []) as Array<{
+    id: string;
+    name: string;
+    area: string | null;
+    thumbnail_url: string | null;
+  }>).filter((c) => {
     const lower = c.name.toLowerCase();
     return !HIDDEN.some(
       (kw) => lower.startsWith(kw) || lower.includes(`club ${kw}`)
@@ -249,18 +255,40 @@ export default async function ShareAreaPage({ params }: PageProps) {
             {areaClubs.slice(0, 20).map((c) => {
               const primary = getPrimaryAlias(c.id);
               const display = primary ?? c.name;
+              const altText = `${area} ${display}${
+                primary && primary !== c.name ? ` (${c.name})` : ""
+              } 클럽 사진`;
               return (
                 <li key={c.id}>
                   <Link
                     href={`/clubs/${c.id}`}
-                    className="block bg-[#1C1C1E] border border-neutral-800 rounded-xl px-3 py-2.5 hover:bg-neutral-900 transition-colors"
+                    className="block bg-[#1C1C1E] border border-neutral-800 rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors"
                   >
-                    <p className="text-white font-bold text-sm truncate">
-                      {display}
-                    </p>
-                    <p className="text-neutral-500 text-[10px] mt-0.5 truncate">
-                      {c.name}
-                    </p>
+                    <div className="relative w-full aspect-[4/3] bg-neutral-900">
+                      {c.thumbnail_url ? (
+                        <Image
+                          src={c.thumbnail_url}
+                          alt={altText}
+                          fill
+                          sizes="(max-width: 512px) 50vw, 220px"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-neutral-700 text-2xl font-black">
+                            {display.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="px-3 py-2">
+                      <p className="text-white font-bold text-sm truncate">
+                        {display}
+                      </p>
+                      <p className="text-neutral-500 text-[10px] mt-0.5 truncate">
+                        {c.name}
+                      </p>
+                    </div>
                   </Link>
                 </li>
               );
