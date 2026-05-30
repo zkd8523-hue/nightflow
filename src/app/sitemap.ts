@@ -1,7 +1,18 @@
 import type { MetadataRoute } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 
 const BASE_URL = "https://nightflow.kr";
+
+// sitemap.xml은 빌드/ISR 환경(쿠키 없음)에서 호출되므로
+// next/headers cookies()를 부르는 createClient 대신 빈 쿠키 어댑터 사용.
+// /clubs 페이지의 createAnonClient와 동일 패턴.
+function createAnonClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => [], setAll: () => {} } }
+  );
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
@@ -25,7 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    const supabase = await createClient();
+    const supabase = createAnonClient();
 
     const nowIso = new Date().toISOString();
     const [auctionsRes, clubsRes, puzzlesRes, hotdealsRes] = await Promise.all([

@@ -5,8 +5,9 @@ import { HotdealList } from "@/components/hotdeal/HotdealList";
 
 export const revalidate = 30;
 
+// brand suffix(" | 나플(나이트플로우)")는 layout.tsx의 title.template이 자동 추가.
 export const metadata: Metadata = {
-  title: "오늘의 클럽 핫딜 - 강남·홍대 클럽 특가 (나플)",
+  title: "오늘의 클럽 핫딜 - 강남·홍대 클럽 특가",
   description:
     "나플(나이트플로우)에서 오늘 진행 중인 강남·홍대·이태원 클럽 핫딜·특가. 종료 시간이 다가오는 한정 혜택을 한눈에. 클럽 테이블 가격 비교는 나플에서.",
   alternates: { canonical: "https://nightflow.kr/hotdeal" },
