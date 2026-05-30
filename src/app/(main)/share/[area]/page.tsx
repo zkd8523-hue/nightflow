@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
-import { Flag, ArrowRight, Heart } from "lucide-react";
+import { ArrowRight, Heart } from "lucide-react";
 import { getPrimaryAlias } from "@/lib/clubs/aliases";
 
 export const revalidate = 60;
@@ -213,16 +213,15 @@ export default async function ShareAreaPage({ params }: PageProps) {
         </h2>
         {shareItems.length === 0 ? (
           <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-6 text-center">
-            <p className="text-neutral-400 text-sm mb-4">
+            <p className="text-neutral-400 text-sm mb-2 leading-relaxed">
               현재 진행 중인 {area} 조각 매물이 없어요
             </p>
-            <p className="text-neutral-500 text-xs mb-5">
-              깃발을 꽂으면 {area} MD가 직접 오퍼를 보냅니다
+            <p className="text-neutral-500 text-xs mb-5 leading-relaxed">
+              {area} 무료입장·특가 등 실시간 정보를 확인해보실래요?
             </p>
-            <Link href="/flags/new">
-              <Button className="bg-amber-500 text-black font-black rounded-full hover:bg-amber-400">
-                <Flag className="w-4 h-4 mr-1" />
-                깃발 꽂으러 가기
+            <Link href="/">
+              <Button className="bg-amber-500 text-black font-black rounded-full hover:bg-amber-400 h-12 px-6">
+                둘러보기
               </Button>
             </Link>
           </div>

@@ -33,6 +33,7 @@ import { useFavoritesContext } from "@/components/providers";
 import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
 import { ShareAuctionSheet } from "./ShareAuctionSheet";
+import { FloorPlanViewer } from "./FloorPlanViewer";
 import { ContentMoreMenu } from "@/components/moderation/ContentMoreMenu";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
@@ -589,23 +590,11 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 <MapPin className="w-3.5 h-3.5 text-neutral-500" />
                 <h2 className="text-[14px] font-bold text-white">테이블 위치</h2>
               </div>
-              <div className="space-y-2">
-                <div className="relative rounded-xl overflow-hidden border border-neutral-800">
-                  <img
-                    src={club.floor_plan_url}
-                    alt="테이블 위치"
-                    className="w-full h-auto block select-none pointer-events-none"
-                    draggable={false}
-                  />
-                </div>
-                <div className="flex items-center gap-2 justify-center">
-                  <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                  <span className="text-[11px] text-amber-400 font-bold">
-                    {displayAuction.table_info}
-                  </span>
-                  <span className="text-[10px] text-neutral-500">테이블</span>
-                </div>
-              </div>
+              <FloorPlanViewer
+                floorPlanUrl={club.floor_plan_url}
+                positions={[]}
+                highlightLabel={displayAuction.table_info}
+              />
             </div>
           </div>
         )}
