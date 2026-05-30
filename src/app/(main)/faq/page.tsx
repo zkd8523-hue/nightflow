@@ -11,9 +11,9 @@ import {
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "자주 묻는 질문(FAQ)",
+  title: "나플 FAQ - 자주 묻는 질문 (나이트플로우)",
   description:
-    "나이트플로우(나플) 이용 가이드. 입찰 방법, 낙찰 후 MD 연락 절차, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
+    "나플(나이트플로우) 이용 가이드. 나플이 뭔지, 입찰 방법, 낙찰 후 MD 연락 절차, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
   alternates: { canonical: "https://nightflow.kr/faq" },
 };
 

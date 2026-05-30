@@ -5,10 +5,17 @@ import Link from "next/link";
 import Image from "next/image";
 
 export const metadata: Metadata = {
-  title: "회사소개",
+  title: "나플(나이트플로우) 소개 - 강남·홍대 클럽 테이블 예약",
   description:
-    "나이트플로우(나플)는 강남·홍대 클럽 테이블을 실시간 경매로 예약하는 플랫폼입니다. 클럽 MD가 직접 올리는 잔여 테이블을 합리적인 가격에 낙찰받으세요.",
+    "나플은 나이트플로우(NightFlow)의 줄임말입니다. 강남·홍대 클럽 MD가 잔여 테이블을 올리면 회원이 입찰로 가격을 정해 예약하는 서비스. 나플을 만든 이유와 운영 방식을 소개합니다.",
   alternates: { canonical: "https://nightflow.kr/about" },
+  openGraph: {
+    title: "나플(나이트플로우) 소개",
+    description:
+      "나플은 나이트플로우의 줄임말. 강남·홍대 클럽 테이블을 실시간 경매로 예약하는 플랫폼.",
+    url: "https://nightflow.kr/about",
+    type: "website",
+  },
 };
 
 export default function AboutPage() {
@@ -23,17 +30,28 @@ export default function AboutPage() {
 
                 {/* 헤드라인 */}
                 <div className="space-y-5">
-                    <h1 className="text-[28px] font-black text-white leading-[1.3] tracking-tight">
+                    <h1 className="sr-only">
+                        나플(나이트플로우) - 강남·홍대 클럽 테이블 예약 서비스
+                    </h1>
+                    <p
+                        aria-hidden="true"
+                        className="text-[28px] font-black text-white leading-[1.3] tracking-tight"
+                    >
                         더 많은 사람들이<br />
                         더 똑똑하게 클럽을 즐기도록
-                    </h1>
+                    </p>
                     <div className="h-[2px] w-8 bg-amber-500 mx-auto rounded-full" />
                 </div>
 
                 {/* 본문 */}
                 <div className="space-y-6 text-[15px] leading-[1.8] text-neutral-400 break-keep">
                     <p>
-                        안녕하세요, 나이트플로우(줄여서 <strong className="text-white">나플</strong>)를 만들고 있는 개발자 김민기입니다.
+                        안녕하세요, <strong className="text-white">나플</strong>(나이트플로우)을 만들고 있는 개발자 김민기입니다.
+                    </p>
+
+                    <p>
+                        <strong className="text-white">나플</strong>은 <strong className="text-white">나이트플로우(NightFlow)</strong>의 줄임말이에요.
+                        강남·홍대 클럽 MD가 잔여 테이블을 올리면, 회원이 입찰로 가격을 정해 예약하는 서비스입니다.
                     </p>
 
                     <p>
