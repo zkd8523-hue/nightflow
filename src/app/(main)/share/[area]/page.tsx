@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
-import { Flag, ArrowRight } from "lucide-react";
+import { Flag, ArrowRight, Heart } from "lucide-react";
 import { getPrimaryAlias } from "@/lib/clubs/aliases";
 
 export const revalidate = 60;
@@ -121,7 +121,7 @@ export default async function ShareAreaPage({ params }: PageProps) {
   // 2. 지역의 활성 클럽 (영구 콘텐츠 — 매물 없을 때도 SEO 본문 풍부)
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, area, thumbnail_url")
+    .select("id, name, area, thumbnail_url, seed_favorite_count")
     .eq("area", area)
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -134,12 +134,40 @@ export default async function ShareAreaPage({ params }: PageProps) {
     name: string;
     area: string | null;
     thumbnail_url: string | null;
+    seed_favorite_count: number | null;
   }>).filter((c) => {
     const lower = c.name.toLowerCase();
     return !HIDDEN.some(
       (kw) => lower.startsWith(kw) || lower.includes(`club ${kw}`)
     );
   });
+
+  // 3. 클럽별 좋아요(찜) 수 — Migration 243의 공개 SELECT 정책
+  // 시각 클럽 ID 화이트리스트만 카운트해서 쿼리 비용 줄임.
+  const visibleClubIds = areaClubs.map((c) => c.id);
+  const { data: favRows } = visibleClubIds.length > 0
+    ? await supabase
+        .from("user_favorite_clubs")
+        .select("club_id")
+        .in("club_id", visibleClubIds)
+    : { data: null };
+
+  const favCountMap: Record<string, number> = {};
+  for (const f of favRows ?? []) {
+    if (!f.club_id) continue;
+    favCountMap[f.club_id] = (favCountMap[f.club_id] || 0) + 1;
+  }
+  // 시드 카운트 합산 (메인 /clubs 페이지와 동일 정책)
+  for (const c of areaClubs) {
+    const seed = c.seed_favorite_count ?? 0;
+    if (seed > 0) {
+      favCountMap[c.id] = (favCountMap[c.id] || 0) + seed;
+    }
+  }
+  const formatCount = (n: number): string => {
+    if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+    return String(n);
+  };
 
   const formatPrice = (n: number) =>
     new Intl.NumberFormat("ko-KR").format(n);
@@ -258,6 +286,7 @@ export default async function ShareAreaPage({ params }: PageProps) {
               const altText = `${area} ${display}${
                 primary && primary !== c.name ? ` (${c.name})` : ""
               } 클럽 사진`;
+              const favCount = favCountMap[c.id] ?? 0;
               return (
                 <li key={c.id}>
                   <Link
@@ -277,6 +306,14 @@ export default async function ShareAreaPage({ params }: PageProps) {
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className="text-neutral-700 text-2xl font-black">
                             {display.charAt(0)}
+                          </span>
+                        </div>
+                      )}
+                      {favCount > 0 && (
+                        <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-full">
+                          <Heart className="w-3 h-3 fill-red-500 text-red-500" />
+                          <span className="text-white text-[11px] font-bold">
+                            {formatCount(favCount)}
                           </span>
                         </div>
                       )}
