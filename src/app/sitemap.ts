@@ -53,9 +53,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .limit(1000),
       supabase
         .from("clubs")
-        .select("id, updated_at")
+        .select("id")
         .is("deleted_at", null)
-        .order("updated_at", { ascending: false })
         .limit(200),
       supabase
         .from("puzzles")
@@ -86,7 +85,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     const clubRoutes: MetadataRoute.Sitemap = (clubsRes.data ?? []).map((c) => ({
       url: `${BASE_URL}/clubs/${c.id}`,
-      lastModified: c.updated_at ? new Date(c.updated_at) : now,
+      lastModified: now,
       changeFrequency: "weekly" as const,
       priority: 0.7,
     }));
