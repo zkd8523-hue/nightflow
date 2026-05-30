@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Search, X } from "lucide-react";
+import { Search, X, Camera } from "lucide-react";
+import { normalizeProfileImage } from "@/lib/utils/image";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -28,12 +29,16 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initial: {
+    displayName: string;
+    profileImage: string | null;
     bio: string;
     genres: string[];
     areas: string[];
     pinnedClubs: PinnedClubLite[];
   };
   onSaved: (next: {
+    displayName: string;
+    profileImage: string | null;
     bio: string | null;
     genres: string[];
     areas: string[];
@@ -47,6 +52,10 @@ export function ProfileEditSheet({
   onSaved,
 }: Props) {
   const { user } = useCurrentUser();
+  const [displayName, setDisplayName] = useState(initial.displayName);
+  const [profileImage, setProfileImage] = useState<string | null>(
+    initial.profileImage
+  );
   const [bio, setBio] = useState(initial.bio);
   const [genres, setGenres] = useState<string[]>(initial.genres);
   const [areas, setAreas] = useState<string[]>(initial.areas);
@@ -54,6 +63,8 @@ export function ProfileEditSheet({
     initial.pinnedClubs
   );
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 클럽 검색
   const [clubQuery, setClubQuery] = useState("");
@@ -62,6 +73,8 @@ export function ProfileEditSheet({
 
   useEffect(() => {
     if (open) {
+      setDisplayName(initial.displayName);
+      setProfileImage(initial.profileImage);
       setBio(initial.bio);
       setGenres(initial.genres);
       setAreas(initial.areas);
@@ -70,6 +83,62 @@ export function ProfileEditSheet({
       setClubResults([]);
     }
   }, [open, initial]);
+
+  // 프로필 사진 업로드
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("이미지는 2MB 이하만 업로드 가능합니다");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+      const supabase = createClient();
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ profile_image: publicUrl })
+        .eq("id", user.id);
+      if (updateError) throw updateError;
+
+      setProfileImage(publicUrl);
+      toast.success("프로필 사진이 변경되었습니다");
+    } catch {
+      toast.error("업로드에 실패했습니다");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function handleImageDelete() {
+    if (!user) return;
+    if (!confirm("프로필 사진을 삭제하고 기본 이미지로 변경할까요?")) return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("users")
+      .update({ profile_image: null })
+      .eq("id", user.id);
+    if (error) {
+      toast.error("삭제 실패");
+      return;
+    }
+    setProfileImage(null);
+    toast.success("기본 이미지로 변경되었습니다");
+  }
 
   // 클럽 검색 (디바운스)
   useEffect(() => {
@@ -136,6 +205,13 @@ export function ProfileEditSheet({
 
   async function handleSave() {
     if (!user) return;
+
+    // 닉네임 검증 (서버에서도 한 번 더 검증함)
+    const trimmedName = displayName.trim();
+    if (trimmedName.length < 2 || trimmedName.length > 16) {
+      toast.error("닉네임은 2~16자로 입력해주세요");
+      return;
+    }
     if (bio.length > MAX_BIO_LENGTH) {
       toast.error(`자기소개는 ${MAX_BIO_LENGTH}자 이하로 작성해주세요`);
       return;
@@ -144,6 +220,23 @@ export function ProfileEditSheet({
     setSaving(true);
     const supabase = createClient();
     const newBio = bio.trim() === "" ? null : bio.trim();
+
+    // 0. 닉네임 변경된 경우 서버 API로 처리 (중복 체크 포함)
+    if (trimmedName !== initial.displayName) {
+      try {
+        const res = await fetch("/api/user/profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ display_name: trimmedName }),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || "닉네임 저장에 실패했습니다");
+      } catch (e) {
+        setSaving(false);
+        toast.error(e instanceof Error ? e.message : "닉네임 저장에 실패했습니다");
+        return;
+      }
+    }
 
     // 1. users 테이블 (bio + 음악 + 지역)
     const { error: userErr } = await supabase
@@ -194,7 +287,13 @@ export function ProfileEditSheet({
 
     setSaving(false);
     toast.success("프로필이 저장되었습니다");
-    onSaved({ bio: newBio, genres, areas });
+    onSaved({
+      displayName: trimmedName,
+      profileImage,
+      bio: newBio,
+      genres,
+      areas,
+    });
   }
 
   const remaining = MAX_BIO_LENGTH - bio.length;
@@ -213,6 +312,68 @@ export function ProfileEditSheet({
         </SheetHeader>
 
         <div className="p-4 space-y-6">
+          {/* 프로필 사진 */}
+          <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage}
+              className="relative w-24 h-24 rounded-full overflow-hidden bg-neutral-800 ring-2 ring-neutral-700 active:scale-95 transition-transform disabled:opacity-50"
+              aria-label="프로필 사진 변경"
+            >
+              {profileImage ? (
+                <Image
+                  src={normalizeProfileImage(profileImage)!}
+                  alt="프로필 사진"
+                  fill
+                  sizes="96px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/40 text-3xl font-black">
+                  {(displayName || "?").charAt(0)}
+                </div>
+              )}
+              <span className="absolute right-0 bottom-0 w-7 h-7 rounded-full bg-white flex items-center justify-center text-black">
+                <Camera className="w-3.5 h-3.5" />
+              </span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+            {profileImage && (
+              <button
+                type="button"
+                onClick={handleImageDelete}
+                className="text-[12px] text-neutral-500 hover:text-neutral-300"
+              >
+                기본 이미지로 변경
+              </button>
+            )}
+          </div>
+
+          {/* 닉네임 */}
+          <div>
+            <label className="block text-[13px] font-bold text-neutral-400 mb-2">
+              닉네임
+            </label>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="닉네임 (2~16자)"
+              maxLength={16}
+              className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl px-3 py-2.5 text-[15px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600"
+            />
+            <div className="mt-1 text-right text-[12px] text-neutral-500">
+              {displayName.length} / 16
+            </div>
+          </div>
+
           {/* 자기소개 */}
           <div>
             <label className="block text-[13px] font-bold text-neutral-400 mb-2">

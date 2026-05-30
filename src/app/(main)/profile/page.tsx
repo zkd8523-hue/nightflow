@@ -7,9 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
-  User,
   Phone,
-  Calendar,
   AlertTriangle,
   ShieldAlert,
   Clock,
@@ -18,14 +16,12 @@ import {
   Trophy,
   CheckCircle2,
   TrendingUp,
-  Camera,
   Heart,
   MessageCircle,
   Instagram,
   Check,
 } from "lucide-react";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
-import { normalizeProfileImage } from "@/lib/utils/image";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import type { ContactMethodType } from "@/types/database";
@@ -41,11 +37,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const supabase = createClient();
 
-  // 기본 정보 수정
-  const [isEditing, setIsEditing] = useState(false);
-  const [displayName, setDisplayName] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
+  // 닉네임/사진 편집은 /me (공개 프로필) ProfileEditSheet에서 처리
 
   // MD 비즈니스 연락처 수정
   const [isEditingBusiness, setIsEditingBusiness] = useState(false);
@@ -78,66 +70,6 @@ export default function ProfilePage() {
       });
   }, [user]);
 
-  const handleImageDelete = async () => {
-    if (!user) return;
-    if (!confirm("프로필 사진을 삭제하고 기본 이미지로 변경할까요?")) return;
-
-    setUploadingImage(true);
-    try {
-      const { error } = await supabase
-        .from("users")
-        .update({ profile_image: null })
-        .eq("id", user.id);
-      if (error) throw error;
-      toast.success("프로필 사진이 삭제되었습니다");
-      refetch();
-    } catch {
-      toast.error("삭제에 실패했습니다");
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !user) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("이미지는 2MB 이하만 업로드 가능합니다");
-      return;
-    }
-
-    setUploadingImage(true);
-    try {
-      const ext = file.name.split(".").pop();
-      const path = `${user.id}/avatar.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
-      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
-
-      const { error: updateError } = await supabase
-        .from("users")
-        .update({ profile_image: publicUrl })
-        .eq("id", user.id);
-
-      if (updateError) throw updateError;
-
-      toast.success("프로필 사진이 변경되었습니다");
-      refetch();
-    } catch {
-      toast.error("업로드에 실패했습니다");
-    } finally {
-      setUploadingImage(false);
-      e.target.value = "";
-    }
-  };
-
   // 로딩 타임아웃: 5초 후 강제 해제
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
@@ -158,42 +90,6 @@ export default function ProfilePage() {
     router.push("/login?redirect=/profile");
     return null;
   }
-
-  // 기본 정보 수정 시작
-  const handleEdit = () => {
-    setDisplayName(user.display_name || "");
-    setIsEditing(true);
-  };
-
-  // 닉네임 저장 (API 경유 — 서버 검증 + 중복 체크)
-  const handleSave = async () => {
-    if (!displayName.trim()) {
-      toast.error("닉네임을 입력해주세요");
-      return;
-    }
-    if (displayName.trim().length < 2 || displayName.trim().length > 16) {
-      toast.error("닉네임은 2~16자로 입력해주세요");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const res = await fetch("/api/user/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ display_name: displayName }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "저장에 실패했습니다");
-      toast.success("프로필이 수정되었습니다");
-      setIsEditing(false);
-      refetch();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "저장에 실패했습니다");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   // MD 비즈니스 연락처 수정 시작
   const handleEditBusiness = () => {
@@ -285,7 +181,7 @@ export default function ProfilePage() {
           >
             <ArrowLeft className="w-5 h-5 text-neutral-400" />
           </button>
-          <h1 className="text-xl font-black text-white">프로필</h1>
+          <h1 className="text-xl font-black text-white">설정</h1>
         </div>
 
         {/* 제재 상태 배너 */}
@@ -304,128 +200,6 @@ export default function ProfilePage() {
             )}
           </div>
         )}
-
-        {/* 프로필 정보 카드 */}
-        <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-          {/* 프로필 이미지 */}
-          <div className="flex flex-col items-center mb-5">
-            <label className="relative cursor-pointer group">
-              <div className="relative w-20 h-20 rounded-full overflow-hidden bg-neutral-700 flex items-center justify-center">
-                <span className="absolute inset-0 flex items-center justify-center text-2xl font-black text-white">{user.display_name?.[0] || user.name?.[0] || "?"}</span>
-                {user.profile_image && (
-                  <img
-                    src={normalizeProfileImage(user.profile_image)!}
-                    alt="프로필"
-                    className="relative w-full h-full object-cover"
-                    onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  />
-                )}
-              </div>
-              <div className="absolute bottom-0 right-0 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow group-hover:bg-neutral-200 transition-colors">
-                {uploadingImage
-                  ? <div className="w-3 h-3 border border-neutral-400 border-t-transparent rounded-full animate-spin" />
-                  : <Camera className="w-3 h-3 text-black" />
-                }
-              </div>
-              <input
-                type="file"
-                accept="image/jpeg,image/jpg,image/png,image/webp"
-                className="hidden"
-                onChange={handleImageUpload}
-                disabled={uploadingImage}
-              />
-            </label>
-            <p className="text-[11px] text-neutral-500 mt-2">탭하여 사진 변경</p>
-            {user.profile_image && (
-              <button
-                type="button"
-                onClick={handleImageDelete}
-                disabled={uploadingImage}
-                className="mt-3 px-3 py-1.5 rounded-full text-[12px] font-bold text-neutral-300 bg-neutral-800 hover:bg-neutral-700 hover:text-white transition-colors disabled:opacity-50"
-              >
-                기본 이미지로 변경
-              </button>
-            )}
-          </div>
-
-          {/* 기본 정보 */}
-          <h2 className="text-[15px] font-bold text-white mb-4">기본 정보</h2>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <User className="w-4 h-4 text-neutral-500 shrink-0" />
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-[11px] text-neutral-500">닉네임</p>
-                  {!isEditing ? (
-                    <button
-                      onClick={handleEdit}
-                      className="text-[12px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
-                    >
-                      수정
-                    </button>
-                  ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setIsEditing(false)}
-                        className="text-[12px] text-neutral-500 hover:text-neutral-300 transition-colors font-bold"
-                      >
-                        취소
-                      </button>
-                      <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="text-[12px] text-blue-400 hover:text-blue-300 transition-colors font-bold disabled:opacity-50"
-                      >
-                        {saving ? "저장 중..." : "저장"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    maxLength={16}
-                    placeholder="2~16자"
-                    className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2 text-[14px] text-white mt-1 focus:outline-none focus:border-blue-500"
-                  />
-                ) : (
-                  <p className="text-[14px] text-white font-bold">{user.display_name || "미설정"}</p>
-                )}
-              </div>
-            </div>
-
-            {(user.role === "md" || user.role === "admin") && (
-              <div className="flex items-center gap-3">
-                <User className="w-4 h-4 text-neutral-500 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-[11px] text-neutral-500">이름</p>
-                  <p className="text-[14px] text-white font-bold">{user.name || "미설정"}</p>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-3">
-              <Phone className="w-4 h-4 text-neutral-500 shrink-0" />
-              <div className="flex-1">
-                <p className="text-[11px] text-neutral-500">전화번호</p>
-                <p className="text-[14px] text-white font-bold">{user.phone || "미설정"}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Calendar className="w-4 h-4 text-neutral-500 shrink-0" />
-              <div>
-                <p className="text-[11px] text-neutral-500">가입일</p>
-                <p className="text-[14px] text-white font-bold">
-                  {dayjs(user.created_at).format("YYYY년 M월 D일")}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* 일반 유저용 카카오 오픈채팅 등록 (MD는 아래 MD 정보 섹션에서 관리) */}
         {user.role !== "md" && user.role !== "admin" && (
@@ -765,6 +539,13 @@ export default function ProfilePage() {
 
         {/* 바로가기 */}
         <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
+          <Link
+            href="/settings/notifications"
+            className="flex items-center justify-between px-5 py-4 hover:bg-neutral-800/30 transition-colors border-b border-neutral-800/50"
+          >
+            <span className="text-[14px] text-neutral-300">알림 설정</span>
+            <ChevronRight className="w-4 h-4 text-neutral-600" />
+          </Link>
           <Link
             href="/faq"
             className="flex items-center justify-between px-5 py-4 hover:bg-neutral-800/30 transition-colors border-b border-neutral-800/50"

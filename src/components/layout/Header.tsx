@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -31,8 +32,6 @@ import {
   AlertTriangle,
   User,
   Settings,
-  HelpCircle,
-  MessageCircle,
   Heart,
   TrendingUp,
   Star,
@@ -421,7 +420,19 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
-                      <User className="w-5 h-5 text-neutral-500" />
+                      {user.profile_image ? (
+                        <div className="relative w-5 h-5 rounded-full overflow-hidden bg-neutral-800 shrink-0 ring-1 ring-neutral-600">
+                          <Image
+                            src={user.profile_image}
+                            alt="내 프로필"
+                            fill
+                            sizes="20px"
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <User className="w-5 h-5 text-neutral-500" />
+                      )}
                       <span className="text-[15px] font-bold">프로필</span>
                     </Link>
 
@@ -479,25 +490,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
                       <Settings className="w-5 h-5 text-neutral-500" />
-                      <span className="text-[15px] font-bold">개인 설정</span>
-                    </Link>
-
-                    <Link
-                      href="/faq"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                    >
-                      <HelpCircle className="w-5 h-5 text-neutral-500" />
-                      <span className="text-[15px] font-bold">도움말</span>
-                    </Link>
-
-                    <Link
-                      href="/contact"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                    >
-                      <MessageCircle className="w-5 h-5 text-neutral-500" />
-                      <span className="text-[15px] font-bold">고객 문의</span>
+                      <span className="text-[15px] font-bold">설정</span>
                     </Link>
 
                     <Link

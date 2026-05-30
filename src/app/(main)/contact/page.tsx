@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Mail, MessageCircle } from "lucide-react";
+import { ArrowLeft, Mail, MessageCircle, Instagram } from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -26,6 +26,20 @@ export default function ContactPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 pt-4">
+                    <Button
+                        asChild
+                        className="h-14 bg-gradient-to-r from-[#feda77] via-[#f58529] via-[#dd2a7b] to-[#8134af] text-white font-black rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-3"
+                    >
+                        <a
+                            href="https://instagram.com/nightflow.kr"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <Instagram className="w-5 h-5" />
+                            인스타그램 DM 보내기
+                        </a>
+                    </Button>
+
                     <Button
                         asChild
                         className="h-14 bg-[#FEE500] text-[#191919] font-black rounded-2xl hover:bg-[#FEE500]/90 transition-all flex items-center justify-center gap-3"

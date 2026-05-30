@@ -14,7 +14,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
   const { data: profile, error } = await supabase
     .from("users")
     .select(
-      "id, display_name, profile_image, bio, created_at, role, md_unique_slug, md_status, preferred_music_genres, preferred_areas"
+      "id, display_name, profile_image, bio, created_at, role, md_unique_slug, md_status, instagram, preferred_music_genres, preferred_areas"
     )
     .eq("id", userId)
     .maybeSingle();
@@ -55,6 +55,28 @@ export default async function PublicProfilePage({ params }: PageProps) {
     club: clubMap.get(r.club_id) ?? null,
   }));
 
+  // MD 소속 클럽 (승인된 MD만, club_partners N:N)
+  type ClubLite = {
+    id: string;
+    name: string;
+    area: string | null;
+    thumbnail_url: string | null;
+  };
+  const partnerClubs: ClubLite[] = [];
+  if (profile.md_status === "approved") {
+    const { data: partnerships } = await supabase
+      .from("club_partners")
+      .select("club:clubs(id, name, area, thumbnail_url)")
+      .eq("md_id", userId);
+
+    for (const row of (partnerships ?? []) as Array<{
+      club: ClubLite | ClubLite[] | null;
+    }>) {
+      const c = Array.isArray(row.club) ? row.club[0] : row.club;
+      if (c) partnerClubs.push(c);
+    }
+  }
+
   // 본인 여부 판단
   const {
     data: { user: authUser },
@@ -66,6 +88,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
       profile={profile}
       reviewCount={reviewCount ?? 0}
       pinnedClubs={(pinnedClubs ?? []) as never}
+      partnerClubs={partnerClubs}
       isMe={isMe}
     />
   );
