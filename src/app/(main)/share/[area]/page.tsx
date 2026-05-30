@@ -49,7 +49,7 @@ export async function generateMetadata({
   if (!isSupportedArea(area)) {
     return { title: "지역을 찾을 수 없습니다 | 나플" };
   }
-  const title = `${area} 조각 - ${area} 클럽 조각·합석 일행 모집 | 나플`;
+  const title = `${area} 조각 - ${area} 클럽 조각·합석 일행 모집`;
   const description = `${area} 클럽 조각 매물 모음. ${area} 클럽 인당 가격으로 같이 갈 일행을 모집·합류하세요. ${area} 인기 클럽 정보와 진행 중인 조각·합석 매물을 한곳에. 나플(나이트플로우)에서 확인.`;
   const canonical = `https://nightflow.kr/share/${encodeURIComponent(area)}`;
   return {

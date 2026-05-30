@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     "나플(나이트플로우)에서 오늘 진행 중인 강남·홍대·이태원 클럽 핫딜·특가. 종료 시간이 다가오는 한정 혜택을 한눈에. 클럽 테이블 가격 비교는 나플에서.",
   alternates: { canonical: "https://nightflow.kr/hotdeal" },
   openGraph: {
-    title: "오늘의 클럽 핫딜 - 강남·홍대 클럽 특가 | 나플",
+    title: "오늘의 클럽 핫딜 - 강남·홍대 클럽 특가",
     description: "강남·홍대 클럽 오늘의 핫딜·특가를 한눈에. 나플(나이트플로우).",
     url: "https://nightflow.kr/hotdeal",
     type: "website",

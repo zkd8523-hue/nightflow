@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .single();
 
   if (!puzzle) {
-    return { title: "퍼즐을 찾을 수 없습니다 | 나이트플로우" };
+    return { title: "퍼즐을 찾을 수 없습니다" };
   }
 
   const area = puzzle.area || "서울";

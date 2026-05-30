@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!auction) {
     return {
-      title: "매물을 찾을 수 없습니다 | NightFlow",
+      title: "매물을 찾을 수 없습니다",
     };
   }
 
@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (isShare) {
     const perPerson = formatPrice(auction.start_price);
-    title = `${head} 조각 - 1인 ₩${perPerson} | 나플`;
+    title = `${head} 조각 - 1인 ₩${perPerson}`;
     description = `${areaLabel}클럽 조각 매물. ${head}${
       auction.title ? ` ${auction.title}` : ""
     }. 1인 ₩${perPerson}. ${areaLabel}조각·합석으로 같이 갈 일행을 나플(나이트플로우)에서 찾으세요.`;

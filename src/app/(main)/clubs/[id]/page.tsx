@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .single();
 
   if (!club) {
-    return { title: "클럽을 찾을 수 없습니다 | NightFlow" };
+    return { title: "클럽을 찾을 수 없습니다" };
   }
 
   const area = club.area || "";
@@ -62,7 +62,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ],
     alternates: { canonical: `https://nightflow.kr/clubs/${id}` },
     openGraph: {
-      title: `${headName} - 클럽 테이블 가격·예약 | 나플`,
+      title: `${headName} - 클럽 테이블 가격·예약`,
       description: `${headName}${descAliases} 잔여 테이블 실시간 경매. 정가보다 저렴하게.`,
       url: `https://nightflow.kr/clubs/${id}`,
       type: "website",
