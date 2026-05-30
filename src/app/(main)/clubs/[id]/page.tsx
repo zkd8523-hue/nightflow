@@ -189,12 +189,36 @@ export default async function ClubDetailPage({ params }: PageProps) {
       : {}),
   };
 
+  // 별칭을 본문에 자연 문장으로 노출 ("에이스", "강남 에이스", "버뮤다" 등)
+  const ssrAliasSentence = (() => {
+    if (aliases.length === 0) return null;
+    const aliasesWithArea = club.area
+      ? aliases.flatMap((a) =>
+          a.startsWith(club.area as string) ? [a] : [a, `${club.area} ${a}`]
+        )
+      : aliases;
+    return aliasesWithArea.join(", ");
+  })();
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <div className="sr-only">
+        <h1>
+          {ssrAreaPrefix}{club.name} - 클럽 테이블 가격·예약·핫딜 (나플)
+        </h1>
+        {ssrAliasSentence && (
+          <p>
+            {ssrAreaPrefix}{club.name}은(는) {ssrAliasSentence} 등으로도 불리는
+            {club.area ? ` ${club.area} ` : " "}인기 클럽입니다.
+            나플(나이트플로우)에서 {ssrAreaPrefix}{club.name} 테이블 가격을 확인하고
+            예약하세요.
+          </p>
+        )}
+      </div>
       {ssrWeeklyBenefits.length > 0 && (
         <div className="sr-only">
           <h2>

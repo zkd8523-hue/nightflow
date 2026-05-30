@@ -4,6 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import { ClubList } from "@/components/clubs/ClubList";
 import { ClubsAdminFab } from "@/components/clubs/ClubsAdminFab";
 import { normalizeDowSlots, summarizeSlots } from "@/lib/utils/hotdeal";
+import { getClubAliases } from "@/lib/clubs/aliases";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
 export const revalidate = 60;
@@ -145,12 +146,27 @@ export default async function ClubsIndexPage() {
         </p>
         <ul>
           {clubs.map((c: Record<string, unknown>) => {
+            const id = c.id as string;
             const name = c.name as string;
             const area = (c.area as string | null) ?? "";
-            const aliases = (c.aliases as string[] | undefined) ?? [];
-            const aliasText = aliases.length > 0 ? ` (${aliases.join(", ")})` : "";
+            const dbAliases = (c.aliases as string[] | undefined) ?? [];
+            const staticAliases = getClubAliases(id);
+            // 정적·DB 별칭 통합 + 중복 제거 + 클럽명 자체 제외
+            const allAliases = Array.from(
+              new Set([...staticAliases, ...dbAliases])
+            ).filter((a) => a && a !== name);
+            // 별칭에 지역 prefix 안 붙은 것만 "강남 에이스" 같은 조합 추가
+            const aliasesWithArea = area
+              ? allAliases.flatMap((a) =>
+                  a.startsWith(area) ? [a] : [a, `${area} ${a}`]
+                )
+              : allAliases;
+            const aliasText =
+              aliasesWithArea.length > 0
+                ? ` (${aliasesWithArea.join(", ")})`
+                : "";
             return (
-              <li key={c.id as string}>
+              <li key={id}>
                 {area ? `${area} ` : ""}{name}{aliasText}
               </li>
             );

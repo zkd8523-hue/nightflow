@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { HomeContent } from "@/components/home/HomeContent";
+import { getClubAliases } from "@/lib/clubs/aliases";
 
 export const revalidate = 10; // 10초마다 재검증
 
@@ -111,10 +112,12 @@ export default async function HomePage() {
   }
 
   // SEO용 SSR 콘텐츠 — HomeContent는 client-side 렌더링이라 본문이 비어 보이는 문제 보완.
-  // 시각엔 안 보이지만 검색엔진은 클럽 이름·진행 중 매물 정보를 읽음.
+  // 시각엔 안 보이지만 검색엔진은 클럽 이름·별칭·진행 중 매물 정보를 읽음.
   const ssrClubList = clubs.slice(0, 30).map((c) => {
     const area = c.area ? `${c.area} ` : "";
-    return `${area}${c.name}`;
+    const aliases = getClubAliases(c.id);
+    const aliasText = aliases.length > 0 ? ` (${aliases.join(", ")})` : "";
+    return `${area}${c.name}${aliasText}`;
   });
   const ssrActiveCount = activeAuctions.length;
   const ssrPuzzleCount = puzzles.length;
