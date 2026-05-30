@@ -126,15 +126,17 @@ export function ShareSuccessSheet({
     }
   };
 
+  // replace 사용: 등록 폼을 히스토리에서 치움 → 대시보드에서 뒤로가면 바로 홈
+  // (push 시 홈→등록폼→대시보드로 스택이 쌓여 뒤로가기가 꼬임)
   const handleGoToDashboard = () => {
     onOpenChange(false);
-    router.push("/md/dashboard");
+    router.replace("/md/dashboard");
   };
 
   const handleDrawerClose = (open: boolean) => {
     onOpenChange(open);
     if (!open) {
-      router.push("/md/dashboard");
+      router.replace("/md/dashboard");
     }
   };
 

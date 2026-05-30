@@ -594,6 +594,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 const result = await res.json();
                 if (!res.ok) throw new Error(result.error || "등록에 실패했습니다.");
 
+                // 등록 성공 → 폼/버튼 잠금 (중복 제출 방지)
+                // 누락 시 시트를 닫거나 안 뜰 때 재클릭 → "하루 1조각" duplicate 에러 발생
+                setSubmitted(true);
                 router.refresh();
                 trackShareEvent('share_listing_created', {
                     auction_id: result.id,
@@ -606,7 +609,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 });
                 if (initialData) {
                     toast.success("조각 매물이 수정되었습니다!");
-                    setTimeout(() => router.push("/md/dashboard"), 300);
+                    setTimeout(() => router.replace("/md/dashboard"), 300);
                 } else {
                     setCreatedAuctionId(result.id);
                     setCreatedShareData({
@@ -728,7 +731,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 // 수정: 기존 동작 유지
                 toast.success(isInstantMode ? "판매 정보가 수정되었습니다!" : "경매 정보가 수정되었습니다!");
                 setTimeout(() => {
-                    router.push("/md/dashboard");
+                    router.replace("/md/dashboard");
                 }, 300);
             } else {
                 // 신규 등록: 공유 시트 표시
@@ -1763,8 +1766,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             <div className="mt-12 px-1">
                 <div className="max-w-lg mx-auto">
-                    <Button disabled={isSubmitting} className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "조각 정보 수정하기") : (isInstantMode ? "오늘특가 등록하기" : "조각 등록하기"))}
+                    <Button disabled={isSubmitting || submitted} className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60">
+                        {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : submitted ? "등록 완료" : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "조각 정보 수정하기") : (isInstantMode ? "오늘특가 등록하기" : "조각 등록하기"))}
                         <ArrowRight className="w-5 h-5" />
                     </Button>
                 </div>

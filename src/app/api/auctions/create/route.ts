@@ -207,6 +207,16 @@ export async function POST(request: NextRequest) {
 
       if (error) {
         logger.error("Auction create error:", error);
+        // MD 1일 1조각 UNIQUE 위반 → 친화적 메시지로 변환
+        if (
+          error.code === "23505" &&
+          error.message.includes("idx_share_one_per_day_per_md")
+        ) {
+          return NextResponse.json(
+            { error: "이미 해당 날짜에 등록한 조각이 있어요. 기존 조각을 수정하거나 마감 후 다시 등록해주세요." },
+            { status: 409 }
+          );
+        }
         return NextResponse.json(
           { error: error.message },
           { status: 500 }
