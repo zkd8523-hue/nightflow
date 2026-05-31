@@ -97,6 +97,15 @@ export function HomePuzzleCarousel({
             </div>
           );
         })}
+        {puzzles.length > MAX_CARDS && (
+          <Link
+            href={detailHref}
+            className="flex-shrink-0 w-[64px] snap-start flex items-center justify-center pt-[22px] text-neutral-600 hover:text-neutral-400 transition-colors"
+            aria-label="깃발 더보기"
+          >
+            <span className="text-[28px] leading-none font-black tracking-widest">⋯</span>
+          </Link>
+        )}
         {showFlagCTA && (
           <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
             <div className="text-center w-full mt-8">
