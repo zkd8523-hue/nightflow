@@ -2,24 +2,26 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Gavel, LayoutDashboard, Heart, User, MapPin } from "lucide-react";
+import { Home, LayoutDashboard, User, Map, Heart } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { WagleIcon } from "@/components/icons/WagleIcon";
 
 const USER_TABS = [
   { label: "홈", icon: Home, href: "/" },
-  { label: "내 활동", icon: Gavel, href: "/bids" },
-  { label: "주변", icon: MapPin, href: "/clubs" },
+  { label: "와글", icon: WagleIcon, href: "/chat" },
+  { label: "주변", icon: Map, href: "/clubs" },
   { label: "찜", icon: Heart, href: "/favorites" },
-  { label: "프로필", icon: User, href: "/profile" },
+  { label: "내 정보", icon: User, href: "/profile" },
 ];
 
-// MD/Admin: "내 활동" → "MD 대시보드"
+// MD/Admin: "와글" 자리에 MD 대시보드 추가
 const MD_TABS = [
   { label: "홈", icon: Home, href: "/" },
   { label: "대시보드", icon: LayoutDashboard, href: "/md/dashboard" },
-  { label: "주변", icon: MapPin, href: "/clubs" },
+  { label: "와글", icon: WagleIcon, href: "/chat" },
+  { label: "주변", icon: Map, href: "/clubs" },
   { label: "찜", icon: Heart, href: "/favorites" },
-  { label: "프로필", icon: User, href: "/profile" },
+  { label: "내 정보", icon: User, href: "/profile" },
 ];
 
 export function BottomNav() {
@@ -41,7 +43,7 @@ export function BottomNav() {
             <Link
               key={href}
               href={href}
-              className={`flex flex-col items-center gap-0.5 py-2.5 px-4 transition-colors ${
+              className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 transition-colors ${
                 isActive ? "text-white" : "text-neutral-500"
               }`}
             >

@@ -1,101 +1,250 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { usePuzzleFavoritesContext } from "@/components/providers";
+import { useFavoritesContext } from "@/components/providers";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Heart } from "lucide-react";
-import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { PuzzleInterest } from "@/types/database";
-import { getDDayLabel } from "@/lib/utils/format";
+import Image from "next/image";
+import { ArrowLeft, Heart, Wine } from "lucide-react";
+import type { UserFavoriteClub, HotdealBenefitsByDow, HotdealDow } from "@/types/database";
+import { createClient } from "@/lib/supabase/client";
+import {
+  normalizeDowSlots,
+  summarizeSlots,
+  benefitLabel,
+  getActiveWeekStartISO,
+  getBusinessDowKey,
+} from "@/lib/utils/hotdeal";
+import { getOpeningStatus } from "@/lib/clubs/openingStatus";
 
-function PuzzleCardList({
-  items,
-  userRole,
-  emptyText,
-}: {
-  items: PuzzleInterest[];
-  userRole?: "user" | "md" | "admin";
-  emptyText?: string;
-}) {
+type GuestSign = { text: string; tags: string[] };
+
+function useGuestSigns(clubIds: string[]): Record<string, GuestSign> {
+  const [signs, setSigns] = useState<Record<string, GuestSign>>({});
+  // clubIds 배열 정체성이 매 렌더 바뀌므로 정렬된 키 문자열로 의존성 고정
+  const key = useMemo(() => [...clubIds].sort().join(","), [clubIds]);
+
+  useEffect(() => {
+    if (clubIds.length === 0) {
+      setSigns({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const thisWeekISO = getActiveWeekStartISO();
+      const todayDowKey = getBusinessDowKey();
+      const { data } = await supabase
+        .from("weekly_hotdeal_slots")
+        .select("club_id, benefits_by_dow")
+        .eq("week_start", thisWeekISO)
+        .in("club_id", clubIds);
+
+      if (cancelled) return;
+
+      const map: Record<string, GuestSign> = {};
+      for (const s of (data ?? []) as Array<{
+        club_id: string;
+        benefits_by_dow: HotdealBenefitsByDow | null;
+      }>) {
+        if (!s.club_id) continue;
+        const todaySlots = normalizeDowSlots((s.benefits_by_dow ?? {})[todayDowKey as HotdealDow]);
+        const summary = summarizeSlots(todaySlots);
+        const tagSet = new Set<string>();
+        for (const slot of todaySlots) {
+          for (const b of slot.benefits ?? []) tagSet.add(b);
+        }
+        if (summary || tagSet.size > 0) {
+          map[s.club_id] = { text: summary, tags: [...tagSet] };
+        }
+      }
+      setSigns(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return signs;
+}
+
+function ClubFavoriteList({ items }: { items: UserFavoriteClub[] }) {
+  const [openOnly, setOpenOnly] = useState(false);
+  const clubIds = useMemo(
+    () => items.map((f) => f.club?.id).filter((id): id is string => !!id),
+    [items]
+  );
+  const guestSigns = useGuestSigns(clubIds);
+
+  // 영업중 클럽 수 (필터 토글 라벨/노출 판단용)
+  const openCount = useMemo(
+    () =>
+      items.filter(
+        (f) => f.club && getOpeningStatus(f.club.operating_hours) === "open"
+      ).length,
+    [items]
+  );
+
+  const visibleItems = useMemo(
+    () =>
+      openOnly
+        ? items.filter(
+            (f) => f.club && getOpeningStatus(f.club.operating_hours) === "open"
+          )
+        : items,
+    [items, openOnly]
+  );
+
   if (items.length === 0) {
     return (
       <div className="py-12 text-center text-[13px] text-neutral-500">
-        {emptyText ?? "찜한 항목이 없어요."}
+        찜한 클럽이 없어요. 클럽 카드의 하트 버튼으로 찜해보세요.
       </div>
     );
   }
 
-  // 날짜별 그룹핑 (홈 참조)
-  const groups = items.reduce((acc, fav) => {
-    const p = fav.puzzle;
-    if (!p) return acc;
-    if (!acc[p.event_date]) acc[p.event_date] = [];
-    acc[p.event_date].push(fav);
-    return acc;
-  }, {} as Record<string, PuzzleInterest[]>);
-
   return (
-    <div className="space-y-12 pb-24">
-      {Object.entries(groups)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([date, favs]) => {
-          const d = new Date(date + "T00:00:00");
-          const m = d.getMonth() + 1;
-          const day = d.getDate();
-          const days = ["일", "월", "화", "수", "목", "금", "토"];
-          const dateLabel = `${m}월 ${day}일 (${days[d.getDay()]})`;
-          const dday = getDDayLabel(date);
-          return (
-            <div key={date} className="space-y-4">
-              <div className="flex items-center gap-2.5 px-1 py-1">
-                <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px]" />
-                <h3 className="text-[16px] font-black text-white tracking-tight">{dateLabel}</h3>
-                <span
-                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] ${
-                    dday === "오늘"
-                      ? "bg-red-500/20 text-red-400"
-                      : "bg-neutral-800 text-neutral-400"
-                  }`}
-                >
-                  {dday}
+    <div className="space-y-3 pb-24">
+      {/* 영업중만 보기 필터 */}
+      {openCount > 0 && (
+        <div className="flex justify-end -mt-1">
+          <button
+            type="button"
+            onClick={() => setOpenOnly((v) => !v)}
+            className={`h-8 px-3 inline-flex items-center gap-1.5 rounded-full text-[12px] font-bold transition-colors ${
+              openOnly
+                ? "bg-green-500 text-black"
+                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${openOnly ? "bg-black" : "bg-green-500"}`}
+            />
+            영업중만 보기
+          </button>
+        </div>
+      )}
+
+      {visibleItems.length === 0 ? (
+        <div className="py-12 text-center text-[13px] text-neutral-500">
+          지금 영업 중인 찜한 클럽이 없어요.
+        </div>
+      ) : (
+        visibleItems.map((fav) => {
+        const club = fav.club;
+        if (!club) return null;
+        const sign = guestSigns[club.id];
+        const openStatus = getOpeningStatus(club.operating_hours);
+        const isOpen = openStatus === "open";
+        return (
+          <Link
+            key={fav.id}
+            href={`/clubs/${club.id}`}
+            className="group flex gap-3 p-2 rounded-2xl bg-[#1C1C1E] active:bg-[#252527] transition-colors"
+          >
+            {/* 썸네일 */}
+            <div className="relative w-[88px] h-[88px] flex-shrink-0 rounded-xl overflow-hidden bg-neutral-900">
+              {club.thumbnail_url ? (
+                <Image
+                  src={club.thumbnail_url}
+                  alt={club.name}
+                  fill
+                  sizes="88px"
+                  className="object-cover group-active:scale-95 transition-transform"
+                />
+              ) : (
+                <ClubImageFallback name={club.name} />
+              )}
+              {club.drink_menu_url && (
+                <div className="absolute bottom-1 right-1 flex items-center gap-0.5 bg-black/60 backdrop-blur-sm px-1 py-0.5 rounded-full">
+                  <Wine className="w-2.5 h-2.5 text-amber-400" />
+                  <span className="text-[8px] font-bold text-amber-400">주대표</span>
+                </div>
+              )}
+            </div>
+
+            {/* 정보 */}
+            <div className="flex-1 min-w-0 flex flex-col justify-center gap-1 py-0.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="text-white text-[15px] font-black truncate">{club.name}</p>
+                {club.area && (
+                  <span className="text-neutral-500 text-[11px] font-medium flex-shrink-0">
+                    {club.area}
+                  </span>
+                )}
+                <span className="ml-auto flex items-center gap-1 flex-shrink-0">
+                  <span
+                    className={`w-2 h-2 rounded-full ${isOpen ? "bg-green-500" : "bg-neutral-600"}`}
+                  />
+                  <span
+                    className={`text-[10px] font-bold ${isOpen ? "text-green-500" : "text-neutral-500"}`}
+                  >
+                    {isOpen ? "영업중" : "영업종료"}
+                  </span>
                 </span>
               </div>
-              <div className="space-y-4">
-                {favs.map((fav) => {
-                  const puzzle = fav.puzzle;
-                  if (!puzzle) return null;
-                  return (
-                    <Link key={fav.id} href={`/flags/${puzzle.id}`} className="block">
-                      <PuzzleCard puzzle={puzzle} userRole={userRole} hideNewBadge />
-                    </Link>
-                  );
-                })}
-              </div>
+
+              {sign?.text && (
+                <p className="text-amber-400 text-[12px] font-bold leading-snug line-clamp-2">
+                  {sign.text}
+                </p>
+              )}
+
+              {sign && sign.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {sign.tags.slice(0, 3).map((tag) => {
+                    const { label, emoji } = benefitLabel(tag);
+                    return (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[9px] font-black leading-none"
+                      >
+                        {emoji} {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          );
-        })}
+          </Link>
+        );
+        })
+      )}
     </div>
   );
 }
 
-function EmptyState({ isMdOrAdmin }: { isMdOrAdmin: boolean }) {
+function ClubImageFallback({ name }: { name: string }) {
+  const initial = name.trim().charAt(0);
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = (hash + name.charCodeAt(i)) % 4;
+  const gradients = [
+    "from-amber-900/40 via-neutral-900 to-black",
+    "from-purple-900/40 via-neutral-900 to-black",
+    "from-rose-900/40 via-neutral-900 to-black",
+    "from-emerald-900/40 via-neutral-900 to-black",
+  ];
+  return (
+    <div className={`w-full h-full bg-gradient-to-br ${gradients[hash]} flex items-center justify-center`}>
+      <span className="text-[40px] font-black text-white/40 select-none">{initial}</span>
+    </div>
+  );
+}
+
+function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center">
       <Heart className="w-12 h-12 text-neutral-700 mb-4" />
-      <p className="text-[15px] text-neutral-400 font-bold mb-2">
-        {isMdOrAdmin ? "아직 찜한 깃발/퍼즐이 없어요" : "아직 찜한 퍼즐이 없어요"}
-      </p>
+      <p className="text-[15px] text-neutral-400 font-bold mb-2">아직 찜한 클럽이 없어요</p>
       <p className="text-[13px] text-neutral-600 mb-6">
-        퍼즐 카드의 하트 버튼으로 찜해보세요.
+        클럽 카드의 하트 버튼으로 찜해보세요.
       </p>
       <Link
-        href="/?tab=puzzle"
-        className="h-10 px-6 rounded-full bg-amber-500 text-black font-bold text-[14px] inline-flex items-center hover:bg-amber-400 transition-colors"
+        href="/clubs"
+        className="h-10 px-5 rounded-full bg-neutral-800 text-white font-bold text-[14px] inline-flex items-center hover:bg-neutral-700 transition-colors"
       >
-        퍼즐 둘러보기
+        클럽 둘러보기
       </Link>
     </div>
   );
@@ -103,50 +252,10 @@ function EmptyState({ isMdOrAdmin }: { isMdOrAdmin: boolean }) {
 
 export default function FavoritesPage() {
   const { user, isLoading: userLoading } = useCurrentUser();
-  const { favoritePuzzles, isLoading: puzzleFavLoading } = usePuzzleFavoritesContext();
+  const { favorites: favoriteClubs, isLoading: clubFavLoading } = useFavoritesContext();
   const router = useRouter();
 
-  const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
-  const [puzzleSort, setPuzzleSort] = useState<"recent" | "budget">("recent");
-
-  const sortFavorites = (list: PuzzleInterest[]) => {
-    const sorted = [...list];
-    if (isMdOrAdmin && puzzleSort === "budget") {
-      sorted.sort((a, b) => {
-        const ab = a.puzzle ? (a.puzzle.total_budget ?? a.puzzle.budget_per_person * a.puzzle.target_count) : 0;
-        const bb = b.puzzle ? (b.puzzle.total_budget ?? b.puzzle.budget_per_person * b.puzzle.target_count) : 0;
-        return bb - ab;
-      });
-    } else {
-      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }
-    return sorted;
-  };
-
-  // 깃발 = 깃발 직접 등록 + 인원 충족된 퍼즐 (오퍼 가능)
-  const flagFavorites = useMemo(() => {
-    const list = favoritePuzzles.filter((fav) => {
-      const p = fav.puzzle;
-      if (!p) return false;
-      return !p.is_recruiting_party || p.current_count >= p.target_count;
-    });
-    return sortFavorites(list);
-  }, [favoritePuzzles, isMdOrAdmin, puzzleSort]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 퍼즐 = 모집 중인 미완성 퍼즐 (트래킹용)
-  const puzzleFavorites = useMemo(() => {
-    const list = favoritePuzzles.filter((fav) => {
-      const p = fav.puzzle;
-      if (!p) return false;
-      return p.is_recruiting_party && p.current_count < p.target_count;
-    });
-    return sortFavorites(list);
-  }, [favoritePuzzles, isMdOrAdmin, puzzleSort]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 일반 유저: 전체 표시 (탭 없음)
-  const allFavorites = useMemo(() => sortFavorites(favoritePuzzles), [favoritePuzzles, isMdOrAdmin, puzzleSort]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (userLoading || puzzleFavLoading) {
+  if (userLoading || clubFavLoading) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
@@ -171,71 +280,15 @@ export default function FavoritesPage() {
             <ArrowLeft className="w-5 h-5 text-neutral-400" />
           </button>
           <h1 className="text-xl font-black text-white">찜</h1>
-          {favoritePuzzles.length > 0 && (
-            <span className="text-[13px] text-neutral-500">{favoritePuzzles.length}개</span>
+          {favoriteClubs.length > 0 && (
+            <span className="text-[13px] text-neutral-500">{favoriteClubs.length}개</span>
           )}
         </div>
 
-        {favoritePuzzles.length === 0 ? (
-          <EmptyState isMdOrAdmin={isMdOrAdmin} />
-        ) : isMdOrAdmin ? (
-          <Tabs defaultValue="flag">
-            <TabsList className="w-full bg-[#1C1C1E] rounded-xl mb-4 p-1">
-              <TabsTrigger
-                value="flag"
-                className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-amber-500 data-[state=active]:text-black text-neutral-500"
-              >
-                🚩 깃발
-                {flagFavorites.length > 0 && (
-                  <span className="ml-1.5 text-[11px] opacity-80">{flagFavorites.length}</span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger
-                value="puzzle"
-                className="flex-1 rounded-lg text-[14px] font-bold data-[state=active]:bg-green-500 data-[state=active]:text-black text-neutral-500"
-              >
-                🧩 퍼즐
-                {puzzleFavorites.length > 0 && (
-                  <span className="ml-1.5 text-[11px] opacity-80">{puzzleFavorites.length}</span>
-                )}
-              </TabsTrigger>
-            </TabsList>
-
-            {/* MD 정렬 토글 (탭 공통) */}
-            <div className="flex items-center justify-end gap-1.5 mb-3">
-              <button
-                type="button"
-                onClick={() => setPuzzleSort("recent")}
-                className={`h-7 px-3 inline-flex items-center rounded-full text-[12px] leading-none font-bold transition-colors ${
-                  puzzleSort === "recent"
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                }`}
-              >
-                최신순
-              </button>
-              <button
-                type="button"
-                onClick={() => setPuzzleSort("budget")}
-                className={`h-7 px-3 inline-flex items-center rounded-full text-[12px] leading-none font-bold transition-colors ${
-                  puzzleSort === "budget"
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                }`}
-              >
-                금액 높은순 ↑
-              </button>
-            </div>
-
-            <TabsContent value="flag">
-              <PuzzleCardList items={flagFavorites} userRole={user.role as "user" | "md" | "admin" | undefined} emptyText="찜한 깃발이 없어요. 인원 확정된 깃발 또는 완성된 퍼즐이 여기에 모여요." />
-            </TabsContent>
-            <TabsContent value="puzzle">
-              <PuzzleCardList items={puzzleFavorites} userRole={user.role as "user" | "md" | "admin" | undefined} emptyText="찜한 퍼즐(모집 중)이 없어요. 완성되면 자동으로 깃발 탭으로 이동해요." />
-            </TabsContent>
-          </Tabs>
+        {favoriteClubs.length === 0 ? (
+          <EmptyState />
         ) : (
-          <PuzzleCardList items={allFavorites} userRole={user.role as "user" | "md" | "admin" | undefined} />
+          <ClubFavoriteList items={favoriteClubs} />
         )}
       </div>
     </div>
