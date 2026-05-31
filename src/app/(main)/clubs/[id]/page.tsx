@@ -230,19 +230,26 @@ export default async function ClubDetailPage({ params }: PageProps) {
       {ssrWeeklyBenefits.length > 0 && (
         <div className="sr-only">
           <h2>
-            이번 주 {ssrHead} 게스트 간판
+            이번 주 {ssrHead} 게스트 간판·무료입장 정보
           </h2>
           <p>
-            {ssrHead} 이번 주 요일별 게스트 간판 혜택을 안내합니다.
-            나플(나이트플로우)에서 클럽 테이블 가격과 핫딜을 확인하고 예약하세요.
+            {ssrHead} 이번 주 요일별 게스트 간판·무료입장 혜택을 안내합니다.
+            {ssrAreaPrefix}클럽 게스트 명단 등록, 무료입장, 게스트 입장
+            정보를 나플(나이트플로우)에서 확인하고 클럽 테이블 가격·핫딜도
+            함께 비교하세요.
           </p>
           <ul>
             {ssrWeeklyBenefits.map((b, i) => (
               <li key={i}>
-                {ssrHead} {b.dow} 게스트 간판 - {b.text}
+                {ssrHead} {b.dow} 게스트 간판·무료입장 - {b.text}
               </li>
             ))}
           </ul>
+          <p>
+            {ssrAreaPrefix}클럽 게스트 입장은 클럽 MD가 운영하는 게스트
+            명단에 등록되어 무료입장 또는 할인 입장이 가능한 방식입니다.
+            {ssrHead}에서 가능한 무료입장·게스트 혜택을 매주 갱신합니다.
+          </p>
         </div>
       )}
       <ClubDetailContent

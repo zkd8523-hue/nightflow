@@ -7,13 +7,27 @@ export const revalidate = 30;
 
 // brand suffix(" | 나플(나이트플로우)")는 layout.tsx의 title.template이 자동 추가.
 export const metadata: Metadata = {
-  title: "오늘의 클럽 핫딜 - 강남·홍대 클럽 특가",
+  title: "오늘의 클럽 핫딜·무료입장·게스트 - 강남·홍대 클럽 특가",
   description:
-    "나플(나이트플로우)에서 오늘 진행 중인 강남·홍대·이태원 클럽 핫딜·특가. 종료 시간이 다가오는 한정 혜택을 한눈에. 클럽 테이블 가격 비교는 나플에서.",
+    "나플(나이트플로우)에서 오늘 진행 중인 강남·홍대·이태원 클럽 핫딜·무료입장·게스트 명단 정보. 종료 시간이 다가오는 한정 혜택과 무료입장 가능 클럽을 한눈에. 클럽 테이블 가격 비교는 나플에서.",
   alternates: { canonical: "https://nightflow.kr/hotdeal" },
+  keywords: [
+    "클럽 핫딜",
+    "클럽 무료입장",
+    "클럽 게스트",
+    "강남 클럽 무료입장",
+    "홍대 클럽 무료입장",
+    "강남 게스트",
+    "홍대 게스트",
+    "이태원 클럽 무료입장",
+    "클럽 특가",
+    "오늘의 클럽 핫딜",
+    "나플",
+    "나이트플로우",
+  ],
   openGraph: {
-    title: "오늘의 클럽 핫딜 - 강남·홍대 클럽 특가",
-    description: "강남·홍대 클럽 오늘의 핫딜·특가를 한눈에. 나플(나이트플로우).",
+    title: "오늘의 클럽 핫딜·무료입장·게스트 - 강남·홍대 클럽 특가",
+    description: "강남·홍대 클럽 오늘의 핫딜·무료입장·게스트 명단을 한눈에. 나플(나이트플로우).",
     url: "https://nightflow.kr/hotdeal",
     type: "website",
   },
@@ -60,11 +74,12 @@ export default async function HotdealIndexPage() {
   return (
     <div className="container mx-auto max-w-3xl px-4 pt-4 pb-8 mb-20">
       <div className="sr-only">
-        <h1>오늘의 클럽 핫딜 - 강남·홍대·이태원 클럽 특가</h1>
+        <h1>오늘의 클럽 핫딜·무료입장·게스트 - 강남·홍대·이태원 클럽 특가</h1>
         <p>
-          나플(나이트플로우)에서 오늘 진행 중인 클럽 핫딜·특가 {visible.length}건.
-          강남·홍대·이태원·부산·광주 클럽 테이블 가격을 한눈에 비교하고
-          마음에 드는 핫딜을 잡으세요.
+          나플(나이트플로우)에서 오늘 진행 중인 클럽 핫딜·무료입장·게스트
+          정보 {visible.length}건. 강남·홍대·이태원·부산·광주 클럽 테이블
+          가격과 무료입장 가능 클럽을 한눈에 비교하세요. 클럽 게스트 명단
+          등록·무료입장 안내·게스트 입장 혜택까지.
         </p>
         {visible.length > 0 && (
           <ul>

@@ -13,13 +13,59 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "나플 FAQ - 자주 묻는 질문 (나이트플로우)",
   description:
-    "나플(나이트플로우) 이용 가이드. 나플이 뭔지, 입찰 방법, 낙찰 후 MD 연락 절차, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
+    "나플(나이트플로우) 이용 가이드. 나플이 뭔지, 클럽 게스트·무료입장이 뭔지, 입찰 방법, 낙찰 후 MD 연락 절차, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
   alternates: { canonical: "https://nightflow.kr/faq" },
+};
+
+// FAQPage JSON-LD — Google 리치 결과(검색 결과 내 Q&A 직접 노출) 가능성.
+// 본문 Accordion과 동일한 Q&A로 작성해 신뢰성 확보.
+const FAQ_ITEMS: { q: string; a: string }[] = [
+  {
+    q: "나플이 뭔가요?",
+    a: "나플은 나이트플로우(NightFlow)의 줄임말입니다. 강남·홍대 클럽 MD가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.",
+  },
+  {
+    q: "퍼즐(클럽 조각)이 뭔가요?",
+    a: "퍼즐은 나이트플로우의 일행 모집 기능입니다. 흔히 '클럽 조각', '클럽 합석'이라고 부르는 기능으로, 같은 클럽에 갈 일행을 모집하거나 합류할 수 있습니다.",
+  },
+  {
+    q: "클럽 게스트 / 무료입장이 뭔가요?",
+    a: "클럽 게스트는 클럽 MD가 운영하는 게스트 명단에 등록되어 무료입장 또는 할인 입장이 가능한 방식입니다. 나플의 게스트 간판은 매주 월요일 오후 6시에 갱신되며, 클럽×요일별로 무료입장·여성 무료·프리드링크 등 혜택이 다르게 적용됩니다.",
+  },
+  {
+    q: "게스트 명단은 어떻게 등록하나요?",
+    a: "원하는 클럽의 게스트 간판을 운영하는 MD에게 직접 연락하면 게스트 명단에 올려줍니다. 나플 클럽 상세 페이지에서 이번 주 게스트 간판 MD를 확인하고 인스타그램 DM 또는 카카오톡 오픈채팅으로 연락하세요.",
+  },
+  {
+    q: "경매는 어떻게 진행되나요?",
+    a: "MD가 클럽 테이블을 등록하면 경매가 시작됩니다. 회원들이 원하는 금액을 입찰하고, 마감 시간에 가장 높은 금액을 제시한 회원이 낙찰받습니다.",
+  },
+  {
+    q: "낙찰 후 어떻게 진행되나요?",
+    a: "낙찰자는 정해진 시간 안에 MD에게 직접 연락(인스타그램 DM 또는 전화)해서 예약을 확정합니다. 미연락 시 차순위 입찰자에게 기회가 넘어가고 노쇼 스트라이크가 부여됩니다.",
+  },
+];
+
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ_ITEMS.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.a,
+    },
+  })),
 };
 
 export default function FAQPage() {
     return (
         <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-start pt-20 px-4 pb-20">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+            />
             <div className="max-w-3xl w-full space-y-8">
                 <div className="flex items-center gap-4 mb-8">
                     <Link href="/">
@@ -72,6 +118,47 @@ export default function FAQPage() {
                                     인원이 부족할 때 같은 클럽에 갈 일행을 모집하거나, 다른 사람이
                                     모집 중인 퍼즐에 합류할 수 있습니다. 강남 클럽 조각, 홍대 클럽
                                     합석을 안전하게 찾는 가장 빠른 방법입니다.
+                                </p>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="item-0b" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
+                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                                클럽 게스트 / 무료입장이 뭔가요?
+                            </AccordionTrigger>
+                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                                <p>
+                                    <strong className="text-white">클럽 게스트</strong>는 클럽 MD가 운영하는 게스트 명단에
+                                    등록되어 <strong className="text-white">무료입장</strong> 또는 할인 입장이 가능한
+                                    방식입니다.
+                                </p>
+                                <p className="mt-2">
+                                    나플(나이트플로우)의 <strong className="text-white">게스트 간판</strong>은 매주 월요일
+                                    오후 6시에 갱신됩니다. 각 클럽 × 요일별로 게스트 입장 혜택
+                                    (여성 무료, 프리드링크, 신청곡 등)이 다르게 적용됩니다.
+                                </p>
+                                <p className="mt-2">
+                                    강남 클럽 무료입장, 홍대 클럽 게스트, 이태원 무료입장 정보는
+                                    클럽 상세 페이지에서 요일별로 확인할 수 있고, 지역별 게스트
+                                    모음(/guest/지역명)에서도 한눈에 볼 수 있어요.
+                                </p>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="item-0c" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
+                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                                게스트 명단은 어떻게 등록하나요?
+                            </AccordionTrigger>
+                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                                <p>
+                                    원하는 클럽의 게스트 간판을 운영하는 MD에게 직접 연락하면
+                                    게스트 명단에 올려줍니다.
+                                </p>
+                                <p className="mt-2">
+                                    나플(나이트플로우)에서 클럽 상세 페이지에 들어가면 이번 주
+                                    게스트 간판 MD가 표시되며, 인스타그램 DM 또는 카카오톡
+                                    오픈채팅으로 직접 연락해 무료입장·게스트 입장 정보를 받을 수
+                                    있습니다.
                                 </p>
                             </AccordionContent>
                         </AccordionItem>
