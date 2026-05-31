@@ -4,21 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, LayoutDashboard, User, Map, Heart } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-import { WagleIcon } from "@/components/icons/WagleIcon";
 
 const USER_TABS = [
   { label: "홈", icon: Home, href: "/" },
-  { label: "와글", icon: WagleIcon, href: "/chat" },
   { label: "주변", icon: Map, href: "/clubs" },
   { label: "찜", icon: Heart, href: "/favorites" },
   { label: "내 정보", icon: User, href: "/profile" },
 ];
 
-// MD/Admin: "와글" 자리에 MD 대시보드 추가
+// MD/Admin: MD 대시보드 추가
 const MD_TABS = [
   { label: "홈", icon: Home, href: "/" },
   { label: "대시보드", icon: LayoutDashboard, href: "/md/dashboard" },
-  { label: "와글", icon: WagleIcon, href: "/chat" },
   { label: "주변", icon: Map, href: "/clubs" },
   { label: "찜", icon: Heart, href: "/favorites" },
   { label: "내 정보", icon: User, href: "/profile" },
