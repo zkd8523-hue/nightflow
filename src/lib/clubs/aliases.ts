@@ -276,3 +276,17 @@ export function getPrimaryAlias(clubId: string): string | null {
   const list = CLUB_ALIASES[clubId];
   return list && list.length > 0 ? list[0] : null;
 }
+
+/**
+ * 사용자 쿼리에 매칭되는 클럽 ID 목록 반환 (부분일치, 대소문자 무시).
+ * 검색창에서 등록명·별칭 둘 다 매칭시키고 싶을 때 사용.
+ */
+export function findClubIdsByAlias(query: string): string[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return Object.entries(CLUB_ALIASES)
+    .filter(([, aliases]) =>
+      aliases.some((a) => a.toLowerCase().includes(q))
+    )
+    .map(([id]) => id);
+}

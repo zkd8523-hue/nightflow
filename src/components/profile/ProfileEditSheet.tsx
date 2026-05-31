@@ -15,6 +15,7 @@ import {
   MAX_FAVORITE_CLUBS,
 } from "@/lib/users/musicGenres";
 import { AREA_OPTIONS } from "@/lib/clubs/tags";
+import { findClubIdsByAlias } from "@/lib/clubs/aliases";
 
 const MAX_BIO_LENGTH = 160;
 
@@ -141,6 +142,8 @@ export function ProfileEditSheet({
   }
 
   // 클럽 검색 (디바운스)
+  // 등록명 부분일치(ilike) + 정적 별칭(aliases.ts) 매칭을 합쳐서 노출.
+  // "에이스"/"버뮤다"/"디엠" 같은 한글 별칭 검색도 가능.
   useEffect(() => {
     if (!clubQuery.trim()) {
       setClubResults([]);
@@ -148,15 +151,43 @@ export function ProfileEditSheet({
     }
     const handle = setTimeout(async () => {
       setSearching(true);
+      const q = clubQuery.trim();
       const supabase = createClient();
-      const { data } = await supabase
-        .from("clubs")
-        .select("id, name, area, thumbnail_url")
-        .ilike("name", `%${clubQuery.trim()}%`)
-        .is("deleted_at", null)
-        .limit(8);
+
+      const aliasMatchIds = findClubIdsByAlias(q);
+      const baseSelect = "id, name, area, thumbnail_url";
+
+      const [nameRes, aliasRes] = await Promise.all([
+        supabase
+          .from("clubs")
+          .select(baseSelect)
+          .ilike("name", `%${q}%`)
+          .is("deleted_at", null)
+          .limit(8),
+        aliasMatchIds.length > 0
+          ? supabase
+              .from("clubs")
+              .select(baseSelect)
+              .in("id", aliasMatchIds)
+              .is("deleted_at", null)
+          : Promise.resolve({ data: [] as PinnedClubLite[] }),
+      ]);
+
+      // 중복 제거 + 최대 8개
+      const seen = new Set<string>();
+      const merged: PinnedClubLite[] = [];
+      for (const c of [
+        ...((nameRes.data ?? []) as PinnedClubLite[]),
+        ...((aliasRes.data ?? []) as PinnedClubLite[]),
+      ]) {
+        if (seen.has(c.id)) continue;
+        seen.add(c.id);
+        merged.push(c);
+        if (merged.length >= 8) break;
+      }
+
       setSearching(false);
-      setClubResults((data ?? []) as PinnedClubLite[]);
+      setClubResults(merged);
     }, 250);
     return () => clearTimeout(handle);
   }, [clubQuery]);
