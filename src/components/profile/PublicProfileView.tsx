@@ -3,10 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck } from "lucide-react";
+import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, MessageCircle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { MUSIC_GENRE_MAP } from "@/lib/users/musicGenres";
-import { ProfileEditSheet } from "./ProfileEditSheet";
+import { createClient } from "@/lib/supabase/client";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { ProfileEditSheet, type ProfileEditSection } from "./ProfileEditSheet";
 
 
 
@@ -22,6 +25,7 @@ interface ProfileData {
   instagram: string | null;
   preferred_music_genres: string[] | null;
   preferred_areas: string[] | null;
+  kakao_open_chat_url: string | null;
 }
 
 interface PinnedClub {
@@ -59,6 +63,7 @@ export function PublicProfileView({
   isMe,
 }: Props) {
   const router = useRouter();
+  const { user } = useCurrentUser();
   const [bio, setBio] = useState(profile.bio);
   const [genres, setGenres] = useState<string[]>(
     profile.preferred_music_genres ?? []
@@ -68,9 +73,59 @@ export function PublicProfileView({
   const [profileImage, setProfileImage] = useState<string | null>(
     profile.profile_image
   );
-  const [editing, setEditing] = useState(false);
+  const [kakaoOpenChatUrl, setKakaoOpenChatUrl] = useState<string | null>(
+    profile.kakao_open_chat_url
+  );
+  // 어떤 섹션을 편집할지. null이면 시트 닫힘.
+  const [editSection, setEditSection] = useState<ProfileEditSection | null>(
+    null
+  );
   const [verifyOpen, setVerifyOpen] = useState(false);
   const verifyRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // 상단 프로필 이미지를 눌러 바로 사진 변경
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("이미지는 2MB 이하만 업로드 가능합니다");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+      const supabase = createClient();
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      const publicUrl = `${data.publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from("users")
+        .update({ profile_image: publicUrl })
+        .eq("id", user.id);
+      if (updateError) throw updateError;
+
+      setProfileImage(publicUrl);
+      toast.success("프로필 사진이 변경되었습니다");
+      router.refresh();
+    } catch {
+      toast.error("업로드에 실패했습니다");
+    } finally {
+      setUploadingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
 
   // 툴팁 외부 클릭 시 닫기
   useEffect(() => {
@@ -115,22 +170,68 @@ export function PublicProfileView({
       {/* 상단: 사진 + 이름 (인스타 스타일 가로 배치) */}
       <div className="px-4 mt-2">
         <div className="flex items-start gap-4 pt-1">
-          {/* 원형 프로필 */}
-          <div className="relative w-24 h-24 rounded-full overflow-hidden bg-neutral-800 shrink-0 ring-2 ring-neutral-700">
-            {profileImage ? (
-              <Image
-                src={profileImage}
-                alt={displayName}
-                fill
-                sizes="96px"
-                className="object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/60 text-4xl font-black">
-                {displayName.charAt(0)}
+          {/* 원형 프로필 (본인이면 클릭해서 사진 변경) */}
+          {isMe ? (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage}
+              aria-label="프로필 사진 변경"
+              className="relative w-24 h-24 shrink-0 active:scale-95 transition-transform disabled:opacity-60"
+            >
+              {/* 원형 이미지 영역 (여기에만 overflow-hidden) */}
+              <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-800 ring-2 ring-neutral-700">
+                {profileImage ? (
+                  <Image
+                    src={profileImage}
+                    alt={displayName}
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white/60 text-4xl font-black">
+                    {displayName.charAt(0)}
+                  </div>
+                )}
+                {/* 업로드 중 오버레이 */}
+                {uploadingImage && (
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[11px] font-bold text-white">
+                    업로드 중...
+                  </span>
+                )}
               </div>
-            )}
-          </div>
+              {/* 카메라 배지 (원 밖에서 잘리지 않도록 버튼 기준 배치) */}
+              <span className="absolute right-0.5 bottom-0.5 w-7 h-7 rounded-full bg-white flex items-center justify-center text-black ring-2 ring-[#0A0A0A]">
+                <Camera className="w-3.5 h-3.5" />
+              </span>
+            </button>
+          ) : (
+            <div className="relative w-24 h-24 rounded-full overflow-hidden bg-neutral-800 shrink-0 ring-2 ring-neutral-700">
+              {profileImage ? (
+                <Image
+                  src={profileImage}
+                  alt={displayName}
+                  fill
+                  sizes="96px"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-white/60 text-4xl font-black">
+                  {displayName.charAt(0)}
+                </div>
+              )}
+            </div>
+          )}
+          {isMe && (
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+          )}
 
           {/* 이름 + 배지 + 핸들 */}
           <div className="flex-1 min-w-0">
@@ -178,21 +279,47 @@ export function PublicProfileView({
                 {partnerClubs.map((c) => c.name).join(" · ")}
               </p>
             )}
-            {profile.md_unique_slug && (
-              profile.instagram ? (
-                <a
-                  href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-[13px] text-neutral-500 mt-0.5 truncate hover:text-neutral-300 active:opacity-70 transition-colors"
-                >
-                  @{profile.md_unique_slug}
-                </a>
-              ) : (
-                <p className="text-[13px] text-neutral-500 mt-0.5 truncate">
-                  @{profile.md_unique_slug}
-                </p>
-              )
+            {/* 핸들 + 오픈채팅 칩 (한 줄) */}
+            {(profile.md_unique_slug || kakaoOpenChatUrl) && (
+              <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                {profile.md_unique_slug &&
+                  (profile.instagram ? (
+                    <a
+                      href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] text-neutral-500 truncate hover:text-neutral-300 active:opacity-70 transition-colors"
+                    >
+                      @{profile.md_unique_slug}
+                    </a>
+                  ) : (
+                    <p className="text-[13px] text-neutral-500 truncate">
+                      @{profile.md_unique_slug}
+                    </p>
+                  ))}
+
+                {/* 오픈채팅 — 핸들과 같은 회색 톤, 메타 정보처럼 차분하게 */}
+                {kakaoOpenChatUrl &&
+                  (isMe ? (
+                    <button
+                      onClick={() => setEditSection("openchat")}
+                      className="shrink-0 inline-flex items-center gap-0.5 text-[13px] text-neutral-500 hover:text-neutral-300 active:opacity-70 transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      오픈채팅
+                    </button>
+                  ) : (
+                    <a
+                      href={kakaoOpenChatUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 inline-flex items-center gap-0.5 text-[13px] text-neutral-500 hover:text-neutral-300 active:opacity-70 transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      오픈채팅
+                    </a>
+                  ))}
+              </div>
             )}
 
             {/* 자기소개 (사진 옆 영역, 3행 제한) */}
@@ -202,7 +329,7 @@ export function PublicProfileView({
               </p>
             ) : isMe ? (
               <button
-                onClick={() => setEditing(true)}
+                onClick={() => setEditSection("bio")}
                 className="mt-1.5 text-[12px] text-neutral-500 hover:text-neutral-300"
               >
                 자기소개를 추가해보세요
@@ -214,11 +341,22 @@ export function PublicProfileView({
         {/* 본인이면 편집 버튼 */}
         {isMe && (
           <button
-            onClick={() => setEditing(true)}
+            onClick={() => setEditSection("all")}
             className="mt-4 w-full h-9 rounded-lg bg-neutral-900 border border-neutral-800 text-[14px] font-bold hover:bg-neutral-800 transition-colors flex items-center justify-center gap-1.5"
           >
             <Pencil className="w-3.5 h-3.5" />
             프로필 편집
+          </button>
+        )}
+
+        {/* 오픈채팅 — 등록됨이면 핸들 옆 칩으로 노출(위 참조). 본인 + 미등록일 때만 등록 유도 버튼 */}
+        {isMe && !kakaoOpenChatUrl && (
+          <button
+            onClick={() => setEditSection("openchat")}
+            className="mt-3 w-full h-9 rounded-lg border border-dashed border-neutral-700 text-[13px] font-bold text-neutral-400 hover:text-neutral-200 hover:border-neutral-500 transition-colors flex items-center justify-center gap-1.5"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            오픈채팅 등록 (프로필에 공개)
           </button>
         )}
 
@@ -249,7 +387,7 @@ export function PublicProfileView({
                 </div>
               ) : isMe ? (
                 <button
-                  onClick={() => setEditing(true)}
+                  onClick={() => setEditSection("music")}
                   className="text-[12px] text-neutral-500 hover:text-neutral-300"
                 >
                   추가하기
@@ -278,7 +416,7 @@ export function PublicProfileView({
                 </div>
               ) : isMe ? (
                 <button
-                  onClick={() => setEditing(true)}
+                  onClick={() => setEditSection("area")}
                   className="text-[12px] text-neutral-500 hover:text-neutral-300"
                 >
                   추가하기
@@ -333,7 +471,7 @@ export function PublicProfileView({
               </div>
             ) : (
               <button
-                onClick={() => setEditing(true)}
+                onClick={() => setEditSection("club")}
                 className="text-[13px] text-neutral-500 hover:text-neutral-300"
               >
                 좋아하는 클럽을 추가해보세요
@@ -349,8 +487,11 @@ export function PublicProfileView({
       {/* 편집 시트 */}
       {isMe && (
         <ProfileEditSheet
-          open={editing}
-          onOpenChange={setEditing}
+          open={editSection !== null}
+          onOpenChange={(open) => {
+            if (!open) setEditSection(null);
+          }}
+          section={editSection ?? "all"}
           initial={{
             displayName,
             profileImage,
@@ -360,6 +501,7 @@ export function PublicProfileView({
             pinnedClubs: pinnedClubs
               .map((fc) => fc.club)
               .filter((c): c is NonNullable<typeof c> => c !== null),
+            kakaoOpenChatUrl: kakaoOpenChatUrl ?? "",
           }}
           onSaved={(next) => {
             setDisplayName(next.displayName);
@@ -367,7 +509,8 @@ export function PublicProfileView({
             setBio(next.bio);
             setGenres(next.genres);
             setAreas(next.areas);
-            setEditing(false);
+            setKakaoOpenChatUrl(next.kakaoOpenChatUrl);
+            setEditSection(null);
             router.refresh();
           }}
         />

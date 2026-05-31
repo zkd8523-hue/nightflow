@@ -464,12 +464,18 @@ export default function ProfilePage() {
         {/* 일반 유저용 카카오 오픈채팅 등록 (MD는 위 MD 정보 섹션에서 관리) */}
         {user.role !== "md" && user.role !== "admin" && (
           <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[15px] font-bold text-white">오픈채팅</h2>
+            <div className="flex items-start justify-between mb-4">
+              <div className="min-w-0">
+                <h2 className="text-[15px] font-bold text-white">오픈채팅</h2>
+                <p className="text-[11px] text-neutral-500 mt-0.5 leading-relaxed">
+                  내 프로필에 공개돼요. 와글에서 내 글을 본 사람이 전화번호 없이
+                  바로 합류할 수 있어요.
+                </p>
+              </div>
               {!isEditingUserKakao ? (
                 <button
                   onClick={handleEditUserKakao}
-                  className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
+                  className="shrink-0 ml-3 text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
                 >
                   {user.kakao_open_chat_url ? "수정" : "등록"}
                 </button>
@@ -499,12 +505,13 @@ export default function ProfilePage() {
                     type="url"
                     value={userKakaoUrl}
                     onChange={(e) => setUserKakaoUrl(e.target.value)}
-                    placeholder="개인정보 보호를 원한다면 등록"
+                    placeholder="https://open.kakao.com/o/..."
                     className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 text-[13px] text-white focus:outline-none focus:border-green-500"
                   />
                   <div className="flex items-center justify-between">
                     <p className="text-[11px] text-neutral-500 leading-relaxed">
-                      깃발 매칭 시 MD에게 전화번호 대신 오픈채팅으로 연락받을 수 있어요.
+                      등록하면 내 프로필에 공개돼요. 와글에서 내 글을 본 사람이
+                      전화번호 없이 오픈채팅으로 합류할 수 있어요.
                     </p>
                     <KakaoOpenChatGuide />
                   </div>

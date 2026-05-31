@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Search, X, Camera } from "lucide-react";
+import { Search, X, Camera, MessageCircle } from "lucide-react";
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
@@ -26,9 +26,28 @@ interface PinnedClubLite {
   thumbnail_url: string | null;
 }
 
+export type ProfileEditSection =
+  | "all"
+  | "bio"
+  | "music"
+  | "area"
+  | "club"
+  | "openchat";
+
+const SECTION_TITLES: Record<ProfileEditSection, string> = {
+  all: "프로필 편집",
+  bio: "자기소개 편집",
+  music: "좋아하는 음악",
+  area: "주로 가는 지역",
+  club: "좋아하는 클럽",
+  openchat: "오픈채팅",
+};
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** 어떤 섹션을 노출할지. "all"이면 전체 폼 표시. 기본값 "all". */
+  section?: ProfileEditSection;
   initial: {
     displayName: string;
     profileImage: string | null;
@@ -36,6 +55,7 @@ interface Props {
     genres: string[];
     areas: string[];
     pinnedClubs: PinnedClubLite[];
+    kakaoOpenChatUrl: string;
   };
   onSaved: (next: {
     displayName: string;
@@ -43,15 +63,25 @@ interface Props {
     bio: string | null;
     genres: string[];
     areas: string[];
+    kakaoOpenChatUrl: string | null;
   }) => void;
 }
 
 export function ProfileEditSheet({
   open,
   onOpenChange,
+  section = "all",
   initial,
   onSaved,
 }: Props) {
+  // 어떤 섹션을 보여줄지 결정 (all이면 전부 노출)
+  const showAll = section === "all";
+  const showName = showAll;
+  const showBio = showAll || section === "bio";
+  const showMusic = showAll || section === "music";
+  const showArea = showAll || section === "area";
+  const showClub = showAll || section === "club";
+  const showOpenChat = showAll || section === "openchat";
   const { user } = useCurrentUser();
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [profileImage, setProfileImage] = useState<string | null>(
@@ -62,6 +92,9 @@ export function ProfileEditSheet({
   const [areas, setAreas] = useState<string[]>(initial.areas);
   const [favClubs, setFavClubs] = useState<PinnedClubLite[]>(
     initial.pinnedClubs
+  );
+  const [kakaoOpenChatUrl, setKakaoOpenChatUrl] = useState(
+    initial.kakaoOpenChatUrl
   );
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -80,6 +113,7 @@ export function ProfileEditSheet({
       setGenres(initial.genres);
       setAreas(initial.areas);
       setFavClubs(initial.pinnedClubs);
+      setKakaoOpenChatUrl(initial.kakaoOpenChatUrl);
       setClubQuery("");
       setClubResults([]);
     }
@@ -237,23 +271,35 @@ export function ProfileEditSheet({
   async function handleSave() {
     if (!user) return;
 
-    // 닉네임 검증 (서버에서도 한 번 더 검증함)
+    // 닉네임 검증 (서버에서도 한 번 더 검증함) — 닉네임 섹션이 보일 때만 검증
     const trimmedName = displayName.trim();
-    if (trimmedName.length < 2 || trimmedName.length > 16) {
+    if (showName && (trimmedName.length < 2 || trimmedName.length > 16)) {
       toast.error("닉네임은 2~16자로 입력해주세요");
       return;
     }
-    if (bio.length > MAX_BIO_LENGTH) {
+    if (showBio && bio.length > MAX_BIO_LENGTH) {
       toast.error(`자기소개는 ${MAX_BIO_LENGTH}자 이하로 작성해주세요`);
+      return;
+    }
+    // 오픈채팅 URL 형식 검증 (입력된 경우에만)
+    const trimmedKakao = kakaoOpenChatUrl.trim();
+    if (
+      showOpenChat &&
+      trimmedKakao &&
+      !/^https:\/\/open\.kakao\.com\//.test(trimmedKakao)
+    ) {
+      toast.error("카카오톡 오픈채팅 URL 형식이 올바르지 않습니다");
       return;
     }
 
     setSaving(true);
     const supabase = createClient();
     const newBio = bio.trim() === "" ? null : bio.trim();
+    const newKakao = trimmedKakao === "" ? null : trimmedKakao;
 
-    // 0. 닉네임 변경된 경우 서버 API로 처리 (중복 체크 포함)
-    if (trimmedName !== initial.displayName) {
+    // 0. 닉네임 변경된 경우 서버 API로 처리 (제한/중복 체크 포함)
+    //    닉네임 변경은 14일에 최대 2회 (인스타그램 "이름" 변경 정책과 동일)
+    if (showName && trimmedName !== initial.displayName) {
       try {
         const res = await fetch("/api/user/profile", {
           method: "PATCH",
@@ -261,7 +307,17 @@ export function ProfileEditSheet({
           body: JSON.stringify({ display_name: trimmedName }),
         });
         const result = await res.json();
-        if (!res.ok) throw new Error(result.error || "닉네임 저장에 실패했습니다");
+        if (!res.ok) {
+          // 변경 횟수 초과 시 다음 가능 일자 안내
+          if (res.status === 429 && result.next_available_at) {
+            const d = new Date(result.next_available_at);
+            const when = `${d.getMonth() + 1}월 ${d.getDate()}일`;
+            throw new Error(
+              `${result.error ?? "닉네임 변경 횟수를 초과했어요."} (${when}부터 다시 변경 가능)`
+            );
+          }
+          throw new Error(result.error || "닉네임 저장에 실패했습니다");
+        }
       } catch (e) {
         setSaving(false);
         toast.error(e instanceof Error ? e.message : "닉네임 저장에 실패했습니다");
@@ -269,50 +325,61 @@ export function ProfileEditSheet({
       }
     }
 
-    // 1. users 테이블 (bio + 음악 + 지역)
-    const { error: userErr } = await supabase
-      .from("users")
-      .update({
-        bio: newBio,
-        preferred_music_genres: genres,
-        preferred_areas: areas,
-      })
-      .eq("id", user.id);
+    // 1. users 테이블 (bio + 음악 + 지역 + 오픈채팅) — 보이는 섹션만 반영
+    const userUpdate: {
+      bio?: string | null;
+      preferred_music_genres?: string[];
+      preferred_areas?: string[];
+      kakao_open_chat_url?: string | null;
+    } = {};
+    if (showBio) userUpdate.bio = newBio;
+    if (showMusic) userUpdate.preferred_music_genres = genres;
+    if (showArea) userUpdate.preferred_areas = areas;
+    if (showOpenChat) userUpdate.kakao_open_chat_url = newKakao;
 
-    if (userErr) {
-      setSaving(false);
-      toast.error("프로필 저장에 실패했습니다");
-      console.error(userErr);
-      return;
+    if (Object.keys(userUpdate).length > 0) {
+      const { error: userErr } = await supabase
+        .from("users")
+        .update(userUpdate)
+        .eq("id", user.id);
+
+      if (userErr) {
+        setSaving(false);
+        toast.error("프로필 저장에 실패했습니다");
+        console.error(userErr);
+        return;
+      }
     }
 
-    // 2. user_pinned_clubs: 전체 삭제 후 재삽입 (간단/정확)
-    const { error: delErr } = await supabase
-      .from("user_pinned_clubs")
-      .delete()
-      .eq("user_id", user.id);
-
-    if (delErr) {
-      setSaving(false);
-      toast.error("좋아하는 클럽 저장에 실패했습니다");
-      console.error(delErr);
-      return;
-    }
-
-    if (favClubs.length > 0) {
-      const rows = favClubs.map((c, idx) => ({
-        user_id: user.id,
-        club_id: c.id,
-        sort_order: idx,
-      }));
-      const { error: insErr } = await supabase
+    // 2. user_pinned_clubs: 전체 삭제 후 재삽입 (간단/정확) — 클럽 섹션일 때만
+    if (showClub) {
+      const { error: delErr } = await supabase
         .from("user_pinned_clubs")
-        .insert(rows);
-      if (insErr) {
+        .delete()
+        .eq("user_id", user.id);
+
+      if (delErr) {
         setSaving(false);
         toast.error("좋아하는 클럽 저장에 실패했습니다");
-        console.error(insErr);
+        console.error(delErr);
         return;
+      }
+
+      if (favClubs.length > 0) {
+        const rows = favClubs.map((c, idx) => ({
+          user_id: user.id,
+          club_id: c.id,
+          sort_order: idx,
+        }));
+        const { error: insErr } = await supabase
+          .from("user_pinned_clubs")
+          .insert(rows);
+        if (insErr) {
+          setSaving(false);
+          toast.error("좋아하는 클럽 저장에 실패했습니다");
+          console.error(insErr);
+          return;
+        }
       }
     }
 
@@ -324,11 +391,31 @@ export function ProfileEditSheet({
       bio: newBio,
       genres,
       areas,
+      kakaoOpenChatUrl: newKakao,
     });
   }
 
   const remaining = MAX_BIO_LENGTH - bio.length;
   const isOverLimit = remaining < 0;
+
+  // 변경사항 여부 (보이는 섹션 기준) — 사진은 즉시 저장되므로 dirty 계산에서 제외
+  const sameStringArray = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((v, i) => v === b[i]);
+
+  const nameDirty = showName && displayName.trim() !== initial.displayName;
+  const bioDirty = showBio && bio.trim() !== (initial.bio ?? "").trim();
+  const musicDirty = showMusic && !sameStringArray(genres, initial.genres);
+  const areaDirty = showArea && !sameStringArray(areas, initial.areas);
+  const clubDirty =
+    showClub &&
+    !sameStringArray(
+      favClubs.map((c) => c.id),
+      initial.pinnedClubs.map((c) => c.id)
+    );
+  const openChatDirty =
+    showOpenChat && kakaoOpenChatUrl.trim() !== initial.kakaoOpenChatUrl.trim();
+  const isDirty =
+    nameDirty || bioDirty || musicDirty || areaDirty || clubDirty || openChatDirty;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -338,12 +425,13 @@ export function ProfileEditSheet({
       >
         <SheetHeader className="p-4 border-b border-neutral-800 sticky top-0 bg-[#1C1C1E] z-10">
           <SheetTitle className="text-white text-[17px] font-bold text-left">
-            프로필 편집
+            {SECTION_TITLES[section]}
           </SheetTitle>
         </SheetHeader>
 
         <div className="p-4 space-y-6">
-          {/* 프로필 사진 */}
+          {/* 프로필 사진 (닉네임 섹션에서만 노출) */}
+          {showName && (
           <div className="flex flex-col items-center gap-2">
             <button
               type="button"
@@ -386,48 +474,58 @@ export function ProfileEditSheet({
               </button>
             )}
           </div>
+          )}
 
           {/* 닉네임 */}
+          {showName && (
           <div>
             <label className="block text-[13px] font-bold text-neutral-400 mb-2">
               닉네임
             </label>
-            <input
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="닉네임 (2~16자)"
-              maxLength={16}
-              className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl px-3 py-2.5 text-[15px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600"
-            />
-            <div className="mt-1 text-right text-[12px] text-neutral-500">
-              {displayName.length} / 16
+            <div className="relative">
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="닉네임 (2~16자)"
+                maxLength={16}
+                className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl pl-3 pr-16 py-2.5 text-[15px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-neutral-500 tabular-nums">
+                {displayName.length} / 16
+              </span>
             </div>
           </div>
+          )}
 
           {/* 자기소개 */}
+          {showBio && (
           <div>
             <label className="block text-[13px] font-bold text-neutral-400 mb-2">
               자기소개
             </label>
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="자기소개를 입력해주세요"
-              rows={3}
-              className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl px-3 py-2.5 text-[15px] text-white placeholder-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
-              maxLength={MAX_BIO_LENGTH + 50}
-            />
-            <div
-              className={`mt-1 text-right text-[12px] ${
-                isOverLimit ? "text-red-500" : "text-neutral-500"
-              }`}
-            >
-              {bio.length} / {MAX_BIO_LENGTH}
+            <div className="relative">
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="자기소개를 입력해주세요"
+                rows={3}
+                className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl px-3 pt-2.5 pb-7 text-[15px] text-white placeholder-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
+                maxLength={MAX_BIO_LENGTH + 50}
+              />
+              <span
+                className={`pointer-events-none absolute bottom-2.5 right-3 text-[12px] tabular-nums ${
+                  isOverLimit ? "text-red-500" : "text-neutral-500"
+                }`}
+              >
+                {bio.length} / {MAX_BIO_LENGTH}
+              </span>
             </div>
           </div>
+          )}
 
           {/* 좋아하는 음악 */}
+          {showMusic && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[13px] font-bold text-neutral-400">
@@ -457,8 +555,10 @@ export function ProfileEditSheet({
               })}
             </div>
           </div>
+          )}
 
           {/* 주로 가는 지역 */}
+          {showArea && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[13px] font-bold text-neutral-400">
@@ -487,8 +587,10 @@ export function ProfileEditSheet({
               })}
             </div>
           </div>
+          )}
 
           {/* 좋아하는 클럽 */}
+          {showClub && (
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[13px] font-bold text-neutral-400">
@@ -596,6 +698,28 @@ export function ProfileEditSheet({
               </>
             )}
           </div>
+          )}
+
+          {/* 오픈채팅 */}
+          {showOpenChat && (
+          <div>
+            <label className="flex items-center gap-1.5 text-[13px] font-bold text-neutral-400 mb-2">
+              <MessageCircle className="w-3.5 h-3.5" />
+              오픈채팅
+            </label>
+            <input
+              type="url"
+              value={kakaoOpenChatUrl}
+              onChange={(e) => setKakaoOpenChatUrl(e.target.value)}
+              placeholder="https://open.kakao.com/o/..."
+              className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl px-3 py-2.5 text-[14px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600"
+            />
+            <p className="mt-1.5 text-[12px] text-neutral-500 leading-relaxed">
+              등록하면 내 프로필에 공개돼요. 와글에서 내 글을 본 사람이 전화번호
+              없이 오픈채팅으로 합류할 수 있어요.
+            </p>
+          </div>
+          )}
 
           {/* 저장 버튼 */}
           <div className="flex gap-2 pt-2 sticky bottom-0 bg-[#1C1C1E] pb-2">
@@ -608,8 +732,12 @@ export function ProfileEditSheet({
             </button>
             <button
               onClick={handleSave}
-              disabled={saving || isOverLimit}
-              className="flex-1 h-12 rounded-full bg-white text-black font-black text-[15px] hover:bg-neutral-200 disabled:opacity-50"
+              disabled={saving || isOverLimit || !isDirty}
+              className={`flex-1 h-12 rounded-full font-black text-[15px] transition-colors ${
+                saving || isOverLimit || !isDirty
+                  ? "bg-neutral-800 text-neutral-500 cursor-not-allowed"
+                  : "bg-white text-black hover:bg-neutral-200"
+              }`}
             >
               {saving ? "저장 중..." : "저장"}
             </button>

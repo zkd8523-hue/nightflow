@@ -1,5 +1,4 @@
 import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -58,36 +57,37 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // 4. 중복 체크
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    // 4. 닉네임 변경 (제한 검증 + 중복 체크 + 변경 + 이력 기록을 RPC에서 원자적으로 처리)
+    //    14일에 최대 2회 (인스타그램 "이름" 변경 정책과 동일)
+    //    auth.uid() 기반이므로 인증 클라이언트(supabaseAuth)로 호출.
+    const { data: result, error: rpcError } = await supabaseAuth.rpc(
+      "change_display_name",
+      { p_new_name: trimmed }
     );
 
-    const { data: existing } = await supabaseAdmin
-      .from("users")
-      .select("id")
-      .eq("display_name", trimmed)
-      .neq("id", user.id)
-      .maybeSingle();
-
-    if (existing) {
-      return NextResponse.json(
-        { error: "이미 사용 중인 닉네임입니다." },
-        { status: 409 }
-      );
-    }
-
-    // 5. 저장
-    const { error: updateError } = await supabaseAdmin
-      .from("users")
-      .update({ display_name: trimmed })
-      .eq("id", user.id);
-
-    if (updateError) {
+    if (rpcError) {
       return NextResponse.json(
         { error: "저장에 실패했습니다." },
         { status: 500 }
+      );
+    }
+
+    if (!result?.success) {
+      // 변경 횟수 제한 도달
+      if (result?.limit_reached) {
+        return NextResponse.json(
+          {
+            error: result.error ?? "닉네임 변경 횟수를 초과했습니다.",
+            next_available_at: result.next_available_at ?? null,
+          },
+          { status: 429 }
+        );
+      }
+      // 중복(409) vs 그 외(400) 구분
+      const isDuplicate = (result?.error ?? "").includes("이미 사용 중");
+      return NextResponse.json(
+        { error: result?.error ?? "저장에 실패했습니다." },
+        { status: isDuplicate ? 409 : 400 }
       );
     }
 
