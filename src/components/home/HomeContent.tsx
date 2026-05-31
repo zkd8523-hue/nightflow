@@ -612,10 +612,14 @@ export function HomeContent({
     const filtered = blockedUserIds.size === 0
       ? puzzles
       : puzzles.filter((p) => !p.leader_id || !blockedUserIds.has(p.leader_id));
-    // 최신순(created_at 내림차순) — 새로 올라온 깃발부터
-    return [...filtered].sort((a, b) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    // NEW(등록 6시간 이내) 우선, 그 다음 이벤트 마감일 빠른 순
+    const now = Date.now();
+    return [...filtered].sort((a, b) => {
+      const aNew = now - new Date(a.created_at).getTime() < 6 * 60 * 60 * 1000 ? 0 : 1;
+      const bNew = now - new Date(b.created_at).getTime() < 6 * 60 * 60 * 1000 ? 0 : 1;
+      if (aNew !== bNew) return aNew - bNew;
+      return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+    });
   }, [puzzles, blockedUserIds]);
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)

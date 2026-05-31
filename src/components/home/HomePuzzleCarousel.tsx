@@ -25,7 +25,7 @@ interface Props {
   showFlagCTA?: boolean;
 }
 
-const MAX_CARDS = 5;
+const MAX_CARDS = 3;
 
 export function HomePuzzleCarousel({
   puzzles,
