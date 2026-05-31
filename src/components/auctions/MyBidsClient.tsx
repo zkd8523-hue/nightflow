@@ -794,7 +794,7 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; use
   };
 
   const statusLabel: Record<string, string> = {
-    open: "🟢 모집 중",
+    open: "🟢 제안 받는중",
     matched: "✅ 성사 (인원마감)",
     accepted: "성사됨",
     cancelled: "↩️ 취소됨",

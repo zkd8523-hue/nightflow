@@ -25,7 +25,7 @@ interface PageProps {
 type SortKey = "event" | "created";
 
 const STATUS_FILTER_LABEL: Record<string, string> = {
-  open: "모집 중",
+  open: "제안 받는중",
   selecting: "선택 중",
   expired: "만료",
   accepted: "성사",
@@ -35,7 +35,7 @@ const STATUS_FILTER_LABEL: Record<string, string> = {
 const STATUS_FILTER_ORDER = ["open", "selecting", "expired", "accepted", "matched", "cancelled"];
 
 const STATUS_LABEL: Record<string, string> = {
-  open: "모집 중",
+  open: "제안 받는중",
   selecting: "선택 중",
   matched: "마감",
   accepted: "성사됨",

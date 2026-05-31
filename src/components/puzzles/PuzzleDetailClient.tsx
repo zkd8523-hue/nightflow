@@ -85,7 +85,7 @@ function formatEventDate(dateStr: string) {
 }
 
 const STATUS_LABEL: Record<string, string> = {
-  open: "모집 중",
+  open: "제안 받는중",
   selecting: "검토 중",
   matched: "마감",
   accepted: "성사됨",

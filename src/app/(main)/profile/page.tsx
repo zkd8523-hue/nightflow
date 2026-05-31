@@ -12,11 +12,8 @@ import {
   ShieldAlert,
   Clock,
   ChevronRight,
-  Gavel,
-  Trophy,
-  CheckCircle2,
-  TrendingUp,
   Heart,
+  Ticket,
   MessageCircle,
   Instagram,
   Check,
@@ -24,13 +21,22 @@ import {
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { toast } from "sonner";
 import dayjs from "dayjs";
-import type { ContactMethodType } from "@/types/database";
+import type { ContactMethodType, Puzzle } from "@/types/database";
 
 const CONTACT_METHOD_OPTIONS: { value: ContactMethodType; label: string; icon: typeof Instagram }[] = [
   { value: "dm", label: "인스타 DM", icon: Instagram },
   { value: "kakao", label: "오픈채팅", icon: MessageCircle },
   { value: "phone", label: "전화", icon: Phone },
 ];
+
+const FLAG_STATUS: Record<string, { text: string; tone: string }> = {
+  open: { text: "제안 받는중", tone: "text-amber-400" },
+  selecting: { text: "제안 검토중", tone: "text-amber-400" },
+  matched: { text: "매칭 완료", tone: "text-green-400" },
+  accepted: { text: "매칭 완료", tone: "text-green-400" },
+  cancelled: { text: "취소됨", tone: "text-neutral-500" },
+  expired: { text: "만료됨", tone: "text-neutral-500" },
+};
 
 export default function ProfilePage() {
   const { user, isLoading, refetch } = useCurrentUser();
@@ -51,22 +57,18 @@ export default function ProfilePage() {
   const [userKakaoUrl, setUserKakaoUrl] = useState("");
   const [savingUserKakao, setSavingUserKakao] = useState(false);
 
-  const [activityStats, setActivityStats] = useState<{
-    total_bids: number;
-    won_bids: number;
-    win_rate: number;
-    confirmed_visits: number;
-  } | null>(null);
+  const [myFlags, setMyFlags] = useState<Puzzle[]>([]);
 
   useEffect(() => {
     if (!user) return;
     supabase
-      .from("user_trust_scores")
-      .select("total_bids, won_bids, win_rate, confirmed_visits")
-      .eq("id", user.id)
-      .single()
+      .from("puzzles")
+      .select("*")
+      .eq("leader_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(3)
       .then(({ data }) => {
-        if (data) setActivityStats(data);
+        if (data) setMyFlags(data as Puzzle[]);
       });
   }, [user]);
 
@@ -181,7 +183,7 @@ export default function ProfilePage() {
           >
             <ArrowLeft className="w-5 h-5 text-neutral-400" />
           </button>
-          <h1 className="text-xl font-black text-white">설정</h1>
+          <h1 className="text-xl font-black text-white">내 정보</h1>
         </div>
 
         {/* 제재 상태 배너 */}
@@ -197,78 +199,6 @@ export default function ProfilePage() {
               <p className="text-[12px] text-neutral-400 ml-6">
                 정지 해제: {dayjs(user.blocked_until).format("YYYY년 M월 D일 HH:mm")}
               </p>
-            )}
-          </div>
-        )}
-
-        {/* 일반 유저용 카카오 오픈채팅 등록 (MD는 아래 MD 정보 섹션에서 관리) */}
-        {user.role !== "md" && user.role !== "admin" && (
-          <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[15px] font-bold text-white">오픈채팅</h2>
-              {!isEditingUserKakao ? (
-                <button
-                  onClick={handleEditUserKakao}
-                  className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
-                >
-                  {user.kakao_open_chat_url ? "수정" : "등록"}
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setIsEditingUserKakao(false)}
-                    disabled={savingUserKakao}
-                    className="text-[13px] text-neutral-500 hover:text-neutral-400 transition-colors font-bold"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleSaveUserKakao}
-                    disabled={savingUserKakao}
-                    className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold disabled:opacity-50"
-                  >
-                    {savingUserKakao ? "저장 중..." : "저장"}
-                  </button>
-                </div>
-              )}
-            </div>
-            {isEditingUserKakao ? (
-              <div className="space-y-2">
-                <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-3">
-                  <input
-                    type="url"
-                    value={userKakaoUrl}
-                    onChange={(e) => setUserKakaoUrl(e.target.value)}
-                    placeholder="개인정보 보호를 원한다면 등록"
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 text-[13px] text-white focus:outline-none focus:border-green-500"
-                  />
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] text-neutral-500 leading-relaxed">
-                      깃발 매칭 시 MD에게 전화번호 대신 오픈채팅으로 연락받을 수 있어요.
-                    </p>
-                    <KakaoOpenChatGuide />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <MessageCircle className="w-4 h-4 text-neutral-500 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-[11px] text-neutral-500">카카오 오픈채팅</p>
-                  {user.kakao_open_chat_url ? (
-                    <a
-                      href={user.kakao_open_chat_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[13px] text-white font-bold truncate block hover:text-amber-400 transition-colors"
-                    >
-                      {user.kakao_open_chat_url}
-                    </a>
-                  ) : (
-                    <p className="text-[13px] text-neutral-500">미설정</p>
-                  )}
-                </div>
-              </div>
             )}
           </div>
         )}
@@ -438,54 +368,49 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* 나의 경매 활동 */}
+        {/* 내 깃발 */}
         <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-          <h2 className="text-[15px] font-bold text-white mb-4">나의 경매 활동</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[15px] font-bold text-white">내 깃발</h2>
+            {myFlags.length > 0 && (
+              <Link
+                href="/bids"
+                className="inline-flex items-center gap-0.5 text-[12px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
+              >
+                전체 보기
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
+          </div>
 
-          {activityStats && activityStats.total_bids > 0 ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Gavel className="w-3.5 h-3.5 text-neutral-400" />
-                  <span className="text-[11px] text-neutral-400">총 입찰</span>
-                </div>
-                <p className="text-xl font-black text-white">{activityStats.total_bids}<span className="text-[11px] text-neutral-500 font-normal">회</span></p>
-              </div>
-
-              <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <Trophy className="w-3.5 h-3.5 text-green-500" />
-                  <span className="text-[11px] text-neutral-400">낙찰 성공</span>
-                </div>
-                <p className="text-xl font-black text-green-400">{activityStats.won_bids}<span className="text-[11px] text-neutral-500 font-normal">회</span></p>
-              </div>
-
-              <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
-                  <span className="text-[11px] text-neutral-400">방문 완료</span>
-                </div>
-                <p className="text-xl font-black text-green-400">{activityStats.confirmed_visits}<span className="text-[11px] text-neutral-500 font-normal">회</span></p>
-              </div>
-
-              <div className="bg-neutral-800/50 rounded-xl p-3 text-center">
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-[11px] text-neutral-400">낙찰률</span>
-                </div>
-                <p className="text-xl font-black text-amber-400">{activityStats.win_rate || 0}<span className="text-[11px] text-neutral-500 font-normal">%</span></p>
-              </div>
+          {myFlags.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {myFlags.map((flag) => {
+                const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-neutral-400" };
+                return (
+                  <Link
+                    key={flag.id}
+                    href={`/flags/${flag.id}`}
+                    className="flex items-center justify-between gap-3 bg-neutral-800/40 rounded-xl px-4 py-3 hover:bg-neutral-800/70 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[14px] font-bold text-white truncate">
+                        {flag.area} · {dayjs(flag.event_date).format("M월 D일")}
+                      </p>
+                      <p className="text-[12px] text-neutral-500">
+                        {flag.current_count}/{flag.target_count}명
+                      </p>
+                    </div>
+                    <span className={`shrink-0 text-[12px] font-bold ${st.tone}`}>
+                      {st.text}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-[13px] text-neutral-500 mb-3">아직 경매에 참여한 기록이 없습니다</p>
-              <Link
-                href="/"
-                className="inline-flex items-center gap-1 text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
-              >
-                진행 중인 경매 보기
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
+              <p className="text-[13px] text-neutral-500">아직 꽂은 깃발이 없어요</p>
             </div>
           )}
 
@@ -520,6 +445,22 @@ export default function ProfilePage() {
           )}
         </div>
 
+        {/* 쿠폰 */}
+        <Link
+          href="/coupons"
+          className="bg-[#1C1C1E] rounded-2xl p-5 mb-4 flex items-center justify-between hover:bg-neutral-800/30 transition-colors block"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+              <Ticket className="w-5 h-5 text-amber-500" />
+            </div>
+            <div>
+              <p className="text-[15px] font-bold text-white">내 쿠폰</p>
+            </div>
+          </div>
+          <ChevronRight className="w-5 h-5 text-neutral-600" />
+        </Link>
+
         {/* 찜 */}
         <Link
           href="/favorites"
@@ -536,6 +477,78 @@ export default function ProfilePage() {
           </div>
           <ChevronRight className="w-5 h-5 text-neutral-600" />
         </Link>
+
+        {/* 일반 유저용 카카오 오픈채팅 등록 (MD는 위 MD 정보 섹션에서 관리) */}
+        {user.role !== "md" && user.role !== "admin" && (
+          <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-[15px] font-bold text-white">오픈채팅</h2>
+              {!isEditingUserKakao ? (
+                <button
+                  onClick={handleEditUserKakao}
+                  className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
+                >
+                  {user.kakao_open_chat_url ? "수정" : "등록"}
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setIsEditingUserKakao(false)}
+                    disabled={savingUserKakao}
+                    className="text-[13px] text-neutral-500 hover:text-neutral-400 transition-colors font-bold"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={handleSaveUserKakao}
+                    disabled={savingUserKakao}
+                    className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold disabled:opacity-50"
+                  >
+                    {savingUserKakao ? "저장 중..." : "저장"}
+                  </button>
+                </div>
+              )}
+            </div>
+            {isEditingUserKakao ? (
+              <div className="space-y-2">
+                <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-3">
+                  <input
+                    type="url"
+                    value={userKakaoUrl}
+                    onChange={(e) => setUserKakaoUrl(e.target.value)}
+                    placeholder="개인정보 보호를 원한다면 등록"
+                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 text-[13px] text-white focus:outline-none focus:border-green-500"
+                  />
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] text-neutral-500 leading-relaxed">
+                      깃발 매칭 시 MD에게 전화번호 대신 오픈채팅으로 연락받을 수 있어요.
+                    </p>
+                    <KakaoOpenChatGuide />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <MessageCircle className="w-4 h-4 text-neutral-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[11px] text-neutral-500">카카오 오픈채팅</p>
+                  {user.kakao_open_chat_url ? (
+                    <a
+                      href={user.kakao_open_chat_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] text-white font-bold truncate block hover:text-amber-400 transition-colors"
+                    >
+                      {user.kakao_open_chat_url}
+                    </a>
+                  ) : (
+                    <p className="text-[13px] text-neutral-500">미설정</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 바로가기 */}
         <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
