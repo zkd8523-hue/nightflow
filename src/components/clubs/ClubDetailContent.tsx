@@ -218,7 +218,11 @@ export function ClubDetailContent({
   const flagHref = club.area
     ? `/flags/new?area=${encodeURIComponent(club.area)}`
     : "/flags/new";
-  const ctaHref = user ? flagHref : `/login?redirect=${encodeURIComponent(flagHref)}`;
+  // 로그인 리다이렉트 파라미터를 게스트 간판 링크(?next=)와 통일
+  const ctaHref = user ? flagHref : `/login?next=${encodeURIComponent(flagHref)}`;
+  // 게스트 간판 MD가 있으면 본문에 이미 클럽 맥락 1순위 CTA(연락)가 있으므로
+  // 지역 깃발 CTA는 숨겨 전환 충돌을 막는다. 없을 때만 노출.
+  const showFlagCta = !guestSignSlot;
 
   return (
     <div className="container mx-auto max-w-lg px-4 pt-4 pb-32">
@@ -653,21 +657,25 @@ export function ClubDetailContent({
         </SheetContent>
       </Sheet>
 
-      {/* 플로팅 CTA - 깃발 꽂기 */}
-      <div
-        className="fixed left-0 right-0 z-40 px-4 pt-4 pb-3 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/95 to-transparent pointer-events-none"
-        style={{ bottom: user ? "60px" : 0 }}
-      >
-        <div className="max-w-lg mx-auto pointer-events-auto">
-          <Link
-            href={ctaHref}
-            className="flex items-center justify-center gap-2 w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
-          >
-            <span className="text-[18px]">⛳</span>
-            {club.area ? `${club.area}에서 놀고싶다면, 깃발 꽂기` : "깃발 꽂기"}
-          </Link>
+      {/* 플로팅 CTA - 깃발 꽂기 (게스트 간판 MD가 없는 클럽에서만 노출) */}
+      {showFlagCta && (
+        <div
+          className="fixed left-0 right-0 z-40 px-4 pt-4 pb-3 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/95 to-transparent pointer-events-none"
+          style={{ bottom: user ? "60px" : 0 }}
+        >
+          <div className="max-w-lg mx-auto pointer-events-auto">
+            <Link
+              href={ctaHref}
+              className="flex items-center justify-center gap-2 w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
+            >
+              <span className="text-[18px]">⛳</span>
+              {club.area
+                ? `${club.area} 갈래? 깃발 꽂고 오퍼받기`
+                : "깃발 꽂고 오퍼받기"}
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
