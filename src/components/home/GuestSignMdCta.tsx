@@ -6,20 +6,10 @@ import { ChevronRight, Sparkles, ArrowUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { GuestSignPreviewSheet } from "./GuestSignPreviewSheet";
-import { normalizeDowSlots } from "@/lib/utils/hotdeal";
+import { normalizeDowSlots, getActiveWeekStartISO } from "@/lib/utils/hotdeal";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
 const DOW_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as const;
-
-function getThisWeekISO(): string {
-  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const dowIdx = kstNow.getUTCDay();
-  const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
-  const thisMonday = new Date(kstNow);
-  thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
-  thisMonday.setUTCHours(0, 0, 0, 0);
-  return thisMonday.toISOString().slice(0, 10);
-}
 
 /**
  * MD/admin에게만 노출되는 게스트 간판 행동 유도 띠.
@@ -42,7 +32,7 @@ export function GuestSignMdCta() {
     if (!isMdOrAdmin || !user?.id) return;
     let cancelled = false;
     (async () => {
-      const thisWeekISO = getThisWeekISO();
+      const thisWeekISO = getActiveWeekStartISO();
       const { data } = await supabase
         .from("weekly_hotdeal_slots")
         .select("id, benefits_by_dow, expires_at")

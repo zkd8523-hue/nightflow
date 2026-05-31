@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ClubDetailContent } from "@/components/clubs/ClubDetailContent";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
-import { normalizeDowSlots, summarizeSlots } from "@/lib/utils/hotdeal";
+import { normalizeDowSlots, summarizeSlots, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 import type { Metadata } from "next";
 
@@ -98,15 +98,10 @@ export default async function ClubDetailPage({ params }: PageProps) {
     .limit(20);
 
   // 이번 주 게스트 간판 슬롯 + 차지 MD 정보 + 오늘 요일 혜택
-  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const dowIdx = kstNow.getUTCDay();
-  const DOW_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-  const todayDowKey = DOW_KEYS[dowIdx];
-  const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
-  const thisMonday = new Date(kstNow);
-  thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
-  thisMonday.setUTCHours(0, 0, 0, 0);
-  const thisWeekISO = thisMonday.toISOString().slice(0, 10);
+  // 요일은 영업일 기준(새벽 6시 경계) — 일요일 혜택이 월요일 새벽까지 노출되도록.
+  const todayDowKey = getBusinessDowKey();
+  // 월요일 18시 오픈 갭 보정 포함 (지난 주 슬롯 노출)
+  const thisWeekISO = getActiveWeekStartISO();
 
   const { data: slotRow } = await supabase
     .from("weekly_hotdeal_slots")
@@ -124,7 +119,9 @@ export default async function ClubDetailPage({ params }: PageProps) {
     today_benefit: string | null;
   } | null = null;
 
-  if (slotRow && new Date(slotRow.expires_at) > new Date()) {
+  // 노출 판정은 week_start(getActiveWeekStartISO, 월 18시 게이트 포함) 단일 기준.
+  // expires_at(=다음 월 18:00, Migration 283)과 등가이므로 중복 필터는 두지 않는다.
+  if (slotRow) {
     const { data: mdRow } = await supabase
       .from("users")
       .select("id, display_name, profile_image, instagram, kakao_open_chat_url")
@@ -163,7 +160,7 @@ export default async function ClubDetailPage({ params }: PageProps) {
   };
   const ssrAreaPrefix = club.area ? `${club.area} ` : "";
   const ssrWeeklyBenefits: { dow: string; text: string }[] = [];
-  if (slotRow && new Date(slotRow.expires_at) > new Date()) {
+  if (slotRow) {
     const byDow = (slotRow.benefits_by_dow ?? {}) as HotdealBenefitsByDow;
     (Object.keys(DOW_LABELS_KO) as HotdealDow[]).forEach((d) => {
       const slots = normalizeDowSlots(byDow[d]);

@@ -8,7 +8,7 @@ import { ChevronLeft, Loader2, X, CheckCircle2, Clock, Plus } from "lucide-react
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { HotdealBenefitsByDow, HotdealDow, HotdealTimeSlot } from "@/types/database";
-import { normalizeDowSlots, GUEST_SIGN_BENEFIT_PRESETS, benefitLabel } from "@/lib/utils/hotdeal";
+import { normalizeDowSlots, GUEST_SIGN_BENEFIT_PRESETS, benefitLabel, BUSINESS_DAY_CUTOFF_HOUR } from "@/lib/utils/hotdeal";
 
 interface ClubLite {
   id: string;
@@ -105,11 +105,12 @@ function addHoursToHHMM(hhmm: string, hours: number): string {
   return TIME_OPTIONS[target];
 }
 
-// 클럽 영업이 새벽까지 이어지므로 익일 07:00 이전은 전날을 "오늘"로 간주
+// 클럽 영업이 새벽까지 이어지므로 새벽 6시 이전은 전날을 "오늘"로 간주.
+// 소비자 노출(getBusinessDowKey, BUSINESS_DAY_CUTOFF_HOUR=6)과 경계를 통일.
 function currentBusinessDayKstISO(): string {
   const now = new Date();
   const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-  if (kst.getUTCHours() < 7) {
+  if (kst.getUTCHours() < BUSINESS_DAY_CUTOFF_HOUR) {
     kst.setUTCDate(kst.getUTCDate() - 1);
   }
   return kst.toISOString().slice(0, 10);

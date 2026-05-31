@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { normalizeDowSlots, summarizeSlots, benefitLabel } from "@/lib/utils/hotdeal";
+import { normalizeDowSlots, summarizeSlots, benefitLabel, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
 interface ClubBenefitItem {
@@ -23,21 +23,6 @@ const MAX_CARDS = 12;
 const HIDDEN_PATTERN = /운영자/;
 const SHOW_TEST_CLUBS = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
 
-function getThisWeekISO(): string {
-  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const dowIdx = kstNow.getUTCDay();
-  const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
-  const thisMonday = new Date(kstNow);
-  thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
-  return thisMonday.toISOString().slice(0, 10);
-}
-
-function getTodayDowKey(): string {
-  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const DOW_KEYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
-  return DOW_KEYS[kstNow.getUTCDay()];
-}
-
 export function ClubBenefitSection() {
   const supabase = useMemo(() => createClient(), []);
   const [items, setItems] = useState<ClubBenefitItem[] | null>(null);
@@ -45,8 +30,8 @@ export function ClubBenefitSection() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const thisWeekISO = getThisWeekISO();
-      const todayDowKey = getTodayDowKey();
+      const thisWeekISO = getActiveWeekStartISO();
+      const todayDowKey = getBusinessDowKey();
 
       const [slotsRes, clubsRes, hotdealsRes, favoritesRes] = await Promise.all([
         supabase
@@ -79,7 +64,8 @@ export function ClubBenefitSection() {
         expires_at: string;
       }>) {
         if (!s.club_id) continue;
-        if (new Date(s.expires_at) <= new Date()) continue;
+        // 노출 판정은 week_start(getActiveWeekStartISO, 월 18시 게이트 포함) 단일 기준.
+        // expires_at(=다음 월 18:00, Migration 283)과 등가이므로 중복 필터는 두지 않는다.
         const todaySlots = normalizeDowSlots(
           (s.benefits_by_dow ?? {})[todayDowKey as HotdealDow]
         );

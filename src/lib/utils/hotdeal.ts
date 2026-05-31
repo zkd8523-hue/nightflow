@@ -1,5 +1,54 @@
 import type { HotdealBenefitsByDow, HotdealDow, HotdealTimeSlot, HotdealTableZone } from "@/types/database";
 
+/**
+ * 현재 노출해야 할 게스트 간판 주(week)의 시작일(월요일)을 ISO(YYYY-MM-DD)로 반환.
+ *
+ * ⚠️ 주차 롤오버 갭 보정:
+ * - DB의 슬롯 차지(claim_hotdeal_slot)는 매주 월요일 18:00 KST에 오픈된다.
+ * - 단순히 "이번 주 월요일"을 반환하면, 월요일 00:00~17:59 KST 구간에
+ *   "아직 아무도 차지하지 못한 새 주 슬롯(0개)"만 보게 되어 게시판이 통째로 비어 보인다.
+ * - 따라서 월요일 18:00 KST 이전이면 직전 주 월요일을 반환해, 18시 오픈 전까지는
+ *   지난 주 슬롯을 계속 노출한다. (지난 주 슬롯의 expires_at도 같은 18:00로 맞물려 만료)
+ *
+ * 참조: supabase/migrations/236_hotdeal_week_unit.sql (18시 오픈 게이트 / expires_at)
+ */
+export function getActiveWeekStartISO(): string {
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const dowIdx = kstNow.getUTCDay(); // 0=일 ~ 6=토 (KST 기준)
+  const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
+  const thisMonday = new Date(kstNow);
+  thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
+  thisMonday.setUTCHours(0, 0, 0, 0);
+
+  // 월요일 18:00 KST(=09:00 UTC) 이전이면 직전 주로 보정
+  const isMonday = dowIdx === 1;
+  const beforeOpen = isMonday && kstNow.getUTCHours() < 18;
+  if (beforeOpen) {
+    thisMonday.setUTCDate(thisMonday.getUTCDate() - 7);
+  }
+  return thisMonday.toISOString().slice(0, 10);
+}
+
+/** 영업일 요일 경계: 새벽 6시 KST 이전은 전날로 간주 (date.ts getClubEventDate와 동일 기준) */
+export const BUSINESS_DAY_CUTOFF_HOUR = 6;
+
+/**
+ * 게스트 간판 "오늘 요일" 키(sun~sat)를 영업일 기준으로 반환.
+ *
+ * ⚠️ 클럽은 새벽까지 영업하므로, 일요일 밤에 놀러 간 손님이 월요일 새벽에 봐도
+ *    "일요일 혜택"이 보여야 한다. 달력 자정(00:00)에 요일을 넘기면 새벽에 혜택이 사라진다.
+ *    → 새벽 6시 KST 이전이면 전날 요일로 간주한다.
+ *    MD 입력 화면(HotdealSlotBoard)의 영업일 로직과 기준을 통일.
+ */
+export function getBusinessDowKey(): HotdealDow {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  if (kst.getUTCHours() < BUSINESS_DAY_CUTOFF_HOUR) {
+    kst.setUTCDate(kst.getUTCDate() - 1);
+  }
+  const DOW_KEYS: HotdealDow[] = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
+  return DOW_KEYS[kst.getUTCDay()];
+}
+
 export const TABLE_ZONE_OPTIONS: { value: HotdealTableZone; label: string }[] = [
   { value: "bar", label: "BAR" },
   { value: "bar_aisle", label: "BAR통로" },

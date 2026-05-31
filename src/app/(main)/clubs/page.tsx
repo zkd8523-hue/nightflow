@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { ClubList } from "@/components/clubs/ClubList";
 import { ClubsAdminFab } from "@/components/clubs/ClubsAdminFab";
-import { normalizeDowSlots, summarizeSlots } from "@/lib/utils/hotdeal";
+import { normalizeDowSlots, summarizeSlots, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
@@ -57,14 +57,10 @@ export default async function ClubsIndexPage() {
     .in("status", ["active", "scheduled"]);
 
   // 오늘 활성 HOT DEAL 슬롯 (이번 주 슬롯에서 오늘 요일 혜택 추출)
-  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  const dowIdx = kstNow.getUTCDay(); // 0=일~6=토
-  const DOW_KEYS_KST = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-  const todayDowKey = DOW_KEYS_KST[dowIdx];
-  const daysFromMonday = dowIdx === 0 ? 6 : dowIdx - 1;
-  const thisMonday = new Date(kstNow);
-  thisMonday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
-  const thisWeekISO = thisMonday.toISOString().slice(0, 10);
+  // 요일은 영업일 기준(새벽 6시 경계) — 일요일 혜택이 월요일 새벽까지 노출되도록.
+  const todayDowKey = getBusinessDowKey();
+  // 월요일 18시 오픈 갭 보정 포함 (지난 주 슬롯 노출)
+  const thisWeekISO = getActiveWeekStartISO();
 
   const hotdealRes = await supabase
     .from("weekly_hotdeal_slots")
@@ -90,7 +86,8 @@ export default async function ClubsIndexPage() {
   const benefitTagsMap: Record<string, string[]> = {};
   for (const h of hotdealRes.data ?? []) {
     if (!h.club_id) continue;
-    if (new Date(h.expires_at) <= new Date()) continue;
+    // 노출 판정은 week_start(getActiveWeekStartISO, 월 18시 게이트 포함) 단일 기준.
+    // expires_at(=다음 월 18:00, Migration 283)과 등가이므로 중복 필터는 두지 않는다.
     const byDow = (h.benefits_by_dow ?? {}) as HotdealBenefitsByDow;
     const todaySlots = normalizeDowSlots(byDow[todayDowKey as HotdealDow]);
     const summary = summarizeSlots(todaySlots);
