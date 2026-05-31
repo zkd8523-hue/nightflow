@@ -15,6 +15,7 @@ import {
   makeTag,
   AREA_OPTIONS,
 } from "@/lib/clubs/tags";
+import { getClubAliases } from "@/lib/clubs/aliases";
 import { benefitLabel } from "@/lib/utils/hotdeal";
 
 interface ClubListItem {
@@ -132,10 +133,14 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
         if (!wanted.some((t) => c.tags?.includes(t))) return false;
       }
       if (normalizedQuery) {
+        // DB clubs.aliases + 정적 CLUB_ALIASES 매핑(aliases.ts) 둘 다 매칭.
+        // 정적 매핑에 "에이스", "버뮤다", "디엠" 등 한글 별칭 등록됨.
+        const staticAliases = getClubAliases(c.id);
         const haystack = [
           c.name,
           c.area || "",
           ...(c.aliases || []),
+          ...staticAliases,
         ]
           .map(normalizeSearch)
           .join("  ");
