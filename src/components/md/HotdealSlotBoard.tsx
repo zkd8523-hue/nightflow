@@ -199,6 +199,45 @@ export function HotdealSlotBoard({
     () => slots.filter((s) => s.week_start === selectedWeek),
     [slots, selectedWeek]
   );
+
+  // 다른 MD가 차지한 슬롯의 차지자 닉네임 조회 (md_id → display_name)
+  const [claimerNames, setClaimerNames] = useState<Record<string, string>>({});
+  const otherMdIdsKey = useMemo(
+    () =>
+      [
+        ...new Set(
+          weekSlots
+            .filter((s) => s.md_id !== currentUserId)
+            .map((s) => s.md_id)
+        ),
+      ]
+        .sort()
+        .join(","),
+    [weekSlots, currentUserId]
+  );
+  useEffect(() => {
+    const ids = otherMdIdsKey ? otherMdIdsKey.split(",") : [];
+    if (ids.length === 0) {
+      setClaimerNames({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("users")
+        .select("id, display_name, name")
+        .in("id", ids);
+      if (cancelled || !data) return;
+      const map: Record<string, string> = {};
+      for (const u of data as { id: string; display_name: string | null; name: string | null }[]) {
+        map[u.id] = u.display_name || u.name || "다른 파트너";
+      }
+      setClaimerNames(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [supabase, otherMdIdsKey]);
   // 본인이 차지한 슬롯만 (effectiveMySlots는 이미 본인 것만 담고 있음)
   const mySlotForWeek = useMemo(
     () => effectiveMySlots.find((s) => s.week_start === selectedWeek) ?? null,
@@ -413,7 +452,13 @@ export function HotdealSlotBoard({
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-[14px] font-black truncate">{club.name}</p>
-                    <p className="text-[10px] text-neutral-500">{club.area ?? "기타"}</p>
+                    {claimedByOther ? (
+                      <p className="text-[10px] text-amber-400/80 font-bold truncate">
+                        {(slot && claimerNames[slot.md_id]) || "다른 파트너"}님이 차지
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-neutral-500">{club.area ?? "기타"}</p>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -673,35 +718,41 @@ function MyClaimedSection({
                         />
 
                         {/* 우측 액션: 첫 줄 = 저장 / 그 외 = 삭제(또는 자리) */}
-                        {isFirst && !isPast ? (
+                        {isFirst && !isPast ? (() => {
+                          // 3상태로 명확히 구분:
+                          // 1) dirty  → amber "저장"(변경 내용 저장) / "비움"(텍스트 다 지움) (활성, 강조)
+                          // 2) 저장됨+변경없음 → emerald "저장됨" 체크 (비활성)
+                          // 3) 빈 상태(입력·저장 모두 없음) → 회색 "저장" (비활성)
+                          const canSave = dirty && (hasAnyText || savedExists);
+                          const label = dirty
+                            ? hasAnyText
+                              ? "저장"
+                              : "비움"
+                            : savedExists
+                            ? "저장됨"
+                            : "저장";
+                          return (
                           <button
                             type="button"
                             onClick={() => handleSaveDow(dow)}
-                            disabled={saving || !dirty || (!hasAnyText && !savedExists)}
-                            className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] font-black inline-flex items-center gap-1 transition-colors ${
-                              dirty
-                                ? "bg-amber-500 text-black hover:bg-amber-400 disabled:opacity-50"
+                            disabled={saving || !canSave}
+                            className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-black inline-flex items-center gap-1 transition-colors ${
+                              canSave
+                                ? "bg-amber-500 text-black hover:bg-amber-400"
                                 : savedExists
-                                ? "bg-emerald-500/20 text-emerald-400"
-                                : "bg-neutral-800 text-neutral-600"
+                                ? "bg-transparent text-emerald-400 border border-emerald-500/40 cursor-default"
+                                : "bg-neutral-800 text-neutral-600 cursor-not-allowed"
                             }`}
                           >
                             {saving ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : savedExists && !dirty ? (
+                            ) : !dirty && savedExists ? (
                               <CheckCircle2 className="w-3 h-3" />
                             ) : null}
-                            {dirty
-                              ? savedExists
-                                ? hasAnyText
-                                  ? "수정"
-                                  : "비움"
-                                : "저장"
-                              : savedExists
-                              ? "저장됨"
-                              : "비움"}
+                            {label}
                           </button>
-                        ) : canDelete && !isPast ? (
+                          );
+                        })() : canDelete && !isPast ? (
                           <button
                             type="button"
                             onClick={() => removeSlot(dow, idx)}

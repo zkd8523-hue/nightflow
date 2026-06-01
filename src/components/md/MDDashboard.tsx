@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MDAuctionCard } from "./MDAuctionCard";
+import { MDContactCard } from "./MDContactCard";
 import { AcceptedPuzzleVisitCard } from "./AcceptedPuzzleVisitCard";
 import { AreaOnboardingSheet } from "./AreaOnboardingSheet";
 import { HotdealNowManager } from "./HotdealNowManager";
@@ -426,6 +427,9 @@ export function MDDashboard({
                     </div>
                 </Link>
             </div>
+
+            {/* 내 연락처 (인스타 / 오픈채팅) — 대시보드에서 바로 열기/수정 */}
+            <MDContactCard user={user} />
 
             {/* Hot Deal 인라인 등록 영역 */}
             {hotdealInlineOpen && (
