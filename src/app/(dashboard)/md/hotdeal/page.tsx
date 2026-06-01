@@ -80,13 +80,18 @@ export default async function MDHotdealPage() {
         .in("week_start", [thisWeek, nextWeek])
     : { data: [] };
 
-  // 본인 슬롯 (이번주/다음주). 운영자 테스트로 같은 주 여러 개 있을 수 있음.
-  const { data: mySlots } = await supabase
-    .from("weekly_hotdeal_slots")
-    .select("id, club_id, week_start, benefits_by_dow, expires_at")
-    .eq("md_id", user.id)
-    .gte("week_start", thisWeek)
-    .lte("week_start", nextWeek);
+  // 본인 슬롯 (이번주/다음주). 소속(파트너 연결) 클럽 슬롯만 노출한다.
+  // club_partners 연결이 없는 클럽의 슬롯은 clubs 목록에 없어 이름을 못 찾고
+  // "클럽"으로 떨어지므로, 소속 클럽(clubIds) 범위로 제한한다.
+  const { data: mySlots } = clubIds.length
+    ? await supabase
+        .from("weekly_hotdeal_slots")
+        .select("id, club_id, week_start, benefits_by_dow, expires_at")
+        .eq("md_id", user.id)
+        .in("club_id", clubIds)
+        .gte("week_start", thisWeek)
+        .lte("week_start", nextWeek)
+    : { data: [] };
 
   return (
     <HotdealSlotBoard

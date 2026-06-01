@@ -37,6 +37,7 @@ interface MySlot {
 
 interface Props {
   currentUserId: string;
+  /** @deprecated 이 화면은 MD 본인 전용. admin의 대리 배정/해제는 /admin 게스트 간판 배정 페이지에서만 처리하므로 여기선 사용하지 않는다. */
   isAdmin?: boolean;
   clubs: ClubLite[];
   slots: SlotLite[];     // 이번주 + 다음주 모든 슬롯 (다른 MD 거 포함)
@@ -125,7 +126,6 @@ function formatWeekRange(weekStartISO: string): string {
 
 export function HotdealSlotBoard({
   currentUserId,
-  isAdmin = false,
   clubs,
   slots,
   mySlots,
@@ -139,6 +139,8 @@ export function HotdealSlotBoard({
   const selectedWeek = thisWeekISO;
   const [busy, setBusy] = useState(false);
   const [clientMySlots, setClientMySlots] = useState<MySlot[] | null>(null);
+  // 소속 클럽 id 집합 (재조회 필터 + 의존성 안정화용)
+  const clubIdsKey = useMemo(() => clubs.map((c) => c.id).sort().join(","), [clubs]);
   const GUIDE_DISMISSED_KEY = "nightflow_guest_sign_guide_dismissed";
   const [showGuide, setShowGuide] = useState(true);
   useEffect(() => {
@@ -163,10 +165,15 @@ export function HotdealSlotBoard({
         .select("id, club_id, md_id, week_start, benefits_by_dow, expires_at")
         .in("week_start", [thisWeekISO, nextWeekISO]);
       console.log("[HotdealSlotBoard] all result:", { data, error, len: data?.length });
-      // admin은 모든 슬롯을 자기 것처럼 수정 가능
-      const myData = isAdmin
-        ? (data ?? [])
-        : (data ?? []).filter((s: { md_id: string }) => s.md_id === currentUserId);
+      // 이 화면은 MD 본인용. 본인(md_id) + 소속(파트너 연결) 클럽 슬롯만 다룬다.
+      // 파트너 연결이 없는 클럽 슬롯(admin 대리 배정 등)은 clubs 목록에 없어
+      // 이름을 못 찾고 "클럽"으로 떨어지므로 소속 클럽 범위로 제한한다.
+      // (admin의 대리 배정/해제는 별도 /admin 게스트 간판 배정 페이지에서 처리)
+      const myClubIds = new Set(clubIdsKey ? clubIdsKey.split(",") : []);
+      const myData = (data ?? []).filter(
+        (s: { md_id: string; club_id: string }) =>
+          s.md_id === currentUserId && myClubIds.has(s.club_id)
+      );
       console.log("[HotdealSlotBoard] my filtered:", myData);
       if (!cancelled) {
         setClientMySlots(
@@ -184,7 +191,7 @@ export function HotdealSlotBoard({
     return () => {
       cancelled = true;
     };
-  }, [supabase, currentUserId, thisWeekISO, nextWeekISO, isAdmin]);
+  }, [supabase, currentUserId, thisWeekISO, nextWeekISO, clubIdsKey]);
 
   const effectiveMySlots = clientMySlots ?? mySlots;
 
@@ -192,6 +199,7 @@ export function HotdealSlotBoard({
     () => slots.filter((s) => s.week_start === selectedWeek),
     [slots, selectedWeek]
   );
+  // 본인이 차지한 슬롯만 (effectiveMySlots는 이미 본인 것만 담고 있음)
   const mySlotForWeek = useMemo(
     () => effectiveMySlots.find((s) => s.week_start === selectedWeek) ?? null,
     [effectiveMySlots, selectedWeek]
@@ -202,7 +210,7 @@ export function HotdealSlotBoard({
     return m;
   }, [weekSlots]);
 
-  const preOpen = !isAdmin && isBeforeOpen(selectedWeek);
+  const preOpen = isBeforeOpen(selectedWeek);
   const hasMyClaimThisWeek = !!mySlotForWeek;
 
   const handleClaim = async (clubId: string) => {
@@ -370,8 +378,6 @@ export function HotdealSlotBoard({
             busy={busy}
             onRelease={() => handleRelease(mySlotForWeek.id)}
             onChanged={() => router.refresh()}
-            isAdmin={isAdmin}
-            currentUserId={currentUserId}
           />
         )}
 
@@ -447,16 +453,12 @@ function MyClaimedSection({
   busy,
   onRelease,
   onChanged,
-  isAdmin,
-  currentUserId,
 }: {
   slot: MySlot;
   club?: ClubLite;
   busy: boolean;
   onRelease: () => void;
   onChanged: () => void;
-  isAdmin: boolean;
-  currentUserId: string;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const [drafts, setDrafts] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(() => {
@@ -596,9 +598,6 @@ function MyClaimedSection({
         <div>
           <p className="text-[11px] text-amber-300 font-bold">요일별 혜택 (안 적은 요일은 비어있음으로 노출)</p>
           <p className="text-[10px] text-neutral-500">지난 요일은 수정할 수 없어요 · 시간대별로 다른 혜택 설정 가능 (최대 {MAX_SLOTS_PER_DOW}개)</p>
-          {isAdmin && slot.md_id && slot.md_id !== currentUserId && (
-            <p className="text-[10px] text-red-400 font-bold mt-1">⚠ Admin 모드 — 본인 슬롯이 아닙니다 (MD: {slot.md_id.slice(0, 8)}...)</p>
-          )}
         </div>
         {DOW_KEYS.map((dow) => {
           const saving = savingDow === dow;
