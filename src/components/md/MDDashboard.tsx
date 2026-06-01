@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MDAuctionCard } from "./MDAuctionCard";
+import { MDContactCard } from "./MDContactCard";
 import { AcceptedPuzzleVisitCard } from "./AcceptedPuzzleVisitCard";
 import { AreaOnboardingSheet } from "./AreaOnboardingSheet";
 import { HotdealNowManager } from "./HotdealNowManager";
@@ -118,6 +119,8 @@ export function MDDashboard({
     const [clubFavCounts, setClubFavCounts] = useState<Record<string, number>>({});
     const [mdCredits, setMdCredits] = useState<number | null>(null);
     const [showAreaOnboarding, setShowAreaOnboarding] = useState(false);
+    // prop은 서버 스냅샷이라 markSeen 후에도 갱신 안 됨 → 로컬 상태로 "봤음"을 즉시 반영해 재노출 차단
+    const [areaOnboardingSeen, setAreaOnboardingSeen] = useState(user.md_onboarding_areas_seen);
     const [hotdealSheetOpen, setHotdealSheetOpen] = useState(false);
     const [hotdealInlineOpen, setHotdealInlineOpen] = useState(false);
     const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
@@ -128,7 +131,7 @@ export function MDDashboard({
     useEffect(() => {
         if (user.role !== "md" && user.role !== "admin") return;
         if (user.md_status !== "approved") return;
-        if (user.md_onboarding_areas_seen) return;
+        if (areaOnboardingSeen) return;
         let cancelled = false;
         (async () => {
             const { count } = await supabase
@@ -142,7 +145,7 @@ export function MDDashboard({
         return () => {
             cancelled = true;
         };
-    }, [user.id, user.role, user.md_status, user.md_onboarding_areas_seen, supabase]);
+    }, [user.id, user.role, user.md_status, areaOnboardingSeen, supabase]);
 
     // 나를 찜한 유저 수 + 크레딧 잔액
     useEffect(() => {
@@ -424,6 +427,9 @@ export function MDDashboard({
                     </div>
                 </Link>
             </div>
+
+            {/* 내 연락처 (인스타 / 오픈채팅) — 대시보드에서 바로 열기/수정 */}
+            <MDContactCard user={user} />
 
             {/* Hot Deal 인라인 등록 영역 */}
             {hotdealInlineOpen && (
@@ -815,7 +821,10 @@ export function MDDashboard({
             {showAreaOnboarding && (
                 <AreaOnboardingSheet
                     userId={user.id}
-                    onClose={() => setShowAreaOnboarding(false)}
+                    onClose={() => {
+                        setAreaOnboardingSeen(true);
+                        setShowAreaOnboarding(false);
+                    }}
                 />
             )}
 

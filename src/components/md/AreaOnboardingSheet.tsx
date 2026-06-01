@@ -25,11 +25,14 @@ export function AreaOnboardingSheet({ userId, onClose }: AreaOnboardingSheetProp
     );
   };
 
+  // best-effort: DB 쓰기가 실패해도(예: 컬럼 미배포) 사용자를 모달에 가두지 않는다.
+  // 로컬 상태(MDDashboard)에서 같은 세션 재노출은 막고, 영구 저장은 컬럼 배포 후 정상화된다.
   const markSeen = async () => {
-    await supabase
+    const { error } = await supabase
       .from("users")
       .update({ md_onboarding_areas_seen: true })
       .eq("id", userId);
+    if (error) logError(error, "Mark MD onboarding seen");
   };
 
   const handleSave = async () => {
@@ -58,12 +61,9 @@ export function AreaOnboardingSheet({ userId, onClose }: AreaOnboardingSheetProp
 
   const handleLater = async () => {
     setSaving(true);
-    try {
-      await markSeen();
-      onClose();
-    } finally {
-      setSaving(false);
-    }
+    await markSeen();
+    setSaving(false);
+    onClose();
   };
 
   return (
