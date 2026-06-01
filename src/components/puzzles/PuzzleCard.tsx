@@ -2,14 +2,12 @@
 
 import { memo } from "react";
 import { useRouter } from "next/navigation";
-import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Puzzle, GenderPref, AgePref, VibePref, MusicPref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
-import { usePuzzleFavoritesContext } from "@/components/providers";
 
 interface PuzzleCardProps {
   puzzle: Puzzle;
@@ -177,11 +175,6 @@ export const PuzzleCard = memo(function PuzzleCard({
   const isNew = Date.now() - new Date(puzzle.created_at).getTime() < 6 * 60 * 60 * 1000;
   const isSelecting = puzzle.status === "selecting";
 
-  // MD가 퍼즐(모집 중)을 찜할 수 있음 — 인원 부족/예산 큰 거 트래킹
-  const { isFavoritedPuzzle, toggleFavoritePuzzle } = usePuzzleFavoritesContext();
-  const isFavorited = isFavoritedPuzzle(puzzle.id);
-  const canFavorite = isMd && isRecruitingParty;
-
   // 카드 전체 클릭 가능 — 내부 액션 버튼들은 stopPropagation으로 보호됨
   const isCardClickable = true;
 
@@ -227,16 +220,6 @@ export const PuzzleCard = memo(function PuzzleCard({
             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-bold">
               🚩
             </span>
-          )}
-          {canFavorite && (
-            <button
-              type="button"
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleFavoritePuzzle(puzzle.id); }}
-              className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${isFavorited ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25" : "bg-neutral-800/80 text-neutral-400 hover:bg-neutral-700 hover:text-amber-300"}`}
-              aria-label={isFavorited ? "알림 해제" : "알림받기"}
-            >
-              <Bell className={`w-3 h-3 ${isFavorited ? "fill-current" : ""}`} />
-            </button>
           )}
         </div>
       </div>

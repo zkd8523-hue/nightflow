@@ -821,14 +821,6 @@ export interface PuzzleContactUnlock {
   created_at: string;
 }
 
-export interface PuzzleInterest {
-  id: string;
-  user_id: string;
-  puzzle_id: string;
-  created_at: string;
-  puzzle?: Puzzle;
-}
-
 export interface PuzzleReport {
   id: string;
   puzzle_id: string;
