@@ -91,7 +91,7 @@ export function GuestSignMdCta() {
     >
       <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
       <p className="text-[12.5px] font-bold leading-snug flex-1 text-white">
-        요일별 혜택 입력하면 <span className="text-amber-400">노출이 강해져요</span>
+        <span className="text-amber-400">내 간판</span> 세팅하기
       </p>
       <ChevronRight className="w-4 h-4 shrink-0 text-neutral-500" />
     </Link>

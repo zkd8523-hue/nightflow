@@ -65,7 +65,7 @@ export function HotdealMdCta() {
             </>
           ) : (
             <>
-              다음 자리도 <span className="text-amber-400">미리 선점</span> 오픈 해두세요
+              <span className="text-amber-400">당일 특가 패키지</span>로 매출을 올려보세요!
             </>
           )}
         </p>

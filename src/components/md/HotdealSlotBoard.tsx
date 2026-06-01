@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, X, CheckCircle2, Clock, Plus } from "lucide-react";
+import { ChevronLeft, Loader2, X, Clock, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { HotdealBenefitsByDow, HotdealDow, HotdealTimeSlot } from "@/types/database";
@@ -288,7 +288,7 @@ export function HotdealSlotBoard({
         };
         setClientMySlots((prev) => [...(prev ?? []), newSlot]);
       }
-      toast.success("슬롯 차지 완료! 요일별 혜택을 입력해주세요");
+      toast.success("간판 차지 완료! 요일별 혜택을 입력해주세요");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -299,7 +299,7 @@ export function HotdealSlotBoard({
   };
 
   const handleRelease = async (slotId: string) => {
-    if (!window.confirm("이 슬롯을 해제할까요?")) return;
+    if (!window.confirm("이 간판을 해제할까요?")) return;
     setBusy(true);
     try {
       const { data, error } = await supabase.rpc("release_hotdeal_slot", {
@@ -311,7 +311,7 @@ export function HotdealSlotBoard({
         toast.error(result?.error || "해제 실패");
         return;
       }
-      toast.success("슬롯 해제됨");
+      toast.success("간판 해제됨");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -333,13 +333,15 @@ export function HotdealSlotBoard({
             대시보드
           </Link>
         )}
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-[20px] leading-none">🎫</span>
-          <h1 className="text-2xl font-black text-white tracking-tight">게스트 간판</h1>
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[20px] leading-none">🎫</span>
+            <h1 className="text-2xl font-black text-white tracking-tight">게스트 간판</h1>
+          </div>
+          <p className="text-[11px] text-amber-400 font-bold text-right leading-tight">
+            매주 월 18:00에<br />그 주 간판 오픈
+          </p>
         </div>
-        <p className="text-[12px] text-amber-400 font-bold mb-4">
-          매주 월 18:00에 그 주 슬롯 오픈
-        </p>
 
         {/* 4단계 시각 가이드 (사용자가 닫을 수 있음) */}
         {showGuide ? (
@@ -395,17 +397,19 @@ export function HotdealSlotBoard({
           </button>
         )}
 
-        {/* 이번 주 라벨 (사전 예약 없음 — 매주 월 18:00에 다음 주 슬롯 동시 오픈) */}
-        <div className="mb-4">
-          <div className="inline-flex flex-col items-start px-3 py-2 rounded-xl bg-white text-black">
-            <div className="text-[12px] font-bold">이번 주</div>
-            <div className="text-[10px] font-medium mt-0.5 opacity-70">{formatWeekRange(thisWeekISO)}</div>
+        {/* 이번 주 라벨 — 차지한 간판이 있으면 그 카드에 주차가 표시되므로 중복 숨김 */}
+        {!hasMyClaimThisWeek && (
+          <div className="mb-4">
+            <div className="inline-flex flex-col items-start px-3 py-2 rounded-xl bg-white text-black">
+              <div className="text-[12px] font-bold">이번 주</div>
+              <div className="text-[10px] font-medium mt-0.5 opacity-70">{formatWeekRange(thisWeekISO)}</div>
+            </div>
           </div>
-        </div>
+        )}
 
         {preOpen && (
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2.5 text-[12px] text-amber-300 mb-4">
-            이 주 슬롯은 매주 월요일 오후 6시에 오픈돼요.
+            이 주 간판은 매주 월요일 오후 6시에 오픈돼요.
           </div>
         )}
 
@@ -477,10 +481,10 @@ export function HotdealSlotBoard({
                     {claimedByOther
                       ? "차지됨"
                       : hasMyClaimThisWeek
-                      ? "주 1슬롯"
+                      ? "주 1간판"
                       : preOpen
                       ? "미오픈"
-                      : "슬롯 비었음"}
+                      : "자리 비었음"}
                   </button>
                 </div>
               );
@@ -506,22 +510,47 @@ function MyClaimedSection({
   onChanged: () => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const [drafts, setDrafts] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(() => {
+  const buildFromSlot = (): Record<HotdealDow, HotdealTimeSlot[]> => {
     const out = {} as Record<HotdealDow, HotdealTimeSlot[]>;
     for (const k of DOW_KEYS) {
       out[k] = normalizeDowSlots(slot.benefits_by_dow[k]);
     }
     return out;
-  });
+  };
+  const [drafts, setDrafts] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(buildFromSlot);
+  // "저장된 상태" 스냅샷 — prop(router.refresh)에 의존하지 않고 저장 성공 시 직접 갱신.
+  // dirty 판정은 draft vs 이 스냅샷으로만 한다 (prop은 refresh 타이밍이 불확실).
+  const [saved, setSaved] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(buildFromSlot);
   const [savingDow, setSavingDow] = useState<HotdealDow | null>(null);
   const todayISO = currentBusinessDayKstISO();
 
-  const savedSlotsFor = (dow: HotdealDow) => normalizeDowSlots(slot.benefits_by_dow[dow]);
+  // slot이 바뀌면(다른 슬롯 차지 등) draft/saved 모두 재동기화
+  const slotKey = slot.id + "|" + JSON.stringify(slot.benefits_by_dow);
+  useEffect(() => {
+    const fresh = buildFromSlot();
+    setDrafts(fresh);
+    setSaved(fresh);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotKey]);
+
+  const savedSlotsFor = (dow: HotdealDow) => saved[dow];
+  // 혜택 칩(benefits)도 순서 무관하게 비교해 토글만 해도 dirty로 잡는다.
+  const sameBenefits = (x?: string[], y?: string[]) => {
+    const ax = [...(x ?? [])].sort();
+    const ay = [...(y ?? [])].sort();
+    if (ax.length !== ay.length) return false;
+    return ax.every((v, i) => v === ay[i]);
+  };
   const isDirty = (dow: HotdealDow) => {
     const a = drafts[dow];
-    const b = savedSlotsFor(dow);
+    const b = saved[dow];
     if (a.length !== b.length) return true;
-    return a.some((s, i) => (s.until ?? null) !== (b[i].until ?? null) || s.text !== b[i].text);
+    return a.some(
+      (s, i) =>
+        (s.until ?? null) !== (b[i].until ?? null) ||
+        s.text !== b[i].text ||
+        !sameBenefits(s.benefits, b[i].benefits)
+    );
   };
 
   const updateSlot = (dow: HotdealDow, idx: number, patch: Partial<HotdealTimeSlot>) => {
@@ -608,6 +637,10 @@ function MyClaimedSection({
       }
       const verb = isClear ? "비워졌어요" : isUpdate ? "수정됨" : "저장됨";
       toast.success(`${DOW_FULL_LABELS[dow]} ${verb}`);
+      // 저장 성공 → 저장 스냅샷 + draft를 방금 보낸 값으로 동기화 (dirty 즉시 해제)
+      const normalized = normalizeDowSlots(cleaned.length > 0 ? cleaned : null);
+      setSaved((prev) => ({ ...prev, [dow]: normalized }));
+      setDrafts((prev) => ({ ...prev, [dow]: normalized }));
       onChanged();
     } catch (err) {
       console.error(err);
@@ -621,12 +654,14 @@ function MyClaimedSection({
     <div className="bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4 mb-4 space-y-3">
       <div className="flex items-baseline justify-between">
         <div>
-          <p className="text-[12px] text-amber-300 font-bold">내가 차지한 슬롯</p>
+          <p className="text-[12px] text-amber-300 font-bold">
+            내가 차지한 간판
+          </p>
           <p className="text-white text-[15px] font-black mt-0.5">
             {club?.name ?? "클럽"}
           </p>
           <p className="text-[10px] text-neutral-500 mt-0.5">
-            만료: {new Date(slot.expires_at).toLocaleDateString("ko-KR")}
+            {formatWeekRange(slot.week_start)}
           </p>
         </div>
         <button
@@ -719,10 +754,10 @@ function MyClaimedSection({
 
                         {/* 우측 액션: 첫 줄 = 저장 / 그 외 = 삭제(또는 자리) */}
                         {isFirst && !isPast ? (() => {
-                          // 3상태로 명확히 구분:
-                          // 1) dirty  → amber "저장"(변경 내용 저장) / "비움"(텍스트 다 지움) (활성, 강조)
-                          // 2) 저장됨+변경없음 → emerald "저장됨" 체크 (비활성)
-                          // 3) 빈 상태(입력·저장 모두 없음) → 회색 "저장" (비활성)
+                          // 수정사항이 있을 때만 amber 활성:
+                          // - dirty → amber "저장"(변경 저장) / "비움"(텍스트 다 지움) (활성)
+                          // - 변경 없음 + 저장된 값 있음 → 회색 "저장됨" (비활성)
+                          // - 변경 없음 + 빈 상태 → 회색 "저장" (비활성)
                           const canSave = dirty && (hasAnyText || savedExists);
                           const label = dirty
                             ? hasAnyText
@@ -739,16 +774,10 @@ function MyClaimedSection({
                             className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-black inline-flex items-center gap-1 transition-colors ${
                               canSave
                                 ? "bg-amber-500 text-black hover:bg-amber-400"
-                                : savedExists
-                                ? "bg-transparent text-emerald-400 border border-emerald-500/40 cursor-default"
                                 : "bg-neutral-800 text-neutral-600 cursor-not-allowed"
                             }`}
                           >
-                            {saving ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
-                            ) : !dirty && savedExists ? (
-                              <CheckCircle2 className="w-3 h-3" />
-                            ) : null}
+                            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                             {label}
                           </button>
                           );

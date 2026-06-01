@@ -183,11 +183,11 @@ export function MDContactCard({ user }: Props) {
                 href={openChatUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-[#FEE500] hover:bg-[#FDD835] transition-colors text-[13px] font-bold text-[#3C1E1E]"
+                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-neutral-800 hover:bg-neutral-700 transition-colors text-[13px] font-bold text-white"
               >
-                <MessageCircle className="w-4 h-4" />
-                <span>오픈채팅 열기</span>
-                <ExternalLink className="w-3 h-3 shrink-0" />
+                <MessageCircle className="w-4 h-4 text-[#FEE500]" />
+                <span>오픈채팅 등록됨</span>
+                <ExternalLink className="w-3 h-3 text-neutral-500 shrink-0" />
               </a>
             ) : (
               <button

@@ -477,7 +477,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
           <h1 className="text-2xl font-black text-white tracking-tight">Hot Deal 등록</h1>
         </div>
         <p className="text-[12px] text-neutral-500 mb-4 leading-relaxed">
-          오늘의 특가 상품을 올리고 매출을 올려보세요!
+          당일 특가 패키지로 매출을 올려보세요!
         </p>
 
         {!showForm && (

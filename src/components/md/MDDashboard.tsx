@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { MDAuctionCard } from "./MDAuctionCard";
-import { MDContactCard } from "./MDContactCard";
 import { AcceptedPuzzleVisitCard } from "./AcceptedPuzzleVisitCard";
 import { AreaOnboardingSheet } from "./AreaOnboardingSheet";
 import { HotdealNowManager } from "./HotdealNowManager";
@@ -122,7 +121,7 @@ export function MDDashboard({
     // prop은 서버 스냅샷이라 markSeen 후에도 갱신 안 됨 → 로컬 상태로 "봤음"을 즉시 반영해 재노출 차단
     const [areaOnboardingSeen, setAreaOnboardingSeen] = useState(user.md_onboarding_areas_seen);
     const [hotdealSheetOpen, setHotdealSheetOpen] = useState(false);
-    const [hotdealInlineOpen, setHotdealInlineOpen] = useState(false);
+    const [hotdealInlineOpen, setHotdealInlineOpen] = useState(true);
     const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
     const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(false);
     const supabase = createClient();
@@ -304,7 +303,7 @@ export function MDDashboard({
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                         <h1 className="text-xl font-black tracking-tight">{user.display_name || user.name} 파트너님</h1>
-                        <p className="text-neutral-500 text-[13px] font-medium">오늘 밤도 파이팅이에요!</p>
+                        <p className="text-neutral-500 text-[13px] font-medium">오늘밤도 파이팅이에요!</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Link href="/profile" className="flex items-center gap-1.5 text-neutral-500 hover:text-white transition-colors">
@@ -427,9 +426,6 @@ export function MDDashboard({
                     </div>
                 </Link>
             </div>
-
-            {/* 내 연락처 (인스타 / 오픈채팅) — 대시보드에서 바로 열기/수정 */}
-            <MDContactCard user={user} />
 
             {/* Hot Deal 인라인 등록 영역 */}
             {hotdealInlineOpen && (

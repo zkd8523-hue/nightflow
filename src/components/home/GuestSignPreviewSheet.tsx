@@ -149,7 +149,7 @@ export function GuestSignPreviewSheet({ open, onOpenChange }: Props) {
           </Link>
 
           <p className="text-[11px] text-neutral-600 text-center">
-            매주 월 18:00 새 슬롯 오픈 · 1MD 1클럽 1주 · 무료
+            매주 월 18:00 새 간판 오픈 · 1MD 1클럽 1주 · 무료
           </p>
         </div>
       </SheetContent>

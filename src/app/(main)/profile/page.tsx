@@ -182,7 +182,7 @@ export default function ProfilePage() {
           >
             <ArrowLeft className="w-5 h-5 text-neutral-400" />
           </button>
-          <h1 className="text-xl font-black text-white">내 정보</h1>
+          <h1 className="text-xl font-black text-white">연락처 설정</h1>
         </div>
 
         {/* 제재 상태 배너 */}
@@ -367,6 +367,9 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* 내 깃발 + 찜 목록 — 일반 유저 전용 (MD/admin은 숨김) */}
+        {user.role !== "md" && user.role !== "admin" && (
+        <>
         {/* 내 깃발 */}
         <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
           <div className="flex items-center justify-between mb-4">
@@ -460,6 +463,8 @@ export default function ProfilePage() {
           </div>
           <ChevronRight className="w-5 h-5 text-neutral-600" />
         </Link>
+        </>
+        )}
 
         {/* 일반 유저용 카카오 오픈채팅 등록 (MD는 위 MD 정보 섹션에서 관리) */}
         {user.role !== "md" && user.role !== "admin" && (
