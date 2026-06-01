@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowRight, Building2, Smartphone, MapPin, Map, MessageCircle, Instagram, Phone } from "lucide-react";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
-import { PhoneVerificationField } from "./PhoneVerificationField";
+// 휴대폰 본인인증은 로그인/가입 단계에서 이미 완료되므로 MD 신청에서는 생략
 // Phone은 연락 수단 토글에서 사용
 import type { User, ContactMethodType } from "@/types/database";
 import dynamic from "next/dynamic";
@@ -28,7 +28,6 @@ const formSchema = z.object({
     phone: z.string()
         .min(10, "전화번호를 입력해주세요")
         .regex(/^01[016789]\d{7,8}$/, "올바른 휴대폰 번호를 입력해주세요 (예: 01012345678)"),
-    phone_verified: z.literal(true, { message: "휴대폰 인증을 완료해주세요" }),
     instagram: z.string()
         .min(1, "인스타그램 아이디를 입력해주세요")
         .max(30, "인스타그램 아이디는 30자 이하입니다")
@@ -62,7 +61,6 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
         defaultValues: {
             display_name: initialUser.display_name || "",
             phone: initialUser.phone || "",
-            phone_verified: false as unknown as true,
             instagram: initialUser.instagram || "",
             area: [],
             club_name: initialUser.verification_club_name || "",
@@ -137,25 +135,24 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                             )}
                         </div>
 
-                        {/* Phone + 본인인증 */}
-                        <PhoneVerificationField
-                            value={form.watch("phone")}
-                            onChange={(next) => {
-                                form.setValue("phone", next, { shouldValidate: true });
-                                if (form.getValues("phone_verified")) {
-                                    form.setValue("phone_verified", false as unknown as true, { shouldValidate: true });
-                                }
-                            }}
-                            verified={form.watch("phone_verified") === true}
-                            onVerifiedChange={(next) => {
-                                form.setValue("phone_verified", next as unknown as true, { shouldValidate: true });
-                            }}
-                            purpose="md_apply"
-                            errorMessage={
-                                form.formState.errors.phone?.message?.toString() ??
-                                form.formState.errors.phone_verified?.message?.toString()
-                            }
-                        />
+                        {/* 휴대폰 번호 (본인인증은 로그인/가입 단계에서 완료) */}
+                        <div className="space-y-2">
+                            <Label className="text-neutral-500 text-xs font-bold uppercase">휴대폰 번호</Label>
+                            <Input
+                                value={form.watch("phone")}
+                                onChange={(e) => {
+                                    const next = e.target.value.replace(/[^0-9]/g, "");
+                                    form.setValue("phone", next, { shouldValidate: true });
+                                }}
+                                inputMode="numeric"
+                                maxLength={11}
+                                placeholder="01012345678"
+                                className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
+                            />
+                            {form.formState.errors.phone && (
+                                <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.phone?.message?.toString()}</p>
+                            )}
+                        </div>
 
                         {/* Instagram ID (Required) */}
                         <div className="space-y-2">
@@ -405,7 +402,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                 <Button
                     type="submit"
-                    disabled={loading || form.watch("phone_verified") !== true || !form.watch("club_info_consent")}
+                    disabled={loading || !form.watch("club_info_consent")}
                     className="w-full h-14 bg-white text-black font-black text-lg hover:bg-neutral-200 rounded-2xl flex items-center justify-center gap-2 group transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading ? "신청 정보를 전송 중..." : (

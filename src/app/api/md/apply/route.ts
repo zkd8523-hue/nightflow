@@ -75,35 +75,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4.1 SMS OTP 본인인증 검증 (10분 윈도우 + user_id 매칭으로 도용 차단)
-    {
-      const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      const { data: verified, error: verifyErr } = await supabaseAdmin
-        .from("phone_verifications")
-        .select("id")
-        .eq("phone", phone)
-        .eq("user_id", user.id)
-        .not("verified_at", "is", null)
-        .gte("verified_at", tenMinAgo)
-        .order("verified_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (verifyErr) {
-        logger.error("phone_verifications lookup error:", verifyErr);
-        return NextResponse.json(
-          { error: "본인인증 확인 중 오류가 발생했습니다. 다시 시도해주세요." },
-          { status: 500 }
-        );
-      }
-
-      if (!verified) {
-        return NextResponse.json(
-          { error: "phone_not_verified" },
-          { status: 400 }
-        );
-      }
-    }
+    // 휴대폰 본인인증은 로그인/가입 단계에서 이미 완료되므로 MD 신청에서는 재검증하지 않음.
 
     // Instagram 서버 검증
     const cleanInstagram = instagram.replace(/^@/, "");
