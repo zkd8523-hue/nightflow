@@ -428,7 +428,9 @@ export function PuzzleList({
               .filter(p => now - new Date(p.created_at).getTime() < RECENT_THRESHOLD_MS)
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             const recentTitle = "방금 꽂힌 깃발";
-            const rest = filteredPuzzles;
+            // "방금 꽂힌 깃발"에 노출된 깃발은 아래 날짜별 전체 목록에서 제외 (중복 방지)
+            const recentIds = new Set(recentPuzzles.map(p => p.id));
+            const rest = filteredPuzzles.filter(p => !recentIds.has(p.id));
 
             const recentDeadline = getPuzzleGroupDeadline(recentPuzzles);
 
