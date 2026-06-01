@@ -487,29 +487,33 @@ export function ClubDetailContent({
               onClick={() => setIsMapOpen(true)}
               className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-white transition-colors group w-full text-left"
             >
-              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+              <MapPin className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+              <span className="sr-only">{club.name} 주소: </span>
               <span className="truncate">{clubAddress}</span>
-              <ExternalLink className="w-3 h-3 flex-shrink-0 text-neutral-500 group-hover:text-white" />
+              <ExternalLink className="w-3 h-3 flex-shrink-0 text-neutral-500 group-hover:text-white" aria-hidden="true" />
             </button>
           )}
 
           {clubOperatingHours && (
             <div className="flex items-center gap-1.5 text-[12px] text-neutral-400">
-              <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+              <Clock className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+              <span className="sr-only">{club.name} 영업시간: </span>
               <span>{clubOperatingHours}</span>
             </div>
           )}
 
           {clubEntryFeeDetail && (
             <div className="flex items-center gap-1.5 text-[12px] text-neutral-400">
-              <Ticket className="w-3.5 h-3.5 flex-shrink-0" />
+              <Ticket className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+              <span className="sr-only">{club.name} 입장료: </span>
               <span>{clubEntryFeeDetail}</span>
             </div>
           )}
 
           {clubDresscode && (
             <div className="flex items-center gap-1.5 text-[12px] text-neutral-400">
-              <Shirt className="w-3.5 h-3.5 flex-shrink-0" />
+              <Shirt className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+              <span className="sr-only">{club.name} 드레스코드: </span>
               <span>{clubDresscode}</span>
             </div>
           )}
@@ -521,7 +525,8 @@ export function ClubDetailContent({
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-pink-400 transition-colors mt-1"
             >
-              <Instagram className="w-3.5 h-3.5" />
+              <Instagram className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="sr-only">{club.name} 인스타그램: </span>
               @{clubInstagram}
             </a>
           )}

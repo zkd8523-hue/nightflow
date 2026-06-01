@@ -172,6 +172,44 @@ export default async function ClubDetailPage({ params }: PageProps) {
   }
 
   const aliases = getClubAliases(id);
+  // operating_hours 자유 텍스트(예: "금/토 22:00-05:00")를 OpeningHoursSpecification으로
+  // 시도. 정규식 매칭 실패하면 description으로 폴백.
+  const DOW_TO_SCHEMA: Record<string, string> = {
+    "월": "Monday",
+    "화": "Tuesday",
+    "수": "Wednesday",
+    "목": "Thursday",
+    "금": "Friday",
+    "토": "Saturday",
+    "일": "Sunday",
+  };
+  function parseOperatingHours(raw: string | null | undefined) {
+    if (!raw) return null;
+    // 예: "금/토 22:00-05:00", "금,토 22:00-05:00"
+    const match = raw.match(
+      /([월화수목금토일]([\s\/,·]+[월화수목금토일])*)\s*(\d{1,2}):(\d{2})\s*[-~]\s*(\d{1,2}):(\d{2})/
+    );
+    if (!match) return null;
+    const dowPart = match[1].replace(/[\s\/,·]+/g, "");
+    const days = Array.from(dowPart).filter((c) => DOW_TO_SCHEMA[c]);
+    if (days.length === 0) return null;
+    const opens = `${match[3].padStart(2, "0")}:${match[4]}`;
+    const closes = `${match[5].padStart(2, "0")}:${match[6]}`;
+    return {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: days.map((d) => DOW_TO_SCHEMA[d]),
+      opens,
+      closes,
+    };
+  }
+  const openingHoursSpec = parseOperatingHours(club.operating_hours);
+
+  const sameAsList: string[] = [];
+  if (club.instagram) {
+    const ig = String(club.instagram).replace(/^@/, "").trim();
+    if (ig) sameAsList.push(`https://www.instagram.com/${ig}`);
+  }
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NightClub",
@@ -179,15 +217,23 @@ export default async function ClubDetailPage({ params }: PageProps) {
     name: club.name,
     ...(aliases.length > 0 ? { alternateName: aliases } : {}),
     url: `https://nightflow.kr/clubs/${id}`,
-    ...(club.area
+    ...(club.thumbnail_url ? { image: club.thumbnail_url } : {}),
+    ...(club.area || club.address
       ? {
           address: {
             "@type": "PostalAddress",
-            addressLocality: club.area,
+            ...(club.address ? { streetAddress: club.address } : {}),
+            ...(club.area ? { addressLocality: club.area } : {}),
             addressCountry: "KR",
           },
         }
       : {}),
+    ...(openingHoursSpec
+      ? { openingHoursSpecification: openingHoursSpec }
+      : club.operating_hours
+        ? { disambiguatingDescription: String(club.operating_hours) }
+        : {}),
+    ...(sameAsList.length > 0 ? { sameAs: sameAsList } : {}),
   };
 
   // 별칭을 본문에 자연 문장으로 노출 ("에이스", "강남 에이스", "버뮤다" 등)
