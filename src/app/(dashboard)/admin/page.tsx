@@ -12,6 +12,7 @@ import {
   Sparkles,
   Ban,
   Megaphone,
+  CalendarCheck,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -233,6 +234,15 @@ export default async function AdminDashboardPage() {
       color: "text-green-500",
       bgColor: "bg-green-500/10",
       href: "/admin/auctions",
+    },
+    {
+      label: "게스트 간판 배정",
+      value: "관리",
+      icon: CalendarCheck,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+      badge: null,
+      href: "/admin/hotdeal-slots",
     },
     {
       label: "게스트 간판 클릭",
