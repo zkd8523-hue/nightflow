@@ -275,7 +275,7 @@ export function HomeContent({
   // 첫 방문 시 캐러셀 위 인라인 가이드 (Tip 박스 자리). 닫으면 영구 숨김.
   const [showTopGuide, setShowTopGuide] = useState(false);
 
-  // Tip 박스 콘텐츠 로테이션 (기본 메시지 ↔ 최근 매치 보기)
+  // Tip 박스 콘텐츠 로테이션 (기본 메시지 ↔ 매치 오퍼 보기)
   const [tipRotation, setTipRotation] = useState(0);
   const [tipResetKey, setTipResetKey] = useState(0);
   const [tipDragOffset, setTipDragOffset] = useState(0);
@@ -765,11 +765,11 @@ export function HomeContent({
       <Sheet open={showMatchedModal} onOpenChange={setShowMatchedModal}>
         <SheetContent
           side="bottom"
-          className="h-auto bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pt-5 pb-8 max-h-[80vh] overflow-y-auto"
+          className="h-auto bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pt-5 pb-8 max-h-[80vh] overflow-y-auto gap-2"
         >
-          <SheetHeader className="text-left mb-1">
-            <SheetTitle className="text-white text-[18px] font-black flex items-center gap-2">
-              🎉 최근 매치 깃발
+          <SheetHeader className="text-left p-0 gap-0 mb-1">
+            <SheetTitle className="text-white text-[24px] font-black tracking-tight leading-tight">
+              😎 이 정도는 받아야죠
             </SheetTitle>
           </SheetHeader>
           {recentMatchedPuzzle && (
@@ -848,11 +848,21 @@ export function HomeContent({
                   </div>
                 )}
               </div>
+              {/* 인스타 일반 예약 대비 추가 혜택 — 이 쇼케이스 매치 전용 하드코딩 사실 */}
+              <div className="flex items-center justify-center gap-2 rounded-2xl bg-amber-500/20 border border-amber-400/40 px-4 py-3.5">
+                <span className="text-[20px] leading-none">🎉</span>
+                <p className="text-[16px] font-black text-amber-200 leading-snug break-keep text-center tracking-tight">
+                  <span className="text-shimmer-gold">
+                    인스타 예약보다
+                  </span>{" "}
+                  <span className="text-amber-300">30만원치 더</span> 받았어요
+                </p>
+              </div>
               <div className="text-center space-y-1">
                 <Link
                   href={user ? "/flags/new" : "/login?redirect=/flags/new"}
                   onClick={() => setShowMatchedModal(false)}
-                  className="flex items-center justify-center w-full h-12 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
+                  className="flex items-center justify-center w-full h-11 bg-neutral-800 hover:bg-neutral-700 active:scale-[0.98] text-neutral-200 font-bold text-[14px] rounded-2xl transition-all"
                 >
                   ⛳ 나도 깃발꽂기
                 </Link>
@@ -1151,7 +1161,7 @@ export function HomeContent({
                           onClick={() => setShowMatchedModal(true)}
                           className="w-full shrink-0 text-[13.5px] text-neutral-100 font-bold leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
                         >
-                          🎉 최근 매치 보기 →
+                          어떤 오퍼 받았는지 엿보기 👈
                         </button>
                       </div>
                     </div>
@@ -1417,7 +1427,7 @@ export function HomeContent({
           <div className="text-center -mt-20 pb-3 relative z-10">
             <p className="text-[14.5px] text-neutral-200 font-semibold mb-1">
               {currentTab === "puzzle"
-                ? "최고의 밤을 선택하세요."
+                ? "최고의 테이블을 잡으세요."
                 : "3초만에 로그인하고 입찰하기"}
             </p>
             <Link href={currentTab === "puzzle" ? (user ? "/flags/new" : "/login?redirect=/flags/new") : "/login"}>

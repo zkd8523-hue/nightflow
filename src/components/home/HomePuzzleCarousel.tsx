@@ -110,7 +110,7 @@ export function HomePuzzleCarousel({
           <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
             <div className="text-center w-full mt-8">
               <p className="text-[14.5px] text-neutral-200 font-semibold mb-0.5">
-                최고의 밤을 선택하세요.
+                최고의 테이블을 잡으세요.
               </p>
               <Link href={newFlagHref}>
                 <Button className="h-12 pl-7 pr-9 bg-amber-500 text-black font-black text-[15px] rounded-full hover:bg-amber-400">

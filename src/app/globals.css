@@ -230,6 +230,26 @@
     100% { background-position: 200% 0; }
   }
 
+  /* 그라데이션 텍스트 위에 밝은 하이라이트가 흐르는 깜빡임 */
+  .text-shimmer,
+  .text-shimmer-gold {
+    background-image: linear-gradient(
+      110deg,
+      var(--shimmer-base) 0%,
+      var(--shimmer-base) 35%,
+      var(--shimmer-hi) 50%,
+      var(--shimmer-base) 65%,
+      var(--shimmer-base) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmer 2.2s linear infinite;
+  }
+  .text-shimmer { --shimmer-base: #34d399; --shimmer-hi: #ecfdf5; }
+  .text-shimmer-gold { --shimmer-base: #f59e0b; --shimmer-hi: #ffffff; }
+
   .won-card-border {
     position: relative;
     isolation: isolate;
