@@ -180,7 +180,7 @@ export const PuzzleCard = memo(function PuzzleCard({
 
   return (
     <div
-      className={`relative bg-[#2A2A2E] rounded-2xl p-3 flex flex-col gap-2 h-full ${isCardClickable ? "cursor-pointer hover:bg-neutral-800/30 transition-colors" : ""}`}
+      className={`relative bg-[#1C1C1E] rounded-2xl p-3 flex flex-col gap-2 h-full ${isCardClickable ? "cursor-pointer active:scale-[0.98] transition-all" : ""}`}
       onClick={isCardClickable ? () => router.push(`/flags/${puzzle.id}`) : undefined}
     >
       {isNew && !hideNewBadge && (

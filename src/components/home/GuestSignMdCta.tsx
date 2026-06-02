@@ -70,13 +70,13 @@ export function GuestSignMdCta() {
         <button
           type="button"
           onClick={() => setPreviewOpen(true)}
-          className="w-full flex items-center gap-2 rounded-2xl px-4 py-3 bg-purple-500/15 border border-purple-500/40 active:scale-[0.99] transition-transform text-left"
+          className="w-full flex items-center gap-2 rounded-2xl px-4 py-3 bg-amber-500/15 border border-amber-500/40 active:scale-[0.99] transition-transform text-left"
         >
-          <ArrowUp className="w-4 h-4 text-purple-400 shrink-0 animate-bounce" />
-          <p className="text-[12.5px] font-bold leading-snug flex-1 text-purple-50">
-            여기를 <span className="text-purple-400">내 게스트 광고판</span>으로 쓰고 싶다면?
+          <ArrowUp className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+          <p className="text-[12.5px] font-bold leading-snug flex-1 text-amber-50">
+            여기를 <span className="text-amber-400">내 게스트 광고판</span>으로 쓰고 싶다면?
           </p>
-          <ChevronRight className="w-4 h-4 shrink-0 text-purple-400" />
+          <ChevronRight className="w-4 h-4 shrink-0 text-amber-400" />
         </button>
         <GuestSignPreviewSheet open={previewOpen} onOpenChange={setPreviewOpen} />
       </>
