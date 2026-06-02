@@ -1261,20 +1261,24 @@ export function HomeContent({
         </div>
 
         {/* 오늘 어디갈래? + HOT DEAL 섹션 + 이하 전체 배경 */}
-        <div className="-mx-4 px-4 pt-3 pb-24 bg-[#1A1A1E]">
+        {/* pb는 <main>의 pb-16(BottomNav 가림 방지)과 별개로, 섹션 끝과 푸터 사이 최소 간격만. */}
+        <div className="-mx-4 px-4 pt-3 pb-6 bg-[#1A1A1E]">
           <ClubBenefitSection />
-          {/* MD 전용 게스트 간판 행동 유도 CTA */}
-          <div className="mt-3">
-            <GuestSignMdCta />
-          </div>
+          {/* MD 전용 게스트 간판 행동 유도 CTA — 일반 유저에겐 null이라 래퍼도 렌더 안 함 */}
+          {isMdOrAdmin && (
+            <div className="mt-3">
+              <GuestSignMdCta />
+            </div>
+          )}
           <div className="mt-6">
             <HotdealHomeSection />
           </div>
           {/* MD 전용 행동 유도 CTA (오늘 어디갈래? ↔ Hot Deal Tonight 사이) */}
-          <div className="mt-3">
-            <HotdealMdCta />
-          </div>
-
+          {isMdOrAdmin && (
+            <div className="mt-3">
+              <HotdealMdCta />
+            </div>
+          )}
         </div>
 
         {/* MD 파트너 승인 축하 Sheet, 깃발 CTA Sheet는 풀 모드와 공유 */}

@@ -132,7 +132,7 @@ export default async function HomePage() {
     n ? `${Math.round(n / 10000)}만원` : "";
 
   return (
-    <div className="container mx-auto max-w-lg px-4 py-4 mb-20">
+    <div className="container mx-auto max-w-lg px-4 py-4">
       <h1 className="sr-only">
         나플 - 강남·홍대 클럽 테이블 예약 (나이트플로우)
       </h1>

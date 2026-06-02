@@ -67,7 +67,7 @@ export default function MainLayout({
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen bg-[#0B0A11] flex flex-col">
+      <div className="bg-[#0B0A11] flex flex-col">
         {!isChromeless && (
           isChatPage ? (
             <Header
@@ -79,7 +79,7 @@ export default function MainLayout({
             <Header />
           )
         )}
-        <main className={`flex-1 ${isChromeless ? "" : "pb-16"}`}>{children}</main>
+        <main className={isChromeless ? "" : "pb-16"}>{children}</main>
         {!isChromeless && <Footer />}
         {!isChromeless && <BottomNav />}
         <SelectingFlagAlertSheet />

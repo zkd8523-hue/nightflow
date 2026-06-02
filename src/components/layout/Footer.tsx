@@ -9,7 +9,7 @@ export function Footer() {
 
   return (
     <footer className="border-t border-neutral-800 bg-neutral-950">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 pt-5 pb-8">
         <div className="flex flex-col items-center gap-4 text-sm text-neutral-400">
           <Link
             href="/vision"
