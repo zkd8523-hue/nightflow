@@ -217,7 +217,7 @@ export const PuzzleCard = memo(function PuzzleCard({
               🧩
             </span>
           ) : (
-            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[14px]" style={{lineHeight: 1, paddingLeft: '3px', paddingBottom: '3px'}}>
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[11px]" style={{lineHeight: 1, paddingLeft: '2px', paddingBottom: '2px'}}>
               🚩
             </span>
           )}
