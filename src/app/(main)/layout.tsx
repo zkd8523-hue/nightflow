@@ -67,7 +67,7 @@ export default function MainLayout({
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen bg-[#0A0810] flex flex-col">
+      <div className="min-h-screen bg-[#0B0A11] flex flex-col">
         {!isChromeless && (
           isChatPage ? (
             <Header
