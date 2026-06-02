@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronLeft, MousePointerClick, Instagram, MessageCircle, Copy, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
+import { HotdealClicksTable } from "./HotdealClicksTable";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,33 @@ interface SummaryRow {
   last_clicked_at: string | null;
 }
 
+interface RawClick {
+  slot_id: string;
+  user_id: string | null;
+  click_type: string;
+  clicked_at: string;
+  users: { display_name: string | null; name: string | null; instagram: string | null } | { display_name: string | null; name: string | null; instagram: string | null }[] | null;
+}
+
+interface SlotClicker {
+  userId: string;
+  name: string;
+  instagram: string | null;
+  types: Set<string>;
+  count: number;
+  lastClickedAt: string;
+}
+
+// 클라이언트로 넘길 직렬화 가능한 형태 (Set → string[])
+export interface SlotClickerSerial {
+  userId: string;
+  name: string;
+  instagram: string | null;
+  types: string[];
+  count: number;
+  lastClickedAt: string;
+}
+
 function getKstThisMonday(): string {
   const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const dow = kstNow.getUTCDay(); // 0=일~6=토
@@ -34,16 +62,6 @@ function getKstThisMonday(): string {
   return monday.toISOString().slice(0, 10);
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "-";
-  const d = new Date(iso);
-  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
-  const mm = String(kst.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(kst.getUTCDate()).padStart(2, "0");
-  const hh = String(kst.getUTCHours()).padStart(2, "0");
-  const mi = String(kst.getUTCMinutes()).padStart(2, "0");
-  return `${mm}/${dd} ${hh}:${mi}`;
-}
 
 export default async function AdminHotdealClicksPage({
   searchParams,
@@ -84,6 +102,63 @@ export default async function AdminHotdealClicksPage({
     .order("total_clicks", { ascending: false });
 
   const rows = (rowsData ?? []) as SummaryRow[];
+
+  // 슬롯별 클릭 유저 상세 (행 펼침용) — 로그인 유저만 신원 표시, 비로그인은 익명 집계
+  const slotIds = rows.map((r) => r.slot_id);
+  const clickersBySlot: Record<string, SlotClicker[]> = {};
+  let anonBySlot: Record<string, number> = {};
+  if (slotIds.length > 0) {
+    const { data: clickRows } = await supabase
+      .from("hotdeal_slot_contact_clicks")
+      .select("slot_id, user_id, click_type, clicked_at, users:user_id(display_name, name, instagram)")
+      .in("slot_id", slotIds)
+      .order("clicked_at", { ascending: false });
+
+    // 유저별로 집계: 마지막 클릭 시각 + 클릭 타입 모음
+    const agg: Record<string, Record<string, SlotClicker>> = {};
+    const anon: Record<string, number> = {};
+    for (const c of (clickRows ?? []) as unknown as RawClick[]) {
+      if (!c.user_id) {
+        anon[c.slot_id] = (anon[c.slot_id] ?? 0) + 1;
+        continue;
+      }
+      const bySlot = (agg[c.slot_id] ??= {});
+      const u = Array.isArray(c.users) ? c.users[0] : c.users;
+      const existing = bySlot[c.user_id];
+      if (existing) {
+        existing.types.add(c.click_type);
+        existing.count += 1;
+      } else {
+        bySlot[c.user_id] = {
+          userId: c.user_id,
+          name: u?.display_name || u?.name || "유저",
+          instagram: u?.instagram ?? null,
+          types: new Set([c.click_type]),
+          count: 1,
+          lastClickedAt: c.clicked_at, // 정렬 desc라 첫 등장이 가장 최근
+        };
+      }
+    }
+    for (const sid of Object.keys(agg)) {
+      clickersBySlot[sid] = Object.values(agg[sid]);
+    }
+    anonBySlot = anon;
+  }
+
+  // Set → 배열로 직렬화 (클라이언트 컴포넌트 전달용), 최근 클릭순 정렬
+  const clickersSerial: Record<string, SlotClickerSerial[]> = {};
+  for (const sid of Object.keys(clickersBySlot)) {
+    clickersSerial[sid] = clickersBySlot[sid]
+      .map((c) => ({
+        userId: c.userId,
+        name: c.name,
+        instagram: c.instagram,
+        types: Array.from(c.types),
+        count: c.count,
+        lastClickedAt: c.lastClickedAt,
+      }))
+      .sort((a, b) => b.lastClickedAt.localeCompare(a.lastClickedAt));
+  }
 
   const totals = rows.reduce(
     (acc, r) => {
@@ -182,69 +257,11 @@ export default async function AdminHotdealClicksPage({
         </div>
 
         <Card className="bg-[#1C1C1E] border-neutral-800 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-neutral-900 text-neutral-500 text-[11px] uppercase tracking-wider">
-                <tr>
-                  <th className="text-left px-4 py-3 font-bold">클럽</th>
-                  <th className="text-left px-4 py-3 font-bold">지역</th>
-                  <th className="text-left px-4 py-3 font-bold">담당 MD</th>
-                  <th className="text-right px-4 py-3 font-bold">인스타</th>
-                  <th className="text-right px-4 py-3 font-bold">오픈채팅</th>
-                  <th className="text-right px-4 py-3 font-bold">문의 복사</th>
-                  <th className="text-right px-4 py-3 font-bold">합계</th>
-                  <th className="text-right px-4 py-3 font-bold">유니크</th>
-                  <th className="text-right px-4 py-3 font-bold">마지막 클릭</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-neutral-800">
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="text-center py-12 text-neutral-500">
-                      해당 주차에 등록된 게스트 간판이 없습니다.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((r) => (
-                    <tr key={r.slot_id} className="hover:bg-neutral-900/50">
-                      <td className="px-4 py-3 font-bold text-white">{r.club_name ?? "-"}</td>
-                      <td className="px-4 py-3 text-neutral-400">{r.club_area ?? "-"}</td>
-                      <td className="px-4 py-3 text-neutral-300">
-                        {r.md_name ?? "-"}
-                        {r.md_instagram && (
-                          <span className="text-neutral-500 text-[11px] ml-1">@{r.md_instagram}</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-pink-300">
-                        {Number(r.instagram_clicks || 0).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-green-300">
-                        {Number(r.openchat_clicks || 0).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-amber-300">
-                        {Number(r.copy_message_clicks || 0).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-3 text-right font-black text-white">
-                        {Number(r.total_clicks || 0).toLocaleString()}
-                      </td>
-                      <td
-                        className="px-4 py-3 text-right font-bold text-sky-300"
-                        title={`로그인 유저 ${r.unique_users}명${r.unique_clickers > r.unique_users ? " + 비로그인" : ""}`}
-                      >
-                        {Number(r.unique_users || 0).toLocaleString()}
-                        {Number(r.unique_clickers || 0) > Number(r.unique_users || 0) && (
-                          <span className="text-neutral-500 text-[10px] ml-0.5">+익명</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right text-neutral-500 text-[11px]">
-                        {formatDate(r.last_clicked_at)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <HotdealClicksTable
+            rows={rows}
+            clickersBySlot={clickersSerial}
+            anonBySlot={anonBySlot}
+          />
         </Card>
       </div>
     </div>
