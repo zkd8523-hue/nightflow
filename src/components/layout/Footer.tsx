@@ -11,13 +11,13 @@ export function Footer() {
     <footer className="border-t border-neutral-800 bg-neutral-950">
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col items-center gap-4 text-sm text-neutral-400">
-          <Link href="/" className="text-base font-bold text-white">
-            나이트플로우 <span className="text-neutral-500">(나플)</span>
+          <Link
+            href="/vision"
+            className="text-base font-bold text-white tracking-wide hover:text-neutral-300 transition-colors"
+          >
+            Vision
           </Link>
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
-            <Link href="/about" className="hover:text-white transition-colors">
-              About Us
-            </Link>
             <Link href="/terms" className="hover:text-white transition-colors">
               이용약관
             </Link>

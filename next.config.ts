@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/puzzles/:path*", destination: "/flags/:path*", permanent: true },
+      { source: "/about", destination: "/vision", permanent: true },
     ];
   },
   images: {

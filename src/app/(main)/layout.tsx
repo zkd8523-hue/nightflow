@@ -57,13 +57,19 @@ export default function MainLayout({
     await new Promise((resolve) => setTimeout(resolve, 800));
   };
 
+  // Vision은 풀스크린 매니페스토 — 헤더/푸터/바텀네비 없이 단독 노출
+  const isVisionPage = pathname === "/vision";
+
+  // 헤더/푸터/바텀네비를 숨기는 풀스크린 모드 (클럽지도 + Vision)
+  const isChromeless = isClubMapView || isVisionPage;
+
   return (
     <PullToRefresh onRefresh={handleRefresh}>
       <div className="min-h-screen bg-neutral-950 flex flex-col">
-        {!isClubMapView && <Header />}
-        <main className={`flex-1 ${isClubMapView ? "" : "pb-16"}`}>{children}</main>
-        {!isClubMapView && <Footer />}
-        {!isClubMapView && <BottomNav />}
+        {!isChromeless && <Header />}
+        <main className={`flex-1 ${isChromeless ? "" : "pb-16"}`}>{children}</main>
+        {!isChromeless && <Footer />}
+        {!isChromeless && <BottomNav />}
         <SelectingFlagAlertSheet />
         <CancellationSurveySheet isOtherSheetOpen={false} />
       </div>
