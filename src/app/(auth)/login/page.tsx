@@ -311,7 +311,7 @@ function LoginContent() {
       <Card className="w-full max-w-md p-8 space-y-5">
         <div className="text-center space-y-2">
           <h1
-            className="text-xl font-bold cursor-pointer select-none whitespace-nowrap"
+            className="cursor-pointer select-none leading-snug"
             onClick={() => {
               setTitleClicks((prev) => {
                 const next = prev + 1;
@@ -323,9 +323,10 @@ function LoginContent() {
               });
             }}
           >
-            NightFlow : 즐겁고 건강한 우리의 밤
+            <span className="block text-2xl font-bold">NightFlow</span>
+            <span className="block text-sm font-medium text-neutral-300">즐겁고 건강한 우리의 밤</span>
           </h1>
-          <div className="flex items-center justify-center text-[11px] text-white font-bold whitespace-nowrap">
+          <div className="flex items-center justify-center text-[11px] text-neutral-500 font-normal whitespace-nowrap">
             모든 서비스 무료
           </div>
         </div>
