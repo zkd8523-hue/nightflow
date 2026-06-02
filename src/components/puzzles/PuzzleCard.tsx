@@ -180,7 +180,7 @@ export const PuzzleCard = memo(function PuzzleCard({
 
   return (
     <div
-      className={`relative bg-[#1C1C1E] rounded-2xl p-3 flex flex-col gap-2 h-full ${isCardClickable ? "cursor-pointer hover:bg-neutral-900/60 transition-colors" : ""}`}
+      className={`relative bg-[#2A2A2E] rounded-2xl p-3 flex flex-col gap-2 h-full ${isCardClickable ? "cursor-pointer hover:bg-neutral-800/30 transition-colors" : ""}`}
       onClick={isCardClickable ? () => router.push(`/flags/${puzzle.id}`) : undefined}
     >
       {isNew && !hideNewBadge && (
@@ -217,7 +217,7 @@ export const PuzzleCard = memo(function PuzzleCard({
               🧩
             </span>
           ) : (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-bold">
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[14px]" style={{lineHeight: 1, paddingLeft: '3px', paddingBottom: '3px'}}>
               🚩
             </span>
           )}

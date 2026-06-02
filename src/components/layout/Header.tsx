@@ -97,7 +97,21 @@ function timeAgo(dateStr: string): string {
   return `${days}일 전`;
 }
 
-export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = {}) {
+interface HeaderProps {
+  hideDashboardLink?: boolean;
+  /** compact 모드: NightFlow 로고 + 부제/CTA(MD대시보드/깃발꽂기)를 숨기고 햄버거만 노출.
+   *  좌측에 customTitle/customSubtitle을 대신 표시. (와글 같은 풀스크린 페이지용) */
+  compact?: boolean;
+  customTitle?: string;
+  customSubtitle?: string;
+}
+
+export function Header({
+  hideDashboardLink,
+  compact,
+  customTitle,
+  customSubtitle,
+}: HeaderProps = {}) {
   const { user, isLoading } = useCurrentUser();
   const resetAuth = useAuthStore((s) => s.reset);
   const {
@@ -227,21 +241,36 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
 
   return (
     <header
-      className="border-b border-neutral-800 bg-neutral-950/50 backdrop-blur-sm sticky top-0 z-50"
+      className="border-b border-neutral-800 bg-[#0C0A18]/60 backdrop-blur-sm sticky top-0 z-50"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="container mx-auto max-w-lg px-4 h-[52px] flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <Link
-            href="/"
-            className="text-lg font-black tracking-tighter text-white leading-none flex items-baseline gap-1.5"
-            aria-label="나이트플로우 홈 (베타)"
-          >
-            NightFlow
-          </Link>
-          <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
-            접속하는 순간, VIP
-          </p>
+          {compact && customTitle ? (
+            <>
+              <h1 className="text-lg font-black tracking-tighter text-white leading-none">
+                {customTitle}
+              </h1>
+              {customSubtitle && (
+                <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
+                  {customSubtitle}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <Link
+                href="/"
+                className="text-lg font-black tracking-tighter text-white leading-none flex items-baseline gap-1.5"
+                aria-label="나이트플로우 홈 (베타)"
+              >
+                NightFlow
+              </Link>
+              <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
+                접속하는 순간, VIP
+              </p>
+            </>
+          )}
         </div>
 
         {isLoading ? (
@@ -249,7 +278,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
         ) : user ? (
           <>
             <div className="flex items-center gap-1">
-              {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
+              {!compact && ((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
                 <Link
                   href="/md/dashboard"
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
@@ -258,7 +287,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                   <span className="text-[12px] font-black text-black whitespace-nowrap">MD 대시보드</span>
                 </Link>
               )}
-              {user.md_status === "pending" && (
+              {!compact && user.md_status === "pending" && (
                 <Link
                   href="/md/apply"
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
@@ -267,7 +296,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
                   <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
                 </Link>
               )}
-              {user.role === "user" && user.md_status !== "pending" && (
+              {!compact && user.role === "user" && user.md_status !== "pending" && (
                 <Link
                   href="/flags/new"
                   className="h-9 px-3.5 flex items-center rounded-full bg-amber-500 hover:bg-amber-400 transition-colors shadow-sm"
@@ -407,15 +436,6 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
 
                   <nav className="flex flex-col p-4 gap-1 pb-8">
                     <Link
-                      href="/bids"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                    >
-                      <Gavel className="w-5 h-5 text-neutral-500" />
-                      <span className="text-[15px] font-bold">내 활동</span>
-                    </Link>
-
-                    <Link
                       href="/me"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
@@ -528,7 +548,7 @@ export function Header({ hideDashboardLink }: { hideDashboardLink?: boolean } = 
             </Sheet>
           </>
         ) : (
-          <Link href="/login">
+          <Link href="/login" className="relative z-[60]">
             <Button size="sm" className="h-9 rounded-lg bg-white text-black font-bold hover:bg-neutral-200">
               로그인
             </Button>

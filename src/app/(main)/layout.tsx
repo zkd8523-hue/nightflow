@@ -57,6 +57,8 @@ export default function MainLayout({
     await new Promise((resolve) => setTimeout(resolve, 800));
   };
 
+  const isChatPage = pathname === "/chat" || pathname?.startsWith("/chat/");
+
   // Vision은 풀스크린 매니페스토 — 헤더/푸터/바텀네비 없이 단독 노출
   const isVisionPage = pathname === "/vision";
 
@@ -65,8 +67,18 @@ export default function MainLayout({
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="min-h-screen bg-neutral-950 flex flex-col">
-        {!isChromeless && <Header />}
+      <div className="min-h-screen bg-[#0A0810] flex flex-col">
+        {!isChromeless && (
+          isChatPage ? (
+            <Header
+              compact
+              customTitle="WAGLE"
+              customSubtitle="지역 인증된 사람들끼리 모이는 실시간 피드"
+            />
+          ) : (
+            <Header />
+          )
+        )}
         <main className={`flex-1 ${isChromeless ? "" : "pb-16"}`}>{children}</main>
         {!isChromeless && <Footer />}
         {!isChromeless && <BottomNav />}

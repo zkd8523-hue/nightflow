@@ -1261,7 +1261,7 @@ export function HomeContent({
         </div>
 
         {/* 오늘 어디갈래? + HOT DEAL 섹션 + 이하 전체 배경 */}
-        <div className="-mx-4 px-4 pt-3 pb-24 bg-[#111111]">
+        <div className="-mx-4 px-4 pt-3 pb-24 bg-[#1A1A1E]">
           <ClubBenefitSection />
           {/* MD 전용 게스트 간판 행동 유도 CTA */}
           <div className="mt-3">
