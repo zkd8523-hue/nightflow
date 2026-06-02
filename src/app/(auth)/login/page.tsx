@@ -323,7 +323,7 @@ function LoginContent() {
               });
             }}
           >
-            NightFlow : 접속하는 순간, VIP
+            NightFlow : 즐겁고 건강한 우리의 밤
           </h1>
           <div className="flex items-center justify-center text-[11px] text-white font-bold whitespace-nowrap">
             모든 서비스 무료
