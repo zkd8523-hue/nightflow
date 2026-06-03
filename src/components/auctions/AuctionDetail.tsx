@@ -322,7 +322,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         >
           <ChevronLeft className="w-6 h-6" />
         </button>
-        <h1 className="text-[17px] font-black text-white flex-1">조각 상세</h1>
+        {/* 상단 라벨 — 헤더 텍스트라 h2/p 적정. 진짜 H1은 page.tsx sr-only로 풍부한 SEO 본문. */}
+        <h2 className="text-[17px] font-black text-white flex-1">조각 상세</h2>
       </div>
 
       {/* 1. Hero Image Section */}
@@ -412,19 +413,19 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               <div className="flex items-center gap-2 text-[13px] text-neutral-400 font-bold uppercase tracking-widest">
                 <span>{club?.area}</span>
               </div>
-              <h1 className="text-[42px] font-black text-white tracking-tighter leading-[1.1] flex items-center gap-1">
+              <h2 className="text-[42px] font-black text-white tracking-tighter leading-[1.1] flex items-center gap-1">
                 <span>{club?.name}</span>
                 <ChevronRight className="w-7 h-7 text-white/40 group-active:text-white/70 transition-colors" strokeWidth={3} />
-              </h1>
+              </h2>
             </Link>
           ) : (
             <>
               <div className="flex items-center gap-2 text-[13px] text-neutral-400 font-bold uppercase tracking-widest">
                 <span>{club?.area}</span>
               </div>
-              <h1 className="text-[42px] font-black text-white tracking-tighter leading-[1.1]">
+              <h2 className="text-[42px] font-black text-white tracking-tighter leading-[1.1]">
                 {club?.name}
-              </h1>
+              </h2>
             </>
           )}
           <div className="flex items-center gap-1.5 flex-wrap mt-1">

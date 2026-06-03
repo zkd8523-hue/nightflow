@@ -329,9 +329,11 @@ export function ClubDetailContent({
         <div className="p-4 space-y-2">
           <div className="flex items-start justify-between gap-2">
             <div className="flex items-baseline gap-2 flex-wrap flex-1 min-w-0">
-            <h1 className="text-2xl font-black text-white tracking-tight">
+            {/* H2로 강등 — 실제 H1은 page.tsx의 sr-only로 풍부한 SEO 본문이 됨.
+                네이버 검색최적화 가이드: H1은 페이지당 1개만. */}
+            <h2 className="text-2xl font-black text-white tracking-tight">
               {clubName}
-            </h1>
+            </h2>
             {club.area && (
               <span className="text-[13px] text-neutral-400">
                 {club.area}
