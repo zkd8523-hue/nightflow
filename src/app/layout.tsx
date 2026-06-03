@@ -33,12 +33,12 @@ const nanumPen = Nanum_Pen_Script({
 export const metadata: Metadata = {
   metadataBase: new URL("https://nightflow.kr"),
   title: {
-    default: "나플(나이트플로우) - 강남·홍대 클럽 테이블 예약",
-    template: "%s | 나플(나이트플로우)",
+    default: "나플 | 나이트플로우 - 강남·홍대 클럽 테이블 예약",
+    template: "%s | 나플 | 나이트플로우",
   },
   description:
-    "나플은 나이트플로우(NightFlow)의 줄임말. 서울 인기 클럽 테이블을 정가보다 저렴하게 예약하세요. 강남·홍대·신사 클럽 MD가 잔여 테이블을 올리면 입찰로 가격이 결정됩니다. 혼자 가긴 부담스러우면 퍼즐(클럽 조각·합석)로 일행도 찾을 수 있어요. 강남 Club ACE, 홍대 버뮤다 등 서울 클럽 테이블 가격 비교·예약은 나플에서.",
-  applicationName: "NightFlow",
+    "나플은 전국 인기 클럽 테이블을 실시간 경매로 예약하는 서비스입니다. 강남·홍대·신사 클럽 MD가 잔여 테이블을 올리면 입찰로 가격이 결정됩니다. 혼자 가긴 부담스러우면 퍼즐(클럽 조각·합석)로 일행도 찾을 수 있어요. 강남 Club ACE, 홍대 버뮤다 등 전국 클럽 테이블 가격 비교·예약은 나플에서.",
+  applicationName: "나플 | 나이트플로우",
   keywords: [
     "나플",
     "나이트플로우",
@@ -81,11 +81,11 @@ export const metadata: Metadata = {
     canonical: "https://nightflow.kr",
   },
   openGraph: {
-    title: "나플(나이트플로우) - 강남·홍대 클럽 테이블 예약",
+    title: "나플 | 나이트플로우 - 강남·홍대 클럽 테이블 예약",
     description:
       "강남·홍대·신사 클럽 테이블을 정가보다 저렴하게 예약. MD 직거래, 가격 비교, 실시간 입찰.",
     url: "https://nightflow.kr",
-    siteName: "NightFlow",
+    siteName: "나플 | 나이트플로우",
     locale: "ko_KR",
     type: "website",
     images: [
@@ -93,13 +93,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "나이트플로우 - 강남·홍대 클럽 테이블 예약",
+        alt: "나플 | 나이트플로우 - 강남·홍대 클럽 테이블 예약",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "나플(나이트플로우) - 강남·홍대 클럽 테이블 예약",
+    title: "나플 | 나이트플로우 - 강남·홍대 클럽 테이블 예약",
     description:
       "강남·홍대·신사 클럽 테이블을 정가보다 저렴하게 예약. MD 직거래, 가격 비교, 실시간 입찰.",
     images: ["/og-image.png"],
@@ -146,7 +146,7 @@ export default function RootLayout({
         url: "https://nightflow.kr",
         logo: "https://nightflow.kr/og-image.png",
         description:
-          "나플(나이트플로우)은 강남·홍대·신사 등 서울 인기 클럽 테이블을 실시간 경매로 예약하는 플랫폼. 클럽 MD가 잔여 테이블을 올리면 유저가 입찰로 가격을 정합니다.",
+          "나플은 전국 인기 클럽 테이블을 실시간 경매로 예약하는 서비스. 강남·홍대·신사 등 클럽 MD가 잔여 테이블을 올리면 유저가 입찰로 가격을 정합니다.",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],
       },
       {

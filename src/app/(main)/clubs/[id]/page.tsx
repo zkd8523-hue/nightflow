@@ -290,6 +290,39 @@ export default async function ClubDetailPage({ params }: PageProps) {
     ? `${ssrAreaPrefix}${ssrPrimary}(${club.name})`
     : `${ssrAreaPrefix}${club.name}`;
 
+  // 세부 동네명 자동 추출 (주소에서 압구정/신사동/역삼/선릉/청담/홍대입구 등)
+  // 사용자가 "강남 클럽"보다 더 구체적으로 검색하는 패턴에 매칭.
+  const NEIGHBORHOOD_PATTERNS: { kw: string; match: RegExp }[] = [
+    { kw: "압구정", match: /압구정/ },
+    { kw: "신사동", match: /신사/ },
+    { kw: "청담", match: /청담/ },
+    { kw: "역삼", match: /역삼/ },
+    { kw: "선릉", match: /선릉/ },
+    { kw: "강남역", match: /강남역|강남대로/ },
+    { kw: "논현", match: /논현/ },
+    { kw: "삼성동", match: /삼성동/ },
+    { kw: "홍대입구", match: /홍대입구|동교동|서교동/ },
+    { kw: "합정", match: /합정/ },
+    { kw: "이태원", match: /이태원/ },
+    { kw: "한남동", match: /한남/ },
+    { kw: "서면", match: /서면/ },
+    { kw: "광안리", match: /광안/ },
+    { kw: "해운대", match: /해운대/ },
+  ];
+  const ssrNeighborhoods: string[] = [];
+  if (club.address) {
+    const addr = String(club.address);
+    for (const { kw, match } of NEIGHBORHOOD_PATTERNS) {
+      if (match.test(addr)) ssrNeighborhoods.push(kw);
+    }
+  }
+  const neighborhoodSentence =
+    ssrNeighborhoods.length > 0
+      ? ssrNeighborhoods
+          .map((n) => `${n} 클럽`)
+          .join(", ")
+      : null;
+
   return (
     <>
       <script
@@ -308,6 +341,20 @@ export default async function ClubDetailPage({ params }: PageProps) {
             예약하세요.
           </p>
         )}
+        {neighborhoodSentence && (
+          <p>
+            {ssrHead}은(는) {neighborhoodSentence} 검색 결과로 자주 찾는
+            {ssrAreaPrefix}인기 클럽입니다. 정확한 주소·영업시간·드레스코드
+            정보는 나플에서 확인하세요.
+          </p>
+        )}
+        {/* 클럽 종류·문화 키워드 일괄 노출 — VIP/부킹/라운지/스탠딩/테이블석 등 */}
+        <p>
+          {ssrHead}의 테이블 가격, 테이블석·VIP 테이블·룸·라운지·스탠딩(입석)
+          정보, 부킹·이벤트·DJ·음악·프로모션, 드레스코드, 분위기, 후기,
+          여성무료·커플·단체 입장 안내를 나플(나이트플로우)에서 한곳에 모아
+          비교할 수 있습니다.
+        </p>
         {/* 게스트 간판 미등록 클럽에도 키워드 보장 — 등록되면 아래 ssrWeeklyBenefits 섹션에서 더 풍부히 노출. */}
         <p>
           {ssrAreaPrefix}{club.name} 게스트·무료입장 정보는 매주 갱신됩니다.

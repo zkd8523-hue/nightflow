@@ -37,6 +37,14 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     a: "원하는 클럽의 게스트 간판을 운영하는 MD에게 직접 연락하면 게스트 명단에 올려줍니다. 나플 클럽 상세 페이지에서 이번 주 게스트 간판 MD를 확인하고 인스타그램 DM 또는 카카오톡 오픈채팅으로 연락하세요.",
   },
   {
+    q: "클럽 부킹이 뭔가요?",
+    a: "클럽 부킹은 전통적인 한국 클럽 문화로 MD가 테이블에 합석할 사람을 안내해주는 방식을 말합니다. 나플에서는 부킹 대신 테이블 경매·조각(합석)·게스트 간판 등 더 투명한 방식으로 같은 목적(테이블·일행 매칭)을 해결합니다.",
+  },
+  {
+    q: "여성무료는 어떻게 받나요?",
+    a: "여성무료는 클럽이 특정 요일/시간대에 여성 게스트에게 무료입장을 제공하는 혜택입니다. 나플의 게스트 간판에서 해당 클럽이 여성 무료를 운영하는 요일을 확인하고, 표시된 MD에게 인스타 DM 또는 카카오톡 오픈채팅으로 게스트 명단 등록을 요청하면 됩니다.",
+  },
+  {
     q: "경매는 어떻게 진행되나요?",
     a: "MD가 클럽 테이블을 등록하면 경매가 시작됩니다. 회원들이 원하는 금액을 입찰하고, 마감 시간에 가장 높은 금액을 제시한 회원이 낙찰받습니다.",
   },
@@ -159,6 +167,41 @@ export default function FAQPage() {
                                     게스트 간판 MD가 표시되며, 인스타그램 DM 또는 카카오톡
                                     오픈채팅으로 직접 연락해 무료입장·게스트 입장 정보를 받을 수
                                     있습니다.
+                                </p>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="item-0d" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
+                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                                클럽 부킹이 뭔가요?
+                            </AccordionTrigger>
+                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                                <p>
+                                    <strong className="text-white">클럽 부킹</strong>은 전통적인 한국 클럽 문화로
+                                    MD가 테이블에 합석할 사람을 안내해주는 방식을 말합니다.
+                                </p>
+                                <p className="mt-2">
+                                    나플(나이트플로우)에서는 부킹 대신 <strong className="text-white">테이블 경매</strong>,{" "}
+                                    <strong className="text-white">조각(합석)</strong>,{" "}
+                                    <strong className="text-white">게스트 간판</strong> 등 더 투명한 방식으로
+                                    같은 목적(테이블·일행 매칭)을 해결합니다.
+                                </p>
+                            </AccordionContent>
+                        </AccordionItem>
+
+                        <AccordionItem value="item-0e" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
+                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                                여성무료는 어떻게 받나요?
+                            </AccordionTrigger>
+                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                                <p>
+                                    <strong className="text-white">여성무료</strong>는 클럽이 특정 요일·시간대에
+                                    여성 게스트에게 무료입장을 제공하는 혜택입니다.
+                                </p>
+                                <p className="mt-2">
+                                    나플의 <strong className="text-white">게스트 간판</strong>에서 해당 클럽이
+                                    여성 무료를 운영하는 요일을 확인하고, 표시된 MD에게 인스타 DM
+                                    또는 카카오톡 오픈채팅으로 게스트 명단 등록을 요청하면 됩니다.
                                 </p>
                             </AccordionContent>
                         </AccordionItem>
