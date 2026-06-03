@@ -262,7 +262,7 @@ export default async function ClubDetailPage({ params }: PageProps) {
       />
       <div className="sr-only">
         <h1>
-          {ssrHead} - 클럽 테이블 가격·예약·핫딜 (나플)
+          {ssrHead} - 클럽 테이블 가격·예약·핫딜·게스트·무료입장 (나플)
         </h1>
         {ssrAliasSentence && (
           <p>
@@ -272,6 +272,14 @@ export default async function ClubDetailPage({ params }: PageProps) {
             예약하세요.
           </p>
         )}
+        {/* 게스트 간판 미등록 클럽에도 키워드 보장 — 등록되면 아래 ssrWeeklyBenefits 섹션에서 더 풍부히 노출. */}
+        <p>
+          {ssrAreaPrefix}{club.name} 게스트·무료입장 정보는 매주 갱신됩니다.
+          {ssrHead} 게스트 명단, 무료입장 가능 여부, 게스트 간판 혜택은
+          나플(나이트플로우)에서 확인하세요. {ssrAreaPrefix}클럽 게스트 입장,
+          {ssrAreaPrefix}무료입장 안내는 매주 월요일 오후 6시에 새 데이터로
+          갱신됩니다.
+        </p>
       </div>
       {ssrWeeklyBenefits.length > 0 && (
         <div className="sr-only">
