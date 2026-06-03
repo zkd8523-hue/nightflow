@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { BusinessInfo } from "@/components/layout/BusinessInfo";
 
 export function Footer() {
   const { user, isLoading } = useCurrentUser();
@@ -52,19 +53,9 @@ export function Footer() {
             </svg>
             @nightflow.kr · 문의
           </Link>
-          <div className="text-center text-xs text-neutral-600 leading-relaxed space-y-1">
-            <p>
-              상호: 매드다윗 · 대표: 김민기 · 사업자등록번호: 842-06-03382
-            </p>
-            <p>
-              주소: 부산광역시 연제구 쌍미천로129번길 21 · 이메일: maddawids@gmail.com · 전화번호: 070-5236-4647
-            </p>
-            <p className="text-neutral-700 mt-2">
-              매드다윗은 통신판매중개자로서, 클럽 테이블 예약에 관한 의무와 책임은 MD(판매자)에게 있습니다.
-            </p>
-          </div>
-          <p className="text-neutral-500 text-xs">
-            &copy; {new Date().getFullYear()} 나이트플로우(나플) · NightFlow. All rights reserved.
+          <BusinessInfo />
+          <p className="text-neutral-500 text-xs text-center leading-relaxed">
+            &copy; {new Date().getFullYear()} 나플 | 나이트플로우 · 밤을 더 아름답게
           </p>
         </div>
       </div>

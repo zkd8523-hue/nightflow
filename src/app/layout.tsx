@@ -146,7 +146,8 @@ export default function RootLayout({
         url: "https://nightflow.kr",
         logo: "https://nightflow.kr/og-image.png",
         description:
-          "나플은 전국 인기 클럽 테이블을 실시간 경매로 예약하는 서비스. 강남·홍대·신사 등 클럽 MD가 잔여 테이블을 올리면 유저가 입찰로 가격을 정합니다.",
+          "나플은 전국 인기 클럽 테이블을 실시간 경매로 예약하는 서비스. 강남·홍대·신사 등 클럽 MD가 잔여 테이블을 올리면 유저가 입찰로 가격을 정합니다. 나플은 밤을 더 아름답게 만드는 무브먼트입니다.",
+        slogan: "밤을 더 아름답게",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],
       },
       {
