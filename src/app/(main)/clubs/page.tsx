@@ -132,6 +132,29 @@ export default async function ClubsIndexPage() {
         />
       )}
       <ClubsAdminFab />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              {
+                "@type": "ListItem",
+                position: 1,
+                name: "홈",
+                item: "https://nightflow.kr/",
+              },
+              {
+                "@type": "ListItem",
+                position: 2,
+                name: "전국 클럽 가이드",
+                item: "https://nightflow.kr/clubs",
+              },
+            ],
+          }),
+        }}
+      />
       {/* SEO용 SSR 텍스트 — 화면엔 안 보이지만 검색엔진은 읽음.
           ClubList가 client-only라 SSR HTML에 클럽 이름이 빠지는 문제 보완. */}
       <div className="sr-only">

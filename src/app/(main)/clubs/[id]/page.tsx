@@ -210,8 +210,13 @@ export default async function ClubDetailPage({ params }: PageProps) {
     if (ig) sameAsList.push(`https://www.instagram.com/${ig}`);
   }
 
-  const jsonLd = {
-    "@context": "https://schema.org",
+  // 전화번호 정규화 (숫자/하이픈만, 빈 값 제거)
+  const phoneRaw = (club.phone as string | null | undefined) ?? null;
+  const phoneClean = phoneRaw
+    ? String(phoneRaw).replace(/[^\d\-+()]/g, "").trim() || null
+    : null;
+
+  const nightClubLd = {
     "@type": "NightClub",
     "@id": `https://nightflow.kr/clubs/${id}#nightclub`,
     name: club.name,
@@ -233,7 +238,38 @@ export default async function ClubDetailPage({ params }: PageProps) {
       : club.operating_hours
         ? { disambiguatingDescription: String(club.operating_hours) }
         : {}),
+    ...(phoneClean ? { telephone: phoneClean } : {}),
     ...(sameAsList.length > 0 ? { sameAs: sameAsList } : {}),
+  };
+
+  // BreadcrumbList — 검색 결과에 "홈 > 클럽 > {지역} {클럽명}" 경로 노출
+  const breadcrumbLd = {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "홈",
+        item: "https://nightflow.kr/",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "전국 클럽 가이드",
+        item: "https://nightflow.kr/clubs",
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: club.area ? `${club.area} ${club.name}` : club.name,
+        item: `https://nightflow.kr/clubs/${id}`,
+      },
+    ],
+  };
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [nightClubLd, breadcrumbLd],
   };
 
   // 별칭을 본문에 자연 문장으로 노출 ("에이스", "강남 에이스", "버뮤다" 등)

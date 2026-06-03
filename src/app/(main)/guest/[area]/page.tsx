@@ -192,8 +192,26 @@ export default async function GuestAreaPage({ params }: PageProps) {
   const clubsWithGuest = areaClubs.filter((c) => guestByClub[c.id]?.length);
   const clubsWithoutGuest = areaClubs.filter((c) => !guestByClub[c.id]?.length);
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "홈", item: "https://nightflow.kr/" },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: `${area} 클럽 게스트`,
+        item: `https://nightflow.kr/guest/${encodeURIComponent(area)}`,
+      },
+    ],
+  };
+
   return (
     <div className="container mx-auto max-w-lg px-4 py-6 mb-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       {/* SEO H1 */}
       <header className="mb-6 space-y-2">
         <h1 className="text-2xl font-black text-white tracking-tight">

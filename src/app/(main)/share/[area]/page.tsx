@@ -172,8 +172,26 @@ export default async function ShareAreaPage({ params }: PageProps) {
   const formatPrice = (n: number) =>
     new Intl.NumberFormat("ko-KR").format(n);
 
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "홈", item: "https://nightflow.kr/" },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: `${area} 조각`,
+        item: `https://nightflow.kr/share/${encodeURIComponent(area)}`,
+      },
+    ],
+  };
+
   return (
     <div className="container mx-auto max-w-lg px-4 py-6 mb-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       {/* SEO H1 — 시각엔 작게 표시되지만 검색엔진엔 강한 신호 */}
       <header className="mb-6 space-y-2">
         <h1 className="text-2xl font-black text-white tracking-tight">
