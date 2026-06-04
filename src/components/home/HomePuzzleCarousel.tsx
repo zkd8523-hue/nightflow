@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
+import { OfferSheet } from "@/components/puzzles/OfferSheet";
+import { PuzzleJoinSheet } from "@/components/puzzles/PuzzleJoinSheet";
+import { createClient } from "@/lib/supabase/client";
 import type { Puzzle } from "@/types/database";
 import { getDDayLabel } from "@/lib/utils/format";
 
@@ -36,6 +39,28 @@ export function HomePuzzleCarousel({
   showFlagCTA = false,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  // MD 제안 시트 / 유저 합류 시트 — PuzzleList와 동일하게 캐러셀에서 바로 띄운다.
+  const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
+  const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
+  // 본인 합류/제안 상태 — "합류 완료"/"제안 완료" 배지 정확도용 (PuzzleList와 동일)
+  const [myPuzzleIds, setMyPuzzleIds] = useState<Set<string>>(new Set());
+  const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [{ data: members }, { data: offers }] = await Promise.all([
+        supabase.from("puzzle_members").select("puzzle_id").eq("user_id", user.id),
+        supabase.from("puzzle_offers").select("puzzle_id").eq("md_id", user.id).in("status", ["pending", "accepted"]),
+      ]);
+
+      if (members) setMyPuzzleIds(new Set(members.map((d) => d.puzzle_id)));
+      if (offers) setMyOfferedPuzzleIds(new Set(offers.map((d) => d.puzzle_id)));
+    })();
+  }, []);
 
   if (puzzles.length === 0) {
     return (
@@ -93,6 +118,10 @@ export function HomePuzzleCarousel({
                 puzzle={puzzle}
                 userRole={userRole}
                 offerCount={offerCounts[puzzle.id] ?? 0}
+                isMember={myPuzzleIds.has(puzzle.id)}
+                hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
+                onUnlock={(p) => setUnlockTarget(p)}
+                onJoin={(p) => setJoinTarget(p)}
               />
             </div>
           );
@@ -123,6 +152,26 @@ export function HomePuzzleCarousel({
         )}
       </div>
 
+      {/* MD 제안 Sheet — 제출 성공 시 페이지 이동 없이 홈에 머물므로 배지 즉시 갱신 */}
+      {unlockTarget && (
+        <OfferSheet
+          puzzle={unlockTarget}
+          open={!!unlockTarget}
+          onClose={() => setUnlockTarget(null)}
+          onSubmitted={() =>
+            setMyOfferedPuzzleIds((prev) => new Set(prev).add(unlockTarget.id))
+          }
+        />
+      )}
+
+      {/* 유저 합류 Sheet */}
+      {joinTarget && (
+        <PuzzleJoinSheet
+          puzzle={joinTarget}
+          open={!!joinTarget}
+          onClose={() => setJoinTarget(null)}
+        />
+      )}
     </div>
   );
 }
