@@ -263,9 +263,10 @@ export function ClubDetailContent({
             {thumbnailUrl ? (
               <Image
                 src={thumbnailUrl}
-                alt={club.name}
+                alt={`${club.area ? `${club.area} ` : ""}${club.name} 클럽 사진`}
                 fill
                 className="object-cover"
+                priority
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[12px]">

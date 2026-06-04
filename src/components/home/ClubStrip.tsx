@@ -57,10 +57,11 @@ export function ClubStrip({ clubs: initialClubs }: ClubStripProps) {
               {club.thumbnail_url ? (
                 <Image
                   src={club.thumbnail_url}
-                  alt={club.name}
+                  alt={`${club.area ? `${club.area} ` : ""}${club.name} 클럽 사진`}
                   width={56}
                   height={56}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-white font-black text-xl">

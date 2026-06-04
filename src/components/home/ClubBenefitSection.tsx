@@ -231,10 +231,11 @@ export function ClubBenefitSection() {
               {item.club_thumbnail ? (
                 <Image
                   src={item.club_thumbnail}
-                  alt={item.club_name}
+                  alt={`${item.club_area ? `${item.club_area} ` : ""}${item.club_name} 클럽 사진`}
                   fill
                   sizes="180px"
                   className="object-cover"
+                  loading="lazy"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-[28px] font-black text-white/30">

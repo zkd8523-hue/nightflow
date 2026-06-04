@@ -249,10 +249,11 @@ function DetailCard({
         {club.thumbnail_url ? (
           <Image
             src={club.thumbnail_url}
-            alt={club.name}
+            alt={`${club.area ? `${club.area} ` : ""}${club.name} 클럽 사진`}
             fill
             sizes="80px"
             className="object-cover"
+            loading="lazy"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-[24px] font-black text-white/30">

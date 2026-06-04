@@ -445,10 +445,11 @@ function ClubCard({
         {club.thumbnail_url ? (
           <Image
             src={club.thumbnail_url}
-            alt={club.name}
+            alt={`${club.area ? `${club.area} ` : ""}${club.name} 클럽 사진`}
             fill
             sizes="152px"
             className="object-cover group-active:scale-95 transition-transform"
+            loading="lazy"
           />
         ) : (
           <ImageFallback name={club.name} />
