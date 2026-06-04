@@ -215,8 +215,8 @@ export function ClubBenefitSection() {
           >
             {/* 혜택 띠 (이미지 위 별도 영역) */}
             {item.benefit_text && (
-              <div className="bg-amber-500 px-2.5 py-0 rounded-t-2xl">
-                <span className="block text-black text-[12px] font-black tracking-tight text-left leading-tight line-clamp-2 pt-1 pb-0.5">
+              <div className="bg-amber-500 px-2.5 py-0 rounded-t-2xl border-b border-black/20">
+                <span className="block whitespace-pre-line text-black text-[12px] font-bold tracking-tight text-left leading-[1.15] line-clamp-2 pt-1 pb-0.5">
                   {item.benefit_text}
                 </span>
               </div>

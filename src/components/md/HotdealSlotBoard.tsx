@@ -743,13 +743,23 @@ function MyClaimedSection({
                           )
                         )}
 
-                        <input
-                          type="text"
+                        <textarea
+                          rows={2}
                           value={isPast ? "" : s.text}
-                          onChange={(e) => (isFirst ? onFirstTextChange(e.target.value) : updateSlot(dow, idx, { text: e.target.value }))}
+                          onKeyDown={(e) => {
+                            // 이미 2줄이면 Enter(줄바꿈) 입력 차단
+                            if (e.key === "Enter" && s.text.split("\n").length >= 2) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onChange={(e) => {
+                            // 안전망: 붙여넣기 등으로 들어온 3줄 이상은 2줄로 잘라냄
+                            const next = e.target.value.split("\n").slice(0, 2).join("\n");
+                            return isFirst ? onFirstTextChange(next) : updateSlot(dow, idx, { text: next });
+                          }}
                           placeholder={isFirst ? DOW_PLACEHOLDERS[dow] : "이 시간대 혜택"}
                           disabled={saving || isPast}
-                          className="flex-1 min-w-0 bg-neutral-900 border border-neutral-700 rounded-lg px-2.5 py-1.5 text-[12px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed"
+                          className="flex-1 min-w-0 resize-none bg-neutral-900 border border-neutral-700 rounded-lg px-2.5 py-1.5 text-[12px] leading-snug text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed"
                         />
 
                         {/* 우측 액션: 첫 줄 = 저장 / 그 외 = 삭제(또는 자리) */}
