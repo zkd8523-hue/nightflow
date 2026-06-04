@@ -31,7 +31,6 @@ import {
   Clock,
   AlertTriangle,
   User,
-  Settings,
   Heart,
   TrendingUp,
   Star,
@@ -248,7 +247,7 @@ export function Header({
         <div className="flex flex-col gap-0.5">
           {compact && customTitle ? (
             <>
-              <h1 className="text-lg font-black tracking-tighter text-white leading-none">
+              <h1 className="text-lg font-black tracking-tighter leading-none bg-gradient-to-r from-[#A78BFA] to-[#F472B6] bg-clip-text text-transparent">
                 {customTitle}
               </h1>
               {customSubtitle && (
@@ -436,7 +435,7 @@ export function Header({
 
                   <nav className="flex flex-col p-4 gap-1 pb-8">
                     <Link
-                      href="/me"
+                      href={`/u/${user.id}`}
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
@@ -509,8 +508,8 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
-                      <Settings className="w-5 h-5 text-neutral-500" />
-                      <span className="text-[15px] font-bold">설정</span>
+                      <User className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">내 정보</span>
                     </Link>
 
                     <Link
