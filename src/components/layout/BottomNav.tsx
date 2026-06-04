@@ -5,11 +5,9 @@ import { usePathname } from "next/navigation";
 import { Home, User, Map, Heart } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useNotifications } from "@/hooks/useNotifications";
-import { WagleIcon } from "@/components/icons/WagleIcon";
 
 const TABS = [
   { label: "홈", icon: Home, href: "/" },
-  { label: "와글", icon: WagleIcon, href: "/chat" },
   { label: "주변", icon: Map, href: "/clubs" },
   { label: "찜", icon: Heart, href: "/favorites" },
   { label: "내 정보", icon: User, href: "/profile" },
@@ -33,9 +31,7 @@ export function BottomNav() {
       <div className="max-w-lg mx-auto flex items-center justify-around pb-[env(safe-area-inset-bottom)]">
         {TABS.map(({ label, icon: Icon, href }) => {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
-          // 와글만 보라 시그니처 (MUSIC 가치), 나머지는 흰색
-          const isWagle = href === "/chat";
-          const activeClass = isWagle ? "text-[#C084FC]" : "text-white";
+          const activeClass = "text-white";
           // "내 정보" 탭에 새 오퍼 미확인 점 표시
           const showOfferDot = href === "/profile" && hasNewOffer;
           return (
