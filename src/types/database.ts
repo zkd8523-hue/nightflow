@@ -710,7 +710,7 @@ export const MD_GRADE_CONFIG: Record<MDCustomerGrade, { label: string; color: st
 
 export type PuzzleStatus = 'open' | 'selecting' | 'matched' | 'cancelled' | 'expired' | 'accepted';
 // open: 오퍼 모집 중
-// selecting: 오퍼 마감, 유저 검토 중 (Migration 170 — 오후 5시 이후 90분)
+// selecting: 오퍼 마감, 유저 검토 중 (Migration 297 — 오후 8시 이후 60분)
 // matched: 대표자가 수동 마감 (MD 추가 결제 차단, 홈에서 숨김)
 // accepted: 오퍼 수락 완료 (V2 역경매)
 

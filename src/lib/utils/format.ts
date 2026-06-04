@@ -77,8 +77,8 @@ type PuzzleLike = {
 };
 
 /**
- * "오늘 오후 6시에 오퍼가 마감됩니다" 시스템 룰 안내 메시지.
- * - 조건: 그룹 내 event_date가 오늘인 깃발이 1개라도 존재 + 현재가 6pm KST 이전
+ * "오늘 오후 8시에 오퍼가 마감됩니다" 시스템 룰 안내 메시지.
+ * - 조건: 그룹 내 event_date가 오늘인 깃발이 1개라도 존재 + 현재가 8pm KST 이전
  * - 개별 깃발의 offer_deadline 유무와 무관 (정책 안내이므로)
  * - 해당 없으면 null (표시 안 함)
  */
@@ -91,11 +91,11 @@ export function getPuzzleGroupDeadline(puzzles: PuzzleLike[]): string | null {
   );
   if (!hasTodayPuzzle) return null;
 
-  // 6pm KST = 9am UTC, 오늘 날짜로 마감 시각 계산
-  const offerDeadline = dayjs(now.format("YYYY-MM-DD") + "T09:00:00.000Z");
+  // 8pm KST = 11am UTC, 오늘 날짜로 마감 시각 계산
+  const offerDeadline = dayjs(now.format("YYYY-MM-DD") + "T11:00:00.000Z");
   if (!offerDeadline.isAfter(now)) return null;
 
-  return "오후 5시에 오퍼가 마감됩니다";
+  return "오후 8시에 오퍼가 마감됩니다";
 }
 
 /**

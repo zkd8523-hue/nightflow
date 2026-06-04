@@ -174,7 +174,7 @@ export function PuzzleDetailClient({
   // 파티원 모집 중일 때만 인원 가득 찬 개념이 의미 있음
   const isFull = isRecruitingParty && puzzle.current_count >= puzzle.target_count;
   const isOpen = puzzle.status === "open" && !isFull;
-  // Migration 170: 오퍼 마감 후 'selecting' 단계에서도 방장은 90분간 수락 가능.
+  // Migration 297: 오퍼 마감 후 'selecting' 단계에서도 방장은 60분간 수락 가능.
   // isOpen 은 신규 오퍼 제출/join 같은 동작용이라 selecting 을 포함하면 안 됨.
   const canAcceptOffers =
     (puzzle.status === "open" || puzzle.status === "selecting") && !isFull;

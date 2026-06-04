@@ -1,6 +1,6 @@
 // Deno Edge Function for auto-expiring puzzles past their event date
-// Runs every 5 minutes via Cron
-// expires_at = event_date 당일 18:00 KST (09:00 UTC)
+// Runs every minute via Cron (Migration 220)
+// expires_at = event_date 당일 21:00 KST (12:00 UTC) — 오퍼 마감(20:00) +60분
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";

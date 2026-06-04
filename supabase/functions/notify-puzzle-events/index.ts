@@ -181,18 +181,20 @@ async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
 // handleDeadlineReminder 제거됨 (D-2 리마인더 handleOfferReminder로 대체)
 
 // ============================================================
-// #2 오퍼 마감 (17:00 KST = 08:00 UTC)
+// #2 오퍼 마감 (20:00 KST = 11:00 UTC)
 // status=open AND offer_deadline <= now() AND expires_at > now()
 // → status='selecting'로 전환 + 방장에게 알림톡/in-app 알림
 // ============================================================
 async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
   const nowIso = new Date().toISOString();
 
-  // 마감 시각 도래한 깃발 조회
+  // 마감 시각 도래한 깃발 조회.
+  // 'selecting'도 포함한다: 상태 전환(open→selecting)은 됐지만 알림톡 발송이
+  // 실패한 깃발이 다음 cron에서 재시도되도록 하기 위함. (중복 발송은 alreadySent로 차단)
   const { data: puzzles, error } = await supabase
     .from("puzzles")
-    .select("id, leader_id, area, event_date")
-    .eq("status", "open")
+    .select("id, leader_id, area, event_date, status")
+    .in("status", ["open", "selecting"])
     .not("offer_deadline", "is", null)
     .lte("offer_deadline", nowIso)
     .gt("expires_at", nowIso);
@@ -201,33 +203,40 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
 
   if (!puzzles || puzzles.length === 0) return;
 
-  for (const puzzle of puzzles as Array<{ id: string; leader_id: string; area: string; event_date: string }>) {
+  for (const puzzle of puzzles as Array<{ id: string; leader_id: string; area: string; event_date: string; status: string }>) {
    try {
     // 1) 상태 전환: open → selecting (race 방지: status='open' 조건 재확인)
-    const { data: updated, error: updateErr } = await supabase
-      .from("puzzles")
-      .update({ status: "selecting" })
-      .eq("id", puzzle.id)
-      .eq("status", "open")
-      .select("id")
-      .maybeSingle();
+    //    이미 'selecting'인 깃발은 전환을 건너뛰고 알림 단계로 진행한다.
+    //    (이전 실행에서 전환만 되고 알림톡이 실패했을 수 있으므로 — alreadySent로 중복은 차단)
+    if (puzzle.status === "open") {
+      const { data: updated, error: updateErr } = await supabase
+        .from("puzzles")
+        .update({ status: "selecting" })
+        .eq("id", puzzle.id)
+        .eq("status", "open")
+        .select("id")
+        .maybeSingle();
 
-    if (updateErr || !updated) {
-      // 0행이면 왜 0행인지 현재 status를 재조회해서 로그로 남긴다 (race 원인 추적)
-      const { data: cur } = await supabase
-        .from("puzzles").select("status").eq("id", puzzle.id).maybeSingle();
-      console.log(`[offerDeadline] skip ${puzzle.id} (updateErr=${updateErr?.message ?? "none"}, 현재status=${cur?.status ?? "?"})`);
-      continue;
+      if (updateErr) {
+        console.log(`[offerDeadline] 전환 실패 ${puzzle.id} (updateErr=${updateErr.message})`);
+        continue;
+      }
+      // updated가 null이면 동시에 다른 실행이 selecting으로 바꾼 것 — 정상, 알림 단계로 계속 진행
     }
 
-    // 2) pending 오퍼 수 집계
+    // 2) 중복 발송 가드 — in-app/푸시/알림톡 전체를 1회로 묶는다.
+    //    조회에 'selecting'을 포함시켰으므로(재시도 목적) 이 가드가 없으면
+    //    매 cron마다 in-app 알림이 중복 INSERT된다.
+    if (await alreadySent(supabase, "puzzle_offer_deadline", puzzle.id)) continue;
+
+    // 3) pending 오퍼 수 집계
     const { count: offerCount } = await supabase
       .from("puzzle_offers")
       .select("id", { count: "exact", head: true })
       .eq("puzzle_id", puzzle.id)
       .eq("status", "pending");
 
-    // 3) 방장 정보 로드
+    // 4) 방장 정보 로드
     const { data: leader } = await supabase
       .from("users")
       .select("id, display_name, phone")
@@ -236,16 +245,16 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
 
     if (!leader) continue;
 
-    // 4) in-app 알림 INSERT (알림톡과 별개로 항상 발송)
+    // 5) in-app 알림 INSERT (알림톡과 별개로 항상 발송)
     await supabase.from("in_app_notifications").insert({
       user_id: puzzle.leader_id,
       type: "puzzle_offer_deadline",
       title: "오퍼 마감 · 검토 시작",
-      message: `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발의 MD 오퍼가 마감됐어요. 오후 6시 30분까지 선택해주세요.`,
+      message: `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발의 MD 오퍼가 마감됐어요. 오후 9시까지 선택해주세요.`,
       action_url: `/flags/${puzzle.id}`,
     });
 
-    // 4-1) FCM 푸시 — pending 오퍼 ≥ 1건일 때만 방장에게 발송
+    // 5-1) FCM 푸시 — pending 오퍼 ≥ 1건일 때만 방장에게 발송
     if ((offerCount ?? 0) > 0) {
       try {
         await fetch(
@@ -259,7 +268,7 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
             body: JSON.stringify({
               user_id: puzzle.leader_id,
               title: "⏰ 오퍼 마감 · 검토 시간",
-              body: `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발 · 오퍼 ${offerCount}건 · 90분 안에 선택하세요`,
+              body: `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발 · 오퍼 ${offerCount}건 · 60분 안에 선택하세요`,
               data: {
                 type: "puzzle_review_started",
                 puzzle_id: puzzle.id,
@@ -274,8 +283,12 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
       }
     }
 
-    // 5) 알림톡 발송 (중복 방지 + phone/template 없으면 skip)
-    if (await alreadySent(supabase, "puzzle_offer_deadline", puzzle.id)) continue;
+    // 5-2) 알림톡 발송 (template/phone 없으면 sendAndLog가 skip).
+    //      중복 가드는 위 2)에서 이미 처리됨.
+    if (!TPL.PUZZLE_OFFER_DEADLINE) {
+      console.log(`⚠️ ALIMTALK_TPL_PUZZLE_OFFER_DEADLINE 미설정 — 알림톡 skip (puzzle=${puzzle.id})`);
+      continue;
+    }
 
     await sendAndLog(supabase, "puzzle_offer_deadline", puzzle.id, leader as { id: string; phone: string | null }, TPL.PUZZLE_OFFER_DEADLINE, {
       userName: (leader as { display_name?: string | null }).display_name ?? "방장",

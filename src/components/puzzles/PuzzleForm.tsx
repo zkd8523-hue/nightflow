@@ -349,12 +349,12 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // OFF: budgetAmount = 총액, ON: budgetAmount = 인당
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
 
-  // offer_deadline: 오퍼 마감 오후 5시 KST (08:00 UTC)
-  // expires_at: 유저 검토 마감 오후 6시 30분 KST (09:30 UTC)
-  const getOfferDeadline = (date: string) => `${date}T08:00:00.000Z`;
-  const getExpiresAt = (date: string) => `${date}T09:30:00.000Z`;
+  // offer_deadline: 오퍼 마감 오후 8시 KST (11:00 UTC)
+  // expires_at: 유저 검토 마감 오후 9시 KST (12:00 UTC) — 오퍼 마감 +60분
+  const getOfferDeadline = (date: string) => `${date}T11:00:00.000Z`;
+  const getExpiresAt = (date: string) => `${date}T12:00:00.000Z`;
 
-  // 당일 등록인데 18시(오퍼 마감) 이미 지났는지 체크
+  // 당일 등록인데 오후 8시(오퍼 마감) 이미 지났는지 체크
   const isLateForToday = (): boolean => {
     if (!eventDate || isEditMode) return false;
     const offerDeadline = dayjs(getOfferDeadline(eventDate));
@@ -563,8 +563,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
       toast.success(
         effectiveIsRecruiting
-          ? "퍼즐이 올라갔어요! 당일 오후 5시까지 파티원·MD 모집, 이후 90분간 검토할 수 있어요 🧩"
-          : "깃발이 올라갔어요! 당일 오후 5시까지 오퍼 받고, 이후 90분간 검토할 수 있어요 🚩"
+          ? "퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·MD 모집, 이후 60분간 검토할 수 있어요 🧩"
+          : "깃발이 올라갔어요! 당일 오후 8시까지 오퍼 받고, 이후 60분간 검토할 수 있어요 🚩"
       );
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
@@ -1116,7 +1116,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             : "마음에 드는 오퍼만 고르면 끝!")}
         description={isEditMode
           ? "변경된 내용으로 갱신됩니다."
-          : "오퍼는 당일 5시 마감. 90분간 더 검토할 수 있어요."}
+          : "오퍼는 당일 8시 마감. 60분간 더 검토할 수 있어요."}
         confirmText={isEditMode ? "수정 완료" : (isRecruitingParty ? "파티원 모집 시작" : "계속")}
         cancelText="다시 확인"
         variant={!isEditMode && !isRecruitingParty ? "celebrate" : "default"}
@@ -1134,7 +1134,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         variant="danger"
       />
 
-      {/* 당일 18시 이후 등록 시도 시 안내 */}
+      {/* 당일 오후 8시(오퍼 마감) 이후 등록 시도 시 안내 */}
       <Sheet open={showLateTodayDialog} onOpenChange={setShowLateTodayDialog}>
         <SheetContent
           side="bottom"
@@ -1146,7 +1146,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                 <Flag className="w-5 h-5 text-amber-500" />
               </div>
               <SheetTitle className="text-white font-black text-xl tracking-tight">
-                오늘 깃발은 오후 5시까지였어요
+                오늘 깃발은 오후 8시까지였어요
               </SheetTitle>
             </div>
             <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1">
