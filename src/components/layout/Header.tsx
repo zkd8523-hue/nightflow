@@ -266,7 +266,7 @@ export function Header({
                 NightFlow
               </Link>
               <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
-                즐겁고 건강한 우리의 밤
+                접속하는 순간, VIP
               </p>
             </>
           )}
