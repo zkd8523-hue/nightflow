@@ -6,7 +6,6 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
 import { GoogleAnalytics } from "@/lib/analytics/google-analytics";
-import { DeferredAdSense } from "@/components/analytics/DeferredAdSense";
 import { LoginSuccessTracker } from "@/components/analytics/LoginSuccessTracker";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OfflineBanner } from "@/components/layout/OfflineBanner";
@@ -151,9 +150,6 @@ export const metadata: Metadata = {
       "naver-site-verification": "43d940356195c90cde1de23bc0d9b3b255fe5fa3",
     },
   },
-  other: {
-    "google-adsense-account": "ca-pub-6936468170635504",
-  },
 };
 
 export const viewport = {
@@ -208,9 +204,8 @@ export default function RootLayout({
         {/* 외부 도메인 사전 연결 — DNS+TLS 핸드셰이크를 미리 끝내 첫 API/이미지 응답 단축 */}
         <link rel="preconnect" href="https://ihqztsakxczzsxfvdkpq.supabase.co" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://k.kakaocdn.net" crossOrigin="anonymous" />
-        {/* 분석/광고는 LCP 비핵심 — 가벼운 DNS 힌트만 */}
+        {/* 분석은 LCP 비핵심 — 가벼운 DNS 힌트만 */}
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        <link rel="dns-prefetch" href="https://pagead2.googlesyndication.com" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${nanumPen.variable} antialiased`}
@@ -221,8 +216,6 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
-        {/* Google AdSense - 첫 사용자 상호작용 이후 로드 (LCP·메인스레드에서 광고 JS 완전 분리) */}
-        <DeferredAdSense />
         {/* Google Analytics */}
         <GoogleAnalytics />
 
