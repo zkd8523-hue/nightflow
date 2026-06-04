@@ -106,7 +106,7 @@ export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
                     <div className="flex items-start gap-3">
                         <div className="w-14 h-14 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center shrink-0 overflow-hidden">
                             {leader?.profile_image
-                                ? <img src={leader.profile_image} alt="" className="w-full h-full object-cover" />
+                                ? <img src={leader.profile_image} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                                 : <span className="text-2xl text-neutral-500">👤</span>
                             }
                         </div>

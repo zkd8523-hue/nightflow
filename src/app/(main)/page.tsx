@@ -180,7 +180,8 @@ export default async function HomePage() {
           ))}
         </ul>
       </div>
-      <Suspense fallback={<div className="animate-pulse bg-neutral-900 h-64 rounded-3xl" />}>
+      {/* fallback 높이를 첫 화면 높이만큼 확보 — 콘텐츠 로드 시 footer가 위로 밀려 올라오는 CLS(레이아웃 시프트) 방지 */}
+      <Suspense fallback={<div className="animate-pulse bg-neutral-900 min-h-[100svh] rounded-3xl" />}>
         <HomeContent
           activeAuctions={activeAuctions || []}
           puzzles={puzzles || []}

@@ -29,6 +29,11 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
 
+  experimental: {
+    // 대량 사용 패키지 트리셰이킹 강화 (lucide-react 200+ 파일, radix-ui 메타패키지, dayjs)
+    optimizePackageImports: ["lucide-react", "radix-ui", "dayjs"],
+  },
+
 };
 
 // Sentry 설정

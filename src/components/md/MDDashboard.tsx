@@ -10,8 +10,17 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { MDAuctionCard } from "./MDAuctionCard";
 import { AcceptedPuzzleVisitCard } from "./AcceptedPuzzleVisitCard";
 import { AreaOnboardingSheet } from "./AreaOnboardingSheet";
-import { HotdealNowManager } from "./HotdealNowManager";
-import { HotdealSlotBoard } from "./HotdealSlotBoard";
+import dynamic from "next/dynamic";
+// 핫딜/게스트간판 매니저는 각각 1000줄 규모 + 토글 시에만 렌더되는 인라인 영역이라
+// next/dynamic 으로 분리 — MD 대시보드 진입 시 초기 번들에서 제외, 토글 시점에 로드.
+const HotdealNowManager = dynamic(
+  () => import("./HotdealNowManager").then((m) => m.HotdealNowManager),
+  { loading: () => <div className="animate-pulse bg-neutral-800/50 h-40 rounded-xl" /> }
+);
+const HotdealSlotBoard = dynamic(
+  () => import("./HotdealSlotBoard").then((m) => m.HotdealSlotBoard),
+  { loading: () => <div className="animate-pulse bg-neutral-800/50 h-40 rounded-xl" /> }
+);
 import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByDow } from "@/types/database";
 import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink, Coins } from "lucide-react";
 import { toast } from "sonner";
@@ -751,16 +760,28 @@ export function MDDashboard({
                                 {favoriteMdCount}<span className="text-[12px] text-neutral-500 ml-0.5">명</span>
                             </p>
                         </div>
-                        <div className="space-y-1.5 pt-1 border-t border-neutral-800/50">
-                            <div className="flex items-center gap-1.5 text-neutral-500">
-                                <Coins className="w-3 h-3" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider">크레딧</span>
-                            </div>
-                            <p className={`text-[24px] font-black leading-none ${mdCredits !== null && mdCredits < 30 ? "text-red-400" : "text-amber-400"}`}>
-                                {mdCredits ?? "—"}<span className="text-[12px] text-neutral-500 ml-0.5">/120</span>
-                            </p>
-                        </div>
                     </div>
+
+                    {/* 크레딧 — 가로 전체 폭 강조 바 (충전 동선) */}
+                    <Link
+                        href="/md/credits"
+                        className="mt-5 flex items-center justify-between rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] px-4 py-3.5 group hover:bg-amber-500/[0.12] transition-colors"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/15">
+                                <Coins className="w-4 h-4 text-amber-400" />
+                            </div>
+                            <div className="space-y-0.5">
+                                <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">보유 크레딧</span>
+                                <p className={`text-[22px] font-black leading-none ${mdCredits !== null && mdCredits < 30 ? "text-red-400" : "text-amber-400"}`}>
+                                    {mdCredits ?? "—"}<span className="text-[12px] text-neutral-500 ml-0.5">크레딧</span>
+                                </p>
+                            </div>
+                        </div>
+                        <span className="flex items-center gap-1 rounded-full bg-amber-500 px-4 py-2 text-[13px] font-black text-black group-hover:bg-amber-400 transition-colors">
+                            <Plus className="w-4 h-4" />충전
+                        </span>
+                    </Link>
                 </Card>
             </div>
 

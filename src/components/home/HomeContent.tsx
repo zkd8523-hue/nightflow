@@ -365,15 +365,12 @@ export function HomeContent({
     }
   };
   useEffect(() => {
-    console.log("[reviewPrompt] useEffect entered", { hasUser: !!user?.id, fired: reviewToastFiredRef.current });
     if (reviewToastFiredRef.current) return;
     if (!user?.id) {
-      console.log("[reviewPrompt] no user yet");
       return;
     }
     reviewToastFiredRef.current = true;
     const forceReview = searchParams.get("forceReview") === "1";
-    console.log("[reviewPrompt] effect fired", { userId: user.id, forceReview });
     (async () => {
       const today = new Date();
       const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
@@ -386,11 +383,9 @@ export function HomeContent({
         .order("event_date", { ascending: false })
         .limit(5);
       if (!forceReview) query.lte("event_date", cutoff);
-      const { data: matched, error: queryError } = await query;
-      console.log("[reviewPrompt] puzzles query", { count: matched?.length, error: queryError });
+      const { data: matched } = await query;
       const candidates = (matched ?? []) as Array<{ id: string; event_date: string; accepted_offer_id: string | null }>;
       if (candidates.length === 0) {
-        console.log("[reviewPrompt] no candidates");
         return;
       }
 
@@ -398,7 +393,6 @@ export function HomeContent({
       // accepted_offer_id가 NULL인 비정상 깃발은 건너뜀
       const validCandidates = candidates.filter((p) => p.accepted_offer_id);
       if (validCandidates.length === 0) {
-        console.log("[reviewPrompt] no valid candidates (all missing accepted_offer_id)");
         return;
       }
       if (forceReview) {
@@ -413,23 +407,21 @@ export function HomeContent({
         const reviewed = new Set(((existingReviews ?? []) as Array<{ puzzle_id: string }>).map((r) => r.puzzle_id));
         unreviewed = validCandidates.find((p) => !reviewed.has(p.id)) ?? null;
       }
-      console.log("[reviewPrompt] unreviewed", unreviewed);
       if (!unreviewed) return;
 
       if (!forceReview) {
         const sessionKey = `nightflow_review_toast_shown_${unreviewed.id}`;
-        try { if (sessionStorage.getItem(sessionKey)) { console.log("[reviewPrompt] session key present"); return; } } catch {}
+        try { if (sessionStorage.getItem(sessionKey)) { return; } } catch {}
         try { sessionStorage.setItem(sessionKey, "1"); } catch {}
       }
 
       let clubName: string | null = null;
       if (unreviewed.accepted_offer_id) {
-        const { data: offer, error: offerErr } = await supabase
+        const { data: offer } = await supabase
           .from("puzzle_offers")
           .select("club:clubs(name)")
           .eq("id", unreviewed.accepted_offer_id)
           .maybeSingle();
-        console.log("[reviewPrompt] offer query", { offer, error: offerErr });
         const club = (offer as { club?: { name?: string } | { name?: string }[] | null } | null)?.club;
         const c = Array.isArray(club) ? club[0] : club;
         clubName = c?.name ?? null;
@@ -443,7 +435,6 @@ export function HomeContent({
         return;
       }
 
-      console.log("[reviewPrompt] showing sheet", { puzzleId: unreviewed.id, clubName });
       setReviewPrompt({ puzzleId: unreviewed.id, clubName });
     })();
   }, [user?.id, supabase, searchParams]);
