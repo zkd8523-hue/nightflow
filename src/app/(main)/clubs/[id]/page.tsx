@@ -74,42 +74,47 @@ export default async function ClubDetailPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: club } = await supabase
-    .from("clubs")
-    .select("*")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .single();
-
-  if (!club) {
-    notFound();
-  }
-
-  const { data: activeAuctions } = await supabase
-    .from("auctions")
-    .select(`
-      *,
-      club:clubs(*),
-      md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
-    `)
-    .eq("club_id", id)
-    .in("status", ["active", "scheduled"])
-    .order("auction_start_at", { ascending: true })
-    .limit(20);
-
-  // 이번 주 게스트 간판 슬롯 + 차지 MD 정보 + 오늘 요일 혜택
+  // 이번 주 게스트 간판 슬롯 조회에 쓰일 영업일/주차 계산 (순수 함수 — 쿼리 전 미리 계산)
   // 요일은 영업일 기준(새벽 6시 경계) — 일요일 혜택이 월요일 새벽까지 노출되도록.
   const todayDowKey = getBusinessDowKey();
   // 월요일 18시 오픈 갭 보정 포함 (지난 주 슬롯 노출)
   const thisWeekISO = getActiveWeekStartISO();
 
-  const { data: slotRow } = await supabase
-    .from("weekly_hotdeal_slots")
-    .select("id, md_id, benefits_by_dow, expires_at")
-    .eq("club_id", id)
-    .eq("week_start", thisWeekISO)
-    .limit(1)
-    .maybeSingle();
+  // 서로 독립적인 3개 쿼리를 병렬 실행 — 직렬(3 RTT) → 1 RTT. (mdRow만 slotRow 의존이라 이후 순차)
+  const [
+    { data: club },
+    { data: activeAuctions },
+    { data: slotRow },
+  ] = await Promise.all([
+    supabase
+      .from("clubs")
+      .select("*")
+      .eq("id", id)
+      .is("deleted_at", null)
+      .single(),
+    supabase
+      .from("auctions")
+      .select(`
+        *,
+        club:clubs(*),
+        md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
+      `)
+      .eq("club_id", id)
+      .in("status", ["active", "scheduled"])
+      .order("auction_start_at", { ascending: true })
+      .limit(20),
+    supabase
+      .from("weekly_hotdeal_slots")
+      .select("id, md_id, benefits_by_dow, expires_at")
+      .eq("club_id", id)
+      .eq("week_start", thisWeekISO)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (!club) {
+    notFound();
+  }
 
   let guestSignSlot: {
     slot_id?: string;

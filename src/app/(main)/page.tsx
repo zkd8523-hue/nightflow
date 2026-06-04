@@ -17,57 +17,73 @@ function createAnonClient() {
 export default async function HomePage() {
   const supabase = createAnonClient();
 
-  // 조각(share) 매물 조회 — 메인 카탈로그 기본
-  const { data: shareAuctions } = await supabase
-    .from("auctions")
-    .select(
-      `
-      *,
-      club:clubs(id, name, area, thumbnail_url),
-      md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
-    `
-    )
-    .eq("listing_type", "share")
-    .in("status", ["active", "scheduled"])
-    .gt("share_deadline", new Date().toISOString())
-    .order("share_deadline", { ascending: true })
-    .limit(100);
-
-  // 기존 경매(auction/instant) 조회 — 레거시 노출 (진행 중인 것만)
-  const { data: legacyAuctions } = await supabase
-    .from("auctions")
-    .select(
-      `
-      *,
-      club:clubs(id, name, area, thumbnail_url),
-      md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
-    `
-    )
-    .in("listing_type", ["auction", "instant"])
-    .in("status", ["active", "scheduled"])
-    .order("auction_start_at", { ascending: true })
-    .limit(50);
-
-  const activeAuctions = [...(shareAuctions ?? []), ...(legacyAuctions ?? [])];
-
   const nowIso = new Date().toISOString();
 
-  // 추천 클럽 조회 (ClubStrip용) — 순서 셔플은 클라이언트 마운트 시 수행
-  const { data: rawClubs } = await supabase
-    .from("clubs")
-    .select("id, name, area, thumbnail_url")
-    .is("deleted_at", null)
-    .not("name", "ilike", "%운영자%")
-    .order("name");
+  // 서로 독립적인 5개 SSR 쿼리를 병렬 실행 — 직렬 await(5 RTT) → 1 RTT 로 단축.
+  // offerCount 만 puzzles 결과에 의존하므로 이 그룹 이후 순차 처리.
+  const [
+    { data: shareAuctions },
+    { data: legacyAuctions },
+    { data: rawClubs },
+    { data: ssrHotdeals },
+    { data: puzzlesRaw },
+  ] = await Promise.all([
+    // 조각(share) 매물 조회 — 메인 카탈로그 기본
+    supabase
+      .from("auctions")
+      .select(
+        `
+        *,
+        club:clubs(id, name, area, thumbnail_url),
+        md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
+      `
+      )
+      .eq("listing_type", "share")
+      .in("status", ["active", "scheduled"])
+      .gt("share_deadline", nowIso)
+      .order("share_deadline", { ascending: true })
+      .limit(100),
+    // 기존 경매(auction/instant) 조회 — 레거시 노출 (진행 중인 것만)
+    supabase
+      .from("auctions")
+      .select(
+        `
+        *,
+        club:clubs(id, name, area, thumbnail_url),
+        md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
+      `
+      )
+      .in("listing_type", ["auction", "instant"])
+      .in("status", ["active", "scheduled"])
+      .order("auction_start_at", { ascending: true })
+      .limit(50),
+    // 추천 클럽 조회 (ClubStrip용) — 순서 셔플은 클라이언트 마운트 시 수행
+    supabase
+      .from("clubs")
+      .select("id, name, area, thumbnail_url")
+      .is("deleted_at", null)
+      .not("name", "ilike", "%운영자%")
+      .order("name"),
+    // SEO용: 오늘 진행 중인 핫딜 SSR 로드 (sr-only 본문에만 사용)
+    supabase
+      .from("daily_hotdeals")
+      .select("id, title, price, original_price, club:clubs(name, area)")
+      .eq("status", "active")
+      .gt("ends_at", nowIso)
+      .order("ends_at", { ascending: true })
+      .limit(20),
+    // 오픈/검토중 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
+    // expires_at > now() 가드를 selecting에도 적용 — cron 지연/실패 시 만료된 검토중이 무기한 노출되는 문제 차단
+    supabase
+      .from("puzzles")
+      .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender)")
+      .in("status", ["open", "selecting"])
+      .gt("expires_at", nowIso)
+      .order("created_at", { ascending: false })
+      .limit(50),
+  ]);
 
-  // SEO용: 오늘 진행 중인 핫딜 SSR 로드 (sr-only 본문에만 사용)
-  const { data: ssrHotdeals } = await supabase
-    .from("daily_hotdeals")
-    .select("id, title, price, original_price, club:clubs(name, area)")
-    .eq("status", "active")
-    .gt("ends_at", nowIso)
-    .order("ends_at", { ascending: true })
-    .limit(20);
+  const activeAuctions = [...(shareAuctions ?? []), ...(legacyAuctions ?? [])];
 
   const HIDDEN_FROM_RECOMMEND = ["prism", "eclipse", "luna", "orion"];
   const clubs = (rawClubs ?? []).filter((c) => {
@@ -76,16 +92,6 @@ export default async function HomePage() {
       (kw) => lower.startsWith(kw) || lower.includes(`club ${kw}`)
     );
   });
-
-  // 오픈/검토중 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
-  // expires_at > now() 가드를 selecting에도 적용 — cron 지연/실패 시 만료된 검토중이 무기한 노출되는 문제 차단
-  const { data: puzzlesRaw } = await supabase
-    .from("puzzles")
-    .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender)")
-    .in("status", ["open", "selecting"])
-    .gt("expires_at", nowIso)
-    .order("created_at", { ascending: false })
-    .limit(50);
 
   // selecting(검토 중)을 상단 우선 노출 — 남은 시간 짧아 긴급도 높음
   const puzzles = (puzzlesRaw ?? []).sort((a, b) => {
