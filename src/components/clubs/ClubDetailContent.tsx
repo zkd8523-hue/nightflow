@@ -265,6 +265,9 @@ export function ClubDetailContent({
                 src={thumbnailUrl}
                 alt={`${club.area ? `${club.area} ` : ""}${club.name} 클럽 사진`}
                 fill
+                // 컨테이너는 max-w-lg(512px) 안의 w-full — sizes 없으면 next/image가 3840px(4K)를 받아 LCP 저하.
+                // 모바일은 화면 전체, 그 이상은 512px 상한으로 제한.
+                sizes="(max-width: 512px) 100vw, 512px"
                 className="object-cover"
                 priority
               />
