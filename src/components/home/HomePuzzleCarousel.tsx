@@ -26,6 +26,11 @@ interface Props {
   newFlagHref: string;
   /** 마지막 카드 자리에 노출할 CTA. 없으면 "자세히 보기" 카드 노출. */
   showFlagCTA?: boolean;
+  /**
+   * 전체 깃발 개수. puzzles가 캐러셀용으로 이미 잘려서 들어올 때,
+   * "더보기 ⋯" 버튼 노출 판단에 사용. 미지정 시 puzzles.length 사용.
+   */
+  totalCount?: number;
 }
 
 const MAX_CARDS = 3;
@@ -37,6 +42,7 @@ export function HomePuzzleCarousel({
   detailHref,
   newFlagHref,
   showFlagCTA = false,
+  totalCount,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   // MD 제안 시트 / 유저 합류 시트 — PuzzleList와 동일하게 캐러셀에서 바로 띄운다.
@@ -126,7 +132,7 @@ export function HomePuzzleCarousel({
             </div>
           );
         })}
-        {puzzles.length > MAX_CARDS && (
+        {(totalCount ?? puzzles.length) > MAX_CARDS && (
           <Link
             href={detailHref}
             className="flex-shrink-0 w-[64px] snap-start flex items-center justify-center pt-[22px] text-neutral-600 hover:text-neutral-400 transition-colors"

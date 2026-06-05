@@ -616,6 +616,34 @@ export function HomeContent({
     });
   }, [puzzles, blockedUserIds, puzzleOfferCounts]);
 
+  // 캐러셀(최대 3개) 전용: NEW는 마감일순으로 먼저 채우고, 남은 자리는
+  // 오퍼 많은 순으로 "선발"한 뒤, 캐러셀에 들어온 것끼리는 마감일순으로 "표시".
+  const CAROUSEL_SLOTS = 3;
+  const carouselPuzzles = useMemo(() => {
+    const now = Date.now();
+    const byEventDate = (a: Puzzle, b: Puzzle) =>
+      new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+
+    const isNew = (p: Puzzle) =>
+      now - new Date(p.created_at).getTime() < 6 * 60 * 60 * 1000;
+
+    const news = visiblePuzzles.filter(isNew).sort(byEventDate);
+    const rest = visiblePuzzles.filter((p) => !isNew(p));
+
+    // 남은 자리: 오퍼 많은 순으로 선발 (동률이면 마감일 가까운 순)
+    const remainingSlots = Math.max(0, CAROUSEL_SLOTS - news.length);
+    const picked = [...rest]
+      .sort((a, b) => {
+        const diff = (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
+        return diff !== 0 ? diff : byEventDate(a, b);
+      })
+      .slice(0, remainingSlots)
+      // 선발된 것끼리는 마감일 가까운 순으로 표시
+      .sort(byEventDate);
+
+    return [...news, ...picked];
+  }, [visiblePuzzles, puzzleOfferCounts]);
+
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
   useEffect(() => {
     setAuctions({
@@ -1064,7 +1092,8 @@ export function HomeContent({
           <div className="mb-3">
             {currentTab === "puzzle" && (
               <HomePuzzleCarousel
-                puzzles={visiblePuzzles}
+                puzzles={carouselPuzzles}
+                totalCount={visiblePuzzles.length}
                 offerCounts={puzzleOfferCounts}
                 userRole={user?.role as "user" | "md" | "admin" | undefined}
                 detailHref={detailHref("puzzle")}
