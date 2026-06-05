@@ -603,15 +603,18 @@ export function HomeContent({
     const filtered = blockedUserIds.size === 0
       ? puzzles
       : puzzles.filter((p) => !p.leader_id || !blockedUserIds.has(p.leader_id));
-    // NEW(등록 6시간 이내) 우선, 그 다음 이벤트 마감일 빠른 순
+    // NEW(등록 6시간 이내) 우선 → 오퍼 많은 순 → 이벤트 마감일 빠른 순
     const now = Date.now();
     return [...filtered].sort((a, b) => {
       const aNew = now - new Date(a.created_at).getTime() < 6 * 60 * 60 * 1000 ? 0 : 1;
       const bNew = now - new Date(b.created_at).getTime() < 6 * 60 * 60 * 1000 ? 0 : 1;
       if (aNew !== bNew) return aNew - bNew;
+      const aOffers = puzzleOfferCounts[a.id] ?? 0;
+      const bOffers = puzzleOfferCounts[b.id] ?? 0;
+      if (aOffers !== bOffers) return bOffers - aOffers;
       return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
     });
-  }, [puzzles, blockedUserIds]);
+  }, [puzzles, blockedUserIds, puzzleOfferCounts]);
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
   useEffect(() => {
