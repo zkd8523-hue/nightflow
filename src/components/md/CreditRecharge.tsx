@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Zap, Check } from "lucide-react";
 import { CREDIT_PRODUCTS, type CreditProduct } from "@/lib/payments/credit-products";
@@ -24,6 +25,7 @@ interface CreditRechargeProps {
  * 정책 위반이므로, 네이티브 앱에서는 결제를 막고 웹(브라우저)으로 유도한다.
  */
 export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string>(
     CREDIT_PRODUCTS.find((p) => p.recommended)?.id ?? CREDIT_PRODUCTS[0].id
   );
@@ -110,8 +112,9 @@ export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
       }
 
       toast.success(`크레딧 ${selected.credits}개가 충전되었습니다!`);
-      // 잔액 갱신을 위해 새로고침
-      setTimeout(() => window.location.reload(), 800);
+      // 충전 완료 화면으로 이동 (충전 페이지에 머물지 않도록).
+      // complete 페이지는 paymentId 로 멱등 재확인하므로 이미 적립돼 있어도 안전.
+      router.push(`/md/credits/complete?paymentId=${encodeURIComponent(paymentId)}`);
     } catch (e) {
       const message = e instanceof Error ? e.message : "결제 중 오류가 발생했습니다.";
       toast.error(message);
