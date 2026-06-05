@@ -535,11 +535,17 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           </div>
 
           {credits !== null && credits < 30 && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
+            <Link
+              href="/md/credits"
+              className="flex items-center justify-between gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 hover:bg-red-500/15 transition-colors"
+            >
               <p className="text-[12px] text-red-400 leading-relaxed">
-                크레딧이 부족합니다 ({credits}/30). 매일 오전 6시에 자동 충전됩니다.
+                크레딧이 부족합니다 ({credits}/30). 충전 후 제안할 수 있어요.
               </p>
-            </div>
+              <span className="flex items-center gap-0.5 shrink-0 text-[12px] font-black text-amber-400">
+                충전 <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </Link>
           )}
 
           <Button

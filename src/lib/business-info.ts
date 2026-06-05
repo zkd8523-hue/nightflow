@@ -14,8 +14,8 @@ export const BUSINESS_INFO = {
   ceo: "김민기",
   /** 사업자등록번호 */
   businessNumber: "842-06-03382",
-  /** 통신판매업 신고번호 — 신고 완료 후 채움 (예: 2026-부산연제-XXXX) */
-  mailOrderSalesNumber: "",
+  /** 통신판매업 신고번호 — 부산 연제구청 신고 (2026-06-04) */
+  mailOrderSalesNumber: "2026-부산연제-0301",
   /** 사업장 주소지 */
   address: "부산광역시 연제구 쌍미천로129번길 21",
   /** 고객센터 유선전화 (휴대폰 불가) */

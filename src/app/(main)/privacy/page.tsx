@@ -125,6 +125,40 @@ export default function PrivacyPage() {
                         </p>
                     </section>
 
+                    {/* 3-1. 개인정보 처리위탁 */}
+                    <section className="space-y-3">
+                        <h2 className="text-lg font-black text-white">3-1. 개인정보 처리위탁</h2>
+                        <p>회사는 원활한 서비스 제공을 위하여 다음과 같이 개인정보 처리업무를 외부 전문업체에 위탁하고 있습니다:</p>
+
+                        <div className="overflow-x-auto mt-4">
+                            <table className="w-full text-sm border border-neutral-700 rounded-lg overflow-hidden">
+                                <thead className="bg-neutral-900">
+                                    <tr>
+                                        <th className="px-4 py-3 text-left text-white font-bold border-b border-neutral-700">수탁업체</th>
+                                        <th className="px-4 py-3 text-left text-white font-bold border-b border-neutral-700">위탁 업무</th>
+                                        <th className="px-4 py-3 text-left text-white font-bold border-b border-neutral-700">보유 및 이용 기간</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr className="border-b border-neutral-800">
+                                        <td className="px-4 py-3 text-green-500 font-bold">(주)코리아포트원<br /><span className="text-neutral-400 font-normal text-xs">(PortOne)</span></td>
+                                        <td className="px-4 py-3">결제 처리 및 결제 도용 방지</td>
+                                        <td className="px-4 py-3">회원 탈퇴 또는 위탁계약 종료 시까지 (관계 법령에 따른 보관 기간은 예외)</td>
+                                    </tr>
+                                    <tr>
+                                        <td className="px-4 py-3 text-green-500 font-bold">카카오페이(주)</td>
+                                        <td className="px-4 py-3">신용카드·간편결제 등 결제 대행</td>
+                                        <td className="px-4 py-3">관계 법령에 따른 보관 기간</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <p className="mt-4 text-sm text-neutral-400">
+                            ※ 회사는 위탁계약 체결 시 개인정보보호법 제26조에 따라 위탁업무 수행 목적 외 개인정보 처리 금지, 기술적·관리적 보호조치 등을 계약서에 명시하고 수탁자가 개인정보를 안전하게 처리하는지 감독합니다.
+                        </p>
+                    </section>
+
                     {/* 4. 개인정보의 보유 및 이용 기간 */}
                     <section className="space-y-3">
                         <h2 className="text-lg font-black text-white">4. 개인정보의 보유 및 이용 기간</h2>
