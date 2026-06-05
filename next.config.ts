@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/puzzles/:path*", destination: "/flags/:path*", permanent: true },
       { source: "/about", destination: "/vision", permanent: true },
+      // /flags 인덱스 페이지 없음 → 홈의 깃발 탭(더보기)으로 301.
+      // 깃발 더보기 ⋯ 버튼과 동일한 목적지 — 의도 정확 매칭.
+      { source: "/flags", destination: "/?tab=puzzle&detail=1", permanent: true },
     ];
   },
   images: {
