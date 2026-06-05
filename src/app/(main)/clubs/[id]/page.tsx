@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .single();
 
   if (!club) {
-    return { title: "클럽을 찾을 수 없습니다" };
+    notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
 
   const area = club.area || "";

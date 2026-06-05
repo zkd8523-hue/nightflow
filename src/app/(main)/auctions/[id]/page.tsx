@@ -26,9 +26,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .single();
 
   if (!auction) {
-    return {
-      title: "매물을 찾을 수 없습니다",
-    };
+    // notFound() 호출해서 HTTP 404 응답 + 404 페이지 렌더링.
+    // 이전엔 metadata만 반환해서 HTTP 200 + 404 본문 = Soft 404 패턴이었음.
+    // Google이 가장 싫어하는 시그널 (색인 점수 ↓).
+    notFound();
   }
 
   const formatPrice = (price: number) =>

@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .single();
 
   if (!puzzle) {
-    return { title: "퍼즐을 찾을 수 없습니다" };
+    notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
 
   const area = puzzle.area || "서울";

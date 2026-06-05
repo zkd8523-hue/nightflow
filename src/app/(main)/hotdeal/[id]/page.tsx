@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .single();
 
   if (!data) {
-    return { title: "핫딜을 찾을 수 없습니다" };
+    notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
 
   const club = (data as { club?: { name?: string; area?: string | null } }).club;

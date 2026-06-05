@@ -63,7 +63,7 @@ export async function generateMetadata({
   const { area: rawArea } = await params;
   const area = decodeURIComponent(rawArea);
   if (!isSupportedArea(area)) {
-    return { title: "지역을 찾을 수 없습니다" };
+    notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
   const title = `${area} 클럽 게스트 - 무료입장·게스트 명단 정보`;
   const description = `${area} 클럽 게스트 입장·무료입장 정보 모음. ${area} 인기 클럽의 이번 주 게스트 간판, 요일별 무료입장 혜택, 게스트 명단을 한곳에서. 나플(나이트플로우)에서 ${area} 클럽 게스트 정보 확인.`;

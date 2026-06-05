@@ -58,7 +58,7 @@ export async function generateMetadata({
   const { area: rawArea } = await params;
   const area = decodeURIComponent(rawArea);
   if (!isSupportedArea(area)) {
-    return { title: "지역을 찾을 수 없습니다" };
+    notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
   const title = `${area} 핫플 지도 - ${area} 클럽 위치·정보 한눈에`;
   const description = `${area} 핫플(핫플레이스) 클럽 지도. ${area} 인기 클럽의 위치, 영업시간, 게스트·무료입장, 테이블 가격 정보를 한곳에서 비교하세요. 강남·홍대 등 ${area} 클럽 추천은 나플(나이트플로우)에서.`;
