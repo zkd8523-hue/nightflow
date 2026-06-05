@@ -386,9 +386,9 @@ function AreaCarousel({
       <h2 className="text-[15px] font-black text-white mb-3 px-1 flex items-center gap-2">
         {hasHotplace ? (
           <Link
-            href={`/hotplace/${encodeURIComponent(area)}`}
+            href={`/clubs?area=${encodeURIComponent(area)}`}
             className="inline-flex items-center gap-0.5 hover:text-amber-400 active:text-amber-400 transition-colors"
-            aria-label={`${area} 핫플 지도 보기`}
+            aria-label={`${area} 클럽 전체 보기`}
           >
             {area}
             <ChevronRight className="w-4 h-4 text-neutral-500 -mb-0.5" strokeWidth={3} />
@@ -402,9 +402,11 @@ function AreaCarousel({
         {hasHotplace && (
           <Link
             href={`/hotplace/${encodeURIComponent(area)}`}
-            className="ml-auto text-[11px] text-neutral-500 hover:text-amber-400 transition-colors font-medium"
+            className="ml-auto inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-amber-400 transition-colors font-medium"
+            aria-label={`${area} 핫플 지도 보기`}
           >
-            지도 →
+            <MapIcon className="w-3.5 h-3.5" />
+            지도
           </Link>
         )}
       </h2>
