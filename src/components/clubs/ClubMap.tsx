@@ -117,26 +117,46 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
       if (opts.silent) return;
       const { Capacitor } = await import("@capacitor/core");
       const isNative = Capacitor.isNativePlatform();
-      toast.error("위치 권한이 필요해요", {
-        description: isNative
-          ? "설정에서 위치 권한을 허용해주세요"
-          : "브라우저 설정에서 위치 권한을 허용해주세요",
-        action: {
-          label: "설정 열기",
-          onClick: () => {
-            if (!isNative) return;
-            try {
-              const platform = Capacitor.getPlatform();
-              const url =
-                platform === "ios"
-                  ? "app-settings:"
-                  : "intent://settings#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=kr.nightflow.app;end";
-              window.open(url, "_system");
-            } catch {
-              toast.error("설정 앱을 열 수 없어요");
-            }
+
+      // 네이티브 앱: 설정 앱으로 딥링크 (동작 가능)
+      if (isNative) {
+        toast.error("위치 권한이 필요해요", {
+          description: "설정에서 위치 권한을 허용해주세요",
+          action: {
+            label: "설정 열기",
+            onClick: () => {
+              try {
+                const platform = Capacitor.getPlatform();
+                const url =
+                  platform === "ios"
+                    ? "app-settings:"
+                    : "intent://settings#Intent;action=android.settings.APPLICATION_DETAILS_SETTINGS;package=kr.nightflow.app;end";
+                window.open(url, "_system");
+              } catch {
+                toast.error("설정 앱을 열 수 없어요");
+              }
+            },
           },
-        },
+        });
+        return;
+      }
+
+      // 웹/모바일 브라우저: JS로 설정을 열 수 없으므로 버튼 대신 실제 방법 안내.
+      // 위치 없이도 상단 지역 칩으로 클럽을 볼 수 있음 (fallback).
+      const ua = navigator.userAgent;
+      const isIOS = /iPhone|iPad|iPod/.test(ua);
+      const isSafari = /^((?!chrome|crios|android).)*safari/i.test(ua);
+      let guide: string;
+      if (isIOS && isSafari) {
+        guide = "설정 → Safari → 위치 → 허용으로 바꾼 뒤 새로고침해주세요. 또는 위 지역 칩에서 지역을 직접 선택할 수 있어요.";
+      } else if (isSafari) {
+        guide = "Safari 메뉴 → 이 웹사이트의 설정 → 위치 → 허용으로 바꿔주세요. 또는 위 지역 칩에서 지역을 직접 선택할 수 있어요.";
+      } else {
+        guide = "주소창 왼쪽 자물쇠 아이콘 → 위치 → 허용으로 바꾼 뒤 새로고침해주세요. 또는 위 지역 칩에서 지역을 직접 선택할 수 있어요.";
+      }
+      toast.error("위치 권한이 차단돼 있어요", {
+        description: guide,
+        duration: 8000,
       });
     };
 
