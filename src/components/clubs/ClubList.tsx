@@ -378,13 +378,34 @@ function AreaCarousel({
     el.scrollTo({ left: nextCard * STEP, behavior: "smooth" });
   };
 
+  const HOTPLACE_AREAS = ["강남", "홍대", "이태원", "부산", "광주", "대구"];
+  const hasHotplace = HOTPLACE_AREAS.includes(area);
+
   return (
     <section>
       <h2 className="text-[15px] font-black text-white mb-3 px-1 flex items-baseline gap-2">
-        {area}
+        {hasHotplace ? (
+          <Link
+            href={`/hotplace/${encodeURIComponent(area)}`}
+            className="hover:text-amber-400 transition-colors"
+            aria-label={`${area} 핫플 지도 보기`}
+          >
+            {area}
+          </Link>
+        ) : (
+          area
+        )}
         <span className="text-neutral-500 text-[11px] font-medium">
           {clubs.length}
         </span>
+        {hasHotplace && (
+          <Link
+            href={`/hotplace/${encodeURIComponent(area)}`}
+            className="ml-auto text-[11px] text-neutral-500 hover:text-amber-400 transition-colors font-medium"
+          >
+            지도 →
+          </Link>
+        )}
       </h2>
       <div className="-mx-4 px-4 relative group">
         <div ref={scrollRef} data-no-pull-refresh className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory touch-pan-x touch-pan-y">
