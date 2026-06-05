@@ -627,7 +627,15 @@ export function HomeContent({
     const isNew = (p: Puzzle) =>
       now - new Date(p.created_at).getTime() < 6 * 60 * 60 * 1000;
 
-    const news = visiblePuzzles.filter(isNew).sort(byEventDate);
+    // NEW끼리는 마감일 가까운 순, 같으면 오퍼 많은 순으로 안정화.
+    // NEW만으로 자리가 넘치면 여기서 잘라 카드 수를 확정한다.
+    const news = visiblePuzzles
+      .filter(isNew)
+      .sort((a, b) => {
+        const d = byEventDate(a, b);
+        return d !== 0 ? d : (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
+      })
+      .slice(0, CAROUSEL_SLOTS);
     const rest = visiblePuzzles.filter((p) => !isNew(p));
 
     // 남은 자리: 오퍼 많은 순으로 선발 (동률이면 마감일 가까운 순)
@@ -641,6 +649,7 @@ export function HomeContent({
       // 선발된 것끼리는 마감일 가까운 순으로 표시
       .sort(byEventDate);
 
+    // carouselPuzzles = 캐러셀에 표시될 최종 카드(최대 CAROUSEL_SLOTS개)로 확정.
     return [...news, ...picked];
   }, [visiblePuzzles, puzzleOfferCounts]);
 
