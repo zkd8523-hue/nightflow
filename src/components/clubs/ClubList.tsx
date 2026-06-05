@@ -383,14 +383,15 @@ function AreaCarousel({
 
   return (
     <section>
-      <h2 className="text-[15px] font-black text-white mb-3 px-1 flex items-baseline gap-2">
+      <h2 className="text-[15px] font-black text-white mb-3 px-1 flex items-center gap-2">
         {hasHotplace ? (
           <Link
             href={`/hotplace/${encodeURIComponent(area)}`}
-            className="hover:text-amber-400 transition-colors"
+            className="inline-flex items-center gap-0.5 hover:text-amber-400 active:text-amber-400 transition-colors"
             aria-label={`${area} 핫플 지도 보기`}
           >
             {area}
+            <ChevronRight className="w-4 h-4 text-neutral-500 -mb-0.5" strokeWidth={3} />
           </Link>
         ) : (
           area
