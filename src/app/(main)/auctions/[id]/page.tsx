@@ -5,6 +5,7 @@ import { getPrimaryAlias } from "@/lib/clubs/aliases";
 import type { Metadata } from "next";
 
 export const revalidate = 0; // 실시간 데이터
+export const dynamic = "force-dynamic"; // notFound() 시 정상 404 응답 보장 (Soft 404 방지)
 
 interface PageProps {
   params: Promise<{ id: string }>;

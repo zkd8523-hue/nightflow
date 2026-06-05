@@ -7,6 +7,7 @@ import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 import type { Metadata } from "next";
 
 export const revalidate = 10;
+export const dynamic = "force-dynamic"; // notFound() 시 정상 404 응답 보장 (Soft 404 방지)
 
 interface PageProps {
   params: Promise<{ id: string }>;
