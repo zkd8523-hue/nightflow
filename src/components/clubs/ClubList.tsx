@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
-import { ClubFilterChips, type ClubFilters } from "./ClubFilterChips";
+import { ClubFilterChips, ClubAreaChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -73,8 +73,9 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
     () => searchParams.get("view") === "list"
   );
 
+  // 지역(area)은 1차 필터로 항상 노출되므로 세부 필터 카운트에서 제외
   const activeFilterCount =
-    filters.areas.length + filters.genres.length + filters.venueTypes.length;
+    filters.genres.length + filters.venueTypes.length;
 
   // view 전환 시 필터 펼침 상태도 기본값으로 맞춤 (지도=접힘, 리스트=펼침)
   const changeView = (next: ViewMode) => {
@@ -265,7 +266,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
             : undefined
         }
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
           {view === "map" && (
             <button
               type="button"
@@ -276,7 +277,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               <ArrowLeft className="w-4 h-4 text-white" />
             </button>
           )}
-          <div className="flex-1 flex items-center bg-neutral-900 rounded-full pl-3 pr-1.5 h-9">
+          <div className="flex-1 min-w-0 flex items-center bg-neutral-900 rounded-full pl-3 pr-1.5 h-9">
             <Search className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
             <input
               type="text"
@@ -322,7 +323,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               onClick={() => changeView("list")}
               aria-label="리스트 보기"
               aria-pressed={view === "list"}
-              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+              className={`flex items-center justify-center w-7 h-8 rounded-full transition-colors ${
                 view === "list" ? "bg-white text-black" : "text-neutral-400"
               }`}
             >
@@ -333,7 +334,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               onClick={() => changeView("map")}
               aria-label="지도 보기"
               aria-pressed={view === "map"}
-              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+              className={`flex items-center justify-center w-7 h-8 rounded-full transition-colors ${
                 view === "map" ? "bg-white text-black" : "text-neutral-400"
               }`}
             >
@@ -341,6 +342,9 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
             </button>
           </div>
         </div>
+        {/* 지역 필터는 항상 표시 (1차 필터) */}
+        <ClubAreaChips value={filters} onChange={setFilters} />
+        {/* 세부 필터(클럽/장르)는 토글로 펼침 */}
         {filtersOpen && <ClubFilterChips value={filters} onChange={setFilters} />}
       </div>
 
@@ -350,6 +354,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
           activeCountMap={activeCountMap}
           hotdealMap={hotdealMap}
           unmappedCount={filtered.length - mappableCount}
+          activeAreas={filters.areas}
         />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-3">

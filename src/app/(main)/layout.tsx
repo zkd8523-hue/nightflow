@@ -16,6 +16,14 @@ export default function MainLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  // iframe 임베드 모드(예: 지도 모달에서 /clubs/{id}?embedded=1) — 헤더/네비 숨김.
+  // useSearchParams는 정적 prerender 시 Suspense 요구하므로 window 직접 사용.
+  const [isEmbedded, setIsEmbedded] = useState(false);
+  useEffect(() => {
+    setIsEmbedded(
+      new URLSearchParams(window.location.search).get("embedded") === "1"
+    );
+  }, [pathname]);
 
   // 클럽지도(view=map)에서 Header 자체를 마운트하지 않음.
   // URL search 폴링은 일부 환경에서 동기화 지연이 있어,
@@ -62,8 +70,8 @@ export default function MainLayout({
   // Vision은 풀스크린 매니페스토 — 헤더/푸터/바텀네비 없이 단독 노출
   const isVisionPage = pathname === "/vision";
 
-  // 헤더/푸터/바텀네비를 숨기는 풀스크린 모드 (클럽지도 + Vision)
-  const isChromeless = isClubMapView || isVisionPage;
+  // 헤더/푸터/바텀네비를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드)
+  const isChromeless = isClubMapView || isVisionPage || isEmbedded;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>

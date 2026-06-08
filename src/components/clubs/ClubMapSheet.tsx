@@ -3,7 +3,7 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Flag, Wine } from "lucide-react";
+import { Flag, Wine, ChevronRight } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { getTagsByGroup } from "@/lib/clubs/tags";
 import { getOpeningStatus } from "@/lib/clubs/openingStatus";
@@ -27,16 +27,20 @@ interface Props {
   hotdealMap?: Record<string, string>;
   selectedClubId: string | null;
   onCardClick: (clubId: string) => void;
+  /** "상세 보기" 버튼 클릭 시 호출 — 시트로 클럽 상세 모달 띄움 */
+  onDetailClick?: (clubId: string) => void;
   /** 시트가 차지하는 viewport 비율 (0~1) */
   onHeightChange?: (ratio: number) => void;
   /** 좌표 미등록으로 지도에 표시 못한 클럽 수 */
   unmappedCount?: number;
+  /** 데스크탑 우측 클럽 상세 패널 열림 여부 — 시트 우측에 패널만큼 padding 부여 */
+  detailPanelOpen?: boolean;
 }
 
 // 3단계 스냅 포인트 (viewport 높이 비율)
 const SNAP_POINTS = {
-  minimized: 0.13, // 헤더 + 첫 카드 일부만 (GPS 사용 시 자동 진입)
-  collapsed: 0.38, // 큰 카드 1개 정확히 보임 (여기어때 패턴)
+  minimized: 0.13, // 헤더 + 첫 카드 일부만
+  collapsed: 0.26, // 첫 카드(상세 보기까지) + 둘째 카드 첫 줄 살짝
   expanded: 0.78,  // 전체 리스트 보기
 };
 
@@ -52,8 +56,10 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
   hotdealMap = {},
   selectedClubId,
   onCardClick,
+  onDetailClick,
   onHeightChange,
   unmappedCount = 0,
+  detailPanelOpen = false,
 }, ref) {
   const [snap, setSnap] = useState<Snap>("collapsed");
   useImperativeHandle(ref, () => ({ setSnap }), []);
@@ -158,7 +164,11 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
     <div
       ref={sheetRef}
       style={heightStyle}
-      className="absolute left-0 right-0 bottom-0 bg-[#1C1C1E] rounded-t-3xl shadow-2xl border-t border-neutral-800 z-20 flex flex-col"
+      className={`absolute left-0 bottom-0 bg-[#1C1C1E] rounded-t-3xl shadow-2xl border-t border-neutral-800 z-20 flex flex-col transition-[right] duration-200 ${
+        detailPanelOpen
+          ? "right-0 md:right-[480px] lg:right-[560px]"
+          : "right-0"
+      }`}
     >
       {/* 드래그 핸들 */}
       <div
@@ -212,6 +222,8 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
                 flagCount={activeCountMap[c.id] || 0}
                 hotdealText={hotdealMap[c.id]}
                 isSelected={selectedClubId === c.id}
+                onCardClick={onCardClick}
+                onDetailClick={onDetailClick}
               />
             ))}
           </div>
@@ -221,27 +233,39 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
   );
 });
 
-/** 카드 전체가 상세 페이지 링크. 한 카드에 정보 압축. 구분선은 divide-y로 부모에서. */
+/** 카드 클릭 = 지도 panTo (탐색 흐름 유지). "상세 보기" = 시트 모달 (지도 안 끊김). */
 function DetailCard({
   club,
   flagCount,
   hotdealText,
   isSelected,
+  onCardClick,
+  onDetailClick,
 }: {
   club: ClubItem;
   flagCount: number;
   hotdealText?: string;
   isSelected: boolean;
+  onCardClick: (clubId: string) => void;
+  onDetailClick?: (clubId: string) => void;
 }) {
   const genres = getTagsByGroup(club.tags || [], "genre");
   const genreLine = genres.slice(0, 2).map((g) => `#${g.label}`).join(" ");
   const opening = getOpeningStatus(club.operating_hours);
 
   return (
-    <Link
-      href={`/clubs/${club.id}`}
+    <div
+      role="button"
+      tabIndex={0}
       data-club-id={club.id}
-      className={`flex gap-3 items-start p-3 transition-colors ${
+      onClick={() => onCardClick(club.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onCardClick(club.id);
+        }
+      }}
+      className={`flex gap-3 items-start p-3 transition-colors cursor-pointer ${
         isSelected ? "bg-neutral-800/60" : "hover:bg-neutral-900/60"
       }`}
     >
@@ -266,7 +290,9 @@ function DetailCard({
           <p className="text-white text-[15px] font-black truncate flex-1">
             {club.name}
           </p>
-          <FavoriteButton clubId={club.id} />
+          <span onClick={(e) => e.stopPropagation()}>
+            <FavoriteButton clubId={club.id} />
+          </span>
         </div>
 
         {/* HOT DEAL 한 줄 (있을 때만) */}
@@ -301,22 +327,45 @@ function DetailCard({
           <span className="text-neutral-500 truncate">{club.area || "기타"}</span>
         </div>
 
-        {/* Line 3: 장르 · 입장료 */}
-        <p className="text-neutral-400 text-[11px] font-medium truncate">
-          {genreLine ? (
-            <span>{genreLine}</span>
-          ) : (
-            <span className="text-neutral-600">장르 준비중</span>
+        {/* Line 3: 장르 · 입장료 · (우측) 상세 보기 — 한 줄로 압축 */}
+        <div className="flex items-center gap-2 min-w-0">
+          {(genreLine || club.entry_fee_detail) && (
+            <p className="text-neutral-400 text-[11px] font-medium truncate flex-1 min-w-0">
+              {genreLine && <span>{genreLine}</span>}
+              {genreLine && club.entry_fee_detail && (
+                <span className="text-neutral-700 mx-1.5">·</span>
+              )}
+              {club.entry_fee_detail && (
+                <span className="text-neutral-300">{club.entry_fee_detail}</span>
+              )}
+            </p>
           )}
-          <span className="text-neutral-700 mx-1.5">·</span>
-          {club.entry_fee_detail ? (
-            <span className="text-neutral-300">{club.entry_fee_detail}</span>
+          {!(genreLine || club.entry_fee_detail) && <div className="flex-1" />}
+          {onDetailClick ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDetailClick(club.id);
+              }}
+              className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 active:scale-95 transition flex-shrink-0"
+            >
+              상세 보기
+              <ChevronRight className="w-3 h-3" strokeWidth={3} />
+            </button>
           ) : (
-            <span className="text-neutral-600">입장료 준비중</span>
+            <Link
+              href={`/clubs/${club.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 active:scale-95 transition flex-shrink-0"
+            >
+              상세 보기
+              <ChevronRight className="w-3 h-3" strokeWidth={3} />
+            </Link>
           )}
-        </p>
+        </div>
 
-        {/* Line 4: 깃발 · 주대표 */}
+        {/* Line 4: 깃발 · 주대표 (있을 때만 줄 자체 노출) */}
         {(flagCount > 0 || club.drink_menu_url) && (
           <div className="flex items-center gap-1.5 pt-0.5">
             {flagCount > 0 && (
@@ -334,6 +383,6 @@ function DetailCard({
           </div>
         )}
       </div>
-    </Link>
+    </div>
   );
 }

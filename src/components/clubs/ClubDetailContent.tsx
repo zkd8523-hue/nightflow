@@ -94,6 +94,13 @@ export function ClubDetailContent({
   const { user } = useCurrentUser();
   const supabase = createClient();
 
+  // iframe 임베드 모드 (지도 모달 안에서 열린 경우). 뒤로가기 버튼 숨김 → 모달 X 버튼 사용.
+  const [isEmbedded, setIsEmbedded] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setIsEmbedded(new URLSearchParams(window.location.search).get("embedded") === "1");
+  }, []);
+
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [userBidMap, setUserBidMap] = useState<Map<string, number>>(new Map());
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
@@ -247,14 +254,18 @@ export function ClubDetailContent({
               <p className="text-white font-black text-[15px]">여기에 놓으세요</p>
             </div>
           )}
-            {/* 이미지 위 플로팅: 뒤로가기 + 찜 */}
+            {/* 이미지 위 플로팅: 뒤로가기 + 찜. 임베드 모드(지도 모달)에선 뒤로가기 숨김. */}
             <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 pt-3 pointer-events-none">
-              <button
-                onClick={() => router.back()}
-                className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
-              >
-                <ArrowLeft className="w-7 h-7 text-white" />
-              </button>
+              {!isEmbedded ? (
+                <button
+                  onClick={() => router.back()}
+                  className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
+                >
+                  <ArrowLeft className="w-7 h-7 text-white" />
+                </button>
+              ) : (
+                <div />
+              )}
               <div className="pointer-events-auto">
                 <FavoriteButton clubId={club.id} variant="overlay" />
               </div>

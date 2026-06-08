@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { MapPin, LocateFixed, Loader2 } from "lucide-react";
 import { ClubMapSheet, type ClubMapSheetHandle } from "./ClubMapSheet";
+import { ClubDetailSheet } from "./ClubDetailSheet";
 
 interface ClubMapItem {
   id: string;
@@ -25,6 +26,8 @@ interface Props {
   initialCenter?: { lat: number; lng: number };
   /** 좌표 미등록으로 지도에 표시 못한 클럽 수 (있으면 시트 상단에 작게 안내) */
   unmappedCount?: number;
+  /** 활성 area 필터 — 새 area가 추가됐을 때만 지도 자동 fit */
+  activeAreas?: string[];
 }
 
 declare global {
@@ -72,13 +75,14 @@ function loadKakaoSdk(): Promise<void> {
   return sdkPromise;
 }
 
-export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter, unmappedCount = 0 }: Props) {
+export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter, unmappedCount = 0, activeAreas = [] }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [selectedClub, setSelectedClub] = useState<ClubMapItem | null>(null);
+  const [detailClubId, setDetailClubId] = useState<string | null>(null);
   const [locating, setLocating] = useState(false);
   const [sheetRatio, setSheetRatio] = useState(0.5);
   const userPinRef = useRef<any>(null);
@@ -315,16 +319,33 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
 
   }, [status, filtered, activeCountMap, hotdealMap, selectedClub]);
 
-  // 필터/검색 결과가 바뀌면 지도 시야를 결과 클럽들에 맞춤
-  // (지역 칩, 장르 칩, 검색어 변경 시 즉시 해당 영역으로 이동)
+  // 필터/검색 결과가 바뀔 때 지도 시야 조정.
+  // - area 필터가 "새로 추가/변경"되면 해당 area로 fit
+  // - area를 "해제"하면 지도 그대로 유지 (사용자 탐색 흐름)
+  // - 첫 로드 시에도 결과에 맞춰 fit
   const fingerprint = useMemo(
     () => filtered.map((c) => c.id).sort().join(","),
     [filtered]
   );
+  const prevAreasRef = useRef<string[]>([]);
+  const firstFitDoneRef = useRef<boolean>(false);
   useEffect(() => {
     if (status !== "ready" || !mapInstanceRef.current) return;
     if (filtered.length === 0) return;
     const map = mapInstanceRef.current;
+
+    const prevAreas = prevAreasRef.current;
+    const curAreas = activeAreas;
+    prevAreasRef.current = curAreas;
+
+    // 새로 추가된 area가 있나? (이전엔 없던 게 지금 있음)
+    const newlyAdded = curAreas.filter((a) => !prevAreas.includes(a));
+    const isFirstFit = !firstFitDoneRef.current;
+
+    // 첫 fit + 새 area 추가 시에만 자동 이동. area 해제는 무시.
+    if (!isFirstFit && newlyAdded.length === 0) return;
+    firstFitDoneRef.current = true;
+
     if (filtered.length === 1) {
       const c = filtered[0];
       map.setLevel(4);
@@ -337,7 +358,7 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
     });
     map.setBounds(bounds);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, fingerprint]);
+  }, [status, fingerprint, activeAreas]);
 
   if (status === "error") {
     return (
@@ -409,10 +430,14 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
           hotdealMap={hotdealMap}
           selectedClubId={selectedClub?.id ?? null}
           onCardClick={handleCardClick}
+          onDetailClick={setDetailClubId}
           onHeightChange={setSheetRatio}
           unmappedCount={unmappedCount}
+          detailPanelOpen={!!detailClubId}
         />
       )}
+
+      <ClubDetailSheet clubId={detailClubId} onClose={() => setDetailClubId(null)} />
     </div>
   );
 }

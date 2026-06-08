@@ -13,6 +13,27 @@ interface Props {
   onChange: (next: ClubFilters) => void;
 }
 
+/** 지역(area) 필터만 노출하는 별도 줄 — 항상 보이는 1차 필터 */
+export function ClubAreaChips({ value, onChange }: Props) {
+  const selectSingle = (arr: string[], key: string) =>
+    arr.length === 1 && arr[0] === key ? [] : [key];
+
+  return (
+    <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+      {AREA_OPTIONS.map((area) => (
+        <Chip
+          key={area}
+          label={area}
+          active={value.areas.includes(area)}
+          onClick={() =>
+            onChange({ ...value, areas: selectSingle(value.areas, area) })
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
 function Chip({
   active,
   label,
@@ -49,19 +70,6 @@ export function ClubFilterChips({ value, onChange }: Props) {
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
-        {AREA_OPTIONS.map((area) => (
-          <Chip
-            key={area}
-            label={area}
-            active={value.areas.includes(area)}
-            onClick={() =>
-              onChange({ ...value, areas: selectSingle(value.areas, area) })
-            }
-          />
-        ))}
-      </div>
-
       {venueTypeGroup && (
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
           {venueTypeGroup.options.map((opt) => (
