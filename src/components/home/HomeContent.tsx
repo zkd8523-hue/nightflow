@@ -12,6 +12,8 @@ import { CheckCircle2, X, PartyPopper, ChevronRight, Star } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { ClubStrip } from "@/components/home/ClubStrip";
 import { isAuctionExpired } from "@/lib/utils/auction";
+import { matchesArea } from "@/lib/utils/area";
+import { MAIN_AREAS } from "@/lib/constants/areas";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
 import { trackEvent, trackShareEvent } from "@/lib/analytics/events";
@@ -227,7 +229,7 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
   },
   puzzle: {
     // content는 HomeContent 내부에서 JSX로 재정의 (시크릿오퍼란? 버튼 포함)
-    content: "유저들의 예산이 기다리고 있어요 💰\n시크릿오퍼로 매출을 올려봐요!",
+    content: "유저들의 예산이 기다리고 있어요 💰",
     note: "💰 제안 무료 · 매칭 시 직접 거래",
   },
   share: {
@@ -469,6 +471,21 @@ export function HomeContent({
   const isMdOrAdminUser = user?.role === "md" || user?.role === "admin";
   // 조각 탭 노출 조건: MD/Admin은 항상, 일반/비로그인은 조각이 1개 이상일 때만
   const showShareTab = isMdOrAdminUser || shareCount > 0;
+
+  // MD 로그인 시 깃발 지역 필터 기본값을 본인 활동 지역으로 1회 자동 선택.
+  // (MAIN_AREAS = 강남/홍대/이태원 칩만 제공하므로 그 안에 드는 첫 지역만 적용)
+  const areaDefaultApplied = useRef(false);
+  useEffect(() => {
+    if (areaDefaultApplied.current) return;
+    if (!isMdOrAdminUser) return;
+    const mine = (user?.area ?? []).find((a) =>
+      (MAIN_AREAS as readonly string[]).includes(a)
+    );
+    if (mine) {
+      setSelectedArea(mine);
+      areaDefaultApplied.current = true;
+    }
+  }, [isMdOrAdminUser, user?.area]);
   const normalizeTab = (t: string | null): "today" | "advance" | "puzzle" | "share" => {
     if (t === "today" && instantEnabled) return "today";
     if (t === "advance") return "advance";
@@ -553,6 +570,8 @@ export function HomeContent({
 
   // 차단한 사용자 ID 집합 (Apple Guideline 1.2 — 차단 시 피드 즉시 제거)
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
+  // MD/Admin이 이미 오퍼한 깃발 ID — 캐러셀 정렬에서 "미제안 우선" 판정용 (MD만 fetch)
+  const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
 
   // 유저 관심/입찰/차단 병렬 fetch (Promise.all 로 RTT 절감)
   useEffect(() => {
@@ -560,11 +579,12 @@ export function HomeContent({
       setUserInterestedSet(new Set());
       setUserBidMap(new Map());
       setBlockedUserIds(new Set());
+      setMyOfferedPuzzleIds(new Set());
       return;
     }
     const auctionIds = auctions.active.map(a => a.id);
     const fetchAll = async () => {
-      const [interestsResult, bidsResult, blocksResult] = await Promise.all([
+      const [interestsResult, bidsResult, blocksResult, offersResult] = await Promise.all([
         supabase.from("chat_interests").select("auction_id").eq("user_id", user.id),
         auctionIds.length > 0
           ? supabase
@@ -575,6 +595,14 @@ export function HomeContent({
               .order("bid_amount", { ascending: false })
           : Promise.resolve({ data: [] as { auction_id: string; bid_amount: number }[] }),
         supabase.from("user_blocks").select("blocked_id").eq("blocker_id", user.id),
+        // MD/Admin만 오퍼 조회 — 캐러셀 "미제안 우선" 정렬용
+        isMdOrAdminUser
+          ? supabase
+              .from("puzzle_offers")
+              .select("puzzle_id")
+              .eq("md_id", user.id)
+              .in("status", ["pending", "accepted"])
+          : Promise.resolve({ data: [] as { puzzle_id: string }[] }),
       ]);
       if (interestsResult.data) {
         setUserInterestedSet(new Set(interestsResult.data.map((d: { auction_id: string }) => d.auction_id)));
@@ -589,9 +617,12 @@ export function HomeContent({
       if (blocksResult.data) {
         setBlockedUserIds(new Set(blocksResult.data.map((d: { blocked_id: string }) => d.blocked_id)));
       }
+      if (offersResult.data) {
+        setMyOfferedPuzzleIds(new Set(offersResult.data.map((d: { puzzle_id: string }) => d.puzzle_id)));
+      }
     };
     fetchAll();
-  }, [user, auctions.active, supabase]);
+  }, [user, auctions.active, supabase, isMdOrAdminUser]);
 
   // 차단한 사용자의 경매/퍼즐 필터링
   const visibleAuctions = useMemo(() => {
@@ -616,27 +647,58 @@ export function HomeContent({
     });
   }, [puzzles, blockedUserIds, puzzleOfferCounts]);
 
-  // 캐러셀(최대 3개) 전용: NEW는 마감일순으로 먼저 채우고, 남은 자리는
-  // 오퍼 많은 순으로 "선발"한 뒤, 캐러셀에 들어온 것끼리는 마감일순으로 "표시".
+  // 지역 필터 적용된 깃발 — 캐러셀 선발의 입력. selectedArea 없으면 전체.
+  // "서울 어디든" 깃발도 강남/홍대/이태원 필터에 잡히도록 matchesArea 사용.
+  const areaFilteredPuzzles = useMemo(() => {
+    if (!selectedArea) return visiblePuzzles;
+    return visiblePuzzles.filter((p) => matchesArea(p.area, selectedArea));
+  }, [visiblePuzzles, selectedArea]);
+
+  // 캐러셀(최대 3개) 선발.
+  // - 유저/비로그인: 기존 로직(NEW 우선 → 오퍼 많은 순 → 마감일순).
+  // - MD/Admin: NEW 최우선 → (내 지역∧미제안 > 타 지역∧미제안 > 내가 오퍼함) → 마감일순.
+  //   내 지역 판정은 user.area(배열) 중 하나라도 matchesArea면 true → "서울 어디든" 깃발도 잡힘.
   const CAROUSEL_SLOTS = 3;
   const carouselPuzzles = useMemo(() => {
     const now = Date.now();
     const byEventDate = (a: Puzzle, b: Puzzle) =>
       new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
-
     const isNew = (p: Puzzle) =>
       now - new Date(p.created_at).getTime() < 6 * 60 * 60 * 1000;
 
+    // ── MD/Admin: 제안 기회 중심 정렬 ──────────────────────────────
+    if (isMdOrAdminUser) {
+      const myAreas = user?.area ?? [];
+      const isMyArea = (p: Puzzle) =>
+        myAreas.length > 0 && myAreas.some((a) => matchesArea(p.area, a));
+      // 작을수록 우선: 내 지역∧미제안(0) > 타 지역∧미제안(1) > 내가 오퍼함(2)
+      const tier = (p: Puzzle) => {
+        if (myOfferedPuzzleIds.has(p.id)) return 2;
+        return isMyArea(p) ? 0 : 1;
+      };
+      const rank = (group: Puzzle[]) =>
+        [...group].sort((a, b) => {
+          const t = tier(a) - tier(b);
+          if (t !== 0) return t;
+          return byEventDate(a, b); // 같은 tier 안에서는 마감(이벤트 날짜) 가까운 순
+        });
+
+      // NEW 그룹을 절대 앞에 두고, 각 그룹 내부는 tier→마감순으로 정렬.
+      const news = rank(areaFilteredPuzzles.filter(isNew));
+      const olds = rank(areaFilteredPuzzles.filter((p) => !isNew(p)));
+      return [...news, ...olds].slice(0, CAROUSEL_SLOTS);
+    }
+
+    // ── 유저/비로그인: 기존 로직 유지 ─────────────────────────────
     // NEW끼리는 마감일 가까운 순, 같으면 오퍼 많은 순으로 안정화.
-    // NEW만으로 자리가 넘치면 여기서 잘라 카드 수를 확정한다.
-    const news = visiblePuzzles
+    const news = areaFilteredPuzzles
       .filter(isNew)
       .sort((a, b) => {
         const d = byEventDate(a, b);
         return d !== 0 ? d : (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
       })
       .slice(0, CAROUSEL_SLOTS);
-    const rest = visiblePuzzles.filter((p) => !isNew(p));
+    const rest = areaFilteredPuzzles.filter((p) => !isNew(p));
 
     // 남은 자리: 오퍼 많은 순으로 선발 (동률이면 마감일 가까운 순)
     const remainingSlots = Math.max(0, CAROUSEL_SLOTS - news.length);
@@ -646,12 +708,10 @@ export function HomeContent({
         return diff !== 0 ? diff : byEventDate(a, b);
       })
       .slice(0, remainingSlots)
-      // 선발된 것끼리는 마감일 가까운 순으로 표시
       .sort(byEventDate);
 
-    // carouselPuzzles = 캐러셀에 표시될 최종 카드(최대 CAROUSEL_SLOTS개)로 확정.
     return [...news, ...picked];
-  }, [visiblePuzzles, puzzleOfferCounts]);
+  }, [areaFilteredPuzzles, puzzleOfferCounts, isMdOrAdminUser, user?.area, myOfferedPuzzleIds]);
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
   useEffect(() => {
@@ -981,10 +1041,7 @@ export function HomeContent({
       </div>
     );
     const mdPuzzleTipContent = (
-      <>
-        <div>유저들의 예산이 기다리고 있어요 💰</div>
-        <div>시크릿오퍼로 매출을 올려봐요!</div>
-      </>
+      <div>유저들의 예산이 기다리고 있어요 💰</div>
     );
     const mdShareTipContent = (
       <>
@@ -1017,25 +1074,25 @@ export function HomeContent({
             <button
               type="button"
               onClick={() => handleTabChange("puzzle")}
-              className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
+              className={`text-[12.5px] font-bold px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-0.5 ${
                 currentTab === "puzzle"
                   ? "bg-amber-500 text-black"
                   : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
               }`}
             >
-              <span className="text-[18px] leading-none">🚩</span> 깃발
+              <span className="text-[13px] leading-none">🚩</span> 깃발
             </button>
             {showShareTab && (
               <button
                 type="button"
                 onClick={() => handleTabChange("share")}
-                className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${
+                className={`text-[12.5px] font-bold px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-0.5 ${
                   currentTab === "share"
                     ? "bg-amber-500 text-black"
                     : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
               >
-                <span className="text-[16px] leading-none">🧩</span> 조각
+                <span className="text-[13px] leading-none">🧩</span> 조각
               </button>
             )}
             <Link
@@ -1046,6 +1103,33 @@ export function HomeContent({
               <ChevronRight className="w-3 h-3" />
             </Link>
           </div>
+
+          {/* 지역 필터 칩 — 깃발 탭이면 모든 사용자에게 노출. 지역으로 빠르게 좁혀봄.
+              (미제안 우선 정렬은 MD 전용이지만, 필터 자체는 유저/비로그인도 유용)
+              전체 깃발이 0개면 칩만 덩그러니 남으므로 숨김 */}
+          {currentTab === "puzzle" && visiblePuzzles.length > 0 && (
+            <div className="flex items-center gap-1.5 -mx-4 px-4 mb-2 overflow-x-auto scrollbar-hide">
+              {[{ label: "전체", value: null }, ...MAIN_AREAS.map((a) => ({ label: a, value: a as string | null }))].map(
+                (chip) => {
+                  const active = selectedArea === chip.value;
+                  return (
+                    <button
+                      key={chip.label}
+                      type="button"
+                      onClick={() => setSelectedArea(chip.value)}
+                      className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
+                        active
+                          ? "bg-white text-black"
+                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                      }`}
+                    >
+                      {chip.label}
+                    </button>
+                  );
+                }
+              )}
+            </div>
+          )}
 
           {/* 첫 진입 인라인 가이드 — 캐러셀 위 (한번 닫으면 영구 숨김) */}
           {showTopGuide && (currentTab === "puzzle" || currentTab === "share") && (
@@ -1098,16 +1182,18 @@ export function HomeContent({
           )}
 
           {/* 깃발 / 조각 캐러셀 */}
-          <div className="mb-3">
+          <div className="mb-2">
             {currentTab === "puzzle" && (
               <HomePuzzleCarousel
                 puzzles={carouselPuzzles}
-                totalCount={visiblePuzzles.length}
+                totalCount={areaFilteredPuzzles.length}
                 offerCounts={puzzleOfferCounts}
                 userRole={user?.role as "user" | "md" | "admin" | undefined}
                 detailHref={detailHref("puzzle")}
                 newFlagHref={newFlagHref}
                 showFlagCTA
+                isAreaFiltered={!!selectedArea}
+                onClearAreaFilter={() => setSelectedArea(null)}
               />
             )}
             {currentTab === "share" && (
@@ -1123,7 +1209,7 @@ export function HomeContent({
 
           {/* Tip 박스 + 이용방법 토글 — 캐러셀 아래로 이동 (톤 다운) */}
           {visibleCompactTip && (
-            <section className="space-y-2 -mt-1 mb-5">
+            <section className="space-y-2 -mt-1 mb-3">
               {!showGuide && (
                 <div
                   ref={tipBoxRef}
@@ -1337,10 +1423,7 @@ export function HomeContent({
             : ONBOARDING_STEPS;
           // MD 전용 puzzle tip
           const mdPuzzleTipContent = (
-            <>
-              <div className="text-[14.5px]">유저들의 예산이 기다리고 있어요 💰</div>
-              <div className="text-[15.5px]">시크릿오퍼로 매출을 올려봐요!</div>
-            </>
+            <div className="text-[15.5px]">유저들의 예산이 기다리고 있어요 💰</div>
           );
           const userPuzzleTipContent = (
             <div className="text-[14.5px] text-white">

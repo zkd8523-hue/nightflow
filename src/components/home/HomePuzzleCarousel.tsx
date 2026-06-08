@@ -31,6 +31,10 @@ interface Props {
    * "더보기 ⋯" 버튼 노출 판단에 사용. 미지정 시 puzzles.length 사용.
    */
   totalCount?: number;
+  /** 현재 지역 필터가 걸려있는지 — 0개일 때 "전체 보기" 안내로 분기 */
+  isAreaFiltered?: boolean;
+  /** 지역 필터 해제 콜백 (필터로 0개일 때 "전체 보기" 버튼용) */
+  onClearAreaFilter?: () => void;
 }
 
 const MAX_CARDS = 3;
@@ -43,6 +47,8 @@ export function HomePuzzleCarousel({
   newFlagHref,
   showFlagCTA = false,
   totalCount,
+  isAreaFiltered = false,
+  onClearAreaFilter,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   // MD 제안 시트 / 유저 합류 시트 — PuzzleList와 동일하게 캐러셀에서 바로 띄운다.
@@ -69,6 +75,26 @@ export function HomePuzzleCarousel({
   }, []);
 
   if (puzzles.length === 0) {
+    // 지역 필터 때문에 0개 → 깃발꽂기 유도 대신 "전체 보기"로 안내
+    if (isAreaFiltered) {
+      return (
+        <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
+          <p className="text-[15px] text-white font-bold">이 지역엔 아직 깃발이 없어요</p>
+          <p className="text-[12px] text-neutral-500">
+            다른 지역을 선택하거나 전체에서 둘러보세요
+          </p>
+          {onClearAreaFilter && (
+            <button
+              type="button"
+              onClick={onClearAreaFilter}
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-neutral-700 text-white text-[13px] font-black active:scale-95 transition"
+            >
+              전체 보기
+            </button>
+          )}
+        </div>
+      );
+    }
     return (
       <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
         <p className="text-[15px] text-white font-bold">아직 등록된 깃발이 없어요</p>
@@ -86,6 +112,10 @@ export function HomePuzzleCarousel({
   }
 
   const visible = puzzles.slice(0, MAX_CARDS);
+  // MD/Admin은 깃발을 "꽂는" 주체가 아니라 오퍼를 넣는 쪽 → 깃발꽂기 CTA 숨기고
+  // 끝 슬라이드를 "더보기 >" 카드로 대체 (유저/비로그인은 기존 CTA 유지).
+  const isMd = userRole === "md" || userRole === "admin";
+  const hasMore = (totalCount ?? puzzles.length) > MAX_CARDS;
 
   return (
     <div>
@@ -132,29 +162,48 @@ export function HomePuzzleCarousel({
             </div>
           );
         })}
-        {(totalCount ?? puzzles.length) > MAX_CARDS && (
+        {isMd ? (
+          /* MD/Admin: 끝 슬라이드를 "더보기 >" 카드로. 깃발꽂기 CTA는 노출하지 않음. */
           <Link
             href={detailHref}
-            className="flex-shrink-0 w-[64px] snap-start flex items-center justify-center pt-[22px] text-neutral-600 hover:text-neutral-400 transition-colors"
+            className="flex-shrink-0 w-[64%] max-w-[280px] snap-start snap-always flex items-center justify-center group"
             aria-label="깃발 더보기"
           >
-            <span className="text-[28px] leading-none font-black tracking-widest">⋯</span>
-          </Link>
-        )}
-        {showFlagCTA && (
-          <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
             <div className="text-center w-full mt-8">
-              <p className="text-[14.5px] text-neutral-200 font-semibold mb-0.5">
-                최고의 테이블을 잡으세요.
-              </p>
-              <Link href={newFlagHref}>
-                <Button className="h-12 pl-7 pr-9 bg-amber-500 text-black font-black text-[15px] rounded-full hover:bg-amber-400">
-                  ⛳ 깃발꽂기
-                </Button>
-              </Link>
-              <p className="text-[10px] text-neutral-300 mt-0.5">모든 서비스 무료</p>
+              <div className="inline-flex items-center gap-1 text-[15px] font-black text-neutral-300 group-hover:text-white transition-colors">
+                더보기
+                <ChevronRight className="w-4 h-4" />
+              </div>
+              <p className="text-[11px] text-neutral-500 mt-1">전체 깃발 보러가기</p>
             </div>
-          </div>
+          </Link>
+        ) : (
+          <>
+            {hasMore && (
+              <Link
+                href={detailHref}
+                className="flex-shrink-0 w-[64px] snap-start flex items-center justify-center pt-[22px] text-neutral-600 hover:text-neutral-400 transition-colors"
+                aria-label="깃발 더보기"
+              >
+                <span className="text-[28px] leading-none font-black tracking-widest">⋯</span>
+              </Link>
+            )}
+            {showFlagCTA && (
+              <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
+                <div className="text-center w-full mt-8">
+                  <p className="text-[14.5px] text-neutral-200 font-semibold mb-0.5">
+                    최고의 테이블을 잡으세요.
+                  </p>
+                  <Link href={newFlagHref}>
+                    <Button className="h-12 pl-7 pr-9 bg-amber-500 text-black font-black text-[15px] rounded-full hover:bg-amber-400">
+                      ⛳ 깃발꽂기
+                    </Button>
+                  </Link>
+                  <p className="text-[10px] text-neutral-300 mt-0.5">모든 서비스 무료</p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -175,6 +175,17 @@ export const PuzzleCard = memo(function PuzzleCard({
   const isNew = Date.now() - new Date(puzzle.created_at).getTime() < 6 * 60 * 60 * 1000;
   const isSelecting = puzzle.status === "selecting";
 
+  // 유저용 오퍼 현황 배지 — "꽂으면 MD 오퍼가 온다"는 사회적 증명을 강조.
+  // 🔥 + 숫자 강조는 살리되 문구는 기존 그대로. 0개면 표시하지 않음.
+  const userOfferBadge =
+    offerCount > 0 ? (
+      <span className="text-[12px] font-bold text-amber-400">
+        {/* 3개 이상 = 경쟁이 붙은 핫한 깃발일 때만 🔥로 강조 */}
+        {offerCount >= 3 && <span aria-hidden>🔥 </span>}
+        오퍼 <span className="text-[14px] font-black tabular-nums">{offerCount}</span>개 중에서 고르는중
+      </span>
+    ) : null;
+
   // 카드 전체 클릭 가능 — 내부 액션 버튼들은 stopPropagation으로 보호됨
   const isCardClickable = true;
 
@@ -286,9 +297,7 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
       ) : offerCount > 0 && isRecruitingParty ? (
         // 모집 중 깃발은 위쪽에 별도로 표시. 인원 확정 깃발은 자세히 보기 버튼 옆으로 이동.
-        <p className="text-[12px] text-amber-400 font-bold">
-          오퍼 {offerCount}개 중에서 고르는중
-        </p>
+        userOfferBadge
       ) : null}
 
       {/* 취향 태그 */}
@@ -333,13 +342,7 @@ export const PuzzleCard = memo(function PuzzleCard({
       ) : !isRecruitingParty ? (
         // 인원 확정 깃발: 카드 전체 클릭으로 상세 이동 (별도 버튼 불필요)
         <div className="flex items-center justify-between gap-2">
-          {offerCount > 0 ? (
-            <p className="text-[12px] text-amber-400 font-bold">
-              오퍼 {offerCount}개 중에서 고르는중
-            </p>
-          ) : (
-            <span />
-          )}
+          {userOfferBadge}
           <span className="text-[12px] text-neutral-500 font-bold flex-shrink-0">
             {puzzle.area}
           </span>
