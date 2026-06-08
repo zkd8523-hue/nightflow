@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft, Heart } from "lucide-react";
+import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
@@ -68,6 +68,19 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
     () => (searchParams.get("view") === "list" ? "list" : "map")
   );
   const [query, setQuery] = useState("");
+  // 지도 모드에서는 필터가 지도를 가리므로 기본 접힘. 리스트 모드는 펼침.
+  const [filtersOpen, setFiltersOpen] = useState(
+    () => searchParams.get("view") === "list"
+  );
+
+  const activeFilterCount =
+    filters.areas.length + filters.genres.length + filters.venueTypes.length;
+
+  // view 전환 시 필터 펼침 상태도 기본값으로 맞춤 (지도=접힘, 리스트=펼침)
+  const changeView = (next: ViewMode) => {
+    setView(next);
+    setFiltersOpen(next === "list");
+  };
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -284,10 +297,29 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               </button>
             )}
           </div>
+          {/* 필터 열기/닫기 토글 — 지도 모드에서 지도를 가리지 않게 접을 수 있음 */}
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((v) => !v)}
+            aria-label={filtersOpen ? "필터 닫기" : "필터 열기"}
+            aria-expanded={filtersOpen}
+            className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-colors flex-shrink-0 ${
+              filtersOpen || activeFilterCount > 0
+                ? "bg-white text-black"
+                : "bg-neutral-900 text-neutral-400 hover:bg-neutral-800"
+            }`}
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5" />
+            {activeFilterCount > 0 && !filtersOpen && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1 flex items-center justify-center rounded-full bg-amber-500 text-black text-[9px] font-black leading-none">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
           <div className="flex items-center bg-neutral-900 rounded-full p-0.5 flex-shrink-0 h-9">
             <button
               type="button"
-              onClick={() => setView("list")}
+              onClick={() => changeView("list")}
               aria-label="리스트 보기"
               aria-pressed={view === "list"}
               className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
@@ -298,7 +330,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
             </button>
             <button
               type="button"
-              onClick={() => setView("map")}
+              onClick={() => changeView("map")}
               aria-label="지도 보기"
               aria-pressed={view === "map"}
               className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
@@ -309,7 +341,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
             </button>
           </div>
         </div>
-        <ClubFilterChips value={filters} onChange={setFilters} />
+        {filtersOpen && <ClubFilterChips value={filters} onChange={setFilters} />}
       </div>
 
       {view === "map" ? (

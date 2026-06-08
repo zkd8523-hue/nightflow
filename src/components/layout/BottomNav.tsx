@@ -23,8 +23,10 @@ export function BottomNav() {
     (n) => !n.is_read && n.type === "puzzle_offer_received"
   );
 
-  // 비로그인 사용자에게는 하단 탭바 미노출 (홈 콘텐츠에 집중)
-  if (isLoading || !user) return null;
+  // 최초 인증 상태 확인 중에는 깜빡임 방지를 위해 숨김.
+  // 비로그인 사용자에게도 탭바를 노출해 기능(주변/찜 등)을 발견할 수 있게 함.
+  // 인증이 필요한 탭(찜/내 정보)은 탭 시 미들웨어가 /login으로 유도 → 자연스러운 가입 전환점.
+  if (isLoading) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800">
