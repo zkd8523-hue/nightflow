@@ -376,8 +376,13 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
     const c = filtered.find((x) => x.id === clubId);
     if (!c || !mapInstanceRef.current) return;
     setSelectedClub(c);
+    const map = mapInstanceRef.current;
     const pos = new window.kakao.maps.LatLng(c.latitude!, c.longitude!);
-    mapInstanceRef.current.panTo(pos);
+    // 멀리서 클릭하면 건물 단위(2)로 자동 줌인
+    if (map.getLevel() > 2) {
+      map.setLevel(2);
+    }
+    map.panTo(pos);
   };
 
   return (

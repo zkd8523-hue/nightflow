@@ -20,7 +20,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
   // - "pending" → 첫 8px 움직임으로 방향 판정 대기
   // - "horizontal" → body fixed로 페이지 세로 잠금 (가로 스크롤만 허용)
   // 세로 우세 시 락 안 걸고 일반 pull-to-refresh로 진입
-  const lockStateRef = useRef<"pending" | "horizontal" | null>(null);
+  const lockStateRef = useRef<"pending" | "horizontal" | "vertical-skip" | null>(null);
   const lockedScrollYRef = useRef<number | null>(null);
   const onRefreshRef = useRef(onRefresh);
 
@@ -87,7 +87,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      // 가로 스크롤 영역에서 시작된 제스처: 방향 판정
+      // data-no-pull-refresh 영역에서 시작된 제스처: 방향 판정
       if (lockStateRef.current === "pending") {
         const t = e.touches[0];
         if (!t) return;
@@ -96,19 +96,18 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
         const THRESH = 8;
         if (dx < THRESH && dy < THRESH) return; // 아직 미정
         if (dx > dy) {
-          // 가로 우세 → body fixed 락
+          // 가로 우세 → body fixed 락 (가로 스크롤만 허용)
           lockStateRef.current = "horizontal";
           lockPageScroll();
         } else {
-          // 세로 우세 → 락 해제하고 일반 pull-to-refresh로 진입
-          lockStateRef.current = null;
-          if (window.scrollY <= 1) {
-            touchActiveRef.current = true;
-          }
+          // 세로 우세 → no-pull 영역(시트 등) 내부 세로 스크롤로 간주, pull-to-refresh 비활성
+          // 페이지 새로고침으로 잘못 잡히지 않게 영구히 차단
+          lockStateRef.current = "vertical-skip";
+          touchActiveRef.current = false;
         }
       }
-      // 가로 락 상태: body가 fixed라 세로 못 움직임, native 가로 스크롤만 동작
-      if (lockStateRef.current === "horizontal") return;
+      // 가로 락 / 세로 skip 상태: pull-to-refresh 비활성
+      if (lockStateRef.current === "horizontal" || lockStateRef.current === "vertical-skip") return;
 
       if (!touchActiveRef.current || isRefreshingRef.current) return;
       if (window.scrollY > 1) {
