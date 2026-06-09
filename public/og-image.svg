@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <!-- Background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0A0612;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#050307;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0D0716;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glow1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#4ADE80;stop-opacity:0.06" />
+      <stop offset="100%" style="stop-color:#4ADE80;stop-opacity:0" />
+    </radialGradient>
+    <radialGradient id="glow2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#A855F7;stop-opacity:0.18" />
+      <stop offset="100%" style="stop-color:#A855F7;stop-opacity:0" />
+    </radialGradient>
+    <radialGradient id="glow3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#7C3AED;stop-opacity:0.14" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Base background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <!-- Ambient glow blobs (club neon vibe) -->
+  <!-- 우상단: 보라 메인 (N 로고 뒤에서 은은하게 받쳐줌) -->
+  <circle cx="1050" cy="80" r="500" fill="url(#glow2)"/>
+  <!-- 좌하단: 보라 서브 (좌측 텍스트와 떨어진 곳에 깊이감) -->
+  <circle cx="-50" cy="700" r="450" fill="url(#glow3)"/>
+  <!-- 우하단: 초록 액센트 (시그니처 컬러 살짝) -->
+  <circle cx="900" cy="650" r="350" fill="url(#glow1)"/>
+
+  <!-- ============================================
+       GROUP 1: BRAND IDENTITY (Y: 130 ~ 330)
+       NightFlow → 나플 → Accent
+       ============================================ -->
+  <text x="100" y="155" font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', Arial, sans-serif" font-size="38" font-weight="500" fill="rgba(255,255,255,0.55)" letter-spacing="3">
+    NightFlow
+  </text>
+
+  <text x="100" y="285" font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', Arial, sans-serif" font-size="124" font-weight="900" fill="white" letter-spacing="-5">
+    나플
+  </text>
+
+  <rect x="100" y="318" width="72" height="5" rx="2.5" fill="#4ADE80"/>
+
+  <!-- ============================================
+       GROUP 2: VALUE PROPOSITION (Y: 385)
+       헤드라인 (그룹 1과 65px 간격 — 명확한 분리)
+       ============================================ -->
+  <text x="100" y="385" font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', Arial, sans-serif" font-size="34" font-weight="700" fill="rgba(255,255,255,0.95)" letter-spacing="-1.5">
+    전국 클럽 실시간 혜택 한눈에.
+  </text>
+
+  <!-- ============================================
+       GROUP 3: FEATURE PILLARS (Y: 440 ~ 548)
+       단일 액센트 컬러로 통일 (유사성 원칙)
+       54px 행간 (시각적 호흡)
+       ============================================ -->
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', Arial, sans-serif" font-size="26" font-weight="600" fill="rgba(255,255,255,0.78)">
+    <circle cx="113" cy="446" r="5" fill="#4ADE80"/>
+    <text x="135" y="454">테이블 특가 예약</text>
+
+    <circle cx="113" cy="500" r="5" fill="#4ADE80"/>
+    <text x="135" y="508">무료입장·프리드링크</text>
+
+    <circle cx="113" cy="554" r="5" fill="#4ADE80"/>
+    <text x="135" y="562">지역별 실시간 피드</text>
+  </g>
+
+  <!-- ============================================
+       GROUP 4: BRAND SIGNATURE (Y: 600)
+       그룹 3과 38px 간격 — 부드러운 분리
+       ============================================ -->
+  <text x="100" y="600" font-family="-apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', Arial, sans-serif" font-size="18" font-weight="500" fill="rgba(255,255,255,0.35)" letter-spacing="1">
+    밤을 더 아름답게 · nightflow.kr
+  </text>
+
+  <!-- Right side: N logo will be composited in post-processing -->
+</svg>
