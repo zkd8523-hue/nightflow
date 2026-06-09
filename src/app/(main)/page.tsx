@@ -149,6 +149,11 @@ export default async function HomePage() {
         강남 Club ACE, 홍대 버뮤다 등 전국 클럽 추천과 테이블 가격 비교는
         나플에서 확인하세요. 혼자 가긴 부담스러우면 퍼즐(클럽 조각·합석)
         기능으로 같은 클럽에 갈 일행을 모집할 수 있습니다.
+        홍대 클럽 드레스코드, 입장료, 무료입장 받는 법 등 클럽 정보 가이드는{" "}
+        <a href="https://blog.naver.com/dance_dna" rel="noopener">
+          나플 운영자 블로그
+        </a>
+        에서 확인할 수 있습니다.
       </p>
       <div className="sr-only">
         <h2>지금 나플에서 진행 중인 클럽 매물</h2>

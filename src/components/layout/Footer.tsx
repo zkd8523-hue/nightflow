@@ -33,6 +33,14 @@ export function Footer() {
             >
               고객문의
             </a>
+            <a
+              href="https://blog.naver.com/dance_dna"
+              target="_blank"
+              rel="noopener"
+              className="text-neutral-500 hover:text-neutral-300 transition-colors"
+            >
+              블로그
+            </a>
           </nav>
           {!isPartner && (
             <Link
