@@ -150,18 +150,6 @@ export default function FAQPage() {
                                     클럽 상세 페이지에서 요일별로 확인할 수 있고, 지역별 게스트
                                     모음(/guest/지역명)에서도 한눈에 볼 수 있어요.
                                 </p>
-                                <p className="mt-2 text-neutral-500">
-                                    홍대 클럽 드레스코드·입장료·무료입장 받는 법 등 더 자세한 가이드는{" "}
-                                    <a
-                                        href="https://blog.naver.com/dance_dna"
-                                        target="_blank"
-                                        rel="noopener"
-                                        className="text-neutral-400 underline hover:text-white transition-colors"
-                                    >
-                                        나플 운영자 블로그
-                                    </a>
-                                    에서 확인할 수 있습니다.
-                                </p>
                             </AccordionContent>
                         </AccordionItem>
 
