@@ -247,9 +247,9 @@ export function Header({
         <div className="flex flex-col gap-0.5">
           {compact && customTitle ? (
             <>
-              <h1 className="text-lg font-black tracking-tighter leading-none bg-gradient-to-r from-[#A78BFA] to-[#F472B6] bg-clip-text text-transparent">
+              <div className="text-lg font-black tracking-tighter leading-none bg-gradient-to-r from-[#A78BFA] to-[#F472B6] bg-clip-text text-transparent">
                 {customTitle}
-              </h1>
+              </div>
               {customSubtitle && (
                 <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
                   {customSubtitle}
