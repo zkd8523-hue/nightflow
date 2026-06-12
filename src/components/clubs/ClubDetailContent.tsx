@@ -27,15 +27,10 @@ import {
 } from "lucide-react";
 import { uploadImage } from "@/lib/utils/upload";
 import { toast } from "sonner";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { AuctionList } from "@/components/auctions/AuctionList";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { DrinkMenuViewer } from "./DrinkMenuViewer";
+import { ClubLocationModal } from "./ClubLocationModal";
 import { ClubProfileEditor } from "./ClubProfileEditor";
 import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
 import { OneLinerSection } from "./OneLinerSection";
@@ -116,6 +111,13 @@ export function ClubDetailContent({
   const [clubInstagram, setClubInstagram] = useState<string>(club.instagram ?? "");
   const [clubAliases, setClubAliases] = useState<string[]>(club.aliases ?? []);
   const [clubDresscode, setClubDresscode] = useState<string>(club.dresscode ?? "");
+  const [clubDrinkMenuUrl, setClubDrinkMenuUrl] = useState<string | null>(club.drink_menu_url ?? null);
+  const [clubDrinkMenuUpdatedAt, setClubDrinkMenuUpdatedAt] = useState<string | null>(club.drink_menu_updated_at ?? null);
+  const [clubDrinkMenuUrls, setClubDrinkMenuUrls] = useState<string[]>(
+    () => (club.drink_menu_urls && club.drink_menu_urls.length > 0)
+      ? club.drink_menu_urls
+      : (club.drink_menu_url ? [club.drink_menu_url] : [])
+  );
   const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
   const isAdmin = user?.role === "admin";
   const { isPartner: isPartnerOrAdmin } = useIsClubPartner(club.id);
@@ -232,7 +234,7 @@ export function ClubDetailContent({
   const showFlagCta = !guestSignSlot;
 
   return (
-    <div className="container mx-auto max-w-lg px-4 pt-4 pb-32">
+    <div className="container mx-auto max-w-lg px-4 pt-4 pb-40">
       {/* 클럽 정보 카드 */}
       <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden mb-6">
         <div
@@ -327,6 +329,8 @@ export function ClubDetailContent({
               initialInstagram={clubInstagram}
               initialAliases={clubAliases}
               initialDresscode={clubDresscode}
+              initialDrinkMenuUrl={clubDrinkMenuUrl}
+              initialDrinkMenuUrls={clubDrinkMenuUrls}
               onSaved={(next) => {
                 setClubTags(next.tags);
                 setClubName(next.name);
@@ -336,6 +340,13 @@ export function ClubDetailContent({
                 setClubInstagram(next.instagram);
                 setClubAliases(next.aliases);
                 setClubDresscode(next.dresscode);
+                const urls = next.drinkMenuUrls ?? (next.drinkMenuUrl ? [next.drinkMenuUrl] : []);
+                const head = urls[0] ?? null;
+                setClubDrinkMenuUrls(urls);
+                setClubDrinkMenuUrl(head);
+                if (head !== clubDrinkMenuUrl) {
+                  setClubDrinkMenuUpdatedAt(head ? new Date().toISOString() : null);
+                }
               }}
             />
           </div>
@@ -375,6 +386,8 @@ export function ClubDetailContent({
               initialInstagram={clubInstagram}
               initialAliases={clubAliases}
               initialDresscode={clubDresscode}
+              initialDrinkMenuUrl={clubDrinkMenuUrl}
+              initialDrinkMenuUrls={clubDrinkMenuUrls}
               mode="partner"
               hideTrigger
               externalOpen={partnerEditorOpen}
@@ -441,10 +454,10 @@ export function ClubDetailContent({
                       }
                       trackGuestSignClick(guestSignSlot.slot_id, "instagram");
                     }}
-                    className="bg-gradient-to-r from-pink-500/20 to-fuchsia-500/20 border border-pink-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
+                    className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
                   >
-                    <Instagram className="w-3.5 h-3.5 text-pink-400" />
-                    <span className="text-pink-300 text-[11px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
+                    <Instagram className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
+                    <span className="text-white text-[11px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
                   </a>
                 )}
                 {guestSignSlot.md.kakao_open_chat_url && (
@@ -460,10 +473,10 @@ export function ClubDetailContent({
                       }
                       trackGuestSignClick(guestSignSlot.slot_id, "openchat");
                     }}
-                    className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
+                    className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
                   >
-                    <MessageCircle className="w-3.5 h-3.5 text-green-400" />
-                    <span className="text-green-300 text-[11px] font-bold truncate">오픈채팅</span>
+                    <MessageCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
+                    <span className="text-white text-[11px] font-bold truncate">오픈채팅</span>
                   </a>
                 )}
               </div>
@@ -490,7 +503,7 @@ export function ClubDetailContent({
                       toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
                     }
                   }}
-                  className="w-full h-10 rounded-lg bg-neutral-800 hover:bg-neutral-700 active:scale-95 transition-transform text-white font-bold text-[12px] inline-flex items-center justify-center gap-1.5"
+                  className="w-full h-10 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 active:scale-95 transition-transform text-white font-bold text-[12px] inline-flex items-center justify-center gap-1.5"
                 >
                   {guestSignCopied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
                   {guestSignCopied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사하기"}
@@ -548,6 +561,15 @@ export function ClubDetailContent({
             </a>
           )}
 
+          {(clubDrinkMenuUrls.length > 0 || clubDrinkMenuUrl || club.drink_menu_url) && (
+            <DrinkMenuViewer
+              urls={clubDrinkMenuUrls}
+              url={clubDrinkMenuUrl ?? club.drink_menu_url}
+              updatedAt={clubDrinkMenuUpdatedAt ?? club.drink_menu_updated_at}
+              clubName={clubName}
+            />
+          )}
+
           {/* 파트너 MD/admin: 눈에 띄는 편집 버튼 */}
           {user && canPartnerEdit && (
             <button
@@ -560,35 +582,27 @@ export function ClubDetailContent({
             </button>
           )}
 
-          {/* 일반 유저: 잘못된 정보 신고 (비로그인 시 로그인 페이지로 유도) */}
-          {!canPartnerEdit && (
-            <button
-              type="button"
-              onClick={() => {
-                if (!user) {
-                  router.push(`/login?next=/clubs/${club.id}`);
-                  return;
-                }
-                setReportSheetOpen(true);
-              }}
-              className="flex items-center gap-1 text-[11px] text-neutral-500 hover:text-amber-400 transition-colors mt-2 self-start underline decoration-dotted underline-offset-2"
-            >
-              잘못된 정보가 있다면? 수정 요청
-            </button>
-          )}
-
         </div>
-
-        {club.drink_menu_url && (
-          <div className="p-4 pt-0">
-            <DrinkMenuViewer
-              url={club.drink_menu_url}
-              updatedAt={club.drink_menu_updated_at}
-              clubName={club.name}
-            />
-          </div>
-        )}
       </div>
+
+      {/* 카드 바깥: 잘못된 정보 신고 (비로그인 시 로그인 페이지로 유도) */}
+      {!canPartnerEdit && (
+        <div className="px-1 -mt-3 mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              if (!user) {
+                router.push(`/login?next=/clubs/${club.id}`);
+                return;
+              }
+              setReportSheetOpen(true);
+            }}
+            className="text-[11px] text-neutral-600 hover:text-amber-400 transition-colors underline decoration-dotted underline-offset-2"
+          >
+            정보 수정 요청
+          </button>
+        </div>
+      )}
 
       {/* 정보 오류 신고 Sheet */}
       {user && (
@@ -613,71 +627,15 @@ export function ClubDetailContent({
         initialTab="share"
       />
 
-      {/* 지도 앱 선택 Sheet (AuctionCard 패턴) */}
-      <Sheet open={isMapOpen} onOpenChange={setIsMapOpen}>
-        <SheetContent
-          side="bottom"
-          className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-8"
-        >
-          <SheetHeader className="pb-2">
-            <SheetTitle className="text-white text-[16px]">
-              {club.name} 위치 확인
-            </SheetTitle>
-            {club.address && (
-              <p className="text-[13px] text-neutral-400">{club.address}</p>
-            )}
-          </SheetHeader>
-          <div className="flex flex-col gap-3 mt-4">
-            <button
-              onClick={() => {
-                const query = encodeURIComponent(club.address || club.name);
-                window.open(
-                  `https://map.naver.com/v5/search/${query}`,
-                  "_blank"
-                );
-                setIsMapOpen(false);
-              }}
-              className="flex items-center gap-3 p-4 bg-[#0A0A0A] rounded-2xl border border-neutral-800 hover:border-green-500/50 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[18px] font-bold text-green-500">N</span>
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-[15px] font-bold text-white">네이버지도</p>
-                <p className="text-[12px] text-neutral-400">
-                  네이버지도에서 열기
-                </p>
-              </div>
-              <ExternalLink className="w-4 h-4 text-neutral-500" />
-            </button>
-
-            <button
-              onClick={() => {
-                const query = encodeURIComponent(club.address || club.name);
-                window.open(
-                  `https://map.kakao.com/link/search/${query}`,
-                  "_blank"
-                );
-                setIsMapOpen(false);
-              }}
-              className="flex items-center gap-3 p-4 bg-[#0A0A0A] rounded-2xl border border-neutral-800 hover:border-yellow-500/50 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-xl bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-[18px] font-bold text-yellow-500">
-                  K
-                </span>
-              </div>
-              <div className="flex-1 text-left">
-                <p className="text-[15px] font-bold text-white">카카오맵</p>
-                <p className="text-[12px] text-neutral-400">
-                  카카오맵에서 열기
-                </p>
-              </div>
-              <ExternalLink className="w-4 h-4 text-neutral-500" />
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* 풀스크린 지도 모달 — 네이버 패턴 */}
+      <ClubLocationModal
+        open={isMapOpen}
+        onClose={() => setIsMapOpen(false)}
+        clubName={clubName}
+        address={clubAddress || club.address}
+        latitude={club.latitude}
+        longitude={club.longitude}
+      />
 
       {/* 플로팅 CTA - 깃발 꽂기 (게스트 간판 MD가 없는 클럽에서만 노출) */}
       {showFlagCta && (

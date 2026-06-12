@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { data: userRow } = await supabaseAdmin.from("users").select("role").eq("id", authUser.id).single();
     if (!userRow || userRow.role !== "admin") return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
 
-    const { clubId, name, address, operating_hours, entry_fee_detail, instagram, aliases } = await request.json() as {
+    const { clubId, name, address, operating_hours, entry_fee_detail, instagram, aliases, drink_menu_url, drink_menu_urls } = await request.json() as {
       clubId: string;
       name?: string;
       address?: string;
@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
       entry_fee_detail?: string | null;
       instagram?: string | null;
       aliases?: string[];
+      drink_menu_url?: string | null;
+      drink_menu_urls?: string[];
     };
     if (!clubId) return NextResponse.json({ error: "clubId 누락" }, { status: 400 });
 
@@ -45,6 +47,18 @@ export async function POST(request: NextRequest) {
     if (operating_hours !== undefined) patch.operating_hours = operating_hours?.trim() || null;
     if (entry_fee_detail !== undefined) patch.entry_fee_detail = entry_fee_detail?.trim() || null;
     if (instagram !== undefined) patch.instagram = instagram?.trim() || null;
+    if (drink_menu_urls !== undefined) {
+      const cleaned = Array.from(new Set((drink_menu_urls || []).map((u) => (u || "").trim()).filter(Boolean)));
+      patch.drink_menu_urls = cleaned;
+      // 하위 호환: 첫 번째 URL을 drink_menu_url에 미러링 (구 클라이언트 노출 보장)
+      patch.drink_menu_url = cleaned[0] ?? null;
+      patch.drink_menu_updated_at = cleaned.length > 0 ? new Date().toISOString() : null;
+    } else if (drink_menu_url !== undefined) {
+      const trimmed = drink_menu_url?.trim() || null;
+      patch.drink_menu_url = trimmed;
+      patch.drink_menu_urls = trimmed ? [trimmed] : [];
+      patch.drink_menu_updated_at = trimmed ? new Date().toISOString() : null;
+    }
     if (aliases !== undefined) {
       // 빈 문자열·중복·대소문자 통일
       const cleaned = Array.from(

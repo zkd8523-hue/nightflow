@@ -340,6 +340,8 @@ export interface Club {
   tags: string[];  // prefix-grouped: 'genre:hiphop', 'crowd:foreign', etc.
   drink_menu_url: string | null;
   drink_menu_updated_at: string | null;
+  /** Migration 298: 주대 사진 다중 등록. drink_menu_url(단일)은 하위호환용. */
+  drink_menu_urls?: string[];
 
   // Migration 218: 영업시간 자유 텍스트 (예: "금/토 22:00-05:00")
   operating_hours: string | null;
@@ -1030,6 +1032,86 @@ export type OneLinerReportReason =
   | 'false_info'
   | 'advertising'
   | 'other';
+
+// ============================================================================
+// 실시간 채팅 (Migration 284)
+// ============================================================================
+export type ChatRoomCode = 'all' | 'gangnam' | 'hongdae' | 'itaewon' | 'other';
+export type VerifiableArea = Exclude<ChatRoomCode, 'all'>;
+
+export type ChatMediaType = 'image' | 'video';
+
+export interface ChatMediaItem {
+  type: ChatMediaType;
+  url: string;
+  width?: number;
+  height?: number;
+  duration?: number; // 초 (동영상)
+}
+
+export interface ChatMessage {
+  id: string;
+  room: ChatRoomCode;
+  author_id: string;
+  content: string;
+  /** 첨부 미디어 (이미지/동영상, 최대 4개). Migration 287 */
+  media: ChatMediaItem[];
+  /** 작성 시점의 작성자 활성 인증 지역. Migration 285에서 자동 채움. */
+  author_area: VerifiableArea | null;
+  /** 답글 부모 ID. NULL이면 최상위 와글 (Migration 291) */
+  parent_id: string | null;
+  /** 답글 수 캐시 (Migration 291) */
+  reply_count: number;
+  is_deleted: boolean;
+  created_at: string;
+  // joined
+  author?: { id: string; display_name: string | null; profile_image: string | null };
+  /** 클라 계산: 이모지별 카운트 + 내가 누른 이모지 */
+  reactions?: ChatReactionSummary;
+}
+
+/** 와글 이모지 반응 (Migration 291) */
+export type ChatReactionEmoji = '❤️' | '👍' | '🔥' | '😂' | '😮' | '🍻';
+
+export const CHAT_REACTION_EMOJIS: ChatReactionEmoji[] = [
+  '❤️', '👍', '🔥', '😂', '😮', '🍻',
+];
+
+export interface ChatReactionRow {
+  message_id: string;
+  user_id: string;
+  emoji: ChatReactionEmoji;
+  created_at: string;
+}
+
+export interface ChatReactionSummary {
+  /** 이모지별 카운트 */
+  counts: Record<ChatReactionEmoji, number>;
+  /** 내가 누른 이모지 set */
+  mine: Set<ChatReactionEmoji>;
+}
+
+export interface AreaVerification {
+  user_id: string;
+  area: VerifiableArea;
+  verified_at: string;
+  expires_at: string;
+}
+
+export type ChatReportReason = 'spam' | 'abuse' | 'advertising' | 'other';
+
+export interface ChatMessageReport {
+  id: string;
+  message_id: string;
+  reporter_id: string;
+  reason: ChatReportReason;
+  message: string | null;
+  status: 'pending' | 'resolved' | 'rejected';
+  admin_note: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+}
 
 export interface OneLinerReport {
   id: string;

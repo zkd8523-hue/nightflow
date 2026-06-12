@@ -365,7 +365,7 @@ function DetailCard({
           )}
         </div>
 
-        {/* Line 4: 깃발 · 주대표 (있을 때만 줄 자체 노출) */}
+        {/* Line 4: 깃발 · 가격표 (있을 때만 줄 자체 노출) */}
         {(flagCount > 0 || club.drink_menu_url) && (
           <div className="flex items-center gap-1.5 pt-0.5">
             {flagCount > 0 && (
@@ -377,7 +377,7 @@ function DetailCard({
             {club.drink_menu_url && (
               <span className="inline-flex items-center gap-1 bg-neutral-800 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
                 <Wine className="w-3 h-3" />
-                주대표
+                가격표
               </span>
             )}
           </div>

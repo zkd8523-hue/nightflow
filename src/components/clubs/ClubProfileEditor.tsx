@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Loader2 } from "lucide-react";
+import Image from "next/image";
+import { Pencil, Loader2, Wine, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { CLUB_TAG_GROUPS, makeTag, parseTag } from "@/lib/clubs/tags";
 import { updateClubPartnerFields } from "@/lib/clubs/update";
+import { createClient } from "@/lib/supabase/client";
 
 interface Props {
   clubId: string;
@@ -22,6 +24,8 @@ interface Props {
   initialInstagram: string;
   initialAliases?: string[];
   initialDresscode?: string;
+  initialDrinkMenuUrl?: string | null;
+  initialDrinkMenuUrls?: string[];
   /** "admin": 모든 필드 편집 (기존). "partner": tags + operating_hours + dresscode만 즉시 저장. */
   mode?: "admin" | "partner";
   /** 외부에서 트리거된 open 상태 (트리거 버튼 안 쓰고 인라인/배너에서 열 때) */
@@ -38,10 +42,12 @@ interface Props {
     instagram: string;
     aliases: string[];
     dresscode: string;
+    drinkMenuUrl: string | null;
+    drinkMenuUrls: string[];
   }) => void;
 }
 
-export function ClubProfileEditor({ clubId, initialTags, initialName, initialAddress, initialOperatingHours, initialEntryFeeDetail, initialInstagram, initialAliases = [], initialDresscode = "", mode = "admin", externalOpen, onExternalOpenChange, hideTrigger = false, onSaved }: Props) {
+export function ClubProfileEditor({ clubId, initialTags, initialName, initialAddress, initialOperatingHours, initialEntryFeeDetail, initialInstagram, initialAliases = [], initialDresscode = "", initialDrinkMenuUrl = null, initialDrinkMenuUrls, mode = "admin", externalOpen, onExternalOpenChange, hideTrigger = false, onSaved }: Props) {
   const isPartnerMode = mode === "partner";
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -58,7 +64,71 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
   const [aliases, setAliases] = useState<string[]>(initialAliases);
   const [aliasInput, setAliasInput] = useState("");
   const [dresscode, setDresscode] = useState(initialDresscode);
+  // 다중 사진 우선. 없으면 단일 URL에서 폴백.
+  const [drinkMenuUrls, setDrinkMenuUrls] = useState<string[]>(
+    () => (initialDrinkMenuUrls && initialDrinkMenuUrls.length > 0)
+      ? initialDrinkMenuUrls
+      : (initialDrinkMenuUrl ? [initialDrinkMenuUrl] : [])
+  );
+  const [drinkMenuUploading, setDrinkMenuUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // 하위 호환: 첫 번째 url을 단일 슬롯으로도 노출
+  const drinkMenuUrl = drinkMenuUrls[0] ?? null;
+
+  const MAX_DRINK_MENUS = 8;
+
+  const handleDrinkMenuUpload = async (files: FileList | File[]) => {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    if (drinkMenuUrls.length + list.length > MAX_DRINK_MENUS) {
+      toast.error(`최대 ${MAX_DRINK_MENUS}장까지 등록할 수 있어요`);
+      return;
+    }
+    for (const f of list) {
+      if (f.size > 5 * 1024 * 1024) {
+        toast.error(`${f.name}: 이미지는 5MB 이하만 가능합니다`);
+        return;
+      }
+    }
+    setDrinkMenuUploading(true);
+    try {
+      const supabase = createClient();
+      const uploaded: string[] = [];
+      for (const file of list) {
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${clubId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("club-menus")
+          .upload(path, file, { cacheControl: "3600", upsert: false });
+        if (upErr) throw upErr;
+        const { data: pub } = supabase.storage.from("club-menus").getPublicUrl(path);
+        uploaded.push(pub.publicUrl);
+      }
+      setDrinkMenuUrls((prev) => [...prev, ...uploaded]);
+      toast.success(`가격표 사진 ${uploaded.length}장 업로드 완료. 저장을 눌러주세요`);
+    } catch (err) {
+      console.error("[drink menu upload]", err);
+      toast.error("업로드 실패");
+    } finally {
+      setDrinkMenuUploading(false);
+    }
+  };
+
+  const handleDrinkMenuRemove = (url: string) => {
+    setDrinkMenuUrls((prev) => prev.filter((u) => u !== url));
+  };
+
+  const handleDrinkMenuMove = (url: string, direction: -1 | 1) => {
+    setDrinkMenuUrls((prev) => {
+      const idx = prev.indexOf(url);
+      if (idx < 0) return prev;
+      const next = [...prev];
+      const swapIdx = idx + direction;
+      if (swapIdx < 0 || swapIdx >= next.length) return prev;
+      [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+      return next;
+    });
+  };
 
   const addAlias = (raw: string) => {
     const v = raw.toLowerCase().trim().replace(/\s+/g, " ");
@@ -145,6 +215,8 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
           instagram: initialInstagram,
           aliases: initialAliases,
           dresscode: trimmedDresscode,
+          drinkMenuUrl: initialDrinkMenuUrl,
+          drinkMenuUrls: initialDrinkMenuUrls ?? (initialDrinkMenuUrl ? [initialDrinkMenuUrl] : []),
         });
         toast.success("저장됐어요");
         setOpen(false);
@@ -169,12 +241,19 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       const aliasesChanged =
         aliases.length !== initialAliases.length ||
         aliases.some((a, i) => a !== initialAliases[i]);
+      const baseInitialUrls = (initialDrinkMenuUrls && initialDrinkMenuUrls.length > 0)
+        ? initialDrinkMenuUrls
+        : (initialDrinkMenuUrl ? [initialDrinkMenuUrl] : []);
+      const drinkMenuChanged =
+        drinkMenuUrls.length !== baseInitialUrls.length
+        || drinkMenuUrls.some((u, i) => u !== baseInitialUrls[i]);
       const baseChanged = trimmedName !== initialName
         || trimmedAddress !== initialAddress
         || trimmedHours !== initialOperatingHours
         || trimmedFee !== initialEntryFeeDetail
         || trimmedInstagram !== initialInstagram
-        || aliasesChanged;
+        || aliasesChanged
+        || drinkMenuChanged;
       if (baseChanged) {
         const res = await fetch(`/api/admin/clubs/update-name`, {
           method: "POST",
@@ -187,6 +266,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
             entry_fee_detail: trimmedFee,
             instagram: trimmedInstagram,
             aliases,
+            drink_menu_urls: drinkMenuUrls,
           }),
         });
         if (!res.ok) {
@@ -237,6 +317,8 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
         instagram: trimmedInstagram,
         aliases,
         dresscode: initialDresscode,
+        drinkMenuUrl,
+        drinkMenuUrls,
       });
       toast.success("클럽 프로필이 저장됐어요");
       setOpen(false);
@@ -418,6 +500,95 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
               <p className="text-[10px] text-neutral-600 mt-1">
                 자주 잘못 검색되는 표기를 등록해두면 그 검색어로도 노출돼요 (Enter·쉼표로 추가)
               </p>
+            </div>
+
+            {/* 가격표 사진 (여러 장) — 클럽 상세에서 슬라이드로 노출됨 */}
+            <div>
+              <div className="text-[12px] text-neutral-400 font-bold mb-2 flex items-center gap-1.5">
+                <Wine className="w-3.5 h-3.5 text-amber-400" /> 가격표 사진
+                <span className="text-[10px] text-neutral-600 font-medium">
+                  ({drinkMenuUrls.length}/{MAX_DRINK_MENUS})
+                </span>
+              </div>
+              {drinkMenuUrls.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mb-2">
+                  {drinkMenuUrls.map((url, idx) => (
+                    <div
+                      key={url}
+                      className="relative aspect-square bg-neutral-900 border border-amber-500/30 rounded-lg overflow-hidden group"
+                    >
+                      <Image
+                        src={url}
+                        alt={`가격표 ${idx + 1}`}
+                        fill
+                        sizes="(max-width: 640px) 33vw, 160px"
+                        className="object-cover"
+                      />
+                      {/* 순서 + 컨트롤 오버레이 */}
+                      <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] font-black rounded px-1.5 py-0.5">
+                        {idx + 1}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDrinkMenuRemove(url)}
+                        disabled={saving || drinkMenuUploading}
+                        aria-label="삭제"
+                        className="absolute top-1 right-1 w-6 h-6 inline-flex items-center justify-center rounded-full bg-black/70 text-red-400 hover:bg-red-500/30 hover:text-red-300"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                      <div className="absolute bottom-1 inset-x-1 flex items-center justify-between gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleDrinkMenuMove(url, -1)}
+                          disabled={saving || drinkMenuUploading || idx === 0}
+                          aria-label="앞으로"
+                          className="w-6 h-6 inline-flex items-center justify-center rounded bg-black/70 text-white text-[14px] leading-none hover:bg-black/90 disabled:opacity-40"
+                        >
+                          ‹
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDrinkMenuMove(url, 1)}
+                          disabled={saving || drinkMenuUploading || idx === drinkMenuUrls.length - 1}
+                          aria-label="뒤로"
+                          className="w-6 h-6 inline-flex items-center justify-center rounded bg-black/70 text-white text-[14px] leading-none hover:bg-black/90 disabled:opacity-40"
+                        >
+                          ›
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {drinkMenuUrls.length < MAX_DRINK_MENUS && (
+                <label className={`flex items-center justify-center gap-2 w-full h-20 border border-dashed border-neutral-700 rounded-xl text-[12px] font-bold text-neutral-400 hover:border-amber-500/50 hover:text-amber-300 hover:bg-amber-500/5 transition-colors ${(saving || drinkMenuUploading) ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
+                  {drinkMenuUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> 업로드 중…
+                    </>
+                  ) : (
+                    <>
+                      <Wine className="w-4 h-4 text-amber-400" />
+                      {drinkMenuUrls.length === 0 ? "가격표 사진 업로드" : "사진 추가"}
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    disabled={saving || drinkMenuUploading}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleDrinkMenuUpload(e.target.files);
+                      }
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              )}
+              <p className="text-[10px] text-neutral-600 mt-1">메뉴판·가격표 사진을 여러 장 등록할 수 있어요 (최대 {MAX_DRINK_MENUS}장). 좌우 화살표로 순서 변경</p>
             </div>
             </>
             )}

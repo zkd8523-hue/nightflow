@@ -159,7 +159,7 @@ function ClubFavoriteList({ items }: { items: UserFavoriteClub[] }) {
               {club.drink_menu_url && (
                 <div className="absolute bottom-1 right-1 flex items-center gap-0.5 bg-black/60 backdrop-blur-sm px-1 py-0.5 rounded-full">
                   <Wine className="w-2.5 h-2.5 text-amber-400" />
-                  <span className="text-[8px] font-bold text-amber-400">주대표</span>
+                  <span className="text-[8px] font-bold text-amber-400">가격표</span>
                 </div>
               )}
             </div>

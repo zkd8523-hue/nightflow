@@ -128,7 +128,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
       const { data: pub } = supabase.storage.from("club-menus").getPublicUrl(path);
       setRenameDrinkMenuUrl(pub.publicUrl);
       setRenameDrinkMenuUpdatedAt(new Date().toISOString());
-      toast.success("주대표 업로드됨 (저장 버튼을 눌러주세요)");
+      toast.success("가격표 업로드됨 (저장 버튼을 눌러주세요)");
     } catch (error: unknown) {
       logError(error, "AdminClubsList.handleDrinkMenuUpload");
       toast.error(getErrorMessage(error) || "업로드 실패");
@@ -714,7 +714,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
             <div>
               <label className="text-xs text-neutral-500 mb-1 block flex items-center gap-1.5">
                 <Wine className="w-3.5 h-3.5 text-amber-400" />
-                주대표 (주류 가격표)
+                가격표
               </label>
               {renameDrinkMenuUrl ? (
                 <div className="space-y-2">
@@ -722,7 +722,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={renameDrinkMenuUrl}
-                      alt="주대표"
+                      alt="가격표"
                       className="w-full max-h-48 object-contain bg-neutral-950"
                     />
                   </div>
@@ -767,7 +767,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                     }}
                   />
                   <div className="h-20 bg-neutral-900 rounded-xl border border-dashed border-neutral-700 flex items-center justify-center text-xs text-neutral-500 hover:border-amber-500/40 hover:text-amber-400 transition-colors">
-                    {drinkMenuUploading ? "업로드 중..." : "주대표 이미지 업로드"}
+                    {drinkMenuUploading ? "업로드 중..." : "가격표 이미지 업로드"}
                   </div>
                 </label>
               )}
