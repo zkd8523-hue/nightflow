@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Wine, ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, ClubAreaChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
@@ -525,12 +525,6 @@ function ClubCard({
             <span className="block text-black text-[10px] font-black tracking-tight text-left leading-tight line-clamp-2">
               {benefitText}
             </span>
-          </div>
-        )}
-        {club.drink_menu_url && (
-          <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
-            <Wine className="w-3 h-3 text-amber-400" />
-            <span className="text-[10px] font-bold text-amber-400">가격표</span>
           </div>
         )}
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent" />
