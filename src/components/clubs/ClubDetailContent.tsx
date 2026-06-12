@@ -712,7 +712,7 @@ function FeatureIconRow({
   if (cells.length === 0) return null;
 
   return (
-    <div className="border-t border-neutral-800 flex items-stretch divide-x divide-neutral-800">
+    <div className="border-t border-b border-neutral-800 flex items-stretch divide-x divide-neutral-800">
       {cells.map(({ key, Icon, value, groupLabel }) => {
         const isEmpty = !value;
         const content = (

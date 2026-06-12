@@ -145,9 +145,6 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName }: Props) {
         >
           <Wine className="w-4 h-4 flex-shrink-0 text-amber-400" />
           <span className="font-black">가격표 보기</span>
-          {sources.length > 1 && (
-            <span className="text-[12px] text-amber-300 font-black">{sources.length}장</span>
-          )}
           {isStale && (
             <span className="text-[11px] text-red-400">· 오래된 정보일 수 있어요</span>
           )}
