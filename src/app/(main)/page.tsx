@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { HomeContent } from "@/components/home/HomeContent";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
+import { hideTestData } from "@/lib/utils/testData";
 
 export const revalidate = 10; // 10초마다 재검증
 
@@ -29,58 +30,78 @@ export default async function HomePage() {
     { data: puzzlesRaw },
   ] = await Promise.all([
     // 조각(share) 매물 조회 — 메인 카탈로그 기본
-    supabase
-      .from("auctions")
-      .select(
-        `
+    // hideTestData(clubs): 프로덕션에서만 테스트/운영자 클럽 매물 제외, 로컬·프리뷰는 노출
+    hideTestData(
+      supabase
+        .from("auctions")
+        .select(
+          `
         *,
-        club:clubs(id, name, area, thumbnail_url),
+        club:clubs!inner(id, name, area, thumbnail_url),
         md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
       `
-      )
-      .eq("listing_type", "share")
-      .in("status", ["active", "scheduled"])
-      .gt("share_deadline", nowIso)
-      .order("share_deadline", { ascending: true })
-      .limit(100),
+        )
+        .eq("listing_type", "share")
+        .in("status", ["active", "scheduled"])
+        .gt("share_deadline", nowIso)
+        .order("share_deadline", { ascending: true })
+        .limit(100),
+      "clubs"
+    ),
     // 기존 경매(auction/instant) 조회 — 레거시 노출 (진행 중인 것만)
-    supabase
-      .from("auctions")
-      .select(
-        `
+    // hideTestData(clubs): 프로덕션에서만 테스트 클럽 매물 제외
+    hideTestData(
+      supabase
+        .from("auctions")
+        .select(
+          `
         *,
-        club:clubs(id, name, area, thumbnail_url),
+        club:clubs!inner(id, name, area, thumbnail_url),
         md:public_user_profiles!auctions_md_id_fkey(id, display_name, profile_image)
       `
-      )
-      .in("listing_type", ["auction", "instant"])
-      .in("status", ["active", "scheduled"])
-      .order("auction_start_at", { ascending: true })
-      .limit(50),
+        )
+        .in("listing_type", ["auction", "instant"])
+        .in("status", ["active", "scheduled"])
+        .order("auction_start_at", { ascending: true })
+        .limit(50),
+      "clubs"
+    ),
     // 추천 클럽 조회 (ClubStrip용) — 순서 셔플은 클라이언트 마운트 시 수행
-    supabase
-      .from("clubs")
-      .select("id, name, area, thumbnail_url")
-      .is("deleted_at", null)
-      .not("name", "ilike", "%운영자%")
-      .order("name"),
+    // hideTestData(직접 컬럼): 프로덕션에서만 테스트 클럽 제외 (이름 매칭 대신 is_test)
+    hideTestData(
+      supabase
+        .from("clubs")
+        .select("id, name, area, thumbnail_url")
+        .is("deleted_at", null)
+        .order("name"),
+      ""
+    ),
     // SEO용: 오늘 진행 중인 핫딜 SSR 로드 (sr-only 본문에만 사용)
-    supabase
-      .from("daily_hotdeals")
-      .select("id, title, price, original_price, club:clubs(name, area)")
-      .eq("status", "active")
-      .gt("ends_at", nowIso)
-      .order("ends_at", { ascending: true })
-      .limit(20),
+    // hideTestData(clubs): 프로덕션에서만 테스트 클럽 핫딜 제외
+    hideTestData(
+      supabase
+        .from("daily_hotdeals")
+        .select("id, title, price, original_price, club:clubs!inner(name, area)")
+        .eq("status", "active")
+        .gt("ends_at", nowIso)
+        .order("ends_at", { ascending: true })
+        .limit(20),
+      "clubs"
+    ),
     // 오픈/검토중 퍼즐 목록 조회 (leader deal_count_total 포함 — TrustBadge용)
     // expires_at > now() 가드를 selecting에도 적용 — cron 지연/실패 시 만료된 검토중이 무기한 노출되는 문제 차단
-    supabase
-      .from("puzzles")
-      .select("*, leader:users!puzzles_leader_id_fkey(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender)")
-      .in("status", ["open", "selecting"])
-      .gt("expires_at", nowIso)
-      .order("created_at", { ascending: false })
-      .limit(50),
+    // hideTestData(users): 프로덕션에서만 운영자/테스트 계정(1@1.1 등)이 만든 깃발 제외, 로컬·프리뷰는 노출
+    // (깃발은 club_id 없이 leader로만 식별 가능 — users.is_test 가 단일 기준)
+    hideTestData(
+      supabase
+        .from("puzzles")
+        .select("*, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender, is_test)")
+        .in("status", ["open", "selecting"])
+        .gt("expires_at", nowIso)
+        .order("created_at", { ascending: false })
+        .limit(50),
+      "users"
+    ),
   ]);
 
   const activeAuctions = [...(shareAuctions ?? []), ...(legacyAuctions ?? [])];

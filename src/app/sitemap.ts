@@ -56,10 +56,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const supabase = createAnonClient();
 
     const nowIso = new Date().toISOString();
+    // 테스트/운영자 데이터는 sitemap에서 제외 — 검색엔진 색인 오염 방지.
+    // 클럽: is_test=false / 깃발: leader(users).is_test=false (club_id 없으므로 leader 기준)
     const [auctionsRes, clubsRes, puzzlesRes, hotdealsRes] = await Promise.all([
       supabase
         .from("auctions")
-        .select("id, updated_at, status")
+        .select("id, updated_at, status, club:clubs!inner(is_test)")
+        .eq("clubs.is_test", false)
         .in("status", ["active", "scheduled", "won", "contacted", "confirmed"])
         .order("updated_at", { ascending: false })
         .limit(1000),
@@ -67,17 +70,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .from("clubs")
         .select("id")
         .is("deleted_at", null)
+        .eq("is_test", false)
         .limit(200),
       supabase
         .from("puzzles")
-        .select("id, updated_at")
+        .select("id, updated_at, leader:users!puzzles_leader_id_fkey!inner(is_test)")
+        .eq("users.is_test", false)
         .eq("status", "open")
         .gt("expires_at", new Date().toISOString())
         .order("updated_at", { ascending: false })
         .limit(500),
       supabase
         .from("daily_hotdeals")
-        .select("id, updated_at, ends_at")
+        .select("id, updated_at, ends_at, club:clubs!inner(is_test)")
+        .eq("clubs.is_test", false)
         .gt("ends_at", nowIso)
         .order("updated_at", { ascending: false })
         .limit(500),
