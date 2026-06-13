@@ -26,6 +26,24 @@ import "dayjs/locale/ko";
 
 dayjs.extend(relativeTime);
 dayjs.locale("ko");
+
+// 생년월일(YYYY-MM-DD)로 만 나이 계산. 없으면 null.
+const getAge = (birthday: string | null | undefined): number | null => {
+  if (!birthday || !dayjs(birthday).isValid()) return null;
+  return dayjs().diff(dayjs(birthday), "year");
+};
+
+// 나이 → 연령대 라벨 (통계용 표시)
+const getAgeBand = (age: number | null): string => {
+  if (age === null) return "미입력";
+  if (age < 20) return "10대";
+  if (age < 25) return "20대 초반";
+  if (age < 30) return "20대 후반";
+  if (age < 35) return "30대 초반";
+  if (age < 40) return "30대 후반";
+  return "40대+";
+};
+
 import {
   Search,
   ShieldBan,
@@ -403,6 +421,16 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                       </td>
                       <td className="p-4 landscape:max-md:p-2">
                         <p className="text-sm text-neutral-400">{user.phone || "-"}</p>
+                        {(() => {
+                          const age = getAge(user.birthday);
+                          return (
+                            <p className="text-[11px] text-neutral-500 mt-0.5">
+                              {age !== null
+                                ? `만 ${age}세 · ${getAgeBand(age)}`
+                                : "나이 미입력"}
+                            </p>
+                          );
+                        })()}
                       </td>
                       <td className="p-4 landscape:max-md:p-2 text-center">
                         {getStatusBadge(user)}
@@ -527,6 +555,17 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                   <div className="flex justify-between items-center">
                     <span className="text-neutral-500 text-sm">전화번호</span>
                     <span className="font-bold text-white">{selectedUser.phone || "-"}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 text-sm">생년월일 / 나이</span>
+                    <span className="font-bold text-white text-sm">
+                      {(() => {
+                        const age = getAge(selectedUser.birthday);
+                        return age !== null
+                          ? `${selectedUser.birthday} (만 ${age}세 · ${getAgeBand(age)})`
+                          : "미입력";
+                      })()}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-neutral-500 text-sm">가입일</span>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import dayjs from "dayjs";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -56,6 +57,14 @@ const formatPhoneDisplay = (raw: string) => {
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
 };
 
+// 생년월일 8자리(YYYYMMDD)를 YYYY.MM.DD로 표시
+const formatBirthdayDisplay = (raw: string) => {
+  const digits = raw.replace(/\D/g, "").slice(0, 8);
+  if (digits.length < 5) return digits;
+  if (digits.length < 7) return `${digits.slice(0, 4)}.${digits.slice(4)}`;
+  return `${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6)}`;
+};
+
 const sendOtpErrorMessage = (code: string): string => {
   switch (code) {
     case "invalid_phone": return "올바른 휴대폰 번호를 입력해주세요";
@@ -103,6 +112,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [agreeMarketing, setAgreeMarketing] = useState(false);
 
   const [phoneInput, setPhoneInput] = useState("");
+  // 생년월일 (phone 단계에서 입력 — 만 19세 미만 SMS 발송 전 차단용)
+  const [birthdayInput, setBirthdayInput] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
@@ -259,8 +270,26 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const phoneDigits = phoneInput.replace(/\D/g, "");
   const phoneValid = /^01[016789]\d{7,8}$/.test(phoneDigits);
 
+  // 생년월일 검증 (만 19세 이상만 가입 가능 — 청소년보호법 기준)
+  // birthdayInput은 숫자 8자리(YYYYMMDD)로 보관 → YYYY-MM-DD로 파싱.
+  const birthdayDigits = birthdayInput.replace(/\D/g, "");
+  const birthdayComplete = birthdayDigits.length === 8;
+  const birthdayISO = birthdayComplete
+    ? `${birthdayDigits.slice(0, 4)}-${birthdayDigits.slice(4, 6)}-${birthdayDigits.slice(6, 8)}`
+    : "";
+  // 실재하는 날짜인지 strict 확인 (예: 19990230 같은 가짜 날짜 거름)
+  const birthdayValid =
+    birthdayComplete &&
+    dayjs(birthdayISO).isValid() &&
+    dayjs(birthdayISO).format("YYYY-MM-DD") === birthdayISO &&
+    !dayjs(birthdayISO).isAfter(dayjs());
+  const age = birthdayValid ? dayjs().diff(dayjs(birthdayISO), "year") : null;
+  const isAdult = age !== null && age >= 19;
+  // 8자리를 다 입력했는데 19세 미만/잘못된 날짜일 때만 경고 (입력 중에는 침묵)
+  const isUnderage = birthdayComplete && !isAdult;
+
   const handleSendOtp = async () => {
-    if (!phoneValid || otpSending) return;
+    if (!phoneValid || !isAdult || otpSending) return;
     setOtpSending(true);
     try {
       const res = await fetch("/api/auth/send-otp", {
@@ -430,6 +459,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         return;
       }
 
+      // 생년월일: phone 단계에서 19세 게이트를 통과한 값(YYYY-MM-DD). 유효할 때만 저장.
+      const birthdayToSave = birthdayValid ? birthdayISO : null;
+
       // 기존 row가 있으면 신규 가입 관련 필드만 UPDATE (role/referred_by/signup_source/kakao_id/profile_image 보존)
       // 없으면 INSERT (BEFORE INSERT 트리거 3종이 정상 발동)
       const { error } = existing
@@ -438,6 +470,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             .update({
               display_name: displayName,
               phone: verifiedPhone,
+              birthday: birthdayToSave,
               alimtalk_consent: agreeMarketing,
               alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
             })
@@ -447,6 +480,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             kakao_id: meta.provider_id || authUser.id,
             display_name: displayName,
             phone: verifiedPhone,
+            birthday: birthdayToSave,
             profile_image: finalProfileImage,
             role: "user",
             alimtalk_consent: agreeMarketing,
@@ -578,6 +612,26 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             </div>
 
             <div className="space-y-3">
+              {/* 생년월일 — 만 19세 미만 차단 게이트 (SMS 발송 전). 숫자 직접 입력. */}
+              <div className="space-y-1.5">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="bday"
+                  value={formatBirthdayDisplay(birthdayInput)}
+                  onChange={(e) => setBirthdayInput(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="생년월일 8자리 (예: 19990101)"
+                  className={`w-full h-14 px-4 rounded-xl bg-neutral-800 border text-white text-[16px] placeholder-neutral-500 focus:outline-none transition-colors ${
+                    isUnderage ? "border-red-500 focus:border-red-500" : "border-neutral-700 focus:border-white"
+                  }`}
+                />
+                {isUnderage && (
+                  <p className="text-[13px] text-red-400 px-1">
+                    만 19세 이상만 가입할 수 있어요
+                  </p>
+                )}
+              </div>
+
               <input
                 type="tel"
                 inputMode="numeric"
@@ -587,9 +641,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 placeholder="010-1234-5678"
                 className="w-full h-14 px-4 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-[16px] placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
               />
+
               <Button
                 onClick={handleSendOtp}
-                disabled={!phoneValid || otpSending}
+                disabled={!phoneValid || !isAdult || otpSending}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
                 {otpSending ? "발송 중..." : "인증번호 받기"}
