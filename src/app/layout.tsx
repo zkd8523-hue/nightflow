@@ -33,11 +33,11 @@ const nanumPen = Nanum_Pen_Script({
 export const metadata: Metadata = {
   metadataBase: new URL("https://nightflow.kr"),
   title: {
-    default: "나플 (나이트플로우)",
+    default: "나플 | 나이트플로우",
     template: "%s | 나플",
   },
   description:
-    "강남·홍대 클럽 테이블 예약, 무료입장 게스트, 실시간 채팅을 한 번에. 나플(나이트플로우).",
+    "강남·홍대 클럽 실시간 무료입장·조각·테이블 예약·영업시간·주대 정보 한 곳에. 나플 | 나이트플로우.",
   applicationName: "나플",
   keywords: [
     // 브랜드 (3)
@@ -65,9 +65,9 @@ export const metadata: Metadata = {
     canonical: "https://nightflow.kr",
   },
   openGraph: {
-    title: "나플 (나이트플로우) - 강남·홍대 클럽 테이블 예약",
+    title: "나플 | 나이트플로우 - 강남·홍대 클럽 정보",
     description:
-      "강남·홍대 클럽 테이블 예약, 무료입장 게스트, 실시간 채팅을 한 번에.",
+      "강남·홍대 클럽 실시간 무료입장·조각·테이블 예약·영업시간·주대 정보 한 곳에.",
     url: "https://nightflow.kr",
     siteName: "나플",
     locale: "ko_KR",
@@ -77,15 +77,15 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "나플 (나이트플로우) - 강남·홍대 클럽 테이블 예약",
+        alt: "나플 | 나이트플로우 - 강남·홍대 클럽 정보",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "나플 (나이트플로우) - 강남·홍대 클럽 테이블 예약",
+    title: "나플 | 나이트플로우 - 강남·홍대 클럽 정보",
     description:
-      "강남·홍대 클럽 테이블 예약, 무료입장 게스트, 실시간 채팅을 한 번에.",
+      "강남·홍대 클럽 실시간 무료입장·조각·테이블 예약·영업시간·주대 정보 한 곳에.",
     images: ["/og-image.png"],
   },
   robots: {
@@ -127,7 +127,7 @@ export default function RootLayout({
         url: "https://nightflow.kr",
         logo: "https://nightflow.kr/og-image.png",
         description:
-          "나플은 강남·홍대 클럽 테이블 예약, 무료입장 게스트, 실시간 채팅을 한 번에 제공하는 클럽 플랫폼입니다. 밤을 더 아름답게 만드는 무브먼트.",
+          "나플은 강남·홍대 클럽 실시간 무료입장·조각·테이블 예약·영업시간·주대 정보를 한 곳에서 볼 수 있는 클럽 플랫폼입니다. 밤을 더 아름답게 만드는 무브먼트.",
         slogan: "밤을 더 아름답게",
         sameAs: ["https://www.instagram.com/nightflow.kr/"],
       },
