@@ -342,6 +342,8 @@ export interface Club {
   drink_menu_updated_at: string | null;
   /** Migration 298: 주대 사진 다중 등록. drink_menu_url(단일)은 하위호환용. */
   drink_menu_urls?: string[];
+  /** Migration 300: 테이블맵 사진 다중 등록. floor_plan_url(단일)은 하위호환용. */
+  floor_plan_urls?: string[];
 
   // Migration 218: 영업시간 자유 텍스트 (예: "금/토 22:00-05:00")
   operating_hours: string | null;
@@ -463,6 +465,7 @@ export interface Auction {
   target_female: number;
   seats_claimed_male: number;   // Migration 202: 인앱 참여자 성별 카운터
   seats_claimed_female: number;
+  share_option_id: string | null; // Migration 304: 자동생성 조각의 원본 옵션 (수동 등록은 NULL)
 
   // JOIN 관계
   club?: Club;
@@ -951,6 +954,54 @@ export interface WeeklyHotdealSlot {
   expires_at: string;
   claimed_at: string;
   updated_at: string;
+}
+
+// ============================================================================
+// weekly_share_slots (Migration 299) — 조각(share) 주 단위 선점 슬롯
+//   게스트 간판과 독립. 클럽×주=MD 1명. 이 슬롯을 선점한 MD만 조각 등록 가능.
+// ============================================================================
+export interface WeeklyShareSlot {
+  id: string;
+  club_id: string;
+  md_id: string;
+  /** "YYYY-MM-DD" — 그 주의 월요일 (KST) */
+  week_start: string;
+  /** ISO timestamp — week_start + 7일 18:00 KST */
+  expires_at: string;
+  claimed_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// 조각 상시 세팅 (Migration 302~305)
+//   share_options(옵션/프리셋) + share_weekday_plan(요일표) → cron 자동 생성
+// ============================================================================
+export type ShareDow = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+
+export interface ShareOption {
+  id: string;
+  md_id: string;
+  club_id: string;
+  /** MD용 식별 라벨 "메인","일반" (선택) */
+  label: string | null;
+  table_info: string;
+  total_seats: number;
+  price_per_seat: number;
+  includes: string[];
+  md_message: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ShareWeekdayPlan {
+  id: string;
+  md_id: string;
+  club_id: string;
+  dow: ShareDow;
+  option_id: string;
+  sort_order: number;
+  created_at: string;
 }
 
 // ============================================================================

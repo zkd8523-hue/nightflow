@@ -12,35 +12,39 @@ dayjs.extend(relativeTime);
 dayjs.locale("ko");
 
 interface Props {
-  /** 다중 사진. 비어있으면 url 폴백 */
+  /** 가격표 다중 사진. 비어있으면 url 폴백 */
   urls?: string[];
   /** 하위 호환: 단일 URL */
   url?: string | null;
   updatedAt: string | null;
   clubName: string;
-  /** 테이블맵(층별 도면) URL — 있으면 헤더에 탭 노출 */
+  /** 테이블맵 단일 URL — 하위 호환 */
   floorPlanUrl?: string | null;
+  /** 테이블맵 다중 사진. 비어있으면 floorPlanUrl 폴백 */
+  floorPlanUrls?: string[];
 }
 
 type Tab = "menu" | "floor";
 
 /**
  * 가격표 + 테이블맵 통합 인라인 드롭다운.
- * - 가격표 1장: 단일, 클릭 시 라이트박스
- * - 가격표 2장 이상: 가로 슬라이드 + 좌우 화살표 + dot 인디케이터
- * - 테이블맵: 단일 사진, 동일 라이트박스 사용
- * - floorPlanUrl이 없으면 가격표만 노출 (탭 헤더 X)
+ * - 가격표/테이블맵 각각 다중 슬라이드 지원
+ * - 둘 다 있으면 탭 토글 노출, 하나만 있으면 그것만
  */
-export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }: Props) {
+export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, floorPlanUrls }: Props) {
   // 가격표 소스
   const menuSources = (urls && urls.length > 0)
     ? urls
     : (url ? [url] : []);
-  const hasFloor = !!floorPlanUrl;
+  // 테이블맵 소스 (다중 우선, 없으면 단일)
+  const floorSources = (floorPlanUrls && floorPlanUrls.length > 0)
+    ? floorPlanUrls
+    : (floorPlanUrl ? [floorPlanUrl] : []);
+  const hasFloor = floorSources.length > 0;
   const hasMenu = menuSources.length > 0;
   const [tab, setTab] = useState<Tab>(hasMenu ? "menu" : "floor");
   // 활성 탭의 사진 소스
-  const sources = tab === "menu" ? menuSources : (floorPlanUrl ? [floorPlanUrl] : []);
+  const sources = tab === "menu" ? menuSources : floorSources;
   const hasMultiple = sources.length > 1;
 
   const [open, setOpen] = useState(false);

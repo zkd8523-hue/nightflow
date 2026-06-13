@@ -561,13 +561,14 @@ export function ClubDetailContent({
             </a>
           )}
 
-          {(clubDrinkMenuUrls.length > 0 || clubDrinkMenuUrl || club.drink_menu_url || club.floor_plan_url) && (
+          {(clubDrinkMenuUrls.length > 0 || clubDrinkMenuUrl || club.drink_menu_url || club.floor_plan_url || (club.floor_plan_urls && club.floor_plan_urls.length > 0)) && (
             <DrinkMenuViewer
               urls={clubDrinkMenuUrls}
               url={clubDrinkMenuUrl ?? club.drink_menu_url}
               updatedAt={clubDrinkMenuUpdatedAt ?? club.drink_menu_updated_at}
               clubName={clubName}
               floorPlanUrl={club.floor_plan_url}
+              floorPlanUrls={club.floor_plan_urls}
             />
           )}
 
