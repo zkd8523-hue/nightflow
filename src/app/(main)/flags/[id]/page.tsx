@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: "article",
       images: [
         {
-          url: "/og-image.png",
+          url: "/og-flag-moon.png",
           width: 1200,
           height: 630,
           type: "image/png",
@@ -84,7 +84,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: "summary_large_image",
       title,
       description,
-      images: ["/og-image.png"],
+      images: ["/og-flag-moon.png"],
     },
   };
 }
