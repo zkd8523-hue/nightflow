@@ -110,17 +110,32 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
 
   const supabase = createAnonClient();
 
-  // 지역의 활성 클럽 (지도용 필드 포함)
-  const { data: clubsRaw } = await supabase
-    .from("clubs")
-    .select(
-      "id, name, area, thumbnail_url, latitude, longitude, tags, drink_menu_url, operating_hours, entry_fee_detail, seed_favorite_count"
-    )
-    .eq("area", area)
-    .is("deleted_at", null)
-    .not("name", "ilike", "%운영자%")
-    .order("name")
-    .limit(100);
+  // 이번 주 게스트 간판 — 노출 판정은 week_start(getActiveWeekStartISO, 월 18시 게이트 포함) 단일 기준
+  const { getActiveWeekStartISO } = await import("@/lib/utils/hotdeal");
+  const thisWeekISO = getActiveWeekStartISO();
+
+  // 지역의 활성 클럽 + 이번 주 게스트 간판 동시 조회
+  const [{ data: clubsRaw }, { data: guestSignSlots }] = await Promise.all([
+    supabase
+      .from("clubs")
+      .select(
+        "id, name, area, thumbnail_url, latitude, longitude, tags, drink_menu_url, operating_hours, entry_fee_detail, seed_favorite_count"
+      )
+      .eq("area", area)
+      .is("deleted_at", null)
+      .not("name", "ilike", "%운영자%")
+      .order("name")
+      .limit(100),
+    supabase
+      .from("weekly_hotdeal_slots")
+      .select("club_id")
+      .eq("week_start", thisWeekISO),
+  ]);
+
+  // 게스트 간판 운영 중인 club_id Set
+  const guestSignClubIds = new Set(
+    (guestSignSlots ?? []).map((s) => s.club_id).filter(Boolean) as string[]
+  );
 
   const HIDDEN = ["prism", "eclipse", "luna", "orion"];
   type ClubRow = {
@@ -136,11 +151,18 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
     entry_fee_detail: string | null;
     seed_favorite_count: number | null;
   };
-  const areaClubs = ((clubsRaw ?? []) as ClubRow[]).filter((c) => {
+  const areaClubsRaw = ((clubsRaw ?? []) as ClubRow[]).filter((c) => {
     const lower = c.name.toLowerCase();
     return !HIDDEN.some(
       (kw) => lower.startsWith(kw) || lower.includes(`club ${kw}`)
     );
+  });
+
+  // 게스트 간판 운영 중인 클럽 상위 노출 (안정 정렬로 기존 이름 순 유지)
+  const areaClubs = [...areaClubsRaw].sort((a, b) => {
+    const aHas = guestSignClubIds.has(a.id) ? 1 : 0;
+    const bHas = guestSignClubIds.has(b.id) ? 1 : 0;
+    return bHas - aHas;
   });
 
   // 지도에 표시 가능한 클럽 (좌표 있음)
@@ -253,6 +275,7 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
             activeCountMap={activeCountMap}
             initialCenter={AREA_CENTERS[area]}
             unmappedCount={unmappedCount}
+            lockCenter
           />
         </div>
       </section>
@@ -272,11 +295,14 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
               const display = primary ?? c.name;
               const altText = `${area} ${display} 클럽 사진`;
               const favCount = favCountMap[c.id] ?? 0;
+              const hasGuestSign = guestSignClubIds.has(c.id);
               return (
                 <li key={c.id}>
                   <Link
                     href={`/clubs/${c.id}`}
-                    className="block bg-[#1C1C1E] border border-neutral-800 rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors"
+                    className={`block bg-[#1C1C1E] border rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors ${
+                      hasGuestSign ? "border-amber-500/40" : "border-neutral-800"
+                    }`}
                   >
                     <div className="relative w-full aspect-[4/3] bg-neutral-900">
                       {c.thumbnail_url ? (
@@ -293,6 +319,11 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
                           <span className="text-neutral-700 text-2xl font-black">
                             {display.charAt(0)}
                           </span>
+                        </div>
+                      )}
+                      {hasGuestSign && (
+                        <div className="absolute top-2 left-2 bg-amber-500 px-1.5 py-0.5 rounded-md">
+                          <span className="text-black text-[10px] font-black">게스트</span>
                         </div>
                       )}
                       {favCount > 0 && (
