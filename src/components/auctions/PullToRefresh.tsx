@@ -20,7 +20,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
   // - "pending" → 첫 8px 움직임으로 방향 판정 대기
   // - "horizontal" → body fixed로 페이지 세로 잠금 (가로 스크롤만 허용)
   // 세로 우세 시 락 안 걸고 일반 pull-to-refresh로 진입
-  const lockStateRef = useRef<"pending" | "horizontal" | "vertical-skip" | null>(null);
+  const lockStateRef = useRef<"pending" | "horizontal" | "vertical-skip" | "vertical-pull" | null>(null);
   const lockedScrollYRef = useRef<number | null>(null);
   const onRefreshRef = useRef(onRefresh);
 
@@ -74,9 +74,17 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
       const t = e.touches[0];
       startXRef.current = t.clientX;
       startYRef.current = t.clientY;
-      // 가로 스크롤 영역에서 시작된 터치 — 방향 판정 대기
+      // no-pull 영역에서 시작된 터치 — 방향 판정 대기
       const target = e.target as HTMLElement | null;
-      if (target?.closest("[data-no-pull-refresh]")) {
+      const noPull = target?.closest("[data-no-pull-refresh]");
+      if (noPull) {
+        // strict: 지도/세로 스크롤 시트 등 — 세로로 당겨도 절대 새로고침 안 함
+        if (noPull.getAttribute("data-no-pull-refresh") === "strict") {
+          lockStateRef.current = "vertical-skip";
+          touchActiveRef.current = false;
+          return;
+        }
+        // 기본(가로 캐러셀): 방향 판정 후 세로 당김이면 새로고침 허용
         lockStateRef.current = "pending";
         return;
       }
@@ -99,9 +107,21 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
           // 가로 우세 → body fixed 락 (가로 스크롤만 허용)
           lockStateRef.current = "horizontal";
           lockPageScroll();
+        } else if (t.clientY - startYRef.current > 0 && window.scrollY <= 1) {
+          // 세로 우세 + 아래로 당김 + 페이지 최상단:
+          // 가로 캐러셀(홈 카드 등) 위에서 시작했더라도 세로로 당기면
+          // 곧 페이지 전체를 당기는 동작 → 일반 pull-to-refresh로 진입.
+          lockStateRef.current = "vertical-pull";
+          touchActiveRef.current = true;
+          const dist = t.clientY - startYRef.current;
+          e.preventDefault();
+          const clamped = Math.min(dist, THRESHOLD * 1.5);
+          pullDistanceRef.current = clamped;
+          setPullDistance(clamped);
+          return;
         } else {
-          // 세로 우세 → no-pull 영역(시트 등) 내부 세로 스크롤로 간주, pull-to-refresh 비활성
-          // 페이지 새로고침으로 잘못 잡히지 않게 영구히 차단
+          // 세로 우세지만 위로 스크롤 중이거나 페이지가 이미 스크롤된 상태
+          // → 시트/내부 세로 스크롤로 간주, pull-to-refresh 비활성
           lockStateRef.current = "vertical-skip";
           touchActiveRef.current = false;
         }

@@ -393,7 +393,7 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
     <div className="fixed inset-0 overflow-hidden bg-neutral-900 z-10">
       <div
         ref={mapRef}
-        data-no-pull-refresh
+        data-no-pull-refresh="strict"
         className="w-full h-full"
         style={{ touchAction: "pan-x pan-y" }}
       />

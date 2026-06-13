@@ -205,7 +205,7 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
 
       <div
         ref={listRef}
-        data-no-pull-refresh
+        data-no-pull-refresh="strict"
         className="flex-1 overflow-y-auto"
         style={{ touchAction: "pan-y" }}
       >
