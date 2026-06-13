@@ -9,7 +9,7 @@ import { logger } from '@/lib/utils/logger';
  * @param quality 압축 품질 0-1 (기본: 0.8)
  * @returns 압축된 이미지 파일
  */
-async function compressImage(
+export async function compressImage(
   file: File,
   maxWidth: number = 1920,
   quality: number = 0.8

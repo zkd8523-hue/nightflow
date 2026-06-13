@@ -5,7 +5,7 @@ import Image from "next/image";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ko";
-import { Wine, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Wine, ChevronDown, X, ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
 
 dayjs.extend(relativeTime);
 dayjs.locale("ko");
@@ -17,19 +17,29 @@ interface Props {
   url?: string | null;
   updatedAt: string | null;
   clubName: string;
+  /** 테이블맵(층별 도면) URL — 있으면 헤더에 탭 노출 */
+  floorPlanUrl?: string | null;
 }
 
+type Tab = "menu" | "floor";
+
 /**
- * 가격표(주류 가격표) 인라인 드롭다운.
- * - 1장: 단일 사진, 클릭 시 라이트박스
- * - 2장 이상: 가로 슬라이드 + 좌우 화살표 + dot 인디케이터, 라이트박스도 슬라이드
- * - 라이트박스 안에서 사진 탭 = 2x 줌 토글
+ * 가격표 + 테이블맵 통합 인라인 드롭다운.
+ * - 가격표 1장: 단일, 클릭 시 라이트박스
+ * - 가격표 2장 이상: 가로 슬라이드 + 좌우 화살표 + dot 인디케이터
+ * - 테이블맵: 단일 사진, 동일 라이트박스 사용
+ * - floorPlanUrl이 없으면 가격표만 노출 (탭 헤더 X)
  */
-export function DrinkMenuViewer({ urls, url, updatedAt, clubName }: Props) {
-  // urls 우선, 비어있으면 url 폴백
-  const sources = (urls && urls.length > 0)
+export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }: Props) {
+  // 가격표 소스
+  const menuSources = (urls && urls.length > 0)
     ? urls
     : (url ? [url] : []);
+  const hasFloor = !!floorPlanUrl;
+  const hasMenu = menuSources.length > 0;
+  const [tab, setTab] = useState<Tab>(hasMenu ? "menu" : "floor");
+  // 활성 탭의 사진 소스
+  const sources = tab === "menu" ? menuSources : (floorPlanUrl ? [floorPlanUrl] : []);
   const hasMultiple = sources.length > 1;
 
   const [open, setOpen] = useState(false);
@@ -60,6 +70,34 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName }: Props) {
     const el = inlineScrollRef.current;
     if (!el) return;
     el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
+  };
+
+  // 스와이프 가속 차단: 손 뗐을 때 시작 인덱스 ±1만 허용 (한 번에 한 장씩만 이동)
+  const touchStartXRef = useRef(0);
+  const touchStartIdxRef = useRef(0);
+  const handleSlideTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    const el = inlineScrollRef.current;
+    if (el) {
+      touchStartIdxRef.current = Math.round(el.scrollLeft / el.clientWidth);
+    }
+  };
+  const handleSlideTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    const el = inlineScrollRef.current;
+    if (!el) return;
+    const dx = e.changedTouches[0].clientX - touchStartXRef.current;
+    const startIdx = touchStartIdxRef.current;
+    const SWIPE_THRESHOLD = 40; // 40px 이상 스와이프해야 이동
+    let targetIdx = startIdx;
+    if (dx <= -SWIPE_THRESHOLD) {
+      targetIdx = Math.min(sources.length - 1, startIdx + 1);
+    } else if (dx >= SWIPE_THRESHOLD) {
+      targetIdx = Math.max(0, startIdx - 1);
+    }
+    // 강제 스냅 — native momentum 무력화
+    requestAnimationFrame(() => {
+      el.scrollTo({ left: targetIdx * el.clientWidth, behavior: "smooth" });
+    });
   };
 
   // 라이트박스 줌 토글
@@ -127,12 +165,31 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName }: Props) {
     if (!lightbox) setZoomed(false);
   }, [lightbox]);
 
+  // 탭 전환 시 슬라이드 인덱스 초기화 + 스크롤 리셋
+  useEffect(() => {
+    setInlineIdx(0);
+    setLightboxIdx(0);
+    requestAnimationFrame(() => {
+      if (inlineScrollRef.current) {
+        inlineScrollRef.current.scrollTo({ left: 0, behavior: "instant" as ScrollBehavior });
+      }
+    });
+  }, [tab]);
+
   const openLightboxAt = (idx: number) => {
     setLightboxIdx(idx);
     setLightbox(true);
   };
 
-  if (sources.length === 0) return null;
+  // 가격표·테이블맵 둘 다 없으면 컴포넌트 자체 안 보임
+  if (!hasMenu && !hasFloor) return null;
+
+  // 헤더 라벨: 둘 다 있으면 "가격표 · 테이블맵", 하나만 있으면 그것만
+  const headerLabel = hasMenu && hasFloor
+    ? "가격표 · 테이블맵"
+    : hasMenu
+      ? "가격표 보기"
+      : "테이블맵 보기";
 
   return (
     <>
@@ -143,9 +200,13 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName }: Props) {
           aria-expanded={open}
           className="w-full flex items-center gap-2 px-4 py-3 mt-1 text-[14px] text-white bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.99] border border-amber-500/40 rounded-xl transition-colors text-left"
         >
-          <Wine className="w-4 h-4 flex-shrink-0 text-amber-400" />
-          <span className="font-black">가격표 보기</span>
-          {isStale && (
+          {hasMenu ? (
+            <Wine className="w-4 h-4 flex-shrink-0 text-amber-400" />
+          ) : (
+            <LayoutGrid className="w-4 h-4 flex-shrink-0 text-amber-400" />
+          )}
+          <span className="font-black">{headerLabel}</span>
+          {tab === "menu" && isStale && (
             <span className="text-[11px] text-red-400">· 오래된 정보일 수 있어요</span>
           )}
           <ChevronDown
@@ -155,13 +216,42 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName }: Props) {
         </button>
         {open && (
           <div className="mt-2 rounded-xl overflow-hidden border border-neutral-800">
+            {/* 둘 다 있을 때만 탭 토글 노출 */}
+            {hasMenu && hasFloor && (
+              <div className="flex border-b border-neutral-800 bg-[#0A0A0A]">
+                <button
+                  type="button"
+                  onClick={() => setTab("menu")}
+                  className={`flex-1 py-2.5 text-[13px] font-bold transition-colors ${
+                    tab === "menu"
+                      ? "text-amber-400 border-b-2 border-amber-400 -mb-px"
+                      : "text-neutral-500 hover:text-white"
+                  }`}
+                >
+                  가격표
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTab("floor")}
+                  className={`flex-1 py-2.5 text-[13px] font-bold transition-colors ${
+                    tab === "floor"
+                      ? "text-amber-400 border-b-2 border-amber-400 -mb-px"
+                      : "text-neutral-500 hover:text-white"
+                  }`}
+                >
+                  테이블맵
+                </button>
+              </div>
+            )}
             <div className="relative bg-[#0A0A0A]">
-              {/* 가로 슬라이드 스크롤 컨테이너 */}
+              {/* 가로 슬라이드 스크롤 컨테이너 — 한 장씩만 이동 (가속 차단) */}
               <div
                 ref={inlineScrollRef}
                 onScroll={handleInlineScroll}
+                onTouchStart={handleSlideTouchStart}
+                onTouchEnd={handleSlideTouchEnd}
                 className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-                style={{ scrollSnapType: "x mandatory" }}
+                style={{ scrollSnapType: "x mandatory", overscrollBehaviorX: "contain" }}
               >
                 {sources.map((src, i) => (
                   <button
@@ -176,9 +266,9 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName }: Props) {
                       alt={`${clubName} 가격표 ${i + 1}`}
                       width={1200}
                       height={1600}
+                      sizes="(max-width: 640px) 100vw, 600px"
                       className="w-full h-auto select-none"
                       draggable={false}
-                      unoptimized
                     />
                   </button>
                 ))}

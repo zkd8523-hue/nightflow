@@ -13,6 +13,7 @@ import {
 import { CLUB_TAG_GROUPS, makeTag, parseTag } from "@/lib/clubs/tags";
 import { updateClubPartnerFields } from "@/lib/clubs/update";
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/utils/upload";
 import {
   DndContext,
   closestCenter,
@@ -105,8 +106,9 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       return;
     }
     for (const f of list) {
-      if (f.size > 5 * 1024 * 1024) {
-        toast.error(`${f.name}: 이미지는 5MB 이하만 가능합니다`);
+      // 원본 10MB까지 받고(아이폰 사진 5MB+ 일반적), 압축 후 사이즈는 더 줄어듦
+      if (f.size > 10 * 1024 * 1024) {
+        toast.error(`${f.name}: 이미지는 10MB 이하만 가능합니다`);
         return;
       }
     }
@@ -115,11 +117,16 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       const supabase = createClient();
       const uploaded: string[] = [];
       for (const file of list) {
-        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+        // 클라이언트 압축 (maxWidth 1920px, quality 0.8) — 모바일 로딩/스토리지 비용 절감
+        const compressed = file.type.startsWith("image/")
+          ? await compressImage(file, 1920, 0.8)
+          : file;
+        // 압축 후 항상 .jpg 확장자(canvas.toBlob 출력)
+        const ext = compressed.type === "image/jpeg" ? "jpg" : (file.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${clubId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
         const { error: upErr } = await supabase.storage
           .from("club-menus")
-          .upload(path, file, { cacheControl: "3600", upsert: false });
+          .upload(path, compressed, { cacheControl: "3600", upsert: false, contentType: compressed.type || "image/jpeg" });
         if (upErr) throw upErr;
         const { data: pub } = supabase.storage.from("club-menus").getPublicUrl(path);
         uploaded.push(pub.publicUrl);
