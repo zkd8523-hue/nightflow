@@ -75,6 +75,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           url: "/og-image.png",
           width: 1200,
           height: 630,
+          type: "image/png",
           alt: `${area} 클럽 깃발 - 나이트플로우`,
         },
       ],
