@@ -111,8 +111,9 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
   const supabase = createAnonClient();
 
   // 이번 주 게스트 간판 — 노출 판정은 week_start(getActiveWeekStartISO, 월 18시 게이트 포함) 단일 기준
-  const { getActiveWeekStartISO } = await import("@/lib/utils/hotdeal");
+  const { getActiveWeekStartISO, getBusinessDowKey, normalizeDowSlots, summarizeSlots } = await import("@/lib/utils/hotdeal");
   const thisWeekISO = getActiveWeekStartISO();
+  const todayDowKey = getBusinessDowKey();
 
   // 지역의 활성 클럽 + 이번 주 게스트 간판 동시 조회
   const [{ data: clubsRaw }, { data: guestSignSlots }] = await Promise.all([
@@ -128,14 +129,22 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
       .limit(100),
     supabase
       .from("weekly_hotdeal_slots")
-      .select("club_id")
+      .select("club_id, benefits_by_dow")
       .eq("week_start", thisWeekISO),
   ]);
 
-  // 게스트 간판 운영 중인 club_id Set
+  // 게스트 간판 운영 중인 club_id Set + 오늘 혜택 요약(hotdealMap)
   const guestSignClubIds = new Set(
     (guestSignSlots ?? []).map((s) => s.club_id).filter(Boolean) as string[]
   );
+  const hotdealMap: Record<string, string> = {};
+  for (const slot of guestSignSlots ?? []) {
+    if (!slot.club_id) continue;
+    const byDow = (slot.benefits_by_dow ?? {}) as Record<string, unknown>;
+    const todaySlots = normalizeDowSlots(byDow[todayDowKey] as never);
+    const summary = summarizeSlots(todaySlots);
+    if (summary) hotdealMap[slot.club_id] = summary;
+  }
 
   const HIDDEN = ["prism", "eclipse", "luna", "orion"];
   type ClubRow = {
@@ -273,6 +282,7 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
           <ClubMap
             clubs={mappedClubs}
             activeCountMap={activeCountMap}
+            hotdealMap={hotdealMap}
             initialCenter={AREA_CENTERS[area]}
             unmappedCount={unmappedCount}
             lockCenter
