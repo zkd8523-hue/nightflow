@@ -500,7 +500,7 @@ function ClubCard({
   return (
     <Link
       href={`/clubs/${club.id}`}
-      className="flex-shrink-0 w-[140px] snap-start snap-always group"
+      className="flex-shrink-0 w-[140px] snap-start snap-always group/card"
     >
       <div className="relative w-[140px] h-[175px] rounded-2xl overflow-hidden bg-neutral-900">
         {club.thumbnail_url ? (
@@ -509,7 +509,7 @@ function ClubCard({
             alt={`${club.area ? `${club.area} ` : ""}${club.name} 클럽 사진`}
             fill
             sizes="152px"
-            className="object-cover group-active:scale-95 transition-transform"
+            className="object-cover group-active/card:scale-95 transition-transform"
             loading="lazy"
           />
         ) : (
