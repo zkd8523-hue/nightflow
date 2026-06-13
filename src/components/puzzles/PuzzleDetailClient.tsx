@@ -152,17 +152,38 @@ export function PuzzleDetailClient({
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/flags/${puzzle.id}`;
-    const title = puzzle.notes || `${puzzle.area} 깃발`;
-    const text = `${puzzle.area} · 인당 ${((puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count) / puzzle.target_count).toLocaleString()}원 · ${puzzle.target_count}명`;
+    const title = `나플 깃발 · ${puzzle.area}`;
+    const totalBudget =
+      puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count;
+    const text = `${puzzle.area} · 총 ${Math.round(totalBudget / 10000)}만원 · ${puzzle.target_count}명`;
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url });
       } catch {
         // 사용자가 취소한 경우 무시
       }
-    } else {
-      await navigator.clipboard.writeText(url);
+      return;
+    }
+
+    // navigator.clipboard는 보안 컨텍스트(HTTPS/localhost)에서만 존재
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        // 폴백: 임시 textarea + execCommand
+        const textarea = document.createElement("textarea");
+        textarea.value = url;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
       toast.success("링크가 복사되었습니다");
+    } catch {
+      toast.error("링크 복사에 실패했습니다");
     }
   }, [puzzle]);
 

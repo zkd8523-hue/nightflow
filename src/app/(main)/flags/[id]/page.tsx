@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const { data: puzzle } = await supabase
     .from("puzzles")
-    .select("area, event_date, target_count, current_count, budget_per_person, is_recruiting_party, status")
+    .select("area, event_date, target_count, current_count, budget_per_person, total_budget, is_recruiting_party, status")
     .eq("id", id)
     .single();
 
@@ -31,25 +31,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         weekday: "short",
       })
     : "";
-  const budgetText = puzzle.budget_per_person
-    ? `${Math.round(puzzle.budget_per_person / 10000)}만원`
+  const totalBudget =
+    puzzle.total_budget ??
+    (puzzle.budget_per_person
+      ? puzzle.budget_per_person * (puzzle.target_count ?? 1)
+      : null);
+  const budgetText = totalBudget
+    ? `총 ${Math.round(totalBudget / 10000)}만원`
     : "";
-  const remaining = Math.max(
-    (puzzle.target_count ?? 0) - (puzzle.current_count ?? 0),
-    0
-  );
-  const recruiting = puzzle.is_recruiting_party && remaining > 0;
-  const mode = recruiting ? `${remaining}명 추가 모집` : `${puzzle.target_count}명 확정`;
+  const countText = puzzle.target_count ? `${puzzle.target_count}명` : "";
 
-  const title = `${area} 클럽 퍼즐 ${mode}${eventDate ? ` · ${eventDate}` : ""}${budgetText ? ` · ${budgetText}` : ""}`;
-  const description = `${area} 클럽 조각·합석 일행 모집. ${eventDate ? `${eventDate} ` : ""}${puzzle.target_count}명${budgetText ? ` ${budgetText}` : ""} 퍼즐${recruiting ? " 진행 중" : " 확정"}. 나이트플로우(나플)에서 안전하게 일행을 찾으세요.`;
+  const title = `나플 깃발 · ${area}${eventDate ? ` · ${eventDate}` : ""}`;
+  const description = [budgetText, countText].filter(Boolean).join(" · ");
 
   return {
     title,
     description,
     keywords: [
-      "퍼즐",
-      "클럽 퍼즐",
+      "깃발",
+      "클럽 깃발",
       "클럽 조각",
       "클럽 조각모임",
       "클럽 합석",
@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       `${area} 클럽 조각`,
       `${area} 클럽 합석`,
       `${area} 클럽 일행`,
-      `${area} 클럽 퍼즐`,
+      `${area} 클럽 깃발`,
       "나이트플로우",
       "나플",
     ],
@@ -75,7 +75,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
           url: "/og-image.png",
           width: 1200,
           height: 630,
-          alt: `${area} 클럽 퍼즐 - 나이트플로우`,
+          alt: `${area} 클럽 깃발 - 나이트플로우`,
         },
       ],
     },
