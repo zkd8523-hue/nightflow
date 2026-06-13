@@ -52,6 +52,7 @@
     "react-dom": "19.2.3",
     "react-hook-form": "^7.71.1",
     "react-kakao-maps-sdk": "^1.2.1",
+    "react-zoom-pan-pinch": "^4.0.3",
     "solapi": "^5.5.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.1",

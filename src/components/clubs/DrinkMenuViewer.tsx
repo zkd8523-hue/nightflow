@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ko";
 import { Wine, ChevronDown, X, ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 dayjs.extend(relativeTime);
 dayjs.locale("ko");
@@ -46,9 +47,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }
   const [inlineIdx, setInlineIdx] = useState(0);
   const [lightbox, setLightbox] = useState(false);
   const [lightboxIdx, setLightboxIdx] = useState(0);
-  const [zoomed, setZoomed] = useState(false);
   const inlineScrollRef = useRef<HTMLDivElement | null>(null);
-  const zoomScrollRef = useRef<HTMLDivElement | null>(null);
 
   const isStale = updatedAt
     ? dayjs().diff(dayjs(updatedAt), "day") > 30
@@ -59,83 +58,47 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }
     : null;
 
   // 인라인 슬라이드 스크롤 추적 (스와이프 시 인디케이터 업데이트)
-  const handleInlineScroll = () => {
-    const el = inlineScrollRef.current;
-    if (!el) return;
-    const idx = Math.round(el.scrollLeft / el.clientWidth);
-    if (idx !== inlineIdx) setInlineIdx(idx);
-  };
-
-  const scrollInlineTo = (idx: number) => {
-    const el = inlineScrollRef.current;
-    if (!el) return;
-    el.scrollTo({ left: idx * el.clientWidth, behavior: "smooth" });
-  };
-
-  // 스와이프 가속 차단: 손 뗐을 때 시작 인덱스 ±1만 허용 (한 번에 한 장씩만 이동)
+  // Transform 기반 슬라이드 (native scroll 미사용 → momentum/가속 원천 차단)
+  // 드래그 중에는 손가락 따라가다가, 손 뗐을 때 시작 인덱스 ±1로만 강제 스냅.
+  const [dragX, setDragX] = useState(0); // 현재 드래그 중 픽셀 이동량 (음수=왼쪽)
   const touchStartXRef = useRef(0);
   const touchStartIdxRef = useRef(0);
+  const isDraggingRef = useRef(false);
+
+
+  const scrollInlineTo = (idx: number) => {
+    setInlineIdx(idx);
+    setDragX(0);
+  };
+
   const handleSlideTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     touchStartXRef.current = e.touches[0].clientX;
-    const el = inlineScrollRef.current;
-    if (el) {
-      touchStartIdxRef.current = Math.round(el.scrollLeft / el.clientWidth);
-    }
+    touchStartIdxRef.current = inlineIdx;
+    isDraggingRef.current = true;
+  };
+  const handleSlideTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+    const dx = e.touches[0].clientX - touchStartXRef.current;
+    // 양 끝에서는 저항 (배경 흰 영역 안 보이게)
+    const atStart = touchStartIdxRef.current === 0 && dx > 0;
+    const atEnd = touchStartIdxRef.current === sources.length - 1 && dx < 0;
+    const resistance = (atStart || atEnd) ? 0.3 : 1;
+    setDragX(dx * resistance);
   };
   const handleSlideTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    const el = inlineScrollRef.current;
-    if (!el) return;
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
     const dx = e.changedTouches[0].clientX - touchStartXRef.current;
     const startIdx = touchStartIdxRef.current;
-    const SWIPE_THRESHOLD = 40; // 40px 이상 스와이프해야 이동
+    const SWIPE_THRESHOLD = 40;
     let targetIdx = startIdx;
     if (dx <= -SWIPE_THRESHOLD) {
       targetIdx = Math.min(sources.length - 1, startIdx + 1);
     } else if (dx >= SWIPE_THRESHOLD) {
       targetIdx = Math.max(0, startIdx - 1);
     }
-    // 강제 스냅 — native momentum 무력화
-    requestAnimationFrame(() => {
-      el.scrollTo({ left: targetIdx * el.clientWidth, behavior: "smooth" });
-    });
-  };
-
-  // 라이트박스 줌 토글
-  const toggleZoom = (
-    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
-  ) => {
-    const container = zoomScrollRef.current;
-    if (!container) {
-      setZoomed((z) => !z);
-      return;
-    }
-    if (zoomed) {
-      setZoomed(false);
-      return;
-    }
-    const rect = container.getBoundingClientRect();
-    let clientX = 0;
-    let clientY = 0;
-    if ("touches" in e && e.touches.length > 0) {
-      clientX = e.touches[0].clientX;
-      clientY = e.touches[0].clientY;
-    } else if ("changedTouches" in e && e.changedTouches.length > 0) {
-      clientX = e.changedTouches[0].clientX;
-      clientY = e.changedTouches[0].clientY;
-    } else if ("clientX" in e) {
-      clientX = e.clientX;
-      clientY = e.clientY;
-    }
-    const relX = (clientX - rect.left) / rect.width;
-    const relY = (clientY - rect.top) / rect.height;
-    setZoomed(true);
-    requestAnimationFrame(() => {
-      if (!zoomScrollRef.current) return;
-      const sc = zoomScrollRef.current;
-      const newScrollLeft = relX * sc.scrollWidth - rect.width / 2;
-      const newScrollTop = relY * sc.scrollHeight - rect.height / 2;
-      sc.scrollTo({ left: newScrollLeft, top: newScrollTop, behavior: "instant" as ScrollBehavior });
-    });
+    setInlineIdx(targetIdx);
+    setDragX(0);
   };
 
   // 라이트박스: ESC + 좌우 키 + body 스크롤 잠금
@@ -145,11 +108,9 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }
       if (e.key === "Escape") setLightbox(false);
       if (e.key === "ArrowLeft" && hasMultiple) {
         setLightboxIdx((i) => Math.max(0, i - 1));
-        setZoomed(false);
       }
       if (e.key === "ArrowRight" && hasMultiple) {
         setLightboxIdx((i) => Math.min(sources.length - 1, i + 1));
-        setZoomed(false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -161,19 +122,11 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }
     };
   }, [lightbox, hasMultiple, sources.length]);
 
-  useEffect(() => {
-    if (!lightbox) setZoomed(false);
-  }, [lightbox]);
-
-  // 탭 전환 시 슬라이드 인덱스 초기화 + 스크롤 리셋
+  // 탭 전환 시 슬라이드 인덱스 초기화 — transform이 자동으로 0번 위치로 이동
   useEffect(() => {
     setInlineIdx(0);
     setLightboxIdx(0);
-    requestAnimationFrame(() => {
-      if (inlineScrollRef.current) {
-        inlineScrollRef.current.scrollTo({ left: 0, behavior: "instant" as ScrollBehavior });
-      }
-    });
+    setDragX(0);
   }, [tab]);
 
   const openLightboxAt = (idx: number) => {
@@ -243,36 +196,78 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }
                 </button>
               </div>
             )}
-            <div className="relative bg-[#0A0A0A]">
-              {/* 가로 슬라이드 스크롤 컨테이너 — 한 장씩만 이동 (가속 차단) */}
+            <div
+              className="relative bg-[#0A0A0A] overflow-hidden"
+              onTouchStart={hasMultiple ? handleSlideTouchStart : undefined}
+              onTouchMove={hasMultiple ? handleSlideTouchMove : undefined}
+              onTouchEnd={hasMultiple ? handleSlideTouchEnd : undefined}
+              onTouchCancel={hasMultiple ? handleSlideTouchEnd : undefined}
+            >
+              {/* Transform 기반 가로 슬라이드 — native scroll 미사용 */}
               <div
                 ref={inlineScrollRef}
-                onScroll={handleInlineScroll}
-                onTouchStart={handleSlideTouchStart}
-                onTouchEnd={handleSlideTouchEnd}
-                className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-                style={{ scrollSnapType: "x mandatory", overscrollBehaviorX: "contain" }}
+                className="flex"
+                style={{
+                  transform: hasMultiple
+                    ? `translateX(calc(${-inlineIdx * 100}% + ${dragX}px))`
+                    : "none",
+                  transition: isDraggingRef.current ? "none" : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
+                  // 1장이면 touch-action 제약 없음, 다장이면 세로만 허용
+                  touchAction: hasMultiple ? "pan-y" : "auto",
+                }}
               >
-                {sources.map((src, i) => (
-                  <button
-                    key={src}
-                    type="button"
-                    onClick={() => openLightboxAt(i)}
-                    aria-label={`사진 ${i + 1} 크게 보기`}
-                    className="relative flex-shrink-0 w-full snap-center cursor-zoom-in"
-                  >
-                    <Image
-                      src={src}
-                      alt={`${clubName} 가격표 ${i + 1}`}
-                      width={1200}
-                      height={1600}
-                      sizes="(max-width: 640px) 100vw, 600px"
-                      className="w-full h-auto select-none"
-                      draggable={false}
-                    />
-                  </button>
-                ))}
+                {sources.map((src, i) => {
+                  // D. 현재 인덱스 ±1만 실제 로드, 나머지는 placeholder만
+                  const shouldLoad = Math.abs(i - inlineIdx) <= 1;
+                  // A. 첫 사진은 priority(즉시 로드), 나머지는 lazy
+                  const isPriority = i === 0;
+                  return (
+                    <button
+                      key={src}
+                      type="button"
+                      onClick={() => {
+                        // 드래그 직후 의도치 않은 클릭 방지 (5px 이상 이동 시 클릭 무시)
+                        const dx = Math.abs(dragX);
+                        if (dx > 5) return;
+                        openLightboxAt(i);
+                      }}
+                      aria-label={`사진 ${i + 1} 크게 보기`}
+                      className="relative flex-shrink-0 w-full cursor-zoom-in bg-neutral-900"
+                      style={{ aspectRatio: "3 / 4" }}
+                    >
+                      {shouldLoad ? (
+                        <Image
+                          src={src}
+                          alt={`${clubName} 가격표 ${i + 1}`}
+                          width={800}
+                          height={1066}
+                          sizes="(max-width: 640px) 100vw, 500px"
+                          className="w-full h-auto select-none pointer-events-none"
+                          draggable={false}
+                          priority={isPriority}
+                          loading={isPriority ? undefined : "lazy"}
+                          fetchPriority={isPriority ? "high" : "low"}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-neutral-700 text-[11px]">
+                          로딩 대기 중…
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* 갱신 날짜 — 가격표 탭에서만, 이미지 우측 하단 오버레이 */}
+              {tab === "menu" && updatedLabel && (
+                <div
+                  className={`absolute bottom-2 right-2 z-10 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-[10px] font-bold pointer-events-none ${
+                    isStale ? "text-red-300" : "text-white/90"
+                  }`}
+                >
+                  {updatedLabel} 갱신
+                </div>
+              )}
 
               {/* 좌우 화살표 (데스크탑·다장만) */}
               {hasMultiple && (
@@ -318,20 +313,9 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }
               </div>
             )}
 
-            <div className="relative px-3 py-1.5 text-[10px] text-neutral-600">
-              <p className="text-center">
-                이미지를 탭하면 크게 보기{hasMultiple ? " · 좌우로 스와이프" : ""}
-              </p>
-              {updatedLabel && (
-                <span
-                  className={`absolute right-3 top-1/2 -translate-y-1/2 ${
-                    isStale ? "text-red-400" : "text-neutral-500"
-                  }`}
-                >
-                  {updatedLabel} 갱신
-                </span>
-              )}
-            </div>
+            <p className="px-3 py-1.5 text-[10px] text-neutral-600 text-center">
+              이미지를 탭하면 크게 보기{hasMultiple ? " · 좌우로 스와이프" : ""}
+            </p>
           </div>
         )}
       </div>
@@ -365,7 +349,6 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }
               onClick={(e) => {
                 e.stopPropagation();
                 setLightboxIdx((i) => Math.max(0, i - 1));
-                setZoomed(false);
               }}
               aria-label="이전 사진"
               className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
@@ -381,7 +364,6 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }
               onClick={(e) => {
                 e.stopPropagation();
                 setLightboxIdx((i) => Math.min(sources.length - 1, i + 1));
-                setZoomed(false);
               }}
               aria-label="다음 사진"
               className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
@@ -397,32 +379,102 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl }
             </div>
           )}
 
-          {/* 이미지 영역 (탭 = 2x 줌, 배경 클릭과 분리) */}
+          {/* 이미지 영역 — react-zoom-pan-pinch:
+              - 더블탭/더블클릭으로 줌 토글
+              - 핀치 줌 / 휠 줌
+              - 줌 상태에서 자유롭게 팬 (좌우/상하)
+              - 줌 1배일 때 스와이프 = 좌우 이미지 이동
+              - 우리는 LightboxImage 컴포넌트로 분리해서 사용 */}
           <div
-            ref={zoomScrollRef}
-            className="relative w-full h-full max-w-5xl overflow-auto p-4"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleZoom(e);
-            }}
-            style={{ cursor: zoomed ? "zoom-out" : "zoom-in" }}
-            role="button"
-            aria-label={zoomed ? "축소" : "확대"}
-            tabIndex={0}
+            className="relative w-full h-full max-w-5xl flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
           >
-            <Image
+            <LightboxImage
+              key={lightboxIdx}
               src={sources[lightboxIdx]}
               alt={`${clubName} 가격표 ${lightboxIdx + 1}`}
-              width={1600}
-              height={2400}
-              className="h-auto mx-auto select-none transition-[width] duration-200"
-              style={{ width: zoomed ? "200%" : "100%", objectFit: "contain" }}
-              draggable={false}
-              unoptimized
+              onSwipePrev={lightboxIdx > 0 ? () => setLightboxIdx((i) => Math.max(0, i - 1)) : undefined}
+              onSwipeNext={lightboxIdx < sources.length - 1 ? () => setLightboxIdx((i) => Math.min(sources.length - 1, i + 1)) : undefined}
             />
           </div>
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * 라이트박스 이미지 한 장: 핀치/더블탭/휠 줌 + 팬 지원 (react-zoom-pan-pinch).
+ * - 줌 1배일 때 좌/우 스와이프 = 이전/다음 사진 (onSwipePrev/onSwipeNext)
+ * - 줌 상태에서는 panning이 활성화되어 스와이프는 자동으로 무시됨
+ */
+function LightboxImage({
+  src,
+  alt,
+  onSwipePrev,
+  onSwipeNext,
+}: {
+  src: string;
+  alt: string;
+  onSwipePrev?: () => void;
+  onSwipeNext?: () => void;
+}) {
+  const touchStartXRef = useRef(0);
+  const touchStartYRef = useRef(0);
+  const touchStartScaleRef = useRef(1);
+  const currentScaleRef = useRef(1);
+
+  return (
+    <TransformWrapper
+      initialScale={1}
+      minScale={1}
+      maxScale={4}
+      doubleClick={{ step: 1 }}
+      pinch={{ step: 5 }}
+      wheel={{ step: 0.2 }}
+      panning={{ disabled: false }}
+      onTransform={(_ref, state) => {
+        currentScaleRef.current = state.scale;
+      }}
+    >
+      {() => (
+        <TransformComponent
+          wrapperClass="!w-full !h-full"
+          contentClass="!w-full !h-full flex items-center justify-center"
+        >
+          <div
+            className="w-full h-full flex items-center justify-center"
+            onTouchStart={(e) => {
+              if (e.touches.length !== 1) return;
+              touchStartXRef.current = e.touches[0].clientX;
+              touchStartYRef.current = e.touches[0].clientY;
+              touchStartScaleRef.current = currentScaleRef.current;
+            }}
+            onTouchEnd={(e) => {
+              // 줌 상태였거나 핀치 후 풀린 직후엔 스와이프 무시
+              if (touchStartScaleRef.current > 1.01 || currentScaleRef.current > 1.01) return;
+              const dx = e.changedTouches[0].clientX - touchStartXRef.current;
+              const dy = e.changedTouches[0].clientY - touchStartYRef.current;
+              const THRESHOLD = 50;
+              if (Math.abs(dy) > Math.abs(dx)) return;
+              if (Math.abs(dx) < THRESHOLD) return;
+              if (dx < 0 && onSwipeNext) onSwipeNext();
+              else if (dx > 0 && onSwipePrev) onSwipePrev();
+            }}
+          >
+            <Image
+              src={src}
+              alt={alt}
+              width={1600}
+              height={2400}
+              className="max-w-full max-h-full h-auto w-auto select-none"
+              style={{ objectFit: "contain" }}
+              draggable={false}
+              unoptimized
+            />
+          </div>
+        </TransformComponent>
+      )}
+    </TransformWrapper>
   );
 }
