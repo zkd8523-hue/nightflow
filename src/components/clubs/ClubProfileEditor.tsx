@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Pencil, Loader2, Wine, Trash2 } from "lucide-react";
+import { Pencil, Loader2, Wine, Trash2, GripVertical, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -13,6 +13,24 @@ import {
 import { CLUB_TAG_GROUPS, makeTag, parseTag } from "@/lib/clubs/tags";
 import { updateClubPartnerFields } from "@/lib/clubs/update";
 import { createClient } from "@/lib/supabase/client";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  arrayMove,
+  rectSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Props {
   clubId: string;
@@ -72,6 +90,8 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
   );
   const [drinkMenuUploading, setDrinkMenuUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  // 라이트박스: 미리보기에서 클릭하면 확대해서 보기
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   // 하위 호환: 첫 번째 url을 단일 슬롯으로도 노출
   const drinkMenuUrl = drinkMenuUrls[0] ?? null;
 
@@ -118,15 +138,45 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
     setDrinkMenuUrls((prev) => prev.filter((u) => u !== url));
   };
 
-  const handleDrinkMenuMove = (url: string, direction: -1 | 1) => {
+  // dnd-kit 센서: 마우스/터치/키보드 모두 지원
+  // PointerSensor: 마우스. TouchSensor: 모바일 (longPress 300ms로 스크롤과 분리)
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  // 라이트박스 ESC + 좌우 키 + body 스크롤 잠금
+  useEffect(() => {
+    if (lightboxIdx === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxIdx(null);
+      if (e.key === "ArrowLeft") {
+        setLightboxIdx((i) => (i === null ? null : Math.max(0, i - 1)));
+      }
+      if (e.key === "ArrowRight") {
+        setLightboxIdx((i) =>
+          i === null ? null : Math.min(drinkMenuUrls.length - 1, i + 1)
+        );
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [lightboxIdx, drinkMenuUrls.length]);
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
     setDrinkMenuUrls((prev) => {
-      const idx = prev.indexOf(url);
-      if (idx < 0) return prev;
-      const next = [...prev];
-      const swapIdx = idx + direction;
-      if (swapIdx < 0 || swapIdx >= next.length) return prev;
-      [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
-      return next;
+      const oldIdx = prev.indexOf(String(active.id));
+      const newIdx = prev.indexOf(String(over.id));
+      if (oldIdx < 0 || newIdx < 0) return prev;
+      return arrayMove(prev, oldIdx, newIdx);
     });
   };
 
@@ -511,55 +561,26 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
                 </span>
               </div>
               {drinkMenuUrls.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 mb-2">
-                  {drinkMenuUrls.map((url, idx) => (
-                    <div
-                      key={url}
-                      className="relative aspect-square bg-neutral-900 border border-amber-500/30 rounded-lg overflow-hidden group"
-                    >
-                      <Image
-                        src={url}
-                        alt={`가격표 ${idx + 1}`}
-                        fill
-                        sizes="(max-width: 640px) 33vw, 160px"
-                        className="object-cover"
-                      />
-                      {/* 순서 + 컨트롤 오버레이 */}
-                      <div className="absolute top-1 left-1 bg-black/70 text-white text-[10px] font-black rounded px-1.5 py-0.5">
-                        {idx + 1}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleDrinkMenuRemove(url)}
-                        disabled={saving || drinkMenuUploading}
-                        aria-label="삭제"
-                        className="absolute top-1 right-1 w-6 h-6 inline-flex items-center justify-center rounded-full bg-black/70 text-red-400 hover:bg-red-500/30 hover:text-red-300"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                      <div className="absolute bottom-1 inset-x-1 flex items-center justify-between gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleDrinkMenuMove(url, -1)}
-                          disabled={saving || drinkMenuUploading || idx === 0}
-                          aria-label="앞으로"
-                          className="w-6 h-6 inline-flex items-center justify-center rounded bg-black/70 text-white text-[14px] leading-none hover:bg-black/90 disabled:opacity-40"
-                        >
-                          ‹
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDrinkMenuMove(url, 1)}
-                          disabled={saving || drinkMenuUploading || idx === drinkMenuUrls.length - 1}
-                          aria-label="뒤로"
-                          className="w-6 h-6 inline-flex items-center justify-center rounded bg-black/70 text-white text-[14px] leading-none hover:bg-black/90 disabled:opacity-40"
-                        >
-                          ›
-                        </button>
-                      </div>
+                <DndContext
+                  sensors={dndSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext items={drinkMenuUrls} strategy={rectSortingStrategy}>
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      {drinkMenuUrls.map((url, idx) => (
+                        <SortableDrinkMenuItem
+                          key={url}
+                          url={url}
+                          index={idx}
+                          onRemove={handleDrinkMenuRemove}
+                          onClick={() => setLightboxIdx(idx)}
+                          disabled={saving || drinkMenuUploading}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               )}
               {drinkMenuUrls.length < MAX_DRINK_MENUS && (
                 <label className={`flex items-center justify-center gap-2 w-full h-20 border border-dashed border-neutral-700 rounded-xl text-[12px] font-bold text-neutral-400 hover:border-amber-500/50 hover:text-amber-300 hover:bg-amber-500/5 transition-colors ${(saving || drinkMenuUploading) ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
@@ -588,7 +609,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
                   />
                 </label>
               )}
-              <p className="text-[10px] text-neutral-600 mt-1">메뉴판·가격표 사진을 여러 장 등록할 수 있어요 (최대 {MAX_DRINK_MENUS}장). 좌우 화살표로 순서 변경</p>
+              <p className="text-[10px] text-neutral-600 mt-1">메뉴판·가격표 사진을 여러 장 등록할 수 있어요 (최대 {MAX_DRINK_MENUS}장). 드래그로 순서 변경</p>
             </div>
             </>
             )}
@@ -649,6 +670,170 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
           </div>
         </SheetContent>
       </Sheet>
+
+      {/* 가격표 사진 라이트박스 — 편집 sheet 위로 떠서 큰 사이즈로 미리보기 */}
+      {lightboxIdx !== null && drinkMenuUrls[lightboxIdx] && (
+        <div
+          className="fixed inset-0 z-[400] bg-black/95 flex items-center justify-center"
+          onClick={() => setLightboxIdx(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="가격표 확대 보기"
+        >
+          {/* 닫기 */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIdx(null);
+            }}
+            aria-label="닫기"
+            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+          >
+            <X className="w-5 h-5" strokeWidth={2.5} />
+          </button>
+
+          {/* 좌 */}
+          {drinkMenuUrls.length > 1 && lightboxIdx > 0 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIdx(Math.max(0, lightboxIdx - 1));
+              }}
+              aria-label="이전 사진"
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          )}
+
+          {/* 우 */}
+          {drinkMenuUrls.length > 1 && lightboxIdx < drinkMenuUrls.length - 1 && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIdx(Math.min(drinkMenuUrls.length - 1, lightboxIdx + 1));
+              }}
+              aria-label="다음 사진"
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          )}
+
+          {/* 카운터 */}
+          {drinkMenuUrls.length > 1 && (
+            <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-sm text-white text-[12px] font-bold">
+              {lightboxIdx + 1} / {drinkMenuUrls.length}
+            </div>
+          )}
+
+          <div
+            className="relative w-full h-full max-w-5xl p-4 overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={drinkMenuUrls[lightboxIdx]}
+              alt={`가격표 ${lightboxIdx + 1}`}
+              width={1600}
+              height={2400}
+              className="h-auto w-full mx-auto select-none object-contain"
+              draggable={false}
+              unoptimized
+            />
+          </div>
+        </div>
+      )}
     </>
+  );
+}
+
+/**
+ * 가격표 사진 한 장: dnd-kit Sortable 아이템.
+ * - 카드 전체가 드래그 가능 (PointerSensor 5px / TouchSensor 250ms long-press)
+ * - 삭제 버튼은 stopPropagation으로 드래그와 분리
+ * - 좌상단 grip 아이콘으로 드래그 어포던스
+ */
+function SortableDrinkMenuItem({
+  url,
+  index,
+  onRemove,
+  onClick,
+  disabled,
+}: {
+  url: string;
+  index: number;
+  onRemove: (url: string) => void;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: url, disabled });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : "auto",
+  };
+
+  // dnd-kit activation constraint(5px / 250ms) 안에서는 클릭으로 인식.
+  // 드래그가 트리거되지 않았을 때만 라이트박스 열기.
+  const handleClick = (e: React.MouseEvent) => {
+    if (isDragging) return;
+    // 삭제 버튼 클릭 시 stopPropagation 했지만 안전망
+    if ((e.target as HTMLElement).closest("button")) return;
+    onClick();
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      className={`relative aspect-square bg-neutral-900 border border-amber-500/30 rounded-lg overflow-hidden group ${
+        disabled ? "cursor-default" : "cursor-grab active:cursor-grabbing"
+      } touch-none`}
+    >
+      <Image
+        src={url}
+        alt={`가격표 ${index + 1}`}
+        fill
+        sizes="(max-width: 640px) 33vw, 160px"
+        className="object-cover pointer-events-none"
+        draggable={false}
+      />
+      {/* 순서 + grip 핸들 (좌상단) */}
+      <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-black/70 text-white text-[10px] font-black rounded px-1.5 py-0.5">
+        <GripVertical className="w-2.5 h-2.5 text-neutral-400" />
+        {index + 1}
+      </div>
+      {/* 삭제 (드래그·클릭과 분리) */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(url);
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        disabled={disabled}
+        aria-label="삭제"
+        className="absolute top-1 right-1 w-6 h-6 inline-flex items-center justify-center rounded-full bg-black/70 text-red-400 hover:bg-red-500/30 hover:text-red-300"
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    </div>
   );
 }
