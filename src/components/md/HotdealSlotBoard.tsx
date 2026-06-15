@@ -90,10 +90,10 @@ function formatMd(date: Date): string {
 
 // 시간대 셀렉트 옵션 (저녁 시작 → 익일 새벽)
 const TIME_OPTIONS: string[] = [
-  "19:00","20:00","21:00","22:00","23:00",
-  "00:00","01:00","02:00","03:00","04:00","05:00","06:00","07:00","08:00",
+  "22:00","23:00",
+  "00:00","01:00","02:00","03:00","04:00","05:00",
 ];
-const NEXT_DAY_HOURS = new Set(["00:00","01:00","02:00","03:00","04:00","05:00","06:00","07:00","08:00"]);
+const NEXT_DAY_HOURS = new Set(["00:00","01:00","02:00","03:00","04:00","05:00"]);
 function formatTimeLabel(hhmm: string): string {
   return NEXT_DAY_HOURS.has(hhmm) ? `익일 ${hhmm}` : hhmm;
 }
@@ -534,7 +534,7 @@ function MyClaimedSection({
     return out;
   };
   const [drafts, setDrafts] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(buildFromSlot);
-  const [justSaved, setJustSaved] = useState<Set<HotdealDow>>(new Set());
+  const [justSaved, setJustSaved] = useState<HotdealDow | null>(null);
   // "저장된 상태" 스냅샷 — prop(router.refresh)에 의존하지 않고 저장 성공 시 직접 갱신.
   // dirty 판정은 draft vs 이 스냅샷으로만 한다 (prop은 refresh 타이밍이 불확실).
   const [saved, setSaved] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(buildFromSlot);
@@ -658,7 +658,7 @@ function MyClaimedSection({
       const normalized = normalizeDowSlots(cleaned.length > 0 ? cleaned : null);
       setSaved((prev) => ({ ...prev, [dow]: normalized }));
       setDrafts((prev) => ({ ...prev, [dow]: normalized }));
-      if (!isClear) setJustSaved((prev) => new Set(prev).add(dow));
+      if (!isClear) setJustSaved(dow);
       onChanged();
     } catch (err) {
       console.error(err);
@@ -678,22 +678,15 @@ function MyClaimedSection({
           <p className="text-[11px] text-neutral-500 mt-0.5">
             내 게스트 간판 · {formatWeekRange(slot.week_start)}
           </p>
+          <p className="text-[11px] text-neutral-500 mt-1 inline-flex items-center gap-1">
+            <Clock className="w-3 h-3 text-amber-400" />
+            시간별 혜택 설정 가능 (최대 {MAX_SLOTS_PER_DOW}개)
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={onRelease}
-          disabled={busy}
-          className="text-[11px] text-neutral-500 hover:text-red-400 font-bold inline-flex items-center gap-1"
-        >
-          <X className="w-3 h-3" /> 해제
-        </button>
       </div>
 
       <div className="space-y-3 pt-2 border-t border-neutral-700">
-        <div>
-          <p className="text-[11px] text-neutral-400 font-bold">요일별 혜택 · <span className="font-normal">시간대별 설정 가능 (최대 {MAX_SLOTS_PER_DOW}개)</span></p>
-        </div>
-        {DOW_KEYS.map((dow) => {
+        {DOW_KEYS.map((dow, dowIndex) => {
           const saving = savingDow === dow;
           const dirty = isDirty(dow);
           const d = dowDateKst(slot.week_start, dow);
@@ -706,7 +699,7 @@ function MyClaimedSection({
           // 항상 최소 1개 슬롯이 렌더링되도록 displaySlots 사용
           const displaySlots: HotdealTimeSlot[] = slots.length > 0 ? slots : [{ until: null, text: "" }];
           const onFirstTextChange = (v: string) => {
-            setJustSaved((prev) => { const n = new Set(prev); n.delete(dow); return n; });
+            setJustSaved(null);
             if (slots.length === 0) {
               if (v) setDrafts((prev) => ({ ...prev, [dow]: [{ until: null, text: v }] }));
             } else {
@@ -717,18 +710,22 @@ function MyClaimedSection({
           return (
               <div
                 key={dow}
-                className={`flex items-start gap-2 ${isPast ? "opacity-50" : ""}`}
+                className={`${isPast ? "opacity-50" : ""}`}
               >
-                <div className="w-12 pt-1.5 flex flex-col items-center leading-tight shrink-0">
-                  <span className={`text-[12px] font-bold ${isPast ? "text-neutral-600" : "text-white"}`}>
+                {/* 요일 헤더 */}
+                <div className={`flex items-baseline gap-2 mb-2 ${dowIndex > 0 ? "pt-3 border-t border-neutral-700/50" : ""}`}>
+                  <span className={`text-[13px] font-black ${isPast ? "text-neutral-600" : "text-white"}`}>
                     {DOW_LABELS[dow]}
                   </span>
-                  <span className={`text-[10px] ${isPast ? "text-neutral-700" : "text-neutral-500"}`}>
+                  <span className={`text-[11px] ${isPast ? "text-neutral-700" : "text-neutral-500"}`}>
                     {formatMd(d)}
                   </span>
+                  {isPast && (
+                    <span className="text-[10px] text-neutral-700 ml-auto">지난 요일</span>
+                  )}
                 </div>
 
-                <div className="flex-1 min-w-0 space-y-1.5">
+                <div className="space-y-1.5">
                   {displaySlots.map((s, idx) => {
                     const isLast = idx === displaySlots.length - 1;
                     const canDelete = displaySlots.length > 1;
@@ -736,39 +733,48 @@ function MyClaimedSection({
                     return (
                       <div key={idx} className="space-y-1.5">
                       <div className="flex gap-1.5">
-                        {/* 시간 셀렉트 영역 (시간 설정 OFF면 자리만 비움 X, 자체를 안 그림) */}
-                        {hasTimeSetup && (
-                          isLast && s.until === null ? (
-                            <div className="shrink-0 w-[88px] px-2 py-1.5 rounded-lg text-[11px] text-neutral-400 bg-neutral-900 border border-neutral-800 inline-flex items-center justify-center">
-                              영업종료
-                            </div>
-                          ) : (
-                            <select
-                              value={s.until ?? ""}
-                              onChange={(e) => updateSlot(dow, idx, { until: e.target.value })}
-                              disabled={saving || isPast}
-                              className="shrink-0 w-[88px] px-2 py-1.5 rounded-lg text-[11px] text-white bg-neutral-900 border border-neutral-700 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed"
-                            >
-                              {TIME_OPTIONS.map((t) => (
-                                <option key={t} value={t}>
-                                  ~{formatTimeLabel(t)}
-                                </option>
-                              ))}
-                            </select>
-                          )
+                        {/* 시간 셀렉트: 항상 표시. 단일 슬롯이면 "영업종료까지"(null)가 기본 */}
+                        {!isPast && (
+                          <select
+                            value={s.until ?? ""}
+                            onChange={(e) => {
+                              const val = e.target.value || null;
+                              updateSlot(dow, idx, { until: val });
+                            }}
+                            disabled={saving}
+                            className={`shrink-0 w-[110px] px-2 py-1.5 rounded-lg text-[11px] bg-neutral-900 border border-neutral-700 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed ${s.until ? "text-white" : "text-neutral-600"}`}
+                          >
+                            {TIME_OPTIONS.filter((t) => {
+                              // 오늘 요일이면 현재 KST 시각 이전 옵션 숨김
+                              if (dowISO === todayISO) {
+                                const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+                                const kstHour = kstNow.getUTCHours();
+                                const optHour = parseInt(t.split(":")[0], 10);
+                                // NEXT_DAY_HOURS(00~05)는 익일 새벽이므로 kstHour > 5인 경우만 비교
+                                const isNextDay = NEXT_DAY_HOURS.has(t);
+                                const isToday = !isNextDay;
+                                if (isToday && optHour <= kstHour) return false;
+                              }
+                              // 이전 슬롯 until 이후 시간만 표시
+                              const prevUntil = idx > 0 ? displaySlots[idx - 1].until : null;
+                              const prevIdx = prevUntil ? TIME_OPTIONS.indexOf(prevUntil) : -1;
+                              return prevIdx < 0 || TIME_OPTIONS.indexOf(t) > prevIdx;
+                            }).map((t) => (
+                              <option key={t} value={t}>~{formatTimeLabel(t)}</option>
+                            ))}
+                            <option value="">영업종료까지</option>
+                          </select>
                         )}
 
                         <textarea
                           rows={2}
                           value={isPast ? "" : s.text}
                           onKeyDown={(e) => {
-                            // 이미 2줄이면 Enter(줄바꿈) 입력 차단
                             if (e.key === "Enter" && s.text.split("\n").length >= 2) {
                               e.preventDefault();
                             }
                           }}
                           onChange={(e) => {
-                            // 안전망: 붙여넣기 등으로 들어온 3줄 이상은 2줄로 잘라냄
                             const next = e.target.value.split("\n").slice(0, 2).join("\n");
                             return isFirst ? onFirstTextChange(next) : updateSlot(dow, idx, { text: next });
                           }}
@@ -777,125 +783,98 @@ function MyClaimedSection({
                           className="flex-1 min-w-0 resize-none bg-neutral-900 border border-neutral-700 rounded-lg px-2.5 py-1.5 text-[12px] leading-snug text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed"
                         />
 
-                        {/* 우측 액션: 첫 줄 = 저장 / 그 외 = 삭제(또는 자리) */}
-                        {isFirst && !isPast ? (() => {
-                          const isJustSaved = justSaved.has(dow);
-                          const canSave = dirty && (hasAnyText || savedExists);
-                          const canCopyDown = isJustSaved && hasAnyText && DOW_KEYS.indexOf(dow) < DOW_KEYS.length - 1;
+                        {/* 우측 액션 버튼 그룹 */}
+                        {!isPast && (
+                          <div className="shrink-0 flex flex-col gap-1 self-stretch">
+                            {/* 저장/복사/x 버튼 */}
+                            {(() => {
+                              const isJustSaved = justSaved === dow;
+                              const canSave = dirty && (hasAnyText || savedExists || hasTimeSetup);
+                              const canCopyDown = isJustSaved && hasAnyText && DOW_KEYS.indexOf(dow) < DOW_KEYS.length - 1;
 
-                          // 저장 완료 후 → 복사 버튼으로 교체
-                          if (isJustSaved) {
-                            return (
-                              <button
-                                type="button"
-                                onClick={async () => {
-                                  if (!canCopyDown) return;
-                                  const nextDow = DOW_KEYS[DOW_KEYS.indexOf(dow) + 1];
-                                  const copied = drafts[dow].map((s) => ({ ...s }));
-                                  setDrafts((prev) => ({ ...prev, [nextDow]: copied }));
-                                  setSaved((prev) => ({ ...prev, [nextDow]: copied }));
-                                  setJustSaved((prev) => { const n = new Set(prev); n.delete(dow); return n; });
-                                  // 즉시 DB 저장
-                                  setSavingDow(nextDow);
-                                  try {
-                                    let cleaned = copied.filter((s) => s.text.trim().length > 0);
-                                    if (cleaned.length > 0) {
-                                      cleaned = cleaned.map((s, i, arr) =>
+                              if (isLast && isJustSaved && !dirty && canCopyDown) return (
+                                <button type="button" disabled={saving}
+                                  onClick={async () => {
+                                    const nextDow = DOW_KEYS[DOW_KEYS.indexOf(dow) + 1];
+                                    const copied = drafts[dow].map((s) => ({ ...s }));
+                                    setDrafts((prev) => ({ ...prev, [nextDow]: copied }));
+                                    setSaved((prev) => ({ ...prev, [nextDow]: copied }));
+                                    setJustSaved(null);
+                                    setSavingDow(nextDow);
+                                    try {
+                                      let cleaned = copied.filter((s) => s.text.trim().length > 0);
+                                      if (cleaned.length > 0) cleaned = cleaned.map((s, i, arr) =>
                                         i === arr.length - 1 ? { ...s, until: null, text: s.text.trim() } : { ...s, text: s.text.trim() }
                                       );
-                                    }
-                                    const { data, error } = await supabase.rpc("update_hotdeal_benefit", {
-                                      p_slot_id: slot.id,
-                                      p_dow: nextDow,
-                                      p_slots: cleaned.length > 0 ? cleaned : null,
-                                    });
-                                    if (error) throw error;
-                                    const result = data as { success: boolean; error?: string };
-                                    if (!result?.success) { toast.error(result?.error || "저장 실패"); return; }
-                                    const normalized = normalizeDowSlots(cleaned.length > 0 ? cleaned : null);
-                                    setSaved((prev) => ({ ...prev, [nextDow]: normalized }));
-                                    setDrafts((prev) => ({ ...prev, [nextDow]: normalized }));
-                                    setJustSaved((prev) => new Set(prev).add(nextDow));
-                                    toast.success(`${DOW_FULL_LABELS[nextDow]} 저장됨`);
-                                    onChanged();
-                                  } catch { toast.error("저장 실패"); }
-                                  finally { setSavingDow(null); }
-                                }}
-                                disabled={saving || !canCopyDown}
-                                className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-black inline-flex items-center gap-1 transition-colors bg-green-600 text-white hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CopyPlus className="w-3 h-3" />}
-                                아래에 복사
-                              </button>
-                            );
-                          }
+                                      const { data, error } = await supabase.rpc("update_hotdeal_benefit", { p_slot_id: slot.id, p_dow: nextDow, p_slots: cleaned.length > 0 ? cleaned : null });
+                                      if (error) throw error;
+                                      const result = data as { success: boolean; error?: string };
+                                      if (!result?.success) { toast.error(result?.error || "저장 실패"); return; }
+                                      const normalized = normalizeDowSlots(cleaned.length > 0 ? cleaned : null);
+                                      setSaved((prev) => ({ ...prev, [nextDow]: normalized }));
+                                      setDrafts((prev) => ({ ...prev, [nextDow]: normalized }));
+                                      setJustSaved(nextDow);
+                                      toast.success(`${DOW_FULL_LABELS[nextDow]} 저장됨`);
+                                      onChanged();
+                                    } catch { toast.error("저장 실패"); }
+                                    finally { setSavingDow(null); }
+                                  }}
+                                  className="flex-1 px-3 rounded-lg text-[11px] font-black inline-flex items-center justify-center gap-1 bg-green-600 text-white hover:bg-green-500 disabled:opacity-40">
+                                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CopyPlus className="w-3 h-3" />}
+                                  아래에 복사
+                                </button>
+                              );
 
-                          const label = dirty
-                            ? hasAnyText ? "저장" : "비움"
-                            : savedExists ? "저장됨" : "저장";
-                          return (
-                          <button
-                            type="button"
-                            onClick={() => handleSaveDow(dow)}
-                            disabled={saving || !canSave}
-                            className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-black inline-flex items-center gap-1 transition-colors ${
-                              canSave
-                                ? "bg-amber-500 text-black hover:bg-amber-400"
-                                : "bg-neutral-800 text-neutral-600 cursor-not-allowed"
-                            }`}
-                          >
-                            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
-                            {label}
-                          </button>
-                          );
-                        })() : canDelete && !isPast ? (
-                          <button
-                            type="button"
-                            onClick={() => removeSlot(dow, idx)}
-                            disabled={saving}
-                            title="이 시간대 삭제"
-                            className="shrink-0 px-2 py-1.5 rounded-lg text-neutral-500 hover:text-red-400 disabled:opacity-50"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        ) : (
-                          <div className="shrink-0 w-[34px]" />
+                              if (!dirty && (canDelete || (isLast && savedExists))) return (
+                                <button type="button" disabled={saving}
+                                  onClick={async () => {
+                                    if (canDelete) { removeSlot(dow, idx); return; }
+                                    setDrafts((prev) => ({ ...prev, [dow]: [] }));
+                                    setSaved((prev) => ({ ...prev, [dow]: [] }));
+                                    setJustSaved(null);
+                                    setSavingDow(dow);
+                                    try {
+                                      const { data, error } = await supabase.rpc("update_hotdeal_benefit", { p_slot_id: slot.id, p_dow: dow, p_slots: null });
+                                      if (error) throw error;
+                                      const result = data as { success: boolean; error?: string };
+                                      if (!result?.success) { toast.error(result?.error || "초기화 실패"); return; }
+                                      toast.success(`${DOW_FULL_LABELS[dow]} 초기화됨`);
+                                      onChanged();
+                                    } catch { toast.error("초기화 실패"); }
+                                    finally { setSavingDow(null); }
+                                  }}
+                                  className="flex-1 px-2 rounded-lg text-neutral-500 hover:text-red-400 flex items-center justify-center disabled:opacity-50">
+                                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                                </button>
+                              );
+
+                              if (isLast && dirty) return (
+                                <button type="button" onClick={() => handleSaveDow(dow)} disabled={saving || !canSave}
+                                  className={`flex-1 px-3 rounded-lg text-[11px] font-black inline-flex items-center justify-center gap-1 transition-colors ${canSave ? "bg-amber-500 text-black hover:bg-amber-400" : "bg-neutral-800 text-neutral-600 cursor-not-allowed"}`}>
+                                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                  {hasAnyText ? "저장" : "비움"}
+                                </button>
+                              );
+
+                              return null;
+                            })()}
+                          </div>
                         )}
                       </div>
 
-                      {/* 혜택 토글 칩: 입력칸 아래 */}
-                      {!isPast && (s.text.trim().length > 0 || (s.benefits?.length ?? 0) > 0) && (
+                      {/* 혜택 토글 칩: 입력칸 아래 (항상 표시) */}
+                      {!isPast && (
                         <BenefitChips
                           benefits={s.benefits ?? []}
                           disabled={saving}
                           onChange={(next) => updateSlot(dow, idx, { benefits: next })}
+                          onAddTimeSlot={isLast && slots.length < MAX_SLOTS_PER_DOW ? () => addSlot(dow) : undefined}
                         />
                       )}
                       </div>
                     );
                   })}
 
-                  {/* 액션 행: 시간 설정 OFF면 🕐 토글, ON이면 + 시간대 추가 (지난 요일은 숨김) */}
-                  {!isPast && !hasTimeSetup && (
-                    <button
-                      type="button"
-                      onClick={() => enableTimeSetup(dow)}
-                      disabled={saving}
-                      className="w-full px-2 py-1.5 rounded-lg text-[11px] text-amber-300 bg-neutral-900 border border-dashed border-neutral-700 hover:border-amber-500/50 inline-flex items-center justify-center gap-1 disabled:opacity-50"
-                    >
-                      <Clock className="w-3 h-3" /> 시간대별 혜택 설정
-                    </button>
-                  )}
-                  {!isPast && hasTimeSetup && slots.length < MAX_SLOTS_PER_DOW && (
-                    <button
-                      type="button"
-                      onClick={() => addSlot(dow)}
-                      disabled={saving}
-                      className="w-full px-2 py-1.5 rounded-lg text-[11px] text-amber-300 bg-neutral-900 border border-dashed border-neutral-700 hover:border-amber-500/50 inline-flex items-center justify-center gap-1 disabled:opacity-50"
-                    >
-                      <Plus className="w-3 h-3" /> 시간대 추가
-                    </button>
-                  )}
                 </div>
               </div>
             );
@@ -909,10 +888,12 @@ function BenefitChips({
   benefits,
   disabled,
   onChange,
+  onAddTimeSlot,
 }: {
   benefits: string[];
   disabled: boolean;
   onChange: (next: string[]) => void;
+  onAddTimeSlot?: () => void;
 }) {
   const [customOpen, setCustomOpen] = useState(false);
   const [customText, setCustomText] = useState("");
@@ -934,7 +915,8 @@ function BenefitChips({
   };
 
   return (
-    <div className="flex flex-wrap gap-1 pl-0.5">
+    <div className="flex flex-wrap items-center gap-1 pl-0.5">
+      {/* 프리셋 칩 */}
       {presets.map((p) => {
         const active = benefits.includes(p.value);
         return (
@@ -953,6 +935,7 @@ function BenefitChips({
           </button>
         );
       })}
+      {/* 커스텀 태그 */}
       {customs.map((c) => (
         <button
           key={c}
@@ -966,6 +949,7 @@ function BenefitChips({
           <span className="text-amber-300/70">×</span>
         </button>
       ))}
+      {/* 직접입력 */}
       {customOpen ? (
         <div className="inline-flex items-center gap-1">
           <input
@@ -974,35 +958,29 @@ function BenefitChips({
             value={customText}
             onChange={(e) => setCustomText(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                addCustom();
-              } else if (e.key === "Escape") {
-                setCustomOpen(false);
-                setCustomText("");
-              }
+              if (e.key === "Enter") { e.preventDefault(); addCustom(); }
+              else if (e.key === "Escape") { setCustomOpen(false); setCustomText(""); }
             }}
             placeholder="혜택 직접입력"
             maxLength={20}
-            className="h-7 px-2 rounded-full bg-neutral-900 border border-amber-500/50 text-[11px] text-white placeholder:text-neutral-600 focus:outline-none w-32"
+            className="h-7 px-2 rounded-full bg-neutral-900 border border-amber-500/50 text-[11px] text-white placeholder:text-neutral-600 focus:outline-none w-28"
           />
-          <button
-            type="button"
-            onClick={addCustom}
-            disabled={disabled || !customText.trim()}
-            className="h-7 px-2 rounded-full text-[11px] font-bold bg-amber-500 text-black disabled:opacity-50"
-          >
+          <button type="button" onClick={addCustom} disabled={disabled || !customText.trim()}
+            className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-amber-500 text-black disabled:opacity-50">
             추가
           </button>
         </div>
       ) : (
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => setCustomOpen(true)}
-          className="h-7 px-2.5 rounded-full text-[11px] font-bold border border-dashed border-neutral-700 text-neutral-500 hover:text-amber-300 hover:border-amber-500/40 disabled:opacity-50"
-        >
+        <button type="button" disabled={disabled} onClick={() => setCustomOpen(true)}
+          className="h-7 px-2.5 rounded-full text-[11px] font-bold border border-dashed border-neutral-700 bg-neutral-900 text-neutral-500 hover:border-amber-500/40 hover:text-amber-300 disabled:opacity-50">
           + 직접입력
+        </button>
+      )}
+      {/* Clock: 직접입력 바로 다음 */}
+      {onAddTimeSlot && (
+        <button type="button" disabled={disabled} onClick={onAddTimeSlot}
+          className="h-7 w-7 rounded-full text-amber-400 bg-neutral-900 border border-dashed border-neutral-700 hover:border-amber-500/50 flex items-center justify-center disabled:opacity-50">
+          <Clock className="w-3.5 h-3.5" />
         </button>
       )}
     </div>
