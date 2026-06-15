@@ -249,7 +249,7 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
 
   const handleSave = async () => {
     const label = form.label.trim();
-    if (!label) { toast.error("라벨을 입력해주세요"); return; }
+    if (!label) { toast.error("옵션 이름을 입력해주세요"); return; }
     const table_info = form.table_info.trim();
     if (!table_info) { toast.error("자리 정보를 입력해주세요"); return; }
     const priceMan = Number(form.price_man);
@@ -418,9 +418,9 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
               <SheetDescription className="sr-only">조각 옵션 입력</SheetDescription>
             </SheetHeader>
 
-            {/* 라벨 (필수) */}
+            {/* 옵션 이름 (필수) */}
             <div className="space-y-2">
-              <p className="text-[12px] text-neutral-400 font-medium">라벨</p>
+              <p className="text-[12px] text-neutral-400 font-medium">옵션 이름</p>
               <Input
                 placeholder="예) 메인 / 일반 / 힙존"
                 value={form.label}
@@ -451,9 +451,6 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
                     positions={[]}
                     highlightLabel={null}
                   />
-                  <p className="text-[10.5px] text-neutral-500 leading-snug mt-1.5">
-                    맵을 보고 아래 칸에 자리 이름(예: A3, B1)을 적으세요.
-                  </p>
                 </div>
               )}
               <Input

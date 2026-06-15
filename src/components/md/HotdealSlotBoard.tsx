@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, X, Clock, Plus } from "lucide-react";
+import { ChevronLeft, Loader2, X, Clock, Plus, CopyPlus } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { HotdealBenefitsByDow, HotdealDow, HotdealTimeSlot } from "@/types/database";
@@ -341,9 +341,19 @@ export function HotdealSlotBoard({
             제목 대신 좌상단에 선점 액션 문구를 노출. */}
         <div className="flex items-center justify-between gap-2 mb-0">
           {embedded ? (
-            <p className="text-[17px] text-amber-400 font-black leading-tight flex-1 min-w-0">
-              이번 주 우리 클럽 간판 선점!
-            </p>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <p className="text-[17px] text-amber-400 font-black leading-tight">
+                이번주 게스트 간판
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowGuide((v) => !v)}
+                className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
+              >
+                <span className="text-[12px]">ⓘ</span>
+                이용방법
+              </button>
+            </div>
           ) : (
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-[20px] leading-none">🎫</span>
@@ -363,7 +373,7 @@ export function HotdealSlotBoard({
         )}
 
         {/* 4단계 시각 가이드 (사용자가 닫을 수 있음) */}
-        {showGuide ? (
+        {showGuide && (
         <div className="relative bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 mb-4 space-y-3">
           <button
             type="button"
@@ -412,15 +422,6 @@ export function HotdealSlotBoard({
             👀 미리보기
           </button>
         </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowGuide(true)}
-            className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-1 mb-3"
-          >
-            <span className="text-[12px]">ⓘ</span>
-            이용방법
-          </button>
         )}
 
 
@@ -533,6 +534,7 @@ function MyClaimedSection({
     return out;
   };
   const [drafts, setDrafts] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(buildFromSlot);
+  const [justSaved, setJustSaved] = useState<Set<HotdealDow>>(new Set());
   // "저장된 상태" 스냅샷 — prop(router.refresh)에 의존하지 않고 저장 성공 시 직접 갱신.
   // dirty 판정은 draft vs 이 스냅샷으로만 한다 (prop은 refresh 타이밍이 불확실).
   const [saved, setSaved] = useState<Record<HotdealDow, HotdealTimeSlot[]>>(buildFromSlot);
@@ -656,6 +658,7 @@ function MyClaimedSection({
       const normalized = normalizeDowSlots(cleaned.length > 0 ? cleaned : null);
       setSaved((prev) => ({ ...prev, [dow]: normalized }));
       setDrafts((prev) => ({ ...prev, [dow]: normalized }));
+      if (!isClear) setJustSaved((prev) => new Set(prev).add(dow));
       onChanged();
     } catch (err) {
       console.error(err);
@@ -666,17 +669,14 @@ function MyClaimedSection({
   };
 
   return (
-    <div className="bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4 mb-4 space-y-3">
+    <div className="bg-neutral-800/60 rounded-2xl p-4 mb-4 space-y-3">
       <div className="flex items-baseline justify-between">
         <div>
-          <p className="text-[12px] text-amber-300 font-bold">
-            내가 차지한 간판
-          </p>
-          <p className="text-white text-[15px] font-black mt-0.5">
+          <p className="text-white text-[15px] font-black">
             {club?.name ?? "클럽"}
           </p>
-          <p className="text-[10px] text-neutral-500 mt-0.5">
-            {formatWeekRange(slot.week_start)}
+          <p className="text-[11px] text-neutral-500 mt-0.5">
+            내 게스트 간판 · {formatWeekRange(slot.week_start)}
           </p>
         </div>
         <button
@@ -689,10 +689,9 @@ function MyClaimedSection({
         </button>
       </div>
 
-      <div className="space-y-3 pt-2 border-t border-amber-500/20">
+      <div className="space-y-3 pt-2 border-t border-neutral-700">
         <div>
-          <p className="text-[11px] text-amber-300 font-bold">요일별 혜택 (안 적은 요일은 비어있음으로 노출)</p>
-          <p className="text-[10px] text-neutral-500">지난 요일은 수정할 수 없어요 · 시간대별로 다른 혜택 설정 가능 (최대 {MAX_SLOTS_PER_DOW}개)</p>
+          <p className="text-[11px] text-neutral-400 font-bold">요일별 혜택 · <span className="font-normal">시간대별 설정 가능 (최대 {MAX_SLOTS_PER_DOW}개)</span></p>
         </div>
         {DOW_KEYS.map((dow) => {
           const saving = savingDow === dow;
@@ -707,6 +706,7 @@ function MyClaimedSection({
           // 항상 최소 1개 슬롯이 렌더링되도록 displaySlots 사용
           const displaySlots: HotdealTimeSlot[] = slots.length > 0 ? slots : [{ until: null, text: "" }];
           const onFirstTextChange = (v: string) => {
+            setJustSaved((prev) => { const n = new Set(prev); n.delete(dow); return n; });
             if (slots.length === 0) {
               if (v) setDrafts((prev) => ({ ...prev, [dow]: [{ until: null, text: v }] }));
             } else {
@@ -779,18 +779,60 @@ function MyClaimedSection({
 
                         {/* 우측 액션: 첫 줄 = 저장 / 그 외 = 삭제(또는 자리) */}
                         {isFirst && !isPast ? (() => {
-                          // 수정사항이 있을 때만 amber 활성:
-                          // - dirty → amber "저장"(변경 저장) / "비움"(텍스트 다 지움) (활성)
-                          // - 변경 없음 + 저장된 값 있음 → 회색 "저장됨" (비활성)
-                          // - 변경 없음 + 빈 상태 → 회색 "저장" (비활성)
+                          const isJustSaved = justSaved.has(dow);
                           const canSave = dirty && (hasAnyText || savedExists);
+                          const canCopyDown = isJustSaved && hasAnyText && DOW_KEYS.indexOf(dow) < DOW_KEYS.length - 1;
+
+                          // 저장 완료 후 → 복사 버튼으로 교체
+                          if (isJustSaved) {
+                            return (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!canCopyDown) return;
+                                  const nextDow = DOW_KEYS[DOW_KEYS.indexOf(dow) + 1];
+                                  const copied = drafts[dow].map((s) => ({ ...s }));
+                                  setDrafts((prev) => ({ ...prev, [nextDow]: copied }));
+                                  setSaved((prev) => ({ ...prev, [nextDow]: copied }));
+                                  setJustSaved((prev) => { const n = new Set(prev); n.delete(dow); return n; });
+                                  // 즉시 DB 저장
+                                  setSavingDow(nextDow);
+                                  try {
+                                    let cleaned = copied.filter((s) => s.text.trim().length > 0);
+                                    if (cleaned.length > 0) {
+                                      cleaned = cleaned.map((s, i, arr) =>
+                                        i === arr.length - 1 ? { ...s, until: null, text: s.text.trim() } : { ...s, text: s.text.trim() }
+                                      );
+                                    }
+                                    const { data, error } = await supabase.rpc("update_hotdeal_benefit", {
+                                      p_slot_id: slot.id,
+                                      p_dow: nextDow,
+                                      p_slots: cleaned.length > 0 ? cleaned : null,
+                                    });
+                                    if (error) throw error;
+                                    const result = data as { success: boolean; error?: string };
+                                    if (!result?.success) { toast.error(result?.error || "저장 실패"); return; }
+                                    const normalized = normalizeDowSlots(cleaned.length > 0 ? cleaned : null);
+                                    setSaved((prev) => ({ ...prev, [nextDow]: normalized }));
+                                    setDrafts((prev) => ({ ...prev, [nextDow]: normalized }));
+                                    setJustSaved((prev) => new Set(prev).add(nextDow));
+                                    toast.success(`${DOW_FULL_LABELS[nextDow]} 저장됨`);
+                                    onChanged();
+                                  } catch { toast.error("저장 실패"); }
+                                  finally { setSavingDow(null); }
+                                }}
+                                disabled={saving || !canCopyDown}
+                                className="shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-black inline-flex items-center gap-1 transition-colors bg-green-600 text-white hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <CopyPlus className="w-3 h-3" />}
+                                아래에 복사
+                              </button>
+                            );
+                          }
+
                           const label = dirty
-                            ? hasAnyText
-                              ? "저장"
-                              : "비움"
-                            : savedExists
-                            ? "저장됨"
-                            : "저장";
+                            ? hasAnyText ? "저장" : "비움"
+                            : savedExists ? "저장됨" : "저장";
                           return (
                           <button
                             type="button"
