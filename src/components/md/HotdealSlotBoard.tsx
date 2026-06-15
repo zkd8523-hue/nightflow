@@ -728,7 +728,7 @@ function MyClaimedSection({
                 <div className="space-y-1.5">
                   {displaySlots.map((s, idx) => {
                     const isLast = idx === displaySlots.length - 1;
-                    const canDelete = displaySlots.length > 1;
+                    const canDelete = isLast && displaySlots.length > 1;
                     const isFirst = idx === 0;
                     return (
                       <div key={idx} className="space-y-1.5">
@@ -742,7 +742,7 @@ function MyClaimedSection({
                               updateSlot(dow, idx, { until: val });
                             }}
                             disabled={saving}
-                            className={`shrink-0 w-[110px] px-2 py-1.5 rounded-lg text-[11px] bg-neutral-900 border border-neutral-700 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed ${s.until ? "text-white" : "text-neutral-600"}`}
+                            className={`shrink-0 w-[90px] px-1.5 py-1.5 rounded-lg text-[11px] bg-neutral-900 border border-neutral-700 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed ${s.until ? "text-white" : "text-neutral-600"}`}
                           >
                             {TIME_OPTIONS.filter((t) => {
                               // 오늘 요일이면 현재 KST 시각 이전 옵션 숨김
@@ -825,22 +825,36 @@ function MyClaimedSection({
                                 </button>
                               );
 
-                              if (!dirty && (canDelete || (isLast && savedExists))) return (
+                              if (canDelete || (isLast && savedExists)) return (
                                 <button type="button" disabled={saving}
                                   onClick={async () => {
-                                    if (canDelete) { removeSlot(dow, idx); return; }
-                                    setDrafts((prev) => ({ ...prev, [dow]: [] }));
-                                    setSaved((prev) => ({ ...prev, [dow]: [] }));
+                                    // 슬롯 2개 이상: 마지막 슬롯 제거 후 즉시 저장
+                                    // 슬롯 1개: 해당 요일 전체 초기화 후 즉시 저장
+                                    let nextSlots: HotdealTimeSlot[];
+                                    if (canDelete) {
+                                      let next = drafts[dow].filter((_, i) => i !== idx);
+                                      if (next.length > 0) next = next.map((s, i) => i === next.length - 1 ? { ...s, until: null } : s);
+                                      nextSlots = next;
+                                    } else {
+                                      nextSlots = [];
+                                    }
+                                    setDrafts((prev) => ({ ...prev, [dow]: nextSlots }));
                                     setJustSaved(null);
                                     setSavingDow(dow);
                                     try {
-                                      const { data, error } = await supabase.rpc("update_hotdeal_benefit", { p_slot_id: slot.id, p_dow: dow, p_slots: null });
+                                      let cleaned = nextSlots.filter((s) => s.text.trim().length > 0);
+                                      if (cleaned.length > 0) cleaned = cleaned.map((s, i, arr) =>
+                                        i === arr.length - 1 ? { ...s, until: null, text: s.text.trim() } : { ...s, text: s.text.trim() }
+                                      );
+                                      const { data, error } = await supabase.rpc("update_hotdeal_benefit", { p_slot_id: slot.id, p_dow: dow, p_slots: cleaned.length > 0 ? cleaned : null });
                                       if (error) throw error;
                                       const result = data as { success: boolean; error?: string };
-                                      if (!result?.success) { toast.error(result?.error || "초기화 실패"); return; }
-                                      toast.success(`${DOW_FULL_LABELS[dow]} 초기화됨`);
+                                      if (!result?.success) { toast.error(result?.error || "삭제 실패"); return; }
+                                      const normalized = normalizeDowSlots(cleaned.length > 0 ? cleaned : null);
+                                      setSaved((prev) => ({ ...prev, [dow]: normalized }));
+                                      setDrafts((prev) => ({ ...prev, [dow]: normalized }));
                                       onChanged();
-                                    } catch { toast.error("초기화 실패"); }
+                                    } catch { toast.error("삭제 실패"); }
                                     finally { setSavingDow(null); }
                                   }}
                                   className="flex-1 px-2 rounded-lg text-neutral-500 hover:text-red-400 flex items-center justify-center disabled:opacity-50">
@@ -915,7 +929,7 @@ function BenefitChips({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1 pl-0.5">
+    <div className="flex flex-wrap items-center gap-1">
       {/* 프리셋 칩 */}
       {presets.map((p) => {
         const active = benefits.includes(p.value);
@@ -925,7 +939,7 @@ function BenefitChips({
             type="button"
             disabled={disabled}
             onClick={() => toggle(p.value)}
-            className={`h-7 px-2.5 rounded-full text-[11px] font-bold border transition-colors disabled:opacity-50 ${
+            className={`h-7 px-2 rounded-full text-[11px] font-bold border transition-colors disabled:opacity-50 ${
               active
                 ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
                 : "bg-neutral-900 text-neutral-500 border-neutral-700 hover:border-amber-500/40"
@@ -942,7 +956,7 @@ function BenefitChips({
           type="button"
           disabled={disabled}
           onClick={() => toggle(c)}
-          className="h-7 px-2.5 rounded-full text-[11px] font-bold border bg-amber-500/20 text-amber-300 border-amber-500/50 inline-flex items-center gap-1 disabled:opacity-50"
+          className="h-7 px-2 rounded-full text-[11px] font-bold border bg-amber-500/20 text-amber-300 border-amber-500/50 inline-flex items-center gap-1 disabled:opacity-50"
           title="클릭하여 제거"
         >
           {benefitLabel(c).emoji} {c}
@@ -972,7 +986,7 @@ function BenefitChips({
         </div>
       ) : (
         <button type="button" disabled={disabled} onClick={() => setCustomOpen(true)}
-          className="h-7 px-2.5 rounded-full text-[11px] font-bold border border-dashed border-neutral-700 bg-neutral-900 text-neutral-500 hover:border-amber-500/40 hover:text-amber-300 disabled:opacity-50">
+          className="h-7 px-2 rounded-full text-[11px] font-bold border border-dashed border-neutral-700 bg-neutral-900 text-neutral-500 hover:border-amber-500/40 hover:text-amber-300 disabled:opacity-50">
           + 직접입력
         </button>
       )}
