@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { logger } from "@/lib/utils/logger";
 
-const POLL_INTERVAL = 10000; // 10초
+const POLL_INTERVAL = 30000; // 30초 (낙찰 배너 갱신은 실시간 불필요 — 다른 알림 폴링과 통일)
 
 export interface ActiveWin {
   id: string;
@@ -63,14 +63,36 @@ export function useActiveWins(): UseActiveWinsResult {
       }
     };
 
-    poll();
-    pollingRef.current = setInterval(poll, POLL_INTERVAL);
+    const startPolling = () => {
+      if (pollingRef.current) return; // 이미 실행 중
+      poll(); // 즉시 1회
+      pollingRef.current = setInterval(poll, POLL_INTERVAL);
+    };
 
-    return () => {
+    const stopPolling = () => {
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
         pollingRef.current = null;
       }
+    };
+
+    // 백그라운드 탭에서는 폴링 중지 (배터리/네트워크 절약)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    };
+
+    if (typeof document !== "undefined" && document.visibilityState === "visible") {
+      startPolling();
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [user]);
 
