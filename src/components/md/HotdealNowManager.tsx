@@ -20,6 +20,7 @@ import { uploadImage } from "@/lib/utils/upload";
 import type { DailyHotdeal, HotdealTemplate, HotdealTableZone } from "@/types/database";
 import { TABLE_ZONE_OPTIONS } from "@/lib/utils/hotdeal";
 import { Bookmark } from "lucide-react";
+import { HotdealPreviewSheet } from "@/components/home/HotdealPreviewSheet";
 
 dayjs.locale("ko");
 
@@ -77,6 +78,8 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
   const [showForm, setShowForm] = useState(() => searchParams.get("new") === "1" || !!searchParams.get("edit"));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   // 폼 필드
   const [clubId, setClubId] = useState<string>(clubs[0]?.id ?? "");
@@ -111,6 +114,17 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
     table_features: string[];
     liquor_includes: string[];
   } | null>(null);
+
+  // 이용방법 가이드 접기/펼치기 (조각·게스트 간판과 동일 패턴)
+  const GUIDE_DISMISSED_KEY = "nightflow_hotdeal_guide_dismissed";
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(GUIDE_DISMISSED_KEY) === "1") setShowGuide(false);
+  }, []);
+  const dismissGuide = () => {
+    setShowGuide(false);
+    if (typeof window !== "undefined") localStorage.setItem(GUIDE_DISMISSED_KEY, "1");
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -185,6 +199,21 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
         (h) => h.club_id === clubId && h.status === "active" && h.id !== editingId
       ).length,
     [myHotdeals, clubId, editingId]
+  );
+
+  // "내 핫딜" 목록에서 만료된 핫딜은 자동으로 숨김 (DB에는 expired로 보존).
+  // - status가 expired면 숨김 (cron이 전환한 것)
+  // - cron(expire_old_hotdeals)은 20분 주기라 전환 전 공백이 있으므로,
+  //   아직 active라도 마감시각(ends_at)이 지났으면 함께 숨겨 즉시 사라지게 한다.
+  // cancelled('종료')는 MD가 직접 삭제할 수 있도록 시간과 무관하게 목록에 유지.
+  const visibleHotdeals = useMemo(
+    () =>
+      myHotdeals.filter((h) => {
+        if (h.status === "expired") return false;
+        if (h.status === "active" && new Date(h.ends_at).getTime() <= Date.now()) return false;
+        return true;
+      }),
+    [myHotdeals]
   );
 
   const resetForm = () => {
@@ -472,23 +501,85 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
             대시보드
           </Link>
         )}
-        <div className="flex items-center gap-2 mb-2">
-          <Flame className="w-5 h-5 text-amber-400" />
-          <h1 className="text-2xl font-black text-white tracking-tight">Hot Deal 등록</h1>
-        </div>
-        <p className="text-[12px] text-neutral-500 mb-4 leading-relaxed">
-          당일 특가 패키지로 매출을 올려보세요!
-        </p>
+        {/* embedded(대시보드 인라인)에서는 상단 탭이 제목 역할을 하므로 제목·부제 숨김. */}
+        {!embedded && (
+          <>
+            <div className="flex items-center gap-2 mb-2">
+              <Flame className="w-5 h-5 text-amber-400" />
+              <h1 className="text-2xl font-black text-white tracking-tight">Hot Deal 등록</h1>
+            </div>
+            <p className="text-[12px] text-neutral-500 mb-4 leading-relaxed">
+              당일 특가 패키지로 매출을 올려보세요!
+            </p>
+          </>
+        )}
 
         {!showForm && (
           <button
             type="button"
             onClick={() => setShowForm(true)}
-            className="w-full h-12 mb-5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[14px] inline-flex items-center justify-center gap-1.5"
+            className="w-full h-12 mb-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[14px] inline-flex items-center justify-center gap-1.5"
           >
             <Plus className="w-4 h-4" />
             새 핫딜 등록
           </button>
+        )}
+
+        {/* 이용방법 가이드 (폼 안 열렸을 때만) — 조각·게스트 간판과 동일 패턴 */}
+        {!showForm && (
+          showGuide ? (
+            <div className="relative bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 mb-5 space-y-3">
+              <button
+                type="button"
+                onClick={dismissGuide}
+                aria-label="가이드 닫기"
+                className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <p className="text-[13px] text-white font-black">이용방법</p>
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
+                  <div className="flex-1">
+                    <p className="text-[12.5px] text-white font-bold leading-snug">오늘의 스페셜 패키지 등록</p>
+                    <p className="text-[11px] text-neutral-500 leading-snug">우리 클럽만의 구성으로 오늘 밤 손님을 모아요</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
+                  <div className="flex-1">
+                    <p className="text-[12.5px] text-white font-bold leading-snug">홈 최상단 노출</p>
+                    <p className="text-[11px] text-neutral-500 leading-snug">유저가 앱 열자마자 보는 자리에 강조돼요</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">3</div>
+                  <div className="flex-1">
+                    <p className="text-[12.5px] text-white font-bold leading-snug">상세에서 인스타·연락처로 직접 문의</p>
+                    <p className="text-[11px] text-neutral-500 leading-snug">선착순 마감으로 빠르게 채워보세요</p>
+                  </div>
+                </div>
+              </div>
+              {/* 실제 노출 화면 미리보기 */}
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(true)}
+                className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
+              >
+                👀 미리보기
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowGuide(true)}
+              className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-1 mb-5"
+            >
+              <span className="text-[12px]">ⓘ</span>
+              이용방법
+            </button>
+          )
         )}
 
         {showForm && (
@@ -803,13 +894,13 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
         {!showForm && (
         <div className="space-y-2">
           <p className="text-[12px] text-neutral-500 font-bold px-1">내 핫딜</p>
-          {myHotdeals.length === 0 ? (
+          {visibleHotdeals.length === 0 ? (
             <div className="bg-[#1C1C1E] rounded-2xl px-4 py-8 text-center">
               <p className="text-[13px] text-neutral-400">등록한 핫딜이 없어요</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {myHotdeals.map((h) => (
+              {visibleHotdeals.map((h) => (
                 <div key={h.id} className="bg-[#1C1C1E] rounded-2xl p-3 flex items-center gap-3">
                   {h.thumbnail_url || h.club?.thumbnail_url ? (
                     <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0">
@@ -1017,6 +1108,9 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
           </SheetContent>
         </Sheet>
       )}
+
+      {/* 핫딜 실제 노출 미리보기 (이용방법의 '내 핫딜 미리보기'에서 염) */}
+      <HotdealPreviewSheet open={previewOpen} onOpenChange={setPreviewOpen} />
     </div>
   );
 }

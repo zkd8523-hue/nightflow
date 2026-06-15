@@ -26,6 +26,7 @@ import {
     EARLYBIRD_MAX_EVENT_DAYS_AHEAD,
     SHARE_MAX_EVENT_DAYS_AHEAD,
 } from "@/lib/utils/auction";
+import { getWeekStartForDate } from "@/lib/utils/hotdeal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getErrorMessage, logError } from "@/lib/utils/error";
@@ -525,6 +526,21 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             if (values.listing_type === "share") {
                 const clubName = clubs.find(c => c.id === values.club_id)?.name || "";
 
+                // 오픈채팅 보유 사전 체크 (서버 게이트의 UX 보조)
+                // 미등록이면 유저가 참여(claim) 자체를 못 하므로 등록 단계에서 막고 프로필로 유도.
+                if (!initialData) {
+                    const { data: me } = await supabase
+                        .from("users")
+                        .select("kakao_open_chat_url")
+                        .eq("id", mdId)
+                        .maybeSingle();
+                    if (!(me?.kakao_open_chat_url ?? "").trim()) {
+                        toast.error("먼저 프로필에 카카오 오픈채팅 링크를 등록해야 조각을 올릴 수 있어요.");
+                        router.push("/profile");
+                        return;
+                    }
+                }
+
                 // 1일 1매물 사전 체크 (KST 날짜 기준)
                 if (!initialData && values.share_deadline) {
                     const deadlineKST = dayjs(values.share_deadline).tz("Asia/Seoul").format("YYYY-MM-DD");
@@ -537,6 +553,24 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         .not("status", "in", '("cancelled","unsold")');
                     if ((count ?? 0) > 0) {
                         toast.error("같은 날짜에 이미 등록된 조각 매물이 있습니다.");
+                        return;
+                    }
+                }
+
+                // 조각 자리(주 단위 클럽 선점) 보유 사전 체크 (서버 게이트의 UX 보조)
+                // 방문일이 속한 주의 슬롯을 본인이 가졌는지 확인. 없으면 선점 페이지로 유도.
+                if (!initialData && values.event_date && values.club_id) {
+                    const weekStart = getWeekStartForDate(values.event_date);
+                    const { data: slot } = await supabase
+                        .from("weekly_share_slots")
+                        .select("id")
+                        .eq("club_id", values.club_id)
+                        .eq("week_start", weekStart)
+                        .eq("md_id", mdId)
+                        .maybeSingle();
+                    if (!slot) {
+                        toast.error("이번 주 이 클럽의 조각 자리를 먼저 선점해야 등록할 수 있어요.");
+                        router.push("/md/share-slots");
                         return;
                     }
                 }
@@ -1464,8 +1498,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                   </div>
                 </section>
 
-                {/* 4. 주류 & 테이블 구성 */}
+                {/* 4. 주류 & 테이블 구성 — 조각(share) 모드: 주류 선택 */}
                 <LiquorSelector
+                  optional
                   selected={selectedIncludes.filter((item: string) =>
                     LIQUOR_KEYWORDS.some((kw) => item.includes(kw))
                   )}

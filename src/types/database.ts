@@ -990,6 +990,8 @@ export interface ShareOption {
   includes: string[];
   md_message: string | null;
   is_active: boolean;
+  /** 조각 마감 시각: 행사일 익일 N시(KST). 기본 3 = 익일 새벽 3시. 0 = 당일 자정. (Mig 306) */
+  deadline_hour: number;
   created_at: string;
   updated_at: string;
 }

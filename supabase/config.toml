@@ -64,6 +64,11 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/expire-puzzles/index.ts"
 
+[functions.generate-share-listings]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/generate-share-listings/index.ts"
+
 [functions.notify-puzzle-visit-pending]
 enabled = true
 verify_jwt = false

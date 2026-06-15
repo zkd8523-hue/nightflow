@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { HotdealBenefitsByDow, HotdealDow, HotdealTimeSlot } from "@/types/database";
 import { normalizeDowSlots, GUEST_SIGN_BENEFIT_PRESETS, benefitLabel, BUSINESS_DAY_CUTOFF_HOUR } from "@/lib/utils/hotdeal";
+import { GuestSignPreviewSheet } from "@/components/home/GuestSignPreviewSheet";
 
 interface ClubLite {
   id: string;
@@ -132,6 +133,7 @@ export function HotdealSlotBoard({
   thisWeekISO,
   nextWeekISO,
   embedded = false,
+  isAdmin = false,
 }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -143,6 +145,7 @@ export function HotdealSlotBoard({
   const clubIdsKey = useMemo(() => clubs.map((c) => c.id).sort().join(","), [clubs]);
   const GUIDE_DISMISSED_KEY = "nightflow_guest_sign_guide_dismissed";
   const [showGuide, setShowGuide] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (localStorage.getItem(GUIDE_DISMISSED_KEY) === "1") setShowGuide(false);
@@ -249,7 +252,8 @@ export function HotdealSlotBoard({
     return m;
   }, [weekSlots]);
 
-  const preOpen = isBeforeOpen(selectedWeek);
+  // admin은 오픈 시간 무관하게 선점 가능 (DB도 admin 우회)
+  const preOpen = !isAdmin && isBeforeOpen(selectedWeek);
   const hasMyClaimThisWeek = !!mySlotForWeek;
 
   const handleClaim = async (clubId: string) => {
@@ -333,15 +337,30 @@ export function HotdealSlotBoard({
             대시보드
           </Link>
         )}
-        <div className="flex items-center justify-between gap-2 mb-1">
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-[20px] leading-none">🎫</span>
-            <h1 className="text-2xl font-black text-white tracking-tight">게스트 간판</h1>
-          </div>
-          <p className="text-[11px] text-amber-400 font-bold text-right leading-tight">
-            매주 월 18:00에<br />그 주 간판 오픈
+        {/* embedded(대시보드 인라인)에서는 상단 탭이 제목 역할을 하므로
+            제목 대신 좌상단에 선점 액션 문구를 노출. */}
+        <div className="flex items-center justify-between gap-2 mb-0">
+          {embedded ? (
+            <p className="text-[17px] text-amber-400 font-black leading-tight flex-1 min-w-0">
+              이번 주 우리 클럽 간판 선점!
+            </p>
+          ) : (
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[20px] leading-none">🎫</span>
+              <h1 className="text-2xl font-black text-white tracking-tight">게스트 간판</h1>
+            </div>
+          )}
+          <p className="text-[11px] text-amber-400 font-bold text-right leading-tight shrink-0">
+            매주 월 18시 오픈
           </p>
         </div>
+
+        {/* 이번 주 날짜 — 제목 바로 아래 좌정렬. 차지한 간판이 있으면 클럽 카드에 주차가 표시되므로 숨김 */}
+        {!hasMyClaimThisWeek && (
+          <p className="text-[13px] text-white font-black mt-0.5 mb-3">
+            이번 주 {formatWeekRange(thisWeekISO)}
+          </p>
+        )}
 
         {/* 4단계 시각 가이드 (사용자가 닫을 수 있음) */}
         {showGuide ? (
@@ -354,7 +373,7 @@ export function HotdealSlotBoard({
           >
             <X className="w-4 h-4" />
           </button>
-          <p className="text-[13px] text-white font-black">게스트 간판이 뭔가요?</p>
+          <p className="text-[13px] text-white font-black">이용방법</p>
           <div className="space-y-2.5">
             <div className="flex items-start gap-2.5">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
@@ -377,14 +396,21 @@ export function HotdealSlotBoard({
                 <p className="text-[11px] text-neutral-500 leading-snug">예: 월 여성무료입장 / 토 프리드링크 1잔</p>
               </div>
             </div>
-            <div className="flex items-start gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">4</div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0">4</div>
               <div className="flex-1">
-                <p className="text-[12.5px] text-white font-bold leading-snug">상세 페이지에 파트너님의 인스타·연락처가 노출돼요</p>
-                <p className="text-[11px] text-neutral-500 leading-snug">더 많은 게스트를 모아보세요</p>
+                <p className="text-[12.5px] text-white font-bold leading-snug">더 많은 게스트를 모아보세요</p>
               </div>
             </div>
           </div>
+          {/* 실제 노출 화면 미리보기 */}
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
+          >
+            👀 미리보기
+          </button>
         </div>
         ) : (
           <button
@@ -393,25 +419,11 @@ export function HotdealSlotBoard({
             className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-1 mb-3"
           >
             <span className="text-[12px]">ⓘ</span>
-            게스트 간판이 뭔가요?
+            이용방법
           </button>
         )}
 
-        {/* 이번 주 라벨 — 차지한 간판이 있으면 그 카드에 주차가 표시되므로 중복 숨김 */}
-        {!hasMyClaimThisWeek && (
-          <div className="mb-4">
-            <div className="inline-flex flex-col items-start px-3 py-2 rounded-xl bg-white text-black">
-              <div className="text-[12px] font-bold">이번 주</div>
-              <div className="text-[10px] font-medium mt-0.5 opacity-70">{formatWeekRange(thisWeekISO)}</div>
-            </div>
-          </div>
-        )}
 
-        {preOpen && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-2.5 text-[12px] text-amber-300 mb-4">
-            이 주 간판은 매주 월요일 오후 6시에 오픈돼요.
-          </div>
-        )}
 
         {/* 내가 차지한 슬롯 (이번 주 기준) */}
         {mySlotForWeek && (
@@ -479,12 +491,12 @@ export function HotdealSlotBoard({
                     }`}
                   >
                     {claimedByOther
-                      ? "차지됨"
+                      ? "마감됐어요"
                       : hasMyClaimThisWeek
                       ? "주 1간판"
                       : preOpen
                       ? "미오픈"
-                      : "자리 비었음"}
+                      : "선점하기"}
                   </button>
                 </div>
               );
@@ -492,6 +504,9 @@ export function HotdealSlotBoard({
           </div>
         )}
       </div>
+
+      {/* 게스트 간판 실제 노출 미리보기 (이용방법의 '내 광고판 미리보기'에서 염) */}
+      <GuestSignPreviewSheet open={previewOpen} onOpenChange={setPreviewOpen} />
     </div>
   );
 }

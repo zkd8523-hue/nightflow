@@ -1,0 +1,155 @@
+"use client";
+
+import Link from "next/link";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ArrowDown, ArrowLeft, MessageCircle } from "lucide-react";
+import { PuzzlePiece } from "@/components/puzzles/PuzzleCard";
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * MD가 "내 조각이 어떻게 유저에게 노출되고 채워지는지" 한눈에 보여주는 시각 가이드.
+ * 1. 홈/조각 탭에 내 조각 카드 노출 (자리정보·인당가격·잔여석)
+ * 2. 유저가 좌석 신청
+ * 3. 오픈채팅으로 합류 → 현장에서 만남
+ * (핫딜/게스트 간판 PreviewSheet와 동일한 공식)
+ */
+export function SharePreviewSheet({ open, onOpenChange }: Props) {
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="bottom"
+        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl !h-[88vh] !max-h-[88vh] !gap-0 !p-0 !flex !flex-col"
+      >
+        <SheetHeader className="sr-only">
+          <SheetTitle>조각 노출 미리보기</SheetTitle>
+        </SheetHeader>
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-8 pb-8 space-y-5">
+          <div className="space-y-1">
+            <p className="text-[12px] text-amber-400 font-black tracking-wider">PREVIEW</p>
+            <h2 className="text-[22px] font-black text-white tracking-tight">
+              내 조각이 이렇게 채워져요
+              <span className="text-[13px] font-bold text-neutral-400 ml-1.5">(1클럽 1MD · 선착순)</span>
+            </h2>
+            <p className="text-[13px] text-neutral-400 leading-snug">
+              유저가 홈에서 자리를 보고
+              <br />
+              오픈채팅으로 합류해요
+            </p>
+          </div>
+
+          {/* Step 1: 홈/조각 탭 카드 노출 — 실제 조각 카드(AuctionCard) 모양 재현 */}
+          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center">1</div>
+              <p className="text-[13px] text-white font-bold">홈 &quot;조각&quot;에 내 자리 노출</p>
+            </div>
+            {/* 실제 조각 카드와 동일 레이아웃 */}
+            <div className="relative bg-[#0A0A0A] border border-neutral-800/60 rounded-2xl p-4 space-y-3">
+              <span className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
+                🧩 조각
+              </span>
+              {/* 제목 + 지역 */}
+              <div className="flex flex-col gap-1 pr-16">
+                <div className="text-[20px] font-black leading-snug tracking-tight">
+                  <span className="text-white">Club NightFlow</span>
+                  <span className="text-neutral-500 text-[14px] ml-1.5 font-bold align-middle">홍대</span>
+                </div>
+                <p className="text-[13px] text-neutral-400 font-medium leading-snug">입구컷 X · 황제케어</p>
+              </div>
+              {/* table_info + 1인 가격 */}
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <span className="text-[16px] font-bold text-amber-400">초메인 테이블</span>
+                <span className="text-[15px] font-black text-green-400">1인 60,000원</span>
+              </div>
+              {/* 퍼즐 피스 (6석 중 2석 채움) */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <PuzzlePiece key={i} filled={i < 2} />
+                ))}
+                <span className="text-[11px] font-semibold text-amber-400/80 ml-1">👀 오늘 12명이 봤어요</span>
+              </div>
+              {/* 주류 알약 + 자세히 보기 */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1 flex-wrap min-w-0">
+                  {["돔페1", "샴페인2"].map((item) => (
+                    <span key={item} className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/15 text-amber-400 border-amber-500/30">
+                      {item}
+                    </span>
+                  ))}
+                  <span className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold border bg-neutral-800/50 text-neutral-400 border-neutral-700/30">
+                    퍼레이드
+                  </span>
+                </div>
+                <div className="h-9 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 text-black inline-flex items-center">
+                  자세히 보기
+                </div>
+              </div>
+            </div>
+            <div className="inline-flex items-center gap-1 text-amber-400 text-[10px] font-bold">
+              <ArrowLeft className="w-3 h-3" />
+              유저가 보고 빈 자리에 합류
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <ArrowDown className="w-5 h-5 text-amber-500" />
+          </div>
+
+          {/* Step 2: 유저가 좌석 신청 → 퍼즐이 채워짐 */}
+          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center">2</div>
+              <p className="text-[13px] text-white font-bold">유저가 신청하면 자리가 채워져요</p>
+            </div>
+            <div className="bg-black/40 rounded-xl p-3 space-y-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <PuzzlePiece key={i} filled={i < 5} />
+                ))}
+                <span className="text-[11px] font-bold ml-1 text-red-400">마지막 1자리</span>
+              </div>
+              <p className="text-[11px] text-neutral-500">한 명씩 채워질 때마다 실시간 반영돼요</p>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <ArrowDown className="w-5 h-5 text-amber-500" />
+          </div>
+
+          {/* Step 3: 오픈채팅 합류 */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center">3</div>
+              <p className="text-[13px] text-white font-bold inline-flex items-center gap-1.5">
+                <MessageCircle className="w-3.5 h-3.5 text-green-400" />
+                오픈채팅으로 합류
+              </p>
+            </div>
+            <p className="text-[12px] text-amber-100 leading-snug pl-8">
+              신청한 유저가 내 오픈채팅에 들어와
+              <br />
+              현장에서 한 테이블로 만나요
+            </p>
+          </div>
+
+          {/* CTA — 대시보드 조각 탭으로 이동 (대시보드에서 열렸어도 같은 페이지라 무해) */}
+          <Link
+            href="/md/dashboard?section=share"
+            onClick={() => onOpenChange(false)}
+            className="w-full h-14 bg-amber-500 text-black font-black text-[15px] rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform"
+          >
+            🧩 내 조각 자리 선점하기
+          </Link>
+
+          <p className="text-[11px] text-neutral-600 text-center">
+            매주 월 18:00 새 자리 오픈 · 1MD 1클럽 1주
+          </p>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}

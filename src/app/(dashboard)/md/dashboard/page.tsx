@@ -2,14 +2,16 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MDDashboard } from "@/components/md/MDDashboard";
 
-import type { User, Auction, Club, DailyHotdeal, HotdealBenefitsByDow } from "@/types/database";
+import type { User, Auction, Club, DailyHotdeal, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
-export default async function MDDashboardPage({ searchParams }: { searchParams: Promise<{ test?: string }> }) {
+export default async function MDDashboardPage({ searchParams }: { searchParams: Promise<{ test?: string; section?: string }> }) {
     const supabase = await createClient();
     const isDev = process.env.NODE_ENV === "development";
-    const testMode = isDev && (await searchParams).test === "true";
+    const sp = await searchParams;
+    const testMode = isDev && sp.test === "true";
+    const initialSection = sp.section ?? null;
 
     let userId: string;
     let userData: User | null = null;
@@ -150,7 +152,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     // 7. 핫딜 등록용 클럽 (floor_plan_url 포함) + 본인 핫딜
     const { data: hotdealClubsRaw } = await supabase
         .from("clubs")
-        .select("id, name, area, thumbnail_url, floor_plan_url, club_partners!inner(md_id)")
+        .select("id, name, area, thumbnail_url, floor_plan_url, floor_plan_urls, club_partners!inner(md_id)")
         .eq("club_partners.md_id", userId)
         .is("deleted_at", null)
         .order("name");
@@ -160,12 +162,20 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         area: c.area,
         thumbnail_url: c.thumbnail_url,
         floor_plan_url: c.floor_plan_url,
+        // 대표 테이블맵 1장 (다중 등록 시 첫 장, 없으면 레거시 단일)
+        floor_plan_main:
+            (c as { floor_plan_urls?: string[] | null }).floor_plan_urls?.[0] ??
+            c.floor_plan_url ??
+            null,
     }));
 
     const { data: myHotdeals } = await supabase
         .from("daily_hotdeals")
         .select("*, club:clubs(id, name, area, thumbnail_url)")
         .eq("md_id", userId)
+        // 만료된 핫딜은 목록에서 제외 (cron이 expired로 전환 → 자동으로 안 보임).
+        // active가 limit에 안 밀리도록 SSR 단계에서 먼저 거른다.
+        .neq("status", "expired")
         .order("created_at", { ascending: false })
         .limit(20);
 
@@ -212,6 +222,43 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         expires_at: s.expires_at,
     }));
 
+    // 8-b. 조각 슬롯 데이터 (이번 주 — 본인 + 다른 MD 점유 상태 표시용)
+    const { data: shareSlotRows } = slotClubIds.length
+        ? await supabase
+              .from("weekly_share_slots")
+              .select("id, club_id, md_id, week_start, expires_at")
+              .in("club_id", slotClubIds)
+              .eq("week_start", thisWeekISO)
+        : { data: [] };
+    const shareSlots = (shareSlotRows ?? []).map((s) => ({
+        id: s.id,
+        club_id: s.club_id,
+        md_id: s.md_id,
+        week_start: s.week_start,
+        expires_at: s.expires_at,
+    }));
+
+    // 8-c. 내가 선점 중인 클럽의 조각 옵션 + 요일표 (상시 세팅 UI용)
+    const myClaimedShareClubIds = shareSlots.filter((s) => s.md_id === userId).map((s) => s.club_id);
+    const { data: shareOptionRows } = myClaimedShareClubIds.length
+        ? await supabase
+              .from("share_options")
+              .select("*")
+              .eq("md_id", userId)
+              .in("club_id", myClaimedShareClubIds)
+              .order("sort_order", { ascending: true })
+              .order("created_at", { ascending: true })
+        : { data: [] };
+    const { data: shareWeekdayPlanRows } = myClaimedShareClubIds.length
+        ? await supabase
+              .from("share_weekday_plan")
+              .select("*")
+              .eq("md_id", userId)
+              .in("club_id", myClaimedShareClubIds)
+        : { data: [] };
+    const shareOptions = (shareOptionRows ?? []) as ShareOption[];
+    const shareWeekdayPlans = (shareWeekdayPlanRows ?? []) as ShareWeekdayPlan[];
+
     // 테스트 모드일 때 경매가 하나도 없으면 샘플 하나 추가 (상태 확인용)
     const displayAuctions = (testMode && (!auctions || auctions.length === 0)) ? [
         {
@@ -230,6 +277,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         <div className="min-h-screen bg-[#0A0A0A]">
             <MDDashboard
                 user={userData}
+                initialSection={initialSection}
                 initialAuctions={displayAuctions}
                 initialClubs={clubs || []}
                 initialTopBids={topBids}
@@ -246,6 +294,17 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 guestSignMySlots={guestSignMySlots}
                 guestSignThisWeekISO={thisWeekISO}
                 guestSignNextWeekISO={nextWeekISO}
+                shareSlotClubs={hotdealClubs.map((c) => ({
+                    id: c.id,
+                    name: c.name,
+                    area: c.area,
+                    thumbnail_url: c.thumbnail_url,
+                    floor_plan_url: c.floor_plan_main,
+                }))}
+                shareSlots={shareSlots}
+                shareSlotThisWeekISO={thisWeekISO}
+                shareOptions={shareOptions}
+                shareWeekdayPlans={shareWeekdayPlans}
             />
         </div>
     );

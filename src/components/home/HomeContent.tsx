@@ -26,6 +26,7 @@ import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { HotdealMdCta } from "@/components/home/HotdealMdCta";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
+import { ShareMdCta } from "@/components/home/ShareMdCta";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
 
@@ -269,6 +270,11 @@ export function HomeContent({
   const [welcomeDismissed, setWelcomeDismissed] = useState(false);
 
   const [selectedArea, setSelectedArea] = useState<string | null>(null);
+  // 조각 섹션 전용 지역 필터 — 깃발(selectedArea)과 독립적으로 움직임
+  const [selectedShareArea, setSelectedShareArea] = useState<string | null>(null);
+  // 섹션 헤더 옆 날짜 — 각 캐러셀이 스크롤에 맞춰 "현재 맨 앞 카드 날짜"를 올려준다.
+  const [puzzleHeaderDate, setPuzzleHeaderDate] = useState<string | null>(null);
+  const [shareHeaderDate, setShareHeaderDate] = useState<string | null>(null);
   // 가이드는 항상 닫힘 상태로 시작. "ⓘ 깃발 이용 방법" 버튼으로만 펼침.
   const [showGuide, setShowGuide] = useState(false);
   const guideAutoOpenedRef = useRef(false);
@@ -490,7 +496,9 @@ export function HomeContent({
     if (t === "today" && instantEnabled) return "today";
     if (t === "advance") return "advance";
     if (t === "puzzle") return "puzzle";
-    if (t === "share") return showShareTab ? "share" : "puzzle";
+    // share는 폴백 없이 그대로 — "조각 더보기"(?tab=share)로 진입 시 깃발로 강등되면 안 됨.
+    // 조각 탭 가시성은 compact의 showShareTab, detail의 canShowShareTab이 각각 제어.
+    if (t === "share") return "share";
     return "puzzle";
   };
 
@@ -520,13 +528,9 @@ export function HomeContent({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, currentTab]);
 
-  // 조각 탭이 숨겨진 상태에서 share 탭에 머물러 있으면 puzzle로 폴백
-  useEffect(() => {
-    if (currentTab === "share" && !showShareTab) {
-      handleTabChange("puzzle");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showShareTab, currentTab]);
+  // (구) 조각 탭 share→puzzle 폴백 제거 — 탭 토글이 세로 2섹션으로 바뀌었고,
+  //  "조각 더보기"(?tab=share) 진입 시 깃발로 강등되던 버그 원인이었음.
+  //  조각 섹션 가시성은 showShareTab 게이팅, detail은 canShowShareTab이 담당.
 
   useEffect(() => {
     if (currentTab === "share") {
@@ -647,12 +651,13 @@ export function HomeContent({
     });
   }, [puzzles, blockedUserIds, puzzleOfferCounts]);
 
-  // 지역 필터 적용된 깃발 — 캐러셀 선발의 입력. selectedArea 없으면 전체.
-  // "서울 어디든" 깃발도 강남/홍대/이태원 필터에 잡히도록 matchesArea 사용.
-  const areaFilteredPuzzles = useMemo(() => {
-    if (!selectedArea) return visiblePuzzles;
-    return visiblePuzzles.filter((p) => matchesArea(p.area, selectedArea));
-  }, [visiblePuzzles, selectedArea]);
+  // 홈 캐러셀은 항상 전체 노출 (지역 필터 없음 — 더보기에서 바꾼 selectedArea 영향 안 받음).
+  // 지역 탐색은 더보기(AuctionList)가 자체 selectedArea로 담당.
+  const areaFilteredPuzzles = visiblePuzzles;
+  const areaFilteredShares = useMemo(
+    () => visibleAuctions.filter((a) => a.listing_type === "share"),
+    [visibleAuctions]
+  );
 
   // 캐러셀(최대 3개) 선발.
   // - 유저/비로그인: 기존 로직(NEW 우선 → 오퍼 많은 순 → 마감일순).
@@ -1053,86 +1058,50 @@ export function HomeContent({
       puzzle: isMdOrAdmin ? mdPuzzleTipContent : userPuzzleTipContent,
       share: isMdOrAdmin ? mdShareTipContent : TAB_PROMISES.share.content,
     };
-    const compactSteps =
-      currentTab === "puzzle"
-        ? isMdOrAdmin
-          ? PUZZLE_ONBOARDING_STEPS_MD
-          : PUZZLE_ONBOARDING_STEPS
-        : isMdOrAdmin
-          ? SHARE_ONBOARDING_STEPS_MD
-          : SHARE_ONBOARDING_STEPS;
-    const visibleCompactTip =
-      currentTab === "puzzle" || currentTab === "share"
-        ? compactTipContent[currentTab]
-        : null;
+    // 깃발/조각을 세로 2섹션으로 항상 노출. Tip·이용방법 가이드는 깃발 섹션 전용이므로
+    // steps/tip을 깃발(puzzle) 기준으로 고정한다. (share용 분기 제거)
+    const compactSteps = isMdOrAdmin ? PUZZLE_ONBOARDING_STEPS_MD : PUZZLE_ONBOARDING_STEPS;
+    const visibleCompactTip = compactTipContent.puzzle;
+
+    // 섹션 헤더 한 줄: [아이콘 버튼] [첫 날짜] ... [더보기]  (홈은 지역 필터 없음 — 탐색은 더보기에서)
+    const renderSectionRow = (opts: {
+      icon: string;
+      label: string;
+      detailTab: "puzzle" | "share";
+      /** 배지 옆에 표시할 첫 카드 날짜 "6/23(화)" — 없으면 생략 */
+      dateLabel?: string | null;
+    }) => (
+      <div className="flex items-center gap-2 -mx-4 px-4 mb-2">
+        <div className="shrink-0 text-[12.5px] font-bold px-3.5 py-1.5 rounded-md bg-amber-500 text-black inline-flex items-center gap-0.5">
+          <span className="text-[13px] leading-none">{opts.icon}</span> {opts.label}
+        </div>
+        {opts.dateLabel && (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
+            <h3 className="text-[18px] font-black text-white tracking-tight">
+              {opts.dateLabel}
+            </h3>
+          </div>
+        )}
+        <Link
+          href={detailHref(opts.detailTab)}
+          className="ml-auto shrink-0 self-center text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
+        >
+          더보기
+          <ChevronRight className="w-3 h-3" />
+        </Link>
+      </div>
+    );
+
 
     return (
       <>
         <div className="flex flex-col">
-          {/* 탭 (깃발 / 조각) — 자세히로 갈 때도 그대로 전달 */}
-          <div className="flex items-center gap-2 -mx-4 px-4 mb-2">
-            <button
-              type="button"
-              onClick={() => handleTabChange("puzzle")}
-              className={`text-[12.5px] font-bold px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-0.5 ${
-                currentTab === "puzzle"
-                  ? "bg-amber-500 text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-              }`}
-            >
-              <span className="text-[13px] leading-none">🚩</span> 깃발
-            </button>
-            {showShareTab && (
-              <button
-                type="button"
-                onClick={() => handleTabChange("share")}
-                className={`text-[12.5px] font-bold px-3.5 py-1.5 rounded-md transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-0.5 ${
-                  currentTab === "share"
-                    ? "bg-amber-500 text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                }`}
-              >
-                <span className="text-[13px] leading-none">🧩</span> 조각
-              </button>
-            )}
-            <Link
-              href={detailHref(currentTab)}
-              className="ml-auto text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-end gap-0.5 pb-0.5 self-end"
-            >
-              더보기
-              <ChevronRight className="w-3 h-3" />
-            </Link>
-          </div>
+          {/* ── 깃발 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
+          {renderSectionRow({ icon: "🚩", label: "깃발", detailTab: "puzzle", dateLabel: puzzleHeaderDate })}
 
-          {/* 지역 필터 칩 — 깃발 탭이면 모든 사용자에게 노출. 지역으로 빠르게 좁혀봄.
-              (미제안 우선 정렬은 MD 전용이지만, 필터 자체는 유저/비로그인도 유용)
-              전체 깃발이 0개면 칩만 덩그러니 남으므로 숨김 */}
-          {currentTab === "puzzle" && visiblePuzzles.length > 0 && (
-            <div className="flex items-center gap-1.5 -mx-4 px-4 mb-2 overflow-x-auto scrollbar-hide">
-              {[{ label: "전체", value: null }, ...MAIN_AREAS.map((a) => ({ label: a, value: a as string | null }))].map(
-                (chip) => {
-                  const active = selectedArea === chip.value;
-                  return (
-                    <button
-                      key={chip.label}
-                      type="button"
-                      onClick={() => setSelectedArea(chip.value)}
-                      className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                        active
-                          ? "bg-white text-black"
-                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  );
-                }
-              )}
-            </div>
-          )}
-
-          {/* 첫 진입 인라인 가이드 — 캐러셀 위 (한번 닫으면 영구 숨김) */}
-          {showTopGuide && (currentTab === "puzzle" || currentTab === "share") && (
+          {/* 첫 진입 인라인 가이드 — 깃발 캐러셀 위 (한번 닫으면 영구 숨김) */}
+          {showTopGuide && (
             <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative mt-4 mb-4">
               <button
                 onClick={dismissTopGuide}
@@ -1141,9 +1110,6 @@ export function HomeContent({
               >
                 <X className="w-3.5 h-3.5" />
               </button>
-              <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm leading-none z-10">
-                ⓘ 이용방법
-              </span>
               <div className="flex flex-col gap-2">
                 {compactSteps.map((step, idx) => (
                   <div
@@ -1181,30 +1147,20 @@ export function HomeContent({
             </div>
           )}
 
-          {/* 깃발 / 조각 캐러셀 */}
+          {/* 깃발 캐러셀 (항상 노출) */}
           <div className="mb-2">
-            {currentTab === "puzzle" && (
-              <HomePuzzleCarousel
-                puzzles={carouselPuzzles}
-                totalCount={areaFilteredPuzzles.length}
-                offerCounts={puzzleOfferCounts}
-                userRole={user?.role as "user" | "md" | "admin" | undefined}
-                detailHref={detailHref("puzzle")}
-                newFlagHref={newFlagHref}
-                showFlagCTA
-                isAreaFiltered={!!selectedArea}
-                onClearAreaFilter={() => setSelectedArea(null)}
-              />
-            )}
-            {currentTab === "share" && (
-              <HomeShareCarousel
-                shares={visibleAuctions.filter((a) => a.listing_type === "share")}
-                currentUserId={user?.id}
-                detailHref={detailHref("share")}
-                newFlagHref={newFlagHref}
-                userRole={user?.role as "user" | "md" | "admin" | undefined}
-              />
-            )}
+            <HomePuzzleCarousel
+              puzzles={carouselPuzzles}
+              totalCount={areaFilteredPuzzles.length}
+              offerCounts={puzzleOfferCounts}
+              userRole={user?.role as "user" | "md" | "admin" | undefined}
+              detailHref={detailHref("puzzle")}
+              newFlagHref={newFlagHref}
+              showFlagCTA
+              isAreaFiltered={!!selectedArea}
+              onClearAreaFilter={() => setSelectedArea(null)}
+              onActiveDateChange={setPuzzleHeaderDate}
+            />
           </div>
 
           {/* Tip 박스 + 이용방법 토글 — 캐러셀 아래로 이동 (톤 다운) */}
@@ -1375,6 +1331,33 @@ export function HomeContent({
             </section>
           )}
 
+          {/* ── 조각 섹션 (탭 토글 제거 → 깃발 아래 항상 노출. showShareTab으로 게이팅) ── */}
+          {showShareTab && (
+            <>
+              {/* ── 조각 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
+              {renderSectionRow({ icon: "🧩", label: "조각", detailTab: "share", dateLabel: shareHeaderDate })}
+
+              <div className="mb-2">
+                <HomeShareCarousel
+                  shares={areaFilteredShares}
+                  currentUserId={user?.id}
+                  detailHref={detailHref("share")}
+                  newFlagHref={newFlagHref}
+                  userRole={user?.role as "user" | "md" | "admin" | undefined}
+                  isAreaFiltered={!!selectedShareArea}
+                  onClearAreaFilter={() => setSelectedShareArea(null)}
+                  onActiveDateChange={setShareHeaderDate}
+                />
+              </div>
+              {/* MD 전용 조각 행동 유도 CTA — 미리보기 Sheet 트리거 */}
+              {isMdOrAdmin && (
+                <div className="mb-2">
+                  <ShareMdCta />
+                </div>
+              )}
+            </>
+          )}
+
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
 
@@ -1442,14 +1425,99 @@ export function HomeContent({
           const visibleSteps = steps;
           const guideCard = (
             <section className="space-y-2 -mx-2 mb-3">
-              {/* TIP 박스 — 항시 노출 */}
-              {overriddenTabPromises[currentTab]?.content && (
-                <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 pb-2.5">
+              {/* TIP 박스 — 항시 노출 (매치 깃발 있으면 슬라이드). 조각(share)은 제외 */}
+              {currentTab !== "share" && overriddenTabPromises[currentTab]?.content && (
+                <div className={`relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 ${recentMatchedPuzzle ? "pb-4" : "pb-2.5"}`}>
                   <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
-                  <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
-                    {overriddenTabPromises[currentTab].content}
-                  </div>
-                  {(currentTab === "puzzle" || currentTab === "share" || currentTab === "advance") && (
+                  {recentMatchedPuzzle ? (
+                    <div
+                      ref={tipContainerRef}
+                      data-no-pull-refresh
+                      className="overflow-hidden select-none"
+                      style={{ touchAction: "pan-y" }}
+                      onPointerDown={(e) => {
+                        const width = tipContainerRef.current?.offsetWidth ?? 0;
+                        tipSwipeRef.current = { startX: e.clientX, startY: e.clientY, active: true, width };
+                        setTipIsDragging(true);
+                        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                      }}
+                      onPointerMove={(e) => {
+                        const ref = tipSwipeRef.current;
+                        if (!ref?.active) return;
+                        const dx = e.clientX - ref.startX;
+                        const dy = e.clientY - ref.startY;
+                        if (Math.abs(dx) <= Math.abs(dy)) return;
+                        e.preventDefault();
+                        const widthPct = ref.width > 0 ? (dx / ref.width) * 100 : 0;
+                        const minOffset = tipRotation === 0 ? -100 : 0;
+                        const maxOffset = tipRotation === 0 ? 0 : 100;
+                        const offsetPct = Math.max(minOffset, Math.min(maxOffset, widthPct));
+                        setTipDragOffset(offsetPct);
+                      }}
+                      onPointerUp={(e) => {
+                        const ref = tipSwipeRef.current;
+                        if (!ref?.active) { setTipIsDragging(false); return; }
+                        const dx = e.clientX - ref.startX;
+                        const dy = e.clientY - ref.startY;
+                        tipSwipeRef.current = null;
+                        setTipIsDragging(false);
+                        setTipDragOffset(0);
+                        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+                          if (dx < 0 && tipRotation === 0) changeTipRotation(1);
+                          else if (dx > 0 && tipRotation === 1) changeTipRotation(0);
+                        }
+                      }}
+                      onPointerCancel={() => {
+                        tipSwipeRef.current = null;
+                        setTipIsDragging(false);
+                        setTipDragOffset(0);
+                      }}
+                    >
+                      <div
+                        className="flex w-full"
+                        style={{
+                          transform: `translateX(calc(-${tipRotation * 100}% + ${tipDragOffset}%))`,
+                          transition: tipIsDragging ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+                          willChange: "transform",
+                        }}
+                      >
+                        <div className="w-full shrink-0 text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
+                          {overriddenTabPromises[currentTab].content}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowMatchedModal(true)}
+                          className="w-full shrink-0 text-[13.5px] text-white font-bold leading-tight break-keep text-left inline-flex items-center gap-1 hover:text-amber-100 transition-colors [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]"
+                        >
+                          어떤 오퍼 받았는지 엿보기 👈
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
+                      {overriddenTabPromises[currentTab].content}
+                    </div>
+                  )}
+                  {recentMatchedPuzzle && (
+                    <div className="absolute left-0 right-0 bottom-1 flex items-center justify-center gap-1 pointer-events-none">
+                      {[0, 1].map((i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          aria-label={`슬라이드 ${i + 1}`}
+                          onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
+                          className="pointer-events-auto p-1 cursor-pointer"
+                        >
+                          <span
+                            className={`block w-1.5 h-1.5 rounded-full transition-colors ${
+                              tipRotation === i ? "bg-amber-400" : "bg-neutral-600"
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {(currentTab === "puzzle" || currentTab === "advance") && (
                     <button
                       type="button"
                       onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
@@ -1476,9 +1544,6 @@ export function HomeContent({
                       모든 서비스 무료
                     </span>
                   )}
-                  <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm leading-none z-10">
-                    ⓘ 이용방법
-                  </span>
                   <div className="flex flex-col gap-2">
                     {visibleSteps.map((step, idx) => (
                       <div
@@ -1524,6 +1589,8 @@ export function HomeContent({
               puzzleOfferCounts={puzzleOfferCounts}
               selectedArea={selectedArea}
               onAreaChange={setSelectedArea}
+              shareSelectedArea={selectedShareArea}
+              onShareAreaChange={setSelectedShareArea}
               userBidMap={userBidMap}
               userInterestedSet={userInterestedSet}
               userRole={user?.role as "user" | "md" | "admin" | undefined}

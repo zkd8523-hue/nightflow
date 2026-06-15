@@ -10,6 +10,8 @@ interface LiquorSelectorProps {
   onSelect: (items: string[]) => void;
   disabled?: boolean;
   compact?: boolean;
+  /** true면 주류를 선택 입력으로 표시(별표·"최소 1병" 제거). 조각(share) 모드용. */
+  optional?: boolean;
 }
 
 function normalize(raw: string): string | null {
@@ -34,7 +36,7 @@ function normalize(raw: string): string | null {
   return `${trimmed} 1병`;
 }
 
-export function LiquorSelector({ selected, onSelect, disabled, compact }: LiquorSelectorProps) {
+export function LiquorSelector({ selected, onSelect, disabled, compact, optional }: LiquorSelectorProps) {
   const [customBrand, setCustomBrand] = useState("");
 
   const selectedBrandSet = new Set(selected);
@@ -80,7 +82,7 @@ export function LiquorSelector({ selected, onSelect, disabled, compact }: Liquor
               handleCustomAdd();
             }
           }}
-          placeholder="예: 돔페3, 모엣2, 샴3, 하드1, 데킬라1"
+          placeholder="예: 돔페3 (입력 후 엔터)"
           className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] flex-1"
         />
         <Button
@@ -92,7 +94,7 @@ export function LiquorSelector({ selected, onSelect, disabled, compact }: Liquor
           <Plus className="w-4 h-4" />
         </Button>
       </div>
-      <p className="text-[10px] text-neutral-600">각 주류는 쉼표(,)로 구분</p>
+      <p className="text-[10px] text-neutral-600">하나씩 입력 후 엔터 (쉼표로 여러 개 한 번에 가능)</p>
 
       {selected.length > 0 && (
         <div className="pt-3 border-t border-neutral-800/50 space-y-2">
@@ -121,6 +123,18 @@ export function LiquorSelector({ selected, onSelect, disabled, compact }: Liquor
 
   if (compact) return inner;
 
+  // 조각 모드(optional): 다른 입력들(테이블 구성 등)과 헤더·구조 통일.
+  // 헤더는 "주류 (선택)" 텍스트 한 줄, 바깥 카드 박스 없이 입력칸 바로 노출.
+  if (optional) {
+    return (
+      <div className={`space-y-2 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
+        <p className="text-[12px] text-neutral-400 font-medium">주류 (선택)</p>
+        {inner}
+      </div>
+    );
+  }
+
+  // 일반 경매(주류 필수): 기존 강조 헤더 + 카드 박스 유지.
   return (
     <section className={`space-y-4 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
       <div className="flex items-center gap-1.5 text-[11px] font-bold text-neutral-500 tracking-wide mb-2">

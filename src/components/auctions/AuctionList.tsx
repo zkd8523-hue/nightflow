@@ -7,15 +7,16 @@ import type { Auction, Puzzle } from "@/types/database";
 import { AuctionCard } from "./AuctionCard";
 import { PuzzleSocialProofBanner } from "./PuzzleSocialProofBanner";
 import { PuzzleList } from "@/components/puzzles/PuzzleList";
-import { isAuctionActive, getEffectiveEndTime, SHARE_MAX_EVENT_DAYS_AHEAD } from "@/lib/utils/auction";
+import { isAuctionActive, getEffectiveEndTime } from "@/lib/utils/auction";
 import { getClubEventDate } from "@/lib/utils/date";
 import { DateGroup } from "@/components/ui/DateGroup";
 import { isInstantEnabled } from "@/lib/features";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { matchesArea } from "@/lib/utils/area";
 import { getDDayLabel } from "@/lib/utils/format";
-import { SlidersHorizontal, ArrowLeft } from "lucide-react";
+import { SlidersHorizontal, ArrowLeft, CalendarDays, ChevronDown } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Calendar } from "@/components/ui/calendar";
 import { DateFilterCalendar } from "./filters/DateFilterCalendar";
 import { PriceRangeFilter } from "./filters/PriceRangeFilter";
 import { ClubRequestCTA } from "./ClubRequestCTA";
@@ -30,6 +31,27 @@ import {
   type DateFilter,
 } from "@/lib/utils/auctionFilters";
 
+
+// ── 조각 날짜 필터 (홈 캐러셀 HomeShareCarousel과 동일한 드롭다운+단일캘린더 방식) ──
+const SHARE_DAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+function shareIsoToDate(iso: string): Date {
+  return new Date(iso + "T12:00:00");
+}
+function shareDateToIso(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+function shareTriggerLabel(iso: string, todayISO: string): string {
+  if (iso === "all") return "전체";
+  const d = shareIsoToDate(iso);
+  const dow = SHARE_DAYS_KO[d.getDay()];
+  const tomorrowISO = shareDateToIso(new Date(shareIsoToDate(todayISO).getTime() + 86400000));
+  if (iso === todayISO) return `오늘 (${dow})`;
+  if (iso === tomorrowISO) return `내일 (${dow})`;
+  return `${d.getMonth() + 1}/${d.getDate()} (${dow})`;
+}
 
 const SHARE_NBI_CHIPS: { value: NbiFilter; label: string }[] = [
   { value: "all", label: "전체" },
@@ -65,6 +87,9 @@ interface AuctionListProps {
   puzzleOfferCounts?: Record<string, number>;
   selectedArea?: string | null;
   onAreaChange?: (area: string | null) => void;
+  /** 조각 탭 전용 지역 필터 — 깃발(selectedArea)과 독립. 안 주면 selectedArea로 폴백 */
+  shareSelectedArea?: string | null;
+  onShareAreaChange?: (area: string | null) => void;
   userBidMap?: Map<string, number>;
   userInterestedSet?: Set<string>;
   userRole?: "user" | "md" | "admin";
@@ -82,7 +107,10 @@ interface AuctionListProps {
   onBack?: () => void;
 }
 
-export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, userBidMap, userInterestedSet, userRole, currentUserId, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot, hideTabs, hideAreaFilter, hideShareEmptyState, onBack }: AuctionListProps) {
+export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puzzleOfferCounts = {}, selectedArea, onAreaChange, shareSelectedArea, onShareAreaChange, userBidMap, userInterestedSet, userRole, currentUserId, initialTab, onTabChange, onShowGuide, tabPromises, guideSlot, hideTabs, hideAreaFilter, hideShareEmptyState, onBack }: AuctionListProps) {
+  // 조각 탭 지역 필터 — 깃발과 독립. share props 없으면 selectedArea로 폴백(클럽 상세 등 호환)
+  const effectiveShareArea = shareSelectedArea !== undefined ? shareSelectedArea : (selectedArea ?? null);
+  const effectiveShareAreaChange = onShareAreaChange ?? onAreaChange;
   // Realtime 입찰 burst 시 필터 깜빡임 방지: deferred render
   const deferredAuctions = useDeferredValue(initialAuctions);
 
@@ -127,16 +155,33 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   const todayAuctions = liveAndUpcoming.filter(a => a.listing_type === 'instant');
   // 얼리버드 경매: listing_type === 'auction' (경매)
   const advanceAuctionsAll = liveAndUpcoming.filter(a => a.listing_type === 'auction');
-  // 조각: listing_type === 'share'
-  const shareAuctions = liveAndUpcoming.filter(a => a.listing_type === 'share');
+  // 조각: listing_type === 'share' — 깃발과 독립된 지역 필터(effectiveShareArea) 적용.
+  // 공유 filterByArea(selectedArea)를 거치지 않도록 deferredAuctions에서 직접 뽑는다.
+  const shareAuctions = deferredAuctions.filter(
+    a => a.listing_type === 'share' && (!effectiveShareArea || matchesArea(a.club?.area, effectiveShareArea))
+  );
   const [shareSort, setShareSort] = useState<"deadline" | "recent" | "seats">("deadline");
   const [shareNbi, setShareNbi] = useState<NbiFilter>("all");
   const [shareSeat, setShareSeat] = useState<SeatFilter>("all");
-  const [shareDateFilter, setShareDateFilter] = useState<DateFilter>("all");
-  const [shareFilterOpen, setShareFilterOpen] = useState(false);
+  // 날짜 필터 — 홈 캐러셀과 동일한 단일 날짜 선택 방식 ("all"=전체, 그 외 ISO)
+  const [shareSelectedDate, setShareSelectedDate] = useState<string>("all");
+  const [shareCalendarOpen, setShareCalendarOpen] = useState(false);
   const [myShareOnly, setMyShareOnly] = useState(false);
 
-  const shareEventDates = useMemo(() => Array.from(new Set(shareAuctions.map(a => a.event_date))), [shareAuctions]);
+  const shareTodayISO = dayjs().format("YYYY-MM-DD");
+  // 조각이 있는 날짜만 캘린더에서 선택 가능
+  const shareAvailableIsoSet = useMemo(() => {
+    const s = new Set<string>();
+    for (const a of shareAuctions) {
+      const d = a.share_date ?? a.event_date;
+      if (d) s.add(d);
+    }
+    return s;
+  }, [shareAuctions]);
+  const shareAvailableDates = useMemo(() => Array.from(shareAvailableIsoSet).map(shareIsoToDate), [shareAvailableIsoSet]);
+  const shareCalendarFrom = shareAvailableDates.length ? shareAvailableDates.reduce((a, b) => (a < b ? a : b)) : shareIsoToDate(shareTodayISO);
+  const shareCalendarTo = shareAvailableDates.length ? shareAvailableDates.reduce((a, b) => (a > b ? a : b)) : shareIsoToDate(shareTodayISO);
+
   const filteredShareAuctions = useMemo(() => shareAuctions.filter(a => {
     if (myShareOnly && a.md_id !== currentUserId) return false;
     const price = a.price_per_seat ?? 0;
@@ -147,9 +192,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
     if (shareSeat === "1" && seatsLeft !== 1) return false;
     if (shareSeat === "2" && seatsLeft !== 2) return false;
     if (shareSeat === "3+" && seatsLeft < 3) return false;
-    if (!matchesDate(a, shareDateFilter)) return false;
+    // 날짜: "all"이 아니면 그 날짜 조각만 (홈과 동일)
+    if (shareSelectedDate !== "all" && (a.share_date ?? a.event_date) !== shareSelectedDate) return false;
     return true;
-  }), [shareAuctions, shareNbi, shareSeat, shareDateFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }), [shareAuctions, shareNbi, shareSeat, shareSelectedDate, myShareOnly, currentUserId]);
 
   // 날짜·가격 필터 적용 (얼리버드 한정)
   const advanceAuctions = useMemo(
@@ -201,14 +247,18 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
     onTabChange?.(t);
   };
 
-  // 조각 탭이 숨겨졌는데 share에 머물러 있으면 puzzle로 폴백
-  const canShowShareTab = userRole === "md" || userRole === "admin" || shareAuctions.length > 0;
+  // 부모 initialTab(=URL tab)이 바뀌면 내부 tab 동기화.
+  // 소프트 네비게이션("조각 더보기" → ?tab=share)으로 진입 시 깃발에 머무는 버그 방지.
   useEffect(() => {
-    if (tab === "share" && !canShowShareTab) {
-      setTab("puzzle");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canShowShareTab, tab]);
+    if (initialTab) setTabRaw(initialTab);
+  }, [initialTab]);
+
+  // 조각 탭 버튼 가시성 판단 (전체 조각 존재 여부 — 지역 필터 무관).
+  // ⚠️ 폴백으로 setTab("puzzle")을 호출하면 onTabChange가 부모 URL을 puzzle로 덮어써서
+  //    "조각 더보기"(?tab=share) 진입이 깃발로 튕기는 버그가 났음 → 폴백 제거.
+  //    조각 탭 버튼은 아래 canShowShareTab && 로만 숨기고, tab 강제 전환은 하지 않는다.
+  const hasAnyShare = deferredAuctions.some(a => a.listing_type === 'share');
+  const canShowShareTab = userRole === "md" || userRole === "admin" || hasAnyShare;
 
   // 퍼즐: 지역 필터 적용 ("서울 어디든"은 강남/홍대/이태원/건대 어느 것 선택해도 매칭)
   const filteredPuzzles = useMemo(() => {
@@ -276,7 +326,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               <span className="text-[18px] leading-none">🚩</span> 깃발
             </button>
 
-            {(userRole === "md" || userRole === "admin" || shareAuctions.length > 0) && (
+            {canShowShareTab && (
               <button
                 onClick={() => setTab("share")}
                 className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "share"
@@ -307,7 +357,18 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {guideSlot}
 
-      <div className="flex items-center gap-2 mb-5 h-9">
+      {/* 조각 탭: "모집 중인 조각" 헤더 (지역 필터로 0건이어도 조각 탭이면 유지) */}
+      {tab === "share" && canShowShareTab && (
+        <div className="flex items-center gap-2.5 px-1 mb-2">
+          <span className="relative flex h-2.5 w-2.5 mt-[1px] flex-shrink-0">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
+          </span>
+          <span className="text-[16px] font-black text-white tracking-tight">모집 중인 조각</span>
+        </div>
+      )}
+
+      <div className={`flex items-center gap-2 h-9 ${tab === "share" ? "mb-1.5" : "mb-5"}`}>
           {!hideAreaFilter && (
           <div
             data-no-pull-refresh
@@ -318,10 +379,15 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             }}
           >
             <div className="flex gap-2 px-1 pr-6 w-max">
+              {/* 조각 탭은 독립 지역필터(effectiveShareArea), 그 외는 selectedArea */}
+              {(() => {
+              const areaForChips = tab === "share" ? effectiveShareArea : (selectedArea ?? null);
+              const onAreaChipChange = tab === "share" ? effectiveShareAreaChange : onAreaChange;
+              return (<>
               <button
-                onClick={() => onAreaChange?.(null)}
+                onClick={() => onAreaChipChange?.(null)}
                 className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                  selectedArea === null
+                  areaForChips === null
                     ? "bg-white text-black"
                     : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
@@ -331,9 +397,9 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               {MAIN_AREAS.map((area) => (
                 <button
                   key={area}
-                  onClick={() => onAreaChange?.(area)}
+                  onClick={() => onAreaChipChange?.(areaForChips === area ? null : area)}
                   className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                    selectedArea === area
+                    areaForChips === area
                       ? "bg-white text-black"
                       : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                   }`}
@@ -342,15 +408,17 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 </button>
               ))}
               <button
-                onClick={() => onAreaChange?.("다른지역")}
+                onClick={() => onAreaChipChange?.(areaForChips === "다른지역" ? null : "다른지역")}
                 className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
-                  selectedArea === "다른지역"
+                  areaForChips === "다른지역"
                     ? "bg-white text-black"
                     : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
                 }`}
               >
                 다른지역
               </button>
+              </>);
+              })()}
             </div>
           </div>
           )}
@@ -483,43 +551,38 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         </SheetContent>
       </Sheet>
 
-      {/* 조각 필터 Sheet */}
-      <Sheet open={shareFilterOpen} onOpenChange={setShareFilterOpen}>
-        <SheetContent side="bottom" showCloseButton={false} className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
-          <SheetHeader className="pt-2 pb-4">
-            <SheetTitle className="text-white font-black text-lg text-left">필터</SheetTitle>
-          </SheetHeader>
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <p className="text-[12px] font-bold text-neutral-400 px-1">날짜</p>
-              <DateFilterCalendar
-                eventDates={shareEventDates}
-                value={shareDateFilter}
-                onChange={setShareDateFilter}
-                maxDate={dayjs().add(SHARE_MAX_EVENT_DAYS_AHEAD, "day").format("YYYY-MM-DD")}
-                rangeMode
-              />
-            </div>
-            <div className="flex justify-end pt-1">
-              <button
-                onClick={() => setShareDateFilter("all")}
-                disabled={shareDateFilter === "all"}
-                className={`text-[12px] font-bold transition-colors ${
-                  shareDateFilter !== "all"
-                    ? "text-neutral-400 hover:text-white"
-                    : "text-transparent pointer-events-none"
-                }`}
-              >
-                초기화
-              </button>
-            </div>
-            <button
-              onClick={() => setShareFilterOpen(false)}
-              className="w-full h-16 bg-white text-black font-black text-[14px] rounded-2xl"
-            >
-              {filteredShareAuctions.length}건 보기
-            </button>
+      {/* 조각 날짜 선택 캘린더 — 홈 캐러셀과 동일 (하단 Sheet, 단일 선택) */}
+      <Sheet open={shareCalendarOpen} onOpenChange={setShareCalendarOpen}>
+        <SheetContent side="bottom" showCloseButton={false} className="bg-[#0A0A0A] border-t border-neutral-800 rounded-t-3xl px-4 pt-5 pb-8 max-w-lg mx-auto">
+          <SheetTitle className="text-white text-[16px] font-black text-center mb-3">조각 날짜 선택</SheetTitle>
+          <button
+            type="button"
+            onClick={() => { setShareSelectedDate("all"); setShareCalendarOpen(false); }}
+            className={`mx-auto inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-[13px] font-bold active:scale-95 transition ${
+              shareSelectedDate === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white"
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            초기화
+          </button>
+          <div className="flex justify-center mt-1">
+            <Calendar
+              mode="single"
+              selected={shareSelectedDate === "all" ? undefined : shareIsoToDate(shareSelectedDate)}
+              defaultMonth={shareSelectedDate === "all" ? shareCalendarTo : shareIsoToDate(shareSelectedDate)}
+              startMonth={shareCalendarFrom}
+              endMonth={shareCalendarTo}
+              disabled={(date) => !shareAvailableIsoSet.has(shareDateToIso(date))}
+              onSelect={(date) => {
+                if (!date) return;
+                const iso = shareDateToIso(date);
+                if (!shareAvailableIsoSet.has(iso)) return;
+                setShareSelectedDate(iso);
+                setShareCalendarOpen(false);
+              }}
+            />
           </div>
+          <p className="text-[11px] text-neutral-500 text-center mt-2">조각이 있는 날짜만 선택할 수 있어요</p>
         </SheetContent>
       </Sheet>
 
@@ -575,17 +638,9 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {tab === "share" && (
         <div className="space-y-2">
-          {/* 헤더 + 필터 버튼 */}
+          {/* 가격 필터 버튼 (헤더는 영역 필터 위로 이동됨) */}
           {shareAuctions.length > 0 && (
             <div className="flex flex-col gap-1 px-1">
-              <div className="flex items-center gap-2.5">
-                <span className="relative flex h-2.5 w-2.5 mt-[1px] flex-shrink-0">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 animate-ping" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-                </span>
-                <span className="text-[16px] font-black text-white tracking-tight">모집 중인 조각</span>
-                {/* 마감임박순·필터 버튼은 첫 날짜 헤더 우측으로 이동 */}
-              </div>
               {/* N비 필터 + 내 조각 */}
               <div className="flex items-center gap-1.5 pb-0.5">
                 <div data-no-pull-refresh className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide touch-pan-x touch-pan-y flex-1 min-w-0">
@@ -604,7 +659,27 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   </button>
                 )}
               </div>
-              {/* 정렬 */}
+              {/* 날짜 선택 — 홈 캐러셀과 동일한 드롭다운 + 단일 캘린더 */}
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setShareCalendarOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-800 text-white text-[13px] font-bold hover:bg-neutral-700 active:scale-95 transition"
+                >
+                  <CalendarDays className="w-4 h-4 text-neutral-300" />
+                  <span>{shareTriggerLabel(shareSelectedDate, shareTodayISO)}</span>
+                  <ChevronDown className="w-4 h-4 text-neutral-400" />
+                </button>
+                {shareSelectedDate !== "all" && (
+                  <button
+                    type="button"
+                    onClick={() => setShareSelectedDate("all")}
+                    className="px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-500 text-[11px] font-bold hover:bg-neutral-700 hover:text-white active:scale-95 transition"
+                  >
+                    초기화
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -617,14 +692,11 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 <>
                   <div className="space-y-1.5">
                     <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
-                      지금은 다른 조각이 없어요!
-                    </p>
-                    <p className="text-neutral-500 text-[12.5px] font-medium leading-relaxed break-keep">
-                      경쟁 조각이 없어서 유저 시선 독차지
+                      지금은 다른 조각이 없어요
                     </p>
                   </div>
                   <Link
-                    href="/md/auctions/new"
+                    href="/md/dashboard?section=share"
                     className="inline-flex items-center gap-1.5 h-11 px-6 bg-green-500 text-black font-black text-[13.5px] rounded-full hover:bg-green-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
                     조각 등록하기
@@ -651,29 +723,45 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             </div>
             )
           ) : filteredShareAuctions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-              <p className="text-neutral-400 text-sm font-medium">
-                {userRole === "md" ? "아직 올라온 조각이 없어요" : "조건에 맞는 조각이 없어요"}
-              </p>
-              <button onClick={() => { setShareNbi("all"); setShareSeat("all"); setShareDateFilter("all"); }}
-                className="text-[12px] font-bold text-neutral-500 hover:text-white transition-colors">필터 초기화</button>
-              <div className="pt-2">
-                {userRole === "md" ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <p className="text-[12px] text-neutral-500 font-medium">
-                      지금 선점하면 손님이 제일 먼저 봐요
+            /* 필터(가격/좌석/날짜)로 0건 — 지역 0건과 동일한 빈 상태로 통일 */
+            <div className="flex flex-col items-center justify-center py-14 text-center space-y-5">
+              <span className="text-[40px] leading-none opacity-90">🧩</span>
+              {userRole && ["md", "admin"].includes(userRole) ? (
+                <>
+                  <div className="space-y-1.5">
+                    <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
+                      지금은 다른 조각이 없어요
                     </p>
-                    <Link
-                      href="/md/auctions/new"
-                      className="inline-flex items-center gap-1.5 h-11 px-5 bg-amber-500 text-black font-black text-[13px] rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98]"
-                    >
-                      🧩 내 조각 먼저 올리기
-                    </Link>
                   </div>
-                ) : (
-                  <FlagPlantCTA variant="empty" isLoggedIn={!!currentUserId} />
-                )}
-              </div>
+                  <Link
+                    href="/md/dashboard?section=share"
+                    className="inline-flex items-center gap-1.5 h-11 px-6 bg-green-500 text-black font-black text-[13.5px] rounded-full hover:bg-green-400 transition-colors active:scale-[0.98] tracking-tight"
+                  >
+                    조각 등록하기
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
+                      아직 등록된 조각이 없어요
+                    </p>
+                    <p className="text-neutral-500 text-[12.5px] font-medium leading-relaxed break-keep">
+                      깃발을 꽂으면 MD가 직접 제안을 보내요
+                    </p>
+                  </div>
+                  <Link
+                    href="/flags/new"
+                    className="inline-flex items-center gap-1.5 h-11 px-6 bg-amber-500 text-black font-black text-[13.5px] rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98] tracking-tight"
+                  >
+                    🚩 깃발 꽂으러 가기
+                  </Link>
+                </>
+              )}
+              {(shareNbi !== "all" || shareSeat !== "all" || shareSelectedDate !== "all") && (
+                <button onClick={() => { setShareNbi("all"); setShareSeat("all"); setShareSelectedDate("all"); }}
+                  className="text-[12px] font-bold text-neutral-500 hover:text-white transition-colors">필터 초기화</button>
+              )}
             </div>
           ) : (
             Object.entries(
@@ -685,10 +773,11 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                     const seatsB = (b.total_seats ?? 0) - (b.seats_claimed ?? 0) - (b.external_attendees ?? 0);
                     return seatsA - seatsB;
                   }
-                  return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+                  // 조각의 노출/행사 기준일은 share_date (event_date는 한 칸 밀려있을 수 있음)
+                  return new Date(a.share_date ?? a.event_date).getTime() - new Date(b.share_date ?? b.event_date).getTime();
                 })
                 .reduce((groups, auction) => {
-                  const date = auction.event_date;
+                  const date = auction.share_date ?? auction.event_date;
                   if (!groups[date]) groups[date] = [];
                   groups[date].push(auction);
                   return groups;
@@ -700,7 +789,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   const maxB = Math.max(...bItems.map(b => new Date(b.created_at).getTime()));
                   return maxB - maxA;
                 }
-                return aItems[0].event_date.localeCompare(bItems[0].event_date);
+                return (aItems[0].share_date ?? aItems[0].event_date).localeCompare(bItems[0].share_date ?? bItems[0].event_date);
               })
               .map(([date, items], idx) => {
                 const d = new Date(date + "T00:00:00");
@@ -714,26 +803,6 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>
                         {dday}
                       </span>
-                      {idx === 0 && (
-                        <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
-                          {/* 마감임박순 — 추후 복귀 가능, 현재 숨김
-                          <button
-                            onClick={() => setShareSort(v => v === "seats" ? "deadline" : "seats")}
-                            className={`text-[11px] font-bold px-3 py-1 rounded-full transition-colors whitespace-nowrap ${shareSort === "seats" ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                            마감임박순
-                          </button>
-                          */}
-                          <button
-                            onClick={() => setShareFilterOpen(true)}
-                            aria-label="필터"
-                            className={`relative inline-flex items-center justify-center w-7 h-7 rounded-full transition-colors ${shareDateFilter !== "all" ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
-                            <SlidersHorizontal className="w-3.5 h-3.5" />
-                            {shareDateFilter !== "all" && (
-                              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-red-500 rounded-full" />
-                            )}
-                          </button>
-                        </div>
-                      )}
                     </div>
                     <div className="flex flex-col gap-7">
                       {items.map(auction => (
@@ -749,7 +818,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           {filteredShareAuctions.length > 0 && !hideShareEmptyState && (
             <div className="pt-2">
               {userRole === "md" ? (
-                <ClubRequestCTA variant="list-end" defaultArea={selectedArea ?? null} />
+                <ClubRequestCTA variant="list-end" defaultArea={effectiveShareArea} />
               ) : (
                 <FlagPlantCTA variant="list-end" isLoggedIn={!!currentUserId} />
               )}

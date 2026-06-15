@@ -39,6 +39,7 @@ export function GuestSignPreviewSheet({ open, onOpenChange }: Props) {
             <p className="text-[12px] text-amber-400 font-black tracking-wider">PREVIEW</p>
             <h2 className="text-[22px] font-black text-white tracking-tight">
               내 게스트 광고판이 됩니다
+              <span className="text-[13px] font-bold text-neutral-400 ml-1.5">(1클럽 1MD · 선착순)</span>
             </h2>
             <p className="text-[13px] text-neutral-400 leading-snug">
               유저가 홈에서 내 클럽을 발견하고
@@ -141,7 +142,7 @@ export function GuestSignPreviewSheet({ open, onOpenChange }: Props) {
 
           {/* CTA */}
           <Link
-            href="/md/hotdeal"
+            href="/md/dashboard?section=guestsign"
             onClick={() => onOpenChange(false)}
             className="w-full h-14 bg-amber-500 text-black font-black text-[15px] rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform"
           >

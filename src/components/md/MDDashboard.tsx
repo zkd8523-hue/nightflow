@@ -21,8 +21,15 @@ const HotdealSlotBoard = dynamic(
   () => import("./HotdealSlotBoard").then((m) => m.HotdealSlotBoard),
   { loading: () => <div className="animate-pulse bg-neutral-800/50 h-40 rounded-xl" /> }
 );
-import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByDow } from "@/types/database";
-import { Plus, TrendingUp, Users, Ticket, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, Heart, Puzzle as PuzzleIcon, ExternalLink, Coins } from "lucide-react";
+const ShareSlotBoard = dynamic(
+  () => import("./ShareSlotBoard").then((m) => m.ShareSlotBoard),
+  { loading: () => <div className="animate-pulse bg-neutral-800/50 h-40 rounded-xl" /> }
+);
+import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan } from "@/types/database";
+import { ShareOptionManager } from "@/components/md/ShareOptionManager";
+import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
+import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
+import { Plus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins } from "lucide-react";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -69,6 +76,8 @@ interface GuestSignClubLite {
     name: string;
     area: string | null;
     thumbnail_url: string | null;
+    /** 대표 테이블맵 1장 (조각 옵션 자리 정보 입력 시 참고용). 없으면 null. */
+    floor_plan_url?: string | null;
 }
 
 interface GuestSignSlot {
@@ -88,8 +97,18 @@ interface GuestSignMySlot {
     expires_at: string;
 }
 
+interface ShareSlotLite {
+    id: string;
+    club_id: string;
+    md_id: string;
+    week_start: string;
+    expires_at: string;
+}
+
 interface MDDashboardProps {
     user: User;
+    /** 홈 CTA(?section=guestsign/share)로 진입 시 초기 탭 지정 */
+    initialSection?: string | null;
     initialAuctions: Auction[];
     initialClubs: Club[];
     initialTopBids?: Record<string, TopBidInfo>;
@@ -101,10 +120,16 @@ interface MDDashboardProps {
     guestSignMySlots?: GuestSignMySlot[];
     guestSignThisWeekISO?: string;
     guestSignNextWeekISO?: string;
+    shareSlotClubs?: GuestSignClubLite[];
+    shareSlots?: ShareSlotLite[];
+    shareSlotThisWeekISO?: string;
+    shareOptions?: ShareOption[];
+    shareWeekdayPlans?: ShareWeekdayPlan[];
 }
 
 export function MDDashboard({
     user,
+    initialSection = null,
     initialAuctions,
     initialClubs,
     initialTopBids = {},
@@ -116,6 +141,11 @@ export function MDDashboard({
     guestSignMySlots = [],
     guestSignThisWeekISO,
     guestSignNextWeekISO,
+    shareSlotClubs = [],
+    shareSlots = [],
+    shareSlotThisWeekISO,
+    shareOptions = [],
+    shareWeekdayPlans = [],
 }: MDDashboardProps) {
     const [auctions, setAuctions] = useState<Auction[]>(initialAuctions);
     const [clubs, setClubs] = useState<Club[]>(initialClubs);
@@ -123,17 +153,27 @@ export function MDDashboard({
     const [defaultClubId, setDefaultClubId] = useState<string | null>(user.default_club_id);
     const [loading, setLoading] = useState(false);
     const [clubSheetOpen, setClubSheetOpen] = useState(false);
-    const [favoriteMdCount, setFavoriteMdCount] = useState<number>(0);
     const [clubFavCounts, setClubFavCounts] = useState<Record<string, number>>({});
     const [mdCredits, setMdCredits] = useState<number | null>(null);
     const [showAreaOnboarding, setShowAreaOnboarding] = useState(false);
     // prop은 서버 스냅샷이라 markSeen 후에도 갱신 안 됨 → 로컬 상태로 "봤음"을 즉시 반영해 재노출 차단
     const [areaOnboardingSeen, setAreaOnboardingSeen] = useState(user.md_onboarding_areas_seen);
     const [hotdealSheetOpen, setHotdealSheetOpen] = useState(false);
-    const [hotdealInlineOpen, setHotdealInlineOpen] = useState(true);
+    const [hotdealInlineOpen, setHotdealInlineOpen] = useState(false);
+    // 홈 CTA(?section=guestsign / share)로 진입 시 해당 탭을 열어준다.
     const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
-    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(false);
+    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(initialSection === "guestsign");
+    const [shareInlineOpen, setShareInlineOpen] = useState(initialSection !== "guestsign");
     const supabase = createClient();
+
+    // 낙관적 슬롯 상태 — claim 즉시 세팅 영역 표시 (router.refresh() 대기 안 함)
+    const [localShareSlots, setLocalShareSlots] = useState(shareSlots);
+    const [planBoardResetKey, setPlanBoardResetKey] = useState(0);
+    useEffect(() => { setLocalShareSlots(shareSlots); }, [shareSlots]);
+
+    // 내가 이번 주 선점한 조각 슬롯 — 슬롯이 있어야 조각 등록 가능(등록 버튼 노출 조건)
+    const myShareSlots = localShareSlots.filter((s) => s.md_id === user.id);
+    const hasShareSlot = myShareSlots.length > 0;
 
     // 관심 지역 온보딩: 승인된 MD가 아직 시트를 안 봤고 구독도 0건이면 노출
     useEffect(() => {
@@ -155,15 +195,8 @@ export function MDDashboard({
         };
     }, [user.id, user.role, user.md_status, areaOnboardingSeen, supabase]);
 
-    // 나를 찜한 유저 수 + 크레딧 잔액
+    // 크레딧 잔액
     useEffect(() => {
-        const fetchFavoriteCount = async () => {
-            const { count } = await supabase
-                .from("user_favorite_mds")
-                .select("id", { count: "exact", head: true })
-                .eq("md_id", user.id);
-            setFavoriteMdCount(count ?? 0);
-        };
         const fetchCredits = async () => {
             const { data } = await supabase
                 .from("users")
@@ -172,7 +205,6 @@ export function MDDashboard({
                 .single();
             setMdCredits(data?.md_credits ?? null);
         };
-        fetchFavoriteCount();
         fetchCredits();
     }, [user.id, supabase]);
 
@@ -263,9 +295,9 @@ export function MDDashboard({
         a.listing_type === "auction" && isCompleted(a) && !["won", "contacted"].includes(a.status)
     );
 
-    // 조각: share 타입
+    // 조각: share 타입. 진행 중만 노출하고, 종료된 조각(유찰·취소·낙찰·확정)은
+    // 핫딜 만료와 동일하게 목록에서 자동으로 숨긴다 (DB에는 보존).
     const shareAuctions = auctions.filter(a => a.listing_type === "share" && !isCompleted(a));
-    const completedShareAuctions = auctions.filter(a => a.listing_type === "share" && isCompleted(a));
 
     // 오늘특가 정렬: active 먼저 → 마감 임박순
     const sortedTodayAuctions = [...activeTodayAuctions].sort((a, b) => {
@@ -295,20 +327,19 @@ export function MDDashboard({
     });
 
     return (
-        <div className="max-w-lg mx-auto pb-24">
-            {/* 간소 헤더: 뒤로가기 + 타이틀 (고정 X) */}
-            <div className="flex items-center gap-2 px-3 pt-3 pb-1" style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}>
-                <Link
-                    href="/"
-                    aria-label="홈으로"
-                    className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-neutral-800 transition-colors"
-                >
-                    <ChevronLeft className="w-5 h-5 text-white" />
-                </Link>
-            </div>
+        <div className="max-w-lg mx-auto pb-24 relative">
+            {/* 뒤로가기 — 오버레이 */}
+            <Link
+                href="/"
+                aria-label="홈으로"
+                className="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+                style={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
+            >
+                <ChevronLeft className="w-5 h-5 text-white" />
+            </Link>
 
             {/* Header Profile Section */}
-            <div className="px-6 py-4 space-y-4 text-white">
+            <div className="pl-14 pr-6 pt-5 pb-4 space-y-4 text-white">
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                         <h1 className="text-xl font-black tracking-tight">{user.display_name || user.name} 파트너님</h1>
@@ -400,16 +431,16 @@ export function MDDashboard({
                     onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        setHotdealInlineOpen((v) => !v);
+                        setShareInlineOpen((v) => !v);
+                        setHotdealInlineOpen(false);
                         setGuestSignInlineOpen(false);
                     }}
                     className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
-                        hotdealInlineOpen ? "border-amber-500" : "border-neutral-700"
+                        shareInlineOpen ? "border-amber-500" : "border-neutral-700"
                     }`}
                 >
-                    <span className="text-[20px] leading-none">🔥</span>
-                    <span className="text-[11px] font-black text-white">Hot Deal</span>
-                    <span className="text-[9px] text-amber-400 font-bold">당일 특가</span>
+                    <span className="text-[20px] leading-none">🧩</span>
+                    <span className="text-[11px] font-black text-white">조각</span>
                 </button>
                 <button
                     type="button"
@@ -418,6 +449,7 @@ export function MDDashboard({
                         e.stopPropagation();
                         setGuestSignInlineOpen((v) => !v);
                         setHotdealInlineOpen(false);
+                        setShareInlineOpen(false);
                     }}
                     className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
                         guestSignInlineOpen ? "border-amber-500" : "border-neutral-700"
@@ -425,15 +457,23 @@ export function MDDashboard({
                 >
                     <span className="text-[20px] leading-none">🎫</span>
                     <span className="text-[11px] font-black text-white">게스트 간판</span>
-                    <span className="text-[9px] text-neutral-400 font-bold">주 단위</span>
                 </button>
-                <Link href="/md/vip" className="col-span-1">
-                    <div className="flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border border-neutral-700 rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all">
-                        <Users className="w-5 h-5 text-amber-500" />
-                        <span className="text-[11px] font-black text-white">VIP 고객</span>
-                        <span className="text-[9px] text-neutral-400 font-bold">찜 {favoriteMdCount}명</span>
-                    </div>
-                </Link>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setHotdealInlineOpen((v) => !v);
+                        setGuestSignInlineOpen(false);
+                        setShareInlineOpen(false);
+                    }}
+                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
+                        hotdealInlineOpen ? "border-amber-500" : "border-neutral-700"
+                    }`}
+                >
+                    <span className="text-[20px] leading-none">🔥</span>
+                    <span className="text-[11px] font-black text-white">Hot Deal</span>
+                </button>
             </div>
 
             {/* Hot Deal 인라인 등록 영역 */}
@@ -467,14 +507,65 @@ export function MDDashboard({
                 </div>
             )}
 
+            {/* 조각 인라인 영역 — 자리 선점 + 내 조각 목록 */}
+            {shareInlineOpen && (
+                <div className="px-4 mt-3 space-y-2">
+                    {/* 조각 자리 선점 */}
+                    {shareSlotThisWeekISO && (
+                        <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3">
+                            <ShareSlotBoard
+                                currentUserId={user.id}
+                                clubs={shareSlotClubs}
+                                slots={localShareSlots}
+                                thisWeekISO={shareSlotThisWeekISO}
+                                embedded
+                                isAdmin={user.role === "admin"}
+                                onClaim={(slot) => setLocalShareSlots((prev) => [...prev.filter((s) => !(s.club_id === slot.club_id && s.week_start === slot.week_start)), slot])}
+                                onRelease={(clubId) => { setLocalShareSlots((prev) => prev.filter((s) => !(s.club_id === clubId && s.md_id === user.id))); setPlanBoardResetKey((k) => k + 1); }}
+                            />
+                        </div>
+                    )}
+
+                    {/* 선점 중인 클럽별 프리셋 + 요일표 세팅 */}
+                    {myShareSlots.map((slot) => {
+                        const club = shareSlotClubs.find((c) => c.id === slot.club_id);
+                        const clubOptions = shareOptions.filter((o) => o.club_id === slot.club_id);
+                        const clubPlans = shareWeekdayPlans.filter((p) => p.club_id === slot.club_id);
+                        return (
+                            <div key={slot.club_id} className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3 space-y-3">
+                                <ShareOptionManager clubId={slot.club_id} options={clubOptions} floorPlanUrl={club?.floor_plan_url ?? null} />
+                                <div className="border-t border-neutral-800" />
+                                <ShareWeekdayPlanBoard key={`${slot.club_id}-${planBoardResetKey}`} clubId={slot.club_id} options={clubOptions} plans={clubPlans} />
+                            </div>
+                        );
+                    })}
+
+                    {/* 내 조각 목록 — 슬롯 보유 시에만 노출 */}
+                    {hasShareSlot && (
+                        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-3 space-y-2">
+                            <p className="text-[13px] font-black text-white">내 조각</p>
+                            {shareAuctions.length > 0 ? (
+                                <ShareAuctionGroups
+                                    auctions={shareAuctions}
+                                    onDelete={handleAuctionDelete}
+                                    clubFavCounts={clubFavCounts}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-5 text-center space-y-1.5">
+                                    <p className="text-2xl">🧩</p>
+                                    <p className="text-neutral-400 text-[13px] font-medium">등록된 조각이 없습니다</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
             {/* Auction Tabs + Register Button */}
             <div className="px-4 mt-3">
-                <Tabs defaultValue="share" className="w-full">
+                <Tabs defaultValue="puzzle" className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">
-                            <TabsTrigger value="share" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
-                                🧩 조각 {shareAuctions.length > 0 && <span className="ml-0.5 text-green-400">{shareAuctions.length}</span>}
-                            </TabsTrigger>
                             <TabsTrigger value="puzzle" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
                                 ⛳ 깃발 {initialPuzzleOffers.length > 0 && <span className="ml-0.5 text-amber-400">{initialPuzzleOffers.length}</span>}
                             </TabsTrigger>
@@ -682,107 +773,32 @@ export function MDDashboard({
                             ) : null}
                         </TabsContent>
 
-                        {/* 조각 탭 */}
-                        <TabsContent value="share" className="space-y-3 m-0">
-                            {shareAuctions.length > 0 ? (
-                                shareAuctions.map(auction => (
-                                    <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} favoriteCount={clubFavCounts[auction.club_id || ""] || 0} />
-                                ))
-                            ) : (
-                                <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
-                                    <p className="text-3xl">🧩</p>
-                                    <p className="text-neutral-400 text-sm font-medium">등록된 조각이 없습니다</p>
-                                    <Link href="/md/auctions/new">
-                                        <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">
-                                            조각 등록하기
-                                        </Button>
-                                    </Link>
-                                </div>
-                            )}
-                            {completedShareAuctions.length > 0 && (
-                                <div className="mt-4 space-y-2">
-                                    <p className="text-[11px] text-neutral-600 font-bold px-1">종료된 조각</p>
-                                    {completedShareAuctions.map(auction => (
-                                        <MDAuctionCard key={auction.id} auction={auction} onDelete={() => handleAuctionDelete(auction.id)} favoriteCount={clubFavCounts[auction.club_id || ""] || 0} />
-                                    ))}
-                                </div>
-                            )}
-                        </TabsContent>
-
                     </div>
                 </Tabs>
             </div>
 
             {/* Secondary Content: Stats */}
             <div className="px-6 py-6 space-y-4 text-white">
-                {/* Performance Stats */}
-                <Card className="relative overflow-hidden bg-gradient-to-br from-[#1C1C1E] to-[#0A0A0A] border-neutral-800 rounded-[28px] p-5 shadow-xl">
-                    <div className="flex items-center justify-between mb-6">
-                        <div className="space-y-1">
-                            <p className="text-[11px] font-black text-neutral-500 uppercase tracking-widest">Performance</p>
-                            <h2 className="text-[20px] font-black text-white">성과 요약</h2>
+                {/* 크레딧 — 보유/충전 동선만 노출 (성과 통계는 제거) */}
+                <Link
+                    href="/md/credits"
+                    className="flex items-center justify-between rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] px-4 py-3.5 group hover:bg-amber-500/[0.12] transition-colors"
+                >
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/15">
+                            <Coins className="w-4 h-4 text-amber-400" />
                         </div>
-                        <TrendingUp className="w-5 h-5 text-green-500" />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-x-4 gap-y-5">
-                        <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-neutral-500">
-                                <Plus className="w-3 h-3" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider">나의 경매</span>
-                            </div>
-                            <p className="text-[24px] font-black text-white leading-none">{auctions.length}<span className="text-[12px] text-neutral-500 ml-0.5">건</span></p>
-                        </div>
-                        <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-neutral-500">
-                                <Users className="w-3 h-3" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider">비딩수</span>
-                            </div>
-                            <p className="text-[24px] font-black text-white leading-none">
-                                {auctions.reduce((acc, a) => acc + a.bid_count, 0)}<span className="text-[12px] text-neutral-500 ml-0.5">회</span>
-                            </p>
-                        </div>
-                        <div className="space-y-1.5">
-                            <div className="flex items-center gap-1.5 text-neutral-500">
-                                <Ticket className="w-3 h-3" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider">낙찰건</span>
-                            </div>
-                            <p className="text-[24px] font-black text-amber-500 leading-none">
-                                {auctions.filter(a => ["won", "confirmed"].includes(a.status)).length}<span className="text-[12px] text-neutral-500 ml-0.5">건</span>
-                            </p>
-                        </div>
-                        <div className="space-y-1.5 pt-1 border-t border-neutral-800/50">
-                            <div className="flex items-center gap-1.5 text-neutral-500">
-                                <Heart className="w-3 h-3" />
-                                <span className="text-[10px] font-bold uppercase tracking-wider">나를 찜한</span>
-                            </div>
-                            <p className="text-[24px] font-black text-red-400 leading-none">
-                                {favoriteMdCount}<span className="text-[12px] text-neutral-500 ml-0.5">명</span>
+                        <div className="space-y-0.5">
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">보유 크레딧</span>
+                            <p className={`text-[22px] font-black leading-none ${mdCredits !== null && mdCredits < 30 ? "text-red-400" : "text-amber-400"}`}>
+                                {mdCredits ?? "—"}<span className="text-[12px] text-neutral-500 ml-0.5">크레딧</span>
                             </p>
                         </div>
                     </div>
-
-                    {/* 크레딧 — 가로 전체 폭 강조 바 (충전 동선) */}
-                    <Link
-                        href="/md/credits"
-                        className="mt-5 flex items-center justify-between rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] px-4 py-3.5 group hover:bg-amber-500/[0.12] transition-colors"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/15">
-                                <Coins className="w-4 h-4 text-amber-400" />
-                            </div>
-                            <div className="space-y-0.5">
-                                <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">보유 크레딧</span>
-                                <p className={`text-[22px] font-black leading-none ${mdCredits !== null && mdCredits < 30 ? "text-red-400" : "text-amber-400"}`}>
-                                    {mdCredits ?? "—"}<span className="text-[12px] text-neutral-500 ml-0.5">크레딧</span>
-                                </p>
-                            </div>
-                        </div>
-                        <span className="flex items-center gap-1 rounded-full bg-amber-500 px-4 py-2 text-[13px] font-black text-black group-hover:bg-amber-400 transition-colors">
-                            <Plus className="w-4 h-4" />충전
-                        </span>
-                    </Link>
-                </Card>
+                    <span className="flex items-center gap-1 rounded-full bg-amber-500 px-4 py-2 text-[13px] font-black text-black group-hover:bg-amber-400 transition-colors">
+                        <Plus className="w-4 h-4" />충전
+                    </span>
+                </Link>
             </div>
 
             {/* Club Selector Sheet (복수 클럽용) */}
