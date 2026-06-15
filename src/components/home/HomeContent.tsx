@@ -1173,7 +1173,9 @@ export function HomeContent({
                   onClick={() => { setGuideMode("full"); setShowGuide(true); }}
                   className={`relative bg-neutral-900 border-amber-400/50 rounded-xl px-3 cursor-pointer [border-width:0.5px] ${showTopGuide ? "" : "pr-16"} ${recentMatchedPuzzle ? "pt-3 pb-4" : "pt-1.5 pb-1"}`}
                 >
-                  {(() => {
+                  {isMdOrAdmin ? (
+                    <div className="text-[14px] text-neutral-100 font-black leading-snug break-keep py-1">{visibleCompactTip}</div>
+                  ) : (() => {
                     const compactSlides: React.ReactNode[] = [
                       <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">원하는 날, 원하는 예산. 오퍼만 골라요!</div>,
                       ...(recentMatchedPuzzle ? [
@@ -1189,6 +1191,7 @@ export function HomeContent({
                       <div key="tip" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">{visibleCompactTip}</div>,
                     ];
                     const slideCount = compactSlides.length;
+                    const safeRotation = tipRotation % slideCount;
                     return (
                       <>
                         <div
@@ -1209,8 +1212,8 @@ export function HomeContent({
                             if (Math.abs(dx) <= Math.abs(dy)) return;
                             e.preventDefault();
                             const widthPct = ref.width > 0 ? (dx / ref.width) * 100 : 0;
-                            const minOffset = tipRotation === 0 ? 0 : -100;
-                            const maxOffset = tipRotation === slideCount - 1 ? 0 : 100;
+                            const minOffset = safeRotation === 0 ? 0 : -100;
+                            const maxOffset = safeRotation === slideCount - 1 ? 0 : 100;
                             const offsetPct = Math.max(minOffset, Math.min(maxOffset, widthPct));
                             setTipDragOffset(offsetPct);
                           }}
@@ -1223,8 +1226,8 @@ export function HomeContent({
                             setTipIsDragging(false);
                             setTipDragOffset(0);
                             if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-                              if (dx < 0 && tipRotation < slideCount - 1) changeTipRotation(tipRotation + 1);
-                              else if (dx > 0 && tipRotation > 0) changeTipRotation(tipRotation - 1);
+                              if (dx < 0 && safeRotation < slideCount - 1) changeTipRotation(safeRotation + 1);
+                              else if (dx > 0 && safeRotation > 0) changeTipRotation(safeRotation - 1);
                             }
                           }}
                           onPointerCancel={() => {
@@ -1236,7 +1239,7 @@ export function HomeContent({
                           <div
                             className="flex w-full"
                             style={{
-                              transform: `translateX(calc(-${tipRotation * 100}% + ${tipDragOffset}%))`,
+                              transform: `translateX(calc(-${safeRotation * 100}% + ${tipDragOffset}%))`,
                               transition: tipIsDragging ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
                               willChange: "transform",
                             }}
@@ -1255,7 +1258,7 @@ export function HomeContent({
                               onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
                               className="pointer-events-auto p-1"
                             >
-                              <span className={`block w-1.5 h-1.5 rounded-full transition-colors ${tipRotation === i ? "bg-amber-400" : "bg-neutral-600"}`} />
+                              <span className={`block w-1.5 h-1.5 rounded-full transition-colors ${safeRotation === i ? "bg-amber-400" : "bg-neutral-600"}`} />
                             </button>
                           ))}
                         </div>
@@ -1426,77 +1429,11 @@ export function HomeContent({
             <section className="space-y-2 -mx-2 mb-3">
               {/* TIP 박스 — 항시 노출 (매치 깃발 있으면 슬라이드). 조각(share)은 제외 */}
               {currentTab !== "share" && overriddenTabPromises[currentTab]?.content && (
-                <div className={`relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 ${recentMatchedPuzzle ? "pb-4" : "pb-2.5"}`}>
-                  {recentMatchedPuzzle ? (
-                    <div
-                      ref={tipContainerRef}
-                      data-no-pull-refresh
-                      className="overflow-hidden select-none"
-                      style={{ touchAction: "pan-y" }}
-                      onPointerDown={(e) => {
-                        const width = tipContainerRef.current?.offsetWidth ?? 0;
-                        tipSwipeRef.current = { startX: e.clientX, startY: e.clientY, active: true, width };
-                        setTipIsDragging(true);
-                        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-                      }}
-                      onPointerMove={(e) => {
-                        const ref = tipSwipeRef.current;
-                        if (!ref?.active) return;
-                        const dx = e.clientX - ref.startX;
-                        const dy = e.clientY - ref.startY;
-                        if (Math.abs(dx) <= Math.abs(dy)) return;
-                        e.preventDefault();
-                        const widthPct = ref.width > 0 ? (dx / ref.width) * 100 : 0;
-                        const minOffset = tipRotation === 0 ? -100 : 0;
-                        const maxOffset = tipRotation === 0 ? 0 : 100;
-                        const offsetPct = Math.max(minOffset, Math.min(maxOffset, widthPct));
-                        setTipDragOffset(offsetPct);
-                      }}
-                      onPointerUp={(e) => {
-                        const ref = tipSwipeRef.current;
-                        if (!ref?.active) { setTipIsDragging(false); return; }
-                        const dx = e.clientX - ref.startX;
-                        const dy = e.clientY - ref.startY;
-                        tipSwipeRef.current = null;
-                        setTipIsDragging(false);
-                        setTipDragOffset(0);
-                        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-                          if (dx < 0 && tipRotation === 0) changeTipRotation(1);
-                          else if (dx > 0 && tipRotation === 1) changeTipRotation(0);
-                        }
-                      }}
-                      onPointerCancel={() => {
-                        tipSwipeRef.current = null;
-                        setTipIsDragging(false);
-                        setTipDragOffset(0);
-                      }}
-                    >
-                      <div
-                        className="flex w-full"
-                        style={{
-                          transform: `translateX(calc(-${tipRotation * 100}% + ${tipDragOffset}%))`,
-                          transition: tipIsDragging ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
-                          willChange: "transform",
-                        }}
-                      >
-                        <div className="w-full shrink-0 text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
-                          {overriddenTabPromises[currentTab].content}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowMatchedModal(true)}
-                          className="w-full shrink-0 text-[13.5px] text-white font-bold leading-tight break-keep text-left inline-flex items-center gap-1 hover:text-amber-100 transition-colors [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]"
-                        >
-                          어떤 오퍼 받았는지 엿보기 👈
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
-                      {overriddenTabPromises[currentTab].content}
-                    </div>
-                  )}
-                  {recentMatchedPuzzle && (
+                <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 pb-2.5">
+                  <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
+                    {overriddenTabPromises[currentTab].content}
+                  </div>
+                  {!isMdOrAdmin && recentMatchedPuzzle && (
                     <div className="absolute left-0 right-0 bottom-1 flex items-center justify-center gap-1 pointer-events-none">
                       {[0, 1].map((i) => (
                         <button
