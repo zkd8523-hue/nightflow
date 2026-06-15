@@ -97,6 +97,10 @@ export async function updateSession(request: NextRequest) {
       console.warn(`[Middleware] MD 접근 거부 - userId: ${user.id}, role: ${profile?.role}, path: ${pathname}`);
       return NextResponse.redirect(new URL("/", request.url));
     }
+
+    // page.tsx에서 재조회하지 않도록 결과를 헤더로 전달
+    supabaseResponse.headers.set("x-user-id", user.id);
+    supabaseResponse.headers.set("x-user-role", profile?.role ?? "");
   }
 
   return supabaseResponse;

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { MDDashboard } from "@/components/md/MDDashboard";
 
@@ -17,7 +18,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     let userData: User | null = null;
 
     if (testMode) {
-        // 1. 테스트 모드 (개발 환경 전용)
+        // 테스트 모드 (개발 환경 전용)
         userId = '00000000-0000-0000-0000-000000000002';
         const { data } = await supabase
             .from("users")
@@ -26,11 +27,19 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
             .single();
         userData = data;
     } else {
-        // 1. 일반 모드: 세션 확인
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) redirect("/login");
+        // 미들웨어가 이미 auth.getUser() + users 조회를 완료하고 헤더로 전달
+        const headersList = await headers();
+        const headerUserId = headersList.get("x-user-id");
 
-        userId = user.id;
+        if (!headerUserId) {
+            // 헤더 없으면 미들웨어를 통과 못 한 것 (직접 접근 등) → 재검증
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) redirect("/login");
+            userId = user.id;
+        } else {
+            userId = headerUserId;
+        }
+
         const { data } = await supabase
             .from("users")
             .select("*")
@@ -38,10 +47,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
             .single();
         userData = data;
 
-        // 미들웨어에서 이미 role 체크를 완료했으므로, 여기서는 데이터 존재 여부만 확인
-        if (!userData) {
-            redirect("/");
-        }
+        if (!userData) redirect("/");
 
         // 정지 기간 만료 시 자동 해제
         if (
