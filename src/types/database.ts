@@ -112,6 +112,9 @@ export interface User {
   /** 공개 프로필: 주로 가는 지역 (최대 3개, AREA_OPTIONS와 동일). Migration 280 */
   preferred_areas: string[] | null;
 
+  // MD 크레딧 (오퍼 1건당 1크레딧 차감)
+  md_credits: number | null;
+
   // MD 전용
   md_status: MDStatus | null;
   md_onboarding_areas_seen: boolean;

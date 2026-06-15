@@ -78,15 +78,35 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
 
     // 4. MD의 클럽 목록 조회 — Migration 177(club_partners) 기반
     //    auctions 조회보다 먼저: 파트너 클럽 ID로 매물도 필터링.
-    const { data: clubsRaw } = await supabase
-        .from("clubs")
-        .select("*, club_partners!inner(md_id)")
-        .eq("club_partners.md_id", userId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+    const [{ data: clubsRaw }, { data: hotdealClubsRaw }] = await Promise.all([
+        supabase
+            .from("clubs")
+            .select("*, club_partners!inner(md_id)")
+            .eq("club_partners.md_id", userId)
+            .is("deleted_at", null)
+            .order("created_at", { ascending: false }),
+        supabase
+            .from("clubs")
+            .select("id, name, area, thumbnail_url, floor_plan_url, floor_plan_urls, club_partners!inner(md_id)")
+            .eq("club_partners.md_id", userId)
+            .is("deleted_at", null)
+            .order("name"),
+    ]);
 
     // UI에서 club_partners 필드 안 쓰니 제거 (Club 타입 호환)
     const clubs = (clubsRaw ?? []).map(({ club_partners: _, ...rest }) => rest) as Club[];
+    const hotdealClubs = (hotdealClubsRaw ?? []).map((c) => ({
+        id: c.id,
+        name: c.name,
+        area: c.area,
+        thumbnail_url: c.thumbnail_url,
+        floor_plan_url: c.floor_plan_url,
+        // 대표 테이블맵 1장 (다중 등록 시 첫 장, 없으면 레거시 단일)
+        floor_plan_main:
+            (c as { floor_plan_urls?: string[] | null }).floor_plan_urls?.[0] ??
+            c.floor_plan_url ??
+            null,
+    }));
 
     // 5. MD의 경매 목록 조회
     // 본인 매물 OR 파트너 클럽 매물 — 같은 클럽 다른 MD가 올린 매물도 보이게
@@ -94,8 +114,12 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     let auctionsQuery = supabase
         .from("auctions")
         .select(`
-      *,
-      club:club_id (*)
+      id, md_id, club_id, status, listing_type, title, table_info,
+      start_price, current_bid, bid_count, seats_claimed, external_attendees,
+      total_seats, price_per_seat, created_at, event_date, auction_start_at,
+      auction_end_at, extended_end_at, contact_deadline, thumbnail_url, includes,
+      chat_interest_count, buy_now_price, winner_id, cancelled_at,
+      club:club_id (id, name, area, thumbnail_url, is_test)
     `)
         .order("created_at", { ascending: false });
 
@@ -107,7 +131,73 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         auctionsQuery = auctionsQuery.eq("md_id", userId);
     }
 
-    const { data: auctions } = await auctionsQuery;
+    // 주 계산 (슬롯 쿼리에 필요)
+    const kstNowForSlot = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const dowSlot = kstNowForSlot.getUTCDay();
+    const daysFromMon = dowSlot === 0 ? 6 : dowSlot - 1;
+    const mondayKst = new Date(kstNowForSlot);
+    mondayKst.setUTCDate(kstNowForSlot.getUTCDate() - daysFromMon);
+    mondayKst.setUTCHours(0, 0, 0, 0);
+    const thisWeekISO = mondayKst.toISOString().slice(0, 10);
+    const nextWeekDate = new Date(mondayKst);
+    nextWeekDate.setUTCDate(mondayKst.getUTCDate() + 7);
+    const nextWeekISO = nextWeekDate.toISOString().slice(0, 10);
+
+    const slotClubIds = hotdealClubs.map((c) => c.id);
+
+    // 나머지 쿼리 모두 병렬
+    const [
+        { data: auctions },
+        { data: puzzleOffers, error: puzzleOffersError },
+        { data: myHotdeals },
+        { data: slotRows },
+        { data: mySlotRows },
+        { data: shareSlotRows },
+    ] = await Promise.all([
+        auctionsQuery,
+        supabase
+            .from("puzzle_offers")
+            .select(`
+                *,
+                puzzle:puzzles!puzzle_offers_puzzle_id_fkey (
+                    id, area, event_date, total_budget, budget_per_person,
+                    target_count, current_count, status, kakao_open_chat_url,
+                    leader_id
+                )
+            `)
+            .eq("md_id", userId)
+            .in("status", ["pending", "accepted"])
+            .order("created_at", { ascending: false }),
+        supabase
+            .from("daily_hotdeals")
+            .select("*, club:clubs(id, name, area, thumbnail_url)")
+            .eq("md_id", userId)
+            .neq("status", "expired")
+            .order("created_at", { ascending: false })
+            .limit(20),
+        slotClubIds.length
+            ? supabase
+                  .from("weekly_hotdeal_slots")
+                  .select("id, club_id, md_id, week_start, benefits_by_dow, expires_at")
+                  .in("club_id", slotClubIds)
+                  .in("week_start", [thisWeekISO, nextWeekISO])
+            : Promise.resolve({ data: [] as { id: string; club_id: string; md_id: string; week_start: string; benefits_by_dow: unknown; expires_at: string }[], error: null }),
+        supabase
+            .from("weekly_hotdeal_slots")
+            .select("id, club_id, week_start, benefits_by_dow, expires_at")
+            .eq("md_id", userId)
+            .gte("week_start", thisWeekISO)
+            .lte("week_start", nextWeekISO),
+        slotClubIds.length
+            ? supabase
+                  .from("weekly_share_slots")
+                  .select("id, club_id, md_id, week_start, expires_at")
+                  .in("club_id", slotClubIds)
+                  .eq("week_start", thisWeekISO)
+            : Promise.resolve({ data: [] as { id: string; club_id: string; md_id: string; week_start: string; expires_at: string }[], error: null }),
+    ]);
+
+    if (puzzleOffersError) console.error("puzzleOffers query error:", puzzleOffersError);
 
     // 5. 활성 경매의 최고 입찰자 조회
     const activeIds = (auctions || []).filter(a => a.status === "active").map(a => a.id);
@@ -132,80 +222,6 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         }
     }
 
-    // 6. MD의 퍼즐 오퍼 조회 (퍼즐 정보 포함)
-    const { data: puzzleOffers, error: puzzleOffersError } = await supabase
-        .from("puzzle_offers")
-        .select(`
-            *,
-            puzzle:puzzles!puzzle_offers_puzzle_id_fkey (
-                id, area, event_date, total_budget, budget_per_person,
-                target_count, current_count, status, kakao_open_chat_url,
-                leader_id
-            )
-        `)
-        .eq("md_id", userId)
-        .in("status", ["pending", "accepted"])
-        .order("created_at", { ascending: false });
-    if (puzzleOffersError) console.error("puzzleOffers query error:", puzzleOffersError);
-    console.log("puzzleOffers count:", puzzleOffers?.length, "userId:", userId);
-
-    // 7. 핫딜 등록용 클럽 (floor_plan_url 포함) + 본인 핫딜
-    const { data: hotdealClubsRaw } = await supabase
-        .from("clubs")
-        .select("id, name, area, thumbnail_url, floor_plan_url, floor_plan_urls, club_partners!inner(md_id)")
-        .eq("club_partners.md_id", userId)
-        .is("deleted_at", null)
-        .order("name");
-    const hotdealClubs = (hotdealClubsRaw ?? []).map((c) => ({
-        id: c.id,
-        name: c.name,
-        area: c.area,
-        thumbnail_url: c.thumbnail_url,
-        floor_plan_url: c.floor_plan_url,
-        // 대표 테이블맵 1장 (다중 등록 시 첫 장, 없으면 레거시 단일)
-        floor_plan_main:
-            (c as { floor_plan_urls?: string[] | null }).floor_plan_urls?.[0] ??
-            c.floor_plan_url ??
-            null,
-    }));
-
-    const { data: myHotdeals } = await supabase
-        .from("daily_hotdeals")
-        .select("*, club:clubs(id, name, area, thumbnail_url)")
-        .eq("md_id", userId)
-        // 만료된 핫딜은 목록에서 제외 (cron이 expired로 전환 → 자동으로 안 보임).
-        // active가 limit에 안 밀리도록 SSR 단계에서 먼저 거른다.
-        .neq("status", "expired")
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-    // 8. 게스트 간판 슬롯 데이터 (이번주 + 다음주)
-    const kstNowForSlot = new Date(Date.now() + 9 * 60 * 60 * 1000);
-    const dowSlot = kstNowForSlot.getUTCDay();
-    const daysFromMon = dowSlot === 0 ? 6 : dowSlot - 1;
-    const mondayKst = new Date(kstNowForSlot);
-    mondayKst.setUTCDate(kstNowForSlot.getUTCDate() - daysFromMon);
-    mondayKst.setUTCHours(0, 0, 0, 0);
-    const thisWeekISO = mondayKst.toISOString().slice(0, 10);
-    const nextWeekDate = new Date(mondayKst);
-    nextWeekDate.setUTCDate(mondayKst.getUTCDate() + 7);
-    const nextWeekISO = nextWeekDate.toISOString().slice(0, 10);
-
-    const slotClubIds = hotdealClubs.map((c) => c.id);
-    const { data: slotRows } = slotClubIds.length
-        ? await supabase
-              .from("weekly_hotdeal_slots")
-              .select("id, club_id, md_id, week_start, benefits_by_dow, expires_at")
-              .in("club_id", slotClubIds)
-              .in("week_start", [thisWeekISO, nextWeekISO])
-        : { data: [] };
-    const { data: mySlotRows } = await supabase
-        .from("weekly_hotdeal_slots")
-        .select("id, club_id, week_start, benefits_by_dow, expires_at")
-        .eq("md_id", userId)
-        .gte("week_start", thisWeekISO)
-        .lte("week_start", nextWeekISO);
-
     const guestSignSlots = (slotRows ?? []).map((s) => ({
         id: s.id,
         club_id: s.club_id,
@@ -222,14 +238,6 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         expires_at: s.expires_at,
     }));
 
-    // 8-b. 조각 슬롯 데이터 (이번 주 — 본인 + 다른 MD 점유 상태 표시용)
-    const { data: shareSlotRows } = slotClubIds.length
-        ? await supabase
-              .from("weekly_share_slots")
-              .select("id, club_id, md_id, week_start, expires_at")
-              .in("club_id", slotClubIds)
-              .eq("week_start", thisWeekISO)
-        : { data: [] };
     const shareSlots = (shareSlotRows ?? []).map((s) => ({
         id: s.id,
         club_id: s.club_id,
@@ -240,22 +248,24 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
 
     // 8-c. 내가 선점 중인 클럽의 조각 옵션 + 요일표 (상시 세팅 UI용)
     const myClaimedShareClubIds = shareSlots.filter((s) => s.md_id === userId).map((s) => s.club_id);
-    const { data: shareOptionRows } = myClaimedShareClubIds.length
-        ? await supabase
-              .from("share_options")
-              .select("*")
-              .eq("md_id", userId)
-              .in("club_id", myClaimedShareClubIds)
-              .order("sort_order", { ascending: true })
-              .order("created_at", { ascending: true })
-        : { data: [] };
-    const { data: shareWeekdayPlanRows } = myClaimedShareClubIds.length
-        ? await supabase
-              .from("share_weekday_plan")
-              .select("*")
-              .eq("md_id", userId)
-              .in("club_id", myClaimedShareClubIds)
-        : { data: [] };
+    const [{ data: shareOptionRows }, { data: shareWeekdayPlanRows }] = await Promise.all([
+        myClaimedShareClubIds.length
+            ? supabase
+                  .from("share_options")
+                  .select("*")
+                  .eq("md_id", userId)
+                  .in("club_id", myClaimedShareClubIds)
+                  .order("sort_order", { ascending: true })
+                  .order("created_at", { ascending: true })
+            : Promise.resolve({ data: [] as ShareOption[], error: null }),
+        myClaimedShareClubIds.length
+            ? supabase
+                  .from("share_weekday_plan")
+                  .select("*")
+                  .eq("md_id", userId)
+                  .in("club_id", myClaimedShareClubIds)
+            : Promise.resolve({ data: [] as ShareWeekdayPlan[], error: null }),
+    ]);
     const shareOptions = (shareOptionRows ?? []) as ShareOption[];
     const shareWeekdayPlans = (shareWeekdayPlanRows ?? []) as ShareWeekdayPlan[];
 
@@ -271,7 +281,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
             auction_end_at: new Date(Date.now() + 3600000).toISOString(),
             club: { name: "OCTAGON", area: "강남" }
         } as unknown as Auction
-    ] : (auctions || []) as Auction[];
+    ] : (auctions || []) as unknown as Auction[];
 
     return (
         <div className="min-h-screen bg-[#0A0A0A]">

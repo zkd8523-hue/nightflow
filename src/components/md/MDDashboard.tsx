@@ -154,7 +154,7 @@ export function MDDashboard({
     const [loading, setLoading] = useState(false);
     const [clubSheetOpen, setClubSheetOpen] = useState(false);
     const [clubFavCounts, setClubFavCounts] = useState<Record<string, number>>({});
-    const [mdCredits, setMdCredits] = useState<number | null>(null);
+    const [mdCredits, setMdCredits] = useState<number | null>(user.md_credits ?? null);
     const [showAreaOnboarding, setShowAreaOnboarding] = useState(false);
     // prop은 서버 스냅샷이라 markSeen 후에도 갱신 안 됨 → 로컬 상태로 "봤음"을 즉시 반영해 재노출 차단
     const [areaOnboardingSeen, setAreaOnboardingSeen] = useState(user.md_onboarding_areas_seen);
@@ -194,19 +194,6 @@ export function MDDashboard({
             cancelled = true;
         };
     }, [user.id, user.role, user.md_status, areaOnboardingSeen, supabase]);
-
-    // 크레딧 잔액
-    useEffect(() => {
-        const fetchCredits = async () => {
-            const { data } = await supabase
-                .from("users")
-                .select("md_credits")
-                .eq("id", user.id)
-                .single();
-            setMdCredits(data?.md_credits ?? null);
-        };
-        fetchCredits();
-    }, [user.id, supabase]);
 
     // 클럽별 찜 수
     useEffect(() => {
