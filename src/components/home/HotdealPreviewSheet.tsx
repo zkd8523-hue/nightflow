@@ -189,9 +189,7 @@ export function HotdealPreviewSheet({ open, onOpenChange }: Props) {
             🔥 지금 핫딜 등록하기
           </Link>
 
-          <p className="text-[11px] text-neutral-600 text-center">
-            지금은 무료로 노출돼요
-          </p>
+
         </div>
       </SheetContent>
     </Sheet>
