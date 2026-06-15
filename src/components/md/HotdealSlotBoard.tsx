@@ -132,12 +132,12 @@ function TimeSelect({
   const label = value ? `~${formatTimeLabel(value)}` : "영업종료까지";
   const allOptions = [...options, null] as (string | null)[];
   return (
-    <div className="relative shrink-0 w-[100px]">
+    <div className="relative shrink-0 w-[100px] self-stretch">
       <button
         type="button"
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
-        className={`w-full px-2 py-1.5 rounded-lg text-[11px] bg-neutral-900 border border-neutral-700 focus:outline-none disabled:cursor-not-allowed flex items-center justify-between gap-1 ${muted ? "text-neutral-600" : "text-white"}`}
+        className={`w-full h-full px-2 py-1.5 rounded-lg text-[11px] bg-neutral-900 border border-neutral-700 focus:outline-none disabled:cursor-not-allowed flex items-center justify-between gap-1 ${muted ? "text-neutral-600" : "text-white"}`}
       >
         <span className="truncate">{label}</span>
         <svg className="w-3 h-3 shrink-0 text-neutral-500" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -763,7 +763,7 @@ function MyClaimedSection({
                 className={`${isPast ? "opacity-50" : ""}`}
               >
                 {/* 요일 헤더 */}
-                <div className={`flex items-baseline gap-2 mb-1.5 ${dowIndex > 0 ? "pt-2.5 border-t border-neutral-700/50" : ""}`}>
+                <div className={`flex items-center gap-2 mb-1.5 ${dowIndex > 0 ? "pt-2.5 border-t border-neutral-700/50" : ""}`}>
                   <span className={`text-[13px] font-black ${isPast ? "text-neutral-600" : "text-white"}`}>
                     {DOW_LABELS[dow]}
                   </span>
@@ -773,12 +773,51 @@ function MyClaimedSection({
                   {isPast && (
                     <span className="text-[10px] text-neutral-700 ml-auto">지난 요일</span>
                   )}
+                  {/* 요일 삭제 — 저장된 혜택이 있고 수정 전일 때만. 입력칸 위 날짜 행에 배치해 입력 공간 확보 */}
+                  {!isPast && !dirty && savedExists && (
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={async () => {
+                        // 슬롯 2개 이상: 마지막 슬롯 제거 / 단일 슬롯: 요일 전체 초기화
+                        let nextSlots: HotdealTimeSlot[];
+                        if (slots.length > 1) {
+                          let next = slots.filter((_, i) => i !== slots.length - 1);
+                          if (next.length > 0) next = next.map((s, i) => i === next.length - 1 ? { ...s, until: null } : s);
+                          nextSlots = next;
+                        } else {
+                          nextSlots = [];
+                        }
+                        setDrafts((prev) => ({ ...prev, [dow]: nextSlots }));
+                        setJustSaved(null);
+                        setSavingDow(dow);
+                        try {
+                          let cleaned = nextSlots.filter((s, i, arr) =>
+                            s.text.trim().length > 0 || (i < arr.length - 1 && s.until !== null)
+                          );
+                          if (cleaned.length > 0) cleaned = cleaned.map((s) => ({ ...s, text: s.text.trim() }));
+                          const { data, error } = await supabase.rpc("update_hotdeal_benefit", { p_slot_id: slot.id, p_dow: dow, p_slots: cleaned.length > 0 ? cleaned : null });
+                          if (error) throw error;
+                          const result = data as { success: boolean; error?: string };
+                          if (!result?.success) { toast.error(result?.error || "삭제 실패"); return; }
+                          const normalized = normalizeDowSlots(cleaned.length > 0 ? cleaned : null);
+                          setSaved((prev) => ({ ...prev, [dow]: normalized }));
+                          setDrafts((prev) => ({ ...prev, [dow]: normalized }));
+                          onChanged();
+                        } catch { toast.error("삭제 실패"); }
+                        finally { setSavingDow(null); }
+                      }}
+                      className="ml-auto h-6 w-6 rounded-full text-neutral-500 hover:text-red-400 flex items-center justify-center disabled:opacity-50"
+                      aria-label="요일 삭제"
+                    >
+                      {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
                 </div>
 
                 <div className="space-y-1">
                   {displaySlots.map((s, idx) => {
                     const isLast = idx === displaySlots.length - 1;
-                    const canDelete = isLast && displaySlots.length > 1;
                     const isFirst = idx === 0;
                     return (
                       <div key={idx} className="space-y-1">
@@ -868,43 +907,6 @@ function MyClaimedSection({
                                 </button>
                               );
 
-                              if (!dirty && (canDelete || (isLast && savedExists))) return (
-                                <button type="button" disabled={saving}
-                                  onClick={async () => {
-                                    // 슬롯 2개 이상: 마지막 슬롯 제거 후 즉시 저장
-                                    // 슬롯 1개: 해당 요일 전체 초기화 후 즉시 저장
-                                    let nextSlots: HotdealTimeSlot[];
-                                    if (canDelete) {
-                                      let next = drafts[dow].filter((_, i) => i !== idx);
-                                      if (next.length > 0) next = next.map((s, i) => i === next.length - 1 ? { ...s, until: null } : s);
-                                      nextSlots = next;
-                                    } else {
-                                      nextSlots = [];
-                                    }
-                                    setDrafts((prev) => ({ ...prev, [dow]: nextSlots }));
-                                    setJustSaved(null);
-                                    setSavingDow(dow);
-                                    try {
-                                      let cleaned = nextSlots.filter((s, i, arr) =>
-                                        s.text.trim().length > 0 || (i < arr.length - 1 && s.until !== null)
-                                      );
-                                      if (cleaned.length > 0) cleaned = cleaned.map((s) => ({ ...s, text: s.text.trim() }));
-                                      const { data, error } = await supabase.rpc("update_hotdeal_benefit", { p_slot_id: slot.id, p_dow: dow, p_slots: cleaned.length > 0 ? cleaned : null });
-                                      if (error) throw error;
-                                      const result = data as { success: boolean; error?: string };
-                                      if (!result?.success) { toast.error(result?.error || "삭제 실패"); return; }
-                                      const normalized = normalizeDowSlots(cleaned.length > 0 ? cleaned : null);
-                                      setSaved((prev) => ({ ...prev, [dow]: normalized }));
-                                      setDrafts((prev) => ({ ...prev, [dow]: normalized }));
-                                      onChanged();
-                                    } catch { toast.error("삭제 실패"); }
-                                    finally { setSavingDow(null); }
-                                  }}
-                                  className="flex-1 px-2 rounded-lg text-neutral-500 hover:text-red-400 flex items-center justify-center disabled:opacity-50">
-                                  {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3.5 h-3.5" />}
-                                </button>
-                              );
-
                               if (isSaveTarget && dirty && !saving) return (
                                 <button type="button" onClick={() => { setEditingSlot(null); handleSaveDow(dow); }} disabled={!canSave}
                                   className={`flex-1 px-3 rounded-lg text-[11px] font-black inline-flex items-center justify-center gap-1 transition-colors ${canSave ? "bg-green-500 text-black hover:bg-green-400" : "bg-neutral-800 text-neutral-600 cursor-not-allowed"}`}>
@@ -972,7 +974,7 @@ function BenefitChips({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-1">
+    <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide -mx-0.5 px-0.5">
       {/* 프리셋 칩 */}
       {presets.map((p) => {
         const active = benefits.includes(p.value);
@@ -982,7 +984,7 @@ function BenefitChips({
             type="button"
             disabled={disabled}
             onClick={() => toggle(p.value)}
-            className={`h-7 px-2.5 rounded-full text-[11px] font-bold transition-colors disabled:opacity-50 ${
+            className={`shrink-0 h-7 px-2.5 rounded-full text-[11px] font-bold transition-colors disabled:opacity-50 ${
               active
                 ? "bg-green-500 text-black"
                 : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:border-neutral-600"
@@ -999,46 +1001,48 @@ function BenefitChips({
           type="button"
           disabled={disabled}
           onClick={() => toggle(c)}
-          className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-green-500 text-black inline-flex items-center gap-1 disabled:opacity-50"
+          className="shrink-0 h-7 px-2.5 rounded-full text-[11px] font-bold bg-green-500 text-black inline-flex items-center gap-1 disabled:opacity-50"
           title="클릭하여 제거"
         >
           {c}
           <span className="text-black/60">×</span>
         </button>
       ))}
-      {/* 직접입력 */}
-      {customOpen ? (
-        <div className="inline-flex items-center gap-1">
-          <input
-            autoFocus
-            type="text"
-            value={customText}
-            onChange={(e) => setCustomText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") { e.preventDefault(); addCustom(); }
-              else if (e.key === "Escape") { setCustomOpen(false); setCustomText(""); }
-            }}
-            placeholder="혜택 직접입력"
-            maxLength={20}
-            className="h-7 px-2 rounded-full bg-neutral-900 border border-white text-[11px] text-white placeholder:text-neutral-600 focus:outline-none w-28"
-          />
-          <button type="button" onClick={addCustom} disabled={disabled || !customText.trim()}
-            className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-white text-black disabled:opacity-50">
-            추가
+      {/* 직접입력 + 시계(시간 슬롯 추가) — 한 줄 흐름에서 함께 움직이고 압축되지 않게 */}
+      <div className="shrink-0 inline-flex items-center gap-1">
+        {customOpen ? (
+          <div className="inline-flex items-center gap-1">
+            <input
+              autoFocus
+              type="text"
+              value={customText}
+              onChange={(e) => setCustomText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); addCustom(); }
+                else if (e.key === "Escape") { setCustomOpen(false); setCustomText(""); }
+              }}
+              placeholder="혜택 직접입력"
+              maxLength={20}
+              className="h-7 px-2 rounded-full bg-neutral-900 border border-white text-[11px] text-white placeholder:text-neutral-600 focus:outline-none w-28"
+            />
+            <button type="button" onClick={addCustom} disabled={disabled || !customText.trim()}
+              className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-white text-black disabled:opacity-50">
+              추가
+            </button>
+          </div>
+        ) : (
+          <button type="button" disabled={disabled} onClick={() => setCustomOpen(true)}
+            className="h-7 px-2 rounded-full text-[11px] font-bold border border-dashed border-neutral-700 bg-neutral-900 text-neutral-500 hover:border-amber-500/40 hover:text-amber-300 disabled:opacity-50">
+            + 직접입력
           </button>
-        </div>
-      ) : (
-        <button type="button" disabled={disabled} onClick={() => setCustomOpen(true)}
-          className="h-7 px-2 rounded-full text-[11px] font-bold border border-dashed border-neutral-700 bg-neutral-900 text-neutral-500 hover:border-amber-500/40 hover:text-amber-300 disabled:opacity-50">
-          + 직접입력
-        </button>
-      )}
-      {onAddTimeSlot && (
-        <button type="button" disabled={disabled} onClick={onAddTimeSlot}
-          className="h-7 w-7 rounded-full text-amber-400 bg-black border border-neutral-800 hover:border-neutral-600 flex items-center justify-center disabled:opacity-50">
-          <Clock className="w-3.5 h-3.5" />
-        </button>
-      )}
+        )}
+        {onAddTimeSlot && (
+          <button type="button" disabled={disabled} onClick={onAddTimeSlot}
+            className="h-7 w-7 shrink-0 rounded-full text-amber-400 bg-black border border-neutral-800 hover:border-neutral-600 flex items-center justify-center disabled:opacity-50">
+            <Clock className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

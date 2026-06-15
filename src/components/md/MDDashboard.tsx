@@ -483,8 +483,8 @@ export function MDDashboard({
 
             {/* 게스트 간판 인라인 영역 */}
             {guestSignInlineOpen && guestSignThisWeekISO && guestSignNextWeekISO && (
-                <div className="px-4 mt-3">
-                    <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-4">
+                <div className="px-2 mt-3">
+                    <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3">
                         <HotdealSlotBoard
                             currentUserId={user.id}
                             isAdmin={user.role === "admin"}
@@ -501,10 +501,10 @@ export function MDDashboard({
 
             {/* 조각 인라인 영역 — 자리 선점 + 내 조각 목록 */}
             {shareInlineOpen && (
-                <div className="px-4 mt-3 space-y-2">
+                <div className="px-2 mt-3 space-y-2">
                     {/* 조각 자리 선점 + 세팅 — 게스트 간판처럼 한 박스 안에서 가로선으로 구분 */}
                     {shareSlotThisWeekISO && (
-                        <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-4 space-y-3">
+                        <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3 space-y-3">
                             <ShareSlotBoard
                                 currentUserId={user.id}
                                 clubs={shareSlotClubs}
