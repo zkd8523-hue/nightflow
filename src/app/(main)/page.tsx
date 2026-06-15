@@ -130,7 +130,9 @@ export default async function HomePage() {
       .from("puzzle_offers")
       .select("puzzle_id")
       .in("puzzle_id", puzzleIds)
-      .eq("status", "pending");
+      .eq("status", "pending")
+      // 카운트 표시용이라 상한만 있으면 충분 (인기 깃발 오퍼 폭증 시 페이로드 방어)
+      .limit(2000);
     if (offerRows) {
       offerRows.forEach((r) => {
         offerCountMap[r.puzzle_id] = (offerCountMap[r.puzzle_id] || 0) + 1;
