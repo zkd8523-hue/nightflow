@@ -33,6 +33,40 @@ export function getActiveWeekStartISO(): string {
 export const BUSINESS_DAY_CUTOFF_HOUR = 6;
 
 /**
+ * 주어진 날짜(KST)가 속한 주의 월요일(YYYY-MM-DD)을 반환.
+ *
+ * 조각 슬롯 게이트에서 "조각 방문일이 속한 주"의 week_start를 구할 때 사용.
+ * DB의 week_start_kst(DATE)와 동일하게 월요일을 주 시작으로 본다.
+ *
+ * ⚠️ 영업일 경계 보정: 클럽은 새벽까지 영업하므로, 방문이 월요일 새벽(6시 이전)이면
+ *    영업일상 일요일 = 직전 주에 속한다. getBusinessDowKey와 같은 기준으로 보정해,
+ *    "방문 시점에 활성인 슬롯"(월18시~다음월18시)과 어긋나지 않게 한다.
+ *
+ * @param dateISO "YYYY-MM-DD" 또는 ISO 날짜 문자열 (KST 날짜로 취급)
+ */
+export function getWeekStartForDate(dateISO: string): string {
+  // 날짜 부분만 사용 (KST 캘린더 날짜로 취급). UTC 자정 기준 Date 생성.
+  const datePart = dateISO.slice(0, 10);
+  const base = new Date(`${datePart}T00:00:00Z`);
+
+  // 영업일 경계: 입력에 시각 정보가 있고 새벽 6시 이전이면 전날로 간주.
+  // (방문일은 보통 날짜만 들어오므로 대개 영향 없음 — 일관성/안전용)
+  const hasTime = dateISO.length > 10;
+  if (hasTime) {
+    const kst = new Date(new Date(dateISO).getTime() + 9 * 60 * 60 * 1000);
+    if (kst.getUTCHours() < BUSINESS_DAY_CUTOFF_HOUR) {
+      base.setUTCDate(base.getUTCDate() - 1);
+    }
+  }
+
+  // 그 주의 월요일로 거슬러 (0=일 → 6일 전, 그 외 → dow-1일 전)
+  const dow = base.getUTCDay();
+  const daysFromMonday = dow === 0 ? 6 : dow - 1;
+  base.setUTCDate(base.getUTCDate() - daysFromMonday);
+  return base.toISOString().slice(0, 10);
+}
+
+/**
  * 게스트 간판 "오늘 요일" 키(sun~sat)를 영업일 기준으로 반환.
  *
  * ⚠️ 클럽은 새벽까지 영업하므로, 일요일 밤에 놀러 간 손님이 월요일 새벽에 봐도

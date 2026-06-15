@@ -9,7 +9,6 @@ import { OfferSheet } from "@/components/puzzles/OfferSheet";
 import { PuzzleJoinSheet } from "@/components/puzzles/PuzzleJoinSheet";
 import { createClient } from "@/lib/supabase/client";
 import type { Puzzle } from "@/types/database";
-import { getDDayLabel } from "@/lib/utils/format";
 
 function formatEventDateLabel(eventDate: string): string {
   const d = new Date(eventDate + "T00:00:00");
@@ -35,6 +34,8 @@ interface Props {
   isAreaFiltered?: boolean;
   /** 지역 필터 해제 콜백 (필터로 0개일 때 "전체 보기" 버튼용) */
   onClearAreaFilter?: () => void;
+  /** 현재 화면 맨 앞 카드의 날짜 라벨("6월 23일 (화)")을 부모(섹션 헤더)에 올린다. */
+  onActiveDateChange?: (label: string | null) => void;
 }
 
 const MAX_CARDS = 3;
@@ -49,8 +50,47 @@ export function HomePuzzleCarousel({
   totalCount,
   isAreaFiltered = false,
   onClearAreaFilter,
+  onActiveDateChange,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 지역 필터를 바꾸면(목록 구성이 달라지면) 캐러셀을 맨 앞으로 되감는다.
+  // 중간에 스크롤된 상태로 다른 지역 목록이 들어오면 첫 카드가 가려져 보이는 문제 방지.
+  const listSignature = puzzles.map((p) => p.id).join(",");
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ left: 0, behavior: "auto" });
+  }, [listSignature]);
+
+  // 현재 화면 맨 앞 카드의 날짜를 섹션 헤더로 올린다(스크롤 시 함께 변경).
+  const headPuzzles = puzzles.slice(0, MAX_CARDS);
+  const headDateSignature = headPuzzles.map((p) => p.event_date).join(",");
+  useEffect(() => {
+    if (!onActiveDateChange) return;
+    const el = scrollRef.current;
+    const labelAt = (idx: number) =>
+      headPuzzles[idx] ? formatEventDateLabel(headPuzzles[idx].event_date) : null;
+    onActiveDateChange(labelAt(0));
+    if (!el) return;
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const first = el.firstElementChild as HTMLElement | null;
+        if (!first) return;
+        const step = first.offsetWidth + 12; // 카드 너비 + gap(12px)
+        const idx = Math.min(headPuzzles.length - 1, Math.round(el.scrollLeft / step));
+        onActiveDateChange(labelAt(Math.max(0, idx)));
+      });
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headDateSignature, onActiveDateChange]);
+
   // MD 제안 시트 / 유저 합류 시트 — PuzzleList와 동일하게 캐러셀에서 바로 띄운다.
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
@@ -126,30 +166,12 @@ export function HomePuzzleCarousel({
         style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
       >
         {visible.map((puzzle) => {
-          const dday = getDDayLabel(puzzle.event_date);
-          const isUrgent = dday === "오늘" || dday === "내일";
-          const ddayMatch = dday.match(/^D-(\d+)$/);
-          const showDday = isUrgent || (ddayMatch && parseInt(ddayMatch[1], 10) <= 3);
+          // 날짜는 섹션 헤더가 스크롤에 맞춰 표시 → 카드 위 날짜 헤더는 제거.
           return (
             <div
               key={puzzle.id}
               className="flex-shrink-0 w-[88%] max-w-[420px] snap-start snap-always flex flex-col gap-2"
             >
-              <div className="flex items-center gap-1.5 px-1">
-                <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
-                <h3 className="text-[18px] font-black text-white tracking-tight">
-                  {formatEventDateLabel(puzzle.event_date)}
-                </h3>
-                {showDday && (
-                  <span
-                    className={`text-[10px] font-bold px-1.5 py-px rounded-full mt-px ${
-                      isUrgent ? "bg-red-500/20 text-red-400" : "bg-neutral-800 text-neutral-400"
-                    }`}
-                  >
-                    {dday}
-                  </span>
-                )}
-              </div>
               <PuzzleCard
                 puzzle={puzzle}
                 userRole={userRole}
@@ -174,7 +196,7 @@ export function HomePuzzleCarousel({
                 더보기
                 <ChevronRight className="w-4 h-4" />
               </div>
-              <p className="text-[11px] text-neutral-500 mt-1">전체 깃발 보러가기</p>
+              <p className="text-[11px] text-neutral-500 mt-1">{totalCount ?? puzzles.length}개 보러가기</p>
             </div>
           </Link>
         ) : (
