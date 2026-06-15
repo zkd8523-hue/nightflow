@@ -118,7 +118,8 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
       start_price, current_bid, bid_count, seats_claimed, external_attendees,
       total_seats, price_per_seat, created_at, event_date, auction_start_at,
       auction_end_at, extended_end_at, contact_deadline, thumbnail_url, includes,
-      chat_interest_count, buy_now_price, winner_id, cancelled_at,
+      chat_interest_count, buy_now_price, winner_id, cancel_type, cancel_reason,
+      share_date, share_option_id, share_deadline, today_view_count,
       club:club_id (id, name, area, thumbnail_url, is_test)
     `)
         .order("created_at", { ascending: false });

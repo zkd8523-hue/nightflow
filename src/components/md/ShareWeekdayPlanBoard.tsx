@@ -60,6 +60,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
     return m;
   });
   const [savingDow, setSavingDow] = useState<ShareDow | null>(null);
+  const [savingOptionId, setSavingOptionId] = useState<string | null>(null);
   // 처리 중 전역 잠금 — 완료될 때까지 다른 칩 클릭 무시(race 원천 차단). ref라 동기적으로 즉시 막힘.
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -76,6 +77,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
     setAssign((a) => ({ ...a, [dow]: next })); // 낙관적 반영
     const added = next.length > current.length;
     setSavingDow(dow);
+    setSavingOptionId(optionId);
     try {
       const { data, error } = await supabase.rpc("set_share_weekday_plan", {
         p_club_id: clubId,
@@ -127,6 +129,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
       setAssign((a) => ({ ...a, [dow]: current })); // 롤백
     } finally {
       setSavingDow(null);
+      setSavingOptionId(null);
       busyRef.current = false;
       setBusy(false);
     }
@@ -168,7 +171,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
                         on ? "bg-green-500 text-black" : "bg-neutral-900 text-neutral-500 border border-neutral-800"
                       }`}
                     >
-                      {savingDow === dow && on && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {savingDow === dow && savingOptionId === o.id && <Loader2 className="w-3 h-3 animate-spin" />}
                       {o.label || o.table_info}
                       <span className={on ? "text-black/60" : "text-neutral-600"}>
                         {(o.price_per_seat / 10000).toLocaleString()}

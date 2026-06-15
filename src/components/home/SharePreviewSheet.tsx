@@ -41,52 +41,22 @@ export function SharePreviewSheet({ open, onOpenChange }: Props) {
             </p>
           </div>
 
-          {/* Step 1: 홈/조각 탭 카드 노출 — 실제 조각 카드(AuctionCard) 모양 재현 */}
+          {/* Step 1: 홈/조각 탭 카드 노출 */}
           <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center">1</div>
               <p className="text-[13px] text-white font-bold">홈 &quot;조각&quot;에 내 자리 노출</p>
             </div>
-            {/* 실제 조각 카드와 동일 레이아웃 */}
-            <div className="relative bg-[#0A0A0A] border border-neutral-800/60 rounded-2xl p-4 space-y-3">
-              <span className="absolute top-3 right-3 z-10 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
-                🧩 조각
-              </span>
-              {/* 제목 + 지역 */}
-              <div className="flex flex-col gap-1 pr-16">
-                <div className="text-[20px] font-black leading-snug tracking-tight">
-                  <span className="text-white">Club NightFlow</span>
-                  <span className="text-neutral-500 text-[14px] ml-1.5 font-bold align-middle">홍대</span>
-                </div>
-                <p className="text-[13px] text-neutral-400 font-medium leading-snug">입구컷 X · 황제케어</p>
-              </div>
-              {/* table_info + 1인 가격 */}
+            <div className="bg-black/40 rounded-xl p-3 space-y-2">
               <div className="flex items-baseline gap-1.5 flex-wrap">
-                <span className="text-[16px] font-bold text-amber-400">초메인 테이블</span>
-                <span className="text-[15px] font-black text-green-400">1인 60,000원</span>
+                <span className="text-[15px] font-bold text-amber-400">초메인 테이블</span>
+                <span className="text-[14px] font-black text-green-400">1인 60,000원</span>
               </div>
-              {/* 퍼즐 피스 (6석 중 2석 채움) */}
               <div className="flex flex-wrap items-center gap-1.5">
-                {Array.from({ length: 6 }).map((_, i) => (
+                {Array.from({ length: 4 }).map((_, i) => (
                   <PuzzlePiece key={i} filled={i < 2} />
                 ))}
                 <span className="text-[11px] font-semibold text-amber-400/80 ml-1">👀 오늘 12명이 봤어요</span>
-              </div>
-              {/* 주류 알약 + 자세히 보기 */}
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-1 flex-wrap min-w-0">
-                  {["돔페1", "샴페인2"].map((item) => (
-                    <span key={item} className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold border bg-amber-500/15 text-amber-400 border-amber-500/30">
-                      {item}
-                    </span>
-                  ))}
-                  <span className="inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold border bg-neutral-800/50 text-neutral-400 border-neutral-700/30">
-                    퍼레이드
-                  </span>
-                </div>
-                <div className="h-9 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 text-black inline-flex items-center">
-                  자세히 보기
-                </div>
               </div>
             </div>
             <div className="inline-flex items-center gap-1 text-amber-400 text-[10px] font-bold">
@@ -107,8 +77,8 @@ export function SharePreviewSheet({ open, onOpenChange }: Props) {
             </div>
             <div className="bg-black/40 rounded-xl p-3 space-y-2">
               <div className="flex flex-wrap items-center gap-1.5">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <PuzzlePiece key={i} filled={i < 5} />
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <PuzzlePiece key={i} filled={i < 3} />
                 ))}
                 <span className="text-[11px] font-bold ml-1 text-red-400">마지막 1자리</span>
               </div>
@@ -121,7 +91,7 @@ export function SharePreviewSheet({ open, onOpenChange }: Props) {
           </div>
 
           {/* Step 3: 오픈채팅 합류 */}
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-2">
+          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center">3</div>
               <p className="text-[13px] text-white font-bold inline-flex items-center gap-1.5">
@@ -129,7 +99,7 @@ export function SharePreviewSheet({ open, onOpenChange }: Props) {
                 오픈채팅으로 합류
               </p>
             </div>
-            <p className="text-[12px] text-amber-100 leading-snug pl-8">
+            <p className="text-[12px] text-neutral-400 leading-snug pl-8">
               신청한 유저가 내 오픈채팅에 들어와
               <br />
               현장에서 한 테이블로 만나요

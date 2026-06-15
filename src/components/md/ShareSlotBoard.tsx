@@ -96,8 +96,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
     const ok = window.confirm(
       `${clubName}의 이번 주 조각 자리를 선점할까요?\n\n` +
         `· 이 자리를 가진 MD만 이 클럽 조각을 올릴 수 있어요 (선착순 1MD 1클럽)\n` +
-        `· 매주 월요일 오후 6시에 초기화돼요\n` +
-        `· 언제든 '해제'로 반납할 수 있어요`
+        `· 매주 월요일 오후 6시에 초기화돼요`
     );
     if (!ok) return;
     setBusy(true);
@@ -315,10 +314,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
                     {takenByOther ? (
                       <p className="text-[10px] text-amber-400/80 font-bold truncate">다른 파트너님이 차지</p>
                     ) : isMine ? (
-                      <p className="text-[10px] truncate">
-                        <span className="text-green-400 font-bold">내가 선점 중</span>
-                        <span className="text-neutral-500 font-medium"> · {formatWeekRange(thisWeekISO)}</span>
-                      </p>
+                      <p className="text-[10px] truncate text-neutral-500 font-medium">{formatWeekRange(thisWeekISO)}</p>
                     ) : (
                       <p className="text-[10px] text-neutral-500">{club.area ?? "기타"}</p>
                     )}
@@ -326,15 +322,10 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
 
                   {/* 액션 */}
                   {isMine && slot ? (
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => handleRelease(slot.id)}
-                      className="px-3 py-2 rounded-full text-[12px] font-black flex-shrink-0 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 disabled:opacity-40 transition-colors inline-flex items-center gap-1"
-                    >
-                      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5 text-amber-400" />}
-                      해제
-                    </button>
+                    <span className="px-3 py-2 rounded-full text-[12px] font-black flex-shrink-0 bg-green-500/15 text-green-400 inline-flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" />
+                      선점 중
+                    </span>
                   ) : (
                     <button
                       type="button"

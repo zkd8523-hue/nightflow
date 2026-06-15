@@ -284,7 +284,12 @@ export function MDDashboard({
 
     // 조각: share 타입. 진행 중만 노출하고, 종료된 조각(유찰·취소·낙찰·확정)은
     // 핫딜 만료와 동일하게 목록에서 자동으로 숨긴다 (DB에는 보존).
-    const shareAuctions = auctions.filter(a => a.listing_type === "share" && !isCompleted(a));
+    // share 조각: share_deadline 기준 마감 — auction_end_at 기반 isCompleted 사용하면 오판.
+    // status가 취소/유찰/낙찰/확정인 것만 제외하고 나머지는 모두 노출.
+    const shareAuctions = auctions.filter(a =>
+      a.listing_type === "share" &&
+      !["won", "unsold", "confirmed", "cancelled"].includes(a.status)
+    );
 
     // 오늘특가 정렬: active 먼저 → 마감 임박순
     const sortedTodayAuctions = [...activeTodayAuctions].sort((a, b) => {
@@ -537,10 +542,17 @@ export function MDDashboard({
                                     onDelete={handleAuctionDelete}
                                     clubFavCounts={clubFavCounts}
                                 />
+                            ) : !user.kakao_open_chat_url ? (
+                                <div className="flex flex-col items-center justify-center py-5 text-center space-y-2">
+                                    <p className="text-2xl">💬</p>
+                                    <p className="text-white text-[13px] font-black">오픈채팅 URL을 먼저 등록해주세요</p>
+                                    <p className="text-neutral-500 text-[11px]">조각 생성에 오픈채팅이 필요해요</p>
+                                    <a href="/profile" className="mt-1 px-4 py-1.5 rounded-full bg-amber-500 text-black text-[12px] font-black">프로필 설정</a>
+                                </div>
                             ) : (
                                 <div className="flex flex-col items-center justify-center py-5 text-center space-y-1.5">
                                     <p className="text-2xl">🧩</p>
-                                    <p className="text-neutral-400 text-[13px] font-medium">등록된 조각이 없습니다</p>
+                                    <p className="text-neutral-400 text-[13px] font-medium">요일을 켜면 조각이 자동 생성돼요</p>
                                 </div>
                             )}
                         </div>
