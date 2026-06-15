@@ -291,7 +291,7 @@ export function HomeContent({
   const tipContainerRef = useRef<HTMLDivElement>(null);
   const tipSwipeRef = useRef<{ startX: number; startY: number; active: boolean; width: number } | null>(null);
   useEffect(() => {
-    const id = setInterval(() => setTipRotation((v) => (v + 1) % 2), 5000);
+    const id = setInterval(() => setTipRotation((v) => (v + 1) % 3), 5000);
     return () => clearInterval(id);
   }, [tipResetKey]);
 
@@ -1170,99 +1170,98 @@ export function HomeContent({
                 <div
                   ref={tipBoxRef}
                   data-no-pull-refresh
-                  className={`relative bg-neutral-900 border-amber-400/50 rounded-xl px-3 [border-width:0.5px] ${showTopGuide ? "" : "pr-16"} ${recentMatchedPuzzle ? "pt-3 pb-4" : "pt-1.5 pb-1"}`}
+                  onClick={() => { setGuideMode("full"); setShowGuide(true); }}
+                  className={`relative bg-neutral-900 border-amber-400/50 rounded-xl px-3 cursor-pointer [border-width:0.5px] ${showTopGuide ? "" : "pr-16"} ${recentMatchedPuzzle ? "pt-3 pb-4" : "pt-1.5 pb-1"}`}
                 >
-                  <span className="absolute -top-2 left-3 text-[9px] font-black text-black bg-amber-400 px-1.5 py-0.5 rounded-full leading-none shadow-sm">Tip</span>
-                  {recentMatchedPuzzle ? (
-                    <div
-                      ref={tipContainerRef}
-                      className="overflow-hidden select-none"
-                      style={{ touchAction: "pan-y" }}
-                      onPointerDown={(e) => {
-                        const width = tipContainerRef.current?.offsetWidth ?? 0;
-                        tipSwipeRef.current = { startX: e.clientX, startY: e.clientY, active: true, width };
-                        setTipIsDragging(true);
-                        (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
-                      }}
-                      onPointerMove={(e) => {
-                        const ref = tipSwipeRef.current;
-                        if (!ref?.active) return;
-                        const dx = e.clientX - ref.startX;
-                        const dy = e.clientY - ref.startY;
-                        if (Math.abs(dx) <= Math.abs(dy)) return;
-                        // 가로 드래그 확정 → 페이지 스크롤 방지
-                        e.preventDefault();
-                        const widthPct = ref.width > 0 ? (dx / ref.width) * 100 : 0;
-                        // tipRotation=0이면 왼쪽 드래그(-100)만 허용, 오른쪽은 0까지
-                        // tipRotation=1이면 오른쪽 드래그(+100)만 허용, 왼쪽은 0까지
-                        const minOffset = tipRotation === 0 ? -100 : 0;
-                        const maxOffset = tipRotation === 0 ? 0 : 100;
-                        const offsetPct = Math.max(minOffset, Math.min(maxOffset, widthPct));
-                        setTipDragOffset(offsetPct);
-                      }}
-                      onPointerUp={(e) => {
-                        const ref = tipSwipeRef.current;
-                        if (!ref?.active) { setTipIsDragging(false); return; }
-                        const dx = e.clientX - ref.startX;
-                        const dy = e.clientY - ref.startY;
-                        tipSwipeRef.current = null;
-                        setTipIsDragging(false);
-                        setTipDragOffset(0);
-                        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
-                          if (dx < 0 && tipRotation === 0) changeTipRotation(1);
-                          else if (dx > 0 && tipRotation === 1) changeTipRotation(0);
-                        }
-                      }}
-                      onPointerCancel={() => {
-                        tipSwipeRef.current = null;
-                        setTipIsDragging(false);
-                        setTipDragOffset(0);
-                      }}
-                    >
-                      <div
-                        className="flex w-full"
-                        style={{
-                          transform: `translateX(calc(-${tipRotation * 100}% + ${tipDragOffset}%))`,
-                          transition: tipIsDragging ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
-                          willChange: "transform",
-                        }}
-                      >
-                        <div className="w-full shrink-0 text-[13.5px] text-neutral-100 font-bold leading-snug whitespace-pre-line break-keep">
-                          {visibleCompactTip}
-                        </div>
+                  {(() => {
+                    const compactSlides: React.ReactNode[] = [
+                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">원하는 날, 원하는 예산. 오퍼만 골라요!</div>,
+                      ...(recentMatchedPuzzle ? [
                         <button
+                          key="offer"
                           type="button"
-                          onClick={() => setShowMatchedModal(true)}
-                          className="w-full shrink-0 text-[13.5px] text-neutral-100 font-bold leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
+                          onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
+                          className="w-full text-[14px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
                         >
                           어떤 오퍼 받았는지 엿보기 👈
                         </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="text-[13.5px] text-neutral-100 font-bold leading-snug whitespace-pre-line break-keep">
-                      {visibleCompactTip}
-                    </div>
-                  )}
-                  {recentMatchedPuzzle && (
-                    <div className="absolute left-0 right-0 bottom-0.5 flex items-center justify-center gap-1 pointer-events-none">
-                      {[0, 1].map((i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          aria-label={`슬라이드 ${i + 1}`}
-                          onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
-                          className="pointer-events-auto p-1 cursor-pointer"
+                      ] : []),
+                      <div key="tip" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">{visibleCompactTip}</div>,
+                    ];
+                    const slideCount = compactSlides.length;
+                    return (
+                      <>
+                        <div
+                          ref={tipContainerRef}
+                          className="overflow-hidden select-none"
+                          style={{ touchAction: "pan-y" }}
+                          onPointerDown={(e) => {
+                            const width = tipContainerRef.current?.offsetWidth ?? 0;
+                            tipSwipeRef.current = { startX: e.clientX, startY: e.clientY, active: true, width };
+                            setTipIsDragging(true);
+                            (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                          }}
+                          onPointerMove={(e) => {
+                            const ref = tipSwipeRef.current;
+                            if (!ref?.active) return;
+                            const dx = e.clientX - ref.startX;
+                            const dy = e.clientY - ref.startY;
+                            if (Math.abs(dx) <= Math.abs(dy)) return;
+                            e.preventDefault();
+                            const widthPct = ref.width > 0 ? (dx / ref.width) * 100 : 0;
+                            const minOffset = tipRotation === 0 ? 0 : -100;
+                            const maxOffset = tipRotation === slideCount - 1 ? 0 : 100;
+                            const offsetPct = Math.max(minOffset, Math.min(maxOffset, widthPct));
+                            setTipDragOffset(offsetPct);
+                          }}
+                          onPointerUp={(e) => {
+                            const ref = tipSwipeRef.current;
+                            if (!ref?.active) { setTipIsDragging(false); return; }
+                            const dx = e.clientX - ref.startX;
+                            const dy = e.clientY - ref.startY;
+                            tipSwipeRef.current = null;
+                            setTipIsDragging(false);
+                            setTipDragOffset(0);
+                            if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+                              if (dx < 0 && tipRotation < slideCount - 1) changeTipRotation(tipRotation + 1);
+                              else if (dx > 0 && tipRotation > 0) changeTipRotation(tipRotation - 1);
+                            }
+                          }}
+                          onPointerCancel={() => {
+                            tipSwipeRef.current = null;
+                            setTipIsDragging(false);
+                            setTipDragOffset(0);
+                          }}
                         >
-                          <span
-                            className={`block w-1.5 h-1.5 rounded-full transition-colors ${
-                              tipRotation === i ? "bg-amber-400" : "bg-neutral-600"
-                            }`}
-                          />
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                          <div
+                            className="flex w-full"
+                            style={{
+                              transform: `translateX(calc(-${tipRotation * 100}% + ${tipDragOffset}%))`,
+                              transition: tipIsDragging ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+                              willChange: "transform",
+                            }}
+                          >
+                            {compactSlides.map((slide, i) => (
+                              <div key={i} className="w-full shrink-0">{slide}</div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="absolute left-0 right-0 bottom-0.5 flex items-center justify-center gap-1 pointer-events-none">
+                          {compactSlides.map((_, i) => (
+                            <button
+                              key={i}
+                              type="button"
+                              aria-label={`슬라이드 ${i + 1}`}
+                              onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
+                              className="pointer-events-auto p-1"
+                            >
+                              <span className={`block w-1.5 h-1.5 rounded-full transition-colors ${tipRotation === i ? "bg-amber-400" : "bg-neutral-600"}`} />
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    );
+                  })()}
                   {!showTopGuide && (
                     <button
                       type="button"
@@ -1428,7 +1427,6 @@ export function HomeContent({
               {/* TIP 박스 — 항시 노출 (매치 깃발 있으면 슬라이드). 조각(share)은 제외 */}
               {currentTab !== "share" && overriddenTabPromises[currentTab]?.content && (
                 <div className={`relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 ${recentMatchedPuzzle ? "pb-4" : "pb-2.5"}`}>
-                  <span className="absolute -top-2.5 left-3 text-[11px] font-black text-black bg-amber-500 px-2 py-0.5 rounded-full shadow-sm">Tip</span>
                   {recentMatchedPuzzle ? (
                     <div
                       ref={tipContainerRef}
