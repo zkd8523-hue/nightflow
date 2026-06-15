@@ -10,6 +10,7 @@ import {
   EARLYBIRD_MAX_EVENT_DAYS_AHEAD,
 } from "@/lib/utils/auction";
 import { LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
+import { getWeekStartForDate } from "@/lib/utils/hotdeal";
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
     // 3. 권한 확인: MD(approved) 또는 Admin만 허용
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("users")
-      .select("role, md_status")
+      .select("role, md_status, kakao_open_chat_url")
       .eq("id", user.id)
       .single();
 
@@ -158,6 +159,50 @@ export async function POST(request: NextRequest) {
       // (수정 모드에서는 아래 protectedFields에서 auction_end_at가 이미 빠지므로 별도 처리 불필요)
       if (!isUpdate) {
         auctionData.auction_start_at = new Date().toISOString();
+      }
+    }
+
+    // 4-d. 조각(share) 신규 등록 권한 게이트 (Migration 299)
+    //      그 클럽·방문일이 속한 주의 조각 슬롯(weekly_share_slots)을
+    //      본인이 선점한 경우에만 등록 허용. 수정/기존 조각은 통과.
+    //      → 같은 클럽 내 여러 MD의 카니발리제이션 방지.
+    //      (admin도 슬롯 필요 — 슬롯 없는 고아 조각 방지. 2026-06-14)
+    if (!isUpdate && auctionData.listing_type === "share") {
+      if (!auctionData.event_date || !auctionData.club_id) {
+        return NextResponse.json(
+          { error: "조각은 방문일과 클럽이 필요합니다." },
+          { status: 400 }
+        );
+      }
+      // 오픈채팅 미등록 차단: 유저가 참여(claim) 시 MD 오픈채팅으로 안내받으므로
+      // 오픈채팅이 없으면 등록해도 아무도 참여 못 함 → 등록 자체를 막는다.
+      if (!(profile.kakao_open_chat_url ?? "").trim()) {
+        return NextResponse.json(
+          { error: "조각을 등록하려면 먼저 프로필에 카카오 오픈채팅 링크를 등록해야 합니다." },
+          { status: 409 }
+        );
+      }
+      const weekStart = getWeekStartForDate(auctionData.event_date);
+      const { data: slot, error: slotError } = await supabaseAdmin
+        .from("weekly_share_slots")
+        .select("id")
+        .eq("club_id", auctionData.club_id)
+        .eq("week_start", weekStart)
+        .eq("md_id", user.id)
+        .maybeSingle();
+
+      if (slotError) {
+        logger.error("Share slot check error:", slotError);
+        return NextResponse.json(
+          { error: "조각 자리 확인 중 오류가 발생했습니다." },
+          { status: 500 }
+        );
+      }
+      if (!slot) {
+        return NextResponse.json(
+          { error: "이번 주 이 클럽의 조각 자리를 먼저 선점해야 등록할 수 있어요." },
+          { status: 409 }
+        );
       }
     }
 

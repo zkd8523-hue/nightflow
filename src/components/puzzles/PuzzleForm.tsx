@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, OTHER_CITIES } from "@/lib/constants/areas";
 import { toast } from "sonner";
-import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X } from "lucide-react";
+import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
@@ -45,9 +45,9 @@ const VIBE_OPTIONS: { value: VibePref; label: string }[] = [
 
 // Phase 1 신규: 음악 선호 (한국 클럽씬 1차 분기 - 힙합/EDM)
 const MUSIC_OPTIONS: { value: MusicPref; label: string }[] = [
+  { value: "any", label: "상관없음" },
   { value: "hiphop", label: "힙합" },
   { value: "edm", label: "EDM" },
-  { value: "any", label: "상관없음" },
 ];
 
 export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: PuzzleType }) {
@@ -447,6 +447,10 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     const submitFemaleSlot = !isHostMale ? effectiveTargetCount : 0;
 
     setSubmitting(true);
+    // 성공 시 router.push 후에도 버튼을 "등록 중..."으로 유지해야
+    // 서버 렌더(force-dynamic) 전환 동안 사용자가 멈춘 화면을 안 본다.
+    // finally에서 풀어버리면 전환 중에 버튼이 멀쩡해져 "왜 안 넘어가지" 정체감.
+    let navigating = false;
     try {
       if (isEditMode && puzzle) {
         const isEventDateChanged = eventDate !== puzzle.event_date;
@@ -500,9 +504,10 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           target_count: effectiveTargetCount,
         });
 
-        toast.success("퍼즐이 수정되었어요");
+        toast.success(effectiveIsRecruiting ? "퍼즐이 수정되었어요" : "깃발이 수정되었어요");
         clearDraft();
         setSubmitted(true);
+        navigating = true;
         router.push(`/flags/${puzzle.id}`);
         router.refresh();
         return;
@@ -568,12 +573,15 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       );
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
+      navigating = true;
       router.push(`/flags/${created.id}`);
     } catch (err) {
       console.error("puzzle submit error:", err);
       toast.error(err instanceof Error ? err.message : (isEditMode ? "수정에 실패했습니다" : "등록에 실패했습니다"));
     } finally {
-      setSubmitting(false);
+      // 성공 후 전환 중에는 버튼을 풀지 않는다 (상세 페이지가 뜰 때까지 "등록 중..." 유지).
+      // 에러로 빠졌을 때만 다시 누를 수 있게 해제.
+      if (!navigating) setSubmitting(false);
     }
   };
 
@@ -716,7 +724,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           )}
         {area === "서울 어디든" && (
           <p className="text-[12px] text-amber-400/80 leading-relaxed pl-2 mt-0.5">
-            * 상남자 PICK *
+            * 가장 많은 옵션을 받아봐요 *
           </p>
         )}
         </div>
@@ -818,6 +826,33 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               )}
             </>
           )}
+        </div>
+      </section>
+
+      {/* 음악 선호 — MD 매칭 정확도 ↑ (기본값 상관없음, 마찰 0) */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2 text-white font-bold mb-2">
+          <Music className="w-4 h-4 text-purple-500" />
+          <span>음악</span>
+          <span className="text-[12px] font-normal text-neutral-500">선호하는 분위기를 골라요</span>
+        </div>
+        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-4 py-3">
+          <div className="flex gap-1.5 flex-wrap">
+            {MUSIC_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setMusicPref(opt.value)}
+                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
+                  musicPref === opt.value
+                    ? "bg-white text-black"
+                    : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 

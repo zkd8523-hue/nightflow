@@ -43,8 +43,8 @@ const VIBE_LABEL: Record<VibePref, string | null> = {
 };
 
 const MUSIC_LABEL: Record<MusicPref, string | null> = {
-  hiphop: "힙합",
-  edm: "EDM",
+  hiphop: "힙합 선호",
+  edm: "EDM 선호",
   any: null,
 };
 
@@ -162,6 +162,8 @@ export const PuzzleCard = memo(function PuzzleCard({
     : puzzle.age_pref.map((a) => AGE_LABEL[a]).filter(Boolean).join("·") || null;
   const vibeTag = VIBE_LABEL[puzzle.vibe_pref];
   const musicTag = puzzle.music_preference ? MUSIC_LABEL[puzzle.music_preference] : null;
+  // 모집 모드: 연령·바이브·음악을 취향 태그 줄에 함께 노출.
+  // 인원 확정 깃발: 음악은 예산 줄에 인라인으로 붙여 지역 위치가 밀리지 않게 함(별도 줄 X).
   const tags = puzzle.is_recruiting_party
     ? ([ageTag, vibeTag, musicTag].filter(Boolean) as string[])
     : [];
@@ -270,7 +272,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           </>
         ) : (
           <>
-            {/* 인원 확정: 총 예산 + 인원 배지 한 줄 */}
+            {/* 인원 확정: 총 예산 + 인원 배지 + 음악 한 줄 (음악을 별도 줄로 빼면 지역 위치가 밀림) */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[18px] font-black text-green-400">
                 예산 {totalBudget.toLocaleString()}원
@@ -278,6 +280,11 @@ export const PuzzleCard = memo(function PuzzleCard({
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-bold">
                 {puzzle.target_count}명
               </span>
+              {musicTag && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">
+                  {musicTag}
+                </span>
+              )}
             </div>
           </>
         )}
@@ -306,7 +313,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           {tags.map((tag) => (
             <span
               key={tag}
-              className="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-400 font-medium"
+              className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-medium"
             >
               {tag}
             </span>
@@ -341,9 +348,11 @@ export const PuzzleCard = memo(function PuzzleCard({
         )
       ) : !isRecruitingParty ? (
         // 인원 확정 깃발: 카드 전체 클릭으로 상세 이동 (별도 버튼 불필요)
-        <div className="flex items-center justify-between gap-2">
+        // 지역은 오퍼 유무와 무관하게 항상 오른쪽 고정 (ml-auto). 오퍼배지가 null이면
+        // justify-between만으론 지역이 왼쪽으로 붙어버려 위치가 오락가락함.
+        <div className="flex items-center gap-2">
           {userOfferBadge}
-          <span className="text-[12px] text-neutral-500 font-bold flex-shrink-0">
+          <span className="text-[12px] text-neutral-500 font-bold flex-shrink-0 ml-auto">
             {puzzle.area}
           </span>
         </div>

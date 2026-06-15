@@ -648,19 +648,12 @@ export function PuzzleDetailClient({
               </button>
             </div>
 
-            {/* 제목 + 지역/마감: 날짜는 상단 헤더로 분리됨 */}
-            <div className="space-y-1">
+            {/* 제목 옆에 지역: 날짜는 상단 헤더로 분리됨 */}
+            <div className="flex flex-wrap items-baseline gap-x-2">
               {puzzle.notes && (
                 <p className="text-[18px] font-black text-white leading-snug">{puzzle.notes}</p>
               )}
-              <p className="text-[14px] text-neutral-400 flex flex-wrap items-baseline gap-x-1.5">
-                <span>{puzzle.area}</span>
-                {puzzle.status === "open" && (
-                  <span className="text-[12px] text-neutral-400 whitespace-nowrap">
-                    ⏰ {puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감
-                  </span>
-                )}
-              </p>
+              <span className="text-[14px] text-neutral-400">{puzzle.area}</span>
             </div>
 
             {/* 예산 */}
@@ -683,8 +676,13 @@ export function PuzzleDetailClient({
                       예산 {baseBudget.toLocaleString()}원
                     </span>
                   </div>
-                  <p className="text-[12px] text-neutral-500">
-                    인원 확정 {puzzle.target_count}명
+                  <p className="text-[12px] text-neutral-500 flex items-center gap-2">
+                    <span>인원 확정 {puzzle.target_count}명</span>
+                    {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">
+                        {puzzle.music_preference === "hiphop" ? "힙합" : "EDM"} 선호
+                      </span>
+                    )}
                   </p>
                 </>
               )}
@@ -973,10 +971,16 @@ export function PuzzleDetailClient({
                   )}
                 </h2>
               </div>
-              {(isAccepted || pendingOffers.length === 0) && (
-                <span className="text-[11px] text-neutral-500">
-                  {isAccepted ? "제안 마감" : "아직 제안 없음"}
+              {puzzle.status === "open" ? (
+                <span className="text-[12px] text-neutral-400 whitespace-nowrap">
+                  ⏰ {puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감
                 </span>
+              ) : (
+                (isAccepted || pendingOffers.length === 0) && (
+                  <span className="text-[11px] text-neutral-500">
+                    {isAccepted ? "제안 마감" : "아직 제안 없음"}
+                  </span>
+                )
               )}
             </div>
 

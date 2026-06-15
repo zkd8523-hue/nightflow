@@ -27,9 +27,11 @@ interface AuctionCardProps {
   isUserInterested?: boolean;
   priority?: boolean;
   currentUserId?: string;
+  /** 조각 퍼즐 슬롯 아이콘 숨김 — 홈 캐러셀에서 빈 슬롯이 신뢰 떨어뜨려서 미노출 */
+  hidePuzzle?: boolean;
 }
 
-export const AuctionCard = memo(function AuctionCard({ auction: propAuction, userBidAmount, isUserInterested, priority, currentUserId }: AuctionCardProps) {
+export const AuctionCard = memo(function AuctionCard({ auction: propAuction, userBidAmount, isUserInterested, priority, currentUserId, hidePuzzle }: AuctionCardProps) {
   const auction = adjustMockAuctionDates(propAuction);
   const club = auction.club;
   const displayStatus = getAuctionDisplayStatus(auction);
@@ -69,7 +71,6 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
   if (isShare) {
     const totalBudget = (auction.price_per_seat ?? 0) * totalSeats;
     const currentBudget = (auction.price_per_seat ?? 0) * totalFilled;
-    const isNew = Date.now() - new Date(auction.created_at).getTime() < 6 * 60 * 60 * 1000;
     const isOwner = !!currentUserId && currentUserId === auction.md_id;
     // 델타(변동분) 입력: 기본 0, +/-로 외부 인원 증감을 누적, 반영 시 DB 값에 가산
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -161,11 +162,6 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
         }
       >
         <div className="relative bg-[#1C1C1E] rounded-2xl p-4 space-y-3 active:scale-[0.98] transition-all cursor-pointer">
-          {isNew && (
-            <div className="animate-new-badge pointer-events-none absolute -top-4 -right-2.5 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none">
-              NEW!
-            </div>
-          )}
           <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
               🧩 조각
@@ -183,11 +179,10 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                   });
                   setShareSheetOpen(true);
                 }}
-                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-amber-500 hover:bg-amber-400 text-black text-[12px] font-black transition-colors active:scale-[0.97] shadow-[0_2px_10px_rgba(245,158,11,0.4)]"
-                aria-label="내 테이블 공유"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-500 hover:bg-amber-400 text-black transition-colors active:scale-[0.97] shadow-[0_2px_10px_rgba(245,158,11,0.4)]"
+                aria-label="내 조각 공유"
               >
-                <Share2 className="w-3.5 h-3.5" />
-                내 테이블 공유
+                <Share2 className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -195,7 +190,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
           {/* 제목 + 지역 */}
           <div className="flex items-start justify-between">
             <div className="flex flex-col gap-1 flex-1 pr-16">
-              <div className="text-[18px] font-black leading-snug break-keep tracking-tight">
+              <div className="text-[20px] font-black leading-snug break-keep tracking-tight">
                 <span className="text-white">{club?.name}</span>
                 {club?.area && (
                   <span className="text-neutral-500 text-[14px] ml-1.5 font-bold tracking-normal align-middle">
@@ -204,17 +199,38 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                 )}
               </div>
               {auction.md_message && (
-                <p className="text-[13px] text-neutral-400 font-medium leading-snug">{auction.md_message}</p>
+                <p className="text-[13px] text-neutral-400 font-medium leading-snug break-keep">
+                  {auction.md_message}
+                </p>
               )}
             </div>
           </div>
 
           {/* 가격 + 퍼즐 피스 */}
           <div className="flex flex-col gap-1.5">
-            <div className="flex items-baseline gap-1">
-              <span className="text-[18px] font-black text-green-400">
-                1인 {(auction.price_per_seat ?? 0).toLocaleString()}원
-              </span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
+                {auction.table_info && (
+                  <span className="text-[19px] font-black text-amber-400 break-keep">
+                    {auction.table_info}
+                  </span>
+                )}
+                <span className="text-[17px] font-black text-green-400">
+                  1인 {(auction.price_per_seat ?? 0).toLocaleString()}원
+                </span>
+              </div>
+              {/* 홈(hidePuzzle): 자세히 버튼을 가격 행 우측으로 — 테이블/가격/자세히 한 행 */}
+              {hidePuzzle && !isOwner && (
+                <Button
+                  className={`h-8 px-3 rounded-full font-black text-[12px] shrink-0 transition-all active:scale-[0.97] ${
+                    isShareFull
+                      ? "bg-neutral-800 text-neutral-500 cursor-not-allowed pointer-events-none"
+                      : "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
+                  }`}
+                >
+                  {isShareFull ? "마감" : "자세히"}
+                </Button>
+              )}
             </div>
             <div className="space-y-1">
               {isShareFull && (
@@ -225,8 +241,8 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                 const todayViews = auction.today_view_count ?? 0;
                 return (
                   <div className="flex flex-wrap items-center gap-1.5">
-                    {slotLayout.map((slot, i) => (
-                      <PuzzlePiece key={i} filled={slot.filled} gender={slot.gender} />
+                    {!hidePuzzle && slotLayout.map((slot, i) => (
+                      <PuzzlePiece key={i} small filled={slot.filled} gender={slot.gender} />
                     ))}
                     {remaining === 1 && (
                       <span className="text-[11px] font-bold ml-1 text-red-400">
@@ -270,7 +286,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                     <span className="text-[10px] text-neutral-500 font-bold">+{sorted.length - maxShow}</span>
                   )}
                 </div>
-                {!isOwner && (
+                {!isOwner && !hidePuzzle && (
                   <Button
                     className={`h-9 px-3 rounded-full font-black text-[12px] shrink-0 transition-all active:scale-[0.97] ${
                       isShareFull
@@ -288,11 +304,6 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
           {/* 작성자 전용: 확정 인원 스테퍼 */}
           {isOwner && (
             <div className="space-y-1.5" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
-              <p className="text-[11px] text-neutral-500 leading-relaxed">
-                인스타·네이버 카페 등 외부에서 인원을 모집했나요?
-                <br />
-                바로 업데이트 해보세요 👇
-              </p>
               {hasGenderSlot ? (
                 // 성별 분리 스테퍼
                 <div className="grid grid-cols-2 gap-1.5">
@@ -465,7 +476,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
               {isShare && (
                 <div className="flex items-center gap-1 mt-2 flex-wrap">
                   {Array.from({ length: totalSeats }).map((_, i) => (
-                    <PuzzlePiece key={i} filled={i < totalFilled} />
+                    <PuzzlePiece key={i} small filled={i < totalFilled} />
                   ))}
                 </div>
               )}

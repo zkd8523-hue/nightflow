@@ -185,7 +185,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             .maybeSingle();
           if (cancelled) return;
           if (profile?.phone) {
-            router.push("/");
+            router.push(redirectAfterSignup);
             return;
           }
           setAuthUser(user);
@@ -637,7 +637,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 inputMode="numeric"
                 autoComplete="tel"
                 value={formatPhoneDisplay(phoneInput)}
-                onChange={(e) => setPhoneInput(e.target.value)}
+                onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 11))}
                 placeholder="010-1234-5678"
                 className="w-full h-14 px-4 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-[16px] placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
               />

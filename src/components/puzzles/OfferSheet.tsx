@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Check, ChevronDown, X, Lock, ArrowRight } from "lucide-react";
+import { Check, ChevronDown, X, Lock, ArrowRight, Music } from "lucide-react";
 import type { Puzzle, Club, PuzzleOffer } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { LiquorSelector } from "@/components/md/LiquorSelector";
@@ -304,6 +304,12 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               <p className="text-[14px] text-neutral-300 font-bold">
                 {baseBudget.toLocaleString()}원 <span className="text-[13px] text-neutral-500 font-normal ml-1">· {puzzle.target_count}명</span>
               </p>
+            )}
+            {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
+              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-bold">
+                <Music className="w-3 h-3" />
+                {puzzle.music_preference === "hiphop" ? "힙합" : "EDM"} 선호
+              </span>
             )}
           </div>
         </SheetHeader>

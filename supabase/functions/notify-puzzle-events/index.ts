@@ -246,52 +246,77 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
     if (!leader) continue;
 
     // 5) in-app 알림 INSERT (알림톡과 별개로 항상 발송)
+    //    오퍼 개수에 따라 문구 분기: 0개면 '오퍼 없이 마감' 결과 통보,
+    //    1개 이상이면 '검토 시작 · 선택하세요' 안내.
+    const hasOffers = (offerCount ?? 0) > 0;
     await supabase.from("in_app_notifications").insert({
       user_id: puzzle.leader_id,
       type: "puzzle_offer_deadline",
-      title: "오퍼 마감 · 검토 시작",
-      message: `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발의 MD 오퍼가 마감됐어요. 오후 9시까지 선택해주세요.`,
+      title: hasOffers ? "오퍼 마감 · 검토 시작" : "오퍼 마감 · 결과 안내",
+      message: hasOffers
+        ? `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발의 MD 오퍼가 마감됐어요. 오후 9시까지 선택해주세요.`
+        : `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발이 들어온 오퍼 없이 마감됐어요. 다음에 다시 깃발을 꽂아보세요.`,
       action_url: `/flags/${puzzle.id}`,
     });
 
-    // 5-1) FCM 푸시 — pending 오퍼 ≥ 1건일 때만 방장에게 발송
-    if ((offerCount ?? 0) > 0) {
-      try {
-        await fetch(
-          `${Deno.env.get("SUPABASE_URL")}/functions/v1/push-dispatch`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+    // 5-1) FCM 푸시 — 오퍼 개수에 따라 문구 분기 (in-app과 동일).
+    //      0개면 '오퍼 없이 마감' 결과 통보, 1개+면 '검토 시간 · 선택' 안내.
+    try {
+      await fetch(
+        `${Deno.env.get("SUPABASE_URL")}/functions/v1/push-dispatch`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            user_id: puzzle.leader_id,
+            title: hasOffers ? "⏰ 오퍼 마감 · 검토 시간" : "오퍼 마감 · 결과 안내",
+            body: hasOffers
+              ? `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발 · 오퍼 ${offerCount}건 · 60분 안에 선택하세요`
+              : `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발이 오퍼 없이 마감됐어요`,
+            data: {
+              type: hasOffers ? "puzzle_review_started" : "puzzle_offer_deadline_empty",
+              puzzle_id: puzzle.id,
             },
-            body: JSON.stringify({
-              user_id: puzzle.leader_id,
-              title: "⏰ 오퍼 마감 · 검토 시간",
-              body: `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발 · 오퍼 ${offerCount}건 · 60분 안에 선택하세요`,
-              data: {
-                type: "puzzle_review_started",
-                puzzle_id: puzzle.id,
-              },
-              url: `/flags/${puzzle.id}`,
-            }),
-          }
-        );
-        console.log(`📲 FCM 푸시 발송 (puzzle=${puzzle.id}, leader=${puzzle.leader_id})`);
-      } catch (e) {
-        console.error(`❌ FCM 푸시 실패 (puzzle=${puzzle.id}):`, e);
-      }
+            url: `/flags/${puzzle.id}`,
+          }),
+        }
+      );
+      console.log(`📲 FCM 푸시 발송 (puzzle=${puzzle.id}, leader=${puzzle.leader_id}, hasOffers=${hasOffers})`);
+    } catch (e) {
+      console.error(`❌ FCM 푸시 실패 (puzzle=${puzzle.id}):`, e);
     }
 
-    // 5-2) 알림톡 발송 (template/phone 없으면 sendAndLog가 skip).
+    // 5-2) pending 오퍼 0개 → 알림톡은 발송 안 함 (in-app/푸시로 이미 결과 통보됨,
+    //      알림톡은 사전승인 템플릿이라 '오퍼 없이 마감' 전용 문구를 못 보냄).
+    //      단, logSent로 'sent' 로그는 남겨 이 깃발을 '처리 완료'로 마킹한다.
+    //      이게 없으면 다음 cron에서 alreadySent를 통과해 in-app 알림이 매번 중복 INSERT된다.
+    //      (조회에 'selecting'이 포함되어 이 깃발이 계속 재조회되기 때문 — 위 2) 주석 참조)
+    const leaderTyped = leader as { id: string; display_name?: string | null; phone: string | null };
+    if ((offerCount ?? 0) === 0) {
+      await logSent(
+        supabase,
+        "puzzle_offer_deadline",
+        puzzle.id,
+        leaderTyped.id,
+        leaderTyped.phone ?? "",
+        TPL.PUZZLE_OFFER_DEADLINE || "skipped:no-offers",
+      );
+      console.log(`[offerDeadline] pending 오퍼 0개 — 알림톡 skip + 처리완료 마킹 (puzzle=${puzzle.id})`);
+      continue;
+    }
+
+    // 5-3) 알림톡 발송 (template/phone 없으면 sendAndLog가 skip).
     //      중복 가드는 위 2)에서 이미 처리됨.
     if (!TPL.PUZZLE_OFFER_DEADLINE) {
       console.log(`⚠️ ALIMTALK_TPL_PUZZLE_OFFER_DEADLINE 미설정 — 알림톡 skip (puzzle=${puzzle.id})`);
       continue;
     }
 
-    await sendAndLog(supabase, "puzzle_offer_deadline", puzzle.id, leader as { id: string; phone: string | null }, TPL.PUZZLE_OFFER_DEADLINE, {
-      userName: (leader as { display_name?: string | null }).display_name ?? "방장",
+    await sendAndLog(supabase, "puzzle_offer_deadline", puzzle.id, leaderTyped, TPL.PUZZLE_OFFER_DEADLINE, {
+      userName: leaderTyped.display_name ?? "방장",
       area: puzzle.area,
       eventDate: formatEventDate(puzzle.event_date),
       offerCount: String(offerCount ?? 0),

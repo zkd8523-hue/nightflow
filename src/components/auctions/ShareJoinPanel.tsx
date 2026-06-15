@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -60,6 +61,8 @@ const ERROR_MESSAGES: Record<ShareClaimError, string> = {
 
 export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJoinPanelProps) {
   const supabase = createClient();
+  const router = useRouter();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [successSheet, setSuccessSheet] = useState(false);
@@ -167,9 +170,12 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
       });
   }, [auction.id, currentUserId]);
 
+  // 로그인 후 이 조각 페이지로 정확히 복귀시키기 위한 redirect 경로
+  const loginHref = `/login?redirect=${encodeURIComponent(pathname || `/auctions/${auction.id}`)}`;
+
   const handleJoin = async () => {
     if (!currentUserId) {
-      toast.error("로그인이 필요합니다.");
+      router.push(loginHref);
       return;
     }
     // MD가 성별 슬롯을 지정한 경우에만 성별을 묻는다.
@@ -325,6 +331,13 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
               참여 취소
             </Button>
           </div>
+        ) : isOpen && !isFull && !currentUserId ? (
+          <Button
+            onClick={() => router.push(loginHref)}
+            className="w-full h-12 rounded-2xl font-black text-base bg-white text-black hover:bg-neutral-100 transition-all active:scale-[0.98]"
+          >
+            로그인하고 참여하기
+          </Button>
         ) : isOpen && !isFull ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between">

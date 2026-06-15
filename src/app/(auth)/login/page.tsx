@@ -283,7 +283,7 @@ function LoginContent() {
         return;
       }
       setLoading(false);
-      window.location.replace("/");
+      window.location.replace(redirectPath);
       return;
     }
 
@@ -296,11 +296,11 @@ function LoginContent() {
     setLoading(false);
 
     if (!profile) {
-      router.push("/signup");
+      router.push(`/signup${redirectPath !== "/" ? `?next=${encodeURIComponent(redirectPath)}` : ""}`);
       return;
     }
 
-    router.push("/");
+    router.push(redirectPath);
     router.refresh();
   };
 
