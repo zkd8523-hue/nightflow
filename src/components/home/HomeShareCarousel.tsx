@@ -220,6 +220,7 @@ export function HomeShareCarousel({
                 isUserInterested={userInterestedSet?.has(share.id)}
                 currentUserId={currentUserId}
                 hidePuzzle
+                hideSeatControl
               />
             </div>
             );

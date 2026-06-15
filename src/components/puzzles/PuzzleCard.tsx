@@ -290,19 +290,8 @@ export const PuzzleCard = memo(function PuzzleCard({
         )}
       </div>
 
-      {/* MD 제안 현황: MD는 컴팩트 메트릭(0/N offers), 일반 유저는 문장형 */}
-      {isMd ? (
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-[12px] text-amber-400 font-bold tabular-nums">
-            {offerCount} {offerCount === 1 ? "offer" : "offers"}
-          </p>
-          {puzzle.area && (
-            <p className="text-[12px] text-neutral-400 font-medium">
-              {puzzle.area}
-            </p>
-          )}
-        </div>
-      ) : offerCount > 0 && isRecruitingParty ? (
+      {/* MD 제안 현황: MD는 CTA 행에 통합, 일반 유저는 문장형 */}
+      {!isMd && offerCount > 0 && isRecruitingParty ? (
         // 모집 중 깃발은 위쪽에 별도로 표시. 인원 확정 깃발은 자세히 보기 버튼 옆으로 이동.
         userOfferBadge
       ) : null}
@@ -324,28 +313,34 @@ export const PuzzleCard = memo(function PuzzleCard({
       {/* CTA 버튼 (작성날짜는 카드 상단 깃발 배지 아래로 이동) */}
       <div className="relative -mt-2">
       {isMd ? (
-        isSelecting ? (
-          <Button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="w-full h-11 font-black text-[13px] rounded-xl bg-neutral-800 border border-neutral-700 text-neutral-400 pointer-events-none"
-          >
-            방장 검토 중
-          </Button>
-        ) : hasOffered ? (
-          <Button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="w-full h-11 font-black text-[13px] rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 pointer-events-none"
-          >
-            제안 완료
-          </Button>
-        ) : (
-          <Button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-            className="w-full h-11 bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px] rounded-xl"
-          >
-            {offerCount === 0 ? "가장 먼저 제안하기" : "나도 제안하기"}
-          </Button>
-        )
+        // MD: 풀 버튼 대신 작고 둥근 자세히 스타일 버튼 — 오퍼수 + 버튼 한 행
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[12px] text-neutral-500 font-bold tabular-nums">
+            {puzzle.area}
+          </p>
+          {isSelecting ? (
+            <Button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-neutral-800 border border-neutral-700 text-neutral-400 pointer-events-none"
+            >
+              검토 중
+            </Button>
+          ) : hasOffered ? (
+            <Button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500/15 border border-amber-500/30 text-amber-400 pointer-events-none"
+            >
+              제안 완료
+            </Button>
+          ) : (
+            <Button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
+              className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)] active:scale-[0.97] transition-all"
+            >
+              제안하기
+            </Button>
+          )}
+        </div>
       ) : !isRecruitingParty ? (
         // 인원 확정 깃발: 카드 전체 클릭으로 상세 이동 (별도 버튼 불필요)
         // 지역은 오퍼 유무와 무관하게 항상 오른쪽 고정 (ml-auto). 오퍼배지가 null이면

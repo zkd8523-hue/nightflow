@@ -29,9 +29,11 @@ interface AuctionCardProps {
   currentUserId?: string;
   /** 조각 퍼즐 슬롯 아이콘 숨김 — 홈 캐러셀에서 빈 슬롯이 신뢰 떨어뜨려서 미노출 */
   hidePuzzle?: boolean;
+  /** 인원 설정(외부 모집 +/-) 숨김 — 홈 캐러셀에서 미노출 */
+  hideSeatControl?: boolean;
 }
 
-export const AuctionCard = memo(function AuctionCard({ auction: propAuction, userBidAmount, isUserInterested, priority, currentUserId, hidePuzzle }: AuctionCardProps) {
+export const AuctionCard = memo(function AuctionCard({ auction: propAuction, userBidAmount, isUserInterested, priority, currentUserId, hidePuzzle, hideSeatControl }: AuctionCardProps) {
   const auction = adjustMockAuctionDates(propAuction);
   const club = auction.club;
   const displayStatus = getAuctionDisplayStatus(auction);
@@ -302,7 +304,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
           })()}
 
           {/* 작성자 전용: 확정 인원 스테퍼 */}
-          {isOwner && (
+          {isOwner && !hideSeatControl && (
             <div className="space-y-1.5" onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
               {hasGenderSlot ? (
                 // 성별 분리 스테퍼
@@ -362,7 +364,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
           )}
 
           {/* CTA */}
-          {isOwner ? (
+          {isOwner && !hideSeatControl ? (
             <div onClick={e => { e.preventDefault(); e.stopPropagation(); }}>
               <Button
                 disabled={saving}

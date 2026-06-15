@@ -266,7 +266,7 @@ export function Header({
                 NightFlow
               </Link>
               <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
-                클럽 예약, 조각, 게스트 한 번에.
+                클럽 예약 · 조각 · 게스트 한 번에
               </p>
             </>
           )}

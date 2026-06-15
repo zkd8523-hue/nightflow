@@ -8,7 +8,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, X, PartyPopper, ChevronRight, Star } from "lucide-react";
+import { CheckCircle2, X, PartyPopper, ChevronRight, Star, ArrowDown } from "lucide-react";
 import type { Auction, Puzzle } from "@/types/database";
 import { ClubStrip } from "@/components/home/ClubStrip";
 import { isAuctionExpired } from "@/lib/utils/auction";
@@ -949,7 +949,7 @@ export function HomeContent({
                 <span className="text-[20px] leading-none">🎉</span>
                 <p className="text-[16px] font-black text-amber-200 leading-snug break-keep text-center tracking-tight">
                   <span className="text-shimmer-gold">
-                    인스타 예약보다
+                    당일 예약보다
                   </span>{" "}
                   <span className="text-amber-300">30만원치 더</span> 받았어요
                 </p>
@@ -1077,8 +1077,7 @@ export function HomeContent({
         </div>
         {opts.dateLabel && (
           <div className="flex items-center gap-1.5 shrink-0">
-            <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
-            <h3 className="text-[18px] font-black text-white tracking-tight">
+            <h3 className="text-[15px] font-black text-white tracking-tight">
               {opts.dateLabel}
             </h3>
           </div>
@@ -1097,75 +1096,16 @@ export function HomeContent({
     return (
       <>
         <div className="flex flex-col">
-          {/* ── 깃발 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
-          {renderSectionRow({ icon: "🚩", label: "깃발", detailTab: "puzzle", dateLabel: puzzleHeaderDate })}
-
-          {/* 첫 진입 인라인 가이드 — 깃발 캐러셀 위 (한번 닫으면 영구 숨김) */}
-          {showTopGuide && (
-            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative mt-4 mb-4">
-              <button
-                onClick={dismissTopGuide}
-                aria-label="가이드 닫기"
-                className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-              <div className="flex flex-col gap-2">
-                {compactSteps.map((step, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3"
-                  >
-                    <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
-                      {step.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-[14.5px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
-                      <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
-                        {step.desc.split("\n").map((line, lineIdx, arr) => {
-                          const parts = line.split(/(\*\*[^*]+\*\*)/g);
-                          return (
-                            <span key={lineIdx}>
-                              {parts.map((part, pIdx) =>
-                                /^\*\*[^*]+\*\*$/.test(part) ? (
-                                  <span key={pIdx} className="text-neutral-200 font-semibold">
-                                    {part.slice(2, -2)}
-                                  </span>
-                                ) : (
-                                  <span key={pIdx}>{part}</span>
-                                )
-                              )}
-                              {lineIdx < arr.length - 1 && "\n"}
-                            </span>
-                          );
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          {/* MD 팁박스 — 섹션 헤더 위 */}
+          {isMdOrAdmin && visibleCompactTip && (
+            <div className="bg-neutral-800 border-amber-400/50 rounded-xl px-3 py-2 mb-2 [border-width:0.5px]">
+              <div className="text-[14px] text-neutral-100 font-black leading-snug break-keep"><ArrowDown className="w-3.5 h-3.5 inline-block mr-1 text-amber-400 relative -top-px animate-bounce" />유저들의 예산이 기다리고 있어요</div>
             </div>
           )}
 
-          {/* 깃발 캐러셀 (항상 노출) */}
-          <div className="mb-2">
-            <HomePuzzleCarousel
-              puzzles={carouselPuzzles}
-              totalCount={areaFilteredPuzzles.length}
-              offerCounts={puzzleOfferCounts}
-              userRole={user?.role as "user" | "md" | "admin" | undefined}
-              detailHref={detailHref("puzzle")}
-              newFlagHref={newFlagHref}
-              showFlagCTA
-              isAreaFiltered={!!selectedArea}
-              onClearAreaFilter={() => setSelectedArea(null)}
-              onActiveDateChange={setPuzzleHeaderDate}
-            />
-          </div>
-
-          {/* Tip 박스 + 이용방법 토글 — 캐러셀 아래로 이동 (톤 다운) */}
-          {visibleCompactTip && (
-            <section className="space-y-2 -mt-1 mb-3">
+          {/* 유저 팁박스 + 이용방법 토글 — 섹션 헤더 위 */}
+          {visibleCompactTip && !isMdOrAdmin && (
+            <section className="space-y-2 mb-3">
               {!showGuide && (
                 <div
                   ref={tipBoxRef}
@@ -1173,11 +1113,9 @@ export function HomeContent({
                   onClick={() => { setGuideMode("full"); setShowGuide(true); }}
                   className={`relative bg-neutral-900 border-amber-400/50 rounded-xl px-3 cursor-pointer [border-width:0.5px] ${showTopGuide ? "" : "pr-16"} ${recentMatchedPuzzle ? "pt-3 pb-4" : "pt-1.5 pb-1"}`}
                 >
-                  {isMdOrAdmin ? (
-                    <div className="text-[14px] text-neutral-100 font-black leading-snug break-keep py-1">{visibleCompactTip}</div>
-                  ) : (() => {
+                  {(() => {
                     const compactSlides: React.ReactNode[] = [
-                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">원하는 날, 원하는 예산. 오퍼만 골라요!</div>,
+                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">새로운 클럽 예약 방법 — 깃발 꽂고 오퍼 받기</div>,
                       ...(recentMatchedPuzzle ? [
                         <button
                           key="offer"
@@ -1185,7 +1123,7 @@ export function HomeContent({
                           onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
                           className="w-full text-[14px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
                         >
-                          어떤 오퍼 받았는지 엿보기 👈
+                          다른 사람은 어떤 오퍼 받았는지 궁금해? 👈
                         </button>
                       ] : []),
                       <div key="tip" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">{visibleCompactTip}</div>,
@@ -1332,6 +1270,72 @@ export function HomeContent({
               )}
             </section>
           )}
+
+          {/* ── 깃발 섹션 헤더 한 줄: 버튼 + 날짜 + 더보기 ── */}
+          {renderSectionRow({ icon: "🚩", label: "깃발", detailTab: "puzzle", dateLabel: puzzleHeaderDate })}
+
+          {/* 첫 진입 인라인 가이드 — 깃발 캐러셀 위 (한번 닫으면 영구 숨김) */}
+          {showTopGuide && (
+            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative mt-4 mb-4">
+              <button
+                onClick={dismissTopGuide}
+                aria-label="가이드 닫기"
+                className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+              <div className="flex flex-col gap-2">
+                {compactSteps.map((step, idx) => (
+                  <div
+                    key={idx}
+                    className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3"
+                  >
+                    <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
+                      {step.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[14.5px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
+                      <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
+                        {step.desc.split("\n").map((line, lineIdx, arr) => {
+                          const parts = line.split(/(\*\*[^*]+\*\*)/g);
+                          return (
+                            <span key={lineIdx}>
+                              {parts.map((part, pIdx) =>
+                                /^\*\*[^*]+\*\*$/.test(part) ? (
+                                  <span key={pIdx} className="text-neutral-200 font-semibold">
+                                    {part.slice(2, -2)}
+                                  </span>
+                                ) : (
+                                  <span key={pIdx}>{part}</span>
+                                )
+                              )}
+                              {lineIdx < arr.length - 1 && "\n"}
+                            </span>
+                          );
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 깃발 캐러셀 (항상 노출) */}
+          <div className="mb-2">
+            <HomePuzzleCarousel
+              puzzles={carouselPuzzles}
+              totalCount={areaFilteredPuzzles.length}
+              offerCounts={puzzleOfferCounts}
+              userRole={user?.role as "user" | "md" | "admin" | undefined}
+              detailHref={detailHref("puzzle")}
+              newFlagHref={newFlagHref}
+              showFlagCTA
+              isAreaFiltered={!!selectedArea}
+              onClearAreaFilter={() => setSelectedArea(null)}
+              onActiveDateChange={setPuzzleHeaderDate}
+            />
+          </div>
 
           {/* ── 조각 섹션 (탭 토글 제거 → 깃발 아래 항상 노출. showShareTab으로 게이팅) ── */}
           {showShareTab && (
