@@ -159,12 +159,15 @@ export function HomeShareCarousel({
     if (isMdOrAdmin) {
       return (
         <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
-          <p className="text-[15px] text-white font-bold">지금은 다른 조각이 없어요</p>
+          <div className="space-y-0.5">
+            <p className="text-[13px] text-neutral-400 font-medium">아직 조각이 없어요</p>
+            <p className="text-[15px] text-white font-bold">지금이 제일 먼저 노출될 타이밍!</p>
+          </div>
           <Link
             href="/md/dashboard?section=share"
             className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-[13px] font-black active:scale-95 transition"
           >
-            🧩 조각 등록하기
+            🧩 선점하기
           </Link>
         </div>
       );
