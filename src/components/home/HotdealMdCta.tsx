@@ -61,7 +61,7 @@ export function HotdealMdCta() {
         <p className={`text-[12.5px] font-bold leading-snug flex-1 ${isEmpty ? "text-amber-50" : "text-white"}`}>
           {isEmpty ? (
             <>
-              오늘 밤 자리,<br className="md:hidden" /> <span className="text-amber-400">먼저 채우는 MD</span>가 이깁니다
+              아직도 테이블이 비었다면, <span className="text-amber-400">핫딜</span>로 채워봐요!
             </>
           ) : (
             <>

@@ -24,7 +24,7 @@ export function ShareMdCta() {
       <button
         type="button"
         onClick={() => setPreviewOpen(true)}
-        className="w-full flex items-center gap-2 rounded-2xl px-4 py-3 bg-amber-500/15 border border-amber-500/40 active:scale-[0.99] transition-transform text-left"
+        className="w-full flex items-center gap-2 rounded-2xl px-4 py-3 bg-amber-500/20 border border-amber-500/70 active:scale-[0.99] transition-transform text-left"
       >
         <ArrowUp className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
         <p className="text-[12.5px] font-bold leading-snug flex-1 text-amber-50">

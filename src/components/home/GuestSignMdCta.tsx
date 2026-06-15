@@ -74,7 +74,7 @@ export function GuestSignMdCta() {
         >
           <ArrowUp className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
           <p className="text-[12.5px] font-bold leading-snug flex-1 text-amber-50">
-            여기를 <span className="text-amber-400">내 게스트 광고판</span>으로 쓰고 싶다면? <span className="text-amber-200/60 font-medium">(선착순 마감)</span>
+            여기를 <span className="text-amber-400">내 게스트 광고판</span>으로 쓰고 싶다면?<br /><span className="text-amber-200/60 font-medium">(선착순 마감)</span>
           </p>
           <ChevronRight className="w-4 h-4 shrink-0 text-amber-400" />
         </button>
