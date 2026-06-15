@@ -713,7 +713,7 @@ function MyClaimedSection({
                 className={`${isPast ? "opacity-50" : ""}`}
               >
                 {/* 요일 헤더 */}
-                <div className={`flex items-baseline gap-2 mb-2 ${dowIndex > 0 ? "pt-3 border-t border-neutral-700/50" : ""}`}>
+                <div className={`flex items-baseline gap-2 mb-1.5 ${dowIndex > 0 ? "pt-2.5 border-t border-neutral-700/50" : ""}`}>
                   <span className={`text-[13px] font-black ${isPast ? "text-neutral-600" : "text-white"}`}>
                     {DOW_LABELS[dow]}
                   </span>
@@ -725,13 +725,13 @@ function MyClaimedSection({
                   )}
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {displaySlots.map((s, idx) => {
                     const isLast = idx === displaySlots.length - 1;
                     const canDelete = isLast && displaySlots.length > 1;
                     const isFirst = idx === 0;
                     return (
-                      <div key={idx} className="space-y-1.5">
+                      <div key={idx} className="space-y-1">
                       <div className="flex gap-1.5">
                         {/* 시간 셀렉트: 항상 표시. 단일 슬롯이면 "영업종료까지"(null)가 기본 */}
                         {!isPast && (
@@ -767,7 +767,7 @@ function MyClaimedSection({
                         )}
 
                         <textarea
-                          rows={2}
+                          rows={1}
                           value={isPast ? "" : s.text}
                           onKeyDown={(e) => {
                             if (e.key === "Enter" && s.text.split("\n").length >= 2) {
