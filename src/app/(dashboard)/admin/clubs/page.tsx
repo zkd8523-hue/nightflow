@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { AdminClubsList } from "@/components/admin/AdminClubsList";
 import { GeocodeMissingButton } from "@/components/admin/GeocodeMissingButton";
@@ -8,18 +9,16 @@ import type { MDHealthScore } from "@/types/database";
 
 export default async function AdminClubsPage() {
     const supabase = await createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
 
-    if (!authUser) redirect("/login");
+    // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
+    const headersList = await headers();
+    const userId = headersList.get("x-user-id");
 
-    const { data: user } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", authUser.id)
-        .single();
-
-    if (!user || user.role !== "admin") {
-        redirect("/");
+    if (!userId) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) redirect("/login");
+      const { data: ud } = await supabase.from("users").select("role").eq("id", authUser.id).single();
+      if (ud?.role !== "admin") redirect("/");
     }
 
     // Phase 4(Migration 182): clubs.md_id 제거 — club_partners 단독 기반.
@@ -98,7 +97,7 @@ export default async function AdminClubsPage() {
                     검색 실패 로그
                 </Link>
             </div>
-            <AdminClubsList initialClubs={clubs || []} authUserId={authUser.id} healthScores={healthScores || []} clubMdLists={clubMdLists} />
+            <AdminClubsList initialClubs={clubs || []} authUserId={userId ?? ""} healthScores={healthScores || []} clubMdLists={clubMdLists} />
         </div>
     );
 }

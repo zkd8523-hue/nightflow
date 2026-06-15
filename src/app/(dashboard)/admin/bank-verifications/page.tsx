@@ -1,21 +1,20 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { BankVerificationManager } from "@/components/admin/BankVerificationManager";
 
 export default async function BankVerificationsPage() {
     const supabase = await createClient();
-    const { data: { user: authUser } } = await supabase.auth.getUser();
 
-    if (!authUser) redirect("/login");
+    // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
+    const headersList = await headers();
+    const userId = headersList.get("x-user-id");
 
-    const { data: adminUser } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", authUser.id)
-        .single();
-
-    if (!adminUser || adminUser.role !== "admin") {
-        redirect("/");
+    if (!userId) {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) redirect("/login");
+      const { data: ud } = await supabase.from("users").select("role").eq("id", authUser.id).single();
+      if (ud?.role !== "admin") redirect("/");
     }
 
     // 검증 대기 중인 요청 조회
@@ -51,7 +50,7 @@ export default async function BankVerificationsPage() {
                 <BankVerificationManager
                     pendingVerifications={pendingVerifications || []}
                     recentVerifications={recentVerifications || []}
-                    adminId={authUser.id}
+                    adminId={userId ?? ""}
                 />
             </div>
         </div>

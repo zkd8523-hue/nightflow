@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import Link from "next/link";
-import { ChevronLeft, CalendarCheck } from "lucide-react";
+import { ChevronLeft, LayoutGrid } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { AdminHotdealSlotManager } from "@/components/admin/AdminHotdealSlotManager";
-import type { ClubRow, PartnerMd, SlotRow } from "@/components/admin/AdminHotdealSlotManager";
+import { AdminShareSlotManager } from "@/components/admin/AdminShareSlotManager";
+import type { ClubRow, PartnerMd, SlotRow } from "@/components/admin/AdminShareSlotManager";
 
 export const dynamic = "force-dynamic";
 
@@ -41,26 +40,27 @@ interface RawClub {
   partners: RawPartner[] | null;
 }
 
-export default async function AdminHotdealSlotsPage({
+export default async function AdminShareSlotsPage({
   searchParams,
 }: {
   searchParams: Promise<{ week?: string }>;
 }) {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
-  const headersList = await headers();
-  const userId = headersList.get("x-user-id");
+  const { data: me } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  if (me?.role !== "admin") redirect("/");
 
-  if (!userId) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) redirect("/login");
-    const { data: ud } = await supabase.from("users").select("role").eq("id", user.id).single();
-    if (ud?.role !== "admin") redirect("/");
-  }
-
+  // 조각 슬롯은 claim_share_slot과 동일하게 이번 주 ~ 다음 주(+7)만 선점 가능
   const thisMonday = getKstThisMonday();
-  const weekOptions = [thisMonday, addDays(thisMonday, 7), addDays(thisMonday, 14)];
+  const weekOptions = [thisMonday, addDays(thisMonday, 7)];
   const params = await searchParams;
   const selectedWeek = weekOptions.includes(params.week ?? "")
     ? (params.week as string)
@@ -76,11 +76,11 @@ export default async function AdminHotdealSlotsPage({
     .order("area", { ascending: true })
     .order("name", { ascending: true });
 
-  // 선택 주차의 기존 슬롯 조회
+  // 선택 주차의 기존 조각 슬롯 조회
   const { data: slotsRaw } = await supabase
-    .from("weekly_hotdeal_slots")
+    .from("weekly_share_slots")
     .select(
-      "id, club_id, md_id, week_start, md:users!weekly_hotdeal_slots_md_id_fkey(id, name, display_name, instagram)"
+      "id, club_id, md_id, week_start, md:users!weekly_share_slots_md_id_fkey(id, name, display_name, instagram)"
     )
     .eq("week_start", selectedWeek);
 
@@ -129,7 +129,7 @@ export default async function AdminHotdealSlotsPage({
 
   const weekLabel = (w: string) => {
     const idx = weekOptions.indexOf(w);
-    const suffix = idx === 0 ? "이번 주" : idx === 1 ? "다음 주" : idx === 2 ? "다다음 주" : "";
+    const suffix = idx === 0 ? "이번 주" : idx === 1 ? "다음 주" : "";
     return `${w}${suffix ? ` (${suffix})` : ""}`;
   };
 
@@ -145,17 +145,17 @@ export default async function AdminHotdealSlotsPage({
               <ChevronLeft className="w-5 h-5 text-neutral-400" />
             </Link>
             <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-widest text-[11px]">
-              <CalendarCheck className="w-3.5 h-3.5" />
-              Guest Sign Assign
+              <LayoutGrid className="w-3.5 h-3.5" />
+              Share Slot Assign
             </div>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter">게스트 간판 배정</h1>
+          <h1 className="text-4xl font-black tracking-tighter">조각 자리 배정</h1>
           <p className="text-neutral-500 font-medium">
-            클럽별 담당 MD를 미리 배정해요. 빈 슬롯은 그대로 두면 MD가 선착순으로 차지할 수 있어요.
+            클럽별 조각 담당 MD를 미리 배정해요. 빈 자리는 그대로 두면 MD가 선착순으로 차지할 수 있어요.
           </p>
         </header>
 
-        <AdminHotdealSlotManager
+        <AdminShareSlotManager
           clubs={clubs}
           slotByClub={slotByClub}
           selectedWeek={selectedWeek}

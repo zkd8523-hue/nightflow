@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { AdminPuzzleRefundButton } from "@/components/admin/AdminPuzzleRefundButton";
 import { AdminPuzzleOffersDropdown } from "@/components/admin/AdminPuzzleOffersDropdown";
@@ -60,16 +61,16 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
   } = await searchParams;
   const sortKey: SortKey = sortParam === "created" ? "created" : "event";
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
+  const headersList = await headers();
+  const userId = headersList.get("x-user-id");
 
-  const { data: userData } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (userData?.role !== "admin") redirect("/");
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
+    const { data: ud } = await supabase.from("users").select("role").eq("id", user.id).single();
+    if (ud?.role !== "admin") redirect("/");
+  }
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr + "T00:00:00");

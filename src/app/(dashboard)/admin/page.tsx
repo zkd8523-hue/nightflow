@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import {
@@ -13,22 +14,22 @@ import {
   Ban,
   Megaphone,
   CalendarCheck,
+  LayoutGrid,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
   const supabase = await createClient();
-  const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  if (!authUser) redirect("/login");
+  // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
+  const headersList = await headers();
+  const userId = headersList.get("x-user-id");
 
-  const { data: adminUser } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", authUser.id)
-    .single();
-
-  if (!adminUser || adminUser.role !== "admin") {
-    redirect("/");
+  if (!userId) {
+    // 헤더 없으면 직접 재검증 (미들웨어 우회 등 예외 상황)
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) redirect("/login");
+    const { data: adminUser } = await supabase.from("users").select("role").eq("id", authUser.id).single();
+    if (!adminUser || adminUser.role !== "admin") redirect("/");
   }
 
   const now = new Date().toISOString();
@@ -243,6 +244,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/hotdeal-slots",
+    },
+    {
+      label: "조각 자리 배정",
+      value: "관리",
+      icon: LayoutGrid,
+      color: "text-purple-400",
+      bgColor: "bg-purple-500/10",
+      badge: null,
+      href: "/admin/share-slots",
     },
     {
       label: "게스트 간판 클릭",

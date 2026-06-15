@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { ChevronLeft, MousePointerClick, Instagram, MessageCircle, Copy, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -69,17 +70,17 @@ export default async function AdminHotdealClicksPage({
   searchParams: Promise<{ week?: string }>;
 }) {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
 
-  const { data: me } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-  if (me?.role !== "admin") redirect("/");
+  // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
+  const headersList = await headers();
+  const userId = headersList.get("x-user-id");
+
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
+    const { data: ud } = await supabase.from("users").select("role").eq("id", user.id).single();
+    if (ud?.role !== "admin") redirect("/");
+  }
 
   const params = await searchParams;
   const thisMonday = getKstThisMonday();

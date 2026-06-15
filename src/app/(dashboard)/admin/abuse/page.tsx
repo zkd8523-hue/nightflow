@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { ChevronLeft, ShieldAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -13,18 +14,16 @@ export const dynamic = "force-dynamic";
 export default async function AdminAbusePage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
+  const headersList = await headers();
+  const userId = headersList.get("x-user-id");
 
-  const { data: userData } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (userData?.role !== "admin") redirect("/");
+  if (!userId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
+    const { data: ud } = await supabase.from("users").select("role").eq("id", user.id).single();
+    if (ud?.role !== "admin") redirect("/");
+  }
 
   // 1) 모든 깃발 (admin RLS — Migration 148)
   const { data: puzzles } = await supabase
