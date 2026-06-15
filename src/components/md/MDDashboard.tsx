@@ -502,9 +502,9 @@ export function MDDashboard({
             {/* 조각 인라인 영역 — 자리 선점 + 내 조각 목록 */}
             {shareInlineOpen && (
                 <div className="px-4 mt-3 space-y-2">
-                    {/* 조각 자리 선점 */}
+                    {/* 조각 자리 선점 + 세팅 — 게스트 간판처럼 한 박스 안에서 가로선으로 구분 */}
                     {shareSlotThisWeekISO && (
-                        <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3">
+                        <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-4 space-y-3">
                             <ShareSlotBoard
                                 currentUserId={user.id}
                                 clubs={shareSlotClubs}
@@ -515,22 +515,23 @@ export function MDDashboard({
                                 onClaim={(slot) => setLocalShareSlots((prev) => [...prev.filter((s) => !(s.club_id === slot.club_id && s.week_start === slot.week_start)), slot])}
                                 onRelease={(clubId) => { setLocalShareSlots((prev) => prev.filter((s) => !(s.club_id === clubId && s.md_id === user.id))); setPlanBoardResetKey((k) => k + 1); }}
                             />
+
+                            {/* 선점 중인 클럽별 프리셋 + 요일표 세팅 (같은 박스, 가로선 구분) */}
+                            {myShareSlots.map((slot) => {
+                                const club = shareSlotClubs.find((c) => c.id === slot.club_id);
+                                const clubOptions = shareOptions.filter((o) => o.club_id === slot.club_id);
+                                const clubPlans = shareWeekdayPlans.filter((p) => p.club_id === slot.club_id);
+                                return (
+                                    <div key={slot.club_id} className="space-y-3">
+                                        <div className="border-t border-neutral-800" />
+                                        <ShareOptionManager clubId={slot.club_id} options={clubOptions} floorPlanUrl={club?.floor_plan_url ?? null} />
+                                        <div className="border-t border-neutral-800" />
+                                        <ShareWeekdayPlanBoard key={`${slot.club_id}-${planBoardResetKey}`} clubId={slot.club_id} options={clubOptions} plans={clubPlans} />
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
-
-                    {/* 선점 중인 클럽별 프리셋 + 요일표 세팅 */}
-                    {myShareSlots.map((slot) => {
-                        const club = shareSlotClubs.find((c) => c.id === slot.club_id);
-                        const clubOptions = shareOptions.filter((o) => o.club_id === slot.club_id);
-                        const clubPlans = shareWeekdayPlans.filter((p) => p.club_id === slot.club_id);
-                        return (
-                            <div key={slot.club_id} className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3 space-y-3">
-                                <ShareOptionManager clubId={slot.club_id} options={clubOptions} floorPlanUrl={club?.floor_plan_url ?? null} />
-                                <div className="border-t border-neutral-800" />
-                                <ShareWeekdayPlanBoard key={`${slot.club_id}-${planBoardResetKey}`} clubId={slot.club_id} options={clubOptions} plans={clubPlans} />
-                            </div>
-                        );
-                    })}
 
                     {/* 내 조각 목록 — 슬롯 보유 시에만 노출 */}
                     {hasShareSlot && (

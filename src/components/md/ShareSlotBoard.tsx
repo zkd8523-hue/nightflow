@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Loader2, Check, X } from "lucide-react";
+import { ChevronLeft, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { SharePreviewSheet } from "@/components/home/SharePreviewSheet";
@@ -192,9 +192,19 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
             상단 탭이 제목 역할을 하므로 제목 대신 좌상단에 선점 액션 문구를 노출. */}
         <div className="flex items-center justify-between gap-2 mb-0">
           {embedded ? (
-            <p className="text-[17px] text-amber-400 font-black leading-tight flex-1 min-w-0">
-              우리 클럽 조각을 일주일 동안 대표!
-            </p>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <p className="text-[17px] text-amber-400 font-black leading-tight">
+                이번주 조각 일정
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowGuide((v) => !v)}
+                className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
+              >
+                <span className="text-[12px]">ⓘ</span>
+                이용방법
+              </button>
+            </div>
           ) : (
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-[20px] leading-none">🧩</span>
@@ -206,7 +216,6 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
           </p>
         </div>
 
-        {/* 이번 주 날짜 — 제목 바로 아래 좌정렬. 선점 중이면 클럽 카드에 주차가 표시되므로 숨김 */}
         {!myClaimedThisWeek && (
           <p className="text-[13px] text-white font-black mt-0.5 mb-3">
             이번 주 {formatWeekRange(thisWeekISO)}
@@ -214,8 +223,8 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
         )}
 
         {/* 안내 가이드 (접기 가능) — 게스트 간판과 동일 패턴 */}
-        {showGuide ? (
-          <div className="relative bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-3 mb-2 space-y-2">
+        {showGuide && (
+          <div className="relative bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 mb-4 space-y-3">
             <button
               type="button"
               onClick={dismissGuide}
@@ -257,15 +266,6 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
               👀 미리보기
             </button>
           </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setShowGuide(true)}
-            className="-mt-1 text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-1 mb-2"
-          >
-            <span className="text-[12px]">ⓘ</span>
-            이용방법
-          </button>
         )}
 
 
@@ -292,6 +292,26 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
               // 선점 중이면 내 클럽만 노출 (게스트 간판처럼 컴팩트하게 — 나머지는 숨김)
               if (myClaimedThisWeek && !isMine) return null;
 
+              // 선점 중인 내 클럽 — 게스트 간판 MyClaimedSection과 동일한 그리드
+              if (isMine && slot) {
+                return (
+                  <div
+                    key={club.id}
+                    className="bg-neutral-800/60 rounded-2xl p-4"
+                  >
+                    <div>
+                      <p className="text-white text-[15px] font-black">{club.name}</p>
+                      <p className="text-[11px] text-neutral-500 mt-0.5">
+                        내 조각 · {formatWeekRange(thisWeekISO)}
+                      </p>
+                      <p className="text-[11px] text-neutral-500 mt-1">
+                        최대 6개까지 세팅 가능
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
               return (
                 <div
                   key={club.id}
@@ -313,44 +333,31 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
                     <p className="text-white text-[14px] font-black truncate">{club.name}</p>
                     {takenByOther ? (
                       <p className="text-[10px] text-amber-400/80 font-bold truncate">다른 파트너님이 차지</p>
-                    ) : isMine ? (
-                      <p className="text-[10px] truncate text-neutral-500 font-medium">{formatWeekRange(thisWeekISO)}</p>
                     ) : (
                       <p className="text-[10px] text-neutral-500">{club.area ?? "기타"}</p>
                     )}
                   </div>
 
                   {/* 액션 */}
-                  {isMine && slot ? (
-                    <span className="px-3 py-2 rounded-full text-[12px] font-black flex-shrink-0 bg-green-500/15 text-green-400 inline-flex items-center gap-1">
-                      <Check className="w-3.5 h-3.5" />
-                      선점 중
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={busy || !canClaim}
-                      onClick={() => handleClaim(club.id, club.name)}
-                      className={`px-3 py-2 rounded-full text-[12px] font-black flex-shrink-0 transition-colors inline-flex items-center gap-1 ${
-                        takenByOther
-                          ? "bg-neutral-800 text-neutral-500"
-                          : myClaimedThisWeek
-                          ? "bg-neutral-800 text-neutral-600"
-                          : beforeOpen
-                          ? "bg-neutral-800 text-neutral-600"
-                          : "bg-amber-500 text-black hover:bg-amber-400"
-                      }`}
-                    >
-                      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                      {takenByOther
-                        ? "마감됐어요"
-                        : myClaimedThisWeek
-                        ? "주 1자리"
+                  <button
+                    type="button"
+                    disabled={busy || !canClaim}
+                    onClick={() => handleClaim(club.id, club.name)}
+                    className={`px-3 py-2 rounded-full text-[12px] font-black flex-shrink-0 transition-colors inline-flex items-center gap-1 ${
+                      takenByOther
+                        ? "bg-neutral-800 text-neutral-500"
                         : beforeOpen
-                        ? "미오픈"
-                        : "선점하기"}
-                    </button>
-                  )}
+                        ? "bg-neutral-800 text-neutral-600"
+                        : "bg-amber-500 text-black hover:bg-amber-400"
+                    }`}
+                  >
+                    {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                    {takenByOther
+                      ? "마감됐어요"
+                      : beforeOpen
+                      ? "미오픈"
+                      : "선점하기"}
+                  </button>
                 </div>
               );
             })}

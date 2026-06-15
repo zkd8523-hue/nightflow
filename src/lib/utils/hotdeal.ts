@@ -125,10 +125,10 @@ export function normalizeDowSlots(
   return raw
     .filter(
       (s): s is HotdealTimeSlot =>
-        !!s && typeof s === "object" && typeof s.text === "string" && s.text.trim().length > 0
+        !!s && typeof s === "object" && typeof s.text === "string"
     )
     .map((s) => ({
-      until: s.until,
+      until: s.until ?? null,
       text: s.text,
       benefits: Array.isArray(s.benefits) ? s.benefits.filter((b) => typeof b === "string") : [],
     }));
