@@ -213,9 +213,12 @@ export const PuzzleCard = memo(function PuzzleCard({
           {puzzle.leader?.display_name && (
             <div className="flex items-center gap-1.5 flex-wrap">
               <p className="text-[12px] text-neutral-500 font-medium">
-                방장 · {puzzle.leader.display_name}
+                by {puzzle.leader.display_name}
               </p>
               {leaderTier && <TrustBadge tier={leaderTier} size="sm" />}
+              {isMd && puzzle.area && (
+                <p className="text-[12px] text-neutral-500 font-medium">· {puzzle.area}</p>
+              )}
             </div>
           )}
         </div>
@@ -317,31 +320,33 @@ export const PuzzleCard = memo(function PuzzleCard({
       {isMd ? (
         // MD: 풀 버튼 대신 작고 둥근 자세히 스타일 버튼 — 오퍼수 + 버튼 한 행
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[12px] text-neutral-500 font-bold tabular-nums">
-            {puzzle.area}
-          </p>
-          {isSelecting ? (
-            <Button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-neutral-800 border border-neutral-700 text-neutral-400 pointer-events-none"
-            >
-              검토 중
-            </Button>
-          ) : hasOffered ? (
-            <Button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500/15 border border-amber-500/30 text-amber-400 pointer-events-none"
-            >
-              제안 완료
-            </Button>
-          ) : (
-            <Button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-              className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)] active:scale-[0.97] transition-all"
-            >
-              제안하기
-            </Button>
+          {offerCount > 0 && (
+            <span className="text-[12px] text-amber-400 font-bold tabular-nums">{offerCount} offers</span>
           )}
+          <div className="ml-auto">
+            {isSelecting ? (
+              <Button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-neutral-800 border border-neutral-700 text-neutral-400 pointer-events-none"
+              >
+                검토 중
+              </Button>
+            ) : hasOffered ? (
+              <Button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500/15 border border-amber-500/30 text-amber-400 pointer-events-none"
+              >
+                제안 완료
+              </Button>
+            ) : (
+              <Button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
+                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)] active:scale-[0.97] transition-all"
+              >
+                제안하기
+              </Button>
+            )}
+          </div>
         </div>
       ) : !isRecruitingParty ? (
         // 인원 확정 깃발: 카드 전체 클릭으로 상세 이동 (별도 버튼 불필요)
