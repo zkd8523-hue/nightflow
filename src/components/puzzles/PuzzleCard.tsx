@@ -196,9 +196,9 @@ export const PuzzleCard = memo(function PuzzleCard({
       className={`relative bg-[#1C1C1E] rounded-2xl p-3 flex flex-col gap-2 h-full ${isCardClickable ? "cursor-pointer active:scale-[0.98] transition-all" : ""}`}
       onClick={isCardClickable ? () => router.push(`/flags/${puzzle.id}`) : undefined}
     >
-      {isNew && !hideNewBadge && (
+      {isNew && !hideNewBadge && !isSelecting && (
         <div
-          className="animate-new-badge pointer-events-none absolute -top-4 -right-2.5 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none"
+          className="animate-new-badge pointer-events-none absolute top-2 right-2 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none"
           aria-label="6시간 이내 등록"
         >
           NEW!
@@ -225,14 +225,16 @@ export const PuzzleCard = memo(function PuzzleCard({
               검토 중
             </span>
           )}
-          {isRecruitingParty && !isFull ? (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
-              🧩
-            </span>
-          ) : (
-            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[11px]" style={{lineHeight: 1, paddingLeft: '2px', paddingBottom: '2px'}}>
-              🚩
-            </span>
+          {!isSelecting && !(isNew && !hideNewBadge) && (
+            isRecruitingParty && !isFull ? (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
+                🧩
+              </span>
+            ) : (
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[11px]" style={{lineHeight: 1, paddingLeft: '2px', paddingBottom: '2px'}}>
+                🚩
+              </span>
+            )
           )}
         </div>
       </div>
