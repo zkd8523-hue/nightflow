@@ -341,7 +341,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
               setLightbox(false);
             }}
             aria-label="닫기"
-            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+            className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
           >
             <X className="w-5 h-5" strokeWidth={2.5} />
           </button>
@@ -355,7 +355,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                 setLightboxIdx((i) => Math.max(0, i - 1));
               }}
               aria-label="이전 사진"
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
@@ -370,7 +370,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                 setLightboxIdx((i) => Math.min(sources.length - 1, i + 1));
               }}
               aria-label="다음 사진"
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
             >
               <ChevronRight className="w-6 h-6" />
             </button>
@@ -378,7 +378,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
 
           {/* 카운터 */}
           {hasMultiple && (
-            <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-sm text-white text-[12px] font-bold">
+            <div className="absolute top-4 left-4 z-30 px-3 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-sm text-white text-[12px] font-bold">
               {lightboxIdx + 1} / {sources.length}
             </div>
           )}
@@ -390,7 +390,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
               - 줌 1배일 때 스와이프 = 좌우 이미지 이동
               - 우리는 LightboxImage 컴포넌트로 분리해서 사용 */}
           <div
-            className="relative w-full h-full max-w-5xl flex items-center justify-center"
+            className="relative z-0 w-full h-full max-w-5xl flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
             <LightboxImage

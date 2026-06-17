@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, ZoomIn } from "lucide-react";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import type { TablePosition, TableType } from "@/types/database";
 
 interface FloorPlanViewerProps {
@@ -26,6 +28,10 @@ export function FloorPlanViewer({
   showImage = true,
 }: FloorPlanViewerProps) {
   const [isZoomed, setIsZoomed] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Portal SSR 가드
+  useEffect(() => { setMounted(true); }, []);
 
   // ESC 키로 닫기
   useEffect(() => {
@@ -101,16 +107,66 @@ export function FloorPlanViewer({
         )}
       </div>
 
-      {/* 확대 모달 */}
-      {isZoomed && (
+      {/* 확대 모달 — Portal로 body 직속 렌더 (부모 transform/stacking 무시) */}
+      {isZoomed && mounted && createPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-label="테이블 위치 확대 보기"
           onClick={() => setIsZoomed(false)}
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 animate-in fade-in duration-150"
-          style={{ touchAction: "pinch-zoom" }}
+          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center animate-in fade-in duration-150"
         >
+          <div
+            className="relative w-full h-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <TransformWrapper
+              initialScale={1}
+              minScale={1}
+              maxScale={5}
+              doubleClick={{ step: 1 }}
+              pinch={{ step: 5 }}
+              wheel={{ step: 0.2 }}
+              panning={{ disabled: false }}
+              centerOnInit
+            >
+              <TransformComponent
+                wrapperClass="!w-full !h-full"
+                contentClass="!w-full !h-full flex items-center justify-center"
+              >
+                <div className="relative">
+                  <img
+                    src={floorPlanUrl}
+                    alt="클럽 플로어맵 확대"
+                    className="block object-contain"
+                    style={{ maxWidth: "100vw", maxHeight: "85vh" }}
+                    draggable={false}
+                  />
+
+                  {positions.map((marker) => {
+                    const isHighlighted = highlightLabel === marker.label;
+                    return (
+                      <div
+                        key={marker.id}
+                        className={`absolute -translate-x-1/2 -translate-y-1/2 ${isHighlighted ? "z-20" : "z-10"}`}
+                        style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
+                      >
+                        <div
+                          className={`flex items-center gap-1 px-3 py-1.5 rounded-full border-2 ${getViewerMarkerStyle(marker.type, isHighlighted)}`}
+                        >
+                          <span className="text-xs font-black leading-none">
+                            {marker.label}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </TransformComponent>
+            </TransformWrapper>
+          </div>
+
+          {/* 닫기 버튼 — 컨테이너 다음 형제로 두어 항상 위에 노출 */}
           <button
             type="button"
             onClick={(e) => {
@@ -118,54 +174,22 @@ export function FloorPlanViewer({
               setIsZoomed(false);
             }}
             aria-label="닫기"
-            className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
+            className="fixed top-4 right-4 z-[130] w-10 h-10 flex items-center justify-center rounded-full bg-white/15 backdrop-blur-sm hover:bg-white/25 transition-colors"
           >
             <X className="w-5 h-5 text-white" />
           </button>
 
-          <div
-            className="relative max-w-full max-h-full overflow-auto"
-            onClick={(e) => e.stopPropagation()}
-            style={{ touchAction: "pinch-zoom" }}
-          >
-            <img
-              src={floorPlanUrl}
-              alt="클럽 플로어맵 확대"
-              className="block max-w-none w-auto h-auto"
-              style={{ maxHeight: "85vh" }}
-              draggable={false}
-            />
-
-            {positions.map((marker) => {
-              const isHighlighted = highlightLabel === marker.label;
-              return (
-                <div
-                  key={marker.id}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 ${isHighlighted ? "z-20" : "z-10"}`}
-                  style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
-                >
-                  <div
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full border-2 ${getViewerMarkerStyle(marker.type, isHighlighted)}`}
-                  >
-                    <span className="text-xs font-black leading-none">
-                      {marker.label}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
           {highlightLabel && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full">
-              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[130] flex items-center gap-2 bg-black/80 backdrop-blur-sm px-4 py-2 rounded-full pointer-events-none shadow-lg">
+              <div className="w-2 h-2 rounded-full bg-amber-500" />
               <span className="text-sm text-amber-400 font-bold">
                 {highlightLabel}
               </span>
               <span className="text-xs text-neutral-400">테이블 위치</span>
             </div>
           )}
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
