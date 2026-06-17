@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, ArrowUp } from "lucide-react";
+import { Plus, X, ArrowUp, ChevronDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { toast } from "sonner";
@@ -43,6 +43,7 @@ export function WordCloudSection({ clubId }: Props) {
   const [current, setCurrent] = useState("");
   const [saving, setSaving] = useState(false);
   const [justAdded, setJustAdded] = useState<string | null>(null);
+  const [showMine, setShowMine] = useState(false);
   const isComposingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -231,27 +232,76 @@ export function WordCloudSection({ clubId }: Props) {
       `}</style>
 
       {/* 헤더 */}
-      <header className="mb-4">
-        <h2 className="text-[19px] font-black text-white leading-tight">
-          여기 하면 떠오르는 단어?
-        </h2>
-        <p className="text-[13px] text-neutral-500 mt-1">
-          5자 리뷰를 남겨보세요.
-        </p>
+      <header className="mb-4 flex items-start justify-between gap-2">
+        <div>
+          <h2 className="text-[19px] font-black text-white leading-tight">
+            여기 하면 떠오르는 단어?
+          </h2>
+          <p className="text-[13px] text-neutral-500 mt-1">
+            5자 리뷰를 남겨보세요.
+          </p>
+        </div>
+        {myWords.length > 0 && (
+          <button
+            onClick={() => setShowMine((v) => !v)}
+            className={`shrink-0 mt-1 inline-flex items-center gap-0.5 text-[13px] font-bold transition-colors ${
+              showMine ? "text-white" : "text-neutral-500 hover:text-white"
+            }`}
+          >
+            내 리뷰
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${showMine ? "rotate-180" : ""}`}
+            />
+          </button>
+        )}
       </header>
+
+      {/* 내 리뷰 펼침 (탭 눌렀을 때만) */}
+      {showMine && myWords.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-4 justify-center rounded-2xl bg-neutral-900/60 p-3">
+          {myWords.map((w, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-neutral-800 text-neutral-200 text-[13px] font-bold"
+            >
+              {w}
+              <button
+                onClick={() => removeMyWord(i)}
+                disabled={saving}
+                className="text-neutral-500 hover:text-white disabled:opacity-40"
+                aria-label="삭제"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* 워드클라우드 */}
       <div className="flex flex-wrap gap-x-3 gap-y-2 items-baseline justify-center py-4 min-h-[90px] content-center mb-3">
         {loading ? (
           <span className="text-[13px] text-neutral-600">불러오는 중...</span>
         ) : entries.length === 0 ? (
-          <div className="flex flex-col items-center gap-1.5 text-center">
-            <span
-              className="text-[15px] font-bold text-neutral-300 leading-tight"
-              style={{ textShadow: "0 0 10px rgba(168,85,247,.45)" }}
-            >
-              당신의 생각을 이 자리에 ✨
-            </span>
+          // 예시 워드클라우드 — 3층 고정. 2층의 "리뷰가 이렇게 보여요"가 문장으로 읽힘, 1·3층은 예시 단어
+          <div className="flex flex-col items-center gap-y-2 select-none pointer-events-none">
+            {/* 1층 */}
+            <div className="flex items-baseline justify-center gap-x-2.5">
+              <span className="font-bold text-neutral-300 leading-none" style={{ fontSize: 17, textShadow: "0 0 9px rgba(236,72,153,.45)" }}>음악</span>
+              <span className="font-medium text-neutral-500 leading-none" style={{ fontSize: 13 }}>사랑</span>
+            </div>
+            {/* 2층 — 안내 문장 */}
+            <div className="flex items-baseline justify-center gap-x-2.5">
+              <span className="font-black text-white leading-none" style={{ fontSize: 30, textShadow: "0 0 18px rgba(236,72,153,.8)" }}>리뷰가</span>
+              <span className="font-bold text-neutral-200 leading-none" style={{ fontSize: 19, textShadow: "0 0 11px rgba(236,72,153,.55)" }}>이렇게</span>
+              <span className="font-black text-white leading-none" style={{ fontSize: 25, textShadow: "0 0 15px rgba(236,72,153,.7)" }}>보여요</span>
+            </div>
+            {/* 3층 */}
+            <div className="flex items-baseline justify-center gap-x-2.5">
+              <span className="font-bold text-neutral-300 leading-none" style={{ fontSize: 18, textShadow: "0 0 10px rgba(236,72,153,.5)" }}>자유</span>
+              <span className="font-medium text-neutral-500 leading-none" style={{ fontSize: 14 }}>책임</span>
+              <span className="font-medium text-neutral-600 leading-none" style={{ fontSize: 12 }}>준법</span>
+            </div>
           </div>
         ) : (
           shuffledEntries.map((e) => {
@@ -304,27 +354,6 @@ export function WordCloudSection({ clubId }: Props) {
 
       {/* 인라인 입력 */}
       <div>
-        {myWords.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-3 justify-center">
-            {myWords.map((w, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 text-[13px] font-bold"
-              >
-                {w}
-                <button
-                  onClick={() => removeMyWord(i)}
-                  disabled={saving}
-                  className="text-amber-400/60 hover:text-amber-200 disabled:opacity-40"
-                  aria-label="삭제"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-
         {!full ? (
           <div className="flex items-center gap-2 rounded-full bg-[#1C1C1E] border border-neutral-700 focus-within:border-white/60 px-4 py-3 transition-colors">
             <Plus className="w-4 h-4 shrink-0 text-neutral-500" />
