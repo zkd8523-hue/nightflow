@@ -78,10 +78,6 @@ export function WordCloudSection({ clubId }: Props) {
   }, [fetchData, userLoading]);
 
   const entries = useMemo(() => aggregateWords(rows), [rows]);
-  const myNormalized = useMemo(
-    () => new Set(myWords.map(normalizeWord)),
-    [myWords]
-  );
 
   // ── 셔플 (마운트 후 + 10초마다, 하이드레이션 안전) ──
   const [mounted, setMounted] = useState(false);
@@ -306,33 +302,21 @@ export function WordCloudSection({ clubId }: Props) {
         ) : (
           shuffledEntries.map((e) => {
             const c = e.count;
-            const isMine = myNormalized.has(e.normalized);
             const isJust = justAdded === e.normalized;
 
-            const color = isMine
-              ? "text-amber-300"
-              : c >= 5
+            // 본인/남 구분 없이 빈도 기준으로만 (모두 동일하게 보임)
+            const color =
+              c >= 5
                 ? "text-white"
                 : c >= 2
                   ? "text-neutral-200"
-                  : "text-neutral-500";
-            const weight =
-              isMine || c >= 5
-                ? "font-black"
-                : c >= 2
-                  ? "font-bold"
-                  : "font-medium";
+                  : "text-neutral-300";
+            const weight = c >= 5 ? "font-black" : c >= 2 ? "font-bold" : "font-bold";
 
-            const glowStrength = Math.min(20, 6 + Math.log2(Math.max(c, 1)) * 5);
-            const glowAlpha = Math.min(
-              0.8,
-              0.3 + Math.log2(Math.max(c, 1)) * 0.18
-            );
-            const glow = isMine
-              ? "0 0 16px rgba(251,191,36,.7)"
-              : c >= 2
-                ? `0 0 ${Math.round(glowStrength)}px rgba(236,72,153,${glowAlpha.toFixed(2)})`
-                : "none";
+            // 글로우: 1명부터 켜짐, 빈도 클수록 강하게
+            const glowStrength = Math.min(20, 8 + Math.log2(Math.max(c, 1)) * 5);
+            const glowAlpha = Math.min(0.85, 0.4 + Math.log2(Math.max(c, 1)) * 0.18);
+            const glow = `0 0 ${Math.round(glowStrength)}px rgba(236,72,153,${glowAlpha.toFixed(2)})`;
 
             return (
               <span
