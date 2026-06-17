@@ -26,10 +26,15 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
 }
 
 function base64url(input: ArrayBuffer | string): string {
-  const str =
-    typeof input === "string"
-      ? btoa(input)
-      : btoa(String.fromCharCode(...new Uint8Array(input)));
+  let str: string;
+  if (typeof input === "string") {
+    str = btoa(input);
+  } else {
+    const bytes = new Uint8Array(input);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    str = btoa(binary);
+  }
   return str.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
 }
 
@@ -80,7 +85,7 @@ async function sendFCM(
   data: Record<string, string>,
   projectId: string,
   accessToken: string
-): Promise<void> {
+): Promise<{ ok: boolean; error?: string; unregistered?: boolean }> {
   const res = await fetch(
     `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
     {
@@ -103,7 +108,11 @@ async function sendFCM(
   if (!res.ok) {
     const err = await res.text();
     console.error("[FCM] error:", err);
+    // UNREGISTERED(404): 토큰이 무효화됨 → 호출자가 DB에서 삭제하도록 플래그
+    const unregistered = res.status === 404 || err.includes("UNREGISTERED");
+    return { ok: false, error: err, unregistered };
   }
+  return { ok: true };
 }
 
 serve(async (req: Request) => {
@@ -148,13 +157,34 @@ serve(async (req: Request) => {
     const fcmData: Record<string, string> = { ...data };
     if (url) fcmData.url = url;
 
-    await Promise.all(
+    const results = await Promise.all(
       tokens.map((t) => sendFCM(t.token, title, body, fcmData, projectId, accessToken))
     );
 
-    return new Response(JSON.stringify({ sent: tokens.length }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    const succeeded = results.filter((r) => r.ok).length;
+    const errors = results.filter((r) => !r.ok).map((r) => r.error);
+
+    // 무효화된(UNREGISTERED) 토큰은 DB에서 제거해 죽은 토큰 누적을 막는다.
+    const deadTokens = tokens
+      .filter((_, i) => results[i].unregistered)
+      .map((t) => t.token);
+    if (deadTokens.length > 0) {
+      await supabase
+        .from("push_tokens")
+        .delete()
+        .eq("user_id", user_id)
+        .in("token", deadTokens);
+    }
+
+    return new Response(
+      JSON.stringify({
+        sent: succeeded,
+        failed: errors.length,
+        pruned: deadTokens.length,
+        errors,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (err) {
     console.error("[push-dispatch]", err);
     return new Response(JSON.stringify({ error: String(err) }), {

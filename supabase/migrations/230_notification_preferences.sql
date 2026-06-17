@@ -227,7 +227,7 @@ BEGIN
 
   PERFORM notify_user_push(
     v_leader_id,
-    '🚩 새 오퍼 도착',
+    '💌 새 오퍼가 도착했어요!',
     v_body,
     jsonb_build_object(
       'type', 'puzzle_new_offer',
@@ -255,8 +255,11 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  v_budget_text := to_char(NEW.budget_per_person, 'FM999,999,999');
-  v_body := format('%s · %s명 · 1인 %s원', NEW.area, NEW.target_count, v_budget_text);
+  v_budget_text := to_char(
+    COALESCE(NEW.total_budget, NEW.budget_per_person * NEW.target_count),
+    'FM999,999,999'
+  );
+  v_body := format('%s · %s명 · 총 %s원', NEW.area, NEW.target_count, v_budget_text);
 
   IF NEW.area = '서울 어디든' THEN
     FOR v_md IN
@@ -267,7 +270,7 @@ BEGIN
     LOOP
       PERFORM notify_user_push(
         v_md.md_id,
-        '🚩 새 깃발 (서울 어디든)',
+        '🚩 새 깃발이 꽂혔어요!',
         v_body,
         jsonb_build_object(
           'type', 'puzzle_new_in_area',
@@ -287,7 +290,7 @@ BEGIN
     LOOP
       PERFORM notify_user_push(
         v_md.md_id,
-        '🚩 새 깃발 · ' || NEW.area,
+        '🚩 새 깃발이 꽂혔어요!',
         v_body,
         jsonb_build_object(
           'type', 'puzzle_new_in_area',
@@ -341,7 +344,7 @@ BEGIN
 
   PERFORM notify_user_push(
     NEW.md_id,
-    '🚩 오퍼가 수락됐어요!',
+    '🎉 오퍼가 수락됐어요!',
     v_body,
     jsonb_build_object(
       'type', 'puzzle_offer_accepted',

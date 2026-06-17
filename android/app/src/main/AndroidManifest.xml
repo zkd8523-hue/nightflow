@@ -53,6 +53,15 @@
             android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- 푸시 알림 상태바 아이콘: 흰색 실루엣(투명 배경) + 틴트 색.
+             미지정 시 안드로이드가 ic_launcher를 욱여넣어 흰 네모로 표시됨. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_icon_color" />
     </application>
 
     <!-- 카카오톡 앱 연동을 위한 쿼리 -->

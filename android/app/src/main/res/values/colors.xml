@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 푸시 알림 아이콘 틴트 색 (브랜드 다크 테마). 알림을 펼쳤을 때
+         N 실루엣 뒤 동근 배경색으로 적용됨. -->
+    <color name="notification_icon_color">#0A0A0A</color>
+</resources>

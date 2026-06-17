@@ -56,11 +56,14 @@ CREATE OR REPLACE FUNCTION trg_admin_push_new_puzzle()
 RETURNS TRIGGER AS $$
 BEGIN
   PERFORM notify_admins_push(
-    '🚩 신규 깃발',
-    format('%s · %s명 · 1인 %s원',
+    '🚩 새 깃발이 꽂혔어요!',
+    format('%s · %s명 · 총 %s원',
       NEW.area,
       NEW.target_count,
-      to_char(NEW.budget_per_person, 'FM999,999,999')
+      to_char(
+        COALESCE(NEW.total_budget, NEW.budget_per_person * NEW.target_count),
+        'FM999,999,999'
+      )
     ),
     jsonb_build_object(
       'type', 'new_puzzle',
@@ -84,17 +87,27 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_md_name TEXT;
   v_club_name TEXT;
+  v_includes_count INTEGER;
+  v_drinks TEXT;
+  v_body TEXT;
 BEGIN
   SELECT name INTO v_md_name FROM users WHERE id = NEW.md_id;
   SELECT name INTO v_club_name FROM clubs WHERE id = NEW.club_id;
 
+  v_includes_count := COALESCE(array_length(NEW.includes, 1), 0);
+  IF v_includes_count = 1 THEN
+    v_drinks := NEW.includes[1];
+  ELSIF v_includes_count >= 2 THEN
+    v_drinks := NEW.includes[1] || ' 외 ' || (v_includes_count - 1)::TEXT;
+  END IF;
+
+  -- 본문: 클럽명 · MD명 · 오퍼옵션1 외 N
+  v_body := COALESCE(v_club_name, '클럽') || ' · ' || COALESCE(v_md_name, 'MD')
+            || CASE WHEN v_drinks IS NOT NULL THEN ' · ' || v_drinks ELSE '' END;
+
   PERFORM notify_admins_push(
-    '💰 신규 오퍼',
-    format('%s · %s · %s원',
-      COALESCE(v_md_name, 'MD'),
-      COALESCE(v_club_name, '클럽'),
-      to_char(NEW.proposed_price, 'FM999,999,999')
-    ),
+    '💌 신규 오퍼가 도착했어요!',
+    v_body,
     jsonb_build_object(
       'type', 'new_offer',
       'puzzle_id', NEW.puzzle_id::TEXT,
@@ -124,7 +137,7 @@ BEGIN
     SELECT name INTO v_club_name FROM clubs WHERE id = NEW.club_id;
 
     PERFORM notify_admins_push(
-      '✅ 오퍼 승락',
+      '✅ 오퍼가 매칭됐어요!',
       format('%s · %s · %s원 매칭',
         COALESCE(v_md_name, 'MD'),
         COALESCE(v_club_name, '클럽'),
@@ -154,7 +167,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF OLD.md_status IS DISTINCT FROM 'pending' AND NEW.md_status = 'pending' THEN
     PERFORM notify_admins_push(
-      '🆕 MD 신청',
+      '🙋 새 MD가 신청했어요!',
       format('%s님이 MD 신청', COALESCE(NEW.name, '익명')),
       jsonb_build_object(
         'type', 'md_application',

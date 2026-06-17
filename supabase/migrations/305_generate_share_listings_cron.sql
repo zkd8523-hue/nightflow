@@ -27,16 +27,18 @@ BEGIN
   END LOOP;
 END $$;
 
+-- 인증: URL은 하드코딩, service_role_key는 Vault에서 읽는다.
+--   (app.settings.* 는 프로덕션에서 NULL이라 net.http_post가 url NULL로 실패했음 — 2026-06-17 수정)
 -- 1) 매주 월 18:05 KST (09:05 UTC)
 SELECT cron.schedule(
   'generate-share-listings-weekly',
   '5 9 * * 1',
   $$
   SELECT net.http_post(
-    url := current_setting('app.settings.supabase_url', true) || '/functions/v1/generate-share-listings',
+    url := 'https://ihqztsakxczzsxfvdkpq.supabase.co/functions/v1/generate-share-listings',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key', true)
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key' LIMIT 1)
     ),
     body := '{}'::jsonb
   );
@@ -49,10 +51,10 @@ SELECT cron.schedule(
   '10 21 * * *',
   $$
   SELECT net.http_post(
-    url := current_setting('app.settings.supabase_url', true) || '/functions/v1/generate-share-listings',
+    url := 'https://ihqztsakxczzsxfvdkpq.supabase.co/functions/v1/generate-share-listings',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.settings.service_role_key', true)
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key' LIMIT 1)
     ),
     body := '{}'::jsonb
   );

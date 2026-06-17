@@ -272,9 +272,9 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
           },
           body: JSON.stringify({
             user_id: puzzle.leader_id,
-            title: hasOffers ? "⏰ 오퍼 마감 · 검토 시간" : "오퍼 마감 · 결과 안내",
+            title: hasOffers ? "🍾 깃발 오퍼가 마감됐어요!" : "오퍼 마감 · 결과 안내",
             body: hasOffers
-              ? `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발 · 오퍼 ${offerCount}건 · 60분 안에 선택하세요`
+              ? `시크릿오퍼 ${offerCount}개 💌\n60분 동안 더 고민할 수 있어요.`
               : `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발이 오퍼 없이 마감됐어요`,
             data: {
               type: hasOffers ? "puzzle_review_started" : "puzzle_offer_deadline_empty",
@@ -423,6 +423,70 @@ async function handleOfferReminder(supabase: ReturnType<typeof createClient>) {
 }
 
 // ============================================================
+// #7 당일 12시 푸시 리마인더 (방장)
+// 이벤트(=마감) 당일 12:00~12:09 KST, pending 오퍼 1건 이상인 open 깃발 방장에게 1회.
+// "오늘 밤 준비됐어요? 오퍼 미리 둘러보세요" 사전 알림 (당일 20시 마감 알림과 별개).
+// ============================================================
+async function handleDeadlineEve(supabase: ReturnType<typeof createClient>) {
+  const nowUtc = new Date();
+  const kstHour = (nowUtc.getUTCHours() + 9) % 24;
+  const kstMinute = nowUtc.getUTCMinutes();
+
+  const bypassTime = Deno.env.get("TEST_BYPASS_TIME") === "true";
+  if (!bypassTime && (kstHour !== 12 || kstMinute >= 10)) return;
+
+  // 당일(D) KST 날짜 계산
+  const kstNow = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
+  const targetDateStr = kstNow.toISOString().slice(0, 10);
+
+  const { data: puzzles } = await supabase
+    .from("puzzles")
+    .select("id, leader_id")
+    .eq("status", "open")
+    .eq("event_date", targetDateStr)
+    .gt("expires_at", nowUtc.toISOString());
+
+  console.log(`[deadlineEve] 당일 퍼즐=${puzzles?.length ?? 0} (event_date=${targetDateStr})`);
+
+  if (!puzzles || puzzles.length === 0) return;
+
+  for (const puzzle of puzzles as Array<{ id: string; leader_id: string }>) {
+    if (await alreadySent(supabase, "puzzle_deadline_eve", puzzle.id)) continue;
+
+    // pending 오퍼 1건 이상일 때만 (검토할 오퍼가 있어야 의미)
+    const { count } = await supabase
+      .from("puzzle_offers")
+      .select("id", { count: "exact", head: true })
+      .eq("puzzle_id", puzzle.id)
+      .eq("status", "pending");
+
+    if (!count || count === 0) continue;
+
+    try {
+      await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/push-dispatch`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+        body: JSON.stringify({
+          user_id: puzzle.leader_id,
+          title: "🎉 오늘 밤 준비되셨어요?",
+          body: "도착한 오퍼, 미리 둘러보세요 👀",
+          data: { type: "puzzle_deadline_eve", puzzle_id: puzzle.id },
+          url: `/flags/${puzzle.id}`,
+        }),
+      });
+      // 중복 방지 로그 (푸시 전용 — phone 없이 마킹)
+      await logSent(supabase, "puzzle_deadline_eve", puzzle.id, puzzle.leader_id, "", "push");
+      console.log(`📲 마감 전날 리마인드 푸시 (puzzle=${puzzle.id}, leader=${puzzle.leader_id})`);
+    } catch (e) {
+      console.error(`❌ [deadlineEve] 푸시 실패 (puzzle=${puzzle.id}):`, e);
+    }
+  }
+}
+
+// ============================================================
 // #4 매칭 성사 (조각원 전원) + #5 MD 낙찰
 // ============================================================
 async function handleMatched(supabase: ReturnType<typeof createClient>) {
@@ -505,6 +569,7 @@ serve(async (req: Request) => {
       ["leaderChanged", handleLeaderChanged(supabase)],
       ["matched", handleMatched(supabase)],
       ["offerReminder", handleOfferReminder(supabase)],
+      ["deadlineEve", handleDeadlineEve(supabase)],
     ];
 
     const settled = await Promise.allSettled(handlers.map(([, p]) => p));
