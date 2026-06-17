@@ -328,7 +328,7 @@ function LoginContent() {
             }}
           >
             <span className="block text-2xl font-bold">NightFlow</span>
-            <span className="block text-sm font-medium text-neutral-300">접속하는 순간, VIP</span>
+            <span className="block text-sm font-medium text-neutral-300">밤이 더 밝아진다, 나플</span>
           </h1>
           <div className="flex items-center justify-center text-[11px] text-neutral-500 font-normal whitespace-nowrap">
             모든 서비스 무료
