@@ -19,7 +19,7 @@ import { ShareJoinPanel } from "./ShareJoinPanel";
 import { BidCompetitionIndicator } from "./BidCompetitionIndicator";
 import { useCountdown } from "@/hooks/useCountdown";
 import { BidderProfile } from "@/components/md/BidderProfile";
-import { formatDate, formatTime, formatPrice, formatEventDate, formatEntryTime, sortByLiquorFirst, categorizeLiquor } from "@/lib/utils/format";
+import { formatDate, formatTime, formatPrice, formatNumber, formatEventDate, formatEntryTime } from "@/lib/utils/format";
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { getEffectiveEndTime, getAuctionDisplayStatus } from "@/lib/utils/auction";
 import { ContactButton } from "./ContactButton";
@@ -28,7 +28,7 @@ import { ExtensionNotice } from "./ExtensionNotice";
 import { NotifySubscribeButton } from "./NotifySubscribeButton";
 import { FallbackOfferCard } from "./FallbackOfferCard";
 import { MdFavoriteButton } from "@/components/md/MdFavoriteButton";
-import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame, Heart, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, ShieldCheck, PartyPopper, MapPin, AlertCircle, Instagram, Clock, Share2, X, Edit2, Trash2, ExternalLink, BadgeCheck, Flame, Heart, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { useFavoritesContext } from "@/components/providers";
 import Link from "next/link";
 import { AuctionImage } from "@/components/auctions/DrinkPlaceholder";
@@ -61,6 +61,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   // 공유/지도 Sheet 상태
   const [shareSheetOpen, setShareSheetOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [floorPlanOpen, setFloorPlanOpen] = useState(false);
 
   // MD 삭제 상태
   const [deleteSheetOpen, setDeleteSheetOpen] = useState(false);
@@ -153,13 +154,6 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const displayStatus = getAuctionDisplayStatus(displayAuction);
   const isActive = displayStatus === 'active';
   const isExpired = displayStatus === 'expired';
-
-  // Liquor 분류 메모이제이션 (성능 최적화)
-  const { sortedIncludes, liquorItems } = useMemo(() => {
-    const sorted = sortByLiquorFirst(displayAuction.includes || []);
-    const { liquor } = categorizeLiquor(displayAuction.includes || []);
-    return { sortedIncludes: sorted, liquorItems: liquor };
-  }, [displayAuction.includes]);
 
   // 타이머 상태 결정: DB status + 실제 시작 시간 기반
   // DB가 scheduled이어도 시작 시간이 지났으면 active로 취급
@@ -428,32 +422,13 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               </h2>
             </>
           )}
-          <div className="flex items-center gap-1.5 flex-wrap mt-1">
-            {sortedIncludes.slice(0, 3).map((item) => {
-              const isLiquor = liquorItems.includes(item);
-              return (
-                <span
-                  key={item}
-                  className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold border ${isLiquor
-                    ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                    : "bg-neutral-800/50 text-neutral-400 border-neutral-700/30"
-                    }`}
-                >
-                  {item}
-                </span>
-              );
-            })}
-            {(displayAuction.includes?.length || 0) > 3 && (
-              <span className="text-[11px] text-neutral-500 font-bold">
-                +{(displayAuction.includes?.length || 0) - 3}
-              </span>
-            )}
-            {(displayAuction.today_view_count ?? 0) >= 10 && (
+          {(displayAuction.today_view_count ?? 0) >= 10 && (
+            <div className="flex items-center mt-1">
               <span className="ml-auto text-[11px] text-amber-400/80 font-semibold">
                 👀 오늘 {displayAuction.today_view_count}명
               </span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Image Disclaimer */}
@@ -510,8 +485,30 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
           />
         )}
 
-        {/* MD 메시지 (제목 + 한마디) */}
-        {(displayAuction.md_comment || displayAuction.md_message) && (
+        {/* 조각: 방문 일정 + MD 한마디 통합 카드 */}
+        {isShare && (
+          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl px-4 py-2.5 space-y-1.5">
+            <p className="text-[17px] text-white font-extrabold leading-tight tracking-tight">{formatEventDate(displayAuction.event_date)}</p>
+            {(displayAuction.md_comment || displayAuction.md_message) && (
+              <div className="space-y-0.5">
+                <span className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">MD의 한마디</span>
+                {displayAuction.md_comment && (
+                  <p className="text-[15px] text-white font-bold leading-snug">
+                    {displayAuction.md_comment}
+                  </p>
+                )}
+                {displayAuction.md_message && (
+                  <p className="text-[13px] text-neutral-300 leading-relaxed whitespace-pre-line">
+                    {displayAuction.md_message}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* MD 메시지 (제목 + 한마디) — 조각이 아닌 경우 */}
+        {!isShare && (displayAuction.md_comment || displayAuction.md_message) && (
           <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-2">
             <span className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">MD의 한마디</span>
             {displayAuction.md_comment && (
@@ -528,10 +525,19 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         )}
 
         {/* 2. Current Bid Status Card (High Urgency) */}
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 space-y-2 shadow-2xl">
+        {isShare ? (
+          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 shadow-2xl flex items-baseline justify-between gap-2">
+            <div className="flex items-baseline font-bold text-white tracking-tight leading-none">
+              <span className="text-[24px]">{formatNumber(displayAuction.current_bid || displayAuction.start_price)}</span>
+              <span className="text-[15px] ml-0.5 font-semibold text-neutral-300">원</span>
+            </div>
+            <span className="text-[13px] text-neutral-500 font-bold tracking-wider">1인</span>
+          </div>
+        ) : (
+        <Card className="bg-[#1C1C1E] border-neutral-800/50 rounded-2xl p-4 space-y-2 shadow-2xl">
           <div className="space-y-0.5">
             <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">
-              {isShare ? "1인" : isInstant ? "예약가" : (displayAuction.bidder_count ?? 0) === 0 ? "시작가" : "현재 최고 입찰가"}
+              {isInstant ? "예약가" : (displayAuction.bidder_count ?? 0) === 0 ? "시작가" : "현재 최고 입찰가"}
             </p>
             <CurrentBidDisplay
               amount={displayAuction.current_bid || displayAuction.start_price}
@@ -544,7 +550,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
 
           </div>
 
-          {!isShare && <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} isInstant={isInstant} />}
+          <AuctionTimer endTime={endTime} status={timerStatus} startTimeLabel={startTimeLabel} isInstant={isInstant} />
 
           {/* 마감 임박 시 연장 안내 (경매만) */}
           {isActive && !isInstant && (
@@ -559,60 +565,105 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             <NotifySubscribeButton auctionId={displayAuction.id} />
           )}
         </Card>
+        )}
 
-        {/* 3. Event Summary */}
-        <div className="px-1">
-          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-2.5">
-            <div className="flex items-center gap-1.5">
-              <Calendar className="w-3.5 h-3.5 text-neutral-500" />
-              <span className="text-[11px] text-neutral-500 font-bold tracking-wider">방문 일정</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <p className="text-[16px] text-white font-bold">{formatEventDate(displayAuction.event_date)}</p>
-              {!isShare && (displayAuction.entry_time ? (
-                <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full mt-0.5">
-                  <Clock className="w-3 h-3 text-blue-400" />
-                  <span className="text-[11px] font-bold text-blue-400">{formatEntryTime(displayAuction.entry_time, displayAuction.event_date)}</span>
-                </div>
-              ) : (
-                <div className="flex items-center bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
-                  <span className="text-[11px] font-bold text-green-500">즉시 입장 가능</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Floor Plan Viewer (if club has floor plan) */}
-        {club?.floor_plan_url && displayAuction.table_info && (
-          <div className="px-1">
-            <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-neutral-500" />
-                <h2 className="text-[14px] font-bold text-white">테이블 위치</h2>
+        {/* 3. Event Summary — 조각은 가격 카드에 인라인으로 통합됨 */}
+        {!isShare && (
+          <div>
+            <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-2.5">
+              <div className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-neutral-500" />
+                <span className="text-[11px] text-neutral-500 font-bold tracking-wider">방문 일정</span>
               </div>
-              <FloorPlanViewer
-                floorPlanUrl={club.floor_plan_url}
-                positions={[]}
-                highlightLabel={displayAuction.table_info}
-              />
+              <div className="flex items-center gap-3">
+                <p className="text-[16px] text-white font-bold">{formatEventDate(displayAuction.event_date)}</p>
+                {displayAuction.entry_time ? (
+                  <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full mt-0.5">
+                    <Clock className="w-3 h-3 text-blue-400" />
+                    <span className="text-[11px] font-bold text-blue-400">{formatEntryTime(displayAuction.entry_time, displayAuction.event_date)}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
+                    <span className="text-[11px] font-bold text-green-500">즉시 입장 가능</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* 4. Table Details Card */}
+        {/* 4. Table Details Card (테이블 구성 + 테이블맵 통합) */}
         <TableDetailsCard
           includes={displayAuction.includes || []}
           notes={displayAuction.notes}
+          floorPlanSlot={
+            club?.floor_plan_url && displayAuction.table_info ? (
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => setFloorPlanOpen((v) => !v)}
+                  className="w-full flex items-center justify-center gap-2"
+                  aria-expanded={floorPlanOpen}
+                >
+                  <h2 className="text-[14px] font-bold text-white">
+                    {floorPlanOpen ? "테이블 위치" : "테이블맵 보기"}
+                  </h2>
+                  <ChevronDown
+                    className={`w-4 h-4 text-neutral-500 transition-transform ${floorPlanOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+                <FloorPlanViewer
+                  floorPlanUrl={club.floor_plan_url}
+                  positions={[]}
+                  highlightLabel={displayAuction.table_info}
+                  showImage={floorPlanOpen}
+                />
+              </div>
+            ) : null
+          }
         />
 
+        {/* 클럽 위치 미니맵 (MD 정보 위) */}
+        {club && club.latitude && club.longitude && (
+          <div>
+            <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5 text-neutral-500" />
+                  <h2 className="text-[14px] font-bold text-white">위치</h2>
+                </div>
+                <button
+                  onClick={() => setIsMapOpen(true)}
+                  className="flex items-center justify-center p-2 -m-2 rounded-lg text-[12px] text-neutral-400 font-bold hover:text-white transition-colors active:bg-neutral-800"
+                >
+                  지도앱으로 열기 →
+                </button>
+              </div>
+              <div
+                onClick={() => setIsMapOpen(true)}
+                className="relative rounded-xl overflow-hidden border border-neutral-800 w-full cursor-pointer"
+              >
+                <iframe
+                  src={`https://maps.google.com/maps?q=${club.latitude},${club.longitude}&z=16&output=embed&hl=ko`}
+                  className="w-full h-[130px] pointer-events-none"
+                  loading="lazy"
+                  title={`${club.name} 위치`}
+                />
+              </div>
+              {club.address && (
+                <p className="text-[12px] text-neutral-500 leading-relaxed">{club.address}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 5. MD Information & Trust */}
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-6 space-y-4">
-          <div className="space-y-4">
+        <Card className="bg-[#1C1C1E] border-neutral-800/50 rounded-2xl p-3 space-y-3">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className="relative w-12 h-12 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
+                  <div className="relative w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
                     <span className="absolute inset-0 flex items-center justify-center font-black text-neutral-500">
                       {md?.display_name?.substring(0, 1) || md?.name?.substring(0, 1) || "MD"}
                     </span>
@@ -630,9 +681,11 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                   </div>
                 </div>
                 <div>
-                  <p className="text-white font-bold">{md?.display_name || md?.name || "나이트플로우 매니저"}</p>
+                  <div className="flex items-baseline gap-1.5 flex-wrap">
+                    <p className="text-white font-bold">{md?.display_name || md?.name || "나이트플로우 매니저"}</p>
+                    <p className="text-[11px] text-neutral-500 font-medium">NightFlow 인증 파트너</p>
+                  </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <p className="text-[12px] text-neutral-500 font-medium">NightFlow 인증 파트너</p>
                     {mdConfirmedCount > 0 && (
                       <span className="text-[11px] text-green-500 font-bold">
                         · 거래 {mdConfirmedCount}건 완료
@@ -664,7 +717,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                         className="flex items-center gap-1.5 text-[12px] font-bold bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1.5 rounded-full transition-colors"
                       >
                         <Instagram className="w-3.5 h-3.5" />
-                        @{md.instagram}
+                        {md.instagram}
                       </a>
                     )}
                   </div>
@@ -695,40 +748,6 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               vipUserIds={isMdOwner ? vipUserIds : undefined}
               onBidderClick={isMdOwner ? handleBidderClick : undefined}
             />
-          </div>
-        )}
-
-        {/* 8. 클럽 위치 미니맵 */}
-        {club && club.latitude && club.longitude && (
-          <div className="px-1">
-            <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-3.5 h-3.5 text-neutral-500" />
-                  <h2 className="text-[14px] font-bold text-white">클럽 위치</h2>
-                </div>
-                <button
-                  onClick={() => setIsMapOpen(true)}
-                  className="flex items-center justify-center p-2 -m-2 rounded-lg text-[12px] text-neutral-400 font-bold hover:text-white transition-colors active:bg-neutral-800"
-                >
-                  지도앱으로 열기 →
-                </button>
-              </div>
-              <div
-                onClick={() => setIsMapOpen(true)}
-                className="relative rounded-xl overflow-hidden border border-neutral-800 w-full cursor-pointer"
-              >
-                <iframe
-                  src={`https://maps.google.com/maps?q=${club.latitude},${club.longitude}&z=16&output=embed&hl=ko`}
-                  className="w-full h-[130px] pointer-events-none"
-                  loading="lazy"
-                  title={`${club.name} 위치`}
-                />
-              </div>
-              {club.address && (
-                <p className="text-[12px] text-neutral-500 leading-relaxed">{club.address}</p>
-              )}
-            </div>
           </div>
         )}
 

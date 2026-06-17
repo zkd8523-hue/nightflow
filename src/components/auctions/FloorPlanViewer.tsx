@@ -8,6 +8,7 @@ interface FloorPlanViewerProps {
   floorPlanUrl: string;
   positions: TablePosition[];
   highlightLabel: string | null;
+  showImage?: boolean;
 }
 
 function getViewerMarkerStyle(type: TableType, isHighlighted: boolean) {
@@ -22,6 +23,7 @@ export function FloorPlanViewer({
   floorPlanUrl,
   positions,
   highlightLabel,
+  showImage = true,
 }: FloorPlanViewerProps) {
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -44,51 +46,53 @@ export function FloorPlanViewer({
   return (
     <>
       <div className="space-y-2">
-        <button
-          type="button"
-          onClick={() => setIsZoomed(true)}
-          aria-label="테이블 위치 크게 보기"
-          className="relative rounded-xl overflow-hidden border border-neutral-800 group block w-full cursor-zoom-in"
-        >
-          <img
-            src={floorPlanUrl}
-            alt="클럽 플로어맵"
-            className="w-full h-auto block select-none"
-            draggable={false}
-          />
+        {showImage && (
+          <button
+            type="button"
+            onClick={() => setIsZoomed(true)}
+            aria-label="테이블 위치 크게 보기"
+            className="relative rounded-xl overflow-hidden border border-neutral-800 group block w-full cursor-zoom-in"
+          >
+            <img
+              src={floorPlanUrl}
+              alt="클럽 플로어맵"
+              className="w-full h-auto block select-none"
+              draggable={false}
+            />
 
-          {positions.map((marker) => {
-            const isHighlighted = highlightLabel === marker.label;
-            return (
-              <div
-                key={marker.id}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 ${isHighlighted ? "z-20" : "z-10"}`}
-                style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
-              >
+            {positions.map((marker) => {
+              const isHighlighted = highlightLabel === marker.label;
+              return (
                 <div
-                  className={`flex items-center gap-1 px-2 py-1 rounded-full border-2 transition-all ${getViewerMarkerStyle(marker.type, isHighlighted)}`}
+                  key={marker.id}
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 ${isHighlighted ? "z-20" : "z-10"}`}
+                  style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
                 >
-                  <span className="text-[10px] font-black leading-none">
-                    {marker.label}
-                  </span>
+                  <div
+                    className={`flex items-center gap-1 px-2 py-1 rounded-full border-2 transition-all ${getViewerMarkerStyle(marker.type, isHighlighted)}`}
+                  >
+                    <span className="text-[10px] font-black leading-none">
+                      {marker.label}
+                    </span>
+                  </div>
+                  {isHighlighted && (
+                    <div className="absolute inset-0 -m-1 rounded-full border-2 border-amber-400/60 animate-pulse pointer-events-none" />
+                  )}
                 </div>
-                {isHighlighted && (
-                  <div className="absolute inset-0 -m-1 rounded-full border-2 border-amber-400/60 animate-pulse pointer-events-none" />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
 
-          {/* 확대 힌트 배지 */}
-          <div className="absolute top-2 right-2 z-30 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-full opacity-90 group-hover:opacity-100 transition-opacity">
-            <ZoomIn className="w-3 h-3 text-white" />
-            <span className="text-[10px] font-bold text-white">크게 보기</span>
-          </div>
-        </button>
+            {/* 확대 힌트 배지 */}
+            <div className="absolute top-2 right-2 z-30 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-full opacity-90 group-hover:opacity-100 transition-opacity">
+              <ZoomIn className="w-3 h-3 text-white" />
+              <span className="text-[10px] font-bold text-white">크게 보기</span>
+            </div>
+          </button>
+        )}
 
         {highlightLabel && (
           <div className="flex items-center gap-2 justify-center">
-            <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-amber-500" />
             <span className="text-xs text-amber-400 font-bold">
               {highlightLabel}
             </span>

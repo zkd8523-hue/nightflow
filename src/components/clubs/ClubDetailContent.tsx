@@ -616,9 +616,6 @@ export function ClubDetailContent({
         />
       )}
 
-      {/* 한 줄 리뷰 */}
-      <OneLinerSection clubId={club.id} clubName={clubName} />
-
       {/* 경매 목록 */}
       <AuctionList
         activeAuctions={visibleAuctions}
@@ -628,6 +625,9 @@ export function ClubDetailContent({
         hideShareEmptyState
         initialTab="share"
       />
+
+      {/* 한 줄 리뷰 */}
+      <OneLinerSection clubId={club.id} clubName={clubName} />
 
       {/* 풀스크린 지도 모달 — 네이버 패턴 */}
       <ClubLocationModal

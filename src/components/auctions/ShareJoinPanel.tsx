@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import type { Auction, ShareClaimError } from "@/types/database";
 import { formatNumber } from "@/lib/utils/format";
-import { Zap, ExternalLink, Loader2, UserPlus } from "lucide-react";
+import { Zap, ExternalLink, Loader2 } from "lucide-react";
 import { PuzzlePiece } from "@/components/puzzles/PuzzleCard";
 import { trackShareEvent } from "@/lib/analytics/events";
 import { getClientId } from "@/lib/utils/clientId";
@@ -383,17 +383,6 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
             disabled
           >
             {isFull ? "마감" : "참여 불가"}
-          </Button>
-        )}
-
-        {onShareClick && (
-          <Button
-            variant="outline"
-            className="w-full h-11 rounded-2xl border border-neutral-700 bg-transparent text-neutral-300 hover:bg-neutral-800 hover:text-white text-sm font-semibold"
-            onClick={onShareClick}
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            같이 갈 친구에게 공유
           </Button>
         )}
 

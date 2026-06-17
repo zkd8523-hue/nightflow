@@ -1,6 +1,5 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useMemo } from "react";
@@ -8,14 +7,17 @@ import { useMemo } from "react";
 interface TableDetailsCardProps {
   includes: string[];
   notes?: string;
+  /** 테이블맵(플로어맵) 토글 영역. 테이블 구성 칩 아래에 삽입됨 */
+  floorPlanSlot?: React.ReactNode;
 }
 
 /**
  * 테이블 상세 정보 카드
  * - 주류 패키지와 테이블 구성 아이템을 분류하여 표시
+ * - 테이블맵(선택)
  * - 참고 사항 표시
  */
-export function TableDetailsCard({ includes, notes }: TableDetailsCardProps) {
+export function TableDetailsCard({ includes, notes, floorPlanSlot }: TableDetailsCardProps) {
   const { liquorItems, extraItems } = useMemo(() => {
     const liquorKeywords = [
       "병",
@@ -43,57 +45,50 @@ export function TableDetailsCard({ includes, notes }: TableDetailsCardProps) {
   }, [includes]);
 
   return (
-    <Card className="bg-[#1C1C1E] border-neutral-800/50 p-6 space-y-6">
-      <div className="space-y-5">
+    <Card className="bg-[#1C1C1E] border-neutral-800/50 rounded-2xl px-4 py-3 space-y-2.5">
+      <div className="space-y-2.5">
         {/* 테이블 구성 (주류 포함) */}
         {includes.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-[16px] font-bold text-white flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-green-500" />
-              테이블 구성
-            </h2>
-            <div className="flex flex-wrap gap-2 w-full">
-              {liquorItems.map((item) => (
-                <Badge
-                  key={item}
-                  variant="secondary"
-                  className="bg-amber-500/10 text-amber-400 border-amber-500/30 px-4 py-2 font-bold text-[14px] whitespace-normal break-words h-auto"
-                >
-                  {item}
-                </Badge>
-              ))}
-              {extraItems.map((item) => (
-                <Badge
-                  key={item}
-                  variant="secondary"
-                  className="bg-neutral-900/50 text-neutral-400 border-neutral-800 px-4 py-2 font-bold text-[14px] whitespace-normal break-words h-auto"
-                >
-                  {item}
-                </Badge>
-              ))}
-            </div>
+          <div className="space-y-2.5">
+            <h2 className="text-[19px] font-black text-white tracking-tight">테이블 구성</h2>
+            {liquorItems.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 w-full">
+                {liquorItems.map((item) => (
+                  <Badge
+                    key={item}
+                    variant="secondary"
+                    className="bg-amber-500/10 text-amber-400 border-amber-500/30 px-2.5 py-1 font-bold text-[12px] whitespace-normal break-words h-auto"
+                  >
+                    {item}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {extraItems.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 w-full">
+                {extraItems.map((item) => (
+                  <Badge
+                    key={item}
+                    variant="secondary"
+                    className="bg-neutral-900/50 text-neutral-400 border-neutral-800 px-2.5 py-1 font-bold text-[12px] whitespace-normal break-words h-auto"
+                  >
+                    {item}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* 주류 변경 안내 */}
-        {liquorItems.length > 0 && (
-          <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
-            <p className="text-[11px] text-amber-500 font-bold">
-              주류 변경 안내
-            </p>
-            <p className="text-[10px] text-amber-500/80 mt-1">
-              • 현장에서 동급 브랜드 변경 가능
-            </p>
-            <p className="text-[10px] text-amber-500/80">
-              • 낙찰가 이하 환불 불가
-            </p>
-          </div>
+        {/* 테이블맵 토글 */}
+        {floorPlanSlot && (
+          <div className="pt-2.5 border-t border-neutral-800/30">{floorPlanSlot}</div>
         )}
       </div>
 
       {/* 참고 사항 */}
       {notes && (
-        <div className="space-y-2 pt-2 border-t border-neutral-800/30">
+        <div className="space-y-1.5 pt-3 border-t border-neutral-800/30">
           <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">
             참고 사항
           </p>
