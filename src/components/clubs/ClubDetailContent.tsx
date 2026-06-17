@@ -889,6 +889,8 @@ function AdminGuestSignEditor({
           value={customText}
           onChange={(e) => setCustomText(e.target.value)}
           onKeyDown={(e) => {
+            // 한글 IME 조합 중 Enter는 조합 확정용 — 중복/잘림 막기
+            if (e.nativeEvent.isComposing) return;
             if (e.key === "Enter") {
               e.preventDefault();
               addCustom();
