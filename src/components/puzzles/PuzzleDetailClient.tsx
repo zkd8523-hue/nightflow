@@ -33,6 +33,7 @@ dayjs.locale("ko");
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { LeaderInfoSheet } from "./LeaderInfoSheet";
 import { ContentMoreMenu } from "@/components/moderation/ContentMoreMenu";
+import { RecentMatchShowcaseSheet, useRecentMatchedPuzzle } from "./RecentMatchShowcaseSheet";
 
 interface PuzzleLeaderInfo {
   id: string;
@@ -149,6 +150,8 @@ export function PuzzleDetailClient({
   const [showKakaoNotice, setShowKakaoNotice] = useState(false);
   const [showLeaderInfo, setShowLeaderInfo] = useState(false);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
+  const [showMatchedShowcase, setShowMatchedShowcase] = useState(false);
+  const recentMatchedPuzzle = useRecentMatchedPuzzle();
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/flags/${puzzle.id}`;
@@ -1201,7 +1204,13 @@ export function PuzzleDetailClient({
           {!isLeader && !isMember && !isMd && (
             <div className="text-center space-y-1">
               {pendingOffers.length > 0 && !isAccepted && (
-                <p className="text-[13px] font-bold text-amber-300 mb-2">어떤 오퍼 받을지 궁금해? 👇</p>
+                <button
+                  type="button"
+                  onClick={() => setShowMatchedShowcase(true)}
+                  className="block w-full mb-2 text-center text-[13px] font-bold text-white hover:text-neutral-300 active:opacity-70 transition-colors"
+                >
+                  어떤 오퍼 받았는지 구경하기 👈
+                </button>
               )}
               <Link
                 href={currentUserId ? "/flags/new" : "/login?redirect=/flags/new"}
@@ -1210,7 +1219,7 @@ export function PuzzleDetailClient({
                 ⛳ 나도 오퍼받기
               </Link>
               <p className="text-[10px] text-neutral-500">
-                모든 서비스 무료
+                무료
               </p>
             </div>
           )}
@@ -1397,6 +1406,13 @@ export function PuzzleDetailClient({
         open={showLeaderInfo}
         onOpenChange={setShowLeaderInfo}
         leader={puzzle.leader ?? null}
+      />
+
+      <RecentMatchShowcaseSheet
+        open={showMatchedShowcase}
+        onOpenChange={setShowMatchedShowcase}
+        recentMatchedPuzzle={recentMatchedPuzzle}
+        ctaHref={currentUserId ? "/flags/new" : "/login?redirect=/flags/new"}
       />
 
       <PuzzleCancelConfirmSheet

@@ -10,6 +10,7 @@ import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics/events";
 import { isInstantEnabled } from "@/lib/features";
 import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
+import { BackButton } from "@/components/ui/BackButton";
 import { Suspense } from "react";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -308,7 +309,10 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
-      <Card className="w-full max-w-md p-8 space-y-5">
+      <Card className="w-full max-w-md p-8 space-y-5 relative">
+        <div className="absolute top-4 left-4 z-10">
+          <BackButton fallbackHref="/" />
+        </div>
         <div className="text-center space-y-2">
           <h1
             className="cursor-pointer select-none leading-snug"

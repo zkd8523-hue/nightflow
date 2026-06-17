@@ -277,7 +277,6 @@ export function HomeContent({
   const [shareHeaderDate, setShareHeaderDate] = useState<string | null>(null);
   // 가이드는 항상 닫힘 상태로 시작. "ⓘ 깃발 이용 방법" 버튼으로만 펼침.
   const [showGuide, setShowGuide] = useState(false);
-  const guideAutoOpenedRef = useRef(false);
   // 가이드 모드는 단일 (full만) — 시크릿오퍼는 PUZZLE_ONBOARDING_STEPS 2단계에 통합됨
   const [guideMode, setGuideMode] = useState<"full">("full");
   // 첫 방문 시 캐러셀 위 인라인 가이드 (Tip 박스 자리). 닫으면 영구 숨김.
@@ -457,14 +456,7 @@ export function HomeContent({
     return () => { cancelled = true; };
   }, [supabase]);
 
-  // 첫 방문 시 캐러셀 위 가이드 자동 표시 (StrictMode 이중 호출 가드)
-  useEffect(() => {
-    if (guideAutoOpenedRef.current) return;
-    guideAutoOpenedRef.current = true;
-    if (!localStorage.getItem(FLAG_CTA_SHOWN_KEY)) {
-      setShowTopGuide(true);
-    }
-  }, []);
+  // 첫 방문 시 가이드 자동 표시 제거 — 사용자가 "ⓘ 이용방법" 버튼을 직접 눌렀을 때만 노출
 
   const dismissTopGuide = () => {
     setShowTopGuide(false);
@@ -1041,7 +1033,7 @@ export function HomeContent({
 
     // 탭별 Tip 콘텐츠 (풀 화면과 일관)
     const userPuzzleTipContent = (
-      <div className="text-white">
+      <div className="text-[14.5px] text-white">
         오퍼 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
       </div>
     );
@@ -1111,11 +1103,11 @@ export function HomeContent({
           {/* 유저 팁박스 + 이용방법 토글 — 섹션 헤더 위 */}
           {visibleCompactTip && !isMdOrAdmin && (
             <section className="space-y-2 mb-3">
-              {!showGuide && (
+              {true && (
                 <div
                   ref={tipBoxRef}
                   data-no-pull-refresh
-                  className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 ${showTopGuide ? "" : "pr-[88px]"} ${recentMatchedPuzzle ? "pt-3.5 pb-5" : "pt-2.5 pb-2"}`}
+                  className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 ${(showTopGuide || showGuide) ? "" : "pr-[88px]"} ${recentMatchedPuzzle ? "pt-3.5 pb-5" : "pt-2.5 pb-2"}`}
                 >
                   {(() => {
                     const compactSlides: React.ReactNode[] = [
@@ -1213,7 +1205,6 @@ export function HomeContent({
                       onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
                       className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-amber-300 hover:bg-amber-400/25 hover:text-amber-200 active:scale-95 transition-all"
                     >
-                      <span className="text-[11px] leading-none">ⓘ</span>
                       이용방법
                     </button>
                   )}
@@ -1228,20 +1219,17 @@ export function HomeContent({
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
-                  {currentTab === "puzzle" && !isMdOrAdmin && (
-                    <span className="absolute bottom-4 right-4 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-tl-xl rounded-br-2xl rounded-tr-none rounded-bl-none leading-none z-10">
-                      모든 서비스 무료
-                    </span>
-                  )}
-                  <span className="absolute -top-2 left-3 text-[10px] font-black text-black bg-amber-500 px-1.5 py-0.5 rounded-full shadow-sm leading-none z-10">
-                    ⓘ 이용방법
-                  </span>
                   <div className="flex flex-col gap-2">
                     {compactSteps.map((step, idx) => (
                       <div
                         key={idx}
-                        className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3"
+                        className="bg-neutral-700/60 border border-neutral-600 rounded-2xl p-3 flex flex-row items-center gap-3 relative overflow-hidden"
                       >
+                        {idx === 0 && currentTab === "puzzle" && !isMdOrAdmin && (
+                          <span className="absolute top-0 right-0 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-tr-2xl rounded-bl-xl rounded-tl-none rounded-br-none leading-none z-10">
+                            모든 서비스 무료
+                          </span>
+                        )}
                         <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
                           {step.icon}
                         </div>
@@ -1270,6 +1258,17 @@ export function HomeContent({
                       </div>
                     ))}
                   </div>
+                  {currentTab === "puzzle" && !isMdOrAdmin && (
+                    <div className="flex justify-end mt-3">
+                      <Link
+                        href={user ? "/flags/new" : "/login?redirect=/flags/new"}
+                        onClick={dismissGuide}
+                        className="inline-flex items-center gap-1 h-9 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.97] text-black font-black text-[13px] rounded-full transition-all"
+                      >
+                        🚩 바로가기
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -1292,7 +1291,7 @@ export function HomeContent({
                 {compactSteps.map((step, idx) => (
                   <div
                     key={idx}
-                    className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3"
+                    className="bg-neutral-700/60 border border-neutral-600 rounded-2xl p-3 flex flex-row items-center gap-3"
                   >
                     <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
                       {step.icon}
@@ -1540,7 +1539,6 @@ export function HomeContent({
                       onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
                       className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-amber-300 hover:bg-amber-400/25 hover:text-amber-200 active:scale-95 transition-all"
                     >
-                      <span className="text-[11px] leading-none">ⓘ</span>
                       이용방법
                     </button>
                   )}
@@ -1556,17 +1554,17 @@ export function HomeContent({
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
-                  {currentTab === "puzzle" && !isMdOrAdmin && (
-                    <span className="absolute bottom-4 right-4 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-tl-xl rounded-br-2xl rounded-tr-none rounded-bl-none leading-none z-10">
-                      모든 서비스 무료
-                    </span>
-                  )}
                   <div className="flex flex-col gap-2">
                     {visibleSteps.map((step, idx) => (
                       <div
                         key={idx}
-                        className="bg-neutral-800/80 border border-neutral-700 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default"
+                        className="bg-neutral-700/60 border border-neutral-600 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default relative overflow-hidden"
                       >
+                        {idx === 0 && currentTab === "puzzle" && !isMdOrAdmin && (
+                          <span className="absolute top-0 right-0 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-tr-2xl rounded-bl-xl rounded-tl-none rounded-br-none leading-none z-10">
+                            모든 서비스 무료
+                          </span>
+                        )}
                         <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
                           {step.icon}
                         </div>
@@ -1595,6 +1593,17 @@ export function HomeContent({
                       </div>
                     ))}
                   </div>
+                  {currentTab === "puzzle" && !isMdOrAdmin && (
+                    <div className="flex justify-end mt-3">
+                      <Link
+                        href={user ? "/flags/new" : "/login?redirect=/flags/new"}
+                        onClick={dismissGuide}
+                        className="inline-flex items-center gap-1 h-9 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.97] text-black font-black text-[13px] rounded-full transition-all"
+                      >
+                        🚩 바로가기
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
