@@ -69,18 +69,9 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
           backdrop 없음 → 좌측 지도 영역 클릭/드래그/스크롤이 그대로 전달됨.
           z-[200]으로 ClubList 검색바(z-30)보다 위. */}
       <div className="hidden md:block">
-        {/* 패널 외부 좌측 floating 닫기 버튼 */}
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="닫기"
-          className="fixed top-20 right-[calc(min(480px,100vw)+16px)] lg:right-[calc(min(560px,100vw)+16px)] z-[201] w-10 h-10 flex items-center justify-center rounded-full bg-black/70 backdrop-blur-md text-white hover:bg-black/90 shadow-lg"
-        >
-          <X className="w-5 h-5" />
-        </button>
-        {/* 우측 사이드 패널 — 검색바 영역(상단 ~64px) 아래에서 시작 */}
+        {/* 우측 사이드 패널 — 전체 높이를 덮어 검색바가 패널 위로 겹치지 않게 */}
         <aside
-          className="fixed top-16 right-0 h-[calc(100vh-4rem)] w-full max-w-[480px] lg:max-w-[560px] z-[200] bg-[#0A0A0A] border-l border-t border-neutral-900 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 rounded-tl-2xl overflow-hidden"
+          className="fixed top-0 right-0 h-screen w-full max-w-[480px] lg:max-w-[560px] z-[200] bg-[#0A0A0A] border-l border-neutral-900 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label="클럽 상세"
@@ -115,9 +106,9 @@ function SheetHeader({ clubId, onClose }: { clubId: string; onClose: () => void 
           type="button"
           onClick={onClose}
           aria-label="닫기"
-          className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-neutral-900"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-neutral-800 text-white hover:bg-neutral-700 active:scale-95 transition"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
     </div>

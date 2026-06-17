@@ -1,11 +1,9 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
-import { Flag, Wine, ChevronRight } from "lucide-react";
+import { Flag } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
-import { getTagsByGroup } from "@/lib/clubs/tags";
 import { getOpeningStatus } from "@/lib/clubs/openingStatus";
 
 interface ClubItem {
@@ -249,23 +247,27 @@ function DetailCard({
   onCardClick: (clubId: string) => void;
   onDetailClick?: (clubId: string) => void;
 }) {
-  const genres = getTagsByGroup(club.tags || [], "genre");
-  const genreLine = genres.slice(0, 2).map((g) => `#${g.label}`).join(" ");
   const opening = getOpeningStatus(club.operating_hours);
+
+  // 카드 어디를 눌러도: 지도 panTo(위치 동기화) + 상세 모달 오픈
+  const handleActivate = () => {
+    onCardClick(club.id);
+    if (onDetailClick) onDetailClick(club.id);
+  };
 
   return (
     <div
       role="button"
       tabIndex={0}
       data-club-id={club.id}
-      onClick={() => onCardClick(club.id)}
+      onClick={handleActivate}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          onCardClick(club.id);
+          handleActivate();
         }
       }}
-      className={`flex gap-3 items-start p-3 transition-colors cursor-pointer ${
+      className={`flex gap-3 items-center p-3 transition-colors cursor-pointer ${
         isSelected ? "bg-neutral-800/60" : "hover:bg-neutral-900/60"
       }`}
     >
@@ -286,11 +288,16 @@ function DetailCard({
         )}
       </div>
       <div className="flex-1 min-w-0 space-y-1">
-        <div className="flex items-start gap-2">
-          <p className="text-white text-[15px] font-black truncate flex-1">
-            {club.name}
-          </p>
-          <span onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <div className="flex items-baseline gap-1.5 min-w-0 flex-1">
+            <p className="text-white text-[15px] font-black truncate">
+              {club.name}
+            </p>
+            <span className="text-[12px] font-medium text-neutral-500 flex-shrink-0">
+              {club.area || "기타"}
+            </span>
+          </div>
+          <span onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
             <FavoriteButton clubId={club.id} />
           </span>
         </div>
@@ -305,7 +312,7 @@ function DetailCard({
           </div>
         )}
 
-        {/* Line 2: 영업 상태 · 지역 */}
+        {/* Line 2: 영업 상태 */}
         <div className="flex items-center gap-1.5 text-[12px] font-medium">
           {opening === "open" ? (
             <span className="inline-flex items-center gap-1 text-green-500">
@@ -323,63 +330,15 @@ function DetailCard({
               영업시간 준비중
             </span>
           )}
-          <span className="text-neutral-700">·</span>
-          <span className="text-neutral-500 truncate">{club.area || "기타"}</span>
         </div>
 
-        {/* Line 3: 장르 · 입장료 · (우측) 상세 보기 — 한 줄로 압축 */}
-        <div className="flex items-center gap-2 min-w-0">
-          {(genreLine || club.entry_fee_detail) && (
-            <p className="text-neutral-400 text-[11px] font-medium truncate flex-1 min-w-0">
-              {genreLine && <span>{genreLine}</span>}
-              {genreLine && club.entry_fee_detail && (
-                <span className="text-neutral-700 mx-1.5">·</span>
-              )}
-              {club.entry_fee_detail && (
-                <span className="text-neutral-300">{club.entry_fee_detail}</span>
-              )}
-            </p>
-          )}
-          {!(genreLine || club.entry_fee_detail) && <div className="flex-1" />}
-          {onDetailClick ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDetailClick(club.id);
-              }}
-              className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 active:scale-95 transition flex-shrink-0"
-            >
-              상세 보기
-              <ChevronRight className="w-3 h-3" strokeWidth={3} />
-            </button>
-          ) : (
-            <Link
-              href={`/clubs/${club.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-400 hover:text-amber-300 active:scale-95 transition flex-shrink-0"
-            >
-              상세 보기
-              <ChevronRight className="w-3 h-3" strokeWidth={3} />
-            </Link>
-          )}
-        </div>
-
-        {/* Line 4: 깃발 · 가격표 (있을 때만 줄 자체 노출) */}
-        {(flagCount > 0 || club.drink_menu_url) && (
+        {/* Line 4: 깃발 (있을 때만) */}
+        {flagCount > 0 && (
           <div className="flex items-center gap-1.5 pt-0.5">
-            {flagCount > 0 && (
-              <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                <Flag className="w-3 h-3" />
-                깃발 {flagCount}
-              </span>
-            )}
-            {club.drink_menu_url && (
-              <span className="inline-flex items-center gap-1 bg-neutral-800 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                <Wine className="w-3 h-3" />
-                가격표
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              <Flag className="w-3 h-3" />
+              깃발 {flagCount}
+            </span>
           </div>
         )}
       </div>

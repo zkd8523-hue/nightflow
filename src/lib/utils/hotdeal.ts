@@ -105,8 +105,8 @@ export const GUEST_SIGN_BENEFIT_PRESETS: { value: string; label: string; emoji: 
 export function benefitLabel(tag: string): { label: string; emoji: string } {
   const preset = GUEST_SIGN_BENEFIT_PRESETS.find((p) => p.value === tag);
   if (preset) return { label: preset.label, emoji: preset.emoji };
-  // 직접입력: tag 자체가 라벨
-  return { label: tag, emoji: "✨" };
+  // 직접입력: tag 자체가 라벨, 별도 아이콘 없음
+  return { label: tag, emoji: "" };
 }
 
 /**

@@ -270,8 +270,8 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
           {view === "map" && (
             <button
               type="button"
-              onClick={() => router.back()}
-              aria-label="뒤로가기"
+              onClick={() => changeView("list")}
+              aria-label="목록으로"
               className="w-9 h-9 flex items-center justify-center rounded-full bg-neutral-900 hover:bg-neutral-800 active:scale-95 transition flex-shrink-0"
             >
               <ArrowLeft className="w-4 h-4 text-white" />
@@ -519,10 +519,13 @@ function ClubCard({
         <div className="absolute top-2 right-2 z-10">
           <FavoriteButton clubId={club.id} />
         </div>
-        {/* 상단 혜택 배지 — 홈(ClubBenefitSection)과 동일 디자인, 긴 문구는 2줄까지 */}
+        {/* 상단 혜택 배지 — 홈(ClubBenefitSection)과 동일 디자인 (폰트·정렬 통일) */}
         {benefitText && (
-          <div className="absolute top-0 inset-x-0 bg-amber-500 px-1.5 py-1">
-            <span className="block text-black text-[10px] font-black tracking-tight text-left leading-tight line-clamp-2">
+          <div className="absolute top-0 inset-x-0 bg-amber-500 px-2.5 pt-1.5 pb-1">
+            <span
+              className="block whitespace-pre-line text-black text-[13px] tracking-tight text-center leading-[1.1] line-clamp-2"
+              style={{ fontFamily: "var(--font-display-kr)" }}
+            >
               {benefitText}
             </span>
           </div>
@@ -555,7 +558,8 @@ function ClubCard({
                   key={tag}
                   className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[9px] font-black leading-none"
                 >
-                  {emoji} {label}
+                  {emoji && <span>{emoji}</span>}
+                  {label}
                 </span>
               );
             })}

@@ -404,8 +404,11 @@ export function ClubDetailContent({
           {guestSignSlot && (
             <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3 space-y-2 mt-1">
               {guestSignSlot.today_benefit && (
-                <div className="-mx-3 -mt-3 bg-amber-500 px-3 py-1.5 rounded-t-2xl">
-                  <span className="text-black text-[12px] font-black tracking-tight">
+                <div className="-mx-3 -mt-3 bg-amber-500 px-3 pt-1.5 pb-1 rounded-t-2xl">
+                  <span
+                    className="block whitespace-pre-line text-black text-[13px] tracking-tight text-center leading-[1.1] line-clamp-2"
+                    style={{ fontFamily: "var(--font-display-kr)" }}
+                  >
                     {guestSignSlot.today_benefit}
                   </span>
                 </div>
@@ -878,7 +881,7 @@ function AdminGuestSignEditor({
             onClick={() => toggleBenefit(c)}
             className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/50 inline-flex items-center gap-1"
           >
-            {benefitLabel(c).emoji} {c}
+            {benefitLabel(c).emoji && <span>{benefitLabel(c).emoji}</span>} {c}
             <span className="text-amber-300/70">×</span>
           </button>
         ))}
