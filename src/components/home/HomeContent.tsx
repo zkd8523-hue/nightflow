@@ -945,24 +945,24 @@ export function HomeContent({
                 )}
               </div>
               {/* 인스타 일반 예약 대비 추가 혜택 — 이 쇼케이스 매치 전용 하드코딩 사실 */}
-              <div className="flex items-center justify-center gap-2 rounded-2xl bg-amber-500/20 border border-amber-400/40 px-4 py-3.5">
-                <span className="text-[20px] leading-none">🎉</span>
-                <p className="text-[16px] font-black text-amber-200 leading-snug break-keep text-center tracking-tight">
+              <div className="flex items-center justify-center gap-2 px-4 py-0 -mt-2 mb-1">
+                <span className="text-[22px] leading-none">🎉</span>
+                <p className="text-[18px] font-black text-amber-200 leading-snug break-keep text-center tracking-tight">
                   <span className="text-shimmer-gold">
                     당일 예약보다
                   </span>{" "}
                   <span className="text-amber-300">30만원치 더</span> 받았어요
                 </p>
               </div>
-              <div className="text-center space-y-1">
+              <div className="text-center space-y-1.5">
                 <Link
                   href={user ? "/flags/new" : "/login?redirect=/flags/new"}
                   onClick={() => setShowMatchedModal(false)}
-                  className="flex items-center justify-center w-full h-11 bg-neutral-800 hover:bg-neutral-700 active:scale-[0.98] text-neutral-200 font-bold text-[14px] rounded-2xl transition-all"
+                  className="flex flex-col items-center justify-center w-full h-12 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all leading-tight"
                 >
-                  ⛳ 나도 깃발꽂기
+                  <span className="font-black text-[15px]">⛳ 나도 깃발꽂기</span>
+                  <span className="text-[10px] font-bold text-black/55 mt-0.5">&nbsp;모든 서비스 무료</span>
                 </Link>
-                <p className="text-[10.5px] text-neutral-500">모든 서비스 무료</p>
               </div>
             </div>
           )}
@@ -1042,7 +1042,7 @@ export function HomeContent({
     // 탭별 Tip 콘텐츠 (풀 화면과 일관)
     const userPuzzleTipContent = (
       <div className="text-white">
-        오퍼 먼저 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
+        오퍼 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
       </div>
     );
     const mdPuzzleTipContent = (
@@ -1072,9 +1072,13 @@ export function HomeContent({
       dateLabel?: string | null;
     }) => (
       <div className="flex items-center gap-2 -mx-4 px-4 mb-2">
-        <div className="shrink-0 text-[12.5px] font-bold px-3.5 py-1.5 rounded-md bg-amber-500 text-black inline-flex items-center gap-0.5">
+        <Link
+          href={detailHref(opts.detailTab)}
+          aria-label={`${opts.label} 더보기`}
+          className="shrink-0 text-[12.5px] font-bold px-3.5 py-1.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black inline-flex items-center gap-0.5 transition-all"
+        >
           <span className="text-[13px] leading-none">{opts.icon}</span> {opts.label}
-        </div>
+        </Link>
         {opts.dateLabel && (
           <div className="flex items-center gap-1.5 shrink-0">
             <h3 className="text-[15px] font-black text-white tracking-tight">
@@ -1084,10 +1088,11 @@ export function HomeContent({
         )}
         <Link
           href={detailHref(opts.detailTab)}
-          className="ml-auto shrink-0 self-center text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
+          aria-label="더보기"
+          className="ml-auto -my-1.5 -mr-2 shrink-0 self-center text-[12px] text-neutral-400 hover:text-white active:text-white font-bold inline-flex items-center gap-0.5 px-2 py-2.5 rounded-lg active:bg-white/5 transition-colors"
         >
           더보기
-          <ChevronRight className="w-3 h-3" />
+          <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>
     );
@@ -1110,12 +1115,11 @@ export function HomeContent({
                 <div
                   ref={tipBoxRef}
                   data-no-pull-refresh
-                  onClick={() => { setGuideMode("full"); setShowGuide(true); }}
-                  className={`relative bg-neutral-900 border-amber-400/50 rounded-xl px-3 cursor-pointer [border-width:0.5px] ${showTopGuide ? "" : "pr-16"} ${recentMatchedPuzzle ? "pt-3 pb-4" : "pt-1.5 pb-1"}`}
+                  className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 ${showTopGuide ? "" : "pr-[88px]"} ${recentMatchedPuzzle ? "pt-3.5 pb-5" : "pt-2.5 pb-2"}`}
                 >
                   {(() => {
                     const compactSlides: React.ReactNode[] = [
-                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">새로운 클럽 예약 방법 — 깃발 꽂고 오퍼 받기</div>,
+                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">가장 똑똑한 클럽 예약 방법</div>,
                       ...(recentMatchedPuzzle ? [
                         <button
                           key="offer"
@@ -1123,7 +1127,7 @@ export function HomeContent({
                           onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
                           className="w-full text-[14px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
                         >
-                          다른 사람은 어떤 오퍼 받았는지 궁금해? 👈
+                          어떤 오퍼 받을지 궁금해? 👈
                         </button>
                       ] : []),
                       <div key="tip" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">{visibleCompactTip}</div>,
@@ -1187,16 +1191,16 @@ export function HomeContent({
                             ))}
                           </div>
                         </div>
-                        <div className="absolute left-0 right-0 bottom-0.5 flex items-center justify-center gap-1 pointer-events-none">
+                        <div className="absolute left-0 right-0 -bottom-1 flex items-center justify-center gap-0.5 pointer-events-none">
                           {compactSlides.map((_, i) => (
                             <button
                               key={i}
                               type="button"
                               aria-label={`슬라이드 ${i + 1}`}
                               onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
-                              className="pointer-events-auto p-1"
+                              className="pointer-events-auto p-2.5"
                             >
-                              <span className={`block w-1.5 h-1.5 rounded-full transition-colors ${safeRotation === i ? "bg-amber-400" : "bg-neutral-600"}`} />
+                              <span className={`block w-2 h-2 rounded-full transition-colors ${safeRotation === i ? "bg-amber-400" : "bg-neutral-600"}`} />
                             </button>
                           ))}
                         </div>
@@ -1206,10 +1210,10 @@ export function HomeContent({
                   {!showTopGuide && (
                     <button
                       type="button"
-                      onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
-                      className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10px] font-medium text-amber-200/70 hover:text-white transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
+                      className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-amber-300 hover:bg-amber-400/25 hover:text-amber-200 active:scale-95 transition-all"
                     >
-                      <span className="text-[10.5px] leading-none">ⓘ</span>
+                      <span className="text-[11px] leading-none">ⓘ</span>
                       이용방법
                     </button>
                   )}
@@ -1416,7 +1420,7 @@ export function HomeContent({
           );
           const userPuzzleTipContent = (
             <div className="text-[14.5px] text-white">
-              오퍼 먼저 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
+              오퍼 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
             </div>
           );
           const overriddenTabPromises = isMdOrAdmin
@@ -1433,34 +1437,108 @@ export function HomeContent({
             <section className="space-y-2 -mx-2 mb-3">
               {/* TIP 박스 — 항시 노출 (매치 깃발 있으면 슬라이드). 조각(share)은 제외 */}
               {currentTab !== "share" && overriddenTabPromises[currentTab]?.content && (
-                <div className="relative bg-gradient-to-br from-amber-400/25 via-amber-500/15 to-yellow-600/10 rounded-2xl px-4 pt-4 pb-2.5">
-                  <div className="text-[13.5px] text-white font-bold leading-tight whitespace-pre-line break-keep [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]">
-                    {overriddenTabPromises[currentTab].content}
-                  </div>
-                  {!isMdOrAdmin && recentMatchedPuzzle && (
-                    <div className="absolute left-0 right-0 bottom-1 flex items-center justify-center gap-1 pointer-events-none">
-                      {[0, 1].map((i) => (
+                <div className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${(currentTab === "puzzle" || currentTab === "advance") ? "pr-[88px]" : ""}`}>
+                  {(() => {
+                    // compact와 동일한 3장 슬라이드 — 인트로 + (매치 있으면) "오퍼 궁금해?" + 본문
+                    const detailSlides: React.ReactNode[] = [
+                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">가장 똑똑한 클럽 예약 방법</div>,
+                      ...(!isMdOrAdmin && recentMatchedPuzzle ? [
                         <button
-                          key={i}
+                          key="offer"
                           type="button"
-                          aria-label={`슬라이드 ${i + 1}`}
-                          onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
-                          className="pointer-events-auto p-1 cursor-pointer"
+                          onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
+                          className="w-full text-[14px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
                         >
-                          <span
-                            className={`block w-1.5 h-1.5 rounded-full transition-colors ${
-                              tipRotation === i ? "bg-amber-400" : "bg-neutral-600"
-                            }`}
-                          />
+                          어떤 오퍼 받을지 궁금해? 👈
                         </button>
-                      ))}
-                    </div>
-                  )}
+                      ] : []),
+                      <div key="tip" className="text-[14px] text-neutral-100 font-black leading-snug whitespace-pre-line break-keep">
+                        {overriddenTabPromises[currentTab].content}
+                      </div>,
+                    ];
+                    const slideCount = detailSlides.length;
+                    const safeRotation = tipRotation % slideCount;
+                    return (
+                      <>
+                        <div
+                          ref={tipContainerRef}
+                          className="overflow-hidden select-none"
+                          style={{ touchAction: "pan-y" }}
+                          onPointerDown={(e) => {
+                            const width = tipContainerRef.current?.offsetWidth ?? 0;
+                            tipSwipeRef.current = { startX: e.clientX, startY: e.clientY, active: true, width };
+                            setTipIsDragging(true);
+                            (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+                          }}
+                          onPointerMove={(e) => {
+                            const ref = tipSwipeRef.current;
+                            if (!ref?.active) return;
+                            const dx = e.clientX - ref.startX;
+                            const dy = e.clientY - ref.startY;
+                            if (Math.abs(dx) <= Math.abs(dy)) return;
+                            e.preventDefault();
+                            const widthPct = ref.width > 0 ? (dx / ref.width) * 100 : 0;
+                            const minOffset = safeRotation === 0 ? 0 : -100;
+                            const maxOffset = safeRotation === slideCount - 1 ? 0 : 100;
+                            const offsetPct = Math.max(minOffset, Math.min(maxOffset, widthPct));
+                            setTipDragOffset(offsetPct);
+                          }}
+                          onPointerUp={(e) => {
+                            const ref = tipSwipeRef.current;
+                            if (!ref?.active) { setTipIsDragging(false); return; }
+                            const dx = e.clientX - ref.startX;
+                            const dy = e.clientY - ref.startY;
+                            tipSwipeRef.current = null;
+                            setTipIsDragging(false);
+                            setTipDragOffset(0);
+                            if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+                              if (dx < 0 && safeRotation < slideCount - 1) changeTipRotation(safeRotation + 1);
+                              else if (dx > 0 && safeRotation > 0) changeTipRotation(safeRotation - 1);
+                            }
+                          }}
+                          onPointerCancel={() => {
+                            tipSwipeRef.current = null;
+                            setTipIsDragging(false);
+                            setTipDragOffset(0);
+                          }}
+                        >
+                          <div
+                            className="flex w-full"
+                            style={{
+                              transform: `translateX(calc(-${safeRotation * 100}% + ${tipDragOffset}%))`,
+                              transition: tipIsDragging ? "none" : "transform 400ms cubic-bezier(0.32, 0.72, 0, 1)",
+                              willChange: "transform",
+                            }}
+                          >
+                            {detailSlides.map((slide, i) => (
+                              <div key={i} className="w-full shrink-0">{slide}</div>
+                            ))}
+                          </div>
+                        </div>
+                        {slideCount > 1 && (
+                          // 박스 전체 폭 기준 중앙정렬 — pr-[88px](이용방법 버튼 공간)을 음수 마진으로 상쇄
+                          <div className={`mt-0.5 flex items-center justify-center gap-0.5 ${(currentTab === "puzzle" || currentTab === "advance") ? "-mr-[88px]" : ""}`}>
+                            {detailSlides.map((_, i) => (
+                              <button
+                                key={i}
+                                type="button"
+                                aria-label={`슬라이드 ${i + 1}`}
+                                onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
+                                className="px-2.5 py-1.5"
+                              >
+                                <span className={`block w-2 h-2 rounded-full transition-colors ${safeRotation === i ? "bg-amber-400" : "bg-neutral-600"}`} />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                   {(currentTab === "puzzle" || currentTab === "advance") && (
                     <button
                       type="button"
-                      onClick={() => { setGuideMode("full"); setShowGuide(v => !v); }}
-                      className="absolute bottom-1.5 right-2 inline-flex items-center gap-0.5 text-[10.5px] font-bold text-amber-200/90 hover:text-white transition-colors"
+                      onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
+                      className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-amber-300 hover:bg-amber-400/25 hover:text-amber-200 active:scale-95 transition-all"
                     >
                       <span className="text-[11px] leading-none">ⓘ</span>
                       이용방법

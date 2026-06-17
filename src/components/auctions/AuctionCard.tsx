@@ -165,8 +165,8 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
       >
         <div className="relative bg-[#1C1C1E] rounded-2xl p-4 space-y-3 active:scale-[0.98] transition-all cursor-pointer">
           <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
-              🧩 조각
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[11px]" style={{ lineHeight: 1, paddingBottom: '1px', WebkitTextStroke: '1px black' }}>
+              🧩
             </span>
             {isOwner && (
               <button
@@ -221,45 +221,39 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                   1인 {(auction.price_per_seat ?? 0).toLocaleString()}원
                 </span>
               </div>
-              {/* 홈(hidePuzzle): 자세히 버튼을 가격 행 우측으로 — 테이블/가격/자세히 한 행 */}
-              {hidePuzzle && !isOwner && (
-                <Button
-                  className={`h-8 px-3 rounded-full font-black text-[12px] shrink-0 transition-all active:scale-[0.97] ${
-                    isShareFull
-                      ? "bg-neutral-800 text-neutral-500 cursor-not-allowed pointer-events-none"
-                      : "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
-                  }`}
-                >
-                  {isShareFull ? "마감" : "자세히"}
-                </Button>
-              )}
             </div>
-            <div className="space-y-1">
-              {isShareFull && (
-                <span className="text-[13px] text-green-400 font-bold">조각 완성! 🎉</span>
-              )}
-              {(() => {
-                const remaining = totalSeats - localFilled;
-                const todayViews = auction.today_view_count ?? 0;
-                return (
+            {(() => {
+              const remaining = totalSeats - localFilled;
+              const todayViews = auction.today_view_count ?? 0;
+              const showPieces = !hidePuzzle && slotLayout.length > 0;
+              const showRemaining = remaining === 1;
+              const showViews = todayViews >= 10;
+              // 홈에서 퍼즐 피스가 빠지고 보조 정보도 없으면 행 자체를 렌더하지 않음
+              // → 가격과 주류 태그가 붙어 한 묶음으로 읽힘
+              if (!isShareFull && !showPieces && !showRemaining && !showViews) return null;
+              return (
+                <div className="space-y-1">
+                  {isShareFull && (
+                    <span className="text-[13px] text-green-400 font-bold">조각 완성! 🎉</span>
+                  )}
                   <div className="flex flex-wrap items-center gap-1.5">
-                    {!hidePuzzle && slotLayout.map((slot, i) => (
+                    {showPieces && slotLayout.map((slot, i) => (
                       <PuzzlePiece key={i} small filled={slot.filled} gender={slot.gender} />
                     ))}
-                    {remaining === 1 && (
+                    {showRemaining && (
                       <span className="text-[11px] font-bold ml-1 text-red-400">
                         마지막 1자리
                       </span>
                     )}
-                    {todayViews >= 10 && (
-                      <span className={`text-[11px] font-semibold text-amber-400/80 ${remaining === 1 ? "" : "ml-1"}`}>
+                    {showViews && (
+                      <span className={`text-[11px] font-semibold text-amber-400/80 ${showRemaining ? "" : "ml-1"}`}>
                         👀 오늘 {todayViews}명이 봤어요
                       </span>
                     )}
                   </div>
-                );
-              })()}
-            </div>
+                </div>
+              );
+            })()}
           </div>
 
           {/* 주류 알약 + 참여하기 (같은 행) */}
@@ -272,23 +266,25 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
             });
             const maxShow = 3;
             return (
-              <div className="flex items-center justify-between gap-2">
+              // 홈(hidePuzzle): 가격과 주류를 한 묶음으로 — 카드 space-y-3 상쇄해 간격 좁힘
+              <div className={`flex items-center justify-between gap-2 ${hidePuzzle ? "-mt-2" : ""}`}>
                 <div className="flex items-center gap-1 flex-wrap min-w-0">
                   {sorted.slice(0, maxShow).map((item) => (
                     <span key={item}
                       className={`inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${
                         liquor.includes(item)
-                          ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                          ? "bg-neutral-800 text-neutral-200 border-neutral-700"
                           : "bg-neutral-800/50 text-neutral-400 border-neutral-700/30"
                       }`}>
-                      {item}
+                      {/* 홈(hidePuzzle)에서만 끝 "병" 생략 — 상세는 원본 그대로 */}
+                      {hidePuzzle ? item.replace(/병$/, "") : item}
                     </span>
                   ))}
                   {sorted.length > maxShow && (
                     <span className="text-[10px] text-neutral-500 font-bold">+{sorted.length - maxShow}</span>
                   )}
                 </div>
-                {!isOwner && !hidePuzzle && (
+                {!isOwner && (
                   <Button
                     className={`h-9 px-3 rounded-full font-black text-[12px] shrink-0 transition-all active:scale-[0.97] ${
                       isShareFull
@@ -296,7 +292,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                         : "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
                     }`}
                   >
-                    {isShareFull ? "마감" : "자세히 보기"}
+                    {isShareFull ? "마감" : "자세히"}
                   </Button>
                 )}
               </div>

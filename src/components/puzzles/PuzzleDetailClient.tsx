@@ -289,7 +289,7 @@ export function PuzzleDetailClient({
   const pendingOffers = offers.filter((o) => o.status === "pending");
 
   // 비방장용: 본인 오퍼 제외 + public 변환
-  // 같은 클럽은 1개만 클럽명 공개, 최대 3개. 나머지는 클럽명만 숨김.
+  // 클럽명은 1개만 공개(맛보기). 나머지는 클럽명 숨김.
   const { publicOffers, hiddenOffers } = useMemo(() => {
     const seenClubs = new Set<string>();
     const publicResult: Array<PuzzleOffer & { public: ReturnType<typeof getPublicIncludes> }> = [];
@@ -298,7 +298,7 @@ export function PuzzleDetailClient({
       if (o.md_id === currentUserId) continue;
       const enriched = { ...o, public: getPublicIncludes(o.includes) };
       const clubKey = o.club?.id ?? `no-club-${o.id}`;
-      if (publicResult.length < 3 && !seenClubs.has(clubKey)) {
+      if (publicResult.length < 1 && !seenClubs.has(clubKey)) {
         seenClubs.add(clubKey);
         publicResult.push(enriched);
       } else {
@@ -611,79 +611,97 @@ export function PuzzleDetailClient({
           </div>
 
           {/* 기본 정보 */}
-          <section className="bg-[#1C1C1E] rounded-2xl p-5 space-y-4">
-            {/* 작성자 메타: 별도 행으로 분리 */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
-                {puzzle.leader && (
-                  <button
-                    type="button"
-                    onClick={() => setShowLeaderInfo(true)}
-                    className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2 py-1 transition-colors"
-                  >
-                    {puzzle.leader.profile_image ? (
-                      <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-4 h-4 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-4 h-4 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
-                        {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
-                      </div>
-                    )}
-                    {puzzle.leader.display_name || puzzle.leader.name || "방장"}
-                  </button>
+          <section className="bg-[#1C1C1E] rounded-2xl px-5 pt-4 pb-3 space-y-2.5">
+            {/* 제목 + 지역 (맨 위) — 우측에 공유 버튼 */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-wrap items-baseline gap-x-2 min-w-0">
+                {puzzle.notes && (
+                  <p className="text-[22px] font-black text-white leading-snug tracking-tight break-keep">{puzzle.notes}</p>
                 )}
-                {puzzle.leader && (() => {
-                  const tier = getDealTier(puzzle.leader.deal_amount_total ?? 0);
-                  const leaderIsNew = isNewUser(puzzle.leader.created_at);
-                  return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
-                })()}
-                {puzzle.leader && (() => {
-                  const dealCount = puzzle.leader.deal_count_total ?? 0;
-                  return dealCount > 0 ? (
-                    <span className="text-[11px] text-neutral-500 font-bold">거래 {dealCount}회</span>
-                  ) : null;
-                })()}
+                <span className="text-[14px] text-neutral-400">{puzzle.area}</span>
               </div>
               <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mr-1 shrink-0">
                 <Share2 className="w-4.5 h-4.5" />
               </button>
             </div>
 
-            {/* 제목 옆에 지역: 날짜는 상단 헤더로 분리됨 */}
-            <div className="flex flex-wrap items-baseline gap-x-2">
-              {puzzle.notes && (
-                <p className="text-[18px] font-black text-white leading-snug">{puzzle.notes}</p>
-              )}
-              <span className="text-[14px] text-neutral-400">{puzzle.area}</span>
-            </div>
-
-            {/* 예산 */}
+            {/* 예산 + 인원 pill + 닉네임 버튼 + 신뢰도 */}
             <div className="space-y-0.5">
               {isRecruitingParty ? (
                 <>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-[24px] font-black text-green-400">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[19px] font-bold text-green-400">
                       현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
                     </span>
                     <span className="text-[13px] text-neutral-500">
                       / 목표 {baseBudget.toLocaleString()}원
                     </span>
+                    {puzzle.leader && (
+                      <button
+                        type="button"
+                        onClick={() => setShowLeaderInfo(true)}
+                        className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2.5 py-1 transition-colors"
+                      >
+                        {puzzle.leader.profile_image ? (
+                          <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-4 h-4 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
+                            {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
+                          </div>
+                        )}
+                        {puzzle.leader.display_name || puzzle.leader.name || "방장"}
+                      </button>
+                    )}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-[24px] font-black text-green-400">
+                  {/* 홈 카드 패턴 통일: 예산 + 인원 pill + 닉네임 버튼 + 음악 한 줄 */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[19px] font-bold text-green-400">
                       예산 {baseBudget.toLocaleString()}원
                     </span>
-                  </div>
-                  <p className="text-[12px] text-neutral-500 flex items-center gap-2">
-                    <span>인원 확정 {puzzle.target_count}명</span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[12px] font-bold">
+                      {puzzle.target_count}명
+                    </span>
+                    {puzzle.leader && (
+                      <button
+                        type="button"
+                        onClick={() => setShowLeaderInfo(true)}
+                        className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2.5 py-1 transition-colors"
+                      >
+                        {puzzle.leader.profile_image ? (
+                          <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-4 h-4 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
+                            {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
+                          </div>
+                        )}
+                        {puzzle.leader.display_name || puzzle.leader.name || "방장"}
+                      </button>
+                    )}
                     {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">
                         {puzzle.music_preference === "hiphop" ? "힙합" : "EDM"} 선호
                       </span>
                     )}
-                  </p>
+                  </div>
+                  {/* 신뢰도 메타 — 닉네임 버튼 아래 줄 */}
+                  {puzzle.leader && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1.5">
+                      {(() => {
+                        const tier = getDealTier(puzzle.leader.deal_amount_total ?? 0);
+                        const leaderIsNew = isNewUser(puzzle.leader.created_at);
+                        return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
+                      })()}
+                      {(() => {
+                        const dealCount = puzzle.leader.deal_count_total ?? 0;
+                        return dealCount > 0 ? (
+                          <span className="text-[11px] text-neutral-500 font-bold">거래 {dealCount}회</span>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -725,7 +743,7 @@ export function PuzzleDetailClient({
 
             {/* 등록일시 — 우측 하단 */}
             <p
-              className="text-[11px] text-neutral-600 text-right"
+              className="text-[11px] text-neutral-600 text-right -mt-1"
               suppressHydrationWarning
             >
               {formatRelativeTime(puzzle.created_at)}
@@ -973,7 +991,7 @@ export function PuzzleDetailClient({
               </div>
               {puzzle.status === "open" ? (
                 <span className="text-[12px] text-neutral-400 whitespace-nowrap">
-                  ⏰ {puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감
+                  ⏰ 당일 {puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감
                 </span>
               ) : (
                 (isAccepted || pendingOffers.length === 0) && (
@@ -1010,7 +1028,7 @@ export function PuzzleDetailClient({
             {!isLeader && pendingOffers.length > 0 && !isAccepted && (
               <div className="space-y-3 -mt-2">
                 <p className="text-[13px] text-neutral-400 font-medium">
-                  클럽명 일부만 공개 ✨ 자세한 내용은 방장만
+                  클럽명 일부만 공개 ✨
                 </p>
                 {publicOffers.map((offer, idx) => (
                   <div
@@ -1182,6 +1200,9 @@ export function PuzzleDetailClient({
           {/* 비방장·비멤버·비MD: 자기 깃발 등록 유도 CTA */}
           {!isLeader && !isMember && !isMd && (
             <div className="text-center space-y-1">
+              {pendingOffers.length > 0 && !isAccepted && (
+                <p className="text-[13px] font-bold text-amber-300 mb-2">어떤 오퍼 받을지 궁금해? 👇</p>
+              )}
               <Link
                 href={currentUserId ? "/flags/new" : "/login?redirect=/flags/new"}
                 className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"

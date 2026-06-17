@@ -360,7 +360,7 @@ export function PuzzleList({
         </div>
       ) : (popularSort || recentSort || budgetSort) ? (
         /* 인기순/최신순/예산순: 날짜 그룹 헤더 유지 + 정렬 */
-        <div className="space-y-8 pb-24 -mt-3">
+        <div className="pb-24 -mt-3">
           {Object.entries(
             filteredPuzzles.reduce((groups, puzzle) => {
               const date = puzzle.event_date;
@@ -397,20 +397,23 @@ export function PuzzleList({
               const dateLabel = `${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
               const dday = getDDayLabel(date);
               return (
-                <div key={date} className="space-y-2">
-                  <div className="flex items-center gap-2.5 px-1">
-                    <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
-                    <h3 className="text-[16px] font-black text-white tracking-tight">{dateLabel}</h3>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>{dday}</span>
+                <div key={date}>
+                  {/* 조각(AuctionList)과 동일한 날짜 헤더·카드 간격 */}
+                  <div className="flex items-center gap-2.5 px-1 pt-1 pb-0 mb-1.5">
+                    <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
+                    <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>{dday}</span>
                     {idx === 0 && sortSelectEl}
                   </div>
-                  {sorted.map((puzzle) => (
-                    <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); }}>
-                      <PuzzleCard puzzle={puzzle} userRole={userRole} offerCount={offerCounts[puzzle.id] || 0}
-                        isMember={myPuzzleIds.has(puzzle.id)} hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
-                        onJoin={(p) => setJoinTarget(p)} onUnlock={(p) => setUnlockTarget(p)} />
-                    </Link>
-                  ))}
+                  <div className="flex flex-col gap-6">
+                    {sorted.map((puzzle) => (
+                      <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); }}>
+                        <PuzzleCard puzzle={puzzle} userRole={userRole} offerCount={offerCounts[puzzle.id] || 0}
+                          isMember={myPuzzleIds.has(puzzle.id)} hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
+                          onJoin={(p) => setJoinTarget(p)} onUnlock={(p) => setUnlockTarget(p)} />
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               );
             })}
@@ -504,7 +507,7 @@ export function PuzzleList({
                   )}
                   </div>
                 )}
-                <div className="-mt-3 space-y-12">
+                <div className="flex flex-col gap-6">
                 {Object.entries(
                   rest.reduce((groups, puzzle) => {
                     const date = puzzle.event_date;
@@ -526,8 +529,8 @@ export function PuzzleList({
               const deadline = getPuzzleGroupDeadline(items);
 
               return (
-                <div key={date} className="space-y-2">
-                  <div className="flex flex-col gap-1.5 px-1 py-1">
+                <div key={date}>
+                  <div className="flex flex-col gap-1.5 px-1 pt-1 pb-0 mb-1.5">
                     <div className="flex items-center gap-2.5">
                       <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
                       <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
@@ -551,7 +554,7 @@ export function PuzzleList({
                       </p>
                     )}
                   </div>
-                  <div className="space-y-4">
+                  <div className="flex flex-col gap-6">
                     {items.map((puzzle) => (
                       <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); trackEvent('puzzle_card_click', { puzzle_id: puzzle.id, area: puzzle.area, is_recruiting: puzzle.is_recruiting_party }); }}>
                         <PuzzleCard

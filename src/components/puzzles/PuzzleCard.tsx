@@ -354,9 +354,13 @@ export const PuzzleCard = memo(function PuzzleCard({
         // justify-between만으론 지역이 왼쪽으로 붙어버려 위치가 오락가락함.
         <div className="flex items-center gap-2">
           {userOfferBadge}
-          <span className="text-[12px] text-neutral-500 font-bold flex-shrink-0 ml-auto">
-            {puzzle.area}
-          </span>
+          {/* 조각 카드와 통일된 우하단 CTA — 카드 onClick(상세 이동)을 막지 않아 동일 동작 */}
+          <Button
+            tabIndex={-1}
+            className="ml-auto h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)] active:scale-[0.97] transition-all"
+          >
+            자세히
+          </Button>
         </div>
       ) : isFull ? (
         <div className="space-y-2">

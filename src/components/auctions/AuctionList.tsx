@@ -303,13 +303,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   return (
     <div className="flex flex-col">
       {!hideTabs && (
-      <div className="flex items-center gap-2 -mx-4 px-4 mb-4">
+      <div className={`flex items-center gap-2 -mx-4 px-4 ${tab === "share" ? "mb-2" : "mb-4"}`}>
         {onBack && (
           <button
             type="button"
             onClick={onBack}
             aria-label="뒤로가기"
-            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-neutral-800 transition-colors flex-shrink-0"
+            className="w-8 h-11 -ml-1.5 rounded-lg flex items-center justify-center hover:bg-neutral-800/50 transition-colors flex-shrink-0"
           >
             <ArrowLeft className="w-4 h-4 text-white" />
           </button>
@@ -690,16 +690,19 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               <span className="text-[40px] leading-none opacity-90">🧩</span>
               {userRole && ["md", "admin"].includes(userRole) ? (
                 <>
-                  <div className="space-y-1.5">
+                  <div className="space-y-0.5">
+                    <p className="text-neutral-400 text-[13px] font-medium leading-tight break-keep">
+                      아직 조각이 없어요
+                    </p>
                     <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
-                      지금은 다른 조각이 없어요
+                      지금이 제일 먼저 노출될 타이밍!
                     </p>
                   </div>
                   <Link
                     href="/md/dashboard?section=share"
                     className="inline-flex items-center gap-1.5 h-11 px-6 bg-green-500 text-black font-black text-[13.5px] rounded-full hover:bg-green-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
-                    조각 등록하기
+                    🧩 선점하기
                   </Link>
                 </>
               ) : (
@@ -728,16 +731,19 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               <span className="text-[40px] leading-none opacity-90">🧩</span>
               {userRole && ["md", "admin"].includes(userRole) ? (
                 <>
-                  <div className="space-y-1.5">
+                  <div className="space-y-0.5">
+                    <p className="text-neutral-400 text-[13px] font-medium leading-tight break-keep">
+                      아직 조각이 없어요
+                    </p>
                     <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
-                      지금은 다른 조각이 없어요
+                      지금이 제일 먼저 노출될 타이밍!
                     </p>
                   </div>
                   <Link
                     href="/md/dashboard?section=share"
                     className="inline-flex items-center gap-1.5 h-11 px-6 bg-green-500 text-black font-black text-[13.5px] rounded-full hover:bg-green-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
-                    조각 등록하기
+                    🧩 선점하기
                   </Link>
                 </>
               ) : (
@@ -797,7 +803,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 const dday = getDDayLabel(date);
                 return (
                   <div key={date}>
-                    <div className="flex items-center gap-2.5 px-1 py-1 mb-3">
+                    <div className="flex items-center gap-2.5 px-1 pt-1 pb-0 mb-1.5">
                       <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
                       <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
                       <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>

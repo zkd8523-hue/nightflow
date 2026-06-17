@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Suspense } from "react";
-import { Geist, Geist_Mono, Nanum_Pen_Script } from "next/font/google";
+import { Geist, Geist_Mono, Nanum_Pen_Script, Do_Hyeon } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
@@ -25,6 +25,15 @@ const geistMono = Geist_Mono({
 const nanumPen = Nanum_Pen_Script({
   weight: "400",
   variable: "--font-nanum-pen",
+  subsets: ["latin"],
+  display: "swap",
+  preload: false,
+});
+
+// 게스트 간판 라벨 폰트 — 둥글고 친근한 굵은 고딕
+const displayKr = Do_Hyeon({
+  weight: "400",
+  variable: "--font-display-kr",
   subsets: ["latin"],
   display: "swap",
   preload: false,
@@ -161,7 +170,7 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${nanumPen.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${nanumPen.variable} ${displayKr.variable} antialiased`}
       >
         <Script
           id="ld-json-organization"
