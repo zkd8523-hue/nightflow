@@ -68,6 +68,8 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
     () => (searchParams.get("view") === "list" ? "list" : "map")
   );
   const [query, setQuery] = useState("");
+  // 지도 모드에서 클럽 상세 모달이 열렸는지 — 열리면 검색/필터 overlay 숨김
+  const [mapDetailOpen, setMapDetailOpen] = useState(false);
   // 지도 모드에서는 필터가 지도를 가리므로 기본 접힘. 리스트 모드는 펼침.
   const [filtersOpen, setFiltersOpen] = useState(
     () => searchParams.get("view") === "list"
@@ -253,7 +255,9 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
         </header>
       )}
       {/* 통합 상단바: 검색 + 필터 + view 토글 하나의 카드처럼
-          map 모드에서는 지도 위 floating overlay로 표시 */}
+          map 모드에서는 지도 위 floating overlay로 표시.
+          지도에서 클럽 상세 모달이 열리면 검색/필터 숨김. */}
+      {!(view === "map" && mapDetailOpen) && (
       <div
         className={`${
           view === "map"
@@ -304,7 +308,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
             onClick={() => setFiltersOpen((v) => !v)}
             aria-label={filtersOpen ? "필터 닫기" : "필터 열기"}
             aria-expanded={filtersOpen}
-            className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-colors flex-shrink-0 ${
+            className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               filtersOpen || activeFilterCount > 0
                 ? "bg-white text-black"
                 : "bg-neutral-900 text-neutral-400 hover:bg-neutral-800"
@@ -317,36 +321,32 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               </span>
             )}
           </button>
-          <div className="flex items-center bg-neutral-900 rounded-full p-0.5 flex-shrink-0 h-9">
-            <button
-              type="button"
-              onClick={() => changeView("list")}
-              aria-label="리스트 보기"
-              aria-pressed={view === "list"}
-              className={`flex items-center justify-center w-7 h-8 rounded-full transition-colors ${
-                view === "list" ? "bg-white text-black" : "text-neutral-400"
-              }`}
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => changeView("map")}
-              aria-label="지도 보기"
-              aria-pressed={view === "map"}
-              className={`flex items-center justify-center w-7 h-8 rounded-full transition-colors ${
-                view === "map" ? "bg-white text-black" : "text-neutral-400"
-              }`}
-            >
-              <MapIcon className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          {/* 단일 뷰 토글 — 리스트일 땐 "지도", 지도일 땐 "리스트"로 전환 */}
+          <button
+            type="button"
+            onClick={() => changeView(view === "map" ? "list" : "map")}
+            aria-label={view === "map" ? "리스트 보기" : "지도 보기"}
+            className="flex items-center justify-center gap-1.5 px-4 h-9 rounded-full bg-white text-black font-bold text-[13px] flex-shrink-0 active:scale-95 transition"
+          >
+            {view === "map" ? (
+              <>
+                <LayoutGrid className="w-3.5 h-3.5" />
+                리스트
+              </>
+            ) : (
+              <>
+                <MapIcon className="w-3.5 h-3.5" />
+                지도
+              </>
+            )}
+          </button>
         </div>
         {/* 지역 필터는 항상 표시 (1차 필터) */}
         <ClubAreaChips value={filters} onChange={setFilters} />
         {/* 세부 필터(클럽/장르)는 토글로 펼침 */}
         {filtersOpen && <ClubFilterChips value={filters} onChange={setFilters} />}
       </div>
+      )}
 
       {view === "map" ? (
         <ClubMap
@@ -355,6 +355,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
           hotdealMap={hotdealMap}
           unmappedCount={filtered.length - mappableCount}
           activeAreas={filters.areas}
+          onDetailOpenChange={setMapDetailOpen}
         />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-3">

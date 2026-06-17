@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import Link from "next/link";
-import { X, ExternalLink } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ChevronLeft } from "lucide-react";
 
 interface Props {
   clubId: string | null;
@@ -17,6 +16,31 @@ interface Props {
  */
 export function ClubDetailSheet({ clubId, onClose }: Props) {
   const open = !!clubId;
+
+  // 모바일 바텀시트 아래로 드래그 → 닫기
+  const [dragY, setDragY] = useState(0);
+  const dragStartYRef = useRef(0);
+  const draggingRef = useRef(false);
+
+  const onDragStart = (e: React.TouchEvent) => {
+    dragStartYRef.current = e.touches[0].clientY;
+    draggingRef.current = true;
+  };
+  const onDragMove = (e: React.TouchEvent) => {
+    if (!draggingRef.current) return;
+    const dy = e.touches[0].clientY - dragStartYRef.current;
+    // 아래로만 끌림
+    setDragY(dy > 0 ? dy : 0);
+  };
+  const onDragEnd = () => {
+    if (!draggingRef.current) return;
+    draggingRef.current = false;
+    // 120px 이상 끌면 닫기, 아니면 원위치
+    if (dragY > 120) {
+      onClose();
+    }
+    setDragY(0);
+  };
 
   // 배경 스크롤 잠금: 모바일 풀스크린 모드에서만 (데스크탑은 지도 인터랙션 유지)
   useEffect(() => {
@@ -48,6 +72,7 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
       <div
         className="md:hidden fixed inset-0 z-[200] flex items-end bg-black/70 backdrop-blur-sm"
         onClick={onClose}
+        data-no-pull-refresh="strict"
         role="dialog"
         aria-modal="true"
         aria-label="클럽 상세"
@@ -55,8 +80,23 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
         <div
           className="relative w-full h-[92vh] bg-[#0A0A0A] overflow-hidden rounded-t-2xl flex flex-col"
           onClick={(e) => e.stopPropagation()}
+          style={{
+            transform: `translateY(${dragY}px)`,
+            transition: draggingRef.current ? "none" : "transform 0.2s ease-out",
+          }}
         >
-          <SheetHeader clubId={clubId} onClose={onClose} />
+          {/* 드래그 핸들 — 이 영역을 아래로 끌면 닫힘 */}
+          <div
+            className="flex-shrink-0 flex items-center justify-center pt-2 pb-1 cursor-grab active:cursor-grabbing touch-none"
+            onTouchStart={onDragStart}
+            onTouchMove={onDragMove}
+            onTouchEnd={onDragEnd}
+            onTouchCancel={onDragEnd}
+          >
+            <div className="w-10 h-1 rounded-full bg-neutral-700" />
+          </div>
+          {/* 클럽 이미지 좌상단 floating 뒤로가기 */}
+          <BackButton onClose={onClose} />
           <iframe
             src={`/clubs/${clubId}?embedded=1`}
             title="클럽 상세"
@@ -76,7 +116,8 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
           aria-modal="false"
           aria-label="클럽 상세"
         >
-          <SheetHeader clubId={clubId} onClose={onClose} />
+          {/* 클럽 이미지 좌상단 floating 뒤로가기 */}
+          <BackButton onClose={onClose} />
           <iframe
             src={`/clubs/${clubId}?embedded=1`}
             title="클럽 상세"
@@ -88,29 +129,16 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
   );
 }
 
-function SheetHeader({ clubId, onClose }: { clubId: string; onClose: () => void }) {
+/** 클럽 이미지 좌상단에 떠 있는 뒤로가기 버튼 */
+function BackButton({ onClose }: { onClose: () => void }) {
   return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-neutral-900 bg-[#0A0A0A] flex-shrink-0">
-      <span className="ml-1 text-[12px] font-bold text-neutral-400">클럽 상세</span>
-      <div className="flex items-center gap-1">
-        <Link
-          href={`/clubs/${clubId}`}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="새 페이지로 열기"
-          className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-amber-400 px-2 py-1 rounded-full hover:bg-neutral-900"
-        >
-          새 페이지로 열기
-          <ExternalLink className="w-3 h-3" />
-        </Link>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="닫기"
-          className="w-9 h-9 flex items-center justify-center rounded-full bg-neutral-800 text-white hover:bg-neutral-700 active:scale-95 transition"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
+    <button
+      type="button"
+      onClick={onClose}
+      aria-label="뒤로가기"
+      className="absolute top-3 left-3 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 active:scale-95 transition"
+    >
+      <ChevronLeft className="w-6 h-6" strokeWidth={2.5} />
+    </button>
   );
 }

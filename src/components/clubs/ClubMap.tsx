@@ -30,6 +30,8 @@ interface Props {
   activeAreas?: string[];
   /** initialCenter 고정 — true면 권한 있어도 내 위치로 자동 이동 안 함 (지역 페이지용) */
   lockCenter?: boolean;
+  /** 클럽 상세 모달 열림/닫힘 알림 — 부모가 검색바 숨김 처리 */
+  onDetailOpenChange?: (open: boolean) => void;
 }
 
 declare global {
@@ -43,6 +45,10 @@ const DEFAULT_LEVEL = 8; // 수도권 전체 보이는 줌 레벨
 
 let sdkPromise: Promise<void> | null = null;
 function loadKakaoSdk(): Promise<void> {
+  // 개발용: 지도 비활성 플래그 → SDK 스킵하고 즉시 목록 모드
+  if (process.env.NEXT_PUBLIC_DISABLE_MAP === "1") {
+    return Promise.reject(new Error("지도 비활성(NEXT_PUBLIC_DISABLE_MAP)"));
+  }
   if (sdkPromise) return sdkPromise;
   if (typeof window !== "undefined" && window.kakao?.maps) {
     return Promise.resolve();
@@ -77,7 +83,7 @@ function loadKakaoSdk(): Promise<void> {
   return sdkPromise;
 }
 
-export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter, unmappedCount = 0, activeAreas = [], lockCenter = false }: Props) {
+export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter, unmappedCount = 0, activeAreas = [], lockCenter = false, onDetailOpenChange }: Props) {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]);
@@ -85,6 +91,11 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [selectedClub, setSelectedClub] = useState<ClubMapItem | null>(null);
   const [detailClubId, setDetailClubId] = useState<string | null>(null);
+
+  // 상세 모달 열림 상태를 부모(ClubList)에 알림 → 검색바 숨김
+  useEffect(() => {
+    onDetailOpenChange?.(!!detailClubId);
+  }, [detailClubId, onDetailOpenChange]);
   const [locating, setLocating] = useState(false);
   const [sheetRatio, setSheetRatio] = useState(0.5);
   const userPinRef = useRef<any>(null);
@@ -255,6 +266,12 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
 
   useEffect(() => {
     let cancelled = false;
+    // SDK가 5초 내 ready 안 되면 강제로 error 전환 → 시트/카드 UI라도 표시
+    const timeout = setTimeout(() => {
+      if (cancelled) return;
+      setErrorMsg("지도 SDK 로드 지연 (목록만 표시)");
+      setStatus((s) => (s === "loading" ? "error" : s));
+    }, 5000);
     loadKakaoSdk()
       .then(() => {
         if (cancelled || !mapRef.current) return;
@@ -264,14 +281,16 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
           level: DEFAULT_LEVEL,
         });
         mapInstanceRef.current = map;
+        clearTimeout(timeout);
         setStatus("ready");
       })
       .catch((e: Error) => {
         if (cancelled) return;
+        clearTimeout(timeout);
         setErrorMsg(e.message);
         setStatus("error");
       });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(timeout); };
   }, [initialCenter]);
 
   // 마커 렌더링
@@ -364,24 +383,14 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, fingerprint, activeAreas]);
 
-  if (status === "error") {
-    return (
-      <div className="h-[60vh] rounded-2xl bg-neutral-900 flex items-center justify-center text-center px-6">
-        <div className="space-y-2">
-          <MapPin className="w-8 h-8 text-neutral-600 mx-auto" />
-          <p className="text-sm text-neutral-400">지도를 불러올 수 없어요</p>
-          <p className="text-[11px] text-neutral-600">{errorMsg}</p>
-        </div>
-      </div>
-    );
-  }
-
   const handleCardClick = (clubId: string) => {
     const c = filtered.find((x) => x.id === clubId);
-    if (!c || !mapInstanceRef.current) return;
+    if (!c) return;
     setSelectedClub(c);
+    // 지도 SDK가 없거나 좌표가 없으면 panTo 스킵 (UI는 계속 동작)
     const map = mapInstanceRef.current;
-    const pos = new window.kakao.maps.LatLng(c.latitude!, c.longitude!);
+    if (!map || !window.kakao?.maps || c.latitude == null || c.longitude == null) return;
+    const pos = new window.kakao.maps.LatLng(c.latitude, c.longitude);
     // 멀리서 클릭하면 건물 단위(2)로 자동 줌인
     if (map.getLevel() > 2) {
       map.setLevel(2);
@@ -401,6 +410,17 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
       {status === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <p className="text-xs text-neutral-500">지도 불러오는 중…</p>
+        </div>
+      )}
+      {/* SDK 로드 실패(예: 로컬 키 미설정) — 지도 자리에 안내만, 시트/카드 UI는 계속 동작 */}
+      {status === "error" && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-6">
+          <div className="space-y-2 text-center">
+            <MapPin className="w-8 h-8 text-neutral-700 mx-auto" />
+            <p className="text-sm text-neutral-500">지도를 불러올 수 없어요</p>
+            <p className="text-[11px] text-neutral-700">아래 목록은 정상 동작합니다</p>
+            {errorMsg && <p className="text-[10px] text-neutral-800">{errorMsg}</p>}
+          </div>
         </div>
       )}
       {withCoords.length === 0 && status === "ready" && (
@@ -431,7 +451,7 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
         </button>
       )}
 
-      {status === "ready" && (
+      {(status === "ready" || status === "error") && (
         <ClubMapSheet
           ref={sheetRef}
           clubs={filtered}

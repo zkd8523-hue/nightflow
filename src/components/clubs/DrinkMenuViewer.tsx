@@ -155,19 +155,19 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="w-full flex items-center gap-2 px-4 py-3 mt-1 text-[14px] text-white bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.99] border border-amber-500/40 rounded-xl transition-colors text-left"
+          className="w-full flex items-center gap-2 px-4 py-2.5 mt-1 text-[13px] text-neutral-300 bg-neutral-900/50 hover:bg-neutral-900 active:scale-[0.99] border border-neutral-800 rounded-xl transition-colors text-left"
         >
           {hasMenu ? (
-            <Wine className="w-4 h-4 flex-shrink-0 text-amber-400" />
+            <Wine className="w-3.5 h-3.5 flex-shrink-0 text-neutral-500" />
           ) : (
-            <LayoutGrid className="w-4 h-4 flex-shrink-0 text-amber-400" />
+            <LayoutGrid className="w-3.5 h-3.5 flex-shrink-0 text-neutral-500" />
           )}
-          <span className="font-black">{headerLabel}</span>
+          <span className="font-bold">{headerLabel}</span>
           {tab === "menu" && isStale && (
             <span className="text-[11px] text-red-400">· 오래된 정보일 수 있어요</span>
           )}
           <ChevronDown
-            className={`ml-auto w-5 h-5 text-amber-400 transition-transform ${open ? "rotate-180" : ""}`}
+            className={`ml-auto w-4 h-4 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}
           />
           <span className="sr-only">{open ? "접기" : "펼치기"}</span>
         </button>

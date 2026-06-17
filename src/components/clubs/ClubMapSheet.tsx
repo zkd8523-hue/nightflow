@@ -74,14 +74,15 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
     onHeightChange?.(snapRatio);
   }, [snapRatio, onHeightChange]);
 
-  // 선택된 카드로 자동 스크롤
+  // 선택된 카드로 자동 스크롤 — selectedClubId가 "새로 바뀔 때만".
+  // snap(시트 높이) 변경 시엔 스크롤 위치 유지 (사용자가 스크롤한 위치 보존).
   useEffect(() => {
     if (!selectedClubId || !listRef.current) return;
     const el = listRef.current.querySelector<HTMLElement>(
       `[data-club-id="${selectedClubId}"]`
     );
     if (el) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }, [selectedClubId, snap]);
+  }, [selectedClubId]);
 
   // 드래그 핸들러
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -162,6 +163,7 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
     <div
       ref={sheetRef}
       style={heightStyle}
+      data-no-pull-refresh="strict"
       className={`absolute left-0 bottom-0 bg-[#1C1C1E] rounded-t-3xl shadow-2xl border-t border-neutral-800 z-20 flex flex-col transition-[right] duration-200 ${
         detailPanelOpen
           ? "right-0 md:right-[480px] lg:right-[560px]"
