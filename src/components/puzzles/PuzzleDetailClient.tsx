@@ -1278,17 +1278,6 @@ export function PuzzleDetailClient({
             </section>
           )}
 
-          {/* 참여자 나가기 버튼 */}
-          {isMember && (isOpen || isFull) && (
-            <Button
-              onClick={handleLeave}
-              disabled={actionLoading}
-              variant="outline"
-              className="w-full h-12 border-neutral-700 bg-transparent text-neutral-400 hover:bg-neutral-800 font-bold text-[14px] rounded-2xl"
-            >
-              나가기
-            </Button>
-          )}
 
           {/* 미참여 유저 파티 합류 버튼: 파티원 모집 ON 일 때만 */}
           {!isMember && !isLeader && !isMd && isOpen && currentUserId && isRecruitingParty && (

@@ -569,7 +569,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       toast.success(
         effectiveIsRecruiting
           ? "퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·MD 모집, 이후 60분간 검토할 수 있어요 🧩"
-          : "깃발이 올라갔어요! 당일 오후 8시까지 오퍼 받고, 이후 60분간 검토할 수 있어요 🚩"
+          : "깃발이 올라갔어요! 🚩"
       );
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
