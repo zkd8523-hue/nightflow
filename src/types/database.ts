@@ -1060,34 +1060,15 @@ export interface ClubChangeLog {
 // ============================================================================
 // 클럽 한 줄 리뷰 (Migration 275)
 // ============================================================================
-export interface ClubOneLiner {
+// 클럽 워드클라우드 5자 리뷰 (Migration 313, club_one_liners 대체)
+export interface ClubWordCloud {
   id: string;
   club_id: string;
   author_id: string;
-  content: string;
-  tags: string[]; // 한 줄 리뷰에 부착된 클럽 태그 코드 (Migration 278)
-  like_count: number;
-  is_deleted: boolean;
+  words: string[]; // 1~2개, 정규화 전 원본 표기 (각 5자 이내)
   created_at: string;
   updated_at: string;
-  // joined
-  author?: { id: string; display_name: string | null; profile_image: string | null };
-  // 클라이언트 계산 필드
-  liked_by_me?: boolean;
 }
-
-export interface OneLinerLike {
-  one_liner_id: string;
-  user_id: string;
-  created_at: string;
-}
-
-export type OneLinerReportReason =
-  | 'spam'
-  | 'abuse'
-  | 'false_info'
-  | 'advertising'
-  | 'other';
 
 // ============================================================================
 // 실시간 채팅 (Migration 284)
@@ -1169,17 +1150,3 @@ export interface ChatMessageReport {
   created_at: string;
 }
 
-export interface OneLinerReport {
-  id: string;
-  one_liner_id: string;
-  club_id: string;
-  reporter_id: string;
-  reason: OneLinerReportReason;
-  message: string | null;
-  status: 'pending' | 'resolved' | 'rejected';
-  admin_note: string | null;
-  action_taken: 'deleted' | 'kept' | 'warned_user' | null;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  created_at: string;
-}

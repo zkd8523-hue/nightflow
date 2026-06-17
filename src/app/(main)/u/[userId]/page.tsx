@@ -71,9 +71,9 @@ export default async function PublicProfilePage({ params }: PageProps) {
       )
       .eq("id", userId)
       .maybeSingle(),
-    // 작성한 리뷰 수 (삭제되지 않은 것만)
+    // 작성한 리뷰 수 (5자 리뷰 워드클라우드 기준)
     supabase
-      .from("club_one_liners")
+      .from("club_word_clouds")
       .select("id", { count: "exact", head: true })
       .eq("author_id", userId),
     fetchPinnedClubs(supabase, userId),

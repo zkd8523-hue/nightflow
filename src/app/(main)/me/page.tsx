@@ -8,7 +8,7 @@ export default async function MyProfileRedirectPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/login?next=/me");
+    redirect("/login?redirect=/me");
   }
 
   redirect(`/u/${user.id}`);

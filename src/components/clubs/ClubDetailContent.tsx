@@ -33,7 +33,7 @@ import { DrinkMenuViewer } from "./DrinkMenuViewer";
 import { ClubLocationModal } from "./ClubLocationModal";
 import { ClubProfileEditor } from "./ClubProfileEditor";
 import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
-import { OneLinerSection } from "./OneLinerSection";
+import { WordCloudSection } from "./WordCloudSection";
 import { useIsClubPartner } from "@/hooks/useIsClubPartner";
 import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -227,8 +227,8 @@ export function ClubDetailContent({
   const flagHref = club.area
     ? `/flags/new?area=${encodeURIComponent(club.area)}`
     : "/flags/new";
-  // 로그인 리다이렉트 파라미터를 게스트 간판 링크(?next=)와 통일
-  const ctaHref = user ? flagHref : `/login?next=${encodeURIComponent(flagHref)}`;
+  // 로그인 페이지는 ?redirect= 파라미터를 읽음 (next는 미인식)
+  const ctaHref = user ? flagHref : `/login?redirect=${encodeURIComponent(flagHref)}`;
   // 게스트 간판 MD가 있으면 본문에 이미 클럽 맥락 1순위 CTA(연락)가 있으므로
   // 지역 깃발 CTA는 숨겨 전환 충돌을 막는다. 없을 때만 노출.
   const showFlagCta = !guestSignSlot;
@@ -446,17 +446,10 @@ export function ClubDetailContent({
               <div className={`grid gap-2 pt-1 ${guestSignSlot.md.kakao_open_chat_url ? "grid-cols-2" : "grid-cols-1"}`}>
                 {guestSignSlot.md.instagram && (
                   <a
-                    href={user ? `https://instagram.com/${guestSignSlot.md.instagram}` : `/login?next=/clubs/${club.id}`}
-                    target={user ? "_blank" : undefined}
-                    rel={user ? "noopener noreferrer" : undefined}
-                    onClick={(e) => {
-                      if (!user) {
-                        e.preventDefault();
-                        router.push(`/login?next=/clubs/${club.id}`);
-                        return;
-                      }
-                      trackGuestSignClick(guestSignSlot.slot_id, "instagram");
-                    }}
+                    href={`https://instagram.com/${guestSignSlot.md.instagram}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "instagram")}
                     className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
                   >
                     <Instagram className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
@@ -465,17 +458,10 @@ export function ClubDetailContent({
                 )}
                 {guestSignSlot.md.kakao_open_chat_url && (
                   <a
-                    href={user ? guestSignSlot.md.kakao_open_chat_url : `/login?next=/clubs/${club.id}`}
-                    target={user ? "_blank" : undefined}
-                    rel={user ? "noopener noreferrer" : undefined}
-                    onClick={(e) => {
-                      if (!user) {
-                        e.preventDefault();
-                        router.push(`/login?next=/clubs/${club.id}`);
-                        return;
-                      }
-                      trackGuestSignClick(guestSignSlot.slot_id, "openchat");
-                    }}
+                    href={guestSignSlot.md.kakao_open_chat_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "openchat")}
                     className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
                   >
                     <MessageCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
@@ -487,10 +473,6 @@ export function ClubDetailContent({
                 <button
                   type="button"
                   onClick={async () => {
-                    if (!user) {
-                      router.push(`/login?next=/clubs/${club.id}`);
-                      return;
-                    }
                     const benefit = guestSignSlot.today_benefit?.trim();
                     const message = [
                       "[나플 게스트 문의] 안녕하세요!",
@@ -509,7 +491,7 @@ export function ClubDetailContent({
                   className="w-full h-10 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 active:scale-95 transition-transform text-white font-bold text-[12px] inline-flex items-center justify-center gap-1.5"
                 >
                   {guestSignCopied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  {guestSignCopied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사하기"}
+                  {guestSignCopied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사"}
                 </button>
               )}
             </div>
@@ -587,27 +569,27 @@ export function ClubDetailContent({
             </button>
           )}
 
+          {/* 카드 안: 잘못된 정보 신고 (비로그인 시 로그인 페이지로 유도) */}
+          {!canPartnerEdit && (
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!user) {
+                    router.push(`/login?redirect=/clubs/${club.id}`);
+                    return;
+                  }
+                  setReportSheetOpen(true);
+                }}
+                className="text-[11px] text-neutral-600 hover:text-amber-400 transition-colors underline decoration-dotted underline-offset-2"
+              >
+                정보 수정 요청
+              </button>
+            </div>
+          )}
+
         </div>
       </div>
-
-      {/* 카드 바깥: 잘못된 정보 신고 (비로그인 시 로그인 페이지로 유도) */}
-      {!canPartnerEdit && (
-        <div className="px-1 -mt-3 mb-4 flex justify-end">
-          <button
-            type="button"
-            onClick={() => {
-              if (!user) {
-                router.push(`/login?next=/clubs/${club.id}`);
-                return;
-              }
-              setReportSheetOpen(true);
-            }}
-            className="text-[11px] text-neutral-600 hover:text-amber-400 transition-colors underline decoration-dotted underline-offset-2"
-          >
-            정보 수정 요청
-          </button>
-        </div>
-      )}
 
       {/* 정보 오류 신고 Sheet */}
       {user && (
@@ -619,6 +601,9 @@ export function ClubDetailContent({
         />
       )}
 
+      {/* 5자 리뷰 워드클라우드 */}
+      <WordCloudSection clubId={club.id} clubName={clubName} />
+
       {/* 경매 목록 */}
       <AuctionList
         activeAuctions={visibleAuctions}
@@ -628,9 +613,6 @@ export function ClubDetailContent({
         hideShareEmptyState
         initialTab="share"
       />
-
-      {/* 한 줄 리뷰 */}
-      <OneLinerSection clubId={club.id} clubName={clubName} />
 
       {/* 풀스크린 지도 모달 — 네이버 패턴 */}
       <ClubLocationModal

@@ -364,10 +364,12 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 animate-ping" />
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
           </span>
-          <span className="text-[16px] font-black text-white tracking-tight">모집 중인 조각</span>
+          <span className="text-[19px] font-black text-white tracking-tight">모집 중인 조각</span>
         </div>
       )}
 
+      {/* 필터 줄: 지역필터 숨김 + advance탭 아님 = 내용 없음 → 빈 박스 제거 (클럽 상세) */}
+      {!(hideAreaFilter && tab !== "advance") && (
       <div className={`flex items-center gap-2 h-9 ${tab === "share" ? "mb-1.5" : "mb-5"}`}>
           {!hideAreaFilter && (
           <div
@@ -451,6 +453,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           )}
           {/* 정렬 select는 PuzzleList 내부 첫 헤더로 이동 (모바일 칩 row와 겹침 방지) */}
         </div>
+      )}
 
 
       {instantEnabled && tab === "today" && (
