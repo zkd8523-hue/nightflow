@@ -198,7 +198,7 @@ export const PuzzleCard = memo(function PuzzleCard({
     >
       {isNew && !hideNewBadge && !isSelecting && (
         <div
-          className="animate-new-badge pointer-events-none absolute top-2 right-2 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none"
+          className="animate-new-badge pointer-events-none absolute -top-2 -right-1 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none shadow-lg shadow-rose-900/40"
           aria-label="6시간 이내 등록"
         >
           NEW!
