@@ -536,6 +536,8 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
                   value={aliasInput}
                   onChange={(e) => setAliasInput(e.target.value)}
                   onKeyDown={(e) => {
+                    // 한글 IME 조합 중 Enter는 조합 확정용 — 중복/잘림 막기
+                    if (e.nativeEvent.isComposing) return;
                     if (e.key === "Enter" || e.key === ",") {
                       e.preventDefault();
                       addAlias(aliasInput);

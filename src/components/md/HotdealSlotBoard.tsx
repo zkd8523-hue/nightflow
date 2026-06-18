@@ -849,6 +849,7 @@ function MyClaimedSection({
                           value={isPast ? "" : s.text}
                           onFocus={() => setEditingSlot(`${dow}:${idx}`)}
                           onKeyDown={(e) => {
+                            if (e.nativeEvent.isComposing) return;
                             if (e.key === "Enter" && s.text.split("\n").length >= 2) {
                               e.preventDefault();
                             }
