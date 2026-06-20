@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic"; // notFound() 시 정상 404 응답 보�
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ from?: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -72,8 +73,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function ClubDetailPage({ params }: PageProps) {
+export default async function ClubDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const { from } = await searchParams;
+  // 핫딜 상세에서 진입한 경우: 조각/깃발 진입 동선을 숨겨 핫딜 전환 이탈 방지
+  const fromHotdeal = from === "hotdeal";
   const supabase = await createClient();
 
   // 이번 주 게스트 간판 슬롯 조회에 쓰일 영업일/주차 계산 (순수 함수 — 쿼리 전 미리 계산)
@@ -412,6 +416,7 @@ export default async function ClubDetailPage({ params }: PageProps) {
         club={club}
         activeAuctions={activeAuctions || []}
         guestSignSlot={guestSignSlot}
+        hideShareList={fromHotdeal}
       />
     </>
   );

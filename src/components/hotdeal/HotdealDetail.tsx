@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Clock, Instagram, Train, MapPin, Pencil, Copy, Check, ChevronDown } from "lucide-react";
+import { ArrowLeft, Clock, Instagram, Train, MapPin, Pencil, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import type { DailyHotdeal } from "@/types/database";
 import { createClient } from "@/lib/supabase/client";
@@ -29,11 +29,12 @@ function formatCountdown(endsAtISO: string, now: number): string {
   const h = Math.floor(diff / (1000 * 60 * 60));
   const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
   const s = Math.floor((diff % (1000 * 60)) / 1000);
+  const pad = (n: number) => String(n).padStart(2, "0");
   if (h >= 24) {
     const d = Math.floor(h / 24);
-    return `${d}일 ${h % 24}시간 ${m}분 남음`;
+    return `${d}일 ${h % 24}:${pad(m)}:${pad(s)}`;
   }
-  return `${h}시간 ${m}분 ${s}초 남음`;
+  return `${h}:${pad(m)}:${pad(s)}`;
 }
 
 export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
@@ -138,13 +139,15 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
         {/* 하단 그라데이션 */}
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-black via-black/70 to-transparent" />
         <div className="absolute left-4 right-4 bottom-4 space-y-1">
-          <div className="inline-flex items-center gap-1 bg-black/60 backdrop-blur-sm text-amber-300 text-[12px] font-black px-2.5 py-1 rounded-full">
-            <Clock className="w-3.5 h-3.5" />
-            {countdown}
-          </div>
-          <h1 className="text-2xl font-black text-white tracking-tight leading-tight">
-            {h.title}
-          </h1>
+          <Link
+            href={`/clubs/${h.club.id}?from=hotdeal`}
+            className="inline-flex items-center gap-1 group active:opacity-70 transition-opacity"
+          >
+            <h1 className="text-2xl font-black text-white tracking-tight leading-tight">
+              {h.title}
+            </h1>
+            <ChevronRight className="w-5 h-5 text-white/50 shrink-0" />
+          </Link>
           <p className="text-[12px] text-white/60 flex flex-wrap gap-x-2">
             {h.club.area && <span>{h.club.area}</span>}
             {h.nearest_station && (
@@ -180,6 +183,13 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
                 {h.price.toLocaleString()}
               </span>
               <span className="text-[22px] font-black text-white">원</span>
+            </div>
+            {/* 마감 타이머 — 가격 아래 (긴박감 강조) */}
+            <div className="mt-3 pt-3 border-t border-neutral-800/50">
+              <div className="inline-flex items-center gap-1.5 text-amber-300 text-[13px] font-black">
+                <Clock className="w-4 h-4" />
+                {countdown}
+              </div>
             </div>
           </div>
         )}

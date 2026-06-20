@@ -74,12 +74,15 @@ interface ClubDetailContentProps {
   club: Club;
   activeAuctions: Auction[];
   guestSignSlot?: GuestSignSlotInfo | null;
+  /** 핫딜 상세에서 진입 시 조각/깃발 동선을 숨겨 이탈 방지 */
+  hideShareList?: boolean;
 }
 
 export function ClubDetailContent({
   club,
   activeAuctions: rawActiveAuctions,
   guestSignSlot = null,
+  hideShareList = false,
 }: ClubDetailContentProps) {
   const activeAuctions = useMemo(() => {
     return rawActiveAuctions.map(adjustMockAuctionDates);
@@ -231,7 +234,7 @@ export function ClubDetailContent({
   const ctaHref = user ? flagHref : `/login?redirect=${encodeURIComponent(flagHref)}`;
   // 게스트 간판 MD가 있으면 본문에 이미 클럽 맥락 1순위 CTA(연락)가 있으므로
   // 지역 깃발 CTA는 숨겨 전환 충돌을 막는다. 없을 때만 노출.
-  const showFlagCta = !guestSignSlot;
+  const showFlagCta = !guestSignSlot && !hideShareList;
 
   return (
     <div className="container mx-auto max-w-lg px-4 pt-4 pb-40">
@@ -604,15 +607,17 @@ export function ClubDetailContent({
       {/* 5자 리뷰 워드클라우드 */}
       <WordCloudSection clubId={club.id} clubName={clubName} />
 
-      {/* 경매 목록 */}
-      <AuctionList
-        activeAuctions={visibleAuctions}
-        userBidMap={userBidMap}
-        hideTabs
-        hideAreaFilter
-        hideShareEmptyState
-        initialTab="share"
-      />
+      {/* 경매 목록 — 핫딜 상세에서 진입 시 조각글 숨김 (이탈 방지) */}
+      {!hideShareList && (
+        <AuctionList
+          activeAuctions={visibleAuctions}
+          userBidMap={userBidMap}
+          hideTabs
+          hideAreaFilter
+          hideShareEmptyState
+          initialTab="share"
+        />
+      )}
 
       {/* 풀스크린 지도 모달 — 네이버 패턴 */}
       <ClubLocationModal
