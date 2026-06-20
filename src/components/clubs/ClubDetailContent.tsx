@@ -450,10 +450,10 @@ export function ClubDetailContent({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "instagram")}
-                    className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
+                    className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
                   >
-                    <Instagram className="w-3.5 h-3.5 text-pink-400 flex-shrink-0" />
-                    <span className="text-white text-[11px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
+                    <Instagram className="w-4 h-4 text-pink-400 flex-shrink-0" />
+                    <span className="text-white text-[12px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
                   </a>
                 )}
                 {guestSignSlot.md.kakao_open_chat_url && (
@@ -462,10 +462,10 @@ export function ClubDetailContent({
                     target="_blank"
                     rel="noopener noreferrer"
                     onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "openchat")}
-                    className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg px-2.5 py-2 flex items-center gap-1.5 active:scale-95 transition"
+                    className="bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
                   >
-                    <MessageCircle className="w-3.5 h-3.5 text-green-400 flex-shrink-0" />
-                    <span className="text-white text-[11px] font-bold truncate">오픈채팅</span>
+                    <MessageCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                    <span className="text-white text-[12px] font-bold truncate">오픈채팅</span>
                   </a>
                 )}
               </div>
@@ -488,7 +488,7 @@ export function ClubDetailContent({
                       toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
                     }
                   }}
-                  className="w-full h-10 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 active:scale-95 transition-transform text-white font-bold text-[12px] inline-flex items-center justify-center gap-1.5"
+                  className="w-full inline-flex items-center justify-center gap-1.5 text-[12px] font-bold text-neutral-400 hover:text-white transition-colors"
                 >
                   {guestSignCopied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
                   {guestSignCopied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사"}

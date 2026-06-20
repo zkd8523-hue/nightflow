@@ -323,7 +323,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           {offerCount > 0 && (
             <span className="text-[12px] text-amber-400 font-bold tabular-nums">{offerCount} offers</span>
           )}
-          <div className="ml-auto">
+          <div className={!isSelecting && !hasOffered && offerCount === 0 ? "w-full" : "ml-auto"}>
             {isSelecting ? (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
@@ -341,7 +341,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             ) : (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)] active:scale-[0.97] transition-all"
+                className={`h-8 px-3 rounded-full font-black text-[12px] bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_7px_rgba(245,158,11,0.35)] active:scale-[0.97] transition-all ${offerCount > 0 ? "shrink-0" : "w-full"}`}
               >
                 {offerCount > 0 ? "나도 오퍼하기" : "먼저 오퍼하기"}
               </Button>
@@ -352,16 +352,12 @@ export const PuzzleCard = memo(function PuzzleCard({
         // 인원 확정 깃발: 카드 전체 클릭으로 상세 이동 (별도 버튼 불필요)
         // 지역은 오퍼 유무와 무관하게 항상 오른쪽 고정 (ml-auto). 오퍼배지가 null이면
         // justify-between만으론 지역이 왼쪽으로 붙어버려 위치가 오락가락함.
-        <div className="flex items-center gap-2">
-          {userOfferBadge}
-          {/* 조각 카드와 통일된 우하단 CTA — 카드 onClick(상세 이동)을 막지 않아 동일 동작 */}
-          <Button
-            tabIndex={-1}
-            className="ml-auto h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)] active:scale-[0.97] transition-all"
-          >
-            자세히
-          </Button>
-        </div>
+        // 일반 유저: 별도 "자세히" 버튼 없이 카드 전체 클릭으로 상세 이동. 오퍼 배지만 노출.
+        userOfferBadge ? (
+          <div className="flex items-center gap-2">
+            {userOfferBadge}
+          </div>
+        ) : null
       ) : isFull ? (
         <div className="space-y-2">
           <p className="text-[12px] text-neutral-500 font-medium text-center">파티 마감</p>

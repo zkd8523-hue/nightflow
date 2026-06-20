@@ -754,7 +754,20 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         {/* 입찰/예약/조각 패널 */}
         {isShare ? (
           <div className="mt-4">
-            <ShareJoinPanel auction={displayAuction} currentUserId={user?.id} onShareClick={() => setShareSheetOpen(true)} />
+            <ShareJoinPanel auction={displayAuction} currentUserId={user?.id} isMd={user?.role === "md" || user?.role === "admin"} onShareClick={() => setShareSheetOpen(true)} />
+            {/* MD 전용: 다른 조각을 보다 나도 올리도록 유도 (본인 조각이면 숨김).
+                깃발 상세 "나도 오퍼받기" CTA와 동일 스타일 → 대시보드 조각 섹션으로 이동. */}
+            {(user?.role === "md" || user?.role === "admin") && !isMdOwner && (
+              <div className="mt-4 text-center space-y-1">
+                <Link
+                  href="/md/dashboard?section=share"
+                  className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
+                >
+                  🧩 나도 조각 올리기
+                </Link>
+                <p className="text-[10px] text-neutral-500">클럽당 1명 · 조기마감 될 수 있어요.</p>
+              </div>
+            )}
           </div>
         ) : isActive && (
           <div className="mt-4">

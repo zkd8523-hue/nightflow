@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Clock, Instagram, Train, MapPin, Pencil, Copy, Check } from "lucide-react";
+import { ArrowLeft, Clock, Instagram, Train, MapPin, Pencil, Copy, Check, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import type { DailyHotdeal } from "@/types/database";
 import { createClient } from "@/lib/supabase/client";
@@ -42,6 +42,7 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
   const [now, setNow] = useState(Date.now());
   const [isOwner, setIsOwner] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showTableMap, setShowTableMap] = useState(false);
 
   const dmMessage = useMemo(() => {
     const zone = tableZoneLabel(h.table_zone);
@@ -160,8 +161,8 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
       <div className="px-5 py-4 space-y-4">
         {/* 가격 */}
         {h.price !== null && (
-          <div className="bg-green-500/10 border border-green-500/20 rounded-2xl px-5 py-4">
-            <p className="text-[11px] text-green-500/70 font-bold tracking-widest uppercase mb-1">Hot Deal 특가</p>
+          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl px-5 py-4">
+            <p className="text-[11px] text-neutral-500 font-bold tracking-widest uppercase mb-1">Hot Deal 특가</p>
             {h.original_price && h.original_price > h.price && (
               <div className="flex items-center gap-2 mb-1">
                 {discountPct && (
@@ -175,68 +176,72 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
               </div>
             )}
             <div className="flex items-baseline gap-1 leading-none">
-              <span className="text-[42px] font-black text-green-400 tracking-tighter">
+              <span className="text-[42px] font-black text-white tracking-tighter">
                 {h.price.toLocaleString()}
               </span>
-              <span className="text-[22px] font-black text-green-400">원</span>
+              <span className="text-[22px] font-black text-white">원</span>
             </div>
           </div>
         )}
 
-        {/* 테이블 위치 */}
-        {(hasFloorPlan || hasTableInfo) && (
-          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-3.5 h-3.5 text-neutral-500" />
-              <p className="text-[14px] font-bold text-white">테이블 위치</p>
-            </div>
-            {hasFloorPlan && (
-              <div className="relative rounded-xl overflow-hidden border border-neutral-800 bg-neutral-900">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={h.club.floor_plan_url!}
-                  alt="테이블 위치"
-                  className="w-full object-contain block select-none pointer-events-none"
-                  style={{ maxHeight: "260px" }}
-                  draggable={false}
-                />
-              </div>
-            )}
-            {hasTableInfo && (
-              <div className="flex items-center gap-2 justify-center">
-                <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-[12px] text-amber-400 font-bold">{h.table_info}</span>
-                <span className="text-[11px] text-neutral-500">테이블</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 포함 주류 + 테이블 구성 */}
-        {(hasLiquor || hasFeatures) && (
-          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3">
+        {/* 테이블 구성 (주류 + 구성 + 테이블맵 드롭다운) — 조각 TableDetailsCard와 통일 */}
+        {(hasLiquor || hasFeatures || hasFloorPlan || hasTableInfo) && (
+          <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl px-4 py-3 space-y-2.5">
+            <h2 className="text-[19px] font-black text-white tracking-tight">테이블 구성</h2>
             {hasLiquor && (
-              <div className="space-y-2">
-                <p className="text-[11px] text-neutral-500 font-bold">포함 주류</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {h.liquor_includes!.map((item) => (
-                    <span key={item} className="px-2.5 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-[12px] font-bold">
-                      {item}
-                    </span>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-1.5 w-full">
+                {h.liquor_includes!.map((item) => (
+                  <span key={item} className="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/30 rounded-lg text-[12px] font-bold whitespace-normal break-words">
+                    {item}
+                  </span>
+                ))}
               </div>
             )}
             {hasFeatures && (
-              <div className="space-y-2">
-                <p className="text-[11px] text-neutral-500 font-bold">테이블 구성</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {h.table_features!.map((f) => (
-                    <span key={f} className="px-2.5 py-1 bg-neutral-800 text-neutral-200 rounded-lg text-[12px] font-bold">
-                      {f}
-                    </span>
-                  ))}
-                </div>
+              <div className="flex flex-wrap gap-1.5 w-full">
+                {h.table_features!.map((f) => (
+                  <span key={f} className="px-2.5 py-1 bg-neutral-900/50 text-neutral-400 border border-neutral-800 rounded-lg text-[12px] font-bold whitespace-normal break-words">
+                    {f}
+                  </span>
+                ))}
+              </div>
+            )}
+            {(hasFloorPlan || hasTableInfo) && (
+              <div className="pt-2.5 border-t border-neutral-800/30">
+                <button
+                  type="button"
+                  onClick={() => setShowTableMap((v) => !v)}
+                  className="w-full flex items-center justify-between text-[13px] font-bold text-neutral-300 hover:text-white transition-colors"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-neutral-500" />
+                    테이블 위치
+                  </span>
+                  <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${showTableMap ? "rotate-180" : ""}`} />
+                </button>
+                {showTableMap && (
+                  <div className="space-y-3 mt-3">
+                    {hasFloorPlan && (
+                      <div className="relative rounded-xl overflow-hidden border border-neutral-800 bg-neutral-900">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={h.club.floor_plan_url!}
+                          alt="테이블 위치"
+                          className="w-full object-contain block select-none pointer-events-none"
+                          style={{ maxHeight: "260px" }}
+                          draggable={false}
+                        />
+                      </div>
+                    )}
+                    {hasTableInfo && (
+                      <div className="flex items-center gap-2 justify-center">
+                        <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                        <span className="text-[12px] text-amber-400 font-bold">{h.table_info}</span>
+                        <span className="text-[11px] text-neutral-500">테이블</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -282,15 +287,7 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
               </div>
             </div>
             {h.md.instagram && (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  className="w-full h-11 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-95 transition-transform text-white font-black text-[13px] inline-flex items-center justify-center gap-1.5"
-                >
-                  {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-                  {copied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사하기"}
-                </button>
+              <div className="space-y-2.5">
                 <a
                   href={`https://instagram.com/${h.md.instagram}`}
                   target="_blank"
@@ -299,6 +296,14 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
                 >
                   문의하기
                 </a>
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  className="w-full inline-flex items-center justify-center gap-1.5 text-[12px] font-bold text-neutral-400 hover:text-white transition-colors"
+                >
+                  {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사하기"}
+                </button>
               </div>
             )}
           </div>

@@ -295,7 +295,7 @@ export function Header({
                   <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
                 </Link>
               )}
-              {!compact && user.role === "user" && user.md_status !== "pending" && (
+              {!compact && user.role === "user" && user.md_status !== "pending" && !pathname?.startsWith("/auctions/") && !pathname?.startsWith("/flags/") && (
                 <Link
                   href="/flags/new"
                   className="h-9 px-3.5 flex items-center rounded-full bg-amber-500 hover:bg-amber-400 transition-colors shadow-sm"

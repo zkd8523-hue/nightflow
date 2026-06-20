@@ -224,6 +224,7 @@ export function HomeShareCarousel({
                 currentUserId={currentUserId}
                 hidePuzzle
                 hideSeatControl
+                isMd={userRole === "md" || userRole === "admin"}
               />
             </div>
             );

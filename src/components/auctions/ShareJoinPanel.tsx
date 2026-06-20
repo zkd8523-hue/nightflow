@@ -40,6 +40,8 @@ interface ShareJoinPanelProps {
   auction: Auction;
   currentUserId?: string;
   onShareClick?: () => void;
+  /** MD/admin 뷰어: 참여하기 버튼을 흰색으로(참여 대상 아님 → 강조 약화). 유저는 앰버. */
+  isMd?: boolean;
 }
 
 const ERROR_MESSAGES: Record<ShareClaimError, string> = {
@@ -59,7 +61,7 @@ const ERROR_MESSAGES: Record<ShareClaimError, string> = {
   INVALID_PARTY_SIZE: "참여 인원은 1~3명만 선택할 수 있어요.",
 };
 
-export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJoinPanelProps) {
+export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: ShareJoinPanelProps) {
   const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
@@ -369,7 +371,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick }: ShareJo
                 })}
               </div>
               <Button
-                className="flex-1 h-12 rounded-2xl font-bold text-base bg-white text-black hover:bg-neutral-100 transition-all"
+                className={`flex-1 h-12 rounded-2xl font-bold text-base text-black transition-all ${isMd ? "bg-white hover:bg-neutral-100" : "bg-amber-500 hover:bg-amber-400"}`}
                 disabled={loading}
                 onClick={handleJoin}
               >

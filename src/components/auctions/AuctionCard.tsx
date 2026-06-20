@@ -31,9 +31,11 @@ interface AuctionCardProps {
   hidePuzzle?: boolean;
   /** 인원 설정(외부 모집 +/-) 숨김 — 홈 캐러셀에서 미노출 */
   hideSeatControl?: boolean;
+  /** MD/admin 뷰어: 조각 "자세히" 버튼 glow 제거(유저에겐 glow 유지로 클릭 유도). */
+  isMd?: boolean;
 }
 
-export const AuctionCard = memo(function AuctionCard({ auction: propAuction, userBidAmount, isUserInterested, priority, currentUserId, hidePuzzle, hideSeatControl }: AuctionCardProps) {
+export const AuctionCard = memo(function AuctionCard({ auction: propAuction, userBidAmount, isUserInterested, priority, currentUserId, hidePuzzle, hideSeatControl, isMd }: AuctionCardProps) {
   const auction = adjustMockAuctionDates(propAuction);
   const club = auction.club;
   const displayStatus = getAuctionDisplayStatus(auction);
@@ -289,7 +291,9 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                     className={`h-9 px-3 rounded-full font-black text-[12px] shrink-0 transition-all active:scale-[0.97] ${
                       isShareFull
                         ? "bg-neutral-800 text-neutral-500 cursor-not-allowed pointer-events-none"
-                        : "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
+                        : isMd
+                          ? "bg-white hover:bg-neutral-100 text-black"
+                          : "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
                     }`}
                   >
                     {isShareFull ? "마감" : "자세히"}
