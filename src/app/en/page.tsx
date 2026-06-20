@@ -10,6 +10,7 @@ export const metadata: Metadata = {
     description:
       "Best tables, fair prices, no broker. Clubs in Seoul send you private offers.",
     locale: "en_US",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
 };
 

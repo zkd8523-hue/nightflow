@@ -67,6 +67,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: `${headName}${descAliases} 잔여 테이블 실시간 경매. 정가보다 저렴하게.`,
       url: `https://nightflow.kr/clubs/${id}`,
       type: "website",
+      images: [{ url: "/og-image.png", width: 1200, height: 630 }],
     },
   };
 }

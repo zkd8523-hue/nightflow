@@ -20,6 +20,7 @@ export const metadata: Metadata = {
       "전국 인기 클럽 정보를 한눈에 비교. 마음에 드는 클럽은 깃발 한 번으로 예약.",
     url: "https://nightflow.kr/clubs",
     type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
 };
 

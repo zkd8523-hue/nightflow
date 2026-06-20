@@ -13,6 +13,7 @@ export const metadata: Metadata = {
       "나플은 전국 인기 클럽 테이블을 실시간 경매로 예약하는 서비스. 미션은 \"밤을 더 아름답게\".",
     url: "https://nightflow.kr/vision",
     type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
 };
 

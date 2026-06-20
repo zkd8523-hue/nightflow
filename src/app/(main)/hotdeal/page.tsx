@@ -30,6 +30,7 @@ export const metadata: Metadata = {
     description: "강남·홍대 클럽 오늘의 핫딜·무료입장·게스트 명단을 한눈에. 나플(나이트플로우).",
     url: "https://nightflow.kr/hotdeal",
     type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
 };
 
