@@ -343,7 +343,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
                 className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)] active:scale-[0.97] transition-all"
               >
-                제안하기
+                {offerCount > 0 ? "나도 오퍼하기" : "먼저 오퍼하기"}
               </Button>
             )}
           </div>
