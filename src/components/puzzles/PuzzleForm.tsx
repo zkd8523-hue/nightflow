@@ -21,7 +21,7 @@ import { validateTitleDateConsistency } from "@/lib/utils/date";
 
 // 빠른 추가 (만원 단위) — 모드별로 다름
 const BUDGET_PRESETS_RECRUIT = [100000, 50000, 10000]; // 퍼즐(인당) +10만/+5만/+1만
-const BUDGET_PRESETS_FIXED = [100000, 50000, 10000]; // 깃발(총액) +10만/+5만/+1만
+const BUDGET_PRESETS_FIXED = [500000, 100000, 50000]; // 깃발(총액) +50만/+10만/+5만
 
 const GENDER_OPTIONS: { value: GenderPref; label: string }[] = [
   { value: 'any', label: '상관없음' },
@@ -431,7 +431,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       }
     }
     if (!effectiveIsRecruiting && budgetAmount < 500000) {
-      return fail('budget_total', '예산은 50만원 이상이어야 해요');
+      return fail('budget_total', '깃발 예산은 50만원 이상이어야 해요');
     }
     if (effectiveIsRecruiting && effectiveCurrentCount > effectiveTargetCount) {
       return fail('headcount_overflow', '일행 인원이 모집 인원을 초과합니다');
@@ -1126,7 +1126,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           onClick={() => {
             // 예산 하한(총 50만원)은 확인창 전에 즉시 차단 — 화면에 보이는 총액 기준
             if (!isEditMode && totalBudget < 500000) {
-              toast.error('예산은 50만원 이상이어야 해요');
+              toast.error('깃발 예산은 50만원 이상이어야 해요');
               return;
             }
             if (isLateForToday()) {

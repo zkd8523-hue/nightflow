@@ -22,7 +22,7 @@ export default async function PuzzleNewPage() {
     <div className="min-h-screen bg-[#0A0A0A] pb-20">
       <div className="max-w-lg mx-auto p-6">
         {/* 헤더 */}
-        <div className="mb-8 pt-12">
+        <div className="mb-8">
           <h1 className="text-2xl font-black text-white tracking-tight">🚩 깃발 꽂기</h1>
           <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">예산만 정하면 클럽에서 시크릿오퍼를 제안해요</p>
         </div>
