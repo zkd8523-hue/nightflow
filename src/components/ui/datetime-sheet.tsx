@@ -15,6 +15,10 @@ import dayjs from "dayjs";
 import "dayjs/locale/ko";
 dayjs.locale("ko");
 
+// dayjs 로케일이 번들 순서에 따라 영어로 남는 경우가 있어, 요일은 직접 매핑
+const KO_WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+const koWeekday = (d: dayjs.Dayjs) => KO_WEEKDAYS[d.day()];
+
 interface DateTimeSheetProps {
   /** "YYYY-MM-DDTHH:mm" 형식 (date-only 모드에서는 "YYYY-MM-DD") */
   value: string;
@@ -146,8 +150,8 @@ export function DateTimeSheet({
 
   const displayText = value
     ? isDateOnly
-      ? dayjs(value).format("YYYY. MM. DD. (ddd)")
-      : dayjs(value).format("YYYY. MM. DD. (ddd) a h:mm")
+      ? dayjs(value).format(`YYYY. MM. DD. (${koWeekday(dayjs(value))})`)
+      : dayjs(value).format(`YYYY. MM. DD. (${koWeekday(dayjs(value))}) a h:mm`)
     : placeholder;
 
   return (

@@ -12,6 +12,7 @@ import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import dayjs from "dayjs";
+import "dayjs/locale/ko";
 import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle as PuzzleType } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
@@ -429,8 +430,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         return fail('kakao_url', '카톡 오픈채팅 링크는 https://open.kakao.com/ 로 시작해야 합니다');
       }
     }
-    if (!effectiveIsRecruiting && budgetAmount < 10000 * totalPeople) {
-      return fail('budget_total', `${totalPeople}명 기준 최소 ${(10000 * totalPeople).toLocaleString()}원 이상이어야 합니다`);
+    if (!effectiveIsRecruiting && budgetAmount < 500000) {
+      return fail('budget_total', '예산은 50만원 이상이어야 해요');
     }
     if (effectiveIsRecruiting && effectiveCurrentCount > effectiveTargetCount) {
       return fail('headcount_overflow', '일행 인원이 모집 인원을 초과합니다');
@@ -924,8 +925,11 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               <span className="text-green-400">{totalBudget.toLocaleString()}원</span>
             </p>
           )}
-          <p className="text-[12px] text-neutral-400">
-            MD가 이 예산에 맞춰 보틀·서비스를 구성해요
+          <p className="font-medium -my-2">
+            <span className="text-[14px] text-amber-500/80">MD가 예산에 맞춰 서비스를 구성해요</span>
+            {!isRecruitingParty && (
+              <span className="text-[12px] text-neutral-400"> (최소 금액 50만원)</span>
+            )}
           </p>
         </div>
       </section>
@@ -1029,12 +1033,13 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         <div className="flex items-baseline gap-2 text-white font-bold mb-2">
           <MessageCircle className="w-4 h-4 text-purple-500 self-center" />
           <span>{isRecruitingParty ? "퍼즐 소개" : "MD에게 한마디"}</span>
-          <span className="text-[11px] text-neutral-500 font-normal">
-            {isRecruitingParty ? "참여자와 MD가 가장 먼저 읽어요" : "MD가 매물 제안할 때 참고해요"}
-            {" "}
-            <span className={notes.length >= 60 ? "text-amber-500" : ""}>
-              ({notes.length}/60)
+          {isRecruitingParty && (
+            <span className="text-[11px] text-neutral-500 font-normal">
+              참여자와 MD가 가장 먼저 읽어요
             </span>
+          )}
+          <span className={`ml-auto text-[11px] font-normal ${notes.length >= 60 ? "text-amber-500" : "text-neutral-500"}`}>
+            {notes.length}/60
           </span>
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
@@ -1080,38 +1085,50 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         </section>
       )}
 
-      {/* 총 예산 미리보기 */}
-      <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 space-y-1">
-        <p className="text-[11px] text-green-500/70">예산 요약</p>
-        {isRecruitingParty ? (
-          <p className="text-[18px] font-black text-green-500 leading-snug break-keep">
-            인당 {budgetAmount.toLocaleString()}원 × {effectiveTargetCount}명<br />
-            = 총 {totalBudget.toLocaleString()}원
-          </p>
-        ) : (
-          <p className="text-[18px] font-black text-green-500 leading-snug break-keep">
-            총 예산 {totalBudget.toLocaleString()}원
-          </p>
-        )}
-        {!isRecruitingParty ? (
-          <p className="text-[11px] text-green-500/60">
-            {totalPeople}명 확정 · 파티원 미모집
-          </p>
-        ) : hasGuest ? (
-          <p className="text-[11px] text-green-500/60">
-            본인 + 일행 {guestCount}명으로 시작 ({effectiveCurrentCount}/{effectiveTargetCount}명)
-          </p>
-        ) : (
-          <p className="text-[11px] text-green-500/60">
-            본인 1명으로 시작 (파티원 {effectiveTargetCount - 1}명 모집 중)
-          </p>
-        )}
-      </div>
+      {/* 요약 미리보기 */}
+      <section className="space-y-4">
+        <div className="flex items-baseline gap-2 text-white mb-2">
+          <Sparkles className="w-4 h-4 text-green-500 self-center" />
+          <span className="text-[18px] font-bold">깃발 요약</span>
+        </div>
+        <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 space-y-3">
+          {/* 보조: 날짜 · 지역 (한 줄) — green 톤 통일, 명도로 위계 */}
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[13px] font-bold text-green-400/80 truncate">
+              {eventDate ? `${dayjs(eventDate).format("M월 D일")} (${["일","월","화","수","목","금","토"][dayjs(eventDate).day()]})` : "날짜 미정"}
+              {" · "}
+              {area || "지역 미정"}
+            </span>
+          </div>
+
+          {/* 핵심: 총 예산 (+ 인원) */}
+          {isRecruitingParty ? (
+            <p className="text-[20px] font-black text-green-500 leading-tight break-keep">
+              인당 {budgetAmount.toLocaleString()}원 × {effectiveTargetCount}명
+              <span className="block text-[13px] font-bold text-green-500/80 mt-0.5">
+                = 총 {totalBudget.toLocaleString()}원
+              </span>
+            </p>
+          ) : (
+            <p className="text-[20px] font-black text-green-500 leading-tight break-keep">
+              {totalBudget.toLocaleString()}원
+              <span className="ml-2 text-[13px] font-bold text-green-500/60 align-middle">
+                {totalPeople}명
+              </span>
+            </p>
+          )}
+        </div>
+      </section>
 
       {/* 제출 버튼 */}
       <div className="mt-4 px-1">
         <Button
           onClick={() => {
+            // 예산 하한(총 50만원)은 확인창 전에 즉시 차단 — 화면에 보이는 총액 기준
+            if (!isEditMode && totalBudget < 500000) {
+              toast.error('예산은 50만원 이상이어야 해요');
+              return;
+            }
             if (isLateForToday()) {
               setShowLateTodayDialog(true);
               return;
