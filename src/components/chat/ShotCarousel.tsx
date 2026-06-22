@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Heart, Plus } from "lucide-react";
 import { useChatShots } from "@/hooks/useChatShots";
 import { ROOM_LABEL } from "@/lib/chat/areas";
 import type { ChatShot, VerifiableArea } from "@/types/database";
 import { ShotViewerSheet } from "./ShotViewerSheet";
+import { getViewedShotIds, markShotViewed } from "@/lib/chat/viewedShots";
 
 interface Props {
   /** 표시할 area 필터. 비우거나 undefined면 전체(잡담방) */
@@ -29,14 +31,34 @@ export function ShotCarousel({
   currentUserId,
   currentUserProfile,
 }: Props) {
+  const router = useRouter();
   const { shots, loading, toggleLike } = useChatShots(areas, currentUserId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+  // 본 SHOT 추적 (인스타 스토리 패턴) — localStorage
+  const [viewedSet, setViewedSet] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setViewedSet(getViewedShotIds());
+  }, [shots]);
+
+  // 안 본 SHOT 먼저 → 본 SHOT 끝쪽으로 정렬
+  const sortedShots = useMemo(() => {
+    const unseen = shots.filter((s) => !viewedSet.has(s.id));
+    const seen = shots.filter((s) => viewedSet.has(s.id));
+    return [...unseen, ...seen];
+  }, [shots, viewedSet]);
 
   // SHOT이 하나도 없고 컴포즈 버튼도 안 보일 거면 렌더 안 함
   if (!loading && shots.length === 0 && !showComposeButton) return null;
 
   return (
     <div className="px-3 py-2.5 border-b border-neutral-900 bg-[#0B0A11]">
+      <div className="flex items-baseline gap-1.5 mb-2 px-1">
+        <span className="text-[12px] font-bold text-amber-400">🥃 SHOT</span>
+        <span className="text-[11px] text-neutral-500">
+          — 9시간만 남기는 지금 이 순간
+        </span>
+      </div>
       <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
         {showComposeButton && (
           <button
@@ -70,19 +92,34 @@ export function ShotCarousel({
           </button>
         )}
 
-        {shots.map((shot, idx) => (
-          <button
-            key={shot.id}
-            type="button"
-            onClick={() => setViewerIndex(idx)}
-            className="shrink-0 w-16 flex flex-col items-center gap-1"
-          >
-            <ShotThumb shot={shot} isMine={shot.author_id === currentUserId} />
-            <span className="text-[10px] text-neutral-400 truncate w-full text-center font-bold">
-              {shot.author?.display_name ?? "익명"}
-            </span>
-          </button>
-        ))}
+        {sortedShots.map((shot, idx) => {
+          const isViewed = viewedSet.has(shot.id);
+          return (
+            <button
+              key={shot.id}
+              type="button"
+              onClick={() => {
+                markShotViewed(shot.id);
+                setViewedSet((prev) => new Set(prev).add(shot.id));
+                setViewerIndex(idx);
+              }}
+              className="shrink-0 w-16 flex flex-col items-center gap-1"
+            >
+              <ShotThumb
+                shot={shot}
+                isMine={shot.author_id === currentUserId}
+                isViewed={isViewed}
+              />
+              <span
+                className={`text-[10px] truncate w-full text-center font-bold ${
+                  isViewed ? "text-neutral-600" : "text-neutral-300"
+                }`}
+              >
+                {shot.author?.display_name ?? "익명"}
+              </span>
+            </button>
+          );
+        })}
 
         {loading &&
           shots.length === 0 &&
@@ -95,25 +132,40 @@ export function ShotCarousel({
       </div>
 
       <ShotViewerSheet
-        shots={shots}
+        shots={sortedShots}
         index={viewerIndex}
-        onIndexChange={setViewerIndex}
+        onIndexChange={(idx) => {
+          if (idx !== null && sortedShots[idx]) {
+            markShotViewed(sortedShots[idx].id);
+            setViewedSet((prev) => new Set(prev).add(sortedShots[idx].id));
+          }
+          setViewerIndex(idx);
+        }}
         currentUserId={currentUserId}
         onToggleLike={toggleLike}
+        onRequireLogin={() => router.push("/login?redirect=/chat")}
       />
     </div>
   );
 }
 
-function ShotThumb({ shot, isMine }: { shot: ChatShot; isMine: boolean }) {
+function ShotThumb({
+  shot,
+  isMine,
+  isViewed,
+}: {
+  shot: ChatShot;
+  isMine: boolean;
+  isViewed: boolean;
+}) {
+  // 인스타 스토리 패턴: 본 SHOT은 회색 링, 안 본 SHOT은 그라데이션 링
+  const ringClass = isViewed
+    ? "bg-neutral-700"
+    : isMine
+      ? "bg-gradient-to-br from-amber-400 to-amber-600"
+      : "bg-gradient-to-br from-[#A78BFA] to-[#C084FC]";
   return (
-    <div
-      className={`relative w-16 h-16 rounded-full p-[2px] ${
-        isMine
-          ? "bg-gradient-to-br from-amber-400 to-amber-600"
-          : "bg-gradient-to-br from-[#A78BFA] to-[#C084FC]"
-      }`}
-    >
+    <div className={`relative w-16 h-16 rounded-full p-[2px] ${ringClass}`}>
       <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
         {shot.media_type === "image" ? (
           <Image

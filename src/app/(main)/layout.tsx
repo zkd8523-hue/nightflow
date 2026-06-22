@@ -81,7 +81,7 @@ export default function MainLayout({
             <Header
               compact
               customTitle="WAGLE"
-              customSubtitle="지역 인증된 사람들끼리 모이는 실시간 피드"
+              customSubtitle="지역 인증된 사람들이 모인 실시간 피드"
               backHref="/"
             />
           ) : (

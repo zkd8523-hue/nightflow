@@ -5,8 +5,8 @@
  * - 강남/홍대/이태원 반경 안이면 해당 지역, 아니면 null (지원 지역 외)
  */
 
-export type ChatRoomCode = "all" | "gangnam" | "hongdae" | "itaewon";
-export type VerifiableArea = Exclude<ChatRoomCode, "all">;
+export type ChatRoomCode = "all" | "gangnam" | "hongdae" | "itaewon" | "foreigner";
+export type VerifiableArea = Exclude<ChatRoomCode, "all" | "foreigner">;
 
 export const CHAT_ROOMS: { code: ChatRoomCode; label: string }[] = [
   { code: "all", label: "잡담" },

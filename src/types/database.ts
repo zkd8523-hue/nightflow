@@ -1081,7 +1081,7 @@ export interface ClubWordCloud {
 // ============================================================================
 // 실시간 채팅 (Migration 284)
 // ============================================================================
-export type ChatRoomCode = 'all' | 'gangnam' | 'hongdae' | 'itaewon' | 'other';
+export type ChatRoomCode = 'all' | 'gangnam' | 'hongdae' | 'itaewon' | 'other' | 'foreigner';
 export type VerifiableArea = Exclude<ChatRoomCode, 'all'>;
 
 export type ChatMediaType = 'image' | 'video';
@@ -1190,10 +1190,23 @@ export interface ChatShot {
   caption: string | null;
   /** Migration 316 — 좋아요 캐시 */
   like_count: number;
+  /** Migration 325 — 댓글 캐시 */
+  comment_count: number;
   created_at: string;
   expires_at: string;
   author?: { id: string; display_name: string | null; profile_image: string | null };
   /** 클라이언트 측에서 chat_shot_likes 조회 후 채움 */
   liked_by_me?: boolean;
+}
+
+/** Migration 325 — SHOT 댓글 */
+export interface ChatShotComment {
+  id: string;
+  shot_id: string;
+  author_id: string;
+  content: string;
+  is_deleted: boolean;
+  created_at: string;
+  author?: { id: string; display_name: string | null; profile_image: string | null };
 }
 

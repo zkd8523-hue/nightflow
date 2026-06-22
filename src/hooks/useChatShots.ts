@@ -32,7 +32,7 @@ export function useChatShots(
     let q = supabase
       .from("chat_shots")
       .select(
-        `id, area, author_id, media_type, media_url, width, height, duration, caption, like_count, created_at, expires_at,
+        `id, area, author_id, media_type, media_url, width, height, duration, caption, like_count, comment_count, created_at, expires_at,
          author:public_user_profiles!author_id(id, display_name, profile_image)`
       )
       .gt("expires_at", new Date().toISOString())
@@ -72,6 +72,7 @@ export function useChatShots(
           duration: d.duration,
           caption: d.caption,
           like_count: (d as { like_count?: number }).like_count ?? 0,
+          comment_count: (d as { comment_count?: number }).comment_count ?? 0,
           created_at: d.created_at,
           expires_at: d.expires_at,
           author: authorObj,
@@ -135,6 +136,7 @@ export function useChatShots(
               {
                 ...newShot,
                 like_count: newShot.like_count ?? 0,
+                comment_count: newShot.comment_count ?? 0,
                 author: author ?? undefined,
                 liked_by_me: false,
               },
@@ -164,11 +166,19 @@ export function useChatShots(
           table: "chat_shots",
         },
         (payload) => {
-          const updated = payload.new as { id: string; like_count: number };
+          const updated = payload.new as {
+            id: string;
+            like_count: number;
+            comment_count: number;
+          };
           setShots((prev) =>
             prev.map((s) =>
               s.id === updated.id
-                ? { ...s, like_count: updated.like_count }
+                ? {
+                    ...s,
+                    like_count: updated.like_count,
+                    comment_count: updated.comment_count ?? s.comment_count,
+                  }
                 : s
             )
           );

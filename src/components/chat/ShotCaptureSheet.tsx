@@ -129,6 +129,7 @@ export function ShotCaptureSheet({
       area: data.area as VerifiableArea,
       media_type: data.media_type as "image" | "video",
       like_count: 0,
+      comment_count: 0,
       author: userProfile
         ? {
             id: userId,

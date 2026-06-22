@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from("users")
-      .select("id, deleted_at")
+      .select("id, deleted_at, country_code")
       .eq("id", user.id)
       .single();
 
@@ -85,6 +85,20 @@ export async function GET(request: NextRequest) {
       redirectUrl = signupUrl.toString();
     } else if (profile.deleted_at) {
       redirectUrl = `${origin}/recover-account`;
+    } else {
+      // 기존 유저 로그인 — 외국인은 /en/home으로
+      // country_code 있거나, next에 lang=en이 포함된 경우 외국인으로 판단
+      const isForeigner =
+        (profile.country_code != null && profile.country_code !== "") ||
+        safeNext.includes("lang=en");
+      // next가 의미있는 목적지(단순 루트+lang=en 제외)가 아닐 때만 /en/home으로
+      const isDefaultNext =
+        safeNext === "/" ||
+        safeNext === "" ||
+        /^\/?(\?.*)?$/.test(safeNext); // /, /?foo=bar 형태
+      if (isForeigner && isDefaultNext) {
+        redirectUrl = `${origin}/en/home`;
+      }
     }
   }
 

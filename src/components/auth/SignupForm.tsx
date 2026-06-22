@@ -100,10 +100,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextParam = searchParams.get("next");
-  const redirectAfterSignup =
-    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
   const lang = searchParams.get("lang");
   const isForeigner = lang === "en";
+  const redirectAfterSignup =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : (isForeigner ? "/en/home" : "/");
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -112,13 +112,13 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
   const [agreeAll, setAgreeAll] = useState(false);
   const [agreeAge, setAgreeAge] = useState(() =>
-    typeof window !== "undefined" && sessionStorage.getItem("nightflow_step1_age") === "1"
+    !isForeigner && typeof window !== "undefined" && sessionStorage.getItem("nightflow_step1_age") === "1"
   );
   const [agreeTerms, setAgreeTerms] = useState(() =>
-    typeof window !== "undefined" && sessionStorage.getItem("nightflow_step1_terms") === "1"
+    !isForeigner && typeof window !== "undefined" && sessionStorage.getItem("nightflow_step1_terms") === "1"
   );
   const [agreePrivacy, setAgreePrivacy] = useState(() =>
-    typeof window !== "undefined" && sessionStorage.getItem("nightflow_step1_privacy") === "1"
+    !isForeigner && typeof window !== "undefined" && sessionStorage.getItem("nightflow_step1_privacy") === "1"
   );
   const [agreeMarketing, setAgreeMarketing] = useState(false);
 
@@ -138,6 +138,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [nicknameOk, setNicknameOk] = useState(false);
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [countrySearch, setCountrySearch] = useState("");
+  const [countryFocused, setCountryFocused] = useState(false);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -201,8 +202,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
           }
           setAuthUser(user);
           trackEvent("signup_start", { provider: user.app_metadata?.provider ?? "unknown" });
-          // 테스트 모드: 프리셋 계정이면 약관/전화번호 자동 채움
-          if (isTestLoginEnabled && user.email && TEST_PHONE_BY_EMAIL[user.email]) {
+          // 테스트 모드: 한국어 플로우만 약관/전화번호 자동 채움 (외국인은 실제 UX 확인용으로 스킵)
+          if (!isForeigner && isTestLoginEnabled && user.email && TEST_PHONE_BY_EMAIL[user.email]) {
             setAgreeAge(true);
             setAgreeTerms(true);
             setAgreePrivacy(true);
@@ -276,7 +277,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     if (!requiredMet) return;
     trackEvent("signup_agree", { marketing_consent: agreeMarketing });
     if (isForeigner) {
-      setStep("nickname"); // 외국인: phone/otp 스킵
+      setStep("country"); // 외국인: phone/otp 스킵, 나라 먼저
     } else {
       setStep("phone");
     }
@@ -381,7 +382,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const handleCompleteSignup = async () => {
     if (!authUser) return;
     if (completedRef.current) return;
-    if (!verifiedPhoneState) {
+    if (!isForeigner && !verifiedPhoneState) {
       toast.error("인증 정보가 만료됐어요. 처음부터 다시 시도해주세요");
       setStep("phone");
       return;
@@ -788,6 +789,30 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               />
             </div>
 
+            {/* 생년월일 — 외국인 전용 (한국인은 phone 스텝에서 입력) */}
+            {isForeigner && (
+              <div className="space-y-1.5">
+                <label className="text-[12px] text-neutral-500 font-medium px-1">Date of birth</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="bday"
+                  value={formatBirthdayDisplay(birthdayInput)}
+                  onChange={(e) => setBirthdayInput(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  placeholder="YYYY.MM.DD"
+                  className={`w-full h-12 px-4 rounded-xl bg-neutral-800 border text-white text-[15px] placeholder-neutral-500 focus:outline-none transition-colors ${
+                    isUnderage ? "border-red-500 focus:border-red-500" : "border-neutral-700 focus:border-white"
+                  }`}
+                />
+                {isUnderage && (
+                  <p className="text-[12px] text-red-400 px-1">You must be 19 or older to use NightFlow.</p>
+                )}
+                {birthdayValid && isAdult && (
+                  <p className="text-[12px] text-green-400 px-1">Age verified ✓</p>
+                )}
+              </div>
+            )}
+
             <div className="space-y-2">
               <div className="relative">
                 <input
@@ -834,15 +859,15 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
             <div className="space-y-3 pt-1">
               <Button
-                onClick={isForeigner ? () => setStep("country") : handleCompleteSignup}
-                disabled={!nicknameOk || loading || nicknameChecking || uploadingImage}
+                onClick={handleCompleteSignup}
+                disabled={!nicknameOk || loading || nicknameChecking || uploadingImage || (isForeigner && (!birthdayValid || !isAdult))}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
-                {uploadingImage ? "Uploading..." : isForeigner ? "Next →" : (loading ? "가입 중..." : "가입 완료")}
+                {uploadingImage ? "Uploading..." : loading ? (isForeigner ? "Creating account..." : "가입 중...") : (isForeigner ? "Join NightFlow" : "가입 완료")}
               </Button>
               <button
                 type="button"
-                onClick={() => setStep(isForeigner ? "agree" : "otp")}
+                onClick={() => setStep(isForeigner ? "country" : "otp")}
                 className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> {isForeigner ? "Back" : "이전"}
@@ -873,16 +898,19 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                     setCountrySearch(e.target.value);
                     setCountryCode(null);
                   }}
+                  onFocus={() => setCountryFocused(true)}
+                  onBlur={() => setTimeout(() => setCountryFocused(false), 150)}
                   className={`w-full h-12 rounded-xl bg-neutral-800 border text-white placeholder-neutral-500 text-[15px] focus:outline-none focus:border-white transition-colors ${
                     countryCode ? "pl-12 pr-4 border-white" : "px-4 border-neutral-700"
                   }`}
                 />
               </div>
 
-              {countrySearch && !countryCode && (() => {
-                const results = COUNTRIES.filter(c =>
-                  c.name.toLowerCase().includes(countrySearch.toLowerCase())
-                );
+              {(countryFocused && !countryCode) && (() => {
+                const sorted = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
+                const results = countrySearch
+                  ? sorted.filter(c => c.name.toLowerCase().includes(countrySearch.toLowerCase()))
+                  : sorted;
                 if (results.length === 0) return null;
                 return (
                   <div className="absolute z-10 w-full mt-1 rounded-xl bg-neutral-800 border border-neutral-700 overflow-hidden max-h-52 overflow-y-auto shadow-xl">
@@ -890,9 +918,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                       <button
                         key={c.code}
                         type="button"
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           setCountryCode(c.code);
                           setCountrySearch(c.name);
+                          setCountryFocused(false);
                         }}
                         className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-neutral-700 transition-colors"
                       >
@@ -907,15 +937,15 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
             <div className="space-y-3 pt-1">
               <Button
-                onClick={handleCompleteSignup}
-                disabled={!countryCode || loading}
+                onClick={() => setStep("nickname")}
+                disabled={!countryCode}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
-                {loading ? "Creating account..." : "Join NightFlow"}
+                Next →
               </Button>
               <button
                 type="button"
-                onClick={() => setStep("nickname")}
+                onClick={() => setStep("agree")}
                 className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> Back

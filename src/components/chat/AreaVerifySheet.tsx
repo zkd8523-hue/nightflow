@@ -18,14 +18,23 @@ import {
 
 const IS_DEV = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
 
+type VerifyReason = "chat" | "shot";
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** 인증 성공 시 감지된 지역 코드 반환 */
   onSuccess?: (detected: VerifiableArea) => void;
+  /** 진입 컨텍스트 — 'shot'이면 SHOT 작성 안내, 그 외는 채팅 참여 안내 */
+  reason?: VerifyReason;
 }
 
-export function AreaVerifySheet({ open, onOpenChange, onSuccess }: Props) {
+export function AreaVerifySheet({
+  open,
+  onOpenChange,
+  onSuccess,
+  reason = "chat",
+}: Props) {
   const { verifyByCurrentLocation } = useAreaVerification();
   const [loading, setLoading] = useState(false);
   // dev 환경에서만 사용: 선택한 지역으로 우회 인증
@@ -72,8 +81,15 @@ export function AreaVerifySheet({ open, onOpenChange, onSuccess }: Props) {
       >
         <SheetHeader className="pb-2">
           <SheetTitle className="text-white text-[16px] text-left">
-            지금 위치를 확인할게요
+            {reason === "shot"
+              ? "🥃 SHOT은 현장 인증자만 올릴 수 있어요"
+              : "지금 위치를 확인할게요"}
           </SheetTitle>
+          {reason === "shot" && (
+            <p className="text-left text-[12px] text-neutral-400 pt-1">
+              지금 강남·홍대·이태원에 있다면 인증하고 SHOT을 올려보세요
+            </p>
+          )}
         </SheetHeader>
 
         <div className="mt-3 space-y-4">

@@ -48,6 +48,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [verifyReason, setVerifyReason] = useState<"chat" | "shot">("chat");
   const [media, setMedia] = useState<ChatMediaItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -186,6 +187,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
       return;
     }
     if (requiresVerification && !verifiedForRoom) {
+      setVerifyReason("chat");
       setVerifyOpen(true);
       return;
     }
@@ -318,8 +320,6 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
     setSending(false);
   }
 
-  const displayName = user?.display_name ?? "나";
-  const profileImage = user?.profile_image;
 
   // 컴포저 JSX (메시지 리스트 아래로 렌더)
   const composer = (
@@ -329,21 +329,6 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
     >
       <div className="max-w-lg mx-auto px-4 py-3">
       <div className="flex items-start gap-3">
-        <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-800 shrink-0">
-          {profileImage ? (
-            <Image
-              src={profileImage}
-              alt={displayName}
-              fill
-              sizes="40px"
-              className="object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/50 text-[14px] font-black">
-              {displayName.charAt(0)}
-            </div>
-          )}
-        </div>
         <div className="flex-1 min-w-0 relative">
           <textarea
             ref={textareaRef}
@@ -374,11 +359,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
                 handleSend();
               }
             }}
-            placeholder={
-              !user
-                ? "로그인하고 오늘 밤 계획을 공유해보세요"
-                : "오늘 밤 어떤 계획이 있나요?"
-            }
+            placeholder="오늘 밤 어떤 계획이 있나요?"
             rows={2}
             maxLength={MAX_LEN}
             className="w-full bg-transparent text-white text-[16px] placeholder:text-neutral-500 focus:outline-none resize-none leading-snug"
@@ -540,10 +521,10 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
 
   return (
     <div className="flex flex-col pb-40">
-      {/* 와글 SHOT 캐러셀 — 잡담방=전체 지역 노출만, 지역방=해당 지역 + 작성 버튼 */}
+      {/* 와글 SHOT 캐러셀 — 잡담/지역방 모두 작성 버튼 노출 (인증 자격은 동일) */}
       <ShotCarousel
         areas={shotAreas}
-        showComposeButton={room !== "all"}
+        showComposeButton={true}
         currentUserId={user?.id}
         currentUserProfile={user ? { profile_image: user.profile_image ?? null, display_name: user.display_name ?? null } : null}
         onComposeClick={() => {
@@ -552,7 +533,8 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
             return;
           }
           if (!canPostShot || !shotAuthorArea) {
-            // 인증된 지역 없음 → 인증 시트 오픈
+            // 인증된 지역 없음 → 인증 시트 오픈 (SHOT 작성 안내 컨텍스트)
+            setVerifyReason("shot");
             setVerifyOpen(true);
             return;
           }
@@ -579,7 +561,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
       {requiresVerification && !verifiedForRoom && (
         <div className="py-6 px-6 text-center border-b border-neutral-900">
           <p className="text-[15px] text-white font-bold">
-            위치가 인증된 유저만 참여할 수 있어요
+            현위치 인증자만 참여할 수 있어요
           </p>
           <button
             onClick={() => {
@@ -587,12 +569,13 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
                 router.push(`/login?redirect=/chat`);
                 return;
               }
+              setVerifyReason("chat");
               setVerifyOpen(true);
             }}
             className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-black bg-amber-500 text-black"
           >
             <MapPin className="w-4 h-4" />
-            지금 {ROOM_LABEL[room]}
+            {ROOM_LABEL[room]}
             {hasJongseong(ROOM_LABEL[room]) ? "이에요" : "예요"}
           </button>
         </div>
@@ -608,8 +591,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
         </div>
       ) : messages.length === 0 ? (
         <div className="py-10 px-6 text-center">
-          <p className="text-[14px] text-neutral-400">아직 대화가 없어요</p>
-          <p className="text-[12px] text-neutral-600 mt-1">
+          <p className="text-[13px] text-neutral-500">
             {room === "all"
               ? "첫 와글을 남겨보세요!"
               : `지금 ${ROOM_LABEL[room]}에 있다면 첫 와글을 남겨보세요!`}
@@ -657,6 +639,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
       <AreaVerifySheet
         open={verifyOpen}
         onOpenChange={setVerifyOpen}
+        reason={verifyReason}
         onSuccess={(detected) => {
           // ChatRoom 인스턴스의 useAreaVerification 상태도 갱신
           refreshVerifications();

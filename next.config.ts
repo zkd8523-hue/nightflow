@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
         hostname: "images.unsplash.com",
         pathname: "/**",
       },
+      {
+        // 시드 데이터용 placeholder 이미지 (와글 SHOT 더미)
+        protocol: "https",
+        hostname: "picsum.photos",
+        pathname: "/**",
+      },
     ],
     formats: ["image/avif", "image/webp"],
   },

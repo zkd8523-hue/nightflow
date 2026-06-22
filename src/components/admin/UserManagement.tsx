@@ -87,7 +87,10 @@ interface UserManagementProps {
 export function UserManagement({ users, focusId }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [nationalityFilter, setNationalityFilter] = useState<"domestic" | "foreign">("domestic");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "recent_seen" | "long_inactive">("newest");
+
+  const foreignCount = users.filter((u) => u.country_code != null && u.country_code !== "").length;
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<UserActivityStats | null>(null);
@@ -233,6 +236,10 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
   };
 
   const filteredUsers = users.filter((u) => {
+    const isForeign = u.country_code != null && u.country_code !== "";
+    const matchesNationality =
+      nationalityFilter === "foreign" ? isForeign : !isForeign;
+
     const matchesSearch =
       !searchQuery ||
       u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -252,7 +259,7 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
       (statusFilter === "new_24h" && dayjs(u.created_at).isAfter(dayjs().subtract(1, "day"))) ||
       (statusFilter === "new_7d" && dayjs(u.created_at).isAfter(dayjs().subtract(7, "day")));
 
-    return matchesSearch && matchesStatus;
+    return matchesNationality && matchesSearch && matchesStatus;
   }).sort((a, b) => {
     if (sortOrder === "recent_seen" || sortOrder === "long_inactive") {
       // last_seen_at 기준 (null은 항상 맨 뒤로)
@@ -319,6 +326,37 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
 
   return (
     <div className="space-y-6">
+      {/* 내국인 / 외국인 탭 */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setNationalityFilter("domestic")}
+          className={`px-4 py-2 rounded-full text-[13px] font-bold transition-colors ${
+            nationalityFilter === "domestic"
+              ? "bg-white text-black"
+              : "bg-neutral-800 text-neutral-400 hover:text-white"
+          }`}
+        >
+          🇰🇷 내국인
+        </button>
+        <button
+          onClick={() => setNationalityFilter("foreign")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold transition-colors ${
+            nationalityFilter === "foreign"
+              ? "bg-white text-black"
+              : "bg-neutral-800 text-neutral-400 hover:text-white"
+          }`}
+        >
+          🌍 외국인
+          <span className={`text-[11px] font-black px-1.5 py-0.5 rounded-full ${
+            nationalityFilter === "foreign"
+              ? "bg-black/20 text-black"
+              : "bg-neutral-700 text-neutral-300"
+          }`}>
+            {foreignCount}
+          </span>
+        </button>
+      </div>
+
       {/* 필터 */}
       <div className="flex gap-4">
         <div className="flex-1 relative">
