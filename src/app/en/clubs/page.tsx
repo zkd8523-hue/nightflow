@@ -3,9 +3,32 @@ import { createClient } from "@/lib/supabase/server";
 import { ClubsClient } from "./ClubsClient";
 
 export const metadata: Metadata = {
-  title: "Seoul Clubs Guide 2026 — NightFlow",
+  title: "Seoul Club Booking 2026 — Gangnam, Hongdae, Itaewon Guide",
   description:
-    "Browse Seoul's best clubs with real prices, Google ratings, and VIP table access. Gangnam, Hongdae, Itaewon and more.",
+    "Browse Seoul's best clubs with real prices, Google ratings, and VIP table booking. Book Gangnam, Hongdae, Itaewon clubs without speaking Korean. No broker.",
+  keywords: [
+    "Seoul club booking",
+    "Seoul clubs",
+    "Seoul nightclub guide",
+    "Gangnam club booking",
+    "Hongdae club booking",
+    "Itaewon club booking",
+    "Seoul VIP table",
+    "book club Seoul",
+    "Korea clubbing guide",
+  ],
+  alternates: {
+    canonical: "https://nightflow.kr/en/clubs",
+  },
+  openGraph: {
+    title: "Seoul Club Booking 2026 — Gangnam, Hongdae, Itaewon Guide",
+    description:
+      "Book Seoul's best clubs with real prices and VIP table access. No broker.",
+    url: "https://nightflow.kr/en/clubs",
+    locale: "en_US",
+    type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
 };
 
 export default async function EnClubsPage() {

@@ -72,6 +72,11 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://nightflow.kr",
+    languages: {
+      "ko-KR": "https://nightflow.kr",
+      "en-US": "https://nightflow.kr/en",
+      "x-default": "https://nightflow.kr",
+    },
   },
   openGraph: {
     title: "나플 | 나이트플로우 - 강남·홍대 클럽 정보",

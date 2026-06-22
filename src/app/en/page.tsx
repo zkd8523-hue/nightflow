@@ -1,8 +1,61 @@
+import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
 import { hideTestData } from "@/lib/utils/testData";
 import { EnHomeClient } from "./EnHomeClient";
 
 export const revalidate = 30;
+
+export const metadata: Metadata = {
+  title: "NightFlow — Seoul Club Booking for Travelers (Gangnam, Hongdae, Itaewon)",
+  description:
+    "Book the best clubs in Seoul without speaking Korean. Gangnam, Hongdae, Itaewon — real prices, VIP tables, no broker. Top clubs compete to send you private offers.",
+  keywords: [
+    "Seoul club",
+    "Seoul club booking",
+    "Seoul nightclub",
+    "Gangnam club",
+    "Hongdae club",
+    "Itaewon club",
+    "Seoul VIP table",
+    "Korea clubbing",
+    "Korea nightlife",
+    "Seoul party",
+    "club table Seoul",
+    "NightFlow",
+  ],
+  alternates: {
+    canonical: "https://nightflow.kr/en",
+    languages: {
+      "en-US": "https://nightflow.kr/en",
+      "ko-KR": "https://nightflow.kr",
+      "x-default": "https://nightflow.kr",
+    },
+  },
+  openGraph: {
+    title: "NightFlow — Seoul Club Booking for Travelers",
+    description:
+      "Book the best clubs in Seoul without speaking Korean. Real prices, VIP tables, no broker.",
+    url: "https://nightflow.kr/en",
+    siteName: "NightFlow",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "NightFlow — Seoul Club Booking for Travelers",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NightFlow — Seoul Club Booking for Travelers",
+    description:
+      "Book the best clubs in Seoul without speaking Korean. Real prices, VIP tables, no broker.",
+    images: ["/og-image.png"],
+  },
+};
 
 function createAnonClient() {
   return createServerClient(

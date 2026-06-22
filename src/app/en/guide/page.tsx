@@ -3,14 +3,29 @@ import type { Metadata } from "next";
 import { krwToAll } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
-  title: "NightFlow — Be a VIP at Seoul's best clubs",
+  title: "Seoul Club Booking Guide — Be a VIP at Seoul's Best Clubs",
   description:
-    "VIP access to Seoul's hottest clubs for travelers. Best tables, fair prices, skip the line and the broker — no connections or Korean needed. Get the VIP treatment from your first night.",
+    "Book Seoul's hottest clubs without speaking Korean. Best tables, fair prices, skip the line and the broker. VIP table booking for Gangnam, Hongdae, Itaewon clubs.",
+  keywords: [
+    "Seoul club booking guide",
+    "Seoul VIP table booking",
+    "book Seoul club",
+    "Gangnam club booking",
+    "Hongdae club booking",
+    "Itaewon club booking",
+    "Korea nightlife guide",
+    "Seoul party booking",
+  ],
+  alternates: {
+    canonical: "https://nightflow.kr/en/guide",
+  },
   openGraph: {
-    title: "NightFlow — Be a VIP at Seoul's best clubs",
+    title: "Seoul Club Booking Guide — Be a VIP at Seoul's Best Clubs",
     description:
-      "VIP access to Seoul's hottest clubs. Best tables, fair prices, no broker.",
+      "Book Seoul's hottest clubs without speaking Korean. Best tables, fair prices, no broker.",
+    url: "https://nightflow.kr/en/guide",
     locale: "en_US",
+    type: "website",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
 };
