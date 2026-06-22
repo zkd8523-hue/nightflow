@@ -54,6 +54,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/en`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE_URL}/en/guide`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${BASE_URL}/en/clubs`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    // /en/clubs/[area] — 동네별 단독 페이지 (Gangnam/Hongdae/Itaewon/Busan)
+    // 각 동네 키워드 검색(예: "Hongdae club booking") 정확 매칭용.
+    { url: `${BASE_URL}/en/clubs/gangnam`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${BASE_URL}/en/clubs/hongdae`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${BASE_URL}/en/clubs/itaewon`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${BASE_URL}/en/clubs/busan`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
   ];
 
   try {

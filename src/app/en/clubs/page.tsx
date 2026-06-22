@@ -117,6 +117,32 @@ export default async function EnClubsPage() {
           on one screen. Book your Seoul club table with one tap — no Korean
           required.
         </p>
+
+        <h2>Browse Seoul Clubs by District</h2>
+        <ul>
+          <li>
+            <a href="/en/clubs/gangnam">
+              Gangnam Club Booking — VIP tables, EDM clubs, Apgujeong &amp;
+              Cheongdam lounges
+            </a>
+          </li>
+          <li>
+            <a href="/en/clubs/hongdae">
+              Hongdae Club Booking — Hip-hop, K-pop, foreigner-friendly clubs
+            </a>
+          </li>
+          <li>
+            <a href="/en/clubs/itaewon">
+              Itaewon Club Booking — International, English-friendly nightlife
+            </a>
+          </li>
+          <li>
+            <a href="/en/clubs/busan">
+              Busan Club Booking — Haeundae &amp; Seomyeon nightlife (Korea&apos;s
+              second city)
+            </a>
+          </li>
+        </ul>
       </div>
       <ClubsClient clubs={clubList} />
     </>

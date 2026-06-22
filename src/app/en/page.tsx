@@ -271,6 +271,30 @@ export default async function EnHomePage() {
           offers from Seoul&apos;s best clubs within hours.
         </p>
 
+        <h2>Browse Korea Clubs by District</h2>
+        <ul>
+          <li>
+            <a href="/en/clubs/gangnam">
+              Gangnam clubs — EDM, hip-hop, Apgujeong &amp; Cheongdam lounges
+            </a>
+          </li>
+          <li>
+            <a href="/en/clubs/hongdae">
+              Hongdae clubs — Hip-hop, K-pop, foreigner-friendly
+            </a>
+          </li>
+          <li>
+            <a href="/en/clubs/itaewon">
+              Itaewon clubs — International, English-friendly
+            </a>
+          </li>
+          <li>
+            <a href="/en/clubs/busan">
+              Busan clubs — Haeundae beach &amp; Seomyeon downtown
+            </a>
+          </li>
+        </ul>
+
         <h2>Why Book Korea Clubs Through NightFlow</h2>
         <ul>
           <li>
