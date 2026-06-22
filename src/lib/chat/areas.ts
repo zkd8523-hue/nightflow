@@ -9,7 +9,7 @@ export type ChatRoomCode = "all" | "gangnam" | "hongdae" | "itaewon";
 export type VerifiableArea = Exclude<ChatRoomCode, "all">;
 
 export const CHAT_ROOMS: { code: ChatRoomCode; label: string }[] = [
-  { code: "all", label: "전체" },
+  { code: "all", label: "잡담" },
   { code: "gangnam", label: "강남" },
   { code: "hongdae", label: "홍대" },
   { code: "itaewon", label: "이태원" },
@@ -53,6 +53,27 @@ export function detectArea(lat: number, lng: number): VerifiableArea | null {
     }
   }
   return null;
+}
+
+/**
+ * 메시지 공유 시 갈 수 있는 방 목록
+ * - 잡담(all) → 지역방 가능 (단 지역 인증돼있을 때)
+ * - 지역방 → 잡담만
+ * - 지역방 → 다른 지역방 차단
+ *
+ * @param sourceRoom 원본 메시지가 있던 방
+ * @param verifiedAreas 사용자가 현재 인증된 지역들
+ */
+export function getShareableRooms(
+  sourceRoom: ChatRoomCode,
+  verifiedAreas: VerifiableArea[]
+): ChatRoomCode[] {
+  if (sourceRoom === "all") {
+    // 잡담에서 → 인증된 지역으로
+    return verifiedAreas;
+  }
+  // 지역방에서 → 잡담만
+  return ["all"];
 }
 
 /** 인증 유효시간: 2시간 */

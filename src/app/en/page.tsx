@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { krwToAll } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
   title: "NightFlow — Be a VIP at Seoul's best clubs",
@@ -87,12 +88,14 @@ const PRICE_TIERS = [
     icon: "🎟️",
     label: "Just get in",
     price: "₩20,000–30,000 pp",
+    krwAmount: 25000,
     desc: "Entry + your first drink. A quick night on the dance floor.",
   },
   {
     icon: "👑",
     label: "The full VIP",
     price: "₩500,000+",
+    krwAmount: 500000,
     desc: "Prime table, bottle service, staff looking after you all night — the night you'll never forget.",
   },
 ];
@@ -147,6 +150,12 @@ export default function EnglishLanding() {
               </div>
             ))}
           </div>
+          <Link
+            href="/en/clubs"
+            className="block text-center text-[13px] text-blue-400 underline"
+          >
+            Browse Seoul clubs with real prices →
+          </Link>
           <Link
             href="/login?lang=en"
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
@@ -223,6 +232,9 @@ export default function EnglishLanding() {
                       {t.price}
                     </p>
                   </div>
+                  <p className="text-[11px] text-neutral-600 tabular-nums">
+                    ≈ {krwToAll(t.krwAmount)}
+                  </p>
                   <p className="text-[13px] text-neutral-500 leading-relaxed">
                     {t.desc}
                   </p>

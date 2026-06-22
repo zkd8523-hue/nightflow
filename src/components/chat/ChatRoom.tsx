@@ -1,0 +1,687 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { MapPin, ImagePlus, X, Loader2, Hash } from "lucide-react";
+import { WagleIcon } from "@/components/icons/WagleIcon";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useChatMessages } from "@/hooks/useChatMessages";
+import { useAreaVerification } from "@/hooks/useAreaVerification";
+import { useChatReactions } from "@/hooks/useChatReactions";
+import { ChatMessageItem } from "./ChatMessageItem";
+import { AreaVerifySheet } from "./AreaVerifySheet";
+import { ChatReplySheet } from "./ChatReplySheet";
+import { ClubHashtagSuggester } from "./ClubHashtagSuggester";
+import { ShotCarousel } from "./ShotCarousel";
+import { ShotCaptureSheet } from "./ShotCaptureSheet";
+import { getCurrentHashtagToken, extractHashtags } from "@/lib/chat/hashtag";
+import { findClubIdsByAlias } from "@/lib/clubs/aliases";
+import type { ChatMessage } from "@/types/database";
+import {
+  ROOM_LABEL,
+  type ChatRoomCode,
+  type VerifiableArea,
+} from "@/lib/chat/areas";
+import {
+  CHAT_MEDIA_MAX_COUNT,
+  uploadChatMedia,
+  type ChatMediaItem,
+} from "@/lib/utils/uploadChatMedia";
+
+interface Props {
+  room: ChatRoomCode;
+  onAreaVerified?: (detected: VerifiableArea) => void;
+}
+
+const MAX_LEN = 500;
+
+export function ChatRoom({ room, onAreaVerified }: Props) {
+  const router = useRouter();
+  const { user } = useCurrentUser();
+  const { messages, loading, reload, addLocalMessage } = useChatMessages(room);
+  const { isVerified, activeAreas, refresh: refreshVerifications } =
+    useAreaVerification();
+
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const [media, setMedia] = useState<ChatMediaItem[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // 자동완성용 현재 # 토큰 위치
+  const [hashtagToken, setHashtagToken] = useState<{
+    token: string;
+    start: number;
+    end: number;
+  } | null>(null);
+  // 본문에 박제된 클럽 ID 매핑 (해시태그 텍스트 → 클럽 ID)
+  // 메시지 전송 시 club_tags 컬럼에 사용
+  const taggedClubsRef = useRef<Map<string, string>>(new Map());
+  const newMsgAnchorRef = useRef<HTMLDivElement>(null);
+  const prevLenRef = useRef(0);
+  // 도배 방지 (클라 사전 차단)
+  const lastSentAtRef = useRef<number>(0);
+  const lastSentContentRef = useRef<string>("");
+  const recentSentTimesRef = useRef<number[]>([]);
+
+  // 답글 시트
+  const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
+
+  // SHOT 캡처 시트
+  const [shotComposeOpen, setShotComposeOpen] = useState(false);
+
+  // 메시지 ID 리스트 (이모지 반응 일괄 로드)
+  const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
+  const { summaries: reactionSummaries, toggle: toggleReaction } =
+    useChatReactions(messageIds, user?.id);
+
+  // 방 전환 시 prevLen 리셋 (이전 방의 카운트와 혼동 방지)
+  useEffect(() => {
+    prevLenRef.current = 0;
+  }, [room]);
+
+  // 메시지가 "새로" 들어왔을 때만 부드럽게 스크롤
+  // 초기 로드(0→N)에선 스크롤 호출 안 함 — 페이지 점프 방지
+  useEffect(() => {
+    if (
+      prevLenRef.current > 0 &&
+      messages.length > prevLenRef.current
+    ) {
+      newMsgAnchorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+    prevLenRef.current = messages.length;
+  }, [messages.length]);
+
+  const requiresVerification = room !== "all";
+  const verifiedForRoom = useMemo(() => {
+    if (!requiresVerification) return true;
+    return isVerified(room as VerifiableArea);
+  }, [requiresVerification, room, isVerified]);
+
+  // SHOT 캐러셀에 표시할 area 필터
+  // - 잡담방(all): 모든 지역
+  // - 지역방: 해당 지역만
+  const shotAreas = useMemo<VerifiableArea[] | undefined>(() => {
+    if (room === "all") return undefined; // 전체
+    return [room as VerifiableArea];
+  }, [room]);
+
+  // SHOT 작성 가능 여부 — 인증된 지역이 1개 이상 있어야
+  const canPostShot = !!user && activeAreas.length > 0;
+  // SHOT 작성 시 사용할 area — 현재 방이 지역방이면 그 지역, 잡담방이면 인증된 지역 중 첫 번째
+  const shotAuthorArea: VerifiableArea | null = useMemo(() => {
+    if (room !== "all" && verifiedForRoom) return room as VerifiableArea;
+    if (activeAreas.length > 0) return activeAreas[0].area;
+    return null;
+  }, [room, verifiedForRoom, activeAreas]);
+
+  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // 같은 파일 재선택 가능하게
+    if (files.length === 0) return;
+    if (!user) {
+      router.push(`/login?redirect=/chat`);
+      return;
+    }
+    const slotsLeft = CHAT_MEDIA_MAX_COUNT - media.length;
+    if (slotsLeft <= 0) {
+      toast.error(`첨부는 최대 ${CHAT_MEDIA_MAX_COUNT}개까지 가능해요`);
+      return;
+    }
+    const toUpload = files.slice(0, slotsLeft);
+    if (files.length > slotsLeft) {
+      toast.message(
+        `${slotsLeft}개만 첨부됩니다 (최대 ${CHAT_MEDIA_MAX_COUNT}개)`
+      );
+    }
+    setUploading(true);
+    try {
+      const results = await Promise.all(
+        toUpload.map((f) => uploadChatMedia(f, user.id))
+      );
+      const ok = results.filter((r): r is ChatMediaItem => r !== null);
+      if (ok.length > 0) {
+        setMedia((prev) => [...prev, ...ok].slice(0, CHAT_MEDIA_MAX_COUNT));
+      }
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removeMedia(idx: number) {
+    setMedia((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  async function handleSend() {
+    const trimmed = input.trim();
+    if (sending) return;
+    // 텍스트 또는 미디어 중 하나 이상 있어야 함
+    if (trimmed.length < 1 && media.length === 0) return;
+    if (trimmed.length > MAX_LEN) {
+      toast.error(`${MAX_LEN}자를 넘을 수 없어요`);
+      return;
+    }
+    if (!user) {
+      // 비로그인: 로그인 페이지로 강제 이동 (router.push가 막힐 케이스 대비 location 폴백)
+      const target = `/login?redirect=/chat`;
+      try {
+        router.push(target);
+      } catch (e) {
+        console.error("[ChatRoom] router.push failed, falling back", e);
+      }
+      // 만약 0.3초 안에 라우팅 안 됐으면 location으로 강제 이동
+      setTimeout(() => {
+        if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+          window.location.href = target;
+        }
+      }, 300);
+      return;
+    }
+    if (requiresVerification && !verifiedForRoom) {
+      setVerifyOpen(true);
+      return;
+    }
+
+    // 도배 방지 (클라 사전 차단, 서버 트리거 Migration 321과 동일 기준)
+    const now = Date.now();
+    // 5초 간격 정책 제거 — 사용자 응답성 우선
+    // 1시간 내 같은 텍스트는 서버에서 1차 차단, 클라는 최근 1건만 빠른 가드
+    if (trimmed.length > 0 && trimmed === lastSentContentRef.current) {
+      toast.error("같은 내용은 잠시 후에 다시 보낼 수 있어요");
+      return;
+    }
+    // 분당 5개 (서버와 동일)
+    const cutoff = now - 60_000;
+    recentSentTimesRef.current = recentSentTimesRef.current.filter(
+      (t) => t > cutoff
+    );
+    if (recentSentTimesRef.current.length >= 5) {
+      toast.error("1분에 5개까지만 보낼 수 있어요");
+      return;
+    }
+
+    setSending(true);
+    const supabase = createClient();
+
+    // 본문에서 해시태그 추출 → 클럽 ID 매핑
+    // 1) taggedClubsRef (자동완성으로 선택한 것) 우선
+    // 2) 그 외 #토큰은 alias 매칭으로 추론
+    const hashtags = extractHashtags(trimmed);
+    const clubTagIds: string[] = [];
+    const seen = new Set<string>();
+    for (const tag of hashtags) {
+      const fromRef = taggedClubsRef.current.get(tag);
+      if (fromRef && !seen.has(fromRef)) {
+        clubTagIds.push(fromRef);
+        seen.add(fromRef);
+        continue;
+      }
+      // alias 매칭으로 보완 (수동 입력했지만 일치하는 클럽 있을 때)
+      const aliasMatches = findClubIdsByAlias(tag);
+      if (aliasMatches.length === 1 && !seen.has(aliasMatches[0])) {
+        clubTagIds.push(aliasMatches[0]);
+        seen.add(aliasMatches[0]);
+      }
+    }
+
+    // 입력은 먼저 비워서 체감 지연 제거
+    const sentContent = trimmed;
+    const sentMedia = media;
+    setInput("");
+    setMedia([]);
+
+    const { data: inserted, error } = await supabase
+      .from("chat_messages")
+      .insert({
+        room,
+        author_id: user.id,
+        content: sentContent,
+        media: sentMedia,
+        club_tags: clubTagIds,
+      })
+      .select(
+        `id, room, author_id, parent_id, reply_count, content, media, author_area, club_tags, is_deleted, created_at, quoted_message_id`
+      )
+      .single();
+    if (error) {
+      // 실패 시 입력 복원
+      setInput(sentContent);
+      setMedia(sentMedia);
+      console.error("[ChatRoom] send error", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      if (
+        error.code === "42501" ||
+        error.message?.includes("row-level security")
+      ) {
+        toast.error("지역 인증이 만료되었어요. 다시 인증해주세요");
+        setVerifyOpen(true);
+      } else if (error.code === "42P01") {
+        // 테이블 자체가 없음 → 284 마이그레이션 누락
+        toast.error("DB 마이그레이션이 적용되지 않았습니다 (284)");
+      } else if (error.code === "42703") {
+        // 컬럼 누락 → 313/314 마이그레이션 미적용
+        toast.error(
+          `컬럼 누락 (313/314 미적용): ${error.message ?? ""}`
+        );
+      } else if (error.message?.includes("RATE_LIMIT_DUPLICATE")) {
+        toast.error("1시간 이내 같은 내용은 보낼 수 없어요");
+      } else if (error.message?.includes("RATE_LIMIT_PER_MINUTE")) {
+        toast.error("1분에 5개까지만 보낼 수 있어요");
+      } else {
+        toast.error(`전송 실패: ${error.message ?? "알 수 없는 오류"}`);
+      }
+      setSending(false);
+      return;
+    }
+    // 성공 시 도배 방지 ref 업데이트
+    lastSentAtRef.current = now;
+    lastSentContentRef.current = trimmed;
+    recentSentTimesRef.current.push(now);
+
+    // 옵티미스틱 prepend — realtime 이벤트보다 먼저 화면에 표시
+    if (inserted) {
+      addLocalMessage({
+        id: inserted.id,
+        room: inserted.room as typeof room,
+        author_id: inserted.author_id,
+        parent_id: inserted.parent_id ?? null,
+        reply_count: inserted.reply_count ?? 0,
+        content: inserted.content,
+        media: (inserted.media ?? []) as never,
+        author_area: inserted.author_area ?? null,
+        club_tags: inserted.club_tags ?? [],
+        is_deleted: inserted.is_deleted,
+        created_at: inserted.created_at,
+        author: {
+          id: user.id,
+          display_name: user.display_name ?? "나",
+          profile_image: user.profile_image ?? null,
+        },
+        quoted_message_id: inserted.quoted_message_id ?? null,
+        quoted_message: null,
+      });
+    }
+
+    taggedClubsRef.current.clear();
+    setSending(false);
+  }
+
+  const displayName = user?.display_name ?? "나";
+  const profileImage = user?.profile_image;
+
+  // 컴포저 JSX (메시지 리스트 아래로 렌더)
+  const composer = (
+    <div
+      className="fixed bottom-0 inset-x-0 z-40 bg-[#0A0A0A] border-t border-neutral-800"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      <div className="max-w-lg mx-auto px-4 py-3">
+      <div className="flex items-start gap-3">
+        <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-800 shrink-0">
+          {profileImage ? (
+            <Image
+              src={profileImage}
+              alt={displayName}
+              fill
+              sizes="40px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-white/50 text-[14px] font-black">
+              {displayName.charAt(0)}
+            </div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0 relative">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => {
+              const v = e.target.value;
+              setInput(v);
+              const cursor = e.target.selectionStart ?? v.length;
+              setHashtagToken(getCurrentHashtagToken(v, cursor));
+            }}
+            onSelect={(e) => {
+              const t = e.currentTarget;
+              setHashtagToken(
+                getCurrentHashtagToken(t.value, t.selectionStart ?? 0)
+              );
+            }}
+            onBlur={() => {
+              setTimeout(() => setHashtagToken(null), 100);
+            }}
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
+              if (e.key === "Escape" && hashtagToken) {
+                setHashtagToken(null);
+                return;
+              }
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            placeholder={
+              !user
+                ? "로그인하고 오늘 밤 계획을 공유해보세요"
+                : "오늘 밤 어떤 계획이 있나요?"
+            }
+            rows={2}
+            maxLength={MAX_LEN}
+            className="w-full bg-transparent text-white text-[16px] placeholder:text-neutral-500 focus:outline-none resize-none leading-snug"
+          />
+          {hashtagToken && hashtagToken.token.length > 0 && (
+            <div className="absolute left-0 right-0 bottom-full mb-1 z-20">
+              <ClubHashtagSuggester
+                query={hashtagToken.token}
+                open={true}
+                onSelect={(club) => {
+                  const before = input.slice(0, hashtagToken.start);
+                  const after = input.slice(hashtagToken.end);
+                  const insert = `#${club.name}`;
+                  const newInput = `${before}${insert} ${after}`;
+                  setInput(newInput);
+                  taggedClubsRef.current.set(club.name, club.id);
+                  setHashtagToken(null);
+                  setTimeout(() => {
+                    const ta = textareaRef.current;
+                    if (ta) {
+                      const cursor =
+                        hashtagToken.start + insert.length + 1;
+                      ta.focus();
+                      ta.setSelectionRange(cursor, cursor);
+                    }
+                  }, 0);
+                }}
+              />
+            </div>
+          )}
+          {media.length > 0 && (
+            <div className="mt-2 flex gap-1.5 flex-wrap">
+              {media.map((m, i) => (
+                <div
+                  key={i}
+                  className="relative w-16 h-16 rounded-lg overflow-hidden bg-neutral-900 border border-neutral-800"
+                >
+                  {m.type === "image" ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <>
+                      <video
+                        src={m.url}
+                        className="w-full h-full object-cover"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px]">
+                          ▶
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeMedia(i)}
+                    className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center text-white"
+                    aria-label="삭제"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center justify-between mt-2 gap-2">
+            <div className="flex items-center gap-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                hidden
+                onChange={handleFilePick}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!user) {
+                    router.push(`/login?redirect=/chat`);
+                    return;
+                  }
+                  fileInputRef.current?.click();
+                }}
+                disabled={uploading || media.length >= CHAT_MEDIA_MAX_COUNT}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-amber-400 hover:bg-neutral-800 disabled:text-neutral-700 disabled:hover:bg-transparent transition-colors"
+                aria-label="사진/동영상 첨부"
+              >
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="w-4 h-4" />
+                )}
+              </button>
+              {/* 클럽태그 — 누르면 본문에 # 삽입 + textarea focus → 자동완성 자동 트리거 */}
+              <button
+                type="button"
+                onClick={() => {
+                  const ta = textareaRef.current;
+                  if (!ta) return;
+                  const start = ta.selectionStart ?? input.length;
+                  const end = ta.selectionEnd ?? input.length;
+                  // 앞 글자가 공백 아니면 공백 + # 삽입, 아니면 # 만
+                  const prev = input.slice(0, start);
+                  const next = input.slice(end);
+                  const needsSpace = prev.length > 0 && !/\s$/.test(prev);
+                  const insert = (needsSpace ? " #" : "#");
+                  const newValue = `${prev}${insert}${next}`;
+                  setInput(newValue);
+                  const cursor = prev.length + insert.length;
+                  setTimeout(() => {
+                    ta.focus();
+                    ta.setSelectionRange(cursor, cursor);
+                    setHashtagToken({ token: "", start: cursor - 1, end: cursor });
+                  }, 0);
+                }}
+                className="h-8 px-2.5 inline-flex items-center gap-1 rounded-full text-amber-400 hover:bg-neutral-800 transition-colors"
+                aria-label="클럽 태그"
+              >
+                <Hash className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-bold">클럽태그</span>
+              </button>
+              <span
+                className={`text-[11px] ${
+                  input.length >= 450
+                    ? "text-amber-400"
+                    : "text-neutral-600"
+                }`}
+              >
+                {input.length}/{MAX_LEN}
+              </span>
+            </div>
+            <button
+              onClick={handleSend}
+              disabled={
+                !user ||
+                (requiresVerification && !verifiedForRoom) ||
+                (!input.trim() && media.length === 0) ||
+                sending ||
+                uploading
+              }
+              className="px-4 py-1.5 rounded-full text-[13px] font-black bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
+            >
+              {sending ? "전송 중..." : "게시"}
+            </button>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex flex-col pb-40">
+      {/* 와글 SHOT 캐러셀 — 잡담방=전체 지역 노출만, 지역방=해당 지역 + 작성 버튼 */}
+      <ShotCarousel
+        areas={shotAreas}
+        showComposeButton={room !== "all"}
+        currentUserId={user?.id}
+        currentUserProfile={user ? { profile_image: user.profile_image ?? null, display_name: user.display_name ?? null } : null}
+        onComposeClick={() => {
+          if (!user) {
+            router.push(`/login?redirect=/chat`);
+            return;
+          }
+          if (!canPostShot || !shotAuthorArea) {
+            // 인증된 지역 없음 → 인증 시트 오픈
+            setVerifyOpen(true);
+            return;
+          }
+          setShotComposeOpen(true);
+        }}
+      />
+
+      {/* SHOT 캡처 시트 */}
+      {user && shotAuthorArea && (
+        <ShotCaptureSheet
+          open={shotComposeOpen}
+          onOpenChange={setShotComposeOpen}
+          area={shotAuthorArea}
+          userId={user.id}
+          userProfile={{
+            display_name: user.display_name ?? null,
+            profile_image: user.profile_image ?? null,
+          }}
+        />
+      )}
+
+
+      {/* 지역방 + 미인증 = 항상 보이는 인증 학습 안내 (글 유무 무관) */}
+      {requiresVerification && !verifiedForRoom && (
+        <div className="py-6 px-6 text-center border-b border-neutral-900">
+          <p className="text-[15px] text-white font-bold">
+            위치가 인증된 유저만 참여할 수 있어요
+          </p>
+          <button
+            onClick={() => {
+              if (!user) {
+                router.push(`/login?redirect=/chat`);
+                return;
+              }
+              setVerifyOpen(true);
+            }}
+            className="mt-2 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] font-black bg-amber-500 text-black"
+          >
+            <MapPin className="w-4 h-4" />
+            지금 {ROOM_LABEL[room]}
+            {hasJongseong(ROOM_LABEL[room]) ? "이에요" : "예요"}
+          </button>
+        </div>
+      )}
+
+      {/* 새 메시지 스크롤 앵커 */}
+      <div ref={newMsgAnchorRef} />
+
+      {/* 메시지 리스트 */}
+      {loading ? (
+        <div className="py-10 text-center text-[13px] text-neutral-500">
+          불러오는 중...
+        </div>
+      ) : messages.length === 0 ? (
+        <div className="py-10 px-6 text-center">
+          <p className="text-[14px] text-neutral-400">아직 대화가 없어요</p>
+          <p className="text-[12px] text-neutral-600 mt-1">
+            {room === "all"
+              ? "첫 와글을 남겨보세요!"
+              : `지금 ${ROOM_LABEL[room]}에 있다면 첫 와글을 남겨보세요!`}
+          </p>
+        </div>
+      ) : (
+        <div>
+          {/* 최신 → 오래된 순으로 표시 (트위터식) — parent_id 있는 답글은 타임라인에서 제외 */}
+          {(() => {
+            const sorted = [...messages]
+              .reverse()
+              .filter((m) => !m.parent_id);
+            // 같은 작성자 + 5분 이내 연속이면 그루핑 (헤더 숨김)
+            const GROUP_GAP_MS = 5 * 60 * 1000;
+            return sorted.map((m, idx) => {
+              const prev = sorted[idx - 1];
+              const isGrouped =
+                !!prev &&
+                prev.author_id === m.author_id &&
+                new Date(m.created_at).getTime() -
+                  new Date(prev.created_at).getTime() <
+                  GROUP_GAP_MS;
+              return (
+                <ChatMessageItem
+                  key={m.id}
+                  message={m}
+                  currentUserId={user?.id}
+                  isLoggedIn={!!user}
+                  reactionSummary={reactionSummaries.get(m.id)}
+                  onReact={(emoji) => toggleReaction(m.id, emoji)}
+                  onOpenReplies={(target) => setReplyTarget(target)}
+                  onChange={reload}
+                  onRequireLogin={() => router.push(`/login?redirect=/chat`)}
+                  groupedWithPrev={isGrouped}
+                />
+              );
+            });
+          })()}
+        </div>
+      )}
+
+      {/* 카톡식 컴포저 — 메시지 리스트 아래 */}
+      {composer}
+
+      <AreaVerifySheet
+        open={verifyOpen}
+        onOpenChange={setVerifyOpen}
+        onSuccess={(detected) => {
+          // ChatRoom 인스턴스의 useAreaVerification 상태도 갱신
+          refreshVerifications();
+          onAreaVerified?.(detected);
+        }}
+      />
+
+      <ChatReplySheet
+        open={!!replyTarget}
+        onOpenChange={(v) => {
+          if (!v) setReplyTarget(null);
+        }}
+        parent={replyTarget}
+        onChange={reload}
+      />
+    </div>
+  );
+}
+
+/** 한국어 마지막 글자에 받침(종성) 있는지 — 조사 분기용 */
+function hasJongseong(text: string): boolean {
+  if (!text) return false;
+  const last = text.charCodeAt(text.length - 1);
+  // 한글 가(0xAC00) ~ 힣(0xD7A3)
+  if (last < 0xac00 || last > 0xd7a3) return false;
+  return (last - 0xac00) % 28 !== 0;
+}
+

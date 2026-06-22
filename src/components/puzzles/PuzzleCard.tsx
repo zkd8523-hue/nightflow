@@ -8,6 +8,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
+import { countryFlag } from "@/lib/utils/countryFlag";
 
 interface PuzzleCardProps {
   puzzle: Puzzle;
@@ -234,8 +235,10 @@ export const PuzzleCard = memo(function PuzzleCard({
                 🧩
               </span>
             ) : (
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[11px]" style={{lineHeight: 1, paddingLeft: '2px', paddingBottom: '2px'}}>
-                🚩
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[11px]" style={{lineHeight: 1}}>
+                {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR"
+                  ? countryFlag(puzzle.leader.country_code)
+                  : "🚩"}
               </span>
             )
           )}

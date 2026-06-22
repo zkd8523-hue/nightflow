@@ -133,7 +133,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
       } else {
         const { data: inserted, error } = await supabase
           .from("clubs")
-          .insert({ ...clubData, status: "pending" })
+          .insert({ ...clubData })
           .select("id")
           .single();
         if (error) throw error;

@@ -60,7 +60,20 @@ export async function GET(request: NextRequest) {
     if (!profile) {
       // 신규 유저 → 회원가입 페이지로
       const signupUrl = new URL("/signup", origin);
-      if (safeNext !== "/") signupUrl.searchParams.set("next", safeNext);
+
+      // safeNext에서 lang 파라미터 추출해서 signup으로 직접 전달
+      let cleanNext = safeNext;
+      try {
+        const parsedNext = new URL(safeNext, origin);
+        const lang = parsedNext.searchParams.get("lang");
+        if (lang) {
+          signupUrl.searchParams.set("lang", lang);
+          parsedNext.searchParams.delete("lang");
+          cleanNext = parsedNext.pathname + (parsedNext.search || "");
+        }
+      } catch {}
+
+      if (cleanNext !== "/" && cleanNext !== "") signupUrl.searchParams.set("next", cleanNext);
       signupUrl.searchParams.set("auth_success", `signup_${provider}`);
       redirectUrl = signupUrl.toString();
     } else if (profile.deleted_at) {

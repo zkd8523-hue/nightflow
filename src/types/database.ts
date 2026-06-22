@@ -103,6 +103,8 @@ export interface User {
   identity_verified_at: string | null;
   /** 내외국인 구분. 'LOCAL' | 'FOREIGNER' */
   nationality: "LOCAL" | "FOREIGNER" | null;
+  /** ISO 3166-1 alpha-2 국가 코드. 외국인 가입 시 선택 (Migration 320) */
+  country_code: string | null;
 
   /** 공개 프로필 자기소개. 최대 160자 (Migration 279) */
   bio: string | null;
@@ -362,6 +364,12 @@ export interface Club {
 
   // Migration 244: 좋아요 시드 카운트 (실제 row와 합산해 노출)
   seed_favorite_count?: number | null;
+
+  // Migration 317: 구글 평점 (외국인 /en 추천순 정렬)
+  google_place_id: string | null;
+  google_rating: number | null;
+  google_review_count: number | null;
+  google_synced_at: string | null;
 
   /** Migration 174~182: 조인해서 가져올 때만 채워짐. 멀티 MD 표시 및 상세 정보용. */
   partners?: Array<{
@@ -733,7 +741,7 @@ export type MusicPref = 'hiphop' | 'edm' | 'any';
 export interface Puzzle {
   id: string;
   leader_id: string;
-  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'deal_count_total' | 'deal_amount_total' | 'created_at' | 'gender'>;
+  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'deal_count_total' | 'deal_amount_total' | 'created_at' | 'gender' | 'country_code'>;
   area: Area;
   event_date: string;
   kakao_open_chat_url: string | null; // 오퍼 수락 시점에 입력, MD에게만 공개
@@ -1099,6 +1107,22 @@ export interface ChatMessage {
   parent_id: string | null;
   /** 답글 수 캐시 (Migration 291) */
   reply_count: number;
+  /** 본문에 포함된 #클럽 해시태그의 클럽 ID 배열 (Migration 313) */
+  club_tags: string[];
+  /** 인용 공유의 원본 메시지 ID (Migration 314). NULL이면 일반 메시지. */
+  quoted_message_id: string | null;
+  /** joined: 인용된 원본 메시지 (요약 정보만) */
+  quoted_message?: {
+    id: string;
+    room: ChatRoomCode;
+    author_id: string;
+    content: string;
+    media: ChatMediaItem[];
+    author_area: VerifiableArea | null;
+    is_deleted: boolean;
+    created_at: string;
+    author?: { id: string; display_name: string | null; profile_image: string | null };
+  } | null;
   is_deleted: boolean;
   created_at: string;
   // joined
@@ -1148,5 +1172,28 @@ export interface ChatMessageReport {
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
+}
+
+/**
+ * 와글 SHOT (Migration 315) — 지역 인증된 유저의 휘발성 미디어 (9시간)
+ * 작성은 인증자만, 노출은 잡담방 + 지역방 모두
+ */
+export interface ChatShot {
+  id: string;
+  area: VerifiableArea;
+  author_id: string;
+  media_type: 'image' | 'video';
+  media_url: string;
+  width: number | null;
+  height: number | null;
+  duration: number | null;
+  caption: string | null;
+  /** Migration 316 — 좋아요 캐시 */
+  like_count: number;
+  created_at: string;
+  expires_at: string;
+  author?: { id: string; display_name: string | null; profile_image: string | null };
+  /** 클라이언트 측에서 chat_shot_likes 조회 후 채움 */
+  liked_by_me?: boolean;
 }
 

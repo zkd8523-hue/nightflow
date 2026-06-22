@@ -15,6 +15,7 @@ import { ChevronRight, Check, ArrowLeft, RefreshCw, Camera } from "lucide-react"
 import Link from "next/link";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { COUNTRIES, countryFlag } from "@/lib/utils/countryFlag";
 
 import type { User as AuthUser } from "@supabase/supabase-js";
 
@@ -23,7 +24,7 @@ interface SignupFormProps {
   mdReferrer?: string | null;
 }
 
-type Step = "agree" | "phone" | "otp" | "nickname";
+type Step = "agree" | "phone" | "otp" | "nickname" | "country";
 
 const RESEND_COOLDOWN_SEC = 60;
 
@@ -93,6 +94,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const nextParam = searchParams.get("next");
   const redirectAfterSignup =
     nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
+  const lang = searchParams.get("lang");
+  const isForeigner = lang === "en";
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -125,6 +128,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [nicknameError, setNicknameError] = useState<string | null>(null);
   const [nicknameChecking, setNicknameChecking] = useState(false);
   const [nicknameOk, setNicknameOk] = useState(false);
+  const [countryCode, setCountryCode] = useState<string | null>(null);
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -177,14 +181,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         const { data: { user } } = await supabase.auth.getUser();
         if (cancelled) return;
         if (user) {
-          // 이미 가입 완료된 유저(phone 인증 완료)면 홈으로 redirect
+          // 이미 가입 완료된 유저면 홈으로 redirect (외국인은 phone 없이 display_name으로 판정)
           const { data: profile } = await supabase
             .from("users")
-            .select("phone")
+            .select("phone, display_name")
             .eq("id", user.id)
             .maybeSingle();
           if (cancelled) return;
-          if (profile?.phone) {
+          if (profile?.phone || profile?.display_name) {
             router.push(redirectAfterSignup);
             return;
           }
@@ -264,7 +268,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const handleAgreeNext = () => {
     if (!requiredMet) return;
     trackEvent("signup_agree", { marketing_consent: agreeMarketing });
-    setStep("phone");
+    if (isForeigner) {
+      setStep("nickname"); // 외국인: phone/otp 스킵
+    } else {
+      setStep("phone");
+    }
   };
 
   const phoneDigits = phoneInput.replace(/\D/g, "");
@@ -420,7 +428,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       }
 
       let referredById: string | null = null;
-      let signupSource = "direct";
+      let signupSource = isForeigner ? "en" : "direct";
 
       if (referralCode) {
         const { data: referrer } = await supabase
@@ -473,6 +481,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               birthday: birthdayToSave,
               alimtalk_consent: agreeMarketing,
               alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
+              ...(countryCode ? { country_code: countryCode } : {}),
             })
             .eq("id", authUser.id)
         : await supabase.from("users").insert({
@@ -487,6 +496,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
             referred_by: referredById,
             signup_source: signupSource,
+            ...(countryCode ? { country_code: countryCode } : {}),
           });
 
       if (error) {
@@ -544,7 +554,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               }}
               className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" /> 로그인 화면으로
+              <ArrowLeft className="w-4 h-4" /> {isForeigner ? "Back to login" : "로그인 화면으로"}
             </button>
 
             <div className="space-y-2">
@@ -558,17 +568,22 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 }`}>
                   {agreeAll && <Check className="w-4 h-4 text-black" />}
                 </div>
-                <span className="text-[15px] font-bold text-white">전체 동의</span>
+                <span className="text-[15px] font-bold text-white">{isForeigner ? "Agree to all" : "전체 동의"}</span>
               </button>
 
               <div className="h-px bg-neutral-700 mx-2" />
 
-              {[
+              {(isForeigner ? [
+                { state: agreeAge, set: setAgreeAge, label: "I am 19 years of age or older", required: true, href: null },
+                { state: agreeTerms, set: setAgreeTerms, label: "Terms of Service", required: true, href: "/terms" },
+                { state: agreePrivacy, set: setAgreePrivacy, label: "Privacy Policy", required: true, href: "/privacy" },
+                { state: agreeMarketing, set: setAgreeMarketing, label: "Marketing notifications (optional)", required: false, href: "/marketing-consent" },
+              ] : [
                 { state: agreeAge, set: setAgreeAge, label: "만 19세 이상입니다", required: true, href: null },
                 { state: agreeTerms, set: setAgreeTerms, label: "서비스 이용약관 동의", required: true, href: "/terms" },
                 { state: agreePrivacy, set: setAgreePrivacy, label: "개인정보 처리방침 동의", required: true, href: "/privacy" },
                 { state: agreeMarketing, set: setAgreeMarketing, label: "마케팅 정보 수신 동의 (알림톡·SMS·앱 푸시)", required: false, href: "/marketing-consent" },
-              ].map(({ state, set, label, required, href }) => (
+              ]).map(({ state, set, label, required, href }) => (
                 <div key={label} className="flex items-center gap-3 px-3 py-3">
                   <button
                     type="button"
@@ -582,7 +597,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   <span className="text-[14px] text-neutral-200 flex-1">
                     {label}{" "}
                     <span className={`text-[11px] ${required ? "text-red-400" : "text-neutral-500"}`}>
-                      ({required ? "필수" : "선택"})
+                      ({required ? (isForeigner ? "required" : "필수") : (isForeigner ? "optional" : "선택")})
                     </span>
                   </span>
                   {href && (
@@ -599,7 +614,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               disabled={!requiredMet}
               className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
             >
-              다음
+              {isForeigner ? "Next" : "다음"}
             </Button>
           </>
         )}
@@ -711,8 +726,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "nickname" && (
           <div className="space-y-7">
             <div className="space-y-1.5 text-center">
-              <p className="text-[22px] font-bold text-white tracking-tight">프로필을 설정해주세요</p>
-              <p className="text-[13px] text-neutral-500">언제든지 변경할 수 있습니다</p>
+              <p className="text-[22px] font-bold text-white tracking-tight">{isForeigner ? "Set up your profile" : "프로필을 설정해주세요"}</p>
+              <p className="text-[13px] text-neutral-500">{isForeigner ? "You can change this anytime" : "언제든지 변경할 수 있습니다"}</p>
             </div>
 
             {/* 프로필 사진 */}
@@ -770,7 +785,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   type="text"
                   value={nicknameInput}
                   maxLength={16}
-                  placeholder="닉네임"
+                  placeholder={isForeigner ? "Nickname" : "닉네임"}
                   onChange={(e) => {
                     const val = e.target.value;
                     setNicknameInput(val);
@@ -789,20 +804,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                       else { setNicknameError(null); setNicknameOk(true); }
                     } finally { setNicknameChecking(false); }
                   }}
-                  className="w-full h-12 px-4 pr-28 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
+                  className="w-full h-12 px-4 pr-14 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
                 />
-                {/* 글자수 + 자동생성 버튼 */}
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                {/* 글자수 */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
                   <span className="text-[11px] text-neutral-600 tabular-nums">{nicknameInput.length}/16</span>
-                  <button
-                    type="button"
-                    onClick={applyRandomNickname}
-                    disabled={nicknameChecking}
-                    className="h-7 px-2 rounded-lg flex items-center gap-1 text-[11px] font-bold text-neutral-300 bg-neutral-700 hover:bg-neutral-600 transition-colors disabled:opacity-40"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${nicknameChecking ? "animate-spin" : ""}`} />
-                    자동생성
-                  </button>
                 </div>
               </div>
 
@@ -810,27 +816,77 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 <p className="text-[12px] text-red-400 font-medium px-1">{nicknameError}</p>
               )}
               {nicknameOk && !nicknameError && (
-                <p className="text-[12px] text-green-400 font-medium px-1">사용 가능한 닉네임이에요 ✓</p>
+                <p className="text-[12px] text-green-400 font-medium px-1">{isForeigner ? "Nickname available ✓" : "사용 가능한 닉네임이에요 ✓"}</p>
               )}
               {nicknameChecking && !nicknameError && (
-                <p className="text-[12px] text-neutral-500 px-1">중복 확인 중...</p>
+                <p className="text-[12px] text-neutral-500 px-1">{isForeigner ? "Checking..." : "중복 확인 중..."}</p>
               )}
             </div>
 
             <div className="space-y-3 pt-1">
               <Button
-                onClick={handleCompleteSignup}
+                onClick={isForeigner ? () => setStep("country") : handleCompleteSignup}
                 disabled={!nicknameOk || loading || nicknameChecking || uploadingImage}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
-                {uploadingImage ? "사진 업로드 중..." : loading ? "가입 중..." : "가입 완료"}
+                {uploadingImage ? "Uploading..." : isForeigner ? "Next →" : (loading ? "가입 중..." : "가입 완료")}
               </Button>
               <button
                 type="button"
-                onClick={() => setStep("otp")}
+                onClick={() => setStep(isForeigner ? "agree" : "otp")}
                 className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" /> 이전
+                <ArrowLeft className="w-4 h-4" /> {isForeigner ? "Back" : "이전"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === "country" && (
+          <div className="space-y-6">
+            <div className="space-y-1 text-center">
+              <p className="text-[22px] font-bold text-white tracking-tight">Where are you from?</p>
+              <p className="text-[13px] text-neutral-500">Your flag will appear on your posts</p>
+            </div>
+
+            <div className="grid grid-cols-4 gap-2">
+              {COUNTRIES.map((c) => {
+                const flag = c.code === "OTHER" ? "🌍" : countryFlag(c.code);
+                const selected = countryCode === c.code;
+                return (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onClick={() => setCountryCode(c.code)}
+                    className={`flex flex-col items-center gap-1 py-3 px-1 rounded-xl border transition-all ${
+                      selected
+                        ? "bg-white border-white"
+                        : "bg-neutral-800 border-neutral-700 hover:border-neutral-500"
+                    }`}
+                  >
+                    <span className="text-[22px]">{flag}</span>
+                    <span className={`text-[9px] font-bold text-center leading-tight ${selected ? "text-black" : "text-neutral-400"}`}>
+                      {c.name.length > 10 ? c.name.slice(0, 9) + "…" : c.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="space-y-3 pt-1">
+              <Button
+                onClick={handleCompleteSignup}
+                disabled={!countryCode || loading}
+                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+              >
+                {loading ? "Creating account..." : "Join NightFlow"}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setStep("nickname")}
+                className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back
               </button>
             </div>
           </div>

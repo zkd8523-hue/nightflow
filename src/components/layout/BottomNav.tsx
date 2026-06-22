@@ -7,14 +7,10 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useNotifications } from "@/hooks/useNotifications";
 import { WagleIcon } from "@/components/icons/WagleIcon";
 
-// 와글은 아직 개발 중 — 로컬(npm run dev)에서만 노출하고 배포(production)에서는 숨김.
-// NODE_ENV는 빌드 시 정적으로 치환되어 production 번들에서 와글 탭이 트리셰이킹됨.
-const IS_DEV = process.env.NODE_ENV === "development";
-
 const TABS = [
   { label: "홈", icon: Home, href: "/" },
-  ...(IS_DEV ? [{ label: "와글", icon: WagleIcon, href: "/chat" }] : []),
   { label: "주변", icon: Map, href: "/clubs" },
+  { label: "와글", icon: WagleIcon, href: "/chat" },
   { label: "찜", icon: Heart, href: "/favorites" },
   { label: "내 정보", icon: User, href: "/profile" },
 ];

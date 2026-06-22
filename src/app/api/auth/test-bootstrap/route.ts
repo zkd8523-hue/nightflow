@@ -63,6 +63,17 @@ export async function POST() {
     alimtalk_consent_at: null,
   };
 
+  // INSERT 시 DB 트리거 validate_phone_otp_on_signup가 phone_verifications에
+  // 10분 이내 verified 레코드를 요구함 → DEV 우회 위해 가짜 OTP 인증 박기
+  if (!existing) {
+    await admin.from("phone_verifications").insert({
+      phone: preset.phone,
+      code_hash: "test-bootstrap",
+      verified_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 60_000).toISOString(),
+    });
+  }
+
   const { error: writeError } = existing
     ? await admin.from("users").update(baseFields).eq("id", user.id)
     : await admin.from("users").insert({

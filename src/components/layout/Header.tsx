@@ -34,6 +34,7 @@ import {
   Heart,
   TrendingUp,
   Star,
+  ChevronLeft,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -103,6 +104,8 @@ interface HeaderProps {
   compact?: boolean;
   customTitle?: string;
   customSubtitle?: string;
+  /** compact 모드에서 타이틀 좌측에 뒤로가기(←) 표시. 지정한 경로로 이동. */
+  backHref?: string;
 }
 
 export function Header({
@@ -110,6 +113,7 @@ export function Header({
   compact,
   customTitle,
   customSubtitle,
+  backHref,
 }: HeaderProps = {}) {
   const { user, isLoading } = useCurrentUser();
   const resetAuth = useAuthStore((s) => s.reset);
@@ -244,7 +248,17 @@ export function Header({
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="container mx-auto max-w-lg px-4 h-[52px] flex items-center justify-between">
-        <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-2 min-w-0">
+          {compact && backHref && (
+            <Link
+              href={backHref}
+              aria-label="뒤로가기"
+              className="w-9 h-9 -ml-2 flex items-center justify-center rounded-full text-white hover:bg-neutral-800 transition-colors shrink-0"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Link>
+          )}
+          <div className="flex flex-col gap-0.5 min-w-0">
           {compact && customTitle ? (
             <>
               <div className="text-lg font-black tracking-tighter leading-none bg-gradient-to-r from-[#A78BFA] to-[#F472B6] bg-clip-text text-transparent">
@@ -270,6 +284,7 @@ export function Header({
               </p>
             </>
           )}
+          </div>
         </div>
 
         {isLoading ? (

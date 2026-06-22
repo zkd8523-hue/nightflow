@@ -42,6 +42,8 @@ function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/";
+  const lang = searchParams.get("lang");
+  const isForeigner = lang === "en";
   const authError = getAuthErrorMessage(searchParams.get("error"));
   const [isInAppAndroid, setIsInAppAndroid] = useState(false);
   const [isIOSNative, setIsIOSNative] = useState(false);
@@ -84,15 +86,20 @@ function LoginContent() {
       if (user) {
         const { data: profile } = await supabase
           .from("users")
-          .select("phone")
+          .select("phone, display_name")
           .eq("id", user.id)
           .maybeSingle();
 
         if (cancelled) return;
-        if (profile?.phone) {
-          router.push(redirectPath); // 가입 완료자 → redirect 파라미터 우선
+        if (profile?.phone || profile?.display_name) {
+          router.push(redirectPath);
         } else {
-          router.push(`/signup${redirectPath !== "/" ? `?next=${encodeURIComponent(redirectPath)}` : ""}`); // 가입 미완료자
+          const signupBase = "/signup";
+          const signupParams = new URLSearchParams();
+          if (redirectPath !== "/") signupParams.set("next", redirectPath);
+          if (isForeigner) signupParams.set("lang", "en");
+          const signupQuery = signupParams.toString();
+          router.push(signupBase + (signupQuery ? `?${signupQuery}` : ""));
         }
       }
     };
@@ -150,15 +157,36 @@ function LoginContent() {
     const target = customRedirect || redirectPath;
 
     try {
-      const { appleNativeLogin } = await import("@/lib/native/appleLogin");
-      const { isNewUser } = await appleNativeLogin();
-      if (isNewUser) {
-        router.push(`/signup${target !== "/" ? `?next=${encodeURIComponent(target)}` : ""}`);
-      } else {
-        router.push(target);
-        router.refresh();
+      const { Capacitor } = await import("@capacitor/core");
+      if (Capacitor.isNativePlatform()) {
+        const { appleNativeLogin } = await import("@/lib/native/appleLogin");
+        const { isNewUser } = await appleNativeLogin();
+        if (isNewUser) {
+          router.push(`/signup${target !== "/" ? `?next=${encodeURIComponent(target)}` : ""}`);
+        } else {
+          router.push(target);
+          router.refresh();
+        }
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      // 웹: Apple OAuth (외국인 등 비네이티브)
+      const targetWithLang = isForeigner && !target.includes("lang=en")
+        ? target + (target.includes("?") ? "&lang=en" : "?lang=en")
+        : target;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "apple",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(targetWithLang)}`,
+          skipBrowserRedirect: false,
+        },
+      });
+      if (error) {
+        logger.error("Apple login error:", error);
+        setLoginError(error.message);
+        setLoading(false);
+      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
       setLoginError(msg);
@@ -189,10 +217,14 @@ function LoginContent() {
       }
 
       // 웹: 기존 플로우 유지
+      const langParam = isForeigner ? "?lang=en" : "";
+      const targetWithLang = isForeigner && !target.includes("lang=en")
+        ? target + (target.includes("?") ? "&lang=en" : "?lang=en")
+        : target;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(target)}`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(targetWithLang)}`,
           queryParams: { access_type: "offline", prompt: "select_account" },
           skipBrowserRedirect: false,
         },
@@ -208,6 +240,43 @@ function LoginContent() {
       setLoginError(msg);
       setLoading(false);
     }
+  };
+
+  const handleForeignerTestLogin = async () => {
+    setLoading(true);
+    setDevError("");
+
+    // 기존 세션 정리
+    await supabase.auth.signOut().catch(() => {});
+
+    // test-user로 로그인
+    const { error } = await supabase.auth.signInWithPassword({
+      email: "test-user@nightflow.test",
+      password: TEST_PASSWORD,
+    });
+
+    if (error) {
+      setDevError(`Login failed: ${error.message}`);
+      setLoading(false);
+      return;
+    }
+
+    // users 프로필 삭제 → signup 폼 처음부터 (외국인 플로우)
+    try {
+      const res = await fetch("/api/auth/test-foreigner-reset", { method: "POST" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setDevError(`Reset failed: ${body.error || res.statusText}`);
+        setLoading(false);
+        return;
+      }
+    } catch (e) {
+      setDevError(`Reset error: ${e instanceof Error ? e.message : String(e)}`);
+      setLoading(false);
+      return;
+    }
+
+    window.location.replace("/signup?lang=en");
   };
 
   const handleDevLogin = async (presetEmail?: string, presetPassword?: string) => {
@@ -328,10 +397,12 @@ function LoginContent() {
             }}
           >
             <span className="block text-2xl font-bold">NightFlow</span>
-            <span className="block text-sm font-medium text-neutral-300">밤이 더 밝아진다, 나플</span>
+            <span className="block text-sm font-medium text-neutral-300">
+              {isForeigner ? "VIP access to Seoul's best clubs" : "밤이 더 밝아진다, 나플"}
+            </span>
           </h1>
           <div className="flex items-center justify-center text-[11px] text-neutral-500 font-normal whitespace-nowrap">
-            모든 서비스 무료
+            {isForeigner ? "Free to join" : "모든 서비스 무료"}
           </div>
         </div>
 
@@ -368,7 +439,7 @@ function LoginContent() {
             </>
           ) : (
             <>
-              {(isIOSNative || isTestLoginEnabled) && (
+              {(isIOSNative || isForeigner || isTestLoginEnabled) && (
                 <Button
                   onClick={() => handleAppleLogin()}
                   disabled={loading}
@@ -377,7 +448,9 @@ function LoginContent() {
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
                     <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                   </svg>
-                  {loading ? "로그인 중..." : "Apple로 시작하기"}
+                  {loading
+                    ? (isForeigner ? "Signing in..." : "로그인 중...")
+                    : (isForeigner ? "Sign in with Apple" : "Apple로 시작하기")}
                 </Button>
               )}
 
@@ -392,32 +465,41 @@ function LoginContent() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
-                {loading ? "로그인 중..." : "Google로 시작하기"}
+                {loading ? (isForeigner ? "Signing in..." : "로그인 중...") : (isForeigner ? "Sign in with Google" : "Google로 시작하기")}
               </Button>
 
-              <Button
-                onClick={() => handleKakaoLogin()}
-                disabled={loading}
-                className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835] cursor-pointer"
-              >
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.8 5.2 4.5 6.65L5.5 21l3.5-2.25c.97.2 2 .3 3 .3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z" fill="#000" />
-                </svg>
-                {loading ? "로그인 중..." : "카카오로 시작하기"}
-              </Button>
+              {!isForeigner && (
+                <Button
+                  onClick={() => handleKakaoLogin()}
+                  disabled={loading}
+                  className="w-full h-12 bg-[#FEE500] text-black hover:bg-[#FDD835] cursor-pointer"
+                >
+                  <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3C6.48 3 2 6.48 2 10.8c0 2.76 1.8 5.2 4.5 6.65L5.5 21l3.5-2.25c.97.2 2 .3 3 .3 5.52 0 10-3.48 10-7.8S17.52 3 12 3z" fill="#000" />
+                  </svg>
+                  {loading ? "로그인 중..." : "카카오로 시작하기"}
+                </Button>
+              )}
             </>
           )}
 
           <p className="text-xs text-center text-neutral-500">
-            로그인 시{" "}
-            <a href="/terms" className="underline">
-              서비스 이용약관
-            </a>{" "}
-            및{" "}
-            <a href="/privacy" className="underline">
-              개인정보 처리방침
-            </a>
-            에 동의하게 됩니다.
+            {isForeigner ? (
+              <>
+                By signing in you agree to our{" "}
+                <a href="/terms" className="underline">Terms of Service</a>{" "}
+                and{" "}
+                <a href="/privacy" className="underline">Privacy Policy</a>.
+              </>
+            ) : (
+              <>
+                로그인 시{" "}
+                <a href="/terms" className="underline">서비스 이용약관</a>{" "}
+                및{" "}
+                <a href="/privacy" className="underline">개인정보 처리방침</a>
+                에 동의하게 됩니다.
+              </>
+            )}
           </p>
 
         </div>
@@ -440,6 +522,13 @@ function LoginContent() {
                 </Button>
               ))}
             </div>
+            <Button
+              onClick={handleForeignerTestLogin}
+              disabled={loading}
+              className="w-full h-10 bg-blue-600 text-white font-bold hover:bg-blue-500"
+            >
+              🌍 EN — Foreigner signup test
+            </Button>
             <p className="text-[10px] text-neutral-500 text-center">
               Password: <code className="text-neutral-400">{TEST_PASSWORD}</code> · or enter manually
             </p>

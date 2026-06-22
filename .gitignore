@@ -54,3 +54,6 @@ android/app/google-services.json.old-*
 # 일회성 디버그 스크립트 및 로그
 test_*.js
 push_*.log
+
+# Claude Code 로컬 작업 디렉토리 (플랜/메모리)
+.claude/

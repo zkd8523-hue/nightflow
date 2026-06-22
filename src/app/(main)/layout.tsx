@@ -82,14 +82,15 @@ export default function MainLayout({
               compact
               customTitle="WAGLE"
               customSubtitle="지역 인증된 사람들끼리 모이는 실시간 피드"
+              backHref="/"
             />
           ) : (
             <Header />
           )
         )}
-        <main className={isChromeless ? "" : "pb-16"}>{children}</main>
-        {!isChromeless && <Footer />}
-        {!isChromeless && <BottomNav />}
+        <main className={isChromeless ? "" : isChatPage ? "" : "pb-16"}>{children}</main>
+        {!isChromeless && !isChatPage && <Footer />}
+        {!isChromeless && !isChatPage && <BottomNav />}
         <SelectingFlagAlertSheet />
         <CancellationSurveySheet isOtherSheetOpen={false} />
       </div>

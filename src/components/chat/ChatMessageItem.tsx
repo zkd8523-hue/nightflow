@@ -1,0 +1,397 @@
+"use client";
+
+import { useRef, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { MapPin, MessageCircle, SmilePlus } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
+import { ROOM_LABEL } from "@/lib/chat/areas";
+import { ChatMediaGrid } from "./ChatMediaGrid";
+import { ChatContentText } from "./ChatContentText";
+import { ChatQuotedBox } from "./ChatQuotedBox";
+import { ChatActionSheet } from "./ChatActionSheet";
+import { ChatShareSheet } from "./ChatShareSheet";
+import type {
+  ChatMessage,
+  ChatReactionEmoji,
+  ChatReactionSummary,
+} from "@/types/database";
+
+function timeShort(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "방금";
+  if (minutes < 60) return `${minutes}분`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}시간`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}일`;
+  return d.toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+}
+
+interface Props {
+  message: ChatMessage;
+  currentUserId?: string;
+  isLoggedIn: boolean;
+  reactionSummary?: ChatReactionSummary;
+  onReact?: (emoji: ChatReactionEmoji) => void;
+  onOpenReplies?: (message: ChatMessage) => void;
+  onChange?: () => void;
+  onRequireLogin?: () => void;
+  hideReplyButton?: boolean;
+  groupedWithPrev?: boolean;
+}
+
+const LONG_PRESS_MS = 450;
+const DOUBLE_TAP_MS = 300;
+
+export function ChatMessageItem({
+  message,
+  currentUserId,
+  isLoggedIn,
+  reactionSummary,
+  onReact,
+  onOpenReplies,
+  onChange,
+  onRequireLogin,
+  hideReplyButton,
+  groupedWithPrev,
+}: Props) {
+  const isMine = !!currentUserId && message.author_id === currentUserId;
+  const author = message.author;
+  const displayName = author?.display_name ?? "익명";
+  const profileHref = `/u/${message.author_id}`;
+
+  const [actionOpen, setActionOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [pressing, setPressing] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  const lastTapAtRef = useRef<number>(0);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
+
+  function clearLongPress() {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    setPressing(false);
+  }
+
+  function handlePointerDown() {
+    longPressTriggeredRef.current = false;
+    setPressing(true);
+    clearTimeout(longPressTimerRef.current ?? undefined);
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true;
+      setActionOpen(true);
+      setPressing(false);
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePointerUp() {
+    clearLongPress();
+  }
+
+  function handlePointerLeave() {
+    clearLongPress();
+  }
+
+  function handleTap() {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false;
+      return;
+    }
+    const now = Date.now();
+    if (now - lastTapAtRef.current < DOUBLE_TAP_MS) {
+      if (!isLoggedIn) {
+        onRequireLogin?.();
+        lastTapAtRef.current = 0;
+        return;
+      }
+      onReact?.("❤️");
+      lastTapAtRef.current = 0;
+    } else {
+      lastTapAtRef.current = now;
+    }
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(message.content ?? "");
+      toast.success("복사했어요");
+    } catch {
+      toast.error("복사 실패");
+    }
+  }
+
+  function handleSelectCopy() {
+    const el = bodyRef.current?.querySelector<HTMLElement>(
+      "[data-chat-body-text]"
+    );
+    if (!el) {
+      toast.error("선택할 텍스트가 없어요");
+      return;
+    }
+    el.style.userSelect = "text";
+    (el.style as CSSStyleDeclaration).webkitUserSelect = "text";
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    toast.info("드래그해서 원하는 부분만 복사하세요");
+  }
+
+  async function handleDelete() {
+    if (!confirm("이 메시지를 삭제할까요?")) return;
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("chat_messages")
+      .delete()
+      .eq("id", message.id);
+    if (error) {
+      toast.error("삭제 실패");
+      return;
+    }
+    toast.success("삭제되었습니다");
+    onChange?.();
+  }
+
+  async function handleReport() {
+    const reason = prompt(
+      "신고 사유를 간단히 적어주세요 (스팸/욕설/광고 등)"
+    );
+    if (!reason || reason.trim().length < 2) return;
+    const supabase = createClient();
+    const { error } = await supabase.from("chat_message_reports").insert({
+      message_id: message.id,
+      reporter_id: currentUserId,
+      reason: "other",
+      message: reason.trim(),
+    });
+    if (error) {
+      if (error.code === "23505") {
+        toast.error("이미 신고하신 메시지입니다");
+      } else {
+        toast.error("신고 처리에 실패했습니다");
+      }
+      return;
+    }
+    toast.success("신고가 접수되었습니다");
+  }
+
+  const visibleReactions = reactionSummary
+    ? Object.entries(reactionSummary.counts).filter(([, n]) => n > 0)
+    : [];
+
+  const hasReactionCounts = visibleReactions.length > 0;
+  const hasReplyCount = !hideReplyButton && message.reply_count > 0;
+  // 카운트 정보가 있으면 항상 표시, 없으면 hover/active일 때만 보임
+  const showActionRow = hasReactionCounts || hasReplyCount;
+
+  return (
+    <div
+      className={`group/msg relative px-4 hover:bg-[#1A1424]/60 transition-colors ${
+        groupedWithPrev ? "pt-0.5 pb-1" : "pt-2 pb-2"
+      } ${pressing ? "bg-[#1A1424]/80" : ""}`}
+    >
+      <div className="flex items-start gap-2">
+        {groupedWithPrev ? (
+          <div className="w-9 shrink-0" aria-hidden="true" />
+        ) : (
+          <Link
+            href={profileHref}
+            className="relative w-9 h-9 rounded-full overflow-hidden bg-neutral-800 shrink-0 hover:opacity-80 transition-opacity"
+            aria-label={`${displayName} 프로필 보기`}
+          >
+            {author?.profile_image ? (
+              <Image
+                src={author.profile_image}
+                alt={displayName}
+                fill
+                sizes="36px"
+                className="object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-white/50 text-[13px] font-black">
+                {displayName.charAt(0)}
+              </div>
+            )}
+          </Link>
+        )}
+
+        <div className="flex-1 min-w-0">
+          {!groupedWithPrev && (
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap mb-0.5">
+              <Link
+                href={profileHref}
+                className="text-[13px] font-medium text-neutral-300 truncate hover:underline"
+              >
+                {displayName}
+                {isMine && (
+                  <span className="ml-1 text-[11px] text-amber-400 font-bold">
+                    나
+                  </span>
+                )}
+              </Link>
+              {message.author_area && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-300 text-[10px] font-bold leading-none">
+                  <MapPin className="w-2.5 h-2.5" />
+                  {ROOM_LABEL[message.author_area]}
+                </span>
+              )}
+              <span className="text-[11px] text-neutral-500 shrink-0">
+                · {timeShort(message.created_at)}
+              </span>
+            </div>
+          )}
+
+          {/* 본문 + 인라인 액션 — 카톡 스타일 (말풍선 옆에 작은 아이콘) */}
+          <div className="flex items-end gap-1">
+            {/* 본문 + 미디어 — 더블탭/길게누름 영역 */}
+            <div
+              ref={bodyRef}
+              className="relative touch-manipulation min-w-0"
+              onClick={handleTap}
+              onPointerDown={handlePointerDown}
+              onPointerUp={handlePointerUp}
+              onPointerLeave={handlePointerLeave}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ WebkitUserSelect: "none", userSelect: "none" }}
+            >
+              {/* 인용된 원본 (공유) */}
+              {message.quoted_message && (
+                <div className="max-w-[85%]">
+                  <ChatQuotedBox quoted={message.quoted_message} />
+                </div>
+              )}
+
+              {message.content && (
+                <div>
+                  <ChatContentText
+                    content={message.content}
+                    clubTags={message.club_tags ?? []}
+                    className={`inline-block max-w-full px-3 py-1.5 rounded-2xl rounded-tl-sm bg-white text-black text-[14px] leading-snug whitespace-pre-wrap break-words transition-colors ${
+                      pressing ? "bg-neutral-200" : ""
+                    }`}
+                    data-chat-body-text
+                  />
+                </div>
+              )}
+              <ChatMediaGrid items={message.media ?? []} />
+            </div>
+
+            {/* 인라인 액션 — 데스크탑(md+)만, hover 시 노출 */}
+            <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity shrink-0 mb-0.5">
+              {!hideReplyButton && (
+                <button
+                  type="button"
+                  onClick={() => onOpenReplies?.(message)}
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-full text-neutral-500 hover:text-white hover:bg-neutral-900 transition-colors"
+                  aria-label="답글"
+                  title="답글"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isLoggedIn) {
+                    onRequireLogin?.();
+                    return;
+                  }
+                  setActionOpen(true);
+                }}
+                className="inline-flex items-center justify-center w-6 h-6 rounded-full text-neutral-500 hover:text-amber-400 hover:bg-neutral-900 transition-colors"
+                aria-label="이모지 반응 추가"
+                title="이모지 반응"
+              >
+                <SmilePlus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* 카운트 행 — 반응/답글 카운트가 있을 때만 표시 */}
+          {showActionRow && (
+            <div className="mt-1 flex items-center gap-1 flex-wrap">
+              {visibleReactions.map(([emoji, count]) => {
+                const mine = reactionSummary?.mine.has(
+                  emoji as ChatReactionEmoji
+                );
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => {
+                      if (!isLoggedIn) {
+                        onRequireLogin?.();
+                        return;
+                      }
+                      onReact?.(emoji as ChatReactionEmoji);
+                    }}
+                    className={`inline-flex items-center gap-0.5 px-1 py-0.5 text-[11px] transition-colors ${
+                      mine
+                        ? "text-amber-300"
+                        : "text-neutral-400 hover:text-white"
+                    }`}
+                    aria-label={`${emoji} ${count}개`}
+                  >
+                    <span>{emoji}</span>
+                    <span className="font-bold">{count}</span>
+                  </button>
+                );
+              })}
+
+              {!hideReplyButton && hasReplyCount && (
+                <button
+                  type="button"
+                  onClick={() => onOpenReplies?.(message)}
+                  className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
+                  aria-label="답글 보기"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span className="font-bold">
+                    답글 {message.reply_count}
+                  </span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 길게 누름 시 액션 시트 */}
+      <ChatActionSheet
+        open={actionOpen}
+        onOpenChange={setActionOpen}
+        message={message}
+        isMine={isMine}
+        isLoggedIn={isLoggedIn}
+        reactionSummary={reactionSummary}
+        onReact={(emoji) => onReact?.(emoji)}
+        onCopy={handleCopy}
+        onSelectCopy={handleSelectCopy}
+        onOpenReplies={() => onOpenReplies?.(message)}
+        onShare={() => setShareOpen(true)}
+        onDelete={handleDelete}
+        onReport={handleReport}
+        onRequireLogin={onRequireLogin}
+      />
+
+      {/* 공유 시트 */}
+      <ChatShareSheet
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        source={message}
+        currentUserId={currentUserId}
+        onShared={onChange}
+      />
+    </div>
+  );
+}
