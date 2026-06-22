@@ -2,7 +2,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
+  const requestUrl = new URL(request.url);
+  const searchParams = requestUrl.searchParams;
+  // Host 헤더로 실제 브라우저 origin 확정 (Next.js dev 서버를 -H 0.0.0.0으로 실행 시
+  // request.url.origin이 0.0.0.0:3000으로 잡혀 쿠키 도메인이 엇갈리는 문제 방지)
+  const hostHeader = request.headers.get("host");
+  const origin = hostHeader
+    ? `${requestUrl.protocol}//${hostHeader}`
+    : requestUrl.origin;
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/";
   const safeNext = (next.startsWith("/") && !next.startsWith("//")) ? next : "/";

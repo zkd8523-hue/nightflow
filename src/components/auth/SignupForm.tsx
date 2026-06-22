@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import dayjs from "dayjs";
 import { createClient } from "@/lib/supabase/client";
@@ -11,13 +11,21 @@ import { logger } from "@/lib/utils/logger";
 import { trackEvent } from "@/lib/analytics";
 import { validateDisplayName, isDisplayNameTaken } from "@/lib/utils/displayName";
 import { normalizeProfileImage } from "@/lib/utils/image";
-import { ChevronRight, Check, ArrowLeft, RefreshCw, Camera } from "lucide-react";
+import { ChevronRight, Check, ArrowLeft, Camera } from "lucide-react";
 import Link from "next/link";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { COUNTRIES, countryFlag } from "@/lib/utils/countryFlag";
 
 import type { User as AuthUser } from "@supabase/supabase-js";
+
+function toNicknameError(msg: string | undefined, isForeigner: boolean): string | null {
+  if (!msg) return null;
+  if (!isForeigner) return msg;
+  if (msg.includes("2-16자") || msg.includes("2–16")) return "Nickname must be 2–16 characters.";
+  if (msg.includes("사용할 수 없는")) return "This nickname is not allowed.";
+  return msg;
+}
 
 interface SignupFormProps {
   referralCode?: string | null;
@@ -129,6 +137,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [nicknameChecking, setNicknameChecking] = useState(false);
   const [nicknameOk, setNicknameOk] = useState(false);
   const [countryCode, setCountryCode] = useState<string | null>(null);
+  const [countrySearch, setCountrySearch] = useState("");
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -138,26 +147,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   // 가입 완료 후 중복 호출/토스트 차단용 가드
   const completedRef = useRef(false);
 
-  const NICK_COLORS = ["빨간","파란","초록","노란","보라","주황","하늘빛","민트빛","산호빛","금빛","달빛","별빛"];
-  const NICK_ADJECTIVES = ["신나는","빛나는","화려한","자유로운","멋진","설레는","뜨거운","찬란한","유쾌한","활기찬"];
-  const NICK_ANIMALS = ["재규어","표범","독수리","나비","여우","늑대","치타","팬더","코알라","돌고래","고래","매","올빼미","토끼","수달","라쿤","알파카","카피바라"];
-  const pickRandom = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)];
-
-  const applyRandomNickname = useCallback(async () => {
-    const candidate = `${Math.random() < 0.5 ? pickRandom(NICK_COLORS) : pickRandom(NICK_ADJECTIVES)}${pickRandom(NICK_ANIMALS)}`;
-    setNicknameInput(candidate);
-    setNicknameError(null);
-    setNicknameOk(false);
-    setNicknameChecking(true);
-    try {
-      const taken = await isDisplayNameTaken(supabase, candidate);
-      setNicknameOk(!taken);
-      if (taken) setNicknameError("이미 사용 중인 닉네임이에요");
-    } finally {
-      setNicknameChecking(false);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase]);
 
   // 닉네임 단계 진입 시 입력값 초기화
   useEffect(() => {
@@ -168,6 +157,24 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
+
+  // 닉네임 debounce 중복 체크: 형식 통과 후 600ms 대기하여 자동 확인
+  useEffect(() => {
+    if (step !== "nickname") return;
+    const val = nicknameInput.trim();
+    const v = validateDisplayName(val);
+    if (!v.ok) return;
+    setNicknameChecking(true);
+    const timer = setTimeout(async () => {
+      try {
+        const taken = await isDisplayNameTaken(supabase, val);
+        if (taken) { setNicknameError(isForeigner ? "This nickname is already taken." : "이미 사용 중인 닉네임이에요"); setNicknameOk(false); }
+        else { setNicknameError(null); setNicknameOk(true); }
+      } finally { setNicknameChecking(false); }
+    }, 600);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nicknameInput, step]);
 
   const requiredMet = agreeAge && agreeTerms && agreePrivacy;
 
@@ -577,7 +584,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 { state: agreeAge, set: setAgreeAge, label: "I am 19 years of age or older", required: true, href: null },
                 { state: agreeTerms, set: setAgreeTerms, label: "Terms of Service", required: true, href: "/terms" },
                 { state: agreePrivacy, set: setAgreePrivacy, label: "Privacy Policy", required: true, href: "/privacy" },
-                { state: agreeMarketing, set: setAgreeMarketing, label: "Marketing notifications (optional)", required: false, href: "/marketing-consent" },
+                { state: agreeMarketing, set: setAgreeMarketing, label: "Marketing notifications", required: false, href: "/marketing-consent" },
               ] : [
                 { state: agreeAge, set: setAgreeAge, label: "만 19세 이상입니다", required: true, href: null },
                 { state: agreeTerms, set: setAgreeTerms, label: "서비스 이용약관 동의", required: true, href: "/terms" },
@@ -754,7 +761,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 </div>
               </button>
               <p className="text-[12px] text-neutral-500">
-                {profileImageFile ? "사진 변경하기" : "프로필 사진 · 선택"}
+                {isForeigner
+                  ? (profileImageFile ? "Change photo" : "Profile photo · optional")
+                  : (profileImageFile ? "사진 변경하기" : "프로필 사진 · 선택")}
               </p>
               <input
                 ref={imageInputRef}
@@ -791,16 +800,16 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                     setNicknameInput(val);
                     setNicknameOk(false);
                     const v = validateDisplayName(val);
-                    setNicknameError(v.ok ? null : (v.message ?? null));
+                    setNicknameError(v.ok ? null : toNicknameError(v.message, isForeigner));
                   }}
                   onBlur={async () => {
                     const val = nicknameInput.trim();
                     const v = validateDisplayName(val);
-                    if (!v.ok) { setNicknameError(v.message ?? null); setNicknameOk(false); return; }
+                    if (!v.ok) { setNicknameError(toNicknameError(v.message, isForeigner)); setNicknameOk(false); return; }
                     setNicknameChecking(true);
                     try {
                       const taken = await isDisplayNameTaken(supabase, val);
-                      if (taken) { setNicknameError("이미 사용 중인 닉네임이에요"); setNicknameOk(false); }
+                      if (taken) { setNicknameError(isForeigner ? "This nickname is already taken." : "이미 사용 중인 닉네임이에요"); setNicknameOk(false); }
                       else { setNicknameError(null); setNicknameOk(true); }
                     } finally { setNicknameChecking(false); }
                   }}
@@ -849,28 +858,51 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               <p className="text-[13px] text-neutral-500">Your flag will appear on your posts</p>
             </div>
 
-            <div className="grid grid-cols-4 gap-2">
-              {COUNTRIES.map((c) => {
-                const flag = c.code === "OTHER" ? "🌍" : countryFlag(c.code);
-                const selected = countryCode === c.code;
-                return (
-                  <button
-                    key={c.code}
-                    type="button"
-                    onClick={() => setCountryCode(c.code)}
-                    className={`flex flex-col items-center gap-1 py-3 px-1 rounded-xl border transition-all ${
-                      selected
-                        ? "bg-white border-white"
-                        : "bg-neutral-800 border-neutral-700 hover:border-neutral-500"
-                    }`}
-                  >
-                    <span className="text-[22px]">{flag}</span>
-                    <span className={`text-[9px] font-bold text-center leading-tight ${selected ? "text-black" : "text-neutral-400"}`}>
-                      {c.name.length > 10 ? c.name.slice(0, 9) + "…" : c.name}
-                    </span>
-                  </button>
+            <div className="relative">
+              <div className="relative">
+                {countryCode && (
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[22px] pointer-events-none">
+                    {countryCode === "OTHER" ? "🌍" : countryFlag(countryCode)}
+                  </span>
+                )}
+                <input
+                  type="text"
+                  placeholder="Search country..."
+                  value={countrySearch}
+                  onChange={(e) => {
+                    setCountrySearch(e.target.value);
+                    setCountryCode(null);
+                  }}
+                  className={`w-full h-12 rounded-xl bg-neutral-800 border text-white placeholder-neutral-500 text-[15px] focus:outline-none focus:border-white transition-colors ${
+                    countryCode ? "pl-12 pr-4 border-white" : "px-4 border-neutral-700"
+                  }`}
+                />
+              </div>
+
+              {countrySearch && !countryCode && (() => {
+                const results = COUNTRIES.filter(c =>
+                  c.name.toLowerCase().includes(countrySearch.toLowerCase())
                 );
-              })}
+                if (results.length === 0) return null;
+                return (
+                  <div className="absolute z-10 w-full mt-1 rounded-xl bg-neutral-800 border border-neutral-700 overflow-hidden max-h-52 overflow-y-auto shadow-xl">
+                    {results.map(c => (
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => {
+                          setCountryCode(c.code);
+                          setCountrySearch(c.name);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-neutral-700 transition-colors"
+                      >
+                        <span className="text-[20px]">{c.code === "OTHER" ? "🌍" : countryFlag(c.code)}</span>
+                        <span className="text-[15px] text-white">{c.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="space-y-3 pt-1">
