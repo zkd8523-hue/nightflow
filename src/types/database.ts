@@ -1081,7 +1081,7 @@ export interface ClubWordCloud {
 // ============================================================================
 // 실시간 채팅 (Migration 284)
 // ============================================================================
-export type ChatRoomCode = 'all' | 'gangnam' | 'hongdae' | 'itaewon' | 'other' | 'foreigner';
+export type ChatRoomCode = 'all' | 'gangnam' | 'hongdae' | 'itaewon' | 'other';
 export type VerifiableArea = Exclude<ChatRoomCode, 'all'>;
 
 export type ChatMediaType = 'image' | 'video';

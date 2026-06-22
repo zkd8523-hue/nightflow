@@ -25,6 +25,15 @@ export default function MainLayout({
     );
   }, [pathname]);
 
+  // 외국인 트랙(lang=en) — 한국 글로벌 헤더/푸터/바텀네비를 숨김.
+  // /en은 자체 chrome을 쓰고, /flags/new 등 (main) 진입 시 한국 chrome 노출 방지.
+  const [isForeigner, setIsForeigner] = useState(false);
+  useEffect(() => {
+    setIsForeigner(
+      new URLSearchParams(window.location.search).get("lang") === "en"
+    );
+  }, [pathname]);
+
   // 클럽지도(view=map)에서 Header 자체를 마운트하지 않음.
   // URL search 폴링은 일부 환경에서 동기화 지연이 있어,
   // ClubList가 직접 보내주는 'club-view-change' 이벤트의 detail.view를 우선 사용.
@@ -70,8 +79,8 @@ export default function MainLayout({
   // Vision은 풀스크린 매니페스토 — 헤더/푸터/바텀네비 없이 단독 노출
   const isVisionPage = pathname === "/vision";
 
-  // 헤더/푸터/바텀네비를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드)
-  const isChromeless = isClubMapView || isVisionPage || isEmbedded;
+  // 헤더/푸터/바텀네비를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드 + 외국인 트랙)
+  const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>

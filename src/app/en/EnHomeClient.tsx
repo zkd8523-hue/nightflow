@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChatRoom } from "@/components/chat/ChatRoom";
-import { ChevronLeft, Flag, MessageSquare, Map } from "lucide-react";
+import { FaqTab } from "./FaqTab";
+import { ChevronLeft, Flag, HelpCircle, Map } from "lucide-react";
 
-type Tab = "flags" | "chat" | "map";
+type Tab = "flags" | "qa" | "map";
 
 type FlagItem = {
   id: string;
@@ -115,7 +115,7 @@ function FlagsTab({ flags }: { flags: FlagItem[] }) {
           <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
             <p className="text-neutral-500 text-[14px]">No active flags right now.</p>
             <Link
-              href="/puzzle/new?lang=en"
+              href="/flags/new?lang=en"
               className="px-6 py-3 rounded-full bg-white text-black font-black text-[14px] hover:bg-neutral-200 transition-colors"
             >
               🚩 Be the first — plant your flag
@@ -176,6 +176,12 @@ function FlagsTab({ flags }: { flags: FlagItem[] }) {
             </div>
           </div>
         ))}
+        <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-green-500/10 border border-green-500/20">
+          <span className="text-green-400 text-[15px]">✓</span>
+          <p className="text-[12px] font-bold text-green-400">
+            Zero platform fee — you pay the club directly, nothing to us.
+          </p>
+        </div>
         <p className="text-[12px] text-neutral-500 text-center leading-relaxed">
           Set your budget when you plant a flag — clubs send offers that match.
         </p>
@@ -219,7 +225,7 @@ function FlagsTab({ flags }: { flags: FlagItem[] }) {
       {/* Bottom CTA */}
       <div className="px-4 pb-10 space-y-3">
         <Link
-          href="/puzzle/new?lang=en"
+          href="/flags/new?lang=en"
           className="block w-full py-4 rounded-xl bg-white text-black font-black text-[15px] text-center hover:bg-neutral-200 transition-colors"
         >
           🚩 Plant your flag — get VIP offers
@@ -277,43 +283,40 @@ export function EnHomeClient({ flags }: { flags: FlagItem[] }) {
 
   const tabs: { code: Tab; label: string; icon: React.ReactNode }[] = [
     { code: "flags", label: "Flags", icon: <Flag className="w-4 h-4" /> },
-    { code: "chat",  label: "Chat",  icon: <MessageSquare className="w-4 h-4" /> },
+    { code: "qa",    label: "Q&A",   icon: <HelpCircle className="w-4 h-4" /> },
     { code: "map",   label: "Map",   icon: <Map className="w-4 h-4" /> },
   ];
 
   return (
     <div className="flex flex-col h-screen bg-[#0A0A0A] text-white max-w-lg mx-auto">
-      {/* 헤더 — 뒤로가기 + 타이틀, Flags 탭에서만 + Flag 버튼 */}
-      <header className="shrink-0 px-3 pt-3 pb-2 flex items-center gap-2 border-b border-neutral-800">
-        <Link
-          href="/"
-          aria-label="Back"
-          className="w-9 h-9 -ml-1 flex items-center justify-center rounded-full text-white hover:bg-neutral-800 transition-colors shrink-0"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </Link>
-        <div className="flex-1 min-w-0">
-          <span className="text-[17px] font-black tracking-tight">NightFlow</span>
-          <p className="text-[11px] text-neutral-500 leading-none mt-0.5">
-            For foreigners — share club tips & meet up
-          </p>
-        </div>
-        {tab === "flags" && (
-          <Link
-            href="/puzzle/new?lang=en"
-            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-500 text-black font-black text-[13px] hover:bg-amber-400 transition-colors"
+      {/* 헤더 */}
+      <header className="shrink-0 px-4 pt-3 pb-2 flex items-center justify-between border-b border-neutral-800">
+        {tab === "flags" ? (
+          <div>
+            <span className="text-[17px] font-black tracking-tight">NightFlow</span>
+            <p className="text-[11px] text-neutral-500 leading-none mt-0.5">Make the night more beautiful</p>
+          </div>
+        ) : (
+          <button
+            onClick={() => setTab("flags")}
+            className="flex items-center gap-1 -ml-1 px-2 py-1.5 rounded-lg text-white hover:bg-neutral-800 transition-colors"
           >
-            + Flag
-          </Link>
+            <ChevronLeft className="w-5 h-5" />
+            <span className="text-[15px] font-black">NightFlow</span>
+          </button>
         )}
+        <Link
+          href="/flags/new?lang=en"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-500 text-black font-black text-[13px] hover:bg-amber-400 transition-colors"
+        >
+          + Flag
+        </Link>
       </header>
 
       {/* 콘텐츠 */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {tab === "flags" && <FlagsTab flags={flags} />}
-        {tab === "chat" && (
-          <ChatRoom room="foreigner" onAreaVerified={() => {}} loginRedirect="/en" />
-        )}
+        {tab === "qa" && <FaqTab />}
         {tab === "map" && <MapTab />}
       </div>
 

@@ -8,7 +8,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
-import { countryFlag } from "@/lib/utils/countryFlag";
+import { countryFlag, countryNameKo } from "@/lib/utils/countryFlag";
 
 interface PuzzleCardProps {
   puzzle: Puzzle;
@@ -216,6 +216,12 @@ export const PuzzleCard = memo(function PuzzleCard({
               <p className="text-[12px] text-neutral-500 font-medium">
                 by {puzzle.leader.display_name}
               </p>
+              {puzzle.leader.country_code && puzzle.leader.country_code !== "KR" && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-neutral-800 border border-neutral-700 text-[11px] font-bold text-neutral-300">
+                  {countryFlag(puzzle.leader.country_code)}
+                  {countryNameKo(puzzle.leader.country_code)}
+                </span>
+              )}
               {leaderTier && <TrustBadge tier={leaderTier} size="sm" />}
               {isMd && puzzle.area && (
                 <p className="text-[12px] text-neutral-500 font-medium">· {puzzle.area}</p>
@@ -236,9 +242,7 @@ export const PuzzleCard = memo(function PuzzleCard({
               </span>
             ) : (
               <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[11px]" style={{lineHeight: 1}}>
-                {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR"
-                  ? countryFlag(puzzle.leader.country_code)
-                  : "🚩"}
+                🚩
               </span>
             )
           )}

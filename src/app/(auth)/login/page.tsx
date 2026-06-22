@@ -60,6 +60,11 @@ function LoginContent() {
       );
     })();
   }, []);
+
+  // 외국인(lang=en) 진입 시 브라우저 탭 제목을 영어로 (client 페이지라 metadata 불가)
+  useEffect(() => {
+    if (isForeigner) document.title = "Log in | NightFlow";
+  }, [isForeigner]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [devError, setDevError] = useState("");

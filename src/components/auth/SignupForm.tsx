@@ -558,7 +558,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               type="button"
               onClick={async () => {
                 await supabase.auth.signOut();
-                router.push("/login");
+                router.push(isForeigner ? "/login?lang=en" : "/login");
               }}
               className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
             >
@@ -583,9 +583,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
               {(isForeigner ? [
                 { state: agreeAge, set: setAgreeAge, label: "I am 19 years of age or older", required: true, href: null },
-                { state: agreeTerms, set: setAgreeTerms, label: "Terms of Service", required: true, href: "/terms" },
-                { state: agreePrivacy, set: setAgreePrivacy, label: "Privacy Policy", required: true, href: "/privacy" },
-                { state: agreeMarketing, set: setAgreeMarketing, label: "Marketing notifications", required: false, href: "/marketing-consent" },
+                { state: agreeTerms, set: setAgreeTerms, label: "Terms of Service", required: true, href: "/terms?lang=en" },
+                { state: agreePrivacy, set: setAgreePrivacy, label: "Privacy Policy", required: true, href: "/privacy?lang=en" },
+                { state: agreeMarketing, set: setAgreeMarketing, label: "Marketing notifications", required: false, href: "/marketing-consent?lang=en" },
               ] : [
                 { state: agreeAge, set: setAgreeAge, label: "만 19세 이상입니다", required: true, href: null },
                 { state: agreeTerms, set: setAgreeTerms, label: "서비스 이용약관 동의", required: true, href: "/terms" },

@@ -44,3 +44,23 @@ export function hideTestData<T>(query: T, embedRef: string): T {
   // Supabase 쿼리 빌더는 .eq 체이닝 후 동일 타입을 반환한다.
   return (query as { eq: (col: string, val: boolean) => T }).eq(column, false);
 }
+
+/**
+ * 외국인(/en 트랙) 깃발을 프로덕션에서만 숨긴다 — 외국인 트랙 정식 출시 전 임시 가드.
+ *
+ * - 프로덕션: leader.country_code IS NULL 인 깃발만 노출 (= 내국인 깃발만).
+ * - 로컬/프리뷰: 필터 없이 그대로 (개발 중 외국인 깃발 확인 가능).
+ *
+ * 식별 기준은 leader(users).country_code — 외국인은 가입 시 국가코드가 채워진다.
+ *
+ * ⚠️ 외국인 트랙(깃발 상세 영문화·MD 오퍼·매치 플로우)이 완성되면 이 호출만 제거하면
+ *    외국인 깃발 ↔ 한국 MD 양면시장이 프로덕션에서 열린다. (제거 = 출시 스위치)
+ *
+ * @param query     Supabase 쿼리 빌더 (체이닝 중간)
+ * @param leaderRef leader(users) 임베드 참조명. hideTestData 와 동일 규약 (보통 "users").
+ */
+export function hideForeignerFlags<T>(query: T, leaderRef: string): T {
+  if (SHOW_TEST_DATA) return query;
+  const column = leaderRef ? `${leaderRef}.country_code` : "country_code";
+  return (query as { is: (col: string, val: null) => T }).is(column, null);
+}

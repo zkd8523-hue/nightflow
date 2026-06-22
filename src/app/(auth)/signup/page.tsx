@@ -1,6 +1,19 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { SignupForm } from "@/components/auth/SignupForm";
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}): Promise<Metadata> {
+  const { lang } = await searchParams;
+  if (lang === "en") {
+    return { title: { absolute: "Sign up | NightFlow" } };
+  }
+  return { title: "회원가입" };
+}
 
 export default async function SignupPage() {
   const cookieStore = await cookies();

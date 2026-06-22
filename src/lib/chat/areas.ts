@@ -5,8 +5,8 @@
  * - 강남/홍대/이태원 반경 안이면 해당 지역, 아니면 null (지원 지역 외)
  */
 
-export type ChatRoomCode = "all" | "gangnam" | "hongdae" | "itaewon" | "foreigner";
-export type VerifiableArea = Exclude<ChatRoomCode, "all" | "foreigner">;
+export type ChatRoomCode = "all" | "gangnam" | "hongdae" | "itaewon";
+export type VerifiableArea = Exclude<ChatRoomCode, "all">;
 
 export const CHAT_ROOMS: { code: ChatRoomCode; label: string }[] = [
   { code: "all", label: "잡담" },
@@ -21,10 +21,9 @@ export const VERIFIABLE_AREAS: { code: VerifiableArea; label: string; lat: numbe
   { code: "itaewon", label: "이태원", lat: 37.5340, lng: 126.9944, radiusKm: 1.2 },
 ];
 
-export const ROOM_LABEL: Record<ChatRoomCode, string> = {
-  ...Object.fromEntries(CHAT_ROOMS.map((r) => [r.code, r.label])),
-  foreigner: "Chat",
-} as Record<ChatRoomCode, string>;
+export const ROOM_LABEL: Record<ChatRoomCode, string> = Object.fromEntries(
+  CHAT_ROOMS.map((r) => [r.code, r.label])
+) as Record<ChatRoomCode, string>;
 
 /** 두 좌표 간 거리 (km, Haversine) */
 export function distanceKm(

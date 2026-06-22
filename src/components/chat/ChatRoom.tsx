@@ -103,9 +103,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
     prevLenRef.current = messages.length;
   }, [messages.length]);
 
-  // foreigner 채팅방은 인증·SHOT 없이 카톡방처럼 단순 동작
-  const isForeignerRoom = room === "foreigner";
-  const requiresVerification = room !== "all" && !isForeignerRoom;
+  const requiresVerification = room !== "all";
   const verifiedForRoom = useMemo(() => {
     if (!requiresVerification) return true;
     return isVerified(room as VerifiableArea);
@@ -363,7 +361,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
                 handleSend();
               }
             }}
-            placeholder={isForeignerRoom ? "Message" : "오늘 밤 어떤 계획이 있나요?"}
+            placeholder="오늘 밤 어떤 계획이 있나요?"
             rows={2}
             maxLength={MAX_LEN}
             className="w-full bg-transparent text-white text-[16px] placeholder:text-neutral-500 focus:outline-none resize-none leading-snug"
@@ -465,35 +463,32 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
                   <ImagePlus className="w-4 h-4" />
                 )}
               </button>
-              {/* 클럽태그 — 외국인 방에선 숨김 (클럽 검색이 한글 기준) */}
-              {!isForeignerRoom && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    const ta = textareaRef.current;
-                    if (!ta) return;
-                    const start = ta.selectionStart ?? input.length;
-                    const end = ta.selectionEnd ?? input.length;
-                    const prev = input.slice(0, start);
-                    const next = input.slice(end);
-                    const needsSpace = prev.length > 0 && !/\s$/.test(prev);
-                    const insert = needsSpace ? " #" : "#";
-                    const newValue = `${prev}${insert}${next}`;
-                    setInput(newValue);
-                    const cursor = prev.length + insert.length;
-                    setTimeout(() => {
-                      ta.focus();
-                      ta.setSelectionRange(cursor, cursor);
-                      setHashtagToken({ token: "", start: cursor - 1, end: cursor });
-                    }, 0);
-                  }}
-                  className="h-8 px-2.5 inline-flex items-center gap-1 rounded-full text-amber-400 hover:bg-neutral-800 transition-colors"
-                  aria-label="클럽 태그"
-                >
-                  <Hash className="w-3.5 h-3.5" />
-                  <span className="text-[11px] font-bold">클럽태그</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  const ta = textareaRef.current;
+                  if (!ta) return;
+                  const start = ta.selectionStart ?? input.length;
+                  const end = ta.selectionEnd ?? input.length;
+                  const prev = input.slice(0, start);
+                  const next = input.slice(end);
+                  const needsSpace = prev.length > 0 && !/\s$/.test(prev);
+                  const insert = needsSpace ? " #" : "#";
+                  const newValue = `${prev}${insert}${next}`;
+                  setInput(newValue);
+                  const cursor = prev.length + insert.length;
+                  setTimeout(() => {
+                    ta.focus();
+                    ta.setSelectionRange(cursor, cursor);
+                    setHashtagToken({ token: "", start: cursor - 1, end: cursor });
+                  }, 0);
+                }}
+                className="h-8 px-2.5 inline-flex items-center gap-1 rounded-full text-amber-400 hover:bg-neutral-800 transition-colors"
+                aria-label="클럽 태그"
+              >
+                <Hash className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-bold">클럽태그</span>
+              </button>
               <span
                 className={`text-[11px] ${
                   input.length >= 450
@@ -515,9 +510,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
               }
               className="px-4 py-1.5 rounded-full text-[13px] font-black bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
             >
-              {sending
-                ? isForeignerRoom ? "Posting..." : "전송 중..."
-                : isForeignerRoom ? "Post" : "게시"}
+              {sending ? "전송 중..." : "게시"}
             </button>
           </div>
         </div>
@@ -528,8 +521,8 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
 
   return (
     <div className="flex flex-col pb-40">
-      {/* 와글 SHOT 캐러셀 — 외국인 방엔 미노출 (단순 채팅방) */}
-      {!isForeignerRoom && <ShotCarousel
+      {/* 와글 SHOT 캐러셀 */}
+      <ShotCarousel
         areas={shotAreas}
         showComposeButton={true}
         currentUserId={user?.id}
@@ -547,7 +540,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
           }
           setShotComposeOpen(true);
         }}
-      />}
+      />
 
       {/* SHOT 캡처 시트 */}
       {user && shotAuthorArea && (
@@ -594,16 +587,14 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
       {/* 메시지 리스트 */}
       {loading ? (
         <div className="py-10 text-center text-[13px] text-neutral-500">
-          {isForeignerRoom ? "Loading..." : "불러오는 중..."}
+          불러오는 중...
         </div>
       ) : messages.length === 0 ? (
         <div className="py-10 px-6 text-center">
           <p className="text-[13px] text-neutral-500">
-            {isForeignerRoom
-              ? "Be the first to share club tips!"
-              : room === "all"
-                ? "첫 와글을 남겨보세요!"
-                : `지금 ${ROOM_LABEL[room]}에 있다면 첫 와글을 남겨보세요!`}
+            {room === "all"
+              ? "첫 와글을 남겨보세요!"
+              : `지금 ${ROOM_LABEL[room]}에 있다면 첫 와글을 남겨보세요!`}
           </p>
         </div>
       ) : (

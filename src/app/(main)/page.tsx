@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { HomeContent } from "@/components/home/HomeContent";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
-import { hideTestData } from "@/lib/utils/testData";
+import { hideTestData, hideForeignerFlags } from "@/lib/utils/testData";
 
 export const revalidate = 10; // 10초마다 재검증
 
@@ -92,14 +92,18 @@ export default async function HomePage() {
     // expires_at > now() 가드를 selecting에도 적용 — cron 지연/실패 시 만료된 검토중이 무기한 노출되는 문제 차단
     // hideTestData(users): 프로덕션에서만 운영자/테스트 계정(1@1.1 등)이 만든 깃발 제외, 로컬·프리뷰는 노출
     // (깃발은 club_id 없이 leader로만 식별 가능 — users.is_test 가 단일 기준)
-    hideTestData(
-      supabase
-        .from("puzzles")
-        .select("*, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender, is_test, country_code)")
-        .in("status", ["open", "selecting"])
-        .gt("expires_at", nowIso)
-        .order("created_at", { ascending: false })
-        .limit(50),
+    // hideForeignerFlags(users): 외국인 트랙 출시 전, 프로덕션에서만 외국인 깃발 숨김 (로컬·프리뷰는 노출)
+    hideForeignerFlags(
+      hideTestData(
+        supabase
+          .from("puzzles")
+          .select("*, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender, is_test, country_code)")
+          .in("status", ["open", "selecting"])
+          .gt("expires_at", nowIso)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        "users"
+      ),
       "users"
     ),
   ]);

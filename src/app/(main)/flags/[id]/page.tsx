@@ -7,10 +7,20 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ lang?: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+const AREA_EN: Record<string, string> = {
+  "강남": "Gangnam", "홍대": "Hongdae", "이태원": "Itaewon",
+  "서울 어디든": "Anywhere in Seoul", "서울": "Seoul",
+  "부산": "Busan", "대구": "Daegu", "인천": "Incheon",
+  "광주": "Gwangju", "대전": "Daejeon", "울산": "Ulsan", "세종": "Sejong",
+};
+
+export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { id } = await params;
+  const { lang } = await searchParams;
+  const isForeigner = lang === "en";
   const supabase = await createClient();
 
   const { data: puzzle } = await supabase
@@ -21,6 +31,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!puzzle) {
     notFound(); // HTTP 404 응답 (Soft 404 방지)
+  }
+
+  if (isForeigner) {
+    const areaEn = AREA_EN[puzzle.area] ?? puzzle.area ?? "Seoul";
+    const dateEn = puzzle.event_date
+      ? new Date(puzzle.event_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      : "";
+    return {
+      title: { absolute: `NightFlow Flag · ${areaEn}${dateEn ? ` · ${dateEn}` : ""}` },
+      alternates: { canonical: `https://nightflow.kr/flags/${id}` },
+    };
   }
 
   const area = puzzle.area || "서울";

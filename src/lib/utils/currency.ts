@@ -3,6 +3,9 @@
  * 마지막 업데이트: 2026-06
  * 감 잡기용 근사치 — 정밀 거래용 아님
  */
+/** 환율 기준 시점 (테이블 갱신 시 함께 업데이트) */
+export const RATE_AS_OF = "Jun 2026";
+
 const KRW_RATES = [
   { code: "USD", symbol: "$",    rate: 1 / 1380  },
   { code: "JPY", symbol: "¥",   rate: 1 / 9.2   },

@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
     ? `${requestUrl.protocol}//${hostHeader}`
     : requestUrl.origin;
   const code = searchParams.get("code");
+  const langParam = searchParams.get("lang"); // 정규화 전에 캡처
   const next = searchParams.get("next") ?? "/";
   const safeNext = (next.startsWith("/") && !next.startsWith("//")) ? next : "/";
 
@@ -90,6 +91,7 @@ export async function GET(request: NextRequest) {
       // country_code 있거나, next에 lang=en이 포함된 경우 외국인으로 판단
       const isForeigner =
         (profile.country_code != null && profile.country_code !== "") ||
+        langParam === "en" ||
         safeNext.includes("lang=en");
       // next가 의미있는 목적지(단순 루트+lang=en 제외)가 아닐 때만 /en으로
       const isDefaultNext =

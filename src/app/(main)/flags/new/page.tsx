@@ -1,14 +1,36 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function PuzzleNewPage() {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}): Promise<Metadata> {
+  const { lang } = await searchParams;
+  if (lang === "en") {
+    return { title: { absolute: "Plant your flag | NightFlow" } };
+  }
+  return { title: "깃발 꽂기" };
+}
+
+export default async function PuzzleNewPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}) {
+  const { lang } = await searchParams;
+  const isForeigner = lang === "en";
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect("/login");
+  if (!user) redirect(isForeigner ? "/login?lang=en" : "/login");
 
   const { data: profile } = await supabase
     .from("users")
@@ -21,10 +43,28 @@ export default async function PuzzleNewPage() {
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-20">
       <div className="max-w-lg mx-auto p-6">
+        {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 /en 복귀 링크 제공 */}
+        {isForeigner && (
+          <Link
+            href="/en"
+            aria-label="Back"
+            className="inline-flex items-center gap-1 -ml-1 mb-4 px-2 py-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span className="text-[14px] font-bold">Back</span>
+          </Link>
+        )}
+
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-2xl font-black text-white tracking-tight">🚩 깃발 꽂기</h1>
-          <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">예산만 정하면 클럽에서 시크릿오퍼를 제안해요</p>
+          <h1 className="text-2xl font-black text-white tracking-tight">
+            {isForeigner ? "🚩 Plant your flag" : "🚩 깃발 꽂기"}
+          </h1>
+          <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">
+            {isForeigner
+              ? "Set your budget — Seoul's clubs send you private offers"
+              : "예산만 정하면 클럽에서 시크릿오퍼를 제안해요"}
+          </p>
         </div>
 
         <PuzzleForm userId={user.id} />

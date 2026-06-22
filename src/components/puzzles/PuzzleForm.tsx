@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, OTHER_CITIES } from "@/lib/constants/areas";
 import { toast } from "sonner";
-import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X, Music } from "lucide-react";
+import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
@@ -18,7 +18,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { validateTitleDateConsistency } from "@/lib/utils/date";
-import { krwTo } from "@/lib/utils/currency";
+import { krwTo, RATE_AS_OF } from "@/lib/utils/currency";
 
 const CURRENCIES = [
   { code: "USD", symbol: "$" },
@@ -58,7 +58,7 @@ function CurrencyHint({ amount, convertLabel = "환산" }: { amount: number; con
         </div>
       )}
       {selected && singleConversion && (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-[12px] font-bold text-amber-400 tabular-nums">≈ {singleConversion}</span>
           <div className="flex items-center gap-1">
             {CURRENCIES.map((c) => (
@@ -76,6 +76,7 @@ function CurrencyHint({ amount, convertLabel = "환산" }: { amount: number; con
               </button>
             ))}
           </div>
+          <span className="text-[10px] text-neutral-600 w-full">Rates as of {RATE_AS_OF} · approximate</span>
         </div>
       )}
     </div>
@@ -86,32 +87,32 @@ function CurrencyHint({ amount, convertLabel = "환산" }: { amount: number; con
 const BUDGET_PRESETS_RECRUIT = [100000, 50000, 10000]; // 퍼즐(인당) +10만/+5만/+1만
 const BUDGET_PRESETS_FIXED = [500000, 100000, 50000]; // 깃발(총액) +50만/+10만/+5만
 
-const GENDER_OPTIONS: { value: GenderPref; label: string }[] = [
-  { value: 'any', label: '상관없음' },
-  { value: 'male_only', label: '남자만' },
-  { value: 'female_only', label: '여자만' },
+const GENDER_OPTIONS: { value: GenderPref; label: string; en: string }[] = [
+  { value: 'any', label: '상관없음', en: 'Any' },
+  { value: 'male_only', label: '남자만', en: 'Men only' },
+  { value: 'female_only', label: '여자만', en: 'Women only' },
 ];
 
-const AGE_OPTIONS: { value: AgePref; label: string }[] = [
-  { value: "early_20s", label: "20초" },
-  { value: "late_20s", label: "20후" },
-  { value: "early_30s", label: "30초" },
-  { value: "mid_30s", label: "30중" },
-  { value: "any", label: "상관없음" },
+const AGE_OPTIONS: { value: AgePref; label: string; en: string }[] = [
+  { value: "early_20s", label: "20초", en: "Early 20s" },
+  { value: "late_20s", label: "20후", en: "Late 20s" },
+  { value: "early_30s", label: "30초", en: "Early 30s" },
+  { value: "mid_30s", label: "30중", en: "Mid 30s" },
+  { value: "any", label: "상관없음", en: "Any" },
 ];
 
 // Phase 1: 바이브 라벨 정정 (조용히 → 편하게, 상관없음 → 누구나 환영)
-const VIBE_OPTIONS: { value: VibePref; label: string }[] = [
-  { value: "chill", label: "편하게" },
-  { value: "active", label: "신나게" },
-  { value: "any", label: "누구나 환영" },
+const VIBE_OPTIONS: { value: VibePref; label: string; en: string }[] = [
+  { value: "chill", label: "편하게", en: "Chill" },
+  { value: "active", label: "신나게", en: "Hyped" },
+  { value: "any", label: "누구나 환영", en: "Anyone welcome" },
 ];
 
 // Phase 1 신규: 음악 선호 (한국 클럽씬 1차 분기 - 힙합/EDM)
-const MUSIC_OPTIONS: { value: MusicPref; label: string }[] = [
-  { value: "any", label: "상관없음" },
-  { value: "hiphop", label: "힙합" },
-  { value: "edm", label: "EDM" },
+const MUSIC_OPTIONS: { value: MusicPref; label: string; en: string }[] = [
+  { value: "any", label: "상관없음", en: "Any" },
+  { value: "hiphop", label: "힙합", en: "Hip-hop" },
+  { value: "edm", label: "EDM", en: "EDM" },
 ];
 
 export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: PuzzleType }) {
@@ -221,7 +222,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       .update({ gender: g })
       .eq('id', userId);
     if (error) {
-      toast.error('성별 저장에 실패했어요. 다시 시도해주세요');
+      toast.error(t('성별 저장에 실패했어요. 다시 시도해주세요', 'Failed to save gender. Please try again'));
       return;
     }
     setMyGender(g);
@@ -575,7 +576,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
         if (updateError) {
           console.error("puzzles update error:", updateError);
-          return fail('db_error', updateError.message || '수정에 실패했습니다');
+          return fail('db_error', updateError.message || t('수정에 실패했습니다', 'Update failed'));
         }
 
         // 대표자의 puzzle_members.guest_count를 새 인원에 맞춰 동기화
@@ -630,7 +631,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
       if (puzzleError) {
         console.error("puzzles insert error:", puzzleError);
-        return fail('db_error', puzzleError.message || '퍼즐 등록에 실패했습니다');
+        return fail('db_error', puzzleError.message || t('퍼즐 등록에 실패했습니다', 'Flag submission failed'));
       }
 
       // 대표자를 puzzle_members에도 추가 (fire-and-forget — 네비게이션 블로킹 X)
@@ -662,7 +663,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
       navigating = true;
-      router.push(`/flags/${created.id}`);
+      router.push(`/flags/${created.id}${isForeigner ? "?lang=en" : ""}`);
     } catch (err) {
       console.error("puzzle submit error:", err);
       toast.error(err instanceof Error ? err.message : t(isEditMode ? "수정에 실패했습니다" : "등록에 실패했습니다", isEditMode ? "Update failed" : "Submission failed"));
@@ -678,9 +679,12 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       {/* 성별 안내는 파티원 모집(퍼즐) 모드에서만 표시. 깃발(인원 확정) 모드에서는 불필요 */}
       {isRecruitingParty && genderLoaded && !myGender && (
         <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-2">
-          <p className="text-[13px] font-bold text-white">성별 정보가 필요해요</p>
+          <p className="text-[13px] font-bold text-white">{t("성별 정보가 필요해요", "We need your gender")}</p>
           <p className="text-[12px] text-neutral-400 leading-relaxed">
-            파티원 모집은 성별 슬롯 기반으로 매칭돼요. 조각 매물에 먼저 참여하면서 성별을 설정하면 모집도 시작할 수 있어요.
+            {t(
+              "파티원 모집은 성별 슬롯 기반으로 매칭돼요. 조각 매물에 먼저 참여하면서 성별을 설정하면 모집도 시작할 수 있어요.",
+              "Recruiting is matched by gender slots. Set your gender to start recruiting."
+            )}
           </p>
         </div>
       )}
@@ -694,16 +698,16 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         >
           <SheetHeader>
             <SheetTitle className="text-white text-[18px] font-black">
-              퍼즐 매칭을 위해 성별을 알려주세요
+              {t("퍼즐 매칭을 위해 성별을 알려주세요", "Tell us your gender for matching")}
             </SheetTitle>
             <SheetDescription className="text-neutral-400 text-[12px]">
-              한 번 설정하면 변경할 수 없어요
+              {t("한 번 설정하면 변경할 수 없어요", "This can't be changed once set")}
             </SheetDescription>
           </SheetHeader>
           <div className="grid grid-cols-2 gap-3 pt-6 pb-2">
             {([
-              { value: 'male', label: '남자', emoji: '🧑', color: 'green' },
-              { value: 'female', label: '여자', emoji: '👩', color: 'pink' },
+              { value: 'male', label: t('남자', 'Male'), emoji: '🧑', color: 'green' },
+              { value: 'female', label: t('여자', 'Female'), emoji: '👩', color: 'pink' },
             ] as const).map(({ value, label, emoji, color }) => (
               <button
                 key={value}
@@ -771,7 +775,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                 {aL(a)}
               </button>
             ))}
-            {OTHER_CITIES.includes(area as typeof OTHER_CITIES[number]) && (
+            {/* 다른 지역(지방)은 국내 전용 — 외국인 트랙은 서울만 노출 */}
+            {!isForeigner && OTHER_CITIES.includes(area as typeof OTHER_CITIES[number]) && (
               <button
                 type="button"
                 onClick={() => setShowOtherCities(true)}
@@ -780,19 +785,21 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                 {aL(area)}
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => setShowOtherCities((v) => !v)}
-              className={`px-4 py-2 rounded-full text-[13px] font-bold transition-colors ${
-                showOtherCities
-                  ? "bg-neutral-600 text-white"
-                  : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-              }`}
-            >
-              {showOtherCities ? t("접기", "Close") : t("+ 다른 지역", "+ More areas")}
-            </button>
+            {!isForeigner && (
+              <button
+                type="button"
+                onClick={() => setShowOtherCities((v) => !v)}
+                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-colors ${
+                  showOtherCities
+                    ? "bg-neutral-600 text-white"
+                    : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                }`}
+              >
+                {showOtherCities ? t("접기", "Close") : t("+ 다른 지역", "+ More areas")}
+              </button>
+            )}
           </div>
-          {showOtherCities && (
+          {!isForeigner && showOtherCities && (
             <div className="flex flex-wrap gap-2 pt-3 mt-3 border-t border-neutral-800">
               {OTHER_CITIES.map((a) => (
                 <button
@@ -917,33 +924,6 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         </div>
       </section>
 
-      {/* 음악 선호 — MD 매칭 정확도 ↑ (기본값 상관없음, 마찰 0) */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold mb-2">
-          <Music className="w-4 h-4 text-purple-500" />
-          <span>{t("음악", "Music")}</span>
-          <span className="text-[12px] font-normal text-neutral-500">{t("선호하는 분위기를 골라요", "Pick your vibe")}</span>
-        </div>
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-4 py-3">
-          <div className="flex gap-1.5 flex-wrap">
-            {MUSIC_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setMusicPref(opt.value)}
-                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
-                  musicPref === opt.value
-                    ? "bg-white text-black"
-                    : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* 예산 (모드에 따라 총액 or 인당) */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">
@@ -973,7 +953,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             />
             {isRecruitingParty && (
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-neutral-500 font-bold pointer-events-none">
-                /인
+                {t("/인", "/pp")}
               </span>
             )}
           </div>
@@ -1007,9 +987,9 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           {/* 예산 요약 — 박스 없이 인라인 */}
           {isRecruitingParty && (
             <p className="text-[13px] font-bold text-white">
-              인당 <span className="text-amber-400">{budgetAmount.toLocaleString()}원</span>
-              {" "}× {effectiveTargetCount}명 = 총{" "}
-              <span className="text-green-400">{totalBudget.toLocaleString()}원</span>
+              {t("인당", "Per person")} <span className="text-amber-400">{isForeigner ? `₩${budgetAmount.toLocaleString()}` : `${budgetAmount.toLocaleString()}원`}</span>
+              {" "}× {effectiveTargetCount}{t("명", "")} = {t("총", "Total")}{" "}
+              <span className="text-green-400">{isForeigner ? `₩${totalBudget.toLocaleString()}` : `${totalBudget.toLocaleString()}원`}</span>
             </p>
           )}
           {/* 외국인용 환율 힌트 */}
@@ -1029,12 +1009,12 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       {isRecruitingParty && <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">
           <Sparkles className="w-4 h-4 text-green-500" />
-          <span>이런 분들과 함께해요</span>
+          <span>{t("이런 분들과 함께해요", "Who you want to party with")}</span>
         </div>
 
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-4 py-3 space-y-2.5">
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-neutral-400 w-8 shrink-0">성별</p>
+            <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("성별", "Gender")}</p>
             <div className="flex gap-1.5 flex-wrap">
               {GENDER_OPTIONS.map((opt) => (
                 <button
@@ -1047,14 +1027,14 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                       : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
                   }`}
                 >
-                  {opt.label}
+                  {isForeigner ? opt.en : opt.label}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-neutral-400 w-8 shrink-0">연령</p>
+            <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("연령", "Age")}</p>
             <div className="flex gap-1.5 flex-wrap">
               {AGE_OPTIONS.map((opt) => {
                 const selected = agePref.includes(opt.value);
@@ -1070,7 +1050,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                         : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
                     }`}
                   >
-                    {opt.label}
+                    {isForeigner ? opt.en : opt.label}
                   </button>
                 );
               })}
@@ -1078,7 +1058,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           </div>
 
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-neutral-400 w-8 shrink-0">음악</p>
+            <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("음악", "Music")}</p>
             <div className="flex gap-1.5 flex-wrap">
               {MUSIC_OPTIONS.map((opt) => (
                 <button
@@ -1091,14 +1071,14 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                       : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
                   }`}
                 >
-                  {opt.label}
+                  {isForeigner ? opt.en : opt.label}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-neutral-400 w-8 shrink-0">바이브</p>
+            <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("바이브", "Vibe")}</p>
             <div className="flex gap-1.5 flex-wrap">
               {VIBE_OPTIONS.map((opt) => (
                 <button
@@ -1111,7 +1091,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                       : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
                   }`}
                 >
-                  {opt.label}
+                  {isForeigner ? opt.en : opt.label}
                 </button>
               ))}
             </div>
@@ -1156,9 +1136,9 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         <section className="space-y-4">
           <div className="flex items-baseline gap-2 text-white font-bold mb-2">
             <MessageCircle className="w-4 h-4 text-yellow-400 self-center" />
-            <span>카톡 오픈채팅 링크</span>
+            <span>{t("카톡 오픈채팅 링크", "KakaoTalk open chat link")}</span>
             {isEditMode && (
-              <span className="text-[11px] text-neutral-500 font-normal">수정 불가</span>
+              <span className="text-[11px] text-neutral-500 font-normal">{t("수정 불가", "Can't edit")}</span>
             )}
           </div>
           <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
