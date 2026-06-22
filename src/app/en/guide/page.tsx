@@ -147,6 +147,34 @@ const PRICE_TIERS = [
 export default function EnglishLanding() {
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
+      {/* SEO용 sr-only 콘텐츠 — booking 키워드 자연 등장 + Seoul/Gangnam/Hongdae/Itaewon 매칭 강화 */}
+      <div className="sr-only">
+        <h1>
+          Korea Club Booking Guide — Be a VIP at Gangnam, Hongdae, Itaewon
+          Clubs (Seoul)
+        </h1>
+        <p>
+          Looking for Seoul club booking that actually works for travelers?
+          NightFlow is the Korea club booking platform for foreign visitors —
+          Gangnam VIP table booking, Hongdae nightclub booking, Itaewon
+          international nightlife. Real prices, no broker, no Korean needed.
+          Book Seoul clubs the way regulars do.
+        </p>
+        <h2>What Korea Club Booking Through NightFlow Looks Like</h2>
+        <p>
+          Tell us your night — date, party size, budget. Seoul club booking
+          offers arrive within hours. Compare Gangnam, Hongdae, Itaewon club
+          deals on one screen. Pick your booking and pay the club directly when
+          you arrive. Zero booking fee, no broker markup, no deposit.
+        </p>
+        <h2>Why Book Korea Clubs Here Instead of Walk-In</h2>
+        <p>
+          Walk-in club booking in Seoul means tourist prices and the worst
+          tables. NightFlow Seoul club booking inverts that — top clubs compete
+          for your booking, sending private VIP offers only you can see. Real
+          locals book this way. Now you can too.
+        </p>
+      </div>
       <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
         {/* Brand */}
         <div className="text-center">
@@ -163,9 +191,10 @@ export default function EnglishLanding() {
             Seoul&apos;s best clubs
           </h1>
           <p className="text-[15px] text-neutral-400 leading-relaxed">
-            No connections. No Korean. No broker. NightFlow gets you the best
-            tables at Seoul&apos;s hottest clubs — at fair, upfront prices. Get
-            the VIP treatment from your very first night.
+            Seoul club booking made VIP-easy. No connections, no Korean, no
+            broker. NightFlow gets you the best tables at Gangnam, Hongdae,
+            Itaewon clubs — at fair, upfront prices. Book like a regular from
+            your very first night.
           </p>
         </header>
 
@@ -211,7 +240,7 @@ export default function EnglishLanding() {
         {/* How it works */}
         <section className="space-y-6">
           <h2 className="text-[13px] font-bold tracking-[0.2em] text-neutral-500 uppercase text-center">
-            How it works
+            How Seoul club booking works
           </h2>
           <div className="space-y-4">
             {STEPS.map((s) => (
@@ -236,12 +265,13 @@ export default function EnglishLanding() {
         {/* Trust — VIP, fair prices */}
         <section className="space-y-4 text-center">
           <h2 className="text-2xl font-black tracking-tight">
-            VIP treatment, fair prices
+            VIP club booking, fair prices
           </h2>
           <p className="text-[14px] text-neutral-400 leading-relaxed">
-            Every offer is private — clubs compete for you on the deal, not on
-            who shouts loudest. You see the price upfront and pay the club
-            directly. No booking fee, no broker cut. Just the best table, the
+            Every booking offer is private — Seoul clubs compete for you on the
+            deal, not on who shouts loudest. You see the price upfront and pay
+            the club directly. No booking fee, no broker cut. Just the best
+            table, the
             way regulars get it.
           </p>
         </section>
