@@ -44,5 +44,45 @@ export default async function EnClubsPage() {
     .eq("is_test", false)
     .order("google_review_count", { ascending: false, nullsFirst: false });
 
-  return <ClubsClient clubs={clubs ?? []} />;
+  const clubList = clubs ?? [];
+  const clubCount = clubList.length;
+
+  // SEO용 sr-only 콘텐츠 — ClubsClient는 client component라 SSR HTML이 비어 보임.
+  // 구글봇은 sr-only 텍스트를 정상적으로 인덱싱.
+  return (
+    <>
+      <div className="sr-only">
+        <h1>Seoul Club Booking Guide — Gangnam, Hongdae, Itaewon, Apgujeong</h1>
+        <p>
+          Browse {clubCount} of Seoul&apos;s best clubs with real prices, Google
+          ratings, drink menus, and VIP table booking. Book Seoul clubs without
+          speaking Korean. No broker, no hidden fees, no booking fee — you pay
+          the club directly.
+        </p>
+        <h2>Top Seoul Clubs by District</h2>
+        <ul>
+          {clubList.slice(0, 30).map((c) => {
+            const areaEn =
+              ({ 강남: "Gangnam", 홍대: "Hongdae", 이태원: "Itaewon", 건대: "Konkuk" } as Record<string, string>)[c.area] ??
+              c.area;
+            return (
+              <li key={c.id}>
+                {c.name} — {areaEn} club
+                {c.google_rating ? ` (${c.google_rating}★)` : ""}
+              </li>
+            );
+          })}
+        </ul>
+        <h2>How to Book a Seoul Club Through NightFlow</h2>
+        <p>
+          Plant a flag on NightFlow with your date, group size, and budget.
+          Clubs in Gangnam, Hongdae, Itaewon, Apgujeong, and Cheongdam send you
+          private VIP offers. Compare prices, table maps, and bottle packages
+          on one screen. Book your Seoul club table with one tap — no Korean
+          required.
+        </p>
+      </div>
+      <ClubsClient clubs={clubList} />
+    </>
+  );
 }

@@ -117,5 +117,80 @@ export default async function EnHomePage() {
     offerCount: offerCountMap[p.id] ?? 0,
   }));
 
-  return <EnHomeClient flags={flags} />;
+  const flagCount = flags.length;
+
+  // SEO용 SSR sr-only 콘텐츠 — EnHomeClient는 client-side 렌더링이라 본문이 비어 보이는 문제 보완.
+  // 시각엔 안 보이지만 구글봇은 영어 키워드·동네별 클럽 정보를 읽음.
+  return (
+    <>
+      <div className="sr-only">
+        <h1>
+          NightFlow — Seoul Club Booking for Foreign Travelers (Gangnam,
+          Hongdae, Itaewon)
+        </h1>
+        <p>
+          NightFlow is a Seoul club booking platform for foreign travelers and
+          tourists. Book VIP tables at the best clubs in Gangnam, Hongdae,
+          Itaewon, and Apgujeong without speaking Korean. Real prices, no
+          broker, no hidden fees. Top Seoul clubs send you private offers — you
+          compare and pick the best one for your night out in Seoul.
+        </p>
+        <h2>Seoul Club Booking — How NightFlow Works for Travelers</h2>
+        <p>
+          Plant a flag with your date, party size, and budget. Seoul's hottest
+          clubs — including Club ACE in Gangnam, Club Dokkaebi in Hongdae,
+          Soap Seoul in Itaewon, Core Lounge in Apgujeong, and many more —
+          send you VIP booking offers directly. You compare prices, table
+          locations, and bottle packages on one screen, then book with a
+          single tap. No Korean needed, no MD connections needed, no broker
+          fees.
+        </p>
+        <h2>Seoul Nightlife Districts Covered</h2>
+        <ul>
+          <li>
+            Gangnam clubs — large EDM and hip-hop clubs, luxury lounges. Club
+            ACE, Massive, Club Pop, Mirabaud, and more.
+          </li>
+          <li>
+            Hongdae clubs — hip-hop scene, foreigner-friendly. Club Dokkaebi,
+            Sabotage, Attention, Purple, NB2, Awesome Red.
+          </li>
+          <li>
+            Itaewon clubs — international crowd, English OK. Soap Seoul (reopened
+            2026), Cakeshop, and more.
+          </li>
+          <li>
+            Apgujeong & Cheongdam lounges — high-end VIP lounges with bottle
+            service. Core Lounge, Arzu, DM Seoul.
+          </li>
+        </ul>
+        <h2>Current Active Flags</h2>
+        <p>
+          {flagCount} active club booking flag{flagCount !== 1 ? "s" : ""} right
+          now from travelers planning their night in Seoul. Plant your flag and
+          get private VIP offers from Seoul's best clubs within hours.
+        </p>
+        <h2>Why Book Seoul Clubs Through NightFlow</h2>
+        <ul>
+          <li>
+            No Korean required — clubs reach out to you with English-friendly
+            offers.
+          </li>
+          <li>
+            Real prices — secret offers visible only to you, no broker markup.
+          </li>
+          <li>
+            VIP table access — bottle service, prime locations, skip the line.
+          </li>
+          <li>
+            Zero platform fee — you pay the club directly, nothing to NightFlow.
+          </li>
+          <li>
+            Free to plant a flag, free to receive offers, no deposit required.
+          </li>
+        </ul>
+      </div>
+      <EnHomeClient flags={flags} />
+    </>
+  );
 }
