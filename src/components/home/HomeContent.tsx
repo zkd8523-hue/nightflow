@@ -686,13 +686,23 @@ export function HomeContent({
       return [...news, ...olds].slice(0, CAROUSEL_SLOTS);
     }
 
-    // ── 유저/비로그인: 오퍼 많은 순 → 마감일순 ───────────────────
-    return [...areaFilteredPuzzles]
+    // ── 유저/비로그인: NEW 최우선, 각 그룹 내 오퍼 많은 순 → 마감일순 ──
+    const news = areaFilteredPuzzles
+      .filter(isNew)
       .sort((a, b) => {
         const diff = (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
         return diff !== 0 ? diff : byEventDate(a, b);
       })
       .slice(0, CAROUSEL_SLOTS);
+    const remainingSlots = Math.max(0, CAROUSEL_SLOTS - news.length);
+    const picked = areaFilteredPuzzles
+      .filter((p) => !isNew(p))
+      .sort((a, b) => {
+        const diff = (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
+        return diff !== 0 ? diff : byEventDate(a, b);
+      })
+      .slice(0, remainingSlots);
+    return [...news, ...picked];
   }, [areaFilteredPuzzles, puzzleOfferCounts, isMdOrAdminUser, user?.area, myOfferedPuzzleIds]);
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
