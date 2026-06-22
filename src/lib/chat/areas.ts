@@ -21,9 +21,10 @@ export const VERIFIABLE_AREAS: { code: VerifiableArea; label: string; lat: numbe
   { code: "itaewon", label: "이태원", lat: 37.5340, lng: 126.9944, radiusKm: 1.2 },
 ];
 
-export const ROOM_LABEL: Record<ChatRoomCode, string> = Object.fromEntries(
-  CHAT_ROOMS.map((r) => [r.code, r.label])
-) as Record<ChatRoomCode, string>;
+export const ROOM_LABEL: Record<ChatRoomCode, string> = {
+  ...Object.fromEntries(CHAT_ROOMS.map((r) => [r.code, r.label])),
+  foreigner: "Chat",
+} as Record<ChatRoomCode, string>;
 
 /** 두 좌표 간 거리 (km, Haversine) */
 export function distanceKm(

@@ -18,6 +18,9 @@ export function Footer() {
           >
             Vision
           </Link>
+          <Link href="/en" className="text-sm hover:text-white transition-colors">
+            🌍 English
+          </Link>
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
             <Link href="/terms" className="hover:text-white transition-colors">
               이용약관

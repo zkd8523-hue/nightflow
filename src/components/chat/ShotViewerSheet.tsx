@@ -83,11 +83,12 @@ export function ShotViewerSheet({
   function prev() {
     if (index === null) return;
     if (index > 0) onIndexChange(index - 1);
+    // 첫 SHOT에서 더 못 감 — 닫지 않음
   }
   function next() {
     if (index === null) return;
     if (index < shots.length - 1) onIndexChange(index + 1);
-    else close();
+    // 마지막 SHOT에서 더 못 감 — 닫지 않음 (사용자가 X로 명시적으로 닫게)
   }
 
   return (

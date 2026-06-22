@@ -103,7 +103,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const lang = searchParams.get("lang");
   const isForeigner = lang === "en";
   const redirectAfterSignup =
-    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : (isForeigner ? "/en/home" : "/");
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : (isForeigner ? "/en" : "/");
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);

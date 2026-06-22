@@ -34,11 +34,12 @@ import {
 interface Props {
   room: ChatRoomCode;
   onAreaVerified?: (detected: VerifiableArea) => void;
+  loginRedirect?: string;
 }
 
 const MAX_LEN = 500;
 
-export function ChatRoom({ room, onAreaVerified }: Props) {
+export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
   const router = useRouter();
   const { user } = useCurrentUser();
   const { messages, loading, reload, addLocalMessage } = useChatMessages(room);
@@ -65,6 +66,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
   const taggedClubsRef = useRef<Map<string, string>>(new Map());
   const newMsgAnchorRef = useRef<HTMLDivElement>(null);
   const prevLenRef = useRef(0);
+  const loginTarget = `/login?redirect=${encodeURIComponent(loginRedirect ?? "/chat")}`;
   // 도배 방지 (클라 사전 차단)
   const lastSentAtRef = useRef<number>(0);
   const lastSentContentRef = useRef<string>("");
@@ -101,7 +103,9 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
     prevLenRef.current = messages.length;
   }, [messages.length]);
 
-  const requiresVerification = room !== "all";
+  // foreigner 채팅방은 인증·SHOT 없이 카톡방처럼 단순 동작
+  const isForeignerRoom = room === "foreigner";
+  const requiresVerification = room !== "all" && !isForeignerRoom;
   const verifiedForRoom = useMemo(() => {
     if (!requiresVerification) return true;
     return isVerified(room as VerifiableArea);
@@ -129,7 +133,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
     e.target.value = ""; // 같은 파일 재선택 가능하게
     if (files.length === 0) return;
     if (!user) {
-      router.push(`/login?redirect=/chat`);
+      router.push(loginTarget);
       return;
     }
     const slotsLeft = CHAT_MEDIA_MAX_COUNT - media.length;
@@ -172,7 +176,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
     }
     if (!user) {
       // 비로그인: 로그인 페이지로 강제 이동 (router.push가 막힐 케이스 대비 location 폴백)
-      const target = `/login?redirect=/chat`;
+      const target = loginTarget;
       try {
         router.push(target);
       } catch (e) {
@@ -359,7 +363,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
                 handleSend();
               }
             }}
-            placeholder="오늘 밤 어떤 계획이 있나요?"
+            placeholder={isForeignerRoom ? "Message" : "오늘 밤 어떤 계획이 있나요?"}
             rows={2}
             maxLength={MAX_LEN}
             className="w-full bg-transparent text-white text-[16px] placeholder:text-neutral-500 focus:outline-none resize-none leading-snug"
@@ -446,7 +450,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
                 type="button"
                 onClick={() => {
                   if (!user) {
-                    router.push(`/login?redirect=/chat`);
+                    router.push(loginTarget);
                     return;
                   }
                   fileInputRef.current?.click();
@@ -461,34 +465,35 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
                   <ImagePlus className="w-4 h-4" />
                 )}
               </button>
-              {/* 클럽태그 — 누르면 본문에 # 삽입 + textarea focus → 자동완성 자동 트리거 */}
-              <button
-                type="button"
-                onClick={() => {
-                  const ta = textareaRef.current;
-                  if (!ta) return;
-                  const start = ta.selectionStart ?? input.length;
-                  const end = ta.selectionEnd ?? input.length;
-                  // 앞 글자가 공백 아니면 공백 + # 삽입, 아니면 # 만
-                  const prev = input.slice(0, start);
-                  const next = input.slice(end);
-                  const needsSpace = prev.length > 0 && !/\s$/.test(prev);
-                  const insert = (needsSpace ? " #" : "#");
-                  const newValue = `${prev}${insert}${next}`;
-                  setInput(newValue);
-                  const cursor = prev.length + insert.length;
-                  setTimeout(() => {
-                    ta.focus();
-                    ta.setSelectionRange(cursor, cursor);
-                    setHashtagToken({ token: "", start: cursor - 1, end: cursor });
-                  }, 0);
-                }}
-                className="h-8 px-2.5 inline-flex items-center gap-1 rounded-full text-amber-400 hover:bg-neutral-800 transition-colors"
-                aria-label="클럽 태그"
-              >
-                <Hash className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-bold">클럽태그</span>
-              </button>
+              {/* 클럽태그 — 외국인 방에선 숨김 (클럽 검색이 한글 기준) */}
+              {!isForeignerRoom && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const ta = textareaRef.current;
+                    if (!ta) return;
+                    const start = ta.selectionStart ?? input.length;
+                    const end = ta.selectionEnd ?? input.length;
+                    const prev = input.slice(0, start);
+                    const next = input.slice(end);
+                    const needsSpace = prev.length > 0 && !/\s$/.test(prev);
+                    const insert = needsSpace ? " #" : "#";
+                    const newValue = `${prev}${insert}${next}`;
+                    setInput(newValue);
+                    const cursor = prev.length + insert.length;
+                    setTimeout(() => {
+                      ta.focus();
+                      ta.setSelectionRange(cursor, cursor);
+                      setHashtagToken({ token: "", start: cursor - 1, end: cursor });
+                    }, 0);
+                  }}
+                  className="h-8 px-2.5 inline-flex items-center gap-1 rounded-full text-amber-400 hover:bg-neutral-800 transition-colors"
+                  aria-label="클럽 태그"
+                >
+                  <Hash className="w-3.5 h-3.5" />
+                  <span className="text-[11px] font-bold">클럽태그</span>
+                </button>
+              )}
               <span
                 className={`text-[11px] ${
                   input.length >= 450
@@ -510,7 +515,9 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
               }
               className="px-4 py-1.5 rounded-full text-[13px] font-black bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
             >
-              {sending ? "전송 중..." : "게시"}
+              {sending
+                ? isForeignerRoom ? "Posting..." : "전송 중..."
+                : isForeignerRoom ? "Post" : "게시"}
             </button>
           </div>
         </div>
@@ -521,15 +528,15 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
 
   return (
     <div className="flex flex-col pb-40">
-      {/* 와글 SHOT 캐러셀 — 잡담/지역방 모두 작성 버튼 노출 (인증 자격은 동일) */}
-      <ShotCarousel
+      {/* 와글 SHOT 캐러셀 — 외국인 방엔 미노출 (단순 채팅방) */}
+      {!isForeignerRoom && <ShotCarousel
         areas={shotAreas}
         showComposeButton={true}
         currentUserId={user?.id}
         currentUserProfile={user ? { profile_image: user.profile_image ?? null, display_name: user.display_name ?? null } : null}
         onComposeClick={() => {
           if (!user) {
-            router.push(`/login?redirect=/chat`);
+            router.push(loginTarget);
             return;
           }
           if (!canPostShot || !shotAuthorArea) {
@@ -540,7 +547,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
           }
           setShotComposeOpen(true);
         }}
-      />
+      />}
 
       {/* SHOT 캡처 시트 */}
       {user && shotAuthorArea && (
@@ -566,7 +573,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
           <button
             onClick={() => {
               if (!user) {
-                router.push(`/login?redirect=/chat`);
+                router.push(loginTarget);
                 return;
               }
               setVerifyReason("chat");
@@ -587,14 +594,16 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
       {/* 메시지 리스트 */}
       {loading ? (
         <div className="py-10 text-center text-[13px] text-neutral-500">
-          불러오는 중...
+          {isForeignerRoom ? "Loading..." : "불러오는 중..."}
         </div>
       ) : messages.length === 0 ? (
         <div className="py-10 px-6 text-center">
           <p className="text-[13px] text-neutral-500">
-            {room === "all"
-              ? "첫 와글을 남겨보세요!"
-              : `지금 ${ROOM_LABEL[room]}에 있다면 첫 와글을 남겨보세요!`}
+            {isForeignerRoom
+              ? "Be the first to share club tips!"
+              : room === "all"
+                ? "첫 와글을 남겨보세요!"
+                : `지금 ${ROOM_LABEL[room]}에 있다면 첫 와글을 남겨보세요!`}
           </p>
         </div>
       ) : (
@@ -624,7 +633,7 @@ export function ChatRoom({ room, onAreaVerified }: Props) {
                   onReact={(emoji) => toggleReaction(m.id, emoji)}
                   onOpenReplies={(target) => setReplyTarget(target)}
                   onChange={reload}
-                  onRequireLogin={() => router.push(`/login?redirect=/chat`)}
+                  onRequireLogin={() => router.push(loginTarget)}
                   groupedWithPrev={isGrouped}
                 />
               );
