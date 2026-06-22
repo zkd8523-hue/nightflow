@@ -4,11 +4,11 @@ import type { Metadata } from "next";
 // 외국인 검색·공유에서 한글 기본값(나플 등)이 노출되지 않도록 차단.
 export const metadata: Metadata = {
   title: {
-    default: "NightFlow — Seoul Club Booking for Travelers",
-    template: "%s — NightFlow",
+    default: "Korea Club Booking — Gangnam, Hongdae, Itaewon (NightFlow Seoul)",
+    template: "%s — NightFlow Korea",
   },
   description:
-    "Book the best clubs in Seoul without speaking Korean. Gangnam, Hongdae, Itaewon — real prices, VIP tables, no broker.",
+    "Book Korea's best clubs in Seoul — Gangnam, Hongdae, Itaewon, Apgujeong VIP tables. No Korean needed, no broker. Korea nightlife made easy for travelers.",
   alternates: {
     languages: {
       "en-US": "https://nightflow.kr/en",

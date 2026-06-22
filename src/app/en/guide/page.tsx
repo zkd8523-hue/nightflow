@@ -3,18 +3,47 @@ import type { Metadata } from "next";
 import { krwToAll } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
-  title: "Seoul Club Booking Guide — Be a VIP at Seoul's Best Clubs",
+  title: "Korea Club Booking Guide — Be a VIP at Gangnam, Hongdae, Itaewon Clubs",
   description:
-    "Book Seoul's hottest clubs without speaking Korean. Best tables, fair prices, skip the line and the broker. VIP table booking for Gangnam, Hongdae, Itaewon clubs.",
+    "Book Korea's hottest clubs in Seoul without speaking Korean. Best VIP tables in Gangnam, Hongdae, Itaewon, Apgujeong. Fair prices, skip the line and the broker. Korea nightlife guide for travelers.",
   keywords: [
+    // Country-level
+    "Korea club booking",
+    "Korea nightlife guide",
+    "Korea VIP table",
+    "Korea club guide",
+    "South Korea nightlife",
+    // Seoul-level
     "Seoul club booking guide",
     "Seoul VIP table booking",
     "book Seoul club",
-    "Gangnam club booking",
-    "Hongdae club booking",
-    "Itaewon club booking",
-    "Korea nightlife guide",
     "Seoul party booking",
+    "Seoul club guide",
+    // Hongdae
+    "Hongdae club booking",
+    "Hongdae VIP table",
+    "Hongdae nightclub guide",
+    // Gangnam
+    "Gangnam club booking",
+    "Gangnam VIP table",
+    "Gangnam nightclub guide",
+    // Itaewon
+    "Itaewon club booking",
+    "Itaewon nightlife guide",
+    // Apgujeong
+    "Apgujeong lounge booking",
+    "Cheongdam lounge",
+    // 추천
+    "best Korea clubs",
+    "best Seoul clubs",
+    "Korea club recommendation",
+    "Seoul club recommendation",
+    "top clubs Seoul",
+    // 지방
+    "Busan club booking",
+    "Busan nightlife guide",
+    "Daegu club",
+    "Gwangju club",
   ],
   alternates: {
     canonical: "https://nightflow.kr/en/guide",

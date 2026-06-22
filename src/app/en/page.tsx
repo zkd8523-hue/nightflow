@@ -6,22 +6,76 @@ import { EnHomeClient } from "./EnHomeClient";
 export const revalidate = 30;
 
 export const metadata: Metadata = {
-  title: "NightFlow — Seoul Club Booking for Travelers (Gangnam, Hongdae, Itaewon)",
+  title: "Korea Club Booking — Gangnam, Hongdae, Itaewon VIP Tables (NightFlow Seoul)",
   description:
-    "Book the best clubs in Seoul without speaking Korean. Gangnam, Hongdae, Itaewon — real prices, VIP tables, no broker. Top clubs compete to send you private offers.",
+    "Book Korea's best clubs in Seoul — Gangnam, Hongdae, Itaewon, Apgujeong. Real prices, VIP tables, no broker, no Korean needed. Top Seoul clubs send you private offers. Korea nightlife made easy for travelers.",
   keywords: [
+    // Country-level (검색량 큼)
+    "Korea club",
+    "Korea club booking",
+    "Korea nightclub",
+    "Korea nightlife",
+    "Korea clubbing",
+    "South Korea club",
+    "South Korea nightlife",
+    "clubs in Korea",
+    // 추천 키워드 (외국인 일반 검색)
+    "best clubs in Korea",
+    "best clubs in Seoul",
+    "Korea club recommendation",
+    "Seoul club recommendation",
+    "top Seoul clubs",
+    "top Korea clubs",
+    "best nightclubs Seoul",
+    "where to club in Seoul",
+    "Korea travel club",
+    "Seoul tourist clubs",
+    // Seoul-level
     "Seoul club",
     "Seoul club booking",
     "Seoul nightclub",
-    "Gangnam club",
-    "Hongdae club",
-    "Itaewon club",
+    "Seoul nightlife",
     "Seoul VIP table",
-    "Korea clubbing",
-    "Korea nightlife",
     "Seoul party",
-    "club table Seoul",
+    "Seoul club guide",
+    // Hongdae 단독
+    "Hongdae club",
+    "Hongdae club booking",
+    "Hongdae nightclub",
+    "Hongdae nightlife",
+    "Hongdae bar",
+    "Hongdae hip hop club",
+    "best Hongdae club",
+    // Gangnam 단독
+    "Gangnam club",
+    "Gangnam club booking",
+    "Gangnam nightclub",
+    "Gangnam VIP table",
+    "Gangnam lounge",
+    "best Gangnam club",
+    // Itaewon 단독
+    "Itaewon club",
+    "Itaewon club booking",
+    "Itaewon nightlife",
+    "Itaewon nightclub",
+    "best Itaewon club",
+    // Apgujeong / Cheongdam 라운지
+    "Apgujeong lounge",
+    "Cheongdam lounge",
+    "Seoul VIP lounge",
+    // 지방 도시 (Busan / Daegu / Gwangju)
+    "Busan club",
+    "Busan nightclub",
+    "Busan nightlife",
+    "Busan club booking",
+    "Daegu club",
+    "Daegu nightlife",
+    "Gwangju club",
+    "Gwangju nightlife",
+    "Incheon club",
+    // Brand
     "NightFlow",
+    "NightFlow Korea",
   ],
   alternates: {
     canonical: "https://nightflow.kr/en",
@@ -125,56 +179,103 @@ export default async function EnHomePage() {
     <>
       <div className="sr-only">
         <h1>
-          NightFlow — Seoul Club Booking for Foreign Travelers (Gangnam,
-          Hongdae, Itaewon)
+          Korea Club Booking — Gangnam, Hongdae, Itaewon VIP Tables (NightFlow
+          Seoul)
         </h1>
         <p>
-          NightFlow is a Seoul club booking platform for foreign travelers and
-          tourists. Book VIP tables at the best clubs in Gangnam, Hongdae,
-          Itaewon, and Apgujeong without speaking Korean. Real prices, no
-          broker, no hidden fees. Top Seoul clubs send you private offers — you
-          compare and pick the best one for your night out in Seoul.
+          NightFlow is a Korea club booking platform for foreign travelers and
+          tourists visiting Seoul. Book VIP tables at the best Korea clubs in
+          Gangnam, Hongdae, Itaewon, and Apgujeong without speaking Korean.
+          Real prices, no broker, no hidden fees. Top Seoul clubs send you
+          private offers — you compare and pick the best one for your night
+          out. Korea nightlife made easy.
         </p>
-        <h2>Seoul Club Booking — How NightFlow Works for Travelers</h2>
+
+        <h2>Hongdae Club Booking — Hip-Hop &amp; Foreigner-Friendly</h2>
         <p>
-          Plant a flag with your date, party size, and budget. Seoul's hottest
-          clubs — including Club ACE in Gangnam, Club Dokkaebi in Hongdae,
-          Soap Seoul in Itaewon, Core Lounge in Apgujeong, and many more —
-          send you VIP booking offers directly. You compare prices, table
-          locations, and bottle packages on one screen, then book with a
+          Hongdae is Seoul&apos;s hip-hop club district, packed with
+          foreigner-friendly nightclubs and bars near Hongik University. Top
+          Hongdae clubs include Club Dokkaebi (premium hip-hop), Sabotage,
+          Attention, Club Purple, NB2 (K-pop, hip-hop), and Awesome Red. Hongdae
+          club booking is the easiest entry point for travelers — most clubs
+          accept walk-ins, but VIP tables and guest list access through
+          NightFlow get you better seats and skip the line.
+        </p>
+
+        <h2>Gangnam Club Booking — Large EDM &amp; VIP Tables</h2>
+        <p>
+          Gangnam is Seoul&apos;s upscale club district, home to large EDM
+          nightclubs and luxury lounges. Top Gangnam clubs include Club ACE
+          (Sinsa, ex-Race), Massive, Club Pop, and Mirabaud. Gangnam club
+          booking is essential for VIP tables since main tables start at
+          ₩750,000+. Bottle service, prime EDM dance floor seats, and private
+          VIP lounges — all bookable through NightFlow without speaking Korean.
+        </p>
+
+        <h2>Itaewon Club Booking — International &amp; English-Friendly</h2>
+        <p>
+          Itaewon is Seoul&apos;s international nightlife district with the
+          highest concentration of foreign visitors. English-friendly Itaewon
+          clubs include Soap Seoul (reopened 2026, house and groove music),
+          Cakeshop, and more. Itaewon club booking is especially popular among
+          travelers because most staff speak English and music spans house, EDM,
+          disco, R&amp;B, and hip-hop.
+        </p>
+
+        <h2>Best Korea Clubs Recommendation by District</h2>
+        <p>
+          Wondering where to club in Korea? Here&apos;s the best clubs
+          recommendation by district. For Hongdae hip-hop and foreigner-friendly
+          vibes, try Club Dokkaebi or NB2. For Gangnam EDM and VIP tables, Club
+          ACE leads the scene. For Itaewon international crowd, Soap Seoul is
+          the top recommendation. For Apgujeong high-end lounges, Core Lounge
+          and Club Arzu top the list. NightFlow lets you compare and book the
+          best clubs in Seoul without speaking Korean.
+        </p>
+
+        <h2>Apgujeong &amp; Cheongdam VIP Lounges</h2>
+        <p>
+          Apgujeong and Cheongdam host Seoul&apos;s high-end VIP lounges with
+          champagne service and premium bottle packages. Top venues include
+          Core Lounge (EDM, opened 2026), Club Arzu (high-end), and DM Seoul
+          (hip-hop lounge). Lounge tables start at ₩2,000,000+. NightFlow
+          makes VIP lounge booking accessible to foreign travelers without
+          requiring a Korean host or local connections.
+        </p>
+
+        <h2>Korea Beyond Seoul — Busan, Daegu, Gwangju Clubs</h2>
+        <p>
+          NightFlow also covers nightlife outside Seoul. Busan club booking is
+          increasingly popular among travelers visiting Korea&apos;s second
+          city — Haeundae and Seomyeon are the main club districts. Daegu and
+          Gwangju have smaller scenes but solid local clubs. Plant a flag for
+          any Korean city and local clubs will send you offers.
+        </p>
+
+        <h2>How NightFlow Korea Club Booking Works</h2>
+        <p>
+          Plant a flag with your date, party size, and budget. Seoul&apos;s
+          hottest clubs — including Club ACE in Gangnam, Club Dokkaebi in
+          Hongdae, Soap Seoul in Itaewon, Core Lounge in Apgujeong, and many
+          more — send you VIP booking offers directly. You compare prices,
+          table locations, and bottle packages on one screen, then book with a
           single tap. No Korean needed, no MD connections needed, no broker
           fees.
         </p>
-        <h2>Seoul Nightlife Districts Covered</h2>
-        <ul>
-          <li>
-            Gangnam clubs — large EDM and hip-hop clubs, luxury lounges. Club
-            ACE, Massive, Club Pop, Mirabaud, and more.
-          </li>
-          <li>
-            Hongdae clubs — hip-hop scene, foreigner-friendly. Club Dokkaebi,
-            Sabotage, Attention, Purple, NB2, Awesome Red.
-          </li>
-          <li>
-            Itaewon clubs — international crowd, English OK. Soap Seoul (reopened
-            2026), Cakeshop, and more.
-          </li>
-          <li>
-            Apgujeong & Cheongdam lounges — high-end VIP lounges with bottle
-            service. Core Lounge, Arzu, DM Seoul.
-          </li>
-        </ul>
-        <h2>Current Active Flags</h2>
+
+        <h2>Current Active Club Booking Flags</h2>
         <p>
-          {flagCount} active club booking flag{flagCount !== 1 ? "s" : ""} right
-          now from travelers planning their night in Seoul. Plant your flag and
-          get private VIP offers from Seoul's best clubs within hours.
+          {flagCount} active Korea club booking flag{flagCount !== 1 ? "s" : ""}{" "}
+          right now from travelers planning their night in Seoul (Gangnam,
+          Hongdae, Itaewon, Apgujeong). Plant your flag and get private VIP
+          offers from Seoul&apos;s best clubs within hours.
         </p>
-        <h2>Why Book Seoul Clubs Through NightFlow</h2>
+
+        <h2>Why Book Korea Clubs Through NightFlow</h2>
         <ul>
           <li>
-            No Korean required — clubs reach out to you with English-friendly
-            offers.
+            No Korean required — Gangnam, Hongdae, Itaewon clubs reach out to
+            you with English-friendly offers.
           </li>
           <li>
             Real prices — secret offers visible only to you, no broker markup.
@@ -187,6 +288,10 @@ export default async function EnHomePage() {
           </li>
           <li>
             Free to plant a flag, free to receive offers, no deposit required.
+          </li>
+          <li>
+            Covers all Seoul nightlife districts — Gangnam, Hongdae, Itaewon,
+            Apgujeong, Cheongdam, Sinsa.
           </li>
         </ul>
       </div>

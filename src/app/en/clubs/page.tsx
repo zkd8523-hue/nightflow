@@ -3,19 +3,55 @@ import { createClient } from "@/lib/supabase/server";
 import { ClubsClient } from "./ClubsClient";
 
 export const metadata: Metadata = {
-  title: "Seoul Club Booking 2026 — Gangnam, Hongdae, Itaewon Guide",
+  title: "Korea Club Guide 2026 — Gangnam, Hongdae, Itaewon Nightclubs (Seoul)",
   description:
-    "Browse Seoul's best clubs with real prices, Google ratings, and VIP table booking. Book Gangnam, Hongdae, Itaewon clubs without speaking Korean. No broker.",
+    "Browse Korea's best clubs in Seoul with real prices, Google ratings, and VIP table booking. Gangnam EDM clubs, Hongdae hip-hop clubs, Itaewon international clubs, Apgujeong VIP lounges. No Korean needed.",
   keywords: [
+    // Country-level
+    "Korea club",
+    "Korea clubs guide",
+    "Korea nightclub guide",
+    "Korea nightlife guide",
+    "clubs in Korea",
+    "South Korea club",
+    // Seoul-level
     "Seoul club booking",
     "Seoul clubs",
     "Seoul nightclub guide",
-    "Gangnam club booking",
-    "Hongdae club booking",
-    "Itaewon club booking",
+    "Seoul nightlife",
     "Seoul VIP table",
-    "book club Seoul",
-    "Korea clubbing guide",
+    // Hongdae
+    "Hongdae club",
+    "Hongdae club booking",
+    "Hongdae nightclub",
+    "Hongdae bar",
+    // Gangnam
+    "Gangnam club",
+    "Gangnam club booking",
+    "Gangnam nightclub",
+    "Gangnam VIP table",
+    "Gangnam lounge",
+    // Itaewon
+    "Itaewon club",
+    "Itaewon club booking",
+    "Itaewon nightclub",
+    "Itaewon nightlife",
+    // Apgujeong
+    "Apgujeong lounge",
+    "Cheongdam lounge",
+    "Seoul VIP lounge",
+    // 추천
+    "best Seoul clubs",
+    "best Korea clubs",
+    "Korea club recommendation",
+    "top Seoul clubs",
+    "where to club in Seoul",
+    // 지방
+    "Busan club",
+    "Busan nightlife",
+    "Daegu club",
+    "Gwangju club",
+    "Incheon club",
   ],
   alternates: {
     canonical: "https://nightflow.kr/en/clubs",
