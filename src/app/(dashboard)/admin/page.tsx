@@ -15,6 +15,7 @@ import {
   Megaphone,
   CalendarCheck,
   LayoutGrid,
+  Star,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -326,6 +327,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-amber-500/10",
       badge: recentClubRequests ? `최근 7일 ${recentClubRequests}건` : null,
       href: "/admin/club-requests",
+    },
+    {
+      label: "5자리뷰 현황",
+      value: "보기",
+      icon: Star,
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+      badge: null,
+      href: "/admin/reviews",
     },
     {
       label: "사용자 차단",
