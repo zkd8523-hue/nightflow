@@ -6,7 +6,11 @@ import { EnHomeClient } from "./EnHomeClient";
 export const revalidate = 30;
 
 export const metadata: Metadata = {
-  title: "Korea Club Booking — Gangnam, Hongdae, Itaewon VIP Tables (NightFlow Seoul)",
+  // absolute = root layout의 "%s | 나플" template 무시. 한글 노출 차단.
+  title: {
+    absolute:
+      "Korea Club Booking — Gangnam, Hongdae, Itaewon VIP Tables (NightFlow Seoul)",
+  },
   description:
     "Book Korea's best clubs in Seoul — Gangnam, Hongdae, Itaewon, Apgujeong. Real prices, VIP tables, no broker, no Korean needed. Top Seoul clubs send you private offers. Korea nightlife made easy for travelers.",
   keywords: [

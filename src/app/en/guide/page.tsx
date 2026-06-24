@@ -3,7 +3,11 @@ import type { Metadata } from "next";
 import { krwToAll } from "@/lib/utils/currency";
 
 export const metadata: Metadata = {
-  title: "Korea Club Booking Guide — Be a VIP at Gangnam, Hongdae, Itaewon Clubs",
+  // absolute = root layout의 "%s | 나플" template 무시 (한글 노출 차단)
+  title: {
+    absolute:
+      "Korea Club Booking Guide — Be a VIP at Gangnam, Hongdae, Itaewon Clubs",
+  },
   description:
     "Book Korea's hottest clubs in Seoul without speaking Korean. Best VIP tables in Gangnam, Hongdae, Itaewon, Apgujeong. Fair prices, skip the line and the broker. Korea nightlife guide for travelers.",
   keywords: [

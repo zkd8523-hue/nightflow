@@ -3,7 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { ClubsClient } from "./ClubsClient";
 
 export const metadata: Metadata = {
-  title: "Korea Club Guide 2026 — Gangnam, Hongdae, Itaewon Nightclubs (Seoul)",
+  // absolute = root layout의 "%s | 나플" template 무시 (한글 노출 차단)
+  title: {
+    absolute:
+      "Korea Club Guide 2026 — Gangnam, Hongdae, Itaewon Nightclubs (Seoul)",
+  },
   description:
     "Browse Korea's best clubs in Seoul with real prices, Google ratings, and VIP table booking. Gangnam EDM clubs, Hongdae hip-hop clubs, Itaewon international clubs, Apgujeong VIP lounges. No Korean needed.",
   keywords: [
