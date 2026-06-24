@@ -146,8 +146,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // 편집 모드: puzzle에서 초기값 추출. 신규 등록 모드: draft → 기본값 순.
   const initialEventDate = puzzle?.event_date ?? (draft?.eventDate as string) ?? searchParams.get("date") ?? "";
   // 디폴트 모드 = 인원 확정(깃발). 모집(퍼즐/조각) 모드는 매 진입 시 OFF로 시작 (draft 미복원).
-  // 지역은 draft 복원 제외 — 매 진입 시 "서울 어디든"으로 리셋해 사용자가 의식적으로 좁히도록 유도.
-  const initialArea = puzzle?.area ?? "서울 어디든";
+  // 지역은 draft 복원 제외 — 매 진입 시 미선택으로 리셋해 사용자가 의식적으로 지역을 고르도록 유도.
+  const initialArea = puzzle?.area ?? "";
   // budgetAmount 의미: 퍼즐(모집 ON)=인당가 / 깃발(모집 OFF)=총액
   // edit 모드: puzzle에서 모드에 맞춰 변환 / 신규: draft 또는 0
   const initialBudget = puzzle
@@ -409,13 +409,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventDate, area, isRecruitingParty, targetCount, totalPeople, budgetAmount, notesEverEdited, isForeigner]);
 
-  // "서울 어디든" 선택 시 파티원 모집 강제 OFF (지역 미정 상태에서 합류 결정 불가)
   const handleAreaChange = (newArea: string) => {
     setArea(newArea);
-    if (newArea === "서울 어디든" && isRecruitingParty) {
-      setIsRecruitingParty(false);
-      toast.info(t('"서울 어디든"은 파티원 모집을 사용할 수 없어요', '"Anywhere in Seoul" cannot be used with party recruiting'));
-    }
   };
 
   const fail = (error_type: string, error_message: string) => {
@@ -481,8 +476,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   })();
 
   const handleSubmit = async () => {
-    // "서울 어디든"은 파티원 모집 불가 — UI에서 막지만 안전망으로 한 번 더 강제
-    const effectiveIsRecruiting = area === "서울 어디든" ? false : isRecruitingParty;
+    const effectiveIsRecruiting = isRecruitingParty;
 
     trackEvent('puzzle_submit_attempt', {
       is_recruiting_party: effectiveIsRecruiting,
@@ -748,19 +742,6 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         </div>
         <div>
           <div className="flex flex-wrap gap-2">
-            {!isRecruitingParty && (
-              <button
-                type="button"
-                onClick={() => handleAreaChange("서울 어디든")}
-                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
-                  area === "서울 어디든"
-                    ? "bg-white text-black"
-                    : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                }`}
-              >
-                {aL("서울 어디든")}
-              </button>
-            )}
             {MAIN_AREAS.map((a) => (
               <button
                 key={a}
@@ -817,11 +798,6 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               ))}
             </div>
           )}
-        {area === "서울 어디든" && (
-          <p className="text-[12px] text-amber-400/80 leading-relaxed pl-2 mt-0.5">
-            {t("* 가장 많은 옵션을 받아봐요 *", "* Get the most offers from Seoul clubs *")}
-          </p>
-        )}
         </div>
       </section>
 
