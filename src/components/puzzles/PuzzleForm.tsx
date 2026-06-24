@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { MAIN_AREAS, OTHER_CITIES } from "@/lib/constants/areas";
+import { MAIN_AREAS } from "@/lib/constants/areas";
 import { toast } from "sonner";
 import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -266,7 +266,6 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // 오픈채팅 URL — edit 모드면 puzzle에서 복원, 신규 등록은 항상 빈 값으로 시작
   const [kakaoUrl, setKakaoUrl] = useState(puzzle?.kakao_open_chat_url ?? "");
   const [submitting, setSubmitting] = useState(false);
-  const [showOtherCities, setShowOtherCities] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   // 당일 18시 이후 등록 시도 시 안내 다이얼로그
   const [showLateTodayDialog, setShowLateTodayDialog] = useState(false);
@@ -756,48 +755,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                 {aL(a)}
               </button>
             ))}
-            {/* 다른 지역(지방)은 국내 전용 — 외국인 트랙은 서울만 노출 */}
-            {!isForeigner && OTHER_CITIES.includes(area as typeof OTHER_CITIES[number]) && (
-              <button
-                type="button"
-                onClick={() => setShowOtherCities(true)}
-                className="px-4 py-2 rounded-full text-[13px] font-bold bg-white text-black"
-              >
-                {aL(area)}
-              </button>
-            )}
-            {!isForeigner && (
-              <button
-                type="button"
-                onClick={() => setShowOtherCities((v) => !v)}
-                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-colors ${
-                  showOtherCities
-                    ? "bg-neutral-600 text-white"
-                    : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                }`}
-              >
-                {showOtherCities ? t("접기", "Close") : t("+ 다른 지역", "+ More areas")}
-              </button>
-            )}
           </div>
-          {!isForeigner && showOtherCities && (
-            <div className="flex flex-wrap gap-2 pt-3 mt-3 border-t border-neutral-800">
-              {OTHER_CITIES.map((a) => (
-                <button
-                  key={a}
-                  type="button"
-                  onClick={() => { handleAreaChange(a); setShowOtherCities(false); }}
-                  className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
-                    area === a
-                      ? "bg-white text-black"
-                      : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                  }`}
-                >
-                  {aL(a)}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 
