@@ -656,6 +656,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
       navigating = true;
+      // 깃발 꽂은 직후 1회성 앱설치 팝업 트리거 (안드로이드 웹에서만 실제 노출)
+      window.dispatchEvent(new CustomEvent("flag-created"));
       router.push(`/flags/${created.id}${isForeigner ? "?lang=en" : ""}`);
     } catch (err) {
       console.error("puzzle submit error:", err);

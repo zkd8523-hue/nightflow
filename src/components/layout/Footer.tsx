@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
+import { useAppDownloadCta, PLAY_STORE_URL } from "@/hooks/useAppDownloadCta";
 
 export function Footer() {
   const { user, isLoading } = useCurrentUser();
   const isPartner = isLoading || user?.role === "md" || user?.role === "admin";
+  const { eligible: showAppCta } = useAppDownloadCta();
 
   return (
     <footer className="border-t border-neutral-800 bg-neutral-950">
@@ -44,6 +47,25 @@ export function Footer() {
             >
               MD · 파트너 모집 →
             </Link>
+          )}
+          {showAppCta && (
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2.5 rounded-2xl border border-neutral-800 bg-[#1C1C1E] px-3 py-1.5 hover:bg-neutral-800/60 transition-colors"
+            >
+              <Image
+                src="/app-icon.png"
+                alt="나플"
+                width={44}
+                height={44}
+                className="rounded-lg"
+              />
+              <span className="text-sm font-bold text-white">
+                앱으로 더 편하게 이용하기
+              </span>
+            </a>
           )}
           <Link
             href="https://www.instagram.com/nightflow.kr"
