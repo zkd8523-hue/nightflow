@@ -742,7 +742,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           <span>{t("지역", "Area")}</span>
         </div>
         <div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-start gap-2">
             {MAIN_AREAS.map((a) => (
               <button
                 key={a}
@@ -757,6 +757,25 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                 {aL(a)}
               </button>
             ))}
+            {/* 서울 어디든: 항상 제일 오른쪽에 배치. 안내 문구는 흐름에서 빼서(absolute) 버튼 위치 고정 */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => handleAreaChange("서울 어디든")}
+                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
+                  area === "서울 어디든"
+                    ? "bg-white text-black border-transparent"
+                    : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                }`}
+              >
+                {aL("서울 어디든")}
+              </button>
+              {area === "서울 어디든" && (
+                <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 text-[11px] text-amber-400/80 leading-relaxed whitespace-nowrap">
+                  {t("* 가장 많은 옵션을 받아봐요 *", "* Most offers *")}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </section>
