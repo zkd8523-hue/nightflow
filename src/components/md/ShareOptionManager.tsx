@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Minus, Check, Loader2, Pencil, Trash2, Map, ChevronDown, GripVertical } from "lucide-react";
+import { Plus, Minus, Check, Loader2, Pencil, Trash2, Copy, Map, ChevronDown, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,22 @@ const emptyForm = (): FormState => ({
   md_message: "",
   deadline_hour: 3, // 기본: 익일 새벽 3시
 });
+
+// 복제 라벨 생성: "복사본"이 중첩되지 않게 base를 뽑고 끝에 숫자(2,3,…)를 붙인다.
+// 예) "메인" → "메인 복사본" → "메인 복사본 2" → "메인 복사본 3"
+function nextCopyLabel(label: string, existing: ShareOption[]): string {
+  // 기존 "… 복사본" 또는 "… 복사본 N" 접미사를 떼어 원본 이름을 구한다.
+  const base = label.replace(/\s*복사본(\s*\d+)?$/, "").trim();
+  const used = new Set(
+    existing.map((o) => (o.label ?? "").trim()).filter(Boolean)
+  );
+  const first = base ? `${base} 복사본` : "복사본";
+  if (!used.has(first)) return first;
+  for (let n = 2; ; n++) {
+    const candidate = `${first} ${n}`;
+    if (!used.has(candidate)) return candidate;
+  }
+}
 
 // 익일 마감 시각 선택지 (0 = 당일 자정)
 const DEADLINE_HOURS = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
@@ -313,6 +329,49 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
     }
   };
 
+  // 옵션 복제: 같은 값으로 새 옵션 생성. 제목(label)에 "복사본" 표기.
+  const handleCopy = async (o: ShareOption) => {
+    if (list.length >= MAX_OPTIONS) {
+      toast.error(`조각 옵션은 클럽당 최대 ${MAX_OPTIONS}개까지예요`);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("세션이 만료되었어요"); return; }
+
+      const newLabel = nextCopyLabel((o.label ?? "").trim(), list);
+
+      const { data, error } = await supabase
+        .from("share_options")
+        .insert({
+          md_id: user.id,
+          club_id: o.club_id,
+          label: newLabel,
+          table_info: o.table_info,
+          total_seats: o.total_seats,
+          price_per_seat: o.price_per_seat,
+          includes: o.includes ?? [],
+          md_message: o.md_message ?? null,
+          deadline_hour: o.deadline_hour ?? 3,
+        })
+        .select("*")
+        .single();
+      if (error) {
+        toast.error(error.message?.includes("최대") ? error.message : "복사에 실패했어요");
+        return;
+      }
+      setList((prev) => [...prev, data as ShareOption]);
+      toast.success("옵션을 복사했어요");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("복사에 실패했어요");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm("이 옵션을 삭제할까요? 요일표 배정도 함께 해제돼요.")) return;
     setBusy(true);
@@ -391,14 +450,27 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
                   {o.includes.length > 0 && ` · ${o.includes.slice(0, 2).join("/")}${o.includes.length > 2 ? "…" : ""}`}
                 </p>
               </div>
-              <button type="button" onClick={() => openEdit(o)} disabled={busy}
-                className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-300 hover:text-white disabled:opacity-40">
-                <Pencil className="w-3.5 h-3.5" />
-              </button>
-              <button type="button" onClick={() => handleDelete(o.id)} disabled={busy}
-                className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-500 hover:text-red-400 disabled:opacity-40">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <button type="button" onClick={() => openEdit(o)} disabled={busy}
+                  className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-300 hover:text-white disabled:opacity-40">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[9px] text-neutral-500 leading-none">수정</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <button type="button" onClick={() => handleCopy(o)} disabled={busy || list.length >= MAX_OPTIONS}
+                  className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-300 hover:text-white disabled:opacity-40">
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[9px] text-neutral-500 leading-none">복사</span>
+              </div>
+              <div className="flex flex-col items-center gap-1 shrink-0">
+                <button type="button" onClick={() => handleDelete(o.id)} disabled={busy}
+                  className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-500 hover:text-red-400 disabled:opacity-40">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[9px] text-neutral-500 leading-none">삭제</span>
+              </div>
             </div>
           ))}
           <p className="text-right text-[10.5px] text-neutral-600 pr-1">꾹 눌러서 순서 변경 가능</p>

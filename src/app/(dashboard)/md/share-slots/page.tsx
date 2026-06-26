@@ -104,6 +104,11 @@ export default async function MDShareSlotsPage() {
 
   const options = (optionRows ?? []) as ShareOption[];
   const plans = (planRows ?? []) as ShareWeekdayPlan[];
+  // 클럽별 이번 주 요일표 세팅 일수 (다음 주 선점 게이트용)
+  const daysSetByClub: Record<string, number> = {};
+  for (const cid of myClaimedClubIds) {
+    daysSetByClub[cid] = new Set(plans.filter((p) => p.club_id === cid).map((p) => p.dow)).size;
+  }
   // 클럽 대표 테이블맵 1장 (다중 등록 시 첫 장, 없으면 레거시 단일)
   const clubFloorPlan = (id: string): string | null => {
     const c = clubs.find((cl) => cl.id === id) as
@@ -148,6 +153,7 @@ export default async function MDShareSlotsPage() {
           thisWeekISO={thisWeek}
           embedded
           isAdmin={userRow.role === "admin"}
+          daysSetByClub={daysSetByClub}
         />
 
         {/* 선점 중인 클럽별 옵션 + 요일표 */}

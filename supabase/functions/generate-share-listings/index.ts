@@ -77,6 +77,39 @@ serve(async (req: Request) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 
+    // 0) 롤오버 승격: 이번 주 슬롯에 다음-주-스냅샷(plan_snapshot)이 있으면
+    //    share_weekday_plan으로 승격하고 스냅샷을 비운다. (다음 주 → 이번 주 전환 1회)
+    //    이로써 항상 "이번 주 요일표 = share_weekday_plan" 일관성 유지.
+    {
+      const currentWeekStart = weekStartOf(days[0].dateISO);
+      const { data: snapSlots } = await supabase
+        .from("weekly_share_slots")
+        .select("id, md_id, club_id, plan_snapshot")
+        .eq("week_start", currentWeekStart)
+        .not("plan_snapshot", "is", null);
+      for (const s of (snapSlots ?? []) as Array<{
+        id: string; md_id: string; club_id: string;
+        plan_snapshot: Record<string, string[]> | null;
+      }>) {
+        const snap = s.plan_snapshot ?? {};
+        // 기존 공유 요일표 비우고 스냅샷으로 교체
+        await supabase.from("share_weekday_plan")
+          .delete().eq("md_id", s.md_id).eq("club_id", s.club_id);
+        const rows: Array<{ md_id: string; club_id: string; dow: string; option_id: string; sort_order: number }> = [];
+        for (const dow of Object.keys(snap)) {
+          (snap[dow] ?? []).forEach((optId, i) => {
+            rows.push({ md_id: s.md_id, club_id: s.club_id, dow, option_id: optId, sort_order: i });
+          });
+        }
+        if (rows.length > 0) {
+          const { error: insErr } = await supabase.from("share_weekday_plan").insert(rows);
+          if (insErr) console.error("⚠️ 스냅샷 승격 실패:", insErr, { md: s.md_id, club: s.club_id });
+        }
+        // 승격 완료 → 스냅샷 비움 (재실행 멱등)
+        await supabase.from("weekly_share_slots").update({ plan_snapshot: null }).eq("id", s.id);
+      }
+    }
+
     // 1) 요일표 배정 전체 + 옵션 + 클럽명 조인
     const { data: plans, error: planErr } = await supabase
       .from("share_weekday_plan")

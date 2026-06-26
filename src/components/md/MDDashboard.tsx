@@ -175,6 +175,14 @@ export function MDDashboard({
     const myShareSlots = localShareSlots.filter((s) => s.md_id === user.id);
     const hasShareSlot = myShareSlots.length > 0;
 
+    // 클럽별 이번 주 요일표 세팅 일수 (다음 주 선점 게이트용)
+    const shareDaysSetByClub: Record<string, number> = {};
+    for (const s of myShareSlots) {
+      shareDaysSetByClub[s.club_id] = new Set(
+        shareWeekdayPlans.filter((p) => p.club_id === s.club_id).map((p) => p.dow)
+      ).size;
+    }
+
     // 관심 지역 온보딩: 승인된 MD가 아직 시트를 안 봤고 구독도 0건이면 노출
     useEffect(() => {
         if (user.role !== "md" && user.role !== "admin") return;
@@ -514,6 +522,7 @@ export function MDDashboard({
                                 isAdmin={user.role === "admin"}
                                 onClaim={(slot) => setLocalShareSlots((prev) => [...prev.filter((s) => !(s.club_id === slot.club_id && s.week_start === slot.week_start)), slot])}
                                 onRelease={(clubId) => { setLocalShareSlots((prev) => prev.filter((s) => !(s.club_id === clubId && s.md_id === user.id))); setPlanBoardResetKey((k) => k + 1); }}
+                                daysSetByClub={shareDaysSetByClub}
                             />
 
                             {/* 선점 중인 클럽별 프리셋 + 요일표 세팅 (같은 박스, 가로선 구분) */}

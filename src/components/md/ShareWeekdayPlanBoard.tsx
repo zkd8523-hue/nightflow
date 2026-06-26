@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { useShareNextWeekEdit } from "@/stores/useShareNextWeekEdit";
 import type { ShareOption, ShareWeekdayPlan, ShareDow } from "@/types/database";
 
 const DOW_ORDER: ShareDow[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -20,13 +21,13 @@ interface Props {
   plans: ShareWeekdayPlan[];
 }
 
-// 이번 주(월~일) 각 요일의 날짜 — 표시용 M/D + 비교용 ISO. KST 기준.
-function weekDates(): Record<ShareDow, { md: string; iso: string }> {
+// 기준 주(+offsetWeeks) 각 요일의 날짜 — 표시용 M/D + 비교용 ISO. KST 기준.
+function weekDatesFor(offsetWeeks: number): Record<ShareDow, { md: string; iso: string }> {
   const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const dow = kstNow.getUTCDay();
   const daysFromMonday = dow === 0 ? 6 : dow - 1;
   const monday = new Date(kstNow);
-  monday.setUTCDate(kstNow.getUTCDate() - daysFromMonday);
+  monday.setUTCDate(kstNow.getUTCDate() - daysFromMonday + offsetWeeks * 7);
   const out = {} as Record<ShareDow, { md: string; iso: string }>;
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
@@ -39,18 +40,19 @@ function weekDates(): Record<ShareDow, { md: string; iso: string }> {
   return out;
 }
 
-function todayKstISO(): string {
-  return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
-}
-
 export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
-  const dates = useMemo(() => weekDates(), []);
-  const todayISO = useMemo(() => todayKstISO(), []);
+  const dates = useMemo(() => weekDatesFor(0), []);
+  const nextDates = useMemo(() => weekDatesFor(1), []);
   const activeOptions = useMemo(() => options.filter((o) => o.is_active), [options]);
 
-  // dow → 배정된 option_id[]
+  // 다음 주 설정 모드 (스토어 공유 — ShareSlotBoard의 "다음주 설정" 토글)
+  const editingNextWeek = useShareNextWeekEdit((s) => s.editingByClub[clubId] ?? false);
+  const nextSlotId = useShareNextWeekEdit((s) => s.slotByClub[clubId] ?? null);
+  const isNextWeek = editingNextWeek && !!nextSlotId;
+
+  // 이번 주 배정 (plans에서 초기화)
   const [assign, setAssign] = useState<Record<ShareDow, string[]>>(() => {
     const m = {} as Record<ShareDow, string[]>;
     for (const d of DOW_ORDER) m[d] = [];
@@ -59,61 +61,153 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
     }
     return m;
   });
+  // 다음 주 배정 (슬롯 plan_snapshot에서 로드)
+  const [nextAssign, setNextAssign] = useState<Record<ShareDow, string[]>>(() => {
+    const m = {} as Record<ShareDow, string[]>;
+    for (const d of DOW_ORDER) m[d] = [];
+    return m;
+  });
+
+  // 다음 주 모드 진입 시 스냅샷 로드
+  useEffect(() => {
+    if (!isNextWeek || !nextSlotId) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("weekly_share_slots")
+        .select("plan_snapshot")
+        .eq("id", nextSlotId)
+        .maybeSingle();
+      if (cancelled) return;
+      const snap = (data?.plan_snapshot ?? {}) as Record<string, string[]>;
+      const m = {} as Record<ShareDow, string[]>;
+      for (const d of DOW_ORDER) m[d] = snap[d] ?? [];
+      setNextAssign(m);
+    })();
+    return () => { cancelled = true; };
+  }, [isNextWeek, nextSlotId, supabase]);
+
   const [savingDow, setSavingDow] = useState<ShareDow | null>(null);
   const [savingOptionId, setSavingOptionId] = useState<string | null>(null);
-  // 처리 중 전역 잠금 — 완료될 때까지 다른 칩 클릭 무시(race 원천 차단). ref라 동기적으로 즉시 막힘.
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
 
+  // 현재 보고 있는 주의 배정 + 날짜
+  const view = isNextWeek ? nextAssign : assign;
+  const displayDates = isNextWeek ? nextDates : dates;
+  const applyView = (fn: (a: Record<ShareDow, string[]>) => Record<ShareDow, string[]>) =>
+    (isNextWeek ? setNextAssign(fn) : setAssign(fn));
+
+  // 저장 대상 분기: 다음 주면 슬롯 스냅샷, 이번 주면 공유 요일표
+  const persist = (dow: ShareDow, ids: string[]) =>
+    isNextWeek
+      ? supabase.rpc("set_share_slot_plan", { p_slot_id: nextSlotId, p_dow: dow, p_option_ids: ids })
+      : supabase.rpc("set_share_weekday_plan", { p_club_id: clubId, p_dow: dow, p_option_ids: ids });
+
   const toggle = async (dow: ShareDow, optionId: string) => {
-    if (busyRef.current) return; // 처리 중이면 무시(잠금이 race를 막으므로 아래 동기 계산이 안전)
+    if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
-    // 잠금 중엔 다른 토글이 끼어들 수 없으므로 현재 state를 그대로 읽어 next를 동기 계산한다.
-    const current = assign[dow] ?? [];
+    const current = view[dow] ?? [];
     const next = current.includes(optionId)
       ? current.filter((x) => x !== optionId)
       : [...current, optionId];
-    setAssign((a) => ({ ...a, [dow]: next })); // 낙관적 반영
+    applyView((a) => ({ ...a, [dow]: next })); // 낙관적
     const added = next.length > current.length;
     setSavingDow(dow);
     setSavingOptionId(optionId);
     try {
-      const { data, error } = await supabase.rpc("set_share_weekday_plan", {
-        p_club_id: clubId,
-        p_dow: dow,
-        p_option_ids: next,
-      });
+      const { data, error } = await persist(dow, next);
       if (error) throw error;
       const result = data as { success: boolean; error?: string };
       if (!result?.success) {
         toast.error(result?.error || "저장 실패");
-        setAssign((a) => ({ ...a, [dow]: current })); // 롤백
+        applyView((a) => ({ ...a, [dow]: current })); // 롤백
         return;
       }
-      if (added) {
-        // 켰을 때: cron 안 기다리고 이번 주치 즉시 생성 (멱등 + 슬롯/오픈챗 게이트 내장)
-        try {
-          await supabase.functions.invoke("generate-share-listings");
-          // invoke 완료 후에도 DB 반영(커밋→읽기)이 살짝 늦어 refresh가 한 박자 빠를 수 있음.
-          // 짧게 대기 후 새로고침해 방금 생성된 조각이 확실히 잡히게 한다.
-          await new Promise((r) => setTimeout(r, 500));
-        } catch (genErr) {
-          console.warn("즉시 생성 실패(다음 cron이 반영):", genErr);
-        }
-      } else {
-        // 껐을 때: 그 옵션이 만든 "그 요일·이번 주" 자동생성 조각을 내림.
-        // 참여 0건 + 진행/예정인 것만 (이미 손님이 들어온 조각은 보호).
-        const iso = dates[dow]?.iso;
-        if (iso) {
+      // 다음 주는 카드가 아직 없으므로 즉시 생성/내림 없음 (cron 롤오버가 처리)
+      if (!isNextWeek) {
+        if (added) {
           try {
-            // share_date/event_date 중 하나라도 그 날짜면 매칭 (자동생성 시 둘이 한 칸 어긋날 수 있음)
+            await supabase.functions.invoke("generate-share-listings");
+            await new Promise((r) => setTimeout(r, 500));
+          } catch (genErr) {
+            console.warn("즉시 생성 실패(다음 cron이 반영):", genErr);
+          }
+        } else {
+          const iso = dates[dow]?.iso;
+          if (iso) {
+            try {
+              await supabase
+                .from("auctions")
+                .update({ status: "unsold" })
+                .eq("listing_type", "share")
+                .eq("share_option_id", optionId)
+                .or(`share_date.eq.${iso},event_date.eq.${iso}`)
+                .eq("seats_claimed", 0)
+                .eq("external_attendees", 0)
+                .in("status", ["active", "scheduled"]);
+            } catch (delErr) {
+              console.warn("조각 내림 실패:", delErr);
+            }
+          }
+        }
+        router.refresh();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("저장에 실패했어요");
+      applyView((a) => ({ ...a, [dow]: current })); // 롤백
+    } finally {
+      setSavingDow(null);
+      setSavingOptionId(null);
+      busyRef.current = false;
+      setBusy(false);
+    }
+  };
+
+  const allOn = useMemo(
+    () =>
+      activeOptions.length > 0 &&
+      DOW_ORDER.every((dow) => {
+        const a = view[dow] ?? [];
+        return activeOptions.every((o) => a.includes(o.id));
+      }),
+    [view, activeOptions]
+  );
+
+  const toggleAll = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    const turnOn = !allOn;
+    const allIds = activeOptions.map((o) => o.id);
+    const prev = view;
+    const optimistic = {} as Record<ShareDow, string[]>;
+    for (const d of DOW_ORDER) optimistic[d] = turnOn ? [...allIds] : [];
+    applyView(() => optimistic);
+    try {
+      for (const dow of DOW_ORDER) {
+        const { data, error } = await persist(dow, turnOn ? allIds : []);
+        if (error) throw error;
+        const result = data as { success: boolean; error?: string };
+        if (!result?.success) throw new Error(result?.error || "저장 실패");
+      }
+      if (!isNextWeek) {
+        if (turnOn) {
+          try {
+            await supabase.functions.invoke("generate-share-listings");
+            await new Promise((r) => setTimeout(r, 500));
+          } catch (genErr) {
+            console.warn("즉시 생성 실패(다음 cron이 반영):", genErr);
+          }
+        } else {
+          try {
             await supabase
               .from("auctions")
               .update({ status: "unsold" })
               .eq("listing_type", "share")
-              .eq("share_option_id", optionId)
-              .or(`share_date.eq.${iso},event_date.eq.${iso}`)
+              .in("share_option_id", allIds)
               .eq("seats_claimed", 0)
               .eq("external_attendees", 0)
               .in("status", ["active", "scheduled"]);
@@ -121,15 +215,14 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
             console.warn("조각 내림 실패:", delErr);
           }
         }
+        router.refresh();
       }
-      router.refresh();
+      toast.success(turnOn ? "모든 요일에 켰어요" : "모든 요일을 껐어요");
     } catch (err) {
       console.error(err);
       toast.error("저장에 실패했어요");
-      setAssign((a) => ({ ...a, [dow]: current })); // 롤백
+      applyView(() => prev); // 롤백
     } finally {
-      setSavingDow(null);
-      setSavingOptionId(null);
       busyRef.current = false;
       setBusy(false);
     }
@@ -145,8 +238,30 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
 
   return (
     <div className="space-y-1.5">
-      <p className="text-[13px] font-black text-white">요일표</p>
-      <p className="text-[11px] text-neutral-500 -mt-0.5">요일에 옵션을 켜두면 그 요일에 자동으로 조각이 올라가요.</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[13px] font-black text-white">
+          요일표
+          {isNextWeek && <span className="ml-1.5 text-[11px] text-amber-400 font-black">· 다음 주</span>}
+        </p>
+        <button
+          type="button"
+          onClick={toggleAll}
+          disabled={busy}
+          className={`h-7 px-3 rounded-full text-[11px] font-black inline-flex items-center gap-1 transition-colors disabled:opacity-50 ${
+            allOn
+              ? "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+              : "bg-amber-500 text-black hover:bg-amber-400"
+          }`}
+        >
+          {busy && <Loader2 className="w-3 h-3 animate-spin" />}
+          {allOn ? "모두 끄기" : "모두 켜기"}
+        </button>
+      </div>
+      <p className="text-[11px] text-neutral-500 -mt-0.5">
+        {isNextWeek
+          ? "다음 주 요일표예요. 여기서 켠 대로 다음 주에 자동으로 올라가요."
+          : "요일에 옵션을 켜두면 그 요일에 자동으로 조각이 올라가요."}
+      </p>
       <div className="space-y-1.5 mt-0.5">
         {DOW_ORDER.map((dow) => {
           const isWeekend = dow === "fri" || dow === "sat" || dow === "sun";
@@ -156,11 +271,11 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
                 <span className={`text-[13px] font-black ${isWeekend ? "text-amber-400" : "text-white"}`}>
                   {DOW_LABEL[dow]}
                 </span>
-                <span className="text-[10px] text-neutral-600">{dates[dow].md}</span>
+                <span className="text-[10px] text-neutral-600">{displayDates[dow].md}</span>
               </div>
               <div className="flex-1 min-w-0 flex flex-wrap gap-1.5 py-1">
                 {activeOptions.map((o) => {
-                  const on = (assign[dow] ?? []).includes(o.id);
+                  const on = (view[dow] ?? []).includes(o.id);
                   return (
                     <button
                       key={o.id}

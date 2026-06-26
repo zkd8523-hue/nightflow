@@ -8,6 +8,7 @@ import { ChevronLeft, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { SharePreviewSheet } from "@/components/home/SharePreviewSheet";
+import { useShareNextWeekEdit } from "@/stores/useShareNextWeekEdit";
 
 interface ClubLite {
   id: string;
@@ -39,6 +40,17 @@ interface Props {
   onClaim?: (slot: SlotLite) => void;
   /** release 성공 시 부모에 즉시 알림 */
   onRelease?: (clubId: string) => void;
+  /** 클럽별 이번 주 요일표 세팅 일수 (다음 주 선점 게이트용, 2일↑). 없으면 자체 조회 */
+  daysSetByClub?: Record<string, number>;
+}
+
+// 다음 주 선점을 위한 이번 주 최소 세팅 일수 (DB claim_share_slot과 일치)
+const MIN_DAYS_FOR_NEXT_WEEK = 2;
+
+function addDaysISO(iso: string, n: number): string {
+  const d = new Date(iso + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
 }
 
 function isBeforeOpen(weekStartISO: string): boolean {
@@ -53,13 +65,63 @@ function formatWeekRange(weekStartISO: string): string {
   return `${start.getUTCMonth() + 1}/${start.getUTCDate()}(월) ~ ${end.getUTCMonth() + 1}/${end.getUTCDate()}(일)`;
 }
 
-export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embedded = false, isAdmin = false, onClaim, onRelease }: Props) {
+export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embedded = false, isAdmin = false, onClaim, onRelease, daysSetByClub }: Props) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [busy, setBusy] = useState(false);
   // 슬롯 로컬 상태 — claim/release 시 즉시 반영(낙관적 업데이트). 서버 prop 변경 시 동기화.
   const [localSlots, setLocalSlots] = useState<SlotLite[]>(slots);
   useEffect(() => { setLocalSlots(slots); }, [slots]);
+
+  const nextWeekISO = useMemo(() => addDaysISO(thisWeekISO, 7), [thisWeekISO]);
+
+  // 내가 이번 주 차지한 슬롯 (다음 주 선점 UI의 기준 클럽)
+  const myThisWeekSlot = useMemo(
+    () => localSlots.find((s) => s.week_start === thisWeekISO && s.md_id === currentUserId) ?? null,
+    [localSlots, thisWeekISO, currentUserId]
+  );
+  const myClubId = myThisWeekSlot?.club_id ?? null;
+
+  // 다음 주 내 슬롯 + 이번 주 세팅 일수 — 자체 조회 (claim/release 시 갱신)
+  const [nextWeekSlot, setNextWeekSlot] = useState<SlotLite | null>(null);
+  const [fetchedDays, setFetchedDays] = useState<number | null>(null);
+  useEffect(() => {
+    if (!myClubId) { setNextWeekSlot(null); setFetchedDays(null); return; }
+    let cancelled = false;
+    (async () => {
+      const [{ data: nw }, { data: planRows }] = await Promise.all([
+        supabase
+          .from("weekly_share_slots")
+          .select("id, club_id, md_id, week_start, expires_at")
+          .eq("club_id", myClubId)
+          .eq("md_id", currentUserId)
+          .eq("week_start", nextWeekISO)
+          .maybeSingle(),
+        supabase
+          .from("share_weekday_plan")
+          .select("dow")
+          .eq("md_id", currentUserId)
+          .eq("club_id", myClubId),
+      ]);
+      if (cancelled) return;
+      setNextWeekSlot((nw as SlotLite) ?? null);
+      const dows = new Set((planRows ?? []).map((p: { dow: string }) => p.dow));
+      setFetchedDays(dows.size);
+    })();
+    return () => { cancelled = true; };
+  }, [supabase, myClubId, currentUserId, nextWeekISO]);
+
+  // 우선순위: 부모가 준 일수(서버 최신) → 자체 조회값
+  const daysSet = (myClubId ? daysSetByClub?.[myClubId] : undefined) ?? fetchedDays ?? 0;
+
+  // "다음 주 설정" 토글 상태 — 요일표 보드(ShareWeekdayPlanBoard)와 공유
+  const setNextWeekSlotStore = useShareNextWeekEdit((s) => s.setSlot);
+  const toggleNextWeekEdit = useShareNextWeekEdit((s) => s.toggle);
+  const editingNextWeek = useShareNextWeekEdit((s) => (myClubId ? s.editingByClub[myClubId] : false) ?? false);
+  // 다음 주 슬롯 id를 스토어에 반영 (선점/해제 시)
+  useEffect(() => {
+    if (myClubId) setNextWeekSlotStore(myClubId, nextWeekSlot?.id ?? null);
+  }, [myClubId, nextWeekSlot, setNextWeekSlotStore]);
 
   // 안내 가이드 접기/펼치기 (게스트 간판과 동일 패턴)
   const GUIDE_DISMISSED_KEY = "nightflow_share_slot_guide_dismissed";
@@ -165,6 +227,70 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
         onRelease?.(released.club_id);
       }
       toast.success("조각 자리 해제됨");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("요청 실패");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  // 다음 주 미리 선점 — 같은 클럽, 이번 주 요일표 세팅이 다음 주에도 그대로 적용됨
+  const handleClaimNextWeek = async () => {
+    if (!myClubId || busy) return;
+    if (daysSet < MIN_DAYS_FOR_NEXT_WEEK) {
+      toast.error(`이번 주 요일표를 ${MIN_DAYS_FOR_NEXT_WEEK}일 이상 세팅해주세요`);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("claim_share_slot", {
+        p_club_id: myClubId,
+        p_week_start: nextWeekISO,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; slot_id?: string; expires_at?: string };
+      if (!result?.success) {
+        toast.error(result?.error || "선점 실패");
+        return;
+      }
+      if (result.slot_id) {
+        setNextWeekSlot({
+          id: result.slot_id,
+          club_id: myClubId,
+          md_id: currentUserId,
+          week_start: nextWeekISO,
+          expires_at: result.expires_at ?? "",
+        });
+      }
+      toast.success("다음 주 자리도 선점 완료! 이번 주 세팅 그대로 올라가요");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("요청 실패");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleReleaseNextWeek = async () => {
+    if (!nextWeekSlot || busy) return;
+    if (!window.confirm("다음 주 미리 선점을 해제할까요?")) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("release_share_slot", {
+        p_slot_id: nextWeekSlot.id,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result?.success) {
+        toast.error(result?.error || "해제 실패");
+        return;
+      }
+      // 다음 주 카드는 아직 생성 전이라 별도 정리 불필요 (슬롯만 해제)
+      setNextWeekSlot(null);
+      toast.success("다음 주 선점 해제됨");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -307,6 +433,64 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
                       <p className="text-[11px] text-neutral-500 mt-1">
                         최대 6개까지 세팅 가능
                       </p>
+                    </div>
+
+                    {/* 다음 주 미리 선점 */}
+                    <div className="mt-3 pt-3 border-t border-neutral-700">
+                      {nextWeekSlot ? (
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-[12px] font-black text-green-400">✓ 다음 주도 선점됨</p>
+                            <p className="text-[10.5px] text-neutral-500 mt-0.5">
+                              {formatWeekRange(nextWeekISO)}
+                            </p>
+                          </div>
+                          <div className="shrink-0 flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => myClubId && toggleNextWeekEdit(myClubId)}
+                              className={`px-3 py-2 rounded-full text-[11px] font-black transition-colors ${
+                                editingNextWeek
+                                  ? "bg-amber-500 text-black hover:bg-amber-400"
+                                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                              }`}
+                            >
+                              다음주 설정
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={handleReleaseNextWeek}
+                              className="px-3 py-2 rounded-full text-[11px] font-bold bg-neutral-800 text-neutral-400 hover:text-red-400 disabled:opacity-40"
+                            >
+                              해제
+                            </button>
+                          </div>
+                        </div>
+                      ) : daysSet >= MIN_DAYS_FOR_NEXT_WEEK ? (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={handleClaimNextWeek}
+                          className="w-full h-10 rounded-xl bg-amber-500 text-black text-[12.5px] font-black hover:bg-amber-400 disabled:opacity-40 inline-flex items-center justify-center gap-1.5"
+                        >
+                          {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "📌"}
+                          다음 주도 미리 선점 (지금 세팅 그대로)
+                        </button>
+                      ) : (
+                        <div>
+                          <button
+                            type="button"
+                            disabled
+                            className="w-full h-10 rounded-xl bg-neutral-800 text-neutral-600 text-[12.5px] font-black cursor-not-allowed"
+                          >
+                            다음 주 미리 선점 (현재 {daysSet}/{MIN_DAYS_FOR_NEXT_WEEK}일)
+                          </button>
+                          <p className="text-[10.5px] text-neutral-500 mt-1.5 leading-snug">
+                            이번 주 요일표를 {MIN_DAYS_FOR_NEXT_WEEK}일 이상 세팅하면 다음 주 자리도 미리 잡을 수 있어요
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

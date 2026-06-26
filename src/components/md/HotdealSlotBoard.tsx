@@ -190,6 +190,8 @@ export function HotdealSlotBoard({
   const selectedWeek = thisWeekISO;
   const [busy, setBusy] = useState(false);
   const [clientMySlots, setClientMySlots] = useState<MySlot[] | null>(null);
+  // 혜택 저장/선점 후 본인 슬롯 재조회 트리거 (다음 주 게이트 일수 최신화)
+  const [reloadKey, setReloadKey] = useState(0);
   // 소속 클럽 id 집합 (재조회 필터 + 의존성 안정화용)
   const clubIdsKey = useMemo(() => clubs.map((c) => c.id).sort().join(","), [clubs]);
   const GUIDE_DISMISSED_KEY = "nightflow_guest_sign_guide_dismissed";
@@ -203,6 +205,56 @@ export function HotdealSlotBoard({
     setShowGuide(false);
     if (typeof window !== "undefined") {
       localStorage.setItem(GUIDE_DISMISSED_KEY, "1");
+    }
+  };
+
+  // 내 고정 혜택 프리셋 (직접입력 → 고정한 칩, MD 단위)
+  const MAX_BENEFIT_PRESETS = 12;
+  const [benefitPresets, setBenefitPresets] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("md_benefit_presets")
+        .select("label")
+        .eq("md_id", currentUserId)
+        .order("created_at", { ascending: true });
+      if (!cancelled && data) {
+        setBenefitPresets((data as { label: string }[]).map((r) => r.label));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [supabase, currentUserId]);
+
+  const savePreset = async (label: string) => {
+    const t = label.trim();
+    if (!t || benefitPresets.includes(t)) return;
+    if (benefitPresets.length >= MAX_BENEFIT_PRESETS) {
+      toast.error(`고정 혜택은 최대 ${MAX_BENEFIT_PRESETS}개까지예요`);
+      return;
+    }
+    setBenefitPresets((prev) => [...prev, t]); // 낙관적
+    const { error } = await supabase
+      .from("md_benefit_presets")
+      .insert({ md_id: currentUserId, label: t });
+    if (error && !String(error.message).includes("duplicate")) {
+      setBenefitPresets((prev) => prev.filter((x) => x !== t)); // 롤백
+      toast.error("고정에 실패했어요");
+      return;
+    }
+    toast.success(`'${t}' 고정됨`);
+  };
+
+  const removePreset = async (label: string) => {
+    setBenefitPresets((prev) => prev.filter((x) => x !== label)); // 낙관적
+    const { error } = await supabase
+      .from("md_benefit_presets")
+      .delete()
+      .eq("md_id", currentUserId)
+      .eq("label", label);
+    if (error) {
+      setBenefitPresets((prev) => [...prev, label]); // 롤백
+      toast.error("고정 해제에 실패했어요");
     }
   };
 
@@ -243,7 +295,7 @@ export function HotdealSlotBoard({
     return () => {
       cancelled = true;
     };
-  }, [supabase, currentUserId, thisWeekISO, nextWeekISO, clubIdsKey]);
+  }, [supabase, currentUserId, thisWeekISO, nextWeekISO, clubIdsKey, reloadKey]);
 
   const effectiveMySlots = clientMySlots ?? mySlots;
 
@@ -305,6 +357,25 @@ export function HotdealSlotBoard({
   const preOpen = !isAdmin && isBeforeOpen(selectedWeek);
   const hasMyClaimThisWeek = !!mySlotForWeek;
 
+  // 다음 주 미리 선점 — 내 다음 주 슬롯 + 이번 주 혜택 입력 일수
+  const myNextWeekSlot = useMemo(
+    () => effectiveMySlots.find((s) => s.week_start === nextWeekISO) ?? null,
+    [effectiveMySlots, nextWeekISO]
+  );
+  const thisWeekDaysSet = useMemo(() => {
+    if (!mySlotForWeek) return 0;
+    let n = 0;
+    for (const k of DOW_KEYS) {
+      if (normalizeDowSlots(mySlotForWeek.benefits_by_dow[k]).some((s) => s.text.trim().length > 0)) n++;
+    }
+    return n;
+  }, [mySlotForWeek]);
+
+  // 다음 주 설정 모드 — 켜면 아래 혜택 편집이 다음 주 슬롯을 대상으로
+  const [editingNextWeek, setEditingNextWeek] = useState(false);
+  useEffect(() => { if (!myNextWeekSlot) setEditingNextWeek(false); }, [myNextWeekSlot]);
+  const editSlot = editingNextWeek && myNextWeekSlot ? myNextWeekSlot : mySlotForWeek;
+
   const handleClaim = async (clubId: string) => {
     if (busy) return;
     const club = clubs.find((c) => c.id === clubId);
@@ -365,6 +436,71 @@ export function HotdealSlotBoard({
         return;
       }
       toast.success("간판 해제됨");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("요청 실패");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const MIN_DAYS_FOR_NEXT_WEEK = 2;
+  const handleClaimNextWeek = async () => {
+    if (!mySlotForWeek || busy) return;
+    if (thisWeekDaysSet < MIN_DAYS_FOR_NEXT_WEEK) {
+      toast.error(`이번 주 혜택을 ${MIN_DAYS_FOR_NEXT_WEEK}일 이상 입력해주세요`);
+      return;
+    }
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("claim_hotdeal_slot", {
+        p_club_id: mySlotForWeek.club_id,
+        p_week_start: nextWeekISO,
+        p_benefits_by_dow: mySlotForWeek.benefits_by_dow, // 이번 주 혜택 그대로 복사
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string; slot_id?: string; expires_at?: string };
+      if (!result?.success) {
+        toast.error(result?.error || "선점 실패");
+        return;
+      }
+      if (result.slot_id && result.expires_at) {
+        const newSlot: MySlot = {
+          id: result.slot_id,
+          club_id: mySlotForWeek.club_id,
+          week_start: nextWeekISO,
+          benefits_by_dow: mySlotForWeek.benefits_by_dow,
+          expires_at: result.expires_at,
+        };
+        setClientMySlots((prev) => [...(prev ?? []), newSlot]);
+      }
+      toast.success("다음 주도 선점 완료! 이번 주 혜택 그대로 복사됐어요");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("요청 실패");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleReleaseNextWeek = async () => {
+    if (!myNextWeekSlot || busy) return;
+    if (!window.confirm("다음 주 미리 선점을 해제할까요?")) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("release_hotdeal_slot", {
+        p_slot_id: myNextWeekSlot.id,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result?.success) {
+        toast.error(result?.error || "해제 실패");
+        return;
+      }
+      setClientMySlots((prev) => (prev ?? []).filter((s) => s.id !== myNextWeekSlot.id));
+      toast.success("다음 주 선점 해제됨");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -475,14 +611,78 @@ export function HotdealSlotBoard({
 
 
 
-        {/* 내가 차지한 슬롯 (이번 주 기준) */}
+        {/* 다음 주 미리 선점 — 혜택 편집보다 위에 노출 */}
         {mySlotForWeek && (
+          <div className="bg-neutral-800/60 rounded-2xl p-4 mb-4">
+            {myNextWeekSlot ? (
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="text-[12.5px] font-black text-green-400">✓ 다음 주도 선점됨</p>
+                  <p className="text-[10.5px] text-neutral-500 mt-0.5">
+                    {formatWeekRange(nextWeekISO)}
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setEditingNextWeek((v) => !v)}
+                    className={`px-3 py-2 rounded-full text-[11px] font-black transition-colors ${
+                      editingNextWeek
+                        ? "bg-amber-500 text-black hover:bg-amber-400"
+                        : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                    }`}
+                  >
+                    다음주 설정
+                  </button>
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={handleReleaseNextWeek}
+                    className="px-3 py-2 rounded-full text-[11px] font-bold bg-neutral-800 text-neutral-400 hover:text-red-400 disabled:opacity-40"
+                  >
+                    해제
+                  </button>
+                </div>
+              </div>
+            ) : thisWeekDaysSet >= MIN_DAYS_FOR_NEXT_WEEK ? (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={handleClaimNextWeek}
+                className="w-full h-11 rounded-xl bg-amber-500 text-black text-[12.5px] font-black hover:bg-amber-400 disabled:opacity-40 inline-flex items-center justify-center gap-1.5"
+              >
+                {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "📌"}
+                다음 주도 미리 선점 (지금 혜택 그대로)
+              </button>
+            ) : (
+              <div>
+                <button
+                  type="button"
+                  disabled
+                  className="w-full h-11 rounded-xl bg-neutral-800 text-neutral-600 text-[12.5px] font-black cursor-not-allowed"
+                >
+                  다음 주 미리 선점 (현재 {thisWeekDaysSet}/{MIN_DAYS_FOR_NEXT_WEEK}일)
+                </button>
+                <p className="text-[10.5px] text-neutral-500 mt-1.5 leading-snug">
+                  이번 주 혜택을 {MIN_DAYS_FOR_NEXT_WEEK}일 이상 입력하면 다음 주 자리도 미리 잡을 수 있어요
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* 혜택 편집 — 다음 주 설정 모드면 다음 주 슬롯 대상 */}
+        {editSlot && (
           <MyClaimedSection
-            slot={mySlotForWeek}
-            club={clubs.find((c) => c.id === mySlotForWeek.club_id)}
+            key={editSlot.id}
+            slot={editSlot}
+            club={clubs.find((c) => c.id === editSlot.club_id)}
             busy={busy}
-            onRelease={() => handleRelease(mySlotForWeek.id)}
-            onChanged={() => router.refresh()}
+            onRelease={() => handleRelease(editSlot.id)}
+            onChanged={() => { router.refresh(); setReloadKey((k) => k + 1); }}
+            benefitPresets={benefitPresets}
+            onSavePreset={savePreset}
+            onRemovePreset={removePreset}
           />
         )}
 
@@ -567,12 +767,18 @@ function MyClaimedSection({
   busy,
   onRelease,
   onChanged,
+  benefitPresets,
+  onSavePreset,
+  onRemovePreset,
 }: {
   slot: MySlot;
   club?: ClubLite;
   busy: boolean;
   onRelease: () => void;
   onChanged: () => void;
+  benefitPresets: string[];
+  onSavePreset: (label: string) => void;
+  onRemovePreset: (label: string) => void;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const buildFromSlot = (): Record<HotdealDow, HotdealTimeSlot[]> => {
@@ -591,6 +797,12 @@ function MyClaimedSection({
   // 마지막으로 편집한 슬롯("dow:idx") — 저장 버튼을 수정 중인 슬롯 옆에 띄우기 위함
   const [editingSlot, setEditingSlot] = useState<string | null>(null);
   const todayISO = currentBusinessDayKstISO();
+
+  // 지난 요일은 숨김 — 오늘(영업일 기준) 이후 요일만 노출
+  const visibleDows = DOW_KEYS.filter((dow) => {
+    const dowISO = dowDateKst(slot.week_start, dow).toISOString().slice(0, 10);
+    return dowISO >= todayISO;
+  });
 
   // slot이 바뀌면(다른 슬롯 차지 등) draft/saved 모두 재동기화
   const slotKey = slot.id + "|" + JSON.stringify(slot.benefits_by_dow);
@@ -736,7 +948,7 @@ function MyClaimedSection({
       </div>
 
       <div className="space-y-3 pt-2 border-t border-neutral-700">
-        {DOW_KEYS.map((dow, dowIndex) => {
+        {visibleDows.map((dow, dowIndex) => {
           const saving = savingDow === dow;
           const dirty = isDirty(dow);
           const d = dowDateKst(slot.week_start, dow);
@@ -929,6 +1141,9 @@ function MyClaimedSection({
                           disabled={saving}
                           onChange={(next) => { setEditingSlot(`${dow}:${idx}`); updateSlot(dow, idx, { benefits: next }); }}
                           onAddTimeSlot={isLast && slots.length < MAX_SLOTS_PER_DOW ? () => addSlot(dow) : undefined}
+                          mdPresets={benefitPresets}
+                          onSavePreset={onSavePreset}
+                          onRemovePreset={onRemovePreset}
                         />
                       )}
                       </div>
@@ -949,16 +1164,25 @@ function BenefitChips({
   disabled,
   onChange,
   onAddTimeSlot,
+  mdPresets,
+  onSavePreset,
+  onRemovePreset,
 }: {
   benefits: string[];
   disabled: boolean;
   onChange: (next: string[]) => void;
   onAddTimeSlot?: () => void;
+  mdPresets: string[];
+  onSavePreset: (label: string) => void;
+  onRemovePreset: (label: string) => void;
 }) {
   const [customOpen, setCustomOpen] = useState(false);
   const [customText, setCustomText] = useState("");
   const presets = GUEST_SIGN_BENEFIT_PRESETS;
-  const customs = benefits.filter((b) => !presets.some((p) => p.value === b));
+  // 시스템 프리셋 + 내 고정 프리셋에 없는 것만 일회성 커스텀 칩으로
+  const customs = benefits.filter(
+    (b) => !presets.some((p) => p.value === b) && !mdPresets.includes(b)
+  );
 
   const toggle = (val: string) => {
     if (benefits.includes(val)) onChange(benefits.filter((b) => b !== val));
@@ -970,6 +1194,16 @@ function BenefitChips({
     if (!t) return;
     if (benefits.includes(t)) return;
     onChange([...benefits, t]);
+    setCustomText("");
+    setCustomOpen(false);
+  };
+
+  // 직접입력을 '고정': 내 프리셋으로 저장 + 이 시간대에도 바로 적용
+  const pinCustom = () => {
+    const t = customText.trim();
+    if (!t) return;
+    if (!benefits.includes(t)) onChange([...benefits, t]);
+    onSavePreset(t);
     setCustomText("");
     setCustomOpen(false);
   };
@@ -993,6 +1227,37 @@ function BenefitChips({
           >
             {p.emoji} {p.label}
           </button>
+        );
+      })}
+      {/* 내 고정 혜택 (직접입력에서 '고정'한 칩) */}
+      {mdPresets.map((label) => {
+        const active = benefits.includes(label);
+        return (
+          <div
+            key={`preset:${label}`}
+            className={`shrink-0 h-7 rounded-full text-[11px] font-bold inline-flex items-center transition-colors ${
+              active ? "bg-green-500 text-black" : "bg-neutral-900 text-neutral-400 border border-neutral-800"
+            }`}
+          >
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => toggle(label)}
+              className="h-full pl-2.5 pr-1 disabled:opacity-50"
+            >
+              {label}
+            </button>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onRemovePreset(label)}
+              aria-label="고정 해제"
+              title="고정 해제"
+              className={`h-full pr-2 pl-0.5 disabled:opacity-50 ${active ? "text-black/50 hover:text-black" : "text-neutral-600 hover:text-red-400"}`}
+            >
+              ×
+            </button>
+          </div>
         );
       })}
       {/* 커스텀 태그 */}
@@ -1031,6 +1296,10 @@ function BenefitChips({
             <button type="button" onClick={addCustom} disabled={disabled || !customText.trim()}
               className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-white text-black disabled:opacity-50">
               추가
+            </button>
+            <button type="button" onClick={pinCustom} disabled={disabled || !customText.trim()}
+              className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-amber-500 text-black disabled:opacity-50 inline-flex items-center gap-0.5 whitespace-nowrap">
+              📌 고정
             </button>
           </div>
         ) : (
