@@ -14,7 +14,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await searchParams;
   if (lang === "en") {
-    return { title: { absolute: "Plant your flag | NightFlow" } };
+    return { title: { absolute: "Get VIP offers | NightFlow" } };
   }
   return { title: "깃발 꽂기" };
 }
@@ -65,11 +65,11 @@ export default async function PuzzleNewPage({
         {/* 헤더 */}
         <div className="mb-8">
           <h1 className="text-2xl font-black text-white tracking-tight">
-            {isForeigner ? "🚩 Plant your flag" : "🚩 깃발 꽂기"}
+            {isForeigner ? "Tell us your night" : "🚩 깃발 꽂기"}
           </h1>
           <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">
             {isForeigner
-              ? "Set your budget — Seoul's clubs send you private offers"
+              ? "Set your budget — Seoul's clubs send you private VIP offers"
               : "예산만 정하면 클럽에서 시크릿오퍼를 제안해요"}
           </p>
         </div>

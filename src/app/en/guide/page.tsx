@@ -321,14 +321,14 @@ export default function EnglishLanding() {
             ))}
           </div>
           <p className="text-center text-[13px] text-neutral-500 leading-relaxed">
-            Set your budget when you plant a flag — clubs send offers that match.
+            Set your budget — clubs send offers that match.
             The more you bring, the more VIP the night.
           </p>
           <Link
             href="/login?lang=en"
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
           >
-            🚩 Plant your flag — get VIP offers
+            Get VIP offers
           </Link>
         </section>
 

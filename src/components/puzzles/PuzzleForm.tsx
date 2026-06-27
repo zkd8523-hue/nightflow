@@ -147,7 +147,9 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const initialEventDate = puzzle?.event_date ?? (draft?.eventDate as string) ?? searchParams.get("date") ?? "";
   // 디폴트 모드 = 인원 확정(깃발). 모집(퍼즐/조각) 모드는 매 진입 시 OFF로 시작 (draft 미복원).
   // 지역은 draft 복원 제외 — 매 진입 시 미선택으로 리셋해 사용자가 의식적으로 지역을 고르도록 유도.
-  const initialArea = puzzle?.area ?? "";
+  // 단, ?area= 파라미터(외국인 /en 지역 버튼)로 들어오면 프리셋.
+  const presetArea = searchParams.get("area");
+  const initialArea = puzzle?.area ?? (presetArea && ([...MAIN_AREAS, "서울 어디든"] as string[]).includes(presetArea) ? presetArea : "");
   // budgetAmount 의미: 퍼즐(모집 ON)=인당가 / 깃발(모집 OFF)=총액
   // edit 모드: puzzle에서 모드에 맞춰 변환 / 신규: draft 또는 0
   const initialBudget = puzzle

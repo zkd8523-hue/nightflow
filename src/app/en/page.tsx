@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
-import { hideTestData } from "@/lib/utils/testData";
 import { EnHomeClient } from "./EnHomeClient";
 
 export const revalidate = 30;
@@ -127,18 +126,64 @@ export default async function EnHomePage() {
   const supabase = createAnonClient();
   const nowIso = new Date().toISOString();
 
-  const { data: puzzlesRaw } = await hideTestData(
-    supabase
-      .from("puzzles")
-      .select(
-        "id, area, event_date, budget_per_person, total_budget, target_count, current_count, target_male, target_female, status, gender_pref, notes, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, country_code, is_test)"
-      )
-      .in("status", ["open", "selecting"])
-      .gt("expires_at", nowIso)
-      .order("created_at", { ascending: false })
-      .limit(30),
-    "users"
-  );
+  // 깃발 캐러셀 = "🇰🇷 한국인이 올린 깃발" 소셜 프루프.
+  // 테스트 유저(is_test) 제외 + 한국인(country_code NULL)만 — 외국인 본인 깃발은 My flags에 별도.
+  const { data: puzzlesRaw } = await supabase
+    .from("puzzles")
+    .select(
+      "id, area, event_date, budget_per_person, total_budget, target_count, current_count, target_male, target_female, status, gender_pref, notes, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, country_code, is_test)"
+    )
+    .in("status", ["open", "selecting"])
+    .gt("expires_at", nowIso)
+    .eq("users.is_test", false)
+    .is("users.country_code", null)
+    .order("created_at", { ascending: false })
+    .limit(30);
+
+  // 강남·홍대 클럽 (지역 섹션용 — 이태원 제외: MD 없음)
+  // /en/clubs 와 동일한 필터: 삭제·운영자·테스트 클럽 제외 + 썸네일 있는 것만 + 이름 중복 제거
+  const { data: clubsRaw } = await supabase
+    .from("clubs")
+    .select("id, name, area, thumbnail_url, address")
+    .in("area", ["강남", "홍대"])
+    .is("deleted_at", null)
+    .not("name", "ilike", "%운영자%")
+    .eq("is_test", false)
+    .not("thumbnail_url", "is", null)
+    .neq("thumbnail_url", "")
+    .order("google_review_count", { ascending: false, nullsFirst: false })
+    .limit(60);
+  const seenClubNames = new Set<string>();
+  const clubs = (clubsRaw ?? [])
+    .filter((c) => {
+      const key = c.name.trim().toLowerCase();
+      if (seenClubNames.has(key)) return false;
+      seenClubNames.add(key);
+      return true;
+    })
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      area: c.area,
+      thumbnail_url: c.thumbnail_url,
+      address: c.address,
+    }));
+
+  // 클럽 정렬: 누적 오퍼 많은 순 (실시간 불필요 — revalidate 30s 캐시로 충분)
+  const clubIds = clubs.map((c) => c.id);
+  if (clubIds.length > 0) {
+    const { data: clubOfferRows } = await supabase
+      .from("puzzle_offers")
+      .select("club_id")
+      .in("club_id", clubIds)
+      .limit(5000);
+    const clubOfferCount: Record<string, number> = {};
+    clubOfferRows?.forEach((r: { club_id: string | null }) => {
+      if (r.club_id) clubOfferCount[r.club_id] = (clubOfferCount[r.club_id] || 0) + 1;
+    });
+    // 동점은 기존 google_review_count 순 유지 (stable sort)
+    clubs.sort((a, b) => (clubOfferCount[b.id] ?? 0) - (clubOfferCount[a.id] ?? 0));
+  }
 
   const puzzles = puzzlesRaw ?? [];
   let offerCountMap: Record<string, number> = {};
@@ -323,7 +368,7 @@ export default async function EnHomePage() {
           </li>
         </ul>
       </div>
-      <EnHomeClient flags={flags} />
+      <EnHomeClient flags={flags} clubs={clubs} />
     </>
   );
 }

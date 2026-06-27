@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FaqTab } from "./FaqTab";
-import { ChevronLeft, ChevronRight, Flag, HelpCircle, Map } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, HelpCircle, Map } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
+import { BusinessInfo } from "@/components/layout/BusinessInfo";
 
 type Tab = "flags" | "qa" | "map";
 
@@ -18,6 +19,14 @@ type MyFlag = {
   budget_per_person: number;
   target_count: number;
   offerCount: number;
+};
+
+type ClubItem = {
+  id: string;
+  name: string;
+  area: string;
+  thumbnail_url: string | null;
+  address?: string | null;
 };
 
 type FlagItem = {
@@ -66,53 +75,6 @@ function formatBudget(total: number | null, perPerson: number, count: number): s
   return `₩${amt.toLocaleString()}`;
 }
 
-// ── 피드 행 ──────────────────────────────────────────────────────
-function FlagRow({ flag }: { flag: FlagItem }) {
-  const area = AREA_EN[flag.area] ?? flag.area;
-  const date = formatEventDate(flag.event_date);
-  const budget = formatBudget(flag.total_budget, flag.budget_per_person, flag.target_count);
-  const isSelecting = flag.status === "selecting";
-  return (
-    <div className="rounded-2xl bg-[#1C1C1E] border border-neutral-800 p-4">
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div>
-          <span className="font-black text-[15px]">{area}</span>
-          <span className="text-neutral-500 text-[13px] ml-2">· {date}</span>
-        </div>
-        <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-          isSelecting
-            ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-            : "bg-green-500/20 text-green-400 border border-green-500/30"
-        }`}>
-          {isSelecting ? "Reviewing" : "Open"}
-        </span>
-      </div>
-      {/* notes는 한글일 수 있어 /en에서 노출 안 함 */}
-      <div className="flex items-center gap-3 text-[13px]">
-        <span className="font-black text-amber-400">{budget}</span>
-        <span className="text-neutral-700">·</span>
-        <span className="text-neutral-300">
-          {flag.target_male > 0 || flag.target_female > 0 ? (
-            <>
-              {flag.target_male > 0 && <span className="text-blue-400 font-bold">{flag.target_male}M</span>}
-              {flag.target_male > 0 && flag.target_female > 0 && <span className="text-neutral-600"> + </span>}
-              {flag.target_female > 0 && <span className="text-pink-400 font-bold">{flag.target_female}F</span>}
-            </>
-          ) : (
-            <span className="font-bold">{flag.target_count} ppl</span>
-          )}
-        </span>
-        {flag.offerCount > 0 && (
-          <>
-            <span className="text-neutral-700">·</span>
-            <span className="text-neutral-500">{flag.offerCount} offer{flag.offerCount !== 1 ? "s" : ""}</span>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── My flags (로그인 유저의 내 깃발) ──────────────────────────────
 const MY_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   open: { label: "Open", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
@@ -157,7 +119,7 @@ function MyFlags() {
 
   return (
     <div className="px-4 pt-4 pb-2 space-y-2.5">
-      <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">My flags</p>
+      <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">My requests</p>
       {flags.map((f) => {
         const area = AREA_EN[f.area] ?? f.area;
         const date = formatEventDate(f.event_date);
@@ -196,116 +158,219 @@ function MyFlags() {
   );
 }
 
-// ── Flags 탭 ─────────────────────────────────────────────────────
-const PREVIEW_COUNT = 3;
-
-function FlagsTab({ flags }: { flags: FlagItem[] }) {
-  const [showAll, setShowAll] = useState(false);
-  const visibleFlags = showAll ? flags : flags.slice(0, PREVIEW_COUNT);
-
+// ── 한국 깃발 캐러셀 카드 (우상단 🇰🇷 = 소셜 프루프) ───────────────
+function FlagCarouselCard({ flag }: { flag: FlagItem }) {
+  const area = AREA_EN[flag.area] ?? flag.area;
+  const date = formatEventDate(flag.event_date);
+  const budget = formatBudget(flag.total_budget, flag.budget_per_person, flag.target_count);
+  const isSelecting = flag.status === "selecting";
   return (
-    <div className="flex-1 overflow-y-auto">
-      {/* Hero — 타겟 후킹(pain→solution) + 무료 + 소셜프루프 */}
-      <div className="px-5 pt-6 pb-5 text-center space-y-3.5 border-b border-neutral-900">
-        <h1 className="text-[25px] font-black leading-[1.15] tracking-tight">
-          Your best night in Seoul<br />starts here.
-        </h1>
-        <p className="text-[13.5px] text-neutral-400 leading-relaxed">
-          No broker. No scams. No hidden prices.<br />
-          Seoul&apos;s top clubs send you private VIP offers
-          {" "}<span className="text-green-400 font-black">— free.</span>
-        </p>
+    <div className="shrink-0 w-[180px] rounded-2xl bg-[#1C1C1E] border border-neutral-800 p-4 snap-start">
+      <div className="flex items-start justify-between gap-1">
+        <div className="min-w-0">
+          <p className="font-black text-[15px] leading-tight truncate">{area}</p>
+          <p className="text-[12px] text-neutral-400 mt-0.5">{date}</p>
+        </div>
+        {/* 우상단: 한국 국기 (한국인이 올린 깃발 표시) */}
+        <span className="text-[18px] leading-none shrink-0">🇰🇷</span>
+      </div>
+      <p className="text-[18px] font-black text-amber-400 mt-3">{budget}</p>
+      <div className="flex items-center gap-1.5 mt-1 text-[12px] text-neutral-400">
+        <span className="font-bold text-white">{flag.target_count} ppl</span>
+        {flag.offerCount > 0 && (
+          <>
+            <span className="text-neutral-700">·</span>
+            <span className="text-green-400 font-bold">{flag.offerCount} offer{flag.offerCount !== 1 ? "s" : ""}</span>
+          </>
+        )}
+      </div>
+      <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+        isSelecting
+          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+          : "bg-green-500/20 text-green-400 border border-green-500/30"
+      }`}>
+        {isSelecting ? "Reviewing" : "Open"}
+      </span>
+    </div>
+  );
+}
+
+// ── 지역 섹션 (강남=프리미엄 / 홍대=자유) + 클럽 리스트 + 지역 버튼 ──
+const REGIONS = [
+  {
+    ko: "강남",
+    en: "Gangnam",
+    emoji: "🍾",
+    tagline: "Premium, luxury night",
+  },
+  {
+    ko: "홍대",
+    en: "Hongdae",
+    emoji: "🎧",
+    tagline: "Young, wild night",
+  },
+] as const;
+
+// 영어 사이트 전용 클럽명 표기 (한글 클럽명 → 영문)
+const CLUB_NAME_EN: Record<string, string> = {
+  "컬러 압구": "Color Apgu",
+  "컬러압구": "Color Apgu",
+  "도깨비": "Dokkebi",
+  "K-bat 빠따": "K-Bat",
+  "K-bat빠따": "K-Bat",
+};
+const clubNameEn = (name: string) => CLUB_NAME_EN[name.trim()] ?? name;
+
+function ClubThumb({ club }: { club: ClubItem }) {
+  const name = clubNameEn(club.name);
+  // 클릭 시 구글 검색(클럽 정보 패널: 사진·리뷰·지도·영업시간). 외국인용 영어 UI(hl=en).
+  // 검색어는 한글 원본명 + 위치 힌트 — 구글이 정확히 그 클럽을 찾도록.
+  const googleQuery = [club.name.trim(), club.address?.trim() || club.area]
+    .filter(Boolean)
+    .join(" ");
+  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}&hl=en`;
+  return (
+    <a
+      href={googleUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity"
+    >
+      <div className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-neutral-800 border border-neutral-800">
+        {club.thumbnail_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={club.thumbnail_url} alt={name} loading="lazy" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[11px] font-bold">No image</div>
+        )}
+      </div>
+      <p className="text-[12px] font-bold text-neutral-200 mt-1.5 truncate">{name}</p>
+    </a>
+  );
+}
+
+function RegionSection({ clubs }: { clubs: ClubItem[] }) {
+  return (
+    <div className="pt-5 pb-6 border-b border-neutral-900 space-y-5">
+      <div className="px-4 text-center">
+        <p className="text-[22px] font-black text-neutral-100 tracking-tight">Spots competing for you</p>
+      </div>
+
+      {REGIONS.map((r) => {
+        const regionClubs = clubs.filter((c) => c.area === r.ko);
+        return (
+          <div key={r.ko} className="space-y-2.5">
+            <div className="px-4">
+              <p className="text-[15px] leading-snug">
+                <span className="font-black">{r.emoji} {r.en}</span>
+                <span className="text-neutral-400 font-medium text-[13px]"> — {r.tagline}</span>
+              </p>
+            </div>
+            {regionClubs.length > 0 && (
+              <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x">
+                {regionClubs.map((c) => <ClubThumb key={c.id} club={c} />)}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {/* 지역 버튼 → 해당 지역 깃발 등록 바로 */}
+      <div className="px-4 space-y-2.5">
+        <p className="text-center text-[13px] font-bold text-neutral-300">Which area do you want?</p>
+        <div className="grid grid-cols-2 gap-3">
+          {REGIONS.map((r) => (
+            <Link
+              key={r.ko}
+              href={`/flags/new?lang=en&area=${encodeURIComponent(r.ko)}`}
+              className="flex items-center justify-center py-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-amber-500/50 active:scale-[0.98] transition-all"
+            >
+              <span className="text-[16px] font-black">{r.en}</span>
+            </Link>
+          ))}
+        </div>
         <Link
           href="/flags/new?lang=en"
-          className="inline-flex items-center gap-1.5 px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 active:scale-[0.98] transition-all"
+          className="block w-full mt-1 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
         >
-          🚩 Plant your flag
+          Get VIP offers
         </Link>
-        <p className="flex items-center justify-center gap-1.5 text-[12px] text-neutral-500 pt-0.5">
-          <span>🇰🇷</span> The booking platform Koreans already use
+      </div>
+    </div>
+  );
+}
+
+// ── Flags 탭 ─────────────────────────────────────────────────────
+function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
+  return (
+    <div className="flex-1 overflow-y-auto">
+      {/* ① 타겟 후킹 + 설명 (헤더 아래) */}
+      <div className="px-5 pt-6 pb-5 text-center space-y-3 border-b border-neutral-900">
+        <h1 className="text-[24px] font-black leading-[1.18] tracking-tight">
+          Want an unforgettable<br />night in Seoul Club?
+        </h1>
+        <p className="text-[18px] font-black text-amber-400 pt-1">You&apos;re in the right place.</p>
+        <p className="text-[14px] text-neutral-200 leading-relaxed font-medium">
+          Just enter your date &amp; budget<br />
+          Korea&apos;s best clubs send you their offers.<br />
+          Just pick one!
         </p>
       </div>
 
       {/* My flags (로그인 유저 본인 깃발 — 오퍼 확인 진입점) */}
       <MyFlags />
 
-      {/* All flags */}
-      <div className="px-4 pt-4 pb-6 space-y-3">
-        {flags.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-            <p className="text-neutral-500 text-[14px]">No active flags right now.</p>
-            <Link
-              href="/flags/new?lang=en"
-              className="px-6 py-3 rounded-full bg-white text-black font-black text-[14px] hover:bg-neutral-200 transition-colors"
-            >
-              🚩 Be the first — plant your flag
-            </Link>
+      {/* ③ 한국인이 지금 올린 깃발 = 소셜 프루프 (캐러셀) */}
+      {flags.length > 0 && (
+        <div className="pt-5 pb-5 border-b border-neutral-900">
+          <div className="px-4 mb-3">
+            <p className="text-[14px] font-black text-neutral-200">🇰🇷 Koreans are doing it right now</p>
+            <p className="text-[12px] text-neutral-500 mt-0.5">Live requests from people in Seoul</p>
           </div>
-        ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">All flags</p>
-              {flags.length > PREVIEW_COUNT && (
-                <button
-                  onClick={() => setShowAll((v) => !v)}
-                  className="flex items-center gap-0.5 -mr-2 px-2 py-1.5 text-[12px] text-neutral-400 hover:text-white font-bold rounded-lg hover:bg-white/5 transition-colors"
-                >
-                  {showAll ? "Collapse" : "See all"}
-                  <ChevronLeft className={`w-3.5 h-3.5 transition-transform ${showAll ? "rotate-90" : "-rotate-90"}`} />
-                </button>
-              )}
-            </div>
-            {visibleFlags.map((f) => <FlagRow key={f.id} flag={f} />)}
-          </>
-        )}
-      </div>
-
-      {/* How it works */}
-      <div className="px-4 pb-6 space-y-3">
-        <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">How it works</p>
-        {[
-          { n: "1", title: "Tell us your night", body: "Date, budget, how many of you. No need to know a single club name." },
-          { n: "2", title: "Top clubs compete for you", body: "Seoul's best clubs send you private VIP offers — real tables, real prices. They compete; you pick." },
-          { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line, no broker. Show your passport at the door (19+)." },
-        ].map((s) => (
-          <div key={s.n} className="flex gap-3 p-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800">
-            <div className="shrink-0 w-7 h-7 rounded-full bg-white text-black font-black text-[12px] flex items-center justify-center">{s.n}</div>
-            <div className="space-y-0.5">
-              <p className="font-bold text-[14px]">{s.title}</p>
-              <p className="text-[12px] text-neutral-500 leading-relaxed">{s.body}</p>
-            </div>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x snap-mandatory">
+            {flags.map((f) => <FlagCarouselCard key={f.id} flag={f} />)}
           </div>
-        ))}
-      </div>
-
-      {/* Price guide */}
-      <div className="px-4 pb-6 space-y-3">
-        <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">What a night costs</p>
-        {[
-          { icon: "🎟️", label: "Just get in", price: "₩20,000–30,000 pp", desc: "Entry + first drink. Quick night on the dance floor." },
-          { icon: "👑", label: "The full VIP", price: "₩500,000+", desc: "Prime table, bottle service, staff looking after you all night." },
-        ].map((t) => (
-          <div key={t.label} className="flex gap-3 p-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800">
-            <span className="shrink-0 text-2xl leading-none pt-0.5">{t.icon}</span>
-            <div className="flex-1 space-y-0.5">
-              <div className="flex items-baseline justify-between gap-2">
-                <p className="font-bold text-[14px]">{t.label}</p>
-                <p className="font-black text-[13px] text-amber-400 whitespace-nowrap">{t.price}</p>
-              </div>
-              <p className="text-[12px] text-neutral-500 leading-relaxed">{t.desc}</p>
-            </div>
-          </div>
-        ))}
-        <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl bg-green-500/10 border border-green-500/20">
-          <span className="text-green-400 text-[15px]">✓</span>
-          <p className="text-[12px] font-bold text-green-400">
-            Zero platform fee — you pay the club directly, nothing to us.
-          </p>
         </div>
-        <p className="text-[12px] text-neutral-500 text-center leading-relaxed">
-          Set your budget when you plant a flag — clubs send offers that match.
-        </p>
+      )}
+
+      {/* How it works (드롭다운) */}
+      <div className="px-4 pb-6">
+        <details className="group rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden">
+          <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer list-none select-none">
+            <span className="flex items-center gap-2 font-bold text-[14px]">
+              <Info className="w-4 h-4 text-neutral-400" />
+              How it works?
+            </span>
+            <ChevronDown className="w-4 h-4 text-neutral-500 group-open:rotate-180 transition-transform" />
+          </summary>
+          <div className="px-4 pb-4 space-y-3">
+            {[
+              { n: "1", title: "Tell us your night", body: "Date, budget (₩500,000 minimum), how many of you. No need to know a single club name." },
+              { n: "2", title: "Top clubs compete for you", body: "Seoul's best clubs send you private VIP offers — real tables, real prices. They compete; you pick." },
+              { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line, no broker. Show your passport at the door (19+)." },
+            ].map((s) => (
+              <div key={s.n} className="flex gap-3">
+                <div className="shrink-0 w-7 h-7 rounded-full bg-white text-black font-black text-[12px] flex items-center justify-center">{s.n}</div>
+                <div className="space-y-0.5">
+                  <p className="font-bold text-[14px]">{s.title}</p>
+                  <p className="text-[12px] text-neutral-500 leading-relaxed">{s.body}</p>
+                </div>
+              </div>
+            ))}
+            {/* Zero 바가지 보장 — How it works 안에 포함 */}
+            <div className="mt-1 pt-3 border-t border-neutral-800">
+              <p className="flex items-center gap-2 text-[13px] font-black text-green-400">🛡️ Zero rip-off, guaranteed</p>
+              <p className="text-[12px] text-neutral-400 leading-relaxed mt-1">
+                Pay more than the standard price?{" "}
+                <span className="font-bold text-white">We refund you 200%.</span>
+              </p>
+            </div>
+          </div>
+        </details>
       </div>
+
+      {/* 지역 섹션 (강남/홍대 소개 + 클럽 리스트 + 지역 버튼) */}
+      {clubs.length > 0 && <RegionSection clubs={clubs} />}
 
       {/* Safety tips */}
       <div className="px-4 pb-6 space-y-3">
@@ -343,17 +408,27 @@ function FlagsTab({ flags }: { flags: FlagItem[] }) {
       </div>
 
       {/* Bottom CTA */}
-      <div className="px-4 pb-10 space-y-3">
+      <div className="px-4 pb-6 space-y-3">
         <Link
           href="/flags/new?lang=en"
           className="block w-full py-4 rounded-xl bg-white text-black font-black text-[15px] text-center hover:bg-neutral-200 transition-colors"
         >
-          🚩 Plant your flag — get VIP offers
+          Get VIP offers
         </Link>
         <p className="text-center text-[11px] text-neutral-600 leading-relaxed">
-          19+ only · Bring your passport to the venue.<br />Make the night more beautiful.
+          19+ only · Bring your passport to the venue.
         </p>
       </div>
+
+      {/* 푸터 — 약관 링크 + 사업자 정보 (법적 필수) */}
+      <footer className="px-4 pt-5 pb-10 border-t border-neutral-900 space-y-4">
+        <nav className="flex flex-wrap justify-center items-center gap-x-5 gap-y-2 text-[12px] text-neutral-500">
+          <Link href="/terms?lang=en" className="hover:text-white transition-colors">Terms</Link>
+          <Link href="/privacy?lang=en" className="hover:text-white transition-colors">Privacy</Link>
+          <a href="https://www.instagram.com/nightflow.kr" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Contact</a>
+        </nav>
+        <BusinessInfo />
+      </footer>
     </div>
   );
 }
@@ -368,7 +443,7 @@ function MapTab() {
       <div className="space-y-2">
         <h3 className="text-[18px] font-black">Seoul Club Map</h3>
         <p className="text-[13px] text-neutral-500 leading-relaxed">
-          Browse clubs in Gangnam, Hongdae, and Itaewon.<br />
+          Browse clubs in Gangnam and Hongdae.<br />
           See menus, ratings, and opening hours.
         </p>
       </div>
@@ -379,16 +454,14 @@ function MapTab() {
         >
           🗺️ Open club map
         </Link>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {[
-            { label: "Gangnam", emoji: "🔥", count: "12 clubs" },
-            { label: "Hongdae", emoji: "🎵", count: "8 clubs" },
-            { label: "Itaewon", emoji: "🌍", count: "5 clubs" },
+            { label: "Gangnam", emoji: "🍾" },
+            { label: "Hongdae", emoji: "🎧" },
           ].map((area) => (
             <div key={area.label} className="rounded-xl bg-[#1C1C1E] border border-neutral-800 p-3 text-center">
               <p className="text-xl mb-1">{area.emoji}</p>
               <p className="text-[12px] font-bold text-white">{area.label}</p>
-              <p className="text-[10px] text-neutral-500">{area.count}</p>
             </div>
           ))}
         </div>
@@ -398,11 +471,11 @@ function MapTab() {
 }
 
 // ── Main ─────────────────────────────────────────────────────────
-export function EnHomeClient({ flags }: { flags: FlagItem[] }) {
+export function EnHomeClient({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubItem[] }) {
   const [tab, setTab] = useState<Tab>("flags");
 
   const tabs: { code: Tab; label: string; icon: React.ReactNode }[] = [
-    { code: "flags", label: "Flags", icon: <Flag className="w-4 h-4" /> },
+    { code: "flags", label: "Home", icon: <Home className="w-4 h-4" /> },
     { code: "qa",    label: "Q&A",   icon: <HelpCircle className="w-4 h-4" /> },
     { code: "map",   label: "Map",   icon: <Map className="w-4 h-4" /> },
   ];
@@ -414,7 +487,7 @@ export function EnHomeClient({ flags }: { flags: FlagItem[] }) {
         {tab === "flags" ? (
           <div>
             <span className="text-[17px] font-black tracking-tight">NightFlow</span>
-            <p className="text-[11px] text-neutral-500 leading-none mt-0.5">Make the night more beautiful</p>
+            <p className="text-[11px] text-neutral-500 leading-none mt-0.5">The easiest way to book Seoul clubs.</p>
           </div>
         ) : (
           <button
@@ -426,16 +499,16 @@ export function EnHomeClient({ flags }: { flags: FlagItem[] }) {
           </button>
         )}
         <Link
-          href="/flags/new?lang=en"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-500 text-black font-black text-[13px] hover:bg-amber-400 transition-colors"
+          href="/login?lang=en"
+          className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-white text-black font-black text-[13px] hover:bg-neutral-200 transition-colors"
         >
-          + Flag
+          Log in
         </Link>
       </header>
 
       {/* 콘텐츠 */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        {tab === "flags" && <FlagsTab flags={flags} />}
+        {tab === "flags" && <FlagsTab flags={flags} clubs={clubs} />}
         {tab === "qa" && <FaqTab />}
         {tab === "map" && <MapTab />}
       </div>
