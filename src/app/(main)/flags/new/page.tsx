@@ -30,7 +30,14 @@ export default async function PuzzleNewPage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) redirect(isForeigner ? "/login?lang=en" : "/login");
+  // 비로그인 → 로그인 후 깃발 등록으로 복귀(redirect 보존). 외국인은 lang=en 유지.
+  if (!user) {
+    redirect(
+      isForeigner
+        ? `/login?lang=en&redirect=${encodeURIComponent("/flags/new?lang=en")}`
+        : "/login"
+    );
+  }
 
   const { data: profile } = await supabase
     .from("users")

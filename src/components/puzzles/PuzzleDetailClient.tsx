@@ -27,6 +27,7 @@ import { useCountdown } from "@/hooks/useCountdown";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ko";
+import "dayjs/locale/en";
 
 dayjs.extend(relativeTime);
 dayjs.locale("ko");
@@ -77,8 +78,11 @@ const VIBE_LABEL: Record<VibePref, string | null> = {
   any: null,
 };
 
-function formatEventDate(dateStr: string) {
+function formatEventDate(dateStr: string, en = false) {
   const d = new Date(dateStr + "T00:00:00");
+  if (en) {
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
+  }
   const m = d.getMonth() + 1;
   const day = d.getDate();
   const days = ["일", "월", "화", "수", "목", "금", "토"];
@@ -93,18 +97,27 @@ const STATUS_LABEL: Record<string, string> = {
   cancelled: "취소됨",
   expired: "만료됨",
 };
+const STATUS_LABEL_EN: Record<string, string> = {
+  open: "Receiving offers",
+  selecting: "Reviewing",
+  matched: "Closed",
+  accepted: "Matched",
+  cancelled: "Cancelled",
+  expired: "Expired",
+};
 
-function SelectingBanner({ expiresAt }: { expiresAt: string }) {
+function SelectingBanner({ expiresAt, en }: { expiresAt: string; en?: boolean }) {
   const { remaining, level } = useCountdown(expiresAt);
   const mm = Math.floor(remaining / 60).toString().padStart(2, "0");
   const ss = (remaining % 60).toString().padStart(2, "0");
   const timerCls = level === "critical" ? "text-red-400" : level === "warning" ? "text-amber-300" : "text-white";
   return (
     <section className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-1">
-      <p className="text-[14px] font-bold text-amber-400">⏰ 오퍼가 종료되었습니다</p>
+      <p className="text-[14px] font-bold text-amber-400">{en ? "⏰ Offers have closed" : "⏰ 오퍼가 종료되었습니다"}</p>
       <p className="text-[12px] text-neutral-300">
+        {en ? "You have " : ""}
         <span className={`font-mono font-bold ${timerCls}`}>{mm}:{ss}</span>
-        {" "}동안 더 고민할 수 있어요
+        {en ? " left to decide" : " 동안 더 고민할 수 있어요"}
       </p>
     </section>
   );
@@ -116,6 +129,13 @@ const OFFER_STATUS_LABEL: Record<string, string> = {
   rejected: "거절됨",
   withdrawn: "철회됨",
   expired: "미선택",
+};
+const OFFER_STATUS_LABEL_EN: Record<string, string> = {
+  pending: "Pending",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  withdrawn: "Withdrawn",
+  expired: "Not selected",
 };
 
 export function PuzzleDetailClient({
@@ -130,9 +150,17 @@ export function PuzzleDetailClient({
   const searchParams = useSearchParams();
   const supabase = createClient();
 
+  const isForeigner = searchParams.get("lang") === "en";
+  const t = (ko: string, en: string) => (isForeigner ? en : ko);
+  const lq = isForeigner ? "?lang=en" : "";
+  // 외국인 모드에서 상대시간(fromNow)·요일을 영어로
+  useEffect(() => {
+    dayjs.locale(isForeigner ? "en" : "ko");
+  }, [isForeigner]);
+
   useEffect(() => {
     if (searchParams.get("edit_blocked") === "offers") {
-      toast.error("MD 제안이 들어온 깃발은 수정할 수 없어요");
+      toast.error(t("MD 제안이 들어온 깃발은 수정할 수 없어요", "Flags with MD offers can't be edited"));
       router.replace(`/flags/${puzzle.id}`);
     }
   }, [searchParams, router, puzzle.id]);
@@ -154,11 +182,13 @@ export function PuzzleDetailClient({
   const recentMatchedPuzzle = useRecentMatchedPuzzle();
 
   const handleShare = useCallback(async () => {
-    const url = `${window.location.origin}/flags/${puzzle.id}`;
-    const title = `나플 깃발 · ${puzzle.area}`;
+    const url = `${window.location.origin}/flags/${puzzle.id}${lq}`;
     const totalBudget =
       puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count;
-    const text = `${puzzle.area} · 총 ${Math.round(totalBudget / 10000)}만원 · ${puzzle.target_count}명`;
+    const title = isForeigner ? `NightFlow Flag · ${puzzle.area}` : `나플 깃발 · ${puzzle.area}`;
+    const text = isForeigner
+      ? `${puzzle.area} · ₩${totalBudget.toLocaleString()} · ${puzzle.target_count} ppl`
+      : `${puzzle.area} · 총 ${Math.round(totalBudget / 10000)}만원 · ${puzzle.target_count}명`;
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url });
@@ -184,9 +214,9 @@ export function PuzzleDetailClient({
         document.execCommand("copy");
         document.body.removeChild(textarea);
       }
-      toast.success("링크가 복사되었습니다");
+      toast.success(t("링크가 복사되었습니다", "Link copied"));
     } catch {
-      toast.error("링크 복사에 실패했습니다");
+      toast.error(t("링크 복사에 실패했습니다", "Failed to copy link"));
     }
   }, [puzzle]);
 
@@ -328,12 +358,12 @@ export function PuzzleDetailClient({
         p_reason_text: reasonText,
       });
       if (error) throw error;
-      if (!data?.success) { toast.error(data?.error || "취소에 실패했습니다"); return; }
+      if (!data?.success) { toast.error(data?.error || t("취소에 실패했습니다", "Failed to cancel")); return; }
       setShowCancelSheet(false);
-      toast.success("깃발을 내렸습니다");
-      router.push("/?tab=puzzle");
+      toast.success(t("깃발을 내렸습니다", "Flag taken down"));
+      router.push(isForeigner ? "/en" : "/?tab=puzzle");
     } catch {
-      toast.error("취소에 실패했습니다");
+      toast.error(t("취소에 실패했습니다", "Failed to cancel"));
     } finally {
       setActionLoading(false);
     }
@@ -426,7 +456,7 @@ export function PuzzleDetailClient({
       });
       if (error) throw error;
       if (!data?.success) {
-        toast.error(data?.error || "수락에 실패했습니다");
+        toast.error(data?.error || t("수락에 실패했습니다", "Failed to accept"));
         return false;
       }
       trackEvent('puzzle_offer_accepted', {
@@ -452,7 +482,7 @@ export function PuzzleDetailClient({
       router.refresh();
       return true;
     } catch {
-      toast.error("수락에 실패했습니다");
+      toast.error(t("수락에 실패했습니다", "Failed to accept"));
       return false;
     } finally {
       setActionLoading(false);
@@ -516,14 +546,14 @@ export function PuzzleDetailClient({
       <div className="max-w-lg mx-auto px-4">
         {/* 헤더 */}
         <div className="flex items-center gap-3 py-5">
-          <Link href="/?tab=puzzle" className="text-white">
+          <Link href={isForeigner ? "/en" : "/?tab=puzzle"} className="text-white">
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-[17px] font-black text-white flex-1">깃발 상세</h1>
+          <h1 className="text-[17px] font-black text-white flex-1">{t("깃발 상세", "Flag detail")}</h1>
           {currentUserId === puzzle.leader_id && isOpen && pendingOffers.length === 0 && (
             <Link
-              href={`/flags/${puzzle.id}/edit`}
-              aria-label="깃발 수정"
+              href={`/flags/${puzzle.id}/edit${lq}`}
+              aria-label={t("깃발 수정", "Edit flag")}
               className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
             >
               <Pencil className="w-4 h-4" />
@@ -543,7 +573,7 @@ export function PuzzleDetailClient({
                   : "bg-neutral-700 text-neutral-400"
               }`}
             >
-              {STATUS_LABEL[puzzle.status] || puzzle.status}
+              {(isForeigner ? STATUS_LABEL_EN : STATUS_LABEL)[puzzle.status] || puzzle.status}
             </span>
           )}
         </div>
@@ -551,7 +581,7 @@ export function PuzzleDetailClient({
         <div className="space-y-5 pb-10">
           {/* 검토 중 배너 (status = selecting) */}
           {puzzle.status === "selecting" && (
-            <SelectingBanner expiresAt={puzzle.expires_at} />
+            <SelectingBanner expiresAt={puzzle.expires_at} en={isForeigner} />
           )}
 
           {/* 취소 안내 배너 (status = cancelled) */}
@@ -561,12 +591,12 @@ export function PuzzleDetailClient({
               className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 space-y-2"
             >
               <div className="flex items-center gap-2">
-                <span className="text-[15px] font-black text-red-300">🚩 취소된 깃발입니다</span>
+                <span className="text-[15px] font-black text-red-300">{t("🚩 취소된 깃발입니다", "🚩 This flag was cancelled")}</span>
               </div>
               {puzzle.cancelled_reason ? (
                 <>
                   <p className="text-[12px] text-red-200/70 font-bold uppercase tracking-wide">
-                    관리자 안내 사유
+                    {t("관리자 안내 사유", "Reason from admin")}
                   </p>
                   <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap break-keep">
                     {puzzle.cancelled_reason}
@@ -574,18 +604,18 @@ export function PuzzleDetailClient({
                 </>
               ) : (
                 <p className="text-[13px] text-neutral-300 leading-relaxed">
-                  이 깃발은 더 이상 진행되지 않습니다. 새로운 깃발을 등록해 주세요.
+                  {t("이 깃발은 더 이상 진행되지 않습니다. 새로운 깃발을 등록해 주세요.", "This flag is no longer active. Please plant a new one.")}
                 </p>
               )}
               {puzzle.cancelled_at && (
                 <p className="text-[11px] text-neutral-500">
-                  {new Date(puzzle.cancelled_at).toLocaleString("ko-KR", {
+                  {new Date(puzzle.cancelled_at).toLocaleString(isForeigner ? "en-US" : "ko-KR", {
                     timeZone: "Asia/Seoul",
                     month: "numeric",
                     day: "numeric",
                     hour: "2-digit",
                     minute: "2-digit",
-                  })} 취소됨
+                  })}{t(" 취소됨", " cancelled")}
                 </p>
               )}
             </section>
@@ -595,19 +625,20 @@ export function PuzzleDetailClient({
           <div className="flex items-center gap-2.5 px-1">
             <div className="w-1.5 h-[20px] bg-amber-500 rounded-full flex-shrink-0" />
             <h3 className="text-[22px] font-black text-white tracking-tight">
-              {formatEventDate(puzzle.event_date)}
+              {formatEventDate(puzzle.event_date, isForeigner)}
             </h3>
             {(() => {
               const dday = getDDayLabel(puzzle.event_date);
+              const isToday = dday === "오늘";
               return (
                 <span
                   className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full ${
-                    dday === "오늘"
+                    isToday
                       ? "bg-amber-500/20 text-amber-400"
                       : "bg-neutral-800 text-neutral-400"
                   }`}
                 >
-                  {dday}
+                  {isToday ? t("오늘", "Today") : dday}
                 </span>
               );
             })()}
@@ -662,10 +693,10 @@ export function PuzzleDetailClient({
                   {/* 홈 카드 패턴 통일: 예산 + 인원 pill + 닉네임 버튼 + 음악 한 줄 */}
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[19px] font-bold text-green-400">
-                      예산 {baseBudget.toLocaleString()}원
+                      {isForeigner ? `₩${baseBudget.toLocaleString()}` : `예산 ${baseBudget.toLocaleString()}원`}
                     </span>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[12px] font-bold">
-                      {puzzle.target_count}명
+                      {puzzle.target_count}{t("명", " ppl")}
                     </span>
                     {puzzle.leader && (
                       <button
@@ -680,12 +711,12 @@ export function PuzzleDetailClient({
                             {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
                           </div>
                         )}
-                        {puzzle.leader.display_name || puzzle.leader.name || "방장"}
+                        {puzzle.leader.display_name || puzzle.leader.name || t("방장", "Host")}
                       </button>
                     )}
                     {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">
-                        {puzzle.music_preference === "hiphop" ? "힙합" : "EDM"} 선호
+                        {puzzle.music_preference === "hiphop" ? t("힙합", "Hip-hop") : "EDM"}{t(" 선호", " preferred")}
                       </span>
                     )}
                   </div>
@@ -700,7 +731,7 @@ export function PuzzleDetailClient({
                       {(() => {
                         const dealCount = puzzle.leader.deal_count_total ?? 0;
                         return dealCount > 0 ? (
-                          <span className="text-[11px] text-neutral-500 font-bold">거래 {dealCount}회</span>
+                          <span className="text-[11px] text-neutral-500 font-bold">{isForeigner ? `${dealCount} deals` : `거래 ${dealCount}회`}</span>
                         ) : null;
                       })()}
                     </div>
@@ -761,7 +792,7 @@ export function PuzzleDetailClient({
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold text-[13px] rounded-xl hover:bg-[#FDD835] transition-colors animate-in slide-in-from-bottom-4 fade-in duration-500"
             >
-              카카오 오픈채팅 입장하기
+              {t("카카오 오픈채팅 입장하기", "Open KakaoTalk chat")}
             </a>
           )}
 
@@ -770,18 +801,18 @@ export function PuzzleDetailClient({
             <section className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-amber-400" />
-                <h2 className="text-[15px] font-black text-amber-400">성사됨</h2>
+                <h2 className="text-[15px] font-black text-amber-400">{t("성사됨", "Matched")}</h2>
               </div>
               {acceptedOffer && (
                 <div className="space-y-1">
                   <p className="text-[14px] font-bold text-white">
-                    {(acceptedOffer.club as { name?: string } | null)?.name || "클럽"}
+                    {(acceptedOffer.club as { name?: string } | null)?.name || t("클럽", "Club")}
                   </p>
                   {/* 방장에게만 상세 정보 표시 */}
                   {isLeader && (
                     <div className="space-y-2 pt-2 border-t border-amber-500/20 mt-2">
                       <p className="text-[13px] text-neutral-300">
-                        💰 {acceptedOffer.proposed_price.toLocaleString()}원
+                        💰 {isForeigner ? `₩${acceptedOffer.proposed_price.toLocaleString()}` : `${acceptedOffer.proposed_price.toLocaleString()}원`}
                       </p>
                       {acceptedOffer.includes.length > 0 && (
                         <div className="flex flex-wrap gap-1 w-full">
@@ -826,31 +857,31 @@ export function PuzzleDetailClient({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-white font-bold text-[14px] truncate">{md.display_name || "나이트플로우 파트너"}</p>
+                          <p className="text-white font-bold text-[14px] truncate">{md.display_name || t("나이트플로우 파트너", "NightFlow Partner")}</p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-[11px] text-neutral-500">NightFlow 인증 파트너</p>
+                          <p className="text-[11px] text-neutral-500">{t("NightFlow 인증 파트너", "NightFlow verified partner")}</p>
                           {dealCount > 0 && (
                             <span className="text-[10px] font-bold text-neutral-400">
-                              · 거래 {dealCount}회
+                              {isForeigner ? `· ${dealCount} deals` : `· 거래 ${dealCount}회`}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
                     {/* 복사 버튼 — MD에게 보낼 메시지를 원클릭 복사 */}
-                    <CopyAcceptedMessageButton puzzle={puzzle} offer={acceptedOffer} />
+                    <CopyAcceptedMessageButton puzzle={puzzle} offer={acceptedOffer} isForeigner={isForeigner} />
                     {/* puzzle.kakao_open_chat_url이 NULL(기본 케이스)일 때 MD 연락 수단 카드 노출 */}
                     {!puzzle.kakao_open_chat_url && (
                       <div className="pt-1">
-                        <MDContactCard md={md as PublicUserProfile} />
+                        <MDContactCard md={md as PublicUserProfile} isForeigner={isForeigner} />
                       </div>
                     )}
                     {/* 거래 확정 상태 표시 (Migration 147: leader는 알림만 받고 마킹 권한 없음) */}
                     {acceptedOffer.visit_marked_at && (
                       <div className="pt-2 border-t border-amber-500/20">
                         <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-green-500/15 text-green-400">
-                          <ShieldCheck className="w-3.5 h-3.5" /> 거래 확정됨
+                          <ShieldCheck className="w-3.5 h-3.5" /> {t("거래 확정됨", "Visit confirmed")}
                         </span>
                       </div>
                     )}
@@ -863,21 +894,23 @@ export function PuzzleDetailClient({
                       return (
                         <div className="pt-3 border-t border-amber-500/20 space-y-2">
                           <p className="text-[13px] font-bold text-white text-center">
-                            어제 {(acceptedOffer.club as { name?: string } | null)?.name || "클럽"} 어떠셨어요?
+                            {isForeigner
+                              ? `How was ${(acceptedOffer.club as { name?: string } | null)?.name || "the club"} last night?`
+                              : `어제 ${(acceptedOffer.club as { name?: string } | null)?.name || "클럽"} 어떠셨어요?`}
                           </p>
                           <div className="flex gap-2">
                             <button
                               type="button"
-                              onClick={() => toast.success("기록되었어요")}
+                              onClick={() => toast.success(t("기록되었어요", "Recorded"))}
                               className="flex-1 h-11 rounded-2xl bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 font-bold text-[13px] transition"
                             >
-                              가지 않았어요
+                              {t("가지 않았어요", "Didn't go")}
                             </button>
                             <Link
-                              href={`/flags/${puzzle.id}/review`}
+                              href={`/flags/${puzzle.id}/review${lq}`}
                               className="flex-1 inline-flex items-center justify-center h-11 rounded-2xl bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[13.5px] transition-all"
                             >
-                              ⭐ 리뷰 쓰기
+                              {t("⭐ 리뷰 쓰기", "⭐ Write a review")}
                             </Link>
                           </div>
                         </div>
@@ -889,9 +922,17 @@ export function PuzzleDetailClient({
               <p className="text-[11px] text-neutral-500">
                 {isLeader
                   ? puzzle.kakao_open_chat_url
-                    ? "MD가 회원님이 등록한 오픈채팅으로 입장합니다. 선입금/테이블 배정은 MD와 직접 협의하세요."
-                    : "위 연락 수단 중 편한 것으로 MD에게 직접 연락해주세요. 선입금/테이블 배정은 MD와 직접 협의하세요."
-                  : `MD ${offers.filter(o => o.status !== 'expired').length}명이 경쟁, 성사됨`}
+                    ? t(
+                        "MD가 회원님이 등록한 오픈채팅으로 입장합니다. 선입금/테이블 배정은 MD와 직접 협의하세요.",
+                        "The club host will join your open chat. Arrange any deposit and table directly with them."
+                      )
+                    : t(
+                        "위 연락 수단 중 편한 것으로 MD에게 직접 연락해주세요. 선입금/테이블 배정은 MD와 직접 협의하세요.",
+                        "Contact the club host directly via one of the methods above. Arrange any deposit and table directly with them."
+                      )
+                  : isForeigner
+                    ? `${offers.filter(o => o.status !== 'expired').length} clubs competed — matched`
+                    : `MD ${offers.filter(o => o.status !== 'expired').length}명이 경쟁, 성사됨`}
               </p>
 
             </section>
@@ -986,20 +1027,22 @@ export function PuzzleDetailClient({
               <div className="flex items-center gap-2">
                 <span className="text-[16px] leading-none">💌</span>
                 <h2 className="text-[16px] font-bold text-neutral-200">
-                  시크릿오퍼
+                  {t("시크릿오퍼", "Secret Offers")}
                   {pendingOffers.length > 0 && !isAccepted && (
-                    <span className="ml-1.5 text-white">{pendingOffers.length}건</span>
+                    <span className="ml-1.5 text-white">{pendingOffers.length}{t("건", "")}</span>
                   )}
                 </h2>
               </div>
               {puzzle.status === "open" ? (
                 <span className="text-[12px] text-neutral-400 whitespace-nowrap">
-                  ⏰ 당일 {puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감
+                  {isForeigner
+                    ? `⏰ Offers close at ${puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h A") : "5 PM"} today`
+                    : `⏰ 당일 ${puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감`}
                 </span>
               ) : (
                 (isAccepted || pendingOffers.length === 0) && (
                   <span className="text-[11px] text-neutral-500">
-                    {isAccepted ? "제안 마감" : "아직 제안 없음"}
+                    {isAccepted ? t("제안 마감", "Offers closed") : t("아직 제안 없음", "No offers yet")}
                   </span>
                 )
               )}
@@ -1022,6 +1065,7 @@ export function PuzzleDetailClient({
                     onReject={handleRejectOffer}
                     onWithdrawn={loadOffers}
                     onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
+                    isForeigner={isForeigner}
                   />
                 ))}
               </div>
@@ -1031,7 +1075,7 @@ export function PuzzleDetailClient({
             {!isLeader && pendingOffers.length > 0 && !isAccepted && (
               <div className="space-y-3 -mt-2">
                 <p className="text-[13px] text-neutral-400 font-medium">
-                  클럽명 일부만 공개 ✨
+                  {t("클럽명 일부만 공개 ✨", "Club names partially shown ✨")}
                 </p>
                 {publicOffers.map((offer, idx) => (
                   <div
@@ -1209,17 +1253,17 @@ export function PuzzleDetailClient({
                   onClick={() => setShowMatchedShowcase(true)}
                   className="block w-full mb-2 text-center text-[13px] font-bold text-white hover:text-neutral-300 active:opacity-70 transition-colors"
                 >
-                  어떤 오퍼 받았는지 구경하기 👈
+                  {t("어떤 오퍼 받았는지 구경하기 👈", "See what offers came in 👈")}
                 </button>
               )}
               <Link
-                href={currentUserId ? "/flags/new" : "/login?redirect=/flags/new"}
+                href={currentUserId ? `/flags/new${lq}` : `/login?redirect=/flags/new${isForeigner ? "&lang=en" : ""}`}
                 className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
               >
-                ⛳ 나도 오퍼받기
+                {t("⛳ 나도 오퍼받기", "⛳ Get offers too")}
               </Link>
               <p className="text-[10px] text-neutral-500">
-                무료
+                {t("무료", "Free")}
               </p>
             </div>
           )}
@@ -1303,7 +1347,7 @@ export function PuzzleDetailClient({
                 variant="outline"
                 className="w-full h-12 border-red-500/50 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[14px] rounded-2xl"
               >
-                깃발 내리기
+                {t("깃발 내리기", "Take down flag")}
               </Button>
             </section>
           )}
@@ -1400,6 +1444,7 @@ export function PuzzleDetailClient({
           setAcceptingMd(null);
         }}
         onAccept={handleAcceptConfirm}
+        isForeigner={isForeigner}
       />
 
       <LeaderInfoSheet

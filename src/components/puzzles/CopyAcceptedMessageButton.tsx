@@ -19,20 +19,22 @@ interface Props {
     includes: string[];
     club?: { name: string } | null;
   } | null | undefined;
+  isForeigner?: boolean;
 }
 
-export function CopyAcceptedMessageButton({ puzzle, offer }: Props) {
+export function CopyAcceptedMessageButton({ puzzle, offer, isForeigner }: Props) {
   const [copied, setCopied] = useState(false);
+  const t = (ko: string, en: string) => (isForeigner ? en : ko);
 
   const handleCopy = async () => {
     const msg = buildAcceptedFlagMessage(puzzle, offer, window.location.origin);
     try {
       await navigator.clipboard.writeText(msg);
       setCopied(true);
-      toast.success("메시지가 복사됐어요. MD에게 붙여넣으세요!");
+      toast.success(t("메시지가 복사됐어요. MD에게 붙여넣으세요!", "Message copied — paste it to the club host!"));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error("복사에 실패했습니다");
+      toast.error(t("복사에 실패했습니다", "Failed to copy"));
     }
   };
 
@@ -43,7 +45,7 @@ export function CopyAcceptedMessageButton({ puzzle, offer }: Props) {
       className="w-full h-12 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-black font-black text-[14px] rounded-2xl transition-colors"
     >
       {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-      {copied ? "복사됐어요!" : "메세지 복사"}
+      {copied ? t("복사됐어요!", "Copied!") : t("메세지 복사", "Copy message")}
     </button>
   );
 }

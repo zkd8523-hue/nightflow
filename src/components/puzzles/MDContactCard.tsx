@@ -11,6 +11,7 @@ interface MDContactCardProps {
   md: MDContactInfo;
   /** 액션 트래킹용 콜백 (선택) */
   onContactClick?: (method: ContactMethodType) => void;
+  isForeigner?: boolean;
 }
 
 function extractInstagramHandle(input: string): string {
@@ -35,7 +36,8 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-export function MDContactCard({ md, onContactClick }: MDContactCardProps) {
+export function MDContactCard({ md, onContactClick, isForeigner }: MDContactCardProps) {
+  const t = (ko: string, en: string) => (isForeigner ? en : ko);
   const methods = md.preferred_contact_methods;
   // null 또는 빈 배열 = 모든 수단 표시 (MDApplyForm UI 시맨틱과 일치)
   const showAll = !methods || methods.length === 0;
@@ -59,14 +61,14 @@ export function MDContactCard({ md, onContactClick }: MDContactCardProps) {
               <Instagram className="w-4 h-4 text-pink-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold text-neutral-500 uppercase">인스타그램 DM</p>
+              <p className="text-[11px] font-bold text-neutral-500 uppercase">{t("인스타그램 DM", "Instagram DM")}</p>
               <p className="text-[14px] font-bold text-white truncate">
                 @{extractInstagramHandle(md.instagram)}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1 text-[12px] font-bold text-white flex-shrink-0">
-            열기
+            {t("열기", "Open")}
             <ChevronRight className="w-4 h-4" />
           </div>
         </a>
@@ -85,12 +87,12 @@ export function MDContactCard({ md, onContactClick }: MDContactCardProps) {
               <MessageCircle className="w-4 h-4 text-yellow-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold text-neutral-500 uppercase">카카오 오픈채팅</p>
-              <p className="text-[14px] font-bold text-white truncate">MD 채팅방 입장</p>
+              <p className="text-[11px] font-bold text-neutral-500 uppercase">{t("카카오 오픈채팅", "KakaoTalk open chat")}</p>
+              <p className="text-[14px] font-bold text-white truncate">{t("MD 채팅방 입장", "Join chat")}</p>
             </div>
           </div>
           <div className="flex items-center gap-1 text-[12px] font-bold text-white flex-shrink-0">
-            입장
+            {t("입장", "Join")}
             <ChevronRight className="w-4 h-4" />
           </div>
         </a>
@@ -107,14 +109,14 @@ export function MDContactCard({ md, onContactClick }: MDContactCardProps) {
               <Phone className="w-4 h-4 text-green-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold text-neutral-500 uppercase">전화</p>
+              <p className="text-[11px] font-bold text-neutral-500 uppercase">{t("전화", "Phone")}</p>
               <p className="text-[14px] font-bold text-white truncate">
                 {formatPhone(md.phone)}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1 text-[12px] font-bold text-white flex-shrink-0">
-            전화
+            {t("전화", "Call")}
             <ChevronRight className="w-4 h-4" />
           </div>
         </a>

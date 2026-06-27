@@ -36,11 +36,13 @@ interface OfferAcceptSheetProps {
   offer: OfferForCopy;
   /** RPC accept_offer 호출. 성공 시 true, 실패 시 false. */
   onAccept: () => Promise<boolean>;
+  isForeigner?: boolean;
 }
 
 type Step = "confirm" | "success";
 
-export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept }: OfferAcceptSheetProps) {
+export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, isForeigner }: OfferAcceptSheetProps) {
+  const t = (ko: string, en: string) => (isForeigner ? en : ko);
   const [step, setStep] = useState<Step>("confirm");
   const [submitting, setSubmitting] = useState(false);
 
@@ -74,10 +76,14 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept }:
             <div>
               <SheetTitle className="text-white font-black text-[18px] flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-400" />
-                제안을 수락하시겠어요?
+                {t("제안을 수락하시겠어요?", "Accept this offer?")}
               </SheetTitle>
               <SheetDescription className="text-neutral-400 text-[13px] mt-1.5 leading-relaxed">
-                수락하면 <strong className="text-white">MD의 닉네임과 연락처</strong>가 공개됩니다.
+                {isForeigner ? (
+                  <>Accepting reveals the <strong className="text-white">club host&apos;s name and contact</strong>.</>
+                ) : (
+                  <>수락하면 <strong className="text-white">MD의 닉네임과 연락처</strong>가 공개됩니다.</>
+                )}
               </SheetDescription>
             </div>
 
@@ -86,7 +92,7 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept }:
               disabled={submitting}
               className="w-full h-14 bg-white text-black font-black text-base rounded-2xl hover:bg-neutral-200 disabled:bg-neutral-800 disabled:text-neutral-600"
             >
-              {submitting ? "수락 중..." : "수락하기"}
+              {submitting ? t("수락 중...", "Accepting...") : t("수락하기", "Accept")}
             </Button>
           </div>
         ) : (
@@ -94,31 +100,31 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept }:
             <div>
               <SheetTitle className="text-white font-black text-[20px] flex items-center gap-2">
                 <PartyPopper className="w-5 h-5 text-amber-400" />
-                수락 완료!
+                {t("수락 완료!", "Accepted!")}
               </SheetTitle>
               <SheetDescription className="text-neutral-400 text-[13px] mt-1.5 leading-relaxed whitespace-pre-line">
-                {"아래 버튼으로 메세지 복사하고\n원하는 연락수단에 붙여넣으면 끝!"}
+                {t("아래 버튼으로 메세지 복사하고\n원하는 연락수단에 붙여넣으면 끝!", "Copy the message below and paste it into your preferred contact method.")}
               </SheetDescription>
             </div>
 
             {/* 복사 버튼 — MD에게 보낼 메시지 원클릭 복사 */}
             {puzzle && (
-              <CopyAcceptedMessageButton puzzle={puzzle} offer={offer} />
+              <CopyAcceptedMessageButton puzzle={puzzle} offer={offer} isForeigner={isForeigner} />
             )}
 
             {/* MD 연락 수단 카드 — 수락 직후 공개 */}
             <div className="space-y-2.5">
               <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide">
-                {md.display_name} MD 연락 수단
+                {isForeigner ? `${md.display_name} — contact` : `${md.display_name} MD 연락 수단`}
               </p>
-              <MDContactCard md={md} />
+              <MDContactCard md={md} isForeigner={isForeigner} />
             </div>
 
             <Button
               onClick={onClose}
               className="w-full h-14 bg-white text-black font-black text-base rounded-2xl hover:bg-neutral-200"
             >
-              닫기
+              {t("닫기", "Close")}
             </Button>
           </div>
         )}

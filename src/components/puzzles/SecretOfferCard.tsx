@@ -24,6 +24,7 @@ interface SecretOfferCardProps {
   onReject: (offerId: string) => void;
   onWithdrawn: () => void;
   onAdminEdit?: (offer: PuzzleOffer) => void;
+  isForeigner?: boolean;
 }
 
 export function SecretOfferCard({
@@ -38,10 +39,12 @@ export function SecretOfferCard({
   onReject,
   onWithdrawn,
   onAdminEdit,
+  isForeigner,
 }: SecretOfferCardProps) {
   const club = offer.club as { name?: string; area?: string } | null;
   const dealCount = offer.md?.md_deal_count ?? null;
   const staggerStyle = { "--stagger-idx": index } as React.CSSProperties;
+  const t = (ko: string, en: string) => (isForeigner ? en : ko);
 
   return (
     <div
@@ -59,7 +62,7 @@ export function SecretOfferCard({
               href={`/clubs/${offer.club_id}`}
               className="inline-flex items-center gap-0.5 text-[15px] font-black text-white hover:text-amber-300 transition-colors"
             >
-              {club?.name || "클럽"}
+              {club?.name || t("클럽", "Club")}
               {club?.area && (
                 <span className="text-neutral-500 font-medium"> · {club.area}</span>
               )}
@@ -67,7 +70,7 @@ export function SecretOfferCard({
             </Link>
           ) : (
             <p className="text-[15px] font-black text-white">
-              {club?.name || "클럽"}
+              {club?.name || t("클럽", "Club")}
               {club?.area && (
                 <span className="text-neutral-500 font-medium"> · {club.area}</span>
               )}
@@ -76,7 +79,7 @@ export function SecretOfferCard({
         </div>
         {offer.status === "accepted" ? (
           <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold">
-            ✓ 수락됨
+            {t("✓ 수락됨", "✓ Accepted")}
           </span>
         ) : (
           <span className="text-[11px] text-neutral-500 font-medium" suppressHydrationWarning>
@@ -87,7 +90,7 @@ export function SecretOfferCard({
 
       <div className="space-y-2 pt-2 border-t border-neutral-800/60">
         <p className="text-[16px] font-black text-green-400">
-          {offer.proposed_price.toLocaleString()}원
+          {isForeigner ? `₩${offer.proposed_price.toLocaleString()}` : `${offer.proposed_price.toLocaleString()}원`}
         </p>
         {offer.includes.length > 0 && (() => {
           const liquors = offer.includes.filter(isLiquor);
@@ -135,7 +138,7 @@ export function SecretOfferCard({
           ) : (
             <BadgeCheck className="w-3 h-3 text-neutral-500" />
           )}
-          <span className="text-[10px] font-bold text-neutral-400">거래 {dealCount}회</span>
+          <span className="text-[10px] font-bold text-neutral-400">{isForeigner ? `${dealCount} deals` : `거래 ${dealCount}회`}</span>
         </div>
       )}
 
@@ -147,7 +150,7 @@ export function SecretOfferCard({
             className="flex-1 h-10 bg-white hover:bg-neutral-200 text-black font-black text-[13px] rounded-xl"
           >
             <CheckCircle2 className="w-4 h-4 mr-1.5" />
-            수락
+            {t("수락", "Accept")}
           </Button>
           <Button
             onClick={() => onReject(offer.id)}
@@ -156,7 +159,7 @@ export function SecretOfferCard({
             className="flex-1 h-10 border-red-500/40 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[13px] rounded-xl"
           >
             <XCircle className="w-4 h-4 mr-1.5" />
-            거절
+            {t("거절", "Reject")}
           </Button>
         </div>
       )}

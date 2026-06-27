@@ -1,11 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FaqTab } from "./FaqTab";
-import { ChevronLeft, Flag, HelpCircle, Map } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flag, HelpCircle, Map } from "lucide-react";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { createClient } from "@/lib/supabase/client";
 
 type Tab = "flags" | "qa" | "map";
+
+type MyFlag = {
+  id: string;
+  area: string;
+  event_date: string;
+  status: string;
+  total_budget: number | null;
+  budget_per_person: number;
+  target_count: number;
+  offerCount: number;
+};
 
 type FlagItem = {
   id: string;
@@ -100,6 +113,89 @@ function FlagRow({ flag }: { flag: FlagItem }) {
   );
 }
 
+// ── My flags (로그인 유저의 내 깃발) ──────────────────────────────
+const MY_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
+  open: { label: "Open", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
+  selecting: { label: "Reviewing", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  accepted: { label: "Matched", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+};
+
+function MyFlags() {
+  const { user, isLoading } = useCurrentUser();
+  const [flags, setFlags] = useState<MyFlag[] | null>(null);
+
+  useEffect(() => {
+    if (!user) { setFlags(null); return; }
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("puzzles")
+        .select("id, area, event_date, status, total_budget, budget_per_person, target_count")
+        .eq("leader_id", user.id)
+        .in("status", ["open", "selecting", "accepted"])
+        .order("event_date", { ascending: true });
+      if (cancelled || !data) return;
+      const ids = data.map((p) => p.id);
+      const counts: Record<string, number> = {};
+      if (ids.length > 0) {
+        const { data: offerRows } = await supabase
+          .from("puzzle_offers")
+          .select("puzzle_id")
+          .in("puzzle_id", ids)
+          .eq("status", "pending");
+        offerRows?.forEach((r: { puzzle_id: string }) => {
+          counts[r.puzzle_id] = (counts[r.puzzle_id] || 0) + 1;
+        });
+      }
+      setFlags(data.map((p) => ({ ...p, offerCount: counts[p.id] ?? 0 })));
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  if (isLoading || !user || !flags || flags.length === 0) return null;
+
+  return (
+    <div className="px-4 pt-4 pb-2 space-y-2.5">
+      <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">My flags</p>
+      {flags.map((f) => {
+        const area = AREA_EN[f.area] ?? f.area;
+        const date = formatEventDate(f.event_date);
+        const budget = formatBudget(f.total_budget, f.budget_per_person, f.target_count);
+        const st = MY_STATUS_LABEL[f.status] ?? MY_STATUS_LABEL.open;
+        return (
+          <Link
+            key={f.id}
+            href={`/flags/${f.id}?lang=en`}
+            className="flex items-center justify-between gap-3 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-neutral-700 p-4 transition-colors"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-black text-[15px]">{area}</span>
+                <span className="text-neutral-500 text-[12px]">· {date}</span>
+              </div>
+              <div className="flex items-center gap-2 mt-1 text-[13px]">
+                <span className="font-black text-amber-400">{budget}</span>
+                {f.offerCount > 0 && (
+                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
+                    {f.offerCount} offer{f.offerCount !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${st.cls}`}>
+                {st.label}
+              </span>
+              <ChevronRight className="w-4 h-4 text-neutral-600" />
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Flags 탭 ─────────────────────────────────────────────────────
 const PREVIEW_COUNT = 3;
 
@@ -109,6 +205,30 @@ function FlagsTab({ flags }: { flags: FlagItem[] }) {
 
   return (
     <div className="flex-1 overflow-y-auto">
+      {/* Hero — 타겟 후킹(pain→solution) + 무료 + 소셜프루프 */}
+      <div className="px-5 pt-6 pb-5 text-center space-y-3.5 border-b border-neutral-900">
+        <h1 className="text-[25px] font-black leading-[1.15] tracking-tight">
+          Your best night in Seoul<br />starts here.
+        </h1>
+        <p className="text-[13.5px] text-neutral-400 leading-relaxed">
+          No broker. No scams. No hidden prices.<br />
+          Seoul&apos;s top clubs send you private VIP offers
+          {" "}<span className="text-green-400 font-black">— free.</span>
+        </p>
+        <Link
+          href="/flags/new?lang=en"
+          className="inline-flex items-center gap-1.5 px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 active:scale-[0.98] transition-all"
+        >
+          🚩 Plant your flag
+        </Link>
+        <p className="flex items-center justify-center gap-1.5 text-[12px] text-neutral-500 pt-0.5">
+          <span>🇰🇷</span> The booking platform Koreans already use
+        </p>
+      </div>
+
+      {/* My flags (로그인 유저 본인 깃발 — 오퍼 확인 진입점) */}
+      <MyFlags />
+
       {/* All flags */}
       <div className="px-4 pt-4 pb-6 space-y-3">
         {flags.length === 0 ? (
