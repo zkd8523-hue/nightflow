@@ -419,12 +419,24 @@ export default async function EnHomePage() {
             </a>
           </li>
         </ul>
-        <h2>Common Questions About Seoul Club Booking</h2>
-        <p>
-          For detailed answers about Seoul club prices, dress codes, broker
-          problems, and how foreigners book VIP tables, see our{" "}
-          <a href="/en/faq">Seoul Club Booking FAQ</a>.
-        </p>
+        <h2>Quick Links by Booking Type</h2>
+        <ul>
+          <li>
+            <a href="/en/vip-tables">
+              Seoul VIP Table Booking — Gangnam, Apgujeong bottle service
+            </a>
+          </li>
+          <li>
+            <a href="/en/guests">
+              Seoul Club Guest List — Free entry to Korean clubs
+            </a>
+          </li>
+          <li>
+            <a href="/en/faq">
+              Seoul Club Booking FAQ — Prices, dress codes, broker problems
+            </a>
+          </li>
+        </ul>
 
         <h2>Why Book Korea Clubs Through NightFlow</h2>
         <ul>
