@@ -1075,7 +1075,7 @@ export function PuzzleDetailClient({
             {!isLeader && pendingOffers.length > 0 && !isAccepted && (
               <div className="space-y-3 -mt-2">
                 <p className="text-[13px] text-neutral-400 font-medium">
-                  {t("클럽명 일부만 공개 ✨", "Club names partially shown ✨")}
+                  {t("오퍼는 작성자만 볼 수 있어요✨", "Offers are visible to the author only✨")}
                 </p>
                 {publicOffers.map((offer, idx) => (
                   <div
@@ -1084,14 +1084,10 @@ export function PuzzleDetailClient({
                   >
                     <div>
                       <p className="text-[14px] font-bold text-amber-300">Offer #{idx + 1}</p>
-                      {offer.club?.id && offer.club?.name ? (
-                        <Link
-                          href={`/clubs/${offer.club.id}`}
-                          className="inline-flex items-center gap-0.5 text-[18px] font-black text-white -mt-0.5 hover:text-neutral-300 active:opacity-70 transition-colors"
-                        >
+                      {offer.club?.name ? (
+                        <span className="inline-block text-[18px] font-black text-white -mt-0.5 blur-sm select-none pointer-events-none">
                           {offer.club.name}
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
+                        </span>
                       ) : null}
                     </div>
                     <div className="space-y-1.5 blur-sm select-none pointer-events-none">
