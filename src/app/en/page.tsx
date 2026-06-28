@@ -432,6 +432,11 @@ export default async function EnHomePage() {
             </a>
           </li>
           <li>
+            <a href="/en/kpop-clubs">
+              K-Pop Clubs in Seoul — Where K-pop fans actually go
+            </a>
+          </li>
+          <li>
             <a href="/en/faq">
               Seoul Club Booking FAQ — Prices, dress codes, broker problems
             </a>

@@ -158,7 +158,7 @@ export default function EnFaqPage() {
         {/* CTA */}
         <section className="space-y-3 pt-4 text-center">
           <Link
-            href="/login?lang=en"
+            href="/en"
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
           >
             🚩 Plant your flag — get VIP offers

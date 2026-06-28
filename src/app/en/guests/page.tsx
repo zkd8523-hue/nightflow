@@ -133,7 +133,7 @@ export default function EnGuestsPage() {
 
         <section className="text-center pt-4 space-y-3">
           <Link
-            href="/login?lang=en"
+            href="/en/clubs"
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
           >
             See this week&apos;s guest deals →

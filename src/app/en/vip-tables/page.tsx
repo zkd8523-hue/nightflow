@@ -156,7 +156,7 @@ export default function EnVipTablesPage() {
             Pick the one you want, show up, walk straight in.
           </p>
           <Link
-            href="/login?lang=en"
+            href="/en"
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
           >
             🚩 Plant your flag — get VIP offers
