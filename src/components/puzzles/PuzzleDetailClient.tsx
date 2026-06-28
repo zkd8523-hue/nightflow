@@ -20,6 +20,8 @@ import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
+import { toEnglishInclude } from "@/lib/utils/liquorEn";
+import { OfferCommentText } from "./OfferCommentText";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
@@ -818,13 +820,13 @@ export function PuzzleDetailClient({
                         <div className="flex flex-wrap gap-1 w-full">
                           {acceptedOffer.includes.map((inc) => (
                             <span key={inc} className="text-[11px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 break-words max-w-full">
-                              {inc}
+                              {isForeigner ? toEnglishInclude(inc) : inc}
                             </span>
                           ))}
                         </div>
                       )}
                       {acceptedOffer.comment && (
-                        <p className="text-[12px] text-neutral-400 italic">"{acceptedOffer.comment}"</p>
+                        <OfferCommentText comment={acceptedOffer.comment} isForeigner={isForeigner} />
                       )}
                     </div>
                   )}
@@ -1098,7 +1100,7 @@ export function PuzzleDetailClient({
                               key={cat}
                               className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
                             >
-                              🍾 {cat}
+                              🍾 {isForeigner ? toEnglishInclude(cat) : cat}
                             </span>
                           ))}
                         </div>
@@ -1110,13 +1112,13 @@ export function PuzzleDetailClient({
                               key={ext}
                               className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800"
                             >
-                              {ext}
+                              {isForeigner ? toEnglishInclude(ext) : ext}
                             </span>
                           ))}
                         </div>
                       )}
                       {offer.comment && (
-                        <p className="text-[12px] text-neutral-400 italic">&quot;{offer.comment}&quot;</p>
+                        <OfferCommentText comment={offer.comment} isForeigner={isForeigner} />
                       )}
                     </div>
                   </div>
@@ -1137,7 +1139,7 @@ export function PuzzleDetailClient({
                               key={cat}
                               className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
                             >
-                              🍾 {cat}
+                              🍾 {isForeigner ? toEnglishInclude(cat) : cat}
                             </span>
                           ))}
                         </div>
@@ -1149,13 +1151,13 @@ export function PuzzleDetailClient({
                               key={ext}
                               className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800"
                             >
-                              {ext}
+                              {isForeigner ? toEnglishInclude(ext) : ext}
                             </span>
                           ))}
                         </div>
                       )}
                       {offer.comment && (
-                        <p className="text-[12px] text-neutral-400 italic">&quot;{offer.comment}&quot;</p>
+                        <OfferCommentText comment={offer.comment} isForeigner={isForeigner} />
                       )}
                     </div>
                   </div>

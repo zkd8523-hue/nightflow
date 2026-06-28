@@ -7,6 +7,8 @@ import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferB
 import type { PuzzleOffer } from "@/types/database";
 import { formatRelativeTime } from "@/lib/utils/format";
 import { LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
+import { toEnglishInclude } from "@/lib/utils/liquorEn";
+import { useTranslatedComment } from "@/hooks/useTranslatedComment";
 
 function isLiquor(item: string): boolean {
   return LIQUOR_KEYWORDS.some((kw) => item.includes(kw));
@@ -45,6 +47,7 @@ export function SecretOfferCard({
   const dealCount = offer.md?.md_deal_count ?? null;
   const staggerStyle = { "--stagger-idx": index } as React.CSSProperties;
   const t = (ko: string, en: string) => (isForeigner ? en : ko);
+  const commentEn = useTranslatedComment(offer.comment, !!isForeigner);
 
   return (
     <div
@@ -104,7 +107,7 @@ export function SecretOfferCard({
                       key={inc}
                       className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
                     >
-                      🍾 {inc}
+                      🍾 {isForeigner ? toEnglishInclude(inc) : inc}
                     </span>
                   ))}
                 </div>
@@ -116,7 +119,7 @@ export function SecretOfferCard({
                       key={inc}
                       className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800"
                     >
-                      {inc}
+                      {isForeigner ? toEnglishInclude(inc) : inc}
                     </span>
                   ))}
                 </div>
@@ -125,7 +128,7 @@ export function SecretOfferCard({
           );
         })()}
         {offer.comment && (
-          <p className="text-[12px] text-neutral-400 italic">&ldquo;{offer.comment}&rdquo;</p>
+          <p className="text-[12px] text-neutral-400 italic">&ldquo;{isForeigner ? (commentEn ?? offer.comment) : offer.comment}&rdquo;</p>
         )}
       </div>
 
