@@ -503,9 +503,10 @@ async function handleOfferReminder(supabase: ReturnType<typeof createClient>) {
 }
 
 // ============================================================
-// 외국인 전용 D-3 / D-1 이메일 리마인더 (이탈 방지 + 기대치 관리)
+// 외국인 전용 D-7 / D-1 이메일 리마인더 (이탈 방지 + 기대치 관리)
 // 한국 유저는 D-2 알림톡(handleOfferReminder)이 담당. 외국인은 이메일.
 // 19:00~19:09 KST 1회. 오퍼 마감이 당일이라 "오퍼는 당일 도착" 기대치 세팅 톤.
+// (오퍼 도착 메일은 handleFirstOffer가 깃발당 1회 — 여긴 일정 리마인더만)
 // ============================================================
 async function handleForeignerReminders(supabase: ReturnType<typeof createClient>) {
   const nowUtc = new Date();
@@ -516,7 +517,7 @@ async function handleForeignerReminders(supabase: ReturnType<typeof createClient
 
   const kstNow = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
 
-  for (const daysLeft of [3, 1]) {
+  for (const daysLeft of [7, 1]) {
     const eventType = `puzzle_reminder_d${daysLeft}`;
     const target = new Date(kstNow.getTime() + daysLeft * 24 * 60 * 60 * 1000);
     const targetDateStr = target.toISOString().slice(0, 10);

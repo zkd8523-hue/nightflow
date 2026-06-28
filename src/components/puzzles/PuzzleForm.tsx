@@ -267,6 +267,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   );
   // 오픈채팅 URL — edit 모드면 puzzle에서 복원, 신규 등록은 항상 빈 값으로 시작
   const [kakaoUrl, setKakaoUrl] = useState(puzzle?.kakao_open_chat_url ?? "");
+  // 외국인 여행상태 게이트: 확정/여행중만 깃발 허용, 계획중은 홈으로 회유 (신규 등록만)
+  const [tripStatus, setTripStatus] = useState<null | "qualified" | "planning">(null);
   const [submitting, setSubmitting] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   // 당일 18시 이후 등록 시도 시 안내 다이얼로그
@@ -670,6 +672,69 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       if (!navigating) setSubmitting(false);
     }
   };
+
+  // ── 외국인 여행상태 게이트 (신규 등록만) ──────────────────────────
+  // 계획중인 사람은 깃발 마켓을 오염시키므로(실제 방문 불확실, MD 오퍼 낭비)
+  // 차단하고 홈으로 회유. 확정/여행중만 깃발 폼 노출.
+  const showTripGate = isForeigner && !isEditMode;
+
+  if (showTripGate && tripStatus === null) {
+    return (
+      <div className="space-y-6 pb-12">
+        <div className="bg-[#1C1C1E] rounded-3xl p-6 space-y-5">
+          <div className="space-y-1.5">
+            <h2 className="text-[20px] font-black text-white leading-snug tracking-tight">
+              Is your Korea trip confirmed,<br />or are you already in Korea?
+            </h2>
+            <p className="text-[13px] text-neutral-500 leading-relaxed">
+              Seoul clubs send real offers — only for confirmed visitors.
+            </p>
+          </div>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setTripStatus("qualified")}
+              className="w-full h-14 rounded-2xl bg-white text-black font-black text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-200 active:scale-[0.99] transition-all"
+            >
+              ✅ Yes — booked or already in Korea
+            </button>
+            <button
+              type="button"
+              onClick={() => setTripStatus("planning")}
+              className="w-full h-14 rounded-2xl bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-700/60 active:scale-[0.99] transition-all"
+            >
+              🗓️ Not yet, just planning
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (showTripGate && tripStatus === "planning") {
+    return (
+      <div className="space-y-6 pb-12">
+        <div className="bg-[#1C1C1E] rounded-3xl p-7 space-y-5 text-center">
+          <div className="text-[40px]">🗓️</div>
+          <div className="space-y-2">
+            <h2 className="text-[20px] font-black text-white tracking-tight">
+              Trip not locked in yet?
+            </h2>
+            <p className="text-[14px] text-neutral-400 leading-relaxed">
+              No rush — Seoul clubs send offers <span className="text-white font-bold">fast, even same-day.</span> Come back the moment your trip is confirmed and you'll still be right on time. 🎉
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/en")}
+            className="w-full h-13 py-3.5 rounded-2xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 active:scale-[0.99] transition-all"
+          >
+            Back to home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-12">
