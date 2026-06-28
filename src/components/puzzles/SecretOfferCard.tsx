@@ -14,6 +14,13 @@ function isLiquor(item: string): boolean {
   return LIQUOR_KEYWORDS.some((kw) => item.includes(kw));
 }
 
+const AREA_EN: Record<string, string> = {
+  "강남": "Gangnam", "홍대": "Hongdae", "이태원": "Itaewon",
+  "서울 어디든": "Anywhere in Seoul",
+  "부산": "Busan", "대구": "Daegu", "인천": "Incheon",
+  "광주": "Gwangju", "대전": "Daejeon", "울산": "Ulsan", "세종": "Sejong",
+};
+
 interface SecretOfferCardProps {
   offer: PuzzleOffer;
   offerNumber: number;
@@ -67,7 +74,7 @@ export function SecretOfferCard({
             >
               {club?.name || t("클럽", "Club")}
               {club?.area && (
-                <span className="text-neutral-500 font-medium"> · {club.area}</span>
+                <span className="text-neutral-500 font-medium"> · {isForeigner ? (AREA_EN[club.area] ?? club.area) : club.area}</span>
               )}
               <ChevronRight className="w-3.5 h-3.5 text-neutral-500 ml-0.5" />
             </Link>
@@ -75,7 +82,7 @@ export function SecretOfferCard({
             <p className="text-[15px] font-black text-white">
               {club?.name || t("클럽", "Club")}
               {club?.area && (
-                <span className="text-neutral-500 font-medium"> · {club.area}</span>
+                <span className="text-neutral-500 font-medium"> · {isForeigner ? (AREA_EN[club.area] ?? club.area) : club.area}</span>
               )}
             </p>
           )}

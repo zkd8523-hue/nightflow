@@ -43,8 +43,11 @@ export function MDContactCard({ md, onContactClick, isForeigner }: MDContactCard
   const showAll = !methods || methods.length === 0;
 
   const showDm    = (showAll || methods!.includes("dm"))    && !!md.instagram;
-  const showPhone = (showAll || methods!.includes("phone")) && !!md.phone;
-  const showKakao = (showAll || methods!.includes("kakao")) && !!md.kakao_open_chat_url;
+  // 외국인: 인스타 DM이 있으면 카톡/전화는 불필요 정보 → 숨김.
+  // (인스타가 없는 MD면 연락 수단이 0이 되므로 그때만 카톡/전화 폴백 노출)
+  const hideKoreanOnlyForForeigner = isForeigner && showDm;
+  const showPhone = (showAll || methods!.includes("phone")) && !!md.phone && !hideKoreanOnlyForForeigner;
+  const showKakao = (showAll || methods!.includes("kakao")) && !!md.kakao_open_chat_url && !hideKoreanOnlyForForeigner;
 
   return (
     <div className="space-y-2">

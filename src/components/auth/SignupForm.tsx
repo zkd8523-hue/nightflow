@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { COUNTRIES, countryFlag } from "@/lib/utils/countryFlag";
+import { isValidEmailFormat, suggestEmail } from "@/lib/utils/emailCheck";
 
 import type { User as AuthUser } from "@supabase/supabase-js";
 
@@ -139,6 +140,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [countryCode, setCountryCode] = useState<string | null>(null);
   const [countrySearch, setCountrySearch] = useState("");
   const [countryFocused, setCountryFocused] = useState(false);
+  // 이메일 폴백 입력 (OAuth가 email을 안 준 외국인만). authUser.email 있으면 미사용.
+  const [emailInput, setEmailInput] = useState("");
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -478,6 +481,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
       // 생년월일: phone 단계에서 19세 게이트를 통과한 값(YYYY-MM-DD). 유효할 때만 저장.
       const birthdayToSave = birthdayValid ? birthdayISO : null;
 
+      // 이메일: 외국인 알림(첫 오퍼/수락/리마인더) 발송용.
+      // OAuth(구글/애플)가 준 authUser.email 우선, 없으면 폴백 입력값.
+      const emailToSave =
+        (authUser.email || emailInput).trim().toLowerCase() || null;
+
       // 기존 row가 있으면 신규 가입 관련 필드만 UPDATE (role/referred_by/signup_source/kakao_id/profile_image 보존)
       // 없으면 INSERT (BEFORE INSERT 트리거 3종이 정상 발동)
       const { error } = existing
@@ -490,6 +498,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               alimtalk_consent: agreeMarketing,
               alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
               ...(countryCode ? { country_code: countryCode } : {}),
+              ...(emailToSave ? { email: emailToSave } : {}),
             })
             .eq("id", authUser.id)
         : await supabase.from("users").insert({
@@ -505,6 +514,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             referred_by: referredById,
             signup_source: signupSource,
             ...(countryCode ? { country_code: countryCode } : {}),
+            ...(emailToSave ? { email: emailToSave } : {}),
           });
 
       if (error) {
@@ -935,10 +945,43 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               })()}
             </div>
 
+            {/* 이메일 폴백: OAuth(구글/애플)가 email을 안 준 경우만 노출.
+                외국인은 카카오 알림톡을 못 써서 이메일이 유일한 알림 채널. */}
+            {isForeigner && authUser && !authUser.email && (
+              <div className="space-y-1.5">
+                <p className="text-[13px] text-neutral-400">
+                  Email <span className="text-neutral-600">— we'll notify you when clubs send offers</span>
+                </p>
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  placeholder="you@example.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  className="w-full h-12 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] px-4 focus:outline-none focus:border-white transition-colors"
+                />
+                {(() => {
+                  const sug = suggestEmail(emailInput);
+                  if (!sug) return null;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => setEmailInput(sug)}
+                      className="text-[12px] text-amber-400 hover:text-amber-300 transition-colors"
+                    >
+                      Did you mean <span className="font-bold underline">{sug}</span>?
+                    </button>
+                  );
+                })()}
+              </div>
+            )}
+
             <div className="space-y-3 pt-1">
               <Button
                 onClick={() => setStep("nickname")}
-                disabled={!countryCode}
+                disabled={!countryCode || (isForeigner && !!authUser && !authUser.email && !isValidEmailFormat(emailInput))}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
                 Next →

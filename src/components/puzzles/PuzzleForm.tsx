@@ -451,7 +451,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     setEventDate(tomorrow);
     setShowLateTodayDialog(false);
     toast.success(isForeigner
-      ? `Flag moved to tomorrow (${dayjs(tomorrow).format("MMM D")})`
+      ? `Moved to tomorrow (${dayjs(tomorrow).format("MMM D")})`
       : `내일(${dayjs(tomorrow).format("M/D")}) 깃발로 변경했어요`);
   };
 
@@ -588,7 +588,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           target_count: effectiveTargetCount,
         });
 
-        toast.success(effectiveIsRecruiting ? t("퍼즐이 수정되었어요", "Updated!") : t("깃발이 수정되었어요", "Flag updated!"));
+        toast.success(effectiveIsRecruiting ? t("퍼즐이 수정되었어요", "Updated!") : t("깃발이 수정되었어요", "Updated!"));
         clearDraft();
         setSubmitted(true);
         navigating = true;
@@ -626,7 +626,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
 
       if (puzzleError) {
         console.error("puzzles insert error:", puzzleError);
-        return fail('db_error', puzzleError.message || t('퍼즐 등록에 실패했습니다', 'Flag submission failed'));
+        return fail('db_error', puzzleError.message || t('퍼즐 등록에 실패했습니다', 'Submission failed'));
       }
 
       // 대표자를 puzzle_members에도 추가 (fire-and-forget — 네비게이션 블로킹 X)
@@ -653,7 +653,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       toast.success(
         effectiveIsRecruiting
           ? t("퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·MD 모집, 이후 60분간 검토할 수 있어요 🧩", "Posted! Offers close at 8pm. You have 60 min to review 🧩")
-          : t("깃발이 올라갔어요! 🚩", "Flag planted! 🚩")
+          : t("깃발이 올라갔어요! 🚩", "Done! Top clubs will send you offers 🎉")
       );
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
@@ -745,7 +745,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         </div>
         <div>
           <div className="flex flex-wrap items-start gap-2">
-            {MAIN_AREAS.map((a) => (
+            {/* 외국인은 강남/홍대만 (이태원=MD 없음 제외) */}
+            {(isForeigner ? MAIN_AREAS.filter((a) => a !== "이태원") : MAIN_AREAS).map((a) => (
               <button
                 key={a}
                 type="button"
@@ -759,25 +760,27 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                 {aL(a)}
               </button>
             ))}
-            {/* 서울 어디든: 항상 제일 오른쪽에 배치. 안내 문구는 흐름에서 빼서(absolute) 버튼 위치 고정 */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => handleAreaChange("서울 어디든")}
-                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
-                  area === "서울 어디든"
-                    ? "bg-white text-black border-transparent"
-                    : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                }`}
-              >
-                {aL("서울 어디든")}
-              </button>
-              {area === "서울 어디든" && (
-                <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 text-[11px] text-amber-400/80 leading-relaxed whitespace-nowrap">
-                  {t("* 가장 많은 옵션을 받아봐요 *", "* Most offers *")}
-                </p>
-              )}
-            </div>
+            {/* 서울 어디든: 외국인 제외 (강남/홍대만). 안내 문구는 흐름에서 빼서(absolute) 버튼 위치 고정 */}
+            {!isForeigner && (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => handleAreaChange("서울 어디든")}
+                  className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
+                    area === "서울 어디든"
+                      ? "bg-white text-black border-transparent"
+                      : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                  }`}
+                >
+                  {aL("서울 어디든")}
+                </button>
+                {area === "서울 어디든" && (
+                  <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 text-[11px] text-amber-400/80 leading-relaxed whitespace-nowrap">
+                    {t("* 가장 많은 옵션을 받아봐요 *", "* Most offers *")}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -1205,7 +1208,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             ? t("퍼즐이 완성되면 MD가 오퍼를 보내와요", "Clubs will send offers once your group is complete")
             : t("마음에 드는 오퍼만 고르면 끝!", "Just pick the offer you like!"))}
         description={isEditMode
-          ? t("변경된 내용으로 갱신됩니다.", "Your flag will be updated.")
+          ? t("변경된 내용으로 갱신됩니다.", "Your request will be updated.")
           : t("오퍼는 당일 8시 마감. 60분간 더 검토할 수 있어요.", "Offers close at 8pm today. You have 60 min to review.")}
         confirmText={isEditMode ? t("수정 완료", "Save") : (isRecruitingParty ? t("파티원 모집 시작", "Start recruiting") : t("계속", "Continue"))}
         cancelText={t("다시 확인", "Go back")}
@@ -1236,7 +1239,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
                 <Flag className="w-5 h-5 text-amber-500" />
               </div>
               <SheetTitle className="text-white font-black text-xl tracking-tight">
-                {t("오늘 깃발은 오후 8시까지였어요", "Today's flag deadline was 8pm")}
+                {t("오늘 깃발은 오후 8시까지였어요", "Today's request deadline was 8pm")}
               </SheetTitle>
             </div>
             <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1">
@@ -1250,7 +1253,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               className="h-14 rounded-2xl bg-white hover:bg-neutral-200 text-black font-black text-lg shadow-lg flex items-center justify-center gap-2"
             >
               <Flag className="w-5 h-5" />
-              {t("내일 깃발로 등록", "Plant flag for tomorrow")}
+              {t("내일 깃발로 등록", "Request for tomorrow")}
             </Button>
             <Button
               variant="outline"

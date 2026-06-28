@@ -91,6 +91,14 @@ function formatEventDate(dateStr: string, en = false) {
   return `${m}월 ${day}일 (${days[d.getDay()]})`;
 }
 
+const AREA_EN: Record<string, string> = {
+  "강남": "Gangnam", "홍대": "Hongdae", "이태원": "Itaewon",
+  "서울 어디든": "Anywhere in Seoul",
+  "부산": "Busan", "대구": "Daegu", "인천": "Incheon",
+  "광주": "Gwangju", "대전": "Daejeon", "울산": "Ulsan", "세종": "Sejong",
+};
+const areaLabel = (area: string, en: boolean) => (en ? AREA_EN[area] ?? area : area);
+
 const STATUS_LABEL: Record<string, string> = {
   open: "제안 받는중",
   selecting: "검토 중",
@@ -162,7 +170,7 @@ export function PuzzleDetailClient({
 
   useEffect(() => {
     if (searchParams.get("edit_blocked") === "offers") {
-      toast.error(t("MD 제안이 들어온 깃발은 수정할 수 없어요", "Flags with MD offers can't be edited"));
+      toast.error(t("MD 제안이 들어온 깃발은 수정할 수 없어요", "Requests with offers can't be edited"));
       router.replace(`/flags/${puzzle.id}`);
     }
   }, [searchParams, router, puzzle.id]);
@@ -187,9 +195,9 @@ export function PuzzleDetailClient({
     const url = `${window.location.origin}/flags/${puzzle.id}${lq}`;
     const totalBudget =
       puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count;
-    const title = isForeigner ? `NightFlow Flag · ${puzzle.area}` : `나플 깃발 · ${puzzle.area}`;
+    const title = isForeigner ? `NightFlow Request · ${areaLabel(puzzle.area, true)}` : `나플 깃발 · ${puzzle.area}`;
     const text = isForeigner
-      ? `${puzzle.area} · ₩${totalBudget.toLocaleString()} · ${puzzle.target_count} ppl`
+      ? `${areaLabel(puzzle.area, true)} · ₩${totalBudget.toLocaleString()} · ${puzzle.target_count} ppl`
       : `${puzzle.area} · 총 ${Math.round(totalBudget / 10000)}만원 · ${puzzle.target_count}명`;
     if (navigator.share) {
       try {
@@ -362,7 +370,7 @@ export function PuzzleDetailClient({
       if (error) throw error;
       if (!data?.success) { toast.error(data?.error || t("취소에 실패했습니다", "Failed to cancel")); return; }
       setShowCancelSheet(false);
-      toast.success(t("깃발을 내렸습니다", "Flag taken down"));
+      toast.success(t("깃발을 내렸습니다", "Request taken down"));
       router.push(isForeigner ? "/en" : "/?tab=puzzle");
     } catch {
       toast.error(t("취소에 실패했습니다", "Failed to cancel"));
@@ -551,11 +559,11 @@ export function PuzzleDetailClient({
           <Link href={isForeigner ? "/en" : "/?tab=puzzle"} className="text-white">
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-[17px] font-black text-white flex-1">{t("깃발 상세", "Flag detail")}</h1>
+          <h1 className="text-[17px] font-black text-white flex-1">{t("깃발 상세", "Request detail")}</h1>
           {currentUserId === puzzle.leader_id && isOpen && pendingOffers.length === 0 && (
             <Link
               href={`/flags/${puzzle.id}/edit${lq}`}
-              aria-label={t("깃발 수정", "Edit flag")}
+              aria-label={t("깃발 수정", "Edit request")}
               className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
             >
               <Pencil className="w-4 h-4" />
@@ -593,7 +601,7 @@ export function PuzzleDetailClient({
               className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 space-y-2"
             >
               <div className="flex items-center gap-2">
-                <span className="text-[15px] font-black text-red-300">{t("🚩 취소된 깃발입니다", "🚩 This flag was cancelled")}</span>
+                <span className="text-[15px] font-black text-red-300">{t("🚩 취소된 깃발입니다", "🚩 This request was cancelled")}</span>
               </div>
               {puzzle.cancelled_reason ? (
                 <>
@@ -606,7 +614,7 @@ export function PuzzleDetailClient({
                 </>
               ) : (
                 <p className="text-[13px] text-neutral-300 leading-relaxed">
-                  {t("이 깃발은 더 이상 진행되지 않습니다. 새로운 깃발을 등록해 주세요.", "This flag is no longer active. Please plant a new one.")}
+                  {t("이 깃발은 더 이상 진행되지 않습니다. 새로운 깃발을 등록해 주세요.", "This request is no longer active. Please make a new one.")}
                 </p>
               )}
               {puzzle.cancelled_at && (
@@ -654,7 +662,7 @@ export function PuzzleDetailClient({
                 {puzzle.notes && (
                   <p className="text-[22px] font-black text-white leading-snug tracking-tight break-keep">{puzzle.notes}</p>
                 )}
-                <span className="text-[14px] text-neutral-400">{puzzle.area}</span>
+                <span className="text-[14px] text-neutral-400">{areaLabel(puzzle.area, isForeigner)}</span>
               </div>
               <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mr-1 shrink-0">
                 <Share2 className="w-4.5 h-4.5" />
@@ -1345,7 +1353,7 @@ export function PuzzleDetailClient({
                 variant="outline"
                 className="w-full h-12 border-red-500/50 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[14px] rounded-2xl"
               >
-                {t("깃발 내리기", "Take down flag")}
+                {t("깃발 내리기", "Take down request")}
               </Button>
             </section>
           )}

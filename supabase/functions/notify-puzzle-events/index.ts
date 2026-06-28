@@ -12,6 +12,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { solapiSendAlimtalk } from "../_shared/solapi.ts";
+import { resendSend } from "../_shared/resend.ts";
+import {
+  emailFirstOffer,
+  emailMatched,
+  emailReminder,
+  formatDateEn,
+  areaEn,
+} from "../_shared/puzzleEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -113,6 +121,64 @@ async function sendAndLog(
   }
 }
 
+// 외국인 판별: 이메일이 있고 bounce 안 났고, (국가코드 있거나 phone 없음)
+// → 카카오 알림톡 대신 이메일로 발송.
+type LeaderRow = {
+  id: string;
+  phone: string | null;
+  email?: string | null;
+  email_bounced?: boolean | null;
+  country_code?: string | null;
+};
+
+function useEmailChannel(leader: LeaderRow): boolean {
+  return (
+    !!leader.email &&
+    !leader.email_bounced &&
+    (!!leader.country_code || !leader.phone)
+  );
+}
+
+// 이메일 발송 + notification_logs 기록 (알림톡 sendAndLog의 이메일 버전)
+async function sendEmailAndLog(
+  supabase: ReturnType<typeof createClient>,
+  eventType: string,
+  puzzleId: string,
+  leader: LeaderRow,
+  content: { subject: string; html: string },
+) {
+  if (!leader.email) return;
+  try {
+    await resendSend({ to: leader.email, subject: content.subject, html: content.html });
+    await supabase.from("notification_logs").insert({
+      event_type: eventType,
+      puzzle_id: puzzleId,
+      recipient_user_id: leader.id,
+      recipient_phone: leader.email, // 이메일 채널: 수신자 식별자로 email 저장
+      template_id: "email",
+      status: "sent",
+    });
+    console.log(`✅ 이메일 발송 (event=${eventType}, userId=${leader.id})`);
+  } catch (e) {
+    console.error(`❌ 이메일 실패 (event=${eventType}, userId=${leader.id}):`, e);
+    await supabase.from("notification_logs").insert({
+      event_type: eventType,
+      puzzle_id: puzzleId,
+      recipient_user_id: leader.id,
+      recipient_phone: leader.email,
+      template_id: "email",
+      status: "failed",
+      error_message: String(e),
+    });
+  }
+}
+
+// 퍼즐 예산 → "₩500,000" 포맷
+function budgetText(p: { total_budget: number | null; budget_per_person: number; target_count: number }): string {
+  const total = p.total_budget ?? p.budget_per_person * p.target_count;
+  return `₩${total.toLocaleString("en-US")}`;
+}
+
 // ============================================================
 // #1 첫 오퍼 도착
 // ============================================================
@@ -128,11 +194,11 @@ async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
 
   if (!offers || offers.length === 0) return;
 
-  // 해당 퍼즐들의 상태 확인
+  // 해당 퍼즐들의 상태 확인 (이메일용 필드 포함)
   const puzzleIds = [...new Set(offers.map(o => o.puzzle_id))];
   const { data: openPuzzles } = await supabase
     .from("puzzles")
-    .select("id, leader_id, status")
+    .select("id, leader_id, status, event_date, area, total_budget, budget_per_person, target_count")
     .in("id", puzzleIds)
     .eq("status", "open");
 
@@ -140,41 +206,55 @@ async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
 
   if (!openPuzzles || openPuzzles.length === 0) return;
 
-  // puzzle_id별 offer count + leader_id 매핑
-  const rows = offers
-    .filter(o => openPuzzles.some(p => p.id === o.puzzle_id))
-    .map(o => ({
-      puzzle_id: o.puzzle_id,
-      puzzles: openPuzzles.find(p => p.id === o.puzzle_id)!,
-    }));
+  type OpenPuzzle = {
+    id: string; leader_id: string; status: string;
+    event_date: string; area: string;
+    total_budget: number | null; budget_per_person: number; target_count: number;
+  };
 
-  if (!rows || rows.length === 0) return;
-
-  // puzzle_id 별 count 집계
-  const countMap: Record<string, { leaderId: string; count: number }> = {};
-  for (const row of rows as Array<{ puzzle_id: string; puzzles: { leader_id: string; status: string } }>) {
-    if (!countMap[row.puzzle_id]) {
-      countMap[row.puzzle_id] = { leaderId: row.puzzles.leader_id, count: 0 };
-    }
-    countMap[row.puzzle_id].count++;
+  // puzzle_id 별 offer count + 퍼즐 매핑
+  const countMap: Record<string, { puzzle: OpenPuzzle; count: number }> = {};
+  for (const o of offers) {
+    const puzzle = (openPuzzles as OpenPuzzle[]).find(p => p.id === o.puzzle_id);
+    if (!puzzle) continue;
+    if (!countMap[o.puzzle_id]) countMap[o.puzzle_id] = { puzzle, count: 0 };
+    countMap[o.puzzle_id].count++;
   }
 
-  for (const [puzzleId, { leaderId }] of Object.entries(countMap)) {
+  for (const [puzzleId, { puzzle, count }] of Object.entries(countMap)) {
     // count !== 1 가드는 제거: cron이 5분 간격이라 그 사이 두 번째 오퍼가 도착하면
     // count가 2가 되어 영영 안 발송됐던 버그. alreadySent 만으로 중복 발송 충분히 방지.
     if (await alreadySent(supabase, "puzzle_first_offer", puzzleId)) continue;
 
     const { data: leader } = await supabase
       .from("users")
-      .select("id, phone")
-      .eq("id", leaderId)
+      .select("id, phone, email, email_bounced, country_code")
+      .eq("id", puzzle.leader_id)
       .single();
 
     if (!leader) continue;
 
-    await sendAndLog(supabase, "puzzle_first_offer", puzzleId, leader, TPL.PUZZLE_FIRST_OFFER, {
-      puzzleUrl: puzzleUrl(puzzleId),
-    });
+    if (useEmailChannel(leader as LeaderRow)) {
+      // 외국인: 이메일 발송
+      await sendEmailAndLog(
+        supabase,
+        "puzzle_first_offer",
+        puzzleId,
+        leader as LeaderRow,
+        emailFirstOffer({
+          dateEn: formatDateEn(puzzle.event_date),
+          areaEn: areaEn(puzzle.area),
+          budget: budgetText(puzzle),
+          headcount: `${puzzle.target_count} ppl`,
+          offerCount: count,
+          url: puzzleUrl(puzzleId),
+        }),
+      );
+    } else {
+      await sendAndLog(supabase, "puzzle_first_offer", puzzleId, leader, TPL.PUZZLE_FIRST_OFFER, {
+        puzzleUrl: puzzleUrl(puzzleId),
+      });
+    }
   }
 }
 
@@ -423,6 +503,69 @@ async function handleOfferReminder(supabase: ReturnType<typeof createClient>) {
 }
 
 // ============================================================
+// 외국인 전용 D-3 / D-1 이메일 리마인더 (이탈 방지 + 기대치 관리)
+// 한국 유저는 D-2 알림톡(handleOfferReminder)이 담당. 외국인은 이메일.
+// 19:00~19:09 KST 1회. 오퍼 마감이 당일이라 "오퍼는 당일 도착" 기대치 세팅 톤.
+// ============================================================
+async function handleForeignerReminders(supabase: ReturnType<typeof createClient>) {
+  const nowUtc = new Date();
+  const kstHour = (nowUtc.getUTCHours() + 9) % 24;
+  const kstMinute = nowUtc.getUTCMinutes();
+  const bypassTime = Deno.env.get("TEST_BYPASS_TIME") === "true";
+  if (!bypassTime && (kstHour !== 19 || kstMinute >= 10)) return;
+
+  const kstNow = new Date(nowUtc.getTime() + 9 * 60 * 60 * 1000);
+
+  for (const daysLeft of [3, 1]) {
+    const eventType = `puzzle_reminder_d${daysLeft}`;
+    const target = new Date(kstNow.getTime() + daysLeft * 24 * 60 * 60 * 1000);
+    const targetDateStr = target.toISOString().slice(0, 10);
+
+    const { data: puzzles } = await supabase
+      .from("puzzles")
+      .select("id, leader_id, event_date, area, total_budget, budget_per_person, target_count")
+      .eq("status", "open")
+      .eq("event_date", targetDateStr)
+      .gt("expires_at", nowUtc.toISOString());
+
+    console.log(`[foreignerReminder] D-${daysLeft} 퍼즐=${puzzles?.length ?? 0} (event_date=${targetDateStr})`);
+
+    if (!puzzles || puzzles.length === 0) continue;
+
+    for (const puzzle of puzzles as Array<{
+      id: string; leader_id: string; event_date: string; area: string;
+      total_budget: number | null; budget_per_person: number; target_count: number;
+    }>) {
+      if (await alreadySent(supabase, eventType, puzzle.id)) continue;
+
+      const { data: leader } = await supabase
+        .from("users")
+        .select("id, phone, email, email_bounced, country_code")
+        .eq("id", puzzle.leader_id)
+        .single();
+
+      // 외국인만 (한국 방장은 D-2 알림톡으로 충분)
+      if (!leader || !useEmailChannel(leader as LeaderRow)) continue;
+
+      await sendEmailAndLog(
+        supabase,
+        eventType,
+        puzzle.id,
+        leader as LeaderRow,
+        emailReminder({
+          daysLeft,
+          dateEn: formatDateEn(puzzle.event_date),
+          areaEn: areaEn(puzzle.area),
+          budget: budgetText(puzzle),
+          headcount: `${puzzle.target_count} ppl`,
+          url: puzzleUrl(puzzle.id),
+        }),
+      );
+    }
+  }
+}
+
+// ============================================================
 // #7 당일 12시 푸시 리마인더 (방장)
 // 이벤트(=마감) 당일 12:00~12:09 KST, pending 오퍼 1건 이상인 open 깃발 방장에게 1회.
 // "오늘 밤 준비됐어요? 오퍼 미리 둘러보세요" 사전 알림 (당일 20시 마감 알림과 별개).
@@ -494,7 +637,7 @@ async function handleMatched(supabase: ReturnType<typeof createClient>) {
 
   const { data: puzzles } = await supabase
     .from("puzzles")
-    .select("id, leader_id, accepted_offer_id, puzzle_offers!accepted_offer_id(md_id, table_type, clubs(name))")
+    .select("id, leader_id, accepted_offer_id, event_date, area, total_budget, budget_per_person, target_count, puzzle_offers!accepted_offer_id(md_id, table_type, clubs(name))")
     .eq("status", "accepted")
     .not("accepted_offer_id", "is", null)
     .gte("updated_at", tenMinutesAgo);
@@ -505,11 +648,42 @@ async function handleMatched(supabase: ReturnType<typeof createClient>) {
     id: string;
     leader_id: string;
     accepted_offer_id: string;
+    event_date: string;
+    area: string;
+    total_budget: number | null;
+    budget_per_person: number;
+    target_count: number;
     puzzle_offers: { md_id: string; table_type: string; clubs: { name: string } | null } | null;
   }>) {
     const clubName = puzzle.puzzle_offers?.clubs?.name ?? "클럽";
     const tableType = puzzle.puzzle_offers?.table_type ?? "";
     const mdId = puzzle.puzzle_offers?.md_id;
+
+    // 외국인 방장: 매칭 이메일 (클럽 연락 안내). 조각원 알림(아래)과 별개.
+    // 한국 방장은 수락 당사자라 기존대로 알림 없음.
+    if (!(await alreadySent(supabase, "puzzle_matched", puzzle.id, puzzle.leader_id))) {
+      const { data: leader } = await supabase
+        .from("users")
+        .select("id, phone, email, email_bounced, country_code")
+        .eq("id", puzzle.leader_id)
+        .single();
+      if (leader && useEmailChannel(leader as LeaderRow)) {
+        await sendEmailAndLog(
+          supabase,
+          "puzzle_matched",
+          puzzle.id,
+          leader as LeaderRow,
+          emailMatched({
+            dateEn: formatDateEn(puzzle.event_date),
+            areaEn: areaEn(puzzle.area),
+            budget: budgetText(puzzle),
+            headcount: `${puzzle.target_count} ppl`,
+            clubName: clubName === "클럽" ? "the club" : clubName,
+            url: puzzleUrl(puzzle.id),
+          }),
+        );
+      }
+    }
 
     // #4 조각원 전원 (방장 제외 — 본인이 수락한 당사자, 멤버별 개별 중복 체크)
     const { data: members } = await supabase
@@ -569,6 +743,7 @@ serve(async (req: Request) => {
       ["leaderChanged", handleLeaderChanged(supabase)],
       ["matched", handleMatched(supabase)],
       ["offerReminder", handleOfferReminder(supabase)],
+      ["foreignerReminders", handleForeignerReminders(supabase)],
       ["deadlineEve", handleDeadlineEve(supabase)],
     ];
 

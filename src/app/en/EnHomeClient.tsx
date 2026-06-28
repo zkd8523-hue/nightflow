@@ -3,12 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { FaqTab } from "./FaqTab";
-import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, HelpCircle, Map } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
 
-type Tab = "flags" | "qa" | "map";
+type Tab = "flags" | "my" | "qa" | "map";
 
 type MyFlag = {
   id: string;
@@ -82,7 +82,7 @@ const MY_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   accepted: { label: "Matched", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
 };
 
-function MyFlags() {
+function MyRequestsTab() {
   const { user, isLoading } = useCurrentUser();
   const [flags, setFlags] = useState<MyFlag[] | null>(null);
 
@@ -115,10 +115,41 @@ function MyFlags() {
     return () => { cancelled = true; };
   }, [user]);
 
-  if (isLoading || !user || !flags || flags.length === 0) return null;
+  // 비로그인
+  if (!isLoading && !user) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-[15px] font-bold text-neutral-300">Log in to see your requests</p>
+        <p className="text-[13px] text-neutral-500">Track your requests and the offers clubs send you.</p>
+        <Link href="/login?lang=en" className="px-7 py-3 rounded-full bg-white text-black font-black text-[14px] hover:bg-neutral-200 transition-colors">
+          Log in
+        </Link>
+      </div>
+    );
+  }
+  // 로딩 (로그인 + fetch 전)
+  if (isLoading || flags === null) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <p className="text-[13px] text-neutral-500">Loading…</p>
+      </div>
+    );
+  }
+  // 로그인 + 깃발 없음
+  if (flags.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-[15px] font-bold text-neutral-300">No requests yet</p>
+        <p className="text-[13px] text-neutral-500">Post your date &amp; budget — top clubs send you offers.</p>
+        <Link href="/flags/new?lang=en" className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
+          Get VIP offers
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="px-4 pt-4 pb-2 space-y-2.5">
+    <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-2.5">
       <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">My requests</p>
       {flags.map((f) => {
         const area = AREA_EN[f.area] ?? f.area;
@@ -317,9 +348,6 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
         </p>
       </div>
 
-      {/* My flags (로그인 유저 본인 깃발 — 오퍼 확인 진입점) */}
-      <MyFlags />
-
       {/* ③ 한국인이 지금 올린 깃발 = 소셜 프루프 (캐러셀) */}
       {flags.length > 0 && (
         <div className="pt-5 pb-5 border-b border-neutral-900">
@@ -473,9 +501,11 @@ function MapTab() {
 // ── Main ─────────────────────────────────────────────────────────
 export function EnHomeClient({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubItem[] }) {
   const [tab, setTab] = useState<Tab>("flags");
+  const { user, isLoading } = useCurrentUser();
 
   const tabs: { code: Tab; label: string; icon: React.ReactNode }[] = [
     { code: "flags", label: "Home", icon: <Home className="w-4 h-4" /> },
+    { code: "my",    label: "My",    icon: <User className="w-4 h-4" /> },
     { code: "qa",    label: "Q&A",   icon: <HelpCircle className="w-4 h-4" /> },
     { code: "map",   label: "Map",   icon: <Map className="w-4 h-4" /> },
   ];
@@ -498,23 +528,35 @@ export function EnHomeClient({ flags, clubs = [] }: { flags: FlagItem[]; clubs?:
             <span className="text-[15px] font-black">NightFlow</span>
           </button>
         )}
-        <Link
-          href="/login?lang=en"
-          className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-white text-black font-black text-[13px] hover:bg-neutral-200 transition-colors"
-        >
-          Log in
-        </Link>
+        {isLoading ? (
+          <div className="w-[88px] h-9 rounded-full bg-neutral-800 animate-pulse" />
+        ) : user ? (
+          <Link
+            href="/flags/new?lang=en"
+            className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-amber-500 text-black font-black text-[13px] hover:bg-amber-400 transition-colors"
+          >
+            Get offers
+          </Link>
+        ) : (
+          <Link
+            href="/login?lang=en"
+            className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-white text-black font-black text-[13px] hover:bg-neutral-200 transition-colors"
+          >
+            Log in
+          </Link>
+        )}
       </header>
 
       {/* 콘텐츠 */}
       <div className="flex-1 overflow-hidden flex flex-col">
         {tab === "flags" && <FlagsTab flags={flags} clubs={clubs} />}
+        {tab === "my" && <MyRequestsTab />}
         {tab === "qa" && <FaqTab />}
         {tab === "map" && <MapTab />}
       </div>
 
       {/* 하단 탭 바 */}
-      <nav className="shrink-0 border-t border-neutral-800 bg-[#0A0A0A] grid grid-cols-3">
+      <nav className="shrink-0 border-t border-neutral-800 bg-[#0A0A0A] grid grid-cols-4">
         {tabs.map(({ code, label, icon }) => (
           <button
             key={code}
