@@ -22,7 +22,10 @@ export interface ClubLocationLike {
  *   getGoogleReviewsUrl({ name: "옥타곤", address: "서울 강남구 논현로...", area: "강남" })
  *   // → "https://www.google.com/maps/search/?api=1&query=옥타곤%20서울%20강남구%20논현로..."
  */
-export function getGoogleReviewsUrl(club: ClubLocationLike): string {
+// 앱 언어(Lang) → 구글 hl 파라미터 (UI·리뷰 자동번역 언어)
+const HL_BY_LANG: Record<string, string> = { en: "en", ja: "ja", zh: "zh-CN" };
+
+export function getGoogleReviewsUrl(club: ClubLocationLike, lang?: string): string {
   // 클럽명 + (주소 우선, 없으면 지역) — 동명 클럽 혼동을 줄이기 위해 위치 정보 동반
   const locationHint = club.address?.trim() || club.area?.trim() || "";
   const query = [club.name.trim(), locationHint]
@@ -30,5 +33,7 @@ export function getGoogleReviewsUrl(club: ClubLocationLike): string {
     .join(" ")
     .trim();
 
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+  const hl = lang ? HL_BY_LANG[lang] : undefined;
+  const hlParam = hl ? `&hl=${hl}` : "";
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}${hlParam}`;
 }

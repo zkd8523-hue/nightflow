@@ -2,6 +2,7 @@
 
 import { Instagram, Phone, MessageCircle, ChevronRight } from "lucide-react";
 import type { ContactMethodType, PublicUserProfile } from "@/types/database";
+import { type Lang, makeT } from "@/lib/i18n";
 
 type MDContactInfo = Pick<PublicUserProfile,
   "instagram" | "phone" | "kakao_open_chat_url" | "preferred_contact_methods"
@@ -11,7 +12,7 @@ interface MDContactCardProps {
   md: MDContactInfo;
   /** 액션 트래킹용 콜백 (선택) */
   onContactClick?: (method: ContactMethodType) => void;
-  isForeigner?: boolean;
+  lang?: Lang;
 }
 
 function extractInstagramHandle(input: string): string {
@@ -36,8 +37,9 @@ function formatPhone(phone: string): string {
   return phone;
 }
 
-export function MDContactCard({ md, onContactClick, isForeigner }: MDContactCardProps) {
-  const t = (ko: string, en: string) => (isForeigner ? en : ko);
+export function MDContactCard({ md, onContactClick, lang = "ko" }: MDContactCardProps) {
+  const isForeigner = lang !== "ko";
+  const t = makeT(lang);
   const methods = md.preferred_contact_methods;
   // null 또는 빈 배열 = 모든 수단 표시 (MDApplyForm UI 시맨틱과 일치)
   const showAll = !methods || methods.length === 0;

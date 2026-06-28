@@ -7,10 +7,17 @@ import { NextRequest, NextResponse } from "next/server";
 const ANTHROPIC_MODEL = "claude-haiku-4-5-20251001";
 const MAX_INPUT = 500; // comment는 짧음 — 과금/남용 방지 상한
 
+const TARGET_LANG: Record<string, string> = {
+  en: "English",
+  ja: "Japanese",
+  zh: "Simplified Chinese",
+};
+
 export async function POST(req: NextRequest) {
   let text: unknown;
+  let lang: unknown;
   try {
-    ({ text } = await req.json());
+    ({ text, lang } = await req.json());
   } catch {
     return NextResponse.json({ error: "invalid body" }, { status: 400 });
   }
@@ -19,6 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "text required" }, { status: 400 });
   }
   const input = text.trim().slice(0, MAX_INPUT);
+  const targetLang = TARGET_LANG[typeof lang === "string" ? lang : "en"] ?? "English";
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -38,10 +46,10 @@ export async function POST(req: NextRequest) {
         model: ANTHROPIC_MODEL,
         max_tokens: 300,
         system:
-          "You translate short Korean nightclub VIP-table offer comments into natural, concise English for foreign clubgoers. " +
-          "IMPORTANT: Korean liquor/club brand names must become their real English brand names, NOT literal translations. " +
+          `You translate short Korean nightclub VIP-table offer comments into natural, concise ${targetLang} for foreign clubgoers. ` +
+          "IMPORTANT: Korean liquor/club brand names must become their real international brand names (Latin/original spelling), NOT literal translations. " +
           "Examples: 발렌타인→Ballantine's, 돔페리뇽/돔 페리뇽→Dom Pérignon, 조니워커→Johnnie Walker, 헤네시→Hennessy, 맥캘란→Macallan, 그레이구스→Grey Goose, 모엣→Moët. " +
-          "Output ONLY the English translation — no quotes, no preamble, no notes.",
+          `Output ONLY the ${targetLang} translation — no quotes, no preamble, no notes.`,
         messages: [{ role: "user", content: input }],
       }),
     });

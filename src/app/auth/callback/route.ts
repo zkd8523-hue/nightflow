@@ -89,17 +89,21 @@ export async function GET(request: NextRequest) {
     } else {
       // 기존 유저 로그인 — 외국인은 /en으로
       // country_code 있거나, next에 lang=en이 포함된 경우 외국인으로 판단
+      const foreignLang =
+        langParam && langParam !== "ko"
+          ? langParam
+          : (safeNext.match(/lang=(en|ja|zh)/)?.[1] ?? null);
       const isForeigner =
         (profile.country_code != null && profile.country_code !== "") ||
-        langParam === "en" ||
-        safeNext.includes("lang=en");
-      // next가 의미있는 목적지(단순 루트+lang=en 제외)가 아닐 때만 /en으로
+        foreignLang != null;
+      // next가 의미있는 목적지(단순 루트+lang= 제외)가 아닐 때만 /en으로
       const isDefaultNext =
         safeNext === "/" ||
         safeNext === "" ||
         /^\/?(\?.*)?$/.test(safeNext); // /, /?foo=bar 형태
       if (isForeigner && isDefaultNext) {
-        redirectUrl = `${origin}/en`;
+        // 외국어(ja/zh) 유지, 없으면 영어 기본
+        redirectUrl = `${origin}/en?lang=${foreignLang ?? "en"}`;
       }
     }
   }

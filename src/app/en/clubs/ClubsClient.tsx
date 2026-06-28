@@ -1,27 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { DrinkMenuViewer } from "@/components/clubs/DrinkMenuViewer";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
-
-const AREA_EN: Record<string, string> = {
-  강남: "Gangnam",
-  홍대: "Hongdae",
-  이태원: "Itaewon",
-  건대: "Konkuk",
-  부산: "Busan",
-  대구: "Daegu",
-  인천: "Incheon",
-  광주: "Gwangju",
-  대전: "Daejeon",
-  울산: "Ulsan",
-  세종: "Sejong",
-};
-
-// 외국인에게 의미 있는 지역만 필터 칩으로 노출 (나머지는 "All"에 포함)
-const FILTER_AREAS = ["강남", "홍대", "이태원"];
+import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { LangSwitcher } from "@/components/layout/LangSwitcher";
 
 type Club = {
   id: string;
@@ -42,25 +28,26 @@ type Club = {
 };
 
 export function ClubsClient({ clubs }: { clubs: Club[] }) {
-  const [selectedArea, setSelectedArea] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<"reviews" | "rating">("reviews");
+  const [lang, setLang] = useState<Lang>("en");
+  const [selectedClub, setSelectedClub] = useState<Club | null>(null);
+  useEffect(() => {
+    const l = new URLSearchParams(window.location.search).get("lang");
+    setLang(l === "ja" ? "ja" : l === "zh" ? "zh" : "en");
+  }, []);
+  const t = makeT(lang);
+  const tr = (en: string) => t("", en);
+  const langQ = `?lang=${lang}`;
 
-  const filtered = useMemo(() => {
-    const list = clubs.filter((c) => {
-      const areaMatch = !selectedArea || c.area === selectedArea;
-      const q = query.trim().toLowerCase();
-      const nameMatch = !q || c.name.toLowerCase().includes(q) || (AREA_EN[c.area] ?? "").toLowerCase().includes(q);
-      return areaMatch && nameMatch;
-    });
-
-    return [...list].sort((a, b) => {
-      if (sort === "rating") {
-        return (b.google_rating ?? 0) - (a.google_rating ?? 0);
-      }
-      return (b.google_review_count ?? 0) - (a.google_review_count ?? 0);
-    });
-  }, [clubs, selectedArea, query, sort]);
+  // 리뷰 많은 순 정렬 (필터 없음 — 한국 가이드처럼 지역 섹션으로 보여줌)
+  const sorted = useMemo(
+    () => [...clubs].sort((a, b) => (b.google_review_count ?? 0) - (a.google_review_count ?? 0)),
+    [clubs],
+  );
+  // 강남/홍대 두 줄 가로 스크롤 (한국 가이드처럼). 해당 지역 클럽 없으면 섹션 생략.
+  const groups = ["강남", "홍대"]
+    .map((ko) => ({ ko, items: sorted.filter((c) => c.area === ko) }))
+    .filter((g) => g.items.length > 0);
+  const shownCount = groups.reduce((n, g) => n + g.items.length, 0);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -68,118 +55,106 @@ export function ClubsClient({ clubs }: { clubs: Club[] }) {
 
         {/* Header */}
         <header className="space-y-3">
-          <Link href="/en" className="inline-block text-[13px] text-neutral-500 hover:text-white transition-colors">
+          <Link href={`/en${langQ}`} className="inline-block text-[13px] text-neutral-500 hover:text-white transition-colors">
             ← NightFlow
           </Link>
           <div className="space-y-1">
-            <h1 className="text-[28px] font-black tracking-tight">Seoul clubs</h1>
-            <p className="text-[13px] text-neutral-500">
-              {sort === "rating" ? "Top rated" : "Most reviewed"} · {filtered.length} clubs
-            </p>
+            <h1 className="text-[28px] font-black tracking-tight">{tr("Seoul Club Guide")}</h1>
+            <p className="text-[13px] text-neutral-500">{shownCount} {tr("clubs")}</p>
           </div>
         </header>
 
-        {/* Search */}
-        <input
-          type="search"
-          placeholder="Search clubs..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="w-full h-11 px-4 rounded-xl bg-[#1C1C1E] border border-neutral-800 text-white placeholder-neutral-600 text-[14px] focus:outline-none focus:border-neutral-600 transition-colors"
-        />
+        {/* 지역별 가로 스크롤 (한국 가이드처럼 강남/홍대 두 줄) */}
+        {shownCount === 0 && (
+          <p className="text-center text-neutral-500 py-12">{tr("No clubs found.")}</p>
+        )}
+        {groups.map((g) => (
+          <section key={g.ko} className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-[18px] font-black">{areaI18n(g.ko, lang)}</h2>
+              <span className="text-[13px] text-neutral-500">{g.items.length}</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4">
+              {g.items.map((club) => (
+                <button
+                  key={club.id}
+                  onClick={() => setSelectedClub(club)}
+                  className="shrink-0 w-[140px] snap-start text-left active:opacity-70 transition-opacity"
+                >
+                  <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden bg-neutral-800 border border-neutral-800">
+                    {club.thumbnail_url ? (
+                      <Image src={club.thumbnail_url} alt={club.name} fill className="object-cover" sizes="140px" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[11px] font-bold">{tr("No image")}</div>
+                    )}
+                  </div>
+                  <p className="text-[13px] font-bold text-white mt-2 truncate">{club.name}</p>
+                  {club.google_rating != null && (
+                    <p className="text-[12px] text-amber-400 mt-0.5">⭐ {club.google_rating.toFixed(1)}</p>
+                  )}
+                </button>
+              ))}
+            </div>
+          </section>
+        ))}
 
-        {/* Area filter chips + sort */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setSelectedArea(null)}
-              className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
-                !selectedArea ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"
-              }`}
-            >
-              All
-            </button>
-            {FILTER_AREAS.map((area) => (
-              <button
-                key={area}
-                onClick={() => setSelectedArea(selectedArea === area ? null : area)}
-                className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
-                  selectedArea === area ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:text-white"
-                }`}
-              >
-                {AREA_EN[area]}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center shrink-0 bg-neutral-800 rounded-full p-0.5">
-            <button
-              onClick={() => setSort("reviews")}
-              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors ${
-                sort === "reviews" ? "bg-white text-black" : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              Reviews
-            </button>
-            <button
-              onClick={() => setSort("rating")}
-              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-colors ${
-                sort === "rating" ? "bg-white text-black" : "text-neutral-400 hover:text-white"
-              }`}
-            >
-              Rating
-            </button>
+        {/* Bottom CTA */}
+        <div className="space-y-4 pt-4 pb-8">
+          <p className="text-center text-[14px] text-neutral-400">{tr("Not sure where to go?")}</p>
+          <Link
+            href={`/login${langQ}`}
+            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
+          >
+            {tr("✨ Get VIP offers — clubs compete to host you")}
+          </Link>
+          <p className="text-center text-[12px] text-neutral-600 leading-relaxed">
+            {tr("Tell us your date, budget, and group size.")}<br />
+            {tr("Top Seoul clubs send you private VIP offers. You pick.")}
+          </p>
+          <div className="flex justify-center pt-2">
+            <LangSwitcher />
           </div>
         </div>
+      </div>
 
-        {/* Club list */}
-        <div className="space-y-4">
-          {filtered.length === 0 && (
-            <p className="text-center text-neutral-500 py-12">No clubs found.</p>
-          )}
-          {filtered.map((club) => {
-            const areaLabel = AREA_EN[club.area] ?? club.area;
+      {/* 클럽 상세 바텀시트 (카드 클릭 시) — 가격표·영업시간·평점 + 구글 리뷰 */}
+      <Sheet open={!!selectedClub} onOpenChange={(o) => !o && setSelectedClub(null)}>
+        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
+          {selectedClub && (() => {
+            const club = selectedClub;
             const hasDrinkMenu = club.drink_menu_url || (club.drink_menu_urls && club.drink_menu_urls.length > 0);
-            const googleUrl = getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area });
-
+            const googleUrl = getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, lang);
             return (
-              <div key={club.id} className="rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden">
+              <div className="pb-8">
                 {club.thumbnail_url && (
-                  <div className="relative w-full h-44">
+                  <div className="relative w-full h-48">
                     <Image src={club.thumbnail_url} alt={club.name} fill className="object-cover" sizes="(max-width: 640px) 100vw, 512px" />
                   </div>
                 )}
-
-                <div className="p-4 space-y-3">
+                <div className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-2">
-                    <h2 className="font-black text-[17px] leading-tight">{club.name}</h2>
+                    <SheetTitle className="font-black text-[20px] text-white leading-tight">{club.name}</SheetTitle>
                     <span className="shrink-0 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400">
-                      {areaLabel}
+                      {areaI18n(club.area, lang)}
                     </span>
                   </div>
 
-                  {club.google_rating ? (
+                  {club.google_rating != null && (
                     <a href={googleUrl} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 text-[13px] text-amber-400 hover:text-amber-300 transition-colors">
                       ⭐ {club.google_rating.toFixed(1)}
-                      {club.google_review_count && (
-                        <span className="text-neutral-500">· {club.google_review_count.toLocaleString()} Google reviews →</span>
+                      {club.google_review_count != null && (
+                        <span className="text-neutral-500">· {club.google_review_count.toLocaleString()} {tr("Google reviews")} →</span>
                       )}
-                    </a>
-                  ) : (
-                    <a href={googleUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[13px] text-neutral-500 hover:text-neutral-300 transition-colors">
-                      See on Google Maps →
                     </a>
                   )}
 
                   {club.entry_fee_detail && (
                     <p className="text-[13px] text-neutral-400">🎟️ {club.entry_fee_detail}</p>
                   )}
-
                   {club.operating_hours && (
                     <p className="text-[13px] text-neutral-400">🕐 {club.operating_hours}</p>
                   )}
-
                   {club.instagram && (
                     <a href={`https://instagram.com/${club.instagram}`} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center text-[13px] text-blue-400 hover:text-blue-300 transition-colors">
@@ -197,27 +172,21 @@ export function ClubsClient({ clubs }: { clubs: Club[] }) {
                       floorPlanUrls={club.floor_plan_urls ?? undefined}
                     />
                   )}
+
+                  <a
+                    href={googleUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-1.5 w-full mt-1 py-3 rounded-xl bg-neutral-800 border border-neutral-700 text-[14px] font-bold text-neutral-200 hover:bg-neutral-700/60 transition-colors"
+                  >
+                    🔍 {tr("Search reviews on Google")}
+                  </a>
                 </div>
               </div>
             );
-          })}
-        </div>
-
-        {/* Bottom CTA */}
-        <div className="space-y-4 pt-4 pb-8">
-          <p className="text-center text-[14px] text-neutral-400">Not sure where to go?</p>
-          <Link
-            href="/login?lang=en"
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
-          >
-            🚩 Plant a flag — clubs compete to host you
-          </Link>
-          <p className="text-center text-[12px] text-neutral-600 leading-relaxed">
-            Tell us your date, budget, and group size.<br />
-            Top Seoul clubs send you private VIP offers. You pick.
-          </p>
-        </div>
-      </div>
+          })()}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

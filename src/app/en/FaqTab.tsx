@@ -1,26 +1,38 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Search, X, ChevronDown } from "lucide-react";
 import { FAQ_CATEGORIES, FAQ_ITEMS, type FaqCategory } from "./faqData";
+import { FAQ_I18N } from "./faqData.i18n";
+import { type Lang, makeT } from "@/lib/i18n";
 
 export function FaqTab() {
   const [query, setQuery] = useState("");
   const [activeCat, setActiveCat] = useState<FaqCategory | "all">("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [lang, setLang] = useState<Lang>("en");
+  useEffect(() => {
+    const l = new URLSearchParams(window.location.search).get("lang");
+    setLang(l === "ja" ? "ja" : l === "zh" ? "zh" : "en");
+  }, []);
+  const tr = (en: string) => makeT(lang)("", en);
 
   const trimmed = query.trim().toLowerCase();
+  // 현재 언어의 q/a (ja/zh면 번역본, 아니면 영어 원본)
+  const loc = (item: { id: string; q: string; a: string }) => {
+    const t = (lang === "ja" || lang === "zh") ? FAQ_I18N[item.id]?.[lang] : null;
+    return { q: t?.q ?? item.q, a: t?.a ?? item.a };
+  };
 
   const results = useMemo(() => {
     return FAQ_ITEMS.filter((item) => {
       const matchesCat = activeCat === "all" || item.category === activeCat;
-      const matchesQuery =
-        trimmed === "" ||
-        item.q.toLowerCase().includes(trimmed) ||
-        item.a.toLowerCase().includes(trimmed);
+      const tl = (lang === "ja" || lang === "zh") ? FAQ_I18N[item.id]?.[lang] : null;
+      const hay = `${item.q} ${item.a} ${tl?.q ?? ""} ${tl?.a ?? ""}`.toLowerCase();
+      const matchesQuery = trimmed === "" || hay.includes(trimmed);
       return matchesCat && matchesQuery;
     });
-  }, [trimmed, activeCat]);
+  }, [trimmed, activeCat, lang]);
 
   const catMeta = (code: FaqCategory) =>
     FAQ_CATEGORIES.find((c) => c.code === code);
@@ -34,7 +46,7 @@ export function FaqTab() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search — e.g. dress code, ID, scam, taxi"
+            placeholder={tr("Search — e.g. dress code, ID, scam, taxi")}
             className="w-full h-11 pl-9 pr-9 rounded-xl bg-[#1C1C1E] border border-neutral-800 text-[14px] text-white placeholder:text-neutral-600 focus:border-neutral-600 outline-none"
           />
           {query && (
@@ -56,7 +68,7 @@ export function FaqTab() {
                 : "bg-[#1C1C1E] text-neutral-400 hover:text-white border border-neutral-800"
             }`}
           >
-            All
+            {tr("All")}
           </button>
           {FAQ_CATEGORIES.map((c) => (
             <button
@@ -68,7 +80,7 @@ export function FaqTab() {
                   : "bg-[#1C1C1E] text-neutral-400 hover:text-white border border-neutral-800"
               }`}
             >
-              {c.emoji} {c.label}
+              {c.emoji} {tr(c.label)}
             </button>
           ))}
         </div>
@@ -78,18 +90,19 @@ export function FaqTab() {
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
         {results.length === 0 ? (
           <div className="py-16 text-center">
-            <p className="text-neutral-500 text-[14px]">No results for &quot;{query}&quot;.</p>
+            <p className="text-neutral-500 text-[14px]">{tr("No results for")} &quot;{query}&quot;.</p>
             <button
               onClick={() => { setQuery(""); setActiveCat("all"); }}
               className="mt-3 text-[13px] text-amber-400 font-bold"
             >
-              Clear search
+              {tr("Clear search")}
             </button>
           </div>
         ) : (
           results.map((item) => {
             const open = openId === item.id;
             const meta = catMeta(item.category);
+            const { q, a } = loc(item);
             const accent =
               item.emphasis === "warning"
                 ? "border-amber-500/30"
@@ -108,12 +121,12 @@ export function FaqTab() {
                   <div className="min-w-0">
                     {activeCat === "all" && meta && (
                       <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
-                        {meta.emoji} {meta.label}
+                        {meta.emoji} {tr(meta.label)}
                       </span>
                     )}
                     <p className="font-bold text-[14px] leading-snug mt-0.5">
                       {item.emphasis === "warning" && <span className="text-amber-400">⚠ </span>}
-                      {item.q}
+                      {q}
                     </p>
                   </div>
                   <ChevronDown
@@ -122,7 +135,7 @@ export function FaqTab() {
                 </button>
                 {open && (
                   <div className="px-4 pb-4 -mt-1">
-                    <p className="text-[13px] text-neutral-300 leading-relaxed">{item.a}</p>
+                    <p className="text-[13px] text-neutral-300 leading-relaxed">{a}</p>
                   </div>
                 )}
               </div>
@@ -133,8 +146,8 @@ export function FaqTab() {
         {/* 하단 안내 */}
         {results.length > 0 && (
           <p className="pt-3 pb-6 text-center text-[11px] text-neutral-600 leading-relaxed">
-            Info cross-checked from public sources, current 2026.<br />
-            Prices and venue policies vary — treat figures as ranges.
+            {tr("Info cross-checked from public sources, current 2026.")}<br />
+            {tr("Prices and venue policies vary — treat figures as ranges.")}
           </p>
         )}
       </div>

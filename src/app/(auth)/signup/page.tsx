@@ -9,7 +9,7 @@ export async function generateMetadata({
   searchParams: Promise<{ lang?: string }>;
 }): Promise<Metadata> {
   const { lang } = await searchParams;
-  if (lang === "en") {
+  if (lang && lang !== "ko") {
     return { title: { absolute: "Sign up | NightFlow" } };
   }
   return { title: "회원가입" };

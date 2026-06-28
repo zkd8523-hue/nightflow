@@ -31,9 +31,8 @@ export default function MainLayout({
   // /en은 자체 chrome을 쓰고, /flags/new 등 (main) 진입 시 한국 chrome 노출 방지.
   const [isForeigner, setIsForeigner] = useState(false);
   useEffect(() => {
-    setIsForeigner(
-      new URLSearchParams(window.location.search).get("lang") === "en"
-    );
+    const l = new URLSearchParams(window.location.search).get("lang");
+    setIsForeigner(!!l && l !== "ko");
   }, [pathname]);
 
   // 클럽지도(view=map)에서 Header 자체를 마운트하지 않음.

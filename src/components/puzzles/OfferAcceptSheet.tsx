@@ -7,6 +7,7 @@ import { CheckCircle2, PartyPopper } from "lucide-react";
 import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import type { PublicUserProfile } from "@/types/database";
+import { type Lang, makeT } from "@/lib/i18n";
 
 type MDInfo = Pick<PublicUserProfile,
   "id" | "display_name" | "profile_image" |
@@ -36,13 +37,14 @@ interface OfferAcceptSheetProps {
   offer: OfferForCopy;
   /** RPC accept_offer 호출. 성공 시 true, 실패 시 false. */
   onAccept: () => Promise<boolean>;
-  isForeigner?: boolean;
+  lang?: Lang;
 }
 
 type Step = "confirm" | "success";
 
-export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, isForeigner }: OfferAcceptSheetProps) {
-  const t = (ko: string, en: string) => (isForeigner ? en : ko);
+export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, lang = "ko" }: OfferAcceptSheetProps) {
+  const isForeigner = lang !== "ko";
+  const t = makeT(lang);
   const [step, setStep] = useState<Step>("confirm");
   const [submitting, setSubmitting] = useState(false);
 
@@ -109,7 +111,7 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, i
 
             {/* 복사 버튼 — MD에게 보낼 메시지 원클릭 복사 */}
             {puzzle && (
-              <CopyAcceptedMessageButton puzzle={puzzle} offer={offer} isForeigner={isForeigner} />
+              <CopyAcceptedMessageButton puzzle={puzzle} offer={offer} lang={lang} />
             )}
 
             {/* MD 연락 수단 카드 — 수락 직후 공개 */}
@@ -117,7 +119,7 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, i
               <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide">
                 {isForeigner ? `${md.display_name} — contact` : `${md.display_name} MD 연락 수단`}
               </p>
-              <MDContactCard md={md} isForeigner={isForeigner} />
+              <MDContactCard md={md} lang={lang} />
             </div>
 
             <Button

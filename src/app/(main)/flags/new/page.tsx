@@ -13,7 +13,7 @@ export async function generateMetadata({
   searchParams: Promise<{ lang?: string }>;
 }): Promise<Metadata> {
   const { lang } = await searchParams;
-  if (lang === "en") {
+  if (lang && lang !== "ko") {
     return { title: { absolute: "Get VIP offers | NightFlow" } };
   }
   return { title: "깃발 꽂기" };
@@ -25,16 +25,16 @@ export default async function PuzzleNewPage({
   searchParams: Promise<{ lang?: string }>;
 }) {
   const { lang } = await searchParams;
-  const isForeigner = lang === "en";
+  const isForeigner = !!lang && lang !== "ko";
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 비로그인 → 로그인 후 깃발 등록으로 복귀(redirect 보존). 외국인은 lang=en 유지.
+  // 비로그인 → 로그인 후 깃발 등록으로 복귀(redirect 보존). 외국인은 lang(en/ja/zh) 유지.
   if (!user) {
     redirect(
       isForeigner
-        ? `/login?lang=en&redirect=${encodeURIComponent("/flags/new?lang=en")}`
+        ? `/login?lang=${lang}&redirect=${encodeURIComponent(`/flags/new?lang=${lang}`)}`
         : "/login"
     );
   }
@@ -53,7 +53,7 @@ export default async function PuzzleNewPage({
         {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 /en 복귀 링크 제공 */}
         {isForeigner && (
           <Link
-            href="/en"
+            href={`/en?lang=${lang}`}
             aria-label="Back"
             className="inline-flex items-center gap-1 -ml-1 mb-4 px-2 py-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
           >

@@ -17,9 +17,13 @@ import {
   emailFirstOffer,
   emailMatched,
   emailReminder,
-  formatDateEn,
-  areaEn,
+  type MailLang,
 } from "../_shared/puzzleEmail.ts";
+
+// 유저 선호 언어(users.lang) → 이메일 언어. ko이거나 미지정이면 영어 폴백(외국인 이메일은 비한국어).
+function mailLang(leader: { lang?: string | null }): MailLang {
+  return leader.lang === "ja" ? "ja" : leader.lang === "zh" ? "zh" : "en";
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -129,6 +133,7 @@ type LeaderRow = {
   email?: string | null;
   email_bounced?: boolean | null;
   country_code?: string | null;
+  lang?: string | null;
 };
 
 function useEmailChannel(leader: LeaderRow): boolean {
@@ -228,7 +233,7 @@ async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
 
     const { data: leader } = await supabase
       .from("users")
-      .select("id, phone, email, email_bounced, country_code")
+      .select("id, phone, email, email_bounced, country_code, lang")
       .eq("id", puzzle.leader_id)
       .single();
 
@@ -242,10 +247,11 @@ async function handleFirstOffer(supabase: ReturnType<typeof createClient>) {
         puzzleId,
         leader as LeaderRow,
         emailFirstOffer({
-          dateEn: formatDateEn(puzzle.event_date),
-          areaEn: areaEn(puzzle.area),
+          lang: mailLang(leader as LeaderRow),
+          eventDate: puzzle.event_date,
+          area: puzzle.area,
           budget: budgetText(puzzle),
-          headcount: `${puzzle.target_count} ppl`,
+          headcount: puzzle.target_count,
           offerCount: count,
           url: puzzleUrl(puzzleId),
         }),
@@ -541,7 +547,7 @@ async function handleForeignerReminders(supabase: ReturnType<typeof createClient
 
       const { data: leader } = await supabase
         .from("users")
-        .select("id, phone, email, email_bounced, country_code")
+        .select("id, phone, email, email_bounced, country_code, lang")
         .eq("id", puzzle.leader_id)
         .single();
 
@@ -555,10 +561,11 @@ async function handleForeignerReminders(supabase: ReturnType<typeof createClient
         leader as LeaderRow,
         emailReminder({
           daysLeft,
-          dateEn: formatDateEn(puzzle.event_date),
-          areaEn: areaEn(puzzle.area),
+          lang: mailLang(leader as LeaderRow),
+          eventDate: puzzle.event_date,
+          area: puzzle.area,
           budget: budgetText(puzzle),
-          headcount: `${puzzle.target_count} ppl`,
+          headcount: puzzle.target_count,
           url: puzzleUrl(puzzle.id),
         }),
       );
@@ -665,7 +672,7 @@ async function handleMatched(supabase: ReturnType<typeof createClient>) {
     if (!(await alreadySent(supabase, "puzzle_matched", puzzle.id, puzzle.leader_id))) {
       const { data: leader } = await supabase
         .from("users")
-        .select("id, phone, email, email_bounced, country_code")
+        .select("id, phone, email, email_bounced, country_code, lang")
         .eq("id", puzzle.leader_id)
         .single();
       if (leader && useEmailChannel(leader as LeaderRow)) {
@@ -675,10 +682,11 @@ async function handleMatched(supabase: ReturnType<typeof createClient>) {
           puzzle.id,
           leader as LeaderRow,
           emailMatched({
-            dateEn: formatDateEn(puzzle.event_date),
-            areaEn: areaEn(puzzle.area),
+            lang: mailLang(leader as LeaderRow),
+            eventDate: puzzle.event_date,
+            area: puzzle.area,
             budget: budgetText(puzzle),
-            headcount: `${puzzle.target_count} ppl`,
+            headcount: puzzle.target_count,
             clubName: clubName === "클럽" ? "the club" : clubName,
             url: puzzleUrl(puzzle.id),
           }),

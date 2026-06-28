@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User, Eye } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User, Eye, MessageCircle } from "lucide-react";
+import { FeatureGate } from "@/components/common/FeatureGate";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
@@ -21,6 +22,7 @@ import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, 
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { toEnglishInclude } from "@/lib/utils/liquorEn";
+import { getLang, makeT, areaLabel } from "@/lib/i18n";
 import { OfferCommentText } from "./OfferCommentText";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
@@ -91,13 +93,6 @@ function formatEventDate(dateStr: string, en = false) {
   return `${m}월 ${day}일 (${days[d.getDay()]})`;
 }
 
-const AREA_EN: Record<string, string> = {
-  "강남": "Gangnam", "홍대": "Hongdae", "이태원": "Itaewon",
-  "서울 어디든": "Anywhere in Seoul",
-  "부산": "Busan", "대구": "Daegu", "인천": "Incheon",
-  "광주": "Gwangju", "대전": "Daejeon", "울산": "Ulsan", "세종": "Sejong",
-};
-const areaLabel = (area: string, en: boolean) => (en ? AREA_EN[area] ?? area : area);
 
 const STATUS_LABEL: Record<string, string> = {
   open: "제안 받는중",
@@ -160,8 +155,9 @@ export function PuzzleDetailClient({
   const searchParams = useSearchParams();
   const supabase = createClient();
 
-  const isForeigner = searchParams.get("lang") === "en";
-  const t = (ko: string, en: string) => (isForeigner ? en : ko);
+  const lang = getLang(searchParams.get("lang"));
+  const isForeigner = lang !== "ko";
+  const t = makeT(lang);
   const lq = isForeigner ? "?lang=en" : "";
   // 외국인 모드에서 상대시간(fromNow)·요일을 영어로
   useEffect(() => {
@@ -195,9 +191,9 @@ export function PuzzleDetailClient({
     const url = `${window.location.origin}/flags/${puzzle.id}${lq}`;
     const totalBudget =
       puzzle.total_budget ?? puzzle.budget_per_person * puzzle.target_count;
-    const title = isForeigner ? `NightFlow Request · ${areaLabel(puzzle.area, true)}` : `나플 깃발 · ${puzzle.area}`;
+    const title = isForeigner ? `NightFlow Request · ${areaLabel(puzzle.area, lang)}` : `나플 깃발 · ${puzzle.area}`;
     const text = isForeigner
-      ? `${areaLabel(puzzle.area, true)} · ₩${totalBudget.toLocaleString()} · ${puzzle.target_count} ppl`
+      ? `${areaLabel(puzzle.area, lang)} · ₩${totalBudget.toLocaleString()} · ${puzzle.target_count} ppl`
       : `${puzzle.area} · 총 ${Math.round(totalBudget / 10000)}만원 · ${puzzle.target_count}명`;
     if (navigator.share) {
       try {
@@ -662,7 +658,7 @@ export function PuzzleDetailClient({
                 {puzzle.notes && (
                   <p className="text-[22px] font-black text-white leading-snug tracking-tight break-keep">{puzzle.notes}</p>
                 )}
-                <span className="text-[14px] text-neutral-400">{areaLabel(puzzle.area, isForeigner)}</span>
+                <span className="text-[14px] text-neutral-400">{areaLabel(puzzle.area, lang)}</span>
               </div>
               <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mr-1 shrink-0">
                 <Share2 className="w-4.5 h-4.5" />
@@ -834,7 +830,7 @@ export function PuzzleDetailClient({
                         </div>
                       )}
                       {acceptedOffer.comment && (
-                        <OfferCommentText comment={acceptedOffer.comment} isForeigner={isForeigner} />
+                        <OfferCommentText comment={acceptedOffer.comment} lang={lang} />
                       )}
                     </div>
                   )}
@@ -880,11 +876,11 @@ export function PuzzleDetailClient({
                       </div>
                     </div>
                     {/* 복사 버튼 — MD에게 보낼 메시지를 원클릭 복사 */}
-                    <CopyAcceptedMessageButton puzzle={puzzle} offer={acceptedOffer} isForeigner={isForeigner} />
+                    <CopyAcceptedMessageButton puzzle={puzzle} offer={acceptedOffer} lang={lang} />
                     {/* puzzle.kakao_open_chat_url이 NULL(기본 케이스)일 때 MD 연락 수단 카드 노출 */}
                     {!puzzle.kakao_open_chat_url && (
                       <div className="pt-1">
-                        <MDContactCard md={md as PublicUserProfile} isForeigner={isForeigner} />
+                        <MDContactCard md={md as PublicUserProfile} lang={lang} />
                       </div>
                     )}
                     {/* 거래 확정 상태 표시 (Migration 147: leader는 알림만 받고 마킹 권한 없음) */}
@@ -1075,7 +1071,7 @@ export function PuzzleDetailClient({
                     onReject={handleRejectOffer}
                     onWithdrawn={loadOffers}
                     onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
-                    isForeigner={isForeigner}
+                    lang={lang}
                   />
                 ))}
               </div>
@@ -1126,7 +1122,7 @@ export function PuzzleDetailClient({
                         </div>
                       )}
                       {offer.comment && (
-                        <OfferCommentText comment={offer.comment} isForeigner={isForeigner} />
+                        <OfferCommentText comment={offer.comment} lang={lang} />
                       )}
                     </div>
                   </div>
@@ -1165,7 +1161,7 @@ export function PuzzleDetailClient({
                         </div>
                       )}
                       {offer.comment && (
-                        <OfferCommentText comment={offer.comment} isForeigner={isForeigner} />
+                        <OfferCommentText comment={offer.comment} lang={lang} />
                       )}
                     </div>
                   </div>
@@ -1208,6 +1204,18 @@ export function PuzzleDetailClient({
                 )}
                 {myOffer.comment && (
                   <p className="text-[12px] text-neutral-400 italic">"{myOffer.comment}"</p>
+                )}
+                {/* Migration 332: 방장과 1:1 대화 (방장이 먼저 말 걸면 답장 가능, 첫 답장 15크레딧) */}
+                {(myOffer.status === "pending" || myOffer.status === "accepted") && (
+                  <FeatureGate flag="offer_chat">
+                    <Link
+                      href={`/messages/${myOffer.id}`}
+                      className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-neutral-700 bg-transparent text-neutral-200 hover:bg-neutral-800 font-bold text-[13px]"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      방장과 대화
+                    </Link>
+                  </FeatureGate>
                 )}
                 {myOffer.status === "accepted" && puzzle.kakao_open_chat_url && (
                   <a
@@ -1450,7 +1458,7 @@ export function PuzzleDetailClient({
           setAcceptingMd(null);
         }}
         onAccept={handleAcceptConfirm}
-        isForeigner={isForeigner}
+        lang={lang}
       />
 
       <LeaderInfoSheet

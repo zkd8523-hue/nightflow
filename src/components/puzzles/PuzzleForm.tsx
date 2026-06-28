@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getLang, makeT, areaLabel } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS } from "@/lib/constants/areas";
 import { toast } from "sonner";
@@ -118,18 +119,19 @@ const MUSIC_OPTIONS: { value: MusicPref; label: string; en: string }[] = [
 export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: PuzzleType }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const isForeigner = searchParams.get("lang") === "en";
+  const lang = getLang(searchParams.get("lang"));
+  const isForeigner = lang !== "ko";
   const supabase = createClient();
 
   const isEditMode = !!puzzle;
-  const t = (ko: string, en: string) => isForeigner ? en : ko;
+  const t = makeT(lang);
   const AREA_EN_LABEL: Record<string, string> = {
     "강남": "Gangnam", "홍대": "Hongdae", "이태원": "Itaewon",
     "서울 어디든": "Anywhere in Seoul",
     "부산": "Busan", "대구": "Daegu", "인천": "Incheon",
     "광주": "Gwangju", "대전": "Daejeon", "울산": "Ulsan", "세종": "Sejong",
   };
-  const aL = (a: string) => isForeigner ? (AREA_EN_LABEL[a] ?? a) : a;
+  const aL = (a: string) => areaLabel(a, lang);
 
   // 자동저장 draft 로드 (신규 등록 시에만)
   const DRAFT_KEY = `puzzle_form_draft_${userId}`;

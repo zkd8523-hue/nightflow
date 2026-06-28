@@ -2,24 +2,20 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, CheckCircle2, Flame, XCircle, ChevronRight, Instagram, User, Pencil } from "lucide-react";
+import { BadgeCheck, CheckCircle2, Flame, XCircle, ChevronRight, Instagram, User, Pencil, MessageCircle } from "lucide-react";
 import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferButton";
+import { FeatureGate } from "@/components/common/FeatureGate";
 import type { PuzzleOffer } from "@/types/database";
 import { formatRelativeTime } from "@/lib/utils/format";
 import { LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
 import { toEnglishInclude } from "@/lib/utils/liquorEn";
 import { useTranslatedComment } from "@/hooks/useTranslatedComment";
+import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 
 function isLiquor(item: string): boolean {
   return LIQUOR_KEYWORDS.some((kw) => item.includes(kw));
 }
 
-const AREA_EN: Record<string, string> = {
-  "강남": "Gangnam", "홍대": "Hongdae", "이태원": "Itaewon",
-  "서울 어디든": "Anywhere in Seoul",
-  "부산": "Busan", "대구": "Daegu", "인천": "Incheon",
-  "광주": "Gwangju", "대전": "Daejeon", "울산": "Ulsan", "세종": "Sejong",
-};
 
 interface SecretOfferCardProps {
   offer: PuzzleOffer;
@@ -33,7 +29,7 @@ interface SecretOfferCardProps {
   onReject: (offerId: string) => void;
   onWithdrawn: () => void;
   onAdminEdit?: (offer: PuzzleOffer) => void;
-  isForeigner?: boolean;
+  lang?: Lang;
 }
 
 export function SecretOfferCard({
@@ -48,13 +44,14 @@ export function SecretOfferCard({
   onReject,
   onWithdrawn,
   onAdminEdit,
-  isForeigner,
+  lang = "ko",
 }: SecretOfferCardProps) {
+  const isForeigner = lang !== "ko";
   const club = offer.club as { name?: string; area?: string } | null;
   const dealCount = offer.md?.md_deal_count ?? null;
   const staggerStyle = { "--stagger-idx": index } as React.CSSProperties;
-  const t = (ko: string, en: string) => (isForeigner ? en : ko);
-  const commentEn = useTranslatedComment(offer.comment, !!isForeigner);
+  const t = makeT(lang);
+  const commentEn = useTranslatedComment(offer.comment, isForeigner);
 
   return (
     <div
@@ -74,7 +71,7 @@ export function SecretOfferCard({
             >
               {club?.name || t("클럽", "Club")}
               {club?.area && (
-                <span className="text-neutral-500 font-medium"> · {isForeigner ? (AREA_EN[club.area] ?? club.area) : club.area}</span>
+                <span className="text-neutral-500 font-medium"> · {areaLabel(club.area, lang)}</span>
               )}
               <ChevronRight className="w-3.5 h-3.5 text-neutral-500 ml-0.5" />
             </Link>
@@ -82,7 +79,7 @@ export function SecretOfferCard({
             <p className="text-[15px] font-black text-white">
               {club?.name || t("클럽", "Club")}
               {club?.area && (
-                <span className="text-neutral-500 font-medium"> · {isForeigner ? (AREA_EN[club.area] ?? club.area) : club.area}</span>
+                <span className="text-neutral-500 font-medium"> · {areaLabel(club.area, lang)}</span>
               )}
             </p>
           )}
@@ -153,24 +150,36 @@ export function SecretOfferCard({
       )}
 
       {isOpen && offer.status === "pending" && (
-        <div className="flex gap-2 pt-1">
-          <Button
-            onClick={() => onAccept(offer.id)}
-            disabled={actionLoading}
-            className="flex-1 h-10 bg-white hover:bg-neutral-200 text-black font-black text-[13px] rounded-xl"
-          >
-            <CheckCircle2 className="w-4 h-4 mr-1.5" />
-            {t("수락", "Accept")}
-          </Button>
-          <Button
-            onClick={() => onReject(offer.id)}
-            disabled={actionLoading}
-            variant="outline"
-            className="flex-1 h-10 border-red-500/40 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[13px] rounded-xl"
-          >
-            <XCircle className="w-4 h-4 mr-1.5" />
-            {t("거절", "Reject")}
-          </Button>
+        <div className="space-y-2 pt-1">
+          <div className="flex gap-2">
+            <Button
+              onClick={() => onAccept(offer.id)}
+              disabled={actionLoading}
+              className="flex-1 h-10 bg-white hover:bg-neutral-200 text-black font-black text-[13px] rounded-xl"
+            >
+              <CheckCircle2 className="w-4 h-4 mr-1.5" />
+              {t("수락", "Accept")}
+            </Button>
+            <Button
+              onClick={() => onReject(offer.id)}
+              disabled={actionLoading}
+              variant="outline"
+              className="flex-1 h-10 border-red-500/40 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[13px] rounded-xl"
+            >
+              <XCircle className="w-4 h-4 mr-1.5" />
+              {t("거절", "Reject")}
+            </Button>
+          </div>
+          {/* Migration 332: 수락 전 1:1 대화 (warm lead). 플래그 OFF면 숨김 */}
+          <FeatureGate flag="offer_chat">
+            <Link
+              href={`/messages/${offer.id}`}
+              className="flex items-center justify-center gap-1.5 h-10 rounded-xl border border-neutral-700 bg-transparent text-neutral-200 hover:bg-neutral-800 font-bold text-[13px]"
+            >
+              <MessageCircle className="w-4 h-4" />
+              {t("대화하기", "Chat")}
+            </Link>
+          </FeatureGate>
         </div>
       )}
 

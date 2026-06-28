@@ -17,6 +17,7 @@ import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { COUNTRIES, countryFlag } from "@/lib/utils/countryFlag";
 import { isValidEmailFormat, suggestEmail } from "@/lib/utils/emailCheck";
+import { getLang, makeT } from "@/lib/i18n";
 
 import type { User as AuthUser } from "@supabase/supabase-js";
 
@@ -102,7 +103,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const searchParams = useSearchParams();
   const nextParam = searchParams.get("next");
   const lang = searchParams.get("lang");
-  const isForeigner = lang === "en";
+  // 외국인 = 한국어 아닌 모든 언어(en/ja/zh). 과거 lang==="en"만 보던 버그로 ja/zh가 한글을 보던 문제 수정.
+  const isForeigner = !!lang && lang !== "ko";
+  const tt = makeT(getLang(lang)); // 표시 문구 번역 (ja/zh는 사전 경유, 없으면 영어 폴백)
   const redirectAfterSignup =
     nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : (isForeigner ? "/en" : "/");
   const supabase = createClient();
@@ -172,7 +175,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     const timer = setTimeout(async () => {
       try {
         const taken = await isDisplayNameTaken(supabase, val);
-        if (taken) { setNicknameError(isForeigner ? "This nickname is already taken." : "이미 사용 중인 닉네임이에요"); setNicknameOk(false); }
+        if (taken) { setNicknameError(tt("이미 사용 중인 닉네임이에요", "This nickname is already taken.")); setNicknameOk(false); }
         else { setNicknameError(null); setNicknameOk(true); }
       } finally { setNicknameChecking(false); }
     }, 600);
@@ -499,6 +502,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
               ...(countryCode ? { country_code: countryCode } : {}),
               ...(emailToSave ? { email: emailToSave } : {}),
+              lang: getLang(lang),
             })
             .eq("id", authUser.id)
         : await supabase.from("users").insert({
@@ -515,6 +519,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             signup_source: signupSource,
             ...(countryCode ? { country_code: countryCode } : {}),
             ...(emailToSave ? { email: emailToSave } : {}),
+            lang: getLang(lang),
           });
 
       if (error) {
@@ -568,11 +573,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               type="button"
               onClick={async () => {
                 await supabase.auth.signOut();
-                router.push(isForeigner ? "/login?lang=en" : "/login");
+                router.push(isForeigner ? `/login?lang=${lang}` : "/login");
               }}
               className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" /> {isForeigner ? "Back to login" : "로그인 화면으로"}
+              <ArrowLeft className="w-4 h-4" /> {tt("로그인 화면으로", "Back to login")}
             </button>
 
             <div className="space-y-2">
@@ -586,22 +591,17 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 }`}>
                   {agreeAll && <Check className="w-4 h-4 text-black" />}
                 </div>
-                <span className="text-[15px] font-bold text-white">{isForeigner ? "Agree to all" : "전체 동의"}</span>
+                <span className="text-[15px] font-bold text-white">{tt("전체 동의", "Agree to all")}</span>
               </button>
 
               <div className="h-px bg-neutral-700 mx-2" />
 
-              {(isForeigner ? [
-                { state: agreeAge, set: setAgreeAge, label: "I am 19 years of age or older", required: true, href: null },
-                { state: agreeTerms, set: setAgreeTerms, label: "Terms of Service", required: true, href: "/terms?lang=en" },
-                { state: agreePrivacy, set: setAgreePrivacy, label: "Privacy Policy", required: true, href: "/privacy?lang=en" },
-                { state: agreeMarketing, set: setAgreeMarketing, label: "Marketing notifications", required: false, href: "/marketing-consent?lang=en" },
-              ] : [
-                { state: agreeAge, set: setAgreeAge, label: "만 19세 이상입니다", required: true, href: null },
-                { state: agreeTerms, set: setAgreeTerms, label: "서비스 이용약관 동의", required: true, href: "/terms" },
-                { state: agreePrivacy, set: setAgreePrivacy, label: "개인정보 처리방침 동의", required: true, href: "/privacy" },
-                { state: agreeMarketing, set: setAgreeMarketing, label: "마케팅 정보 수신 동의 (알림톡·SMS·앱 푸시)", required: false, href: "/marketing-consent" },
-              ]).map(({ state, set, label, required, href }) => (
+              {[
+                { state: agreeAge, set: setAgreeAge, label: tt("만 19세 이상입니다", "I am 19 years of age or older"), required: true, href: null },
+                { state: agreeTerms, set: setAgreeTerms, label: tt("서비스 이용약관 동의", "Terms of Service"), required: true, href: isForeigner ? `/terms?lang=${lang}` : "/terms" },
+                { state: agreePrivacy, set: setAgreePrivacy, label: tt("개인정보 처리방침 동의", "Privacy Policy"), required: true, href: isForeigner ? `/privacy?lang=${lang}` : "/privacy" },
+                { state: agreeMarketing, set: setAgreeMarketing, label: tt("마케팅 정보 수신 동의 (알림톡·SMS·앱 푸시)", "Marketing notifications"), required: false, href: isForeigner ? `/marketing-consent?lang=${lang}` : "/marketing-consent" },
+              ].map(({ state, set, label, required, href }) => (
                 <div key={label} className="flex items-center gap-3 px-3 py-3">
                   <button
                     type="button"
@@ -615,7 +615,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   <span className="text-[14px] text-neutral-200 flex-1">
                     {label}{" "}
                     <span className={`text-[11px] ${required ? "text-red-400" : "text-neutral-500"}`}>
-                      ({required ? (isForeigner ? "required" : "필수") : (isForeigner ? "optional" : "선택")})
+                      ({required ? tt("필수", "required") : tt("선택", "optional")})
                     </span>
                   </span>
                   {href && (
@@ -632,7 +632,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               disabled={!requiredMet}
               className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
             >
-              {isForeigner ? "Next" : "다음"}
+              {tt("다음", "Next")}
             </Button>
           </>
         )}
@@ -744,8 +744,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "nickname" && (
           <div className="space-y-7">
             <div className="space-y-1.5 text-center">
-              <p className="text-[22px] font-bold text-white tracking-tight">{isForeigner ? "Set up your profile" : "프로필을 설정해주세요"}</p>
-              <p className="text-[13px] text-neutral-500">{isForeigner ? "You can change this anytime" : "언제든지 변경할 수 있습니다"}</p>
+              <p className="text-[22px] font-bold text-white tracking-tight">{tt("프로필을 설정해주세요", "Set up your profile")}</p>
+              <p className="text-[13px] text-neutral-500">{tt("언제든지 변경할 수 있습니다", "You can change this anytime")}</p>
             </div>
 
             {/* 프로필 사진 */}
@@ -829,7 +829,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   type="text"
                   value={nicknameInput}
                   maxLength={16}
-                  placeholder={isForeigner ? "Nickname" : "닉네임"}
+                  placeholder={tt("닉네임", "Nickname")}
                   onChange={(e) => {
                     const val = e.target.value;
                     setNicknameInput(val);
@@ -844,7 +844,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                     setNicknameChecking(true);
                     try {
                       const taken = await isDisplayNameTaken(supabase, val);
-                      if (taken) { setNicknameError(isForeigner ? "This nickname is already taken." : "이미 사용 중인 닉네임이에요"); setNicknameOk(false); }
+                      if (taken) { setNicknameError(tt("이미 사용 중인 닉네임이에요", "This nickname is already taken.")); setNicknameOk(false); }
                       else { setNicknameError(null); setNicknameOk(true); }
                     } finally { setNicknameChecking(false); }
                   }}
@@ -860,10 +860,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 <p className="text-[12px] text-red-400 font-medium px-1">{nicknameError}</p>
               )}
               {nicknameOk && !nicknameError && (
-                <p className="text-[12px] text-green-400 font-medium px-1">{isForeigner ? "Nickname available ✓" : "사용 가능한 닉네임이에요 ✓"}</p>
+                <p className="text-[12px] text-green-400 font-medium px-1">{tt("사용 가능한 닉네임이에요 ✓", "Nickname available ✓")}</p>
               )}
               {nicknameChecking && !nicknameError && (
-                <p className="text-[12px] text-neutral-500 px-1">{isForeigner ? "Checking..." : "중복 확인 중..."}</p>
+                <p className="text-[12px] text-neutral-500 px-1">{tt("중복 확인 중...", "Checking...")}</p>
               )}
             </div>
 
@@ -873,14 +873,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 disabled={!nicknameOk || loading || nicknameChecking || uploadingImage || (isForeigner && (!birthdayValid || !isAdult))}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
-                {uploadingImage ? "Uploading..." : loading ? (isForeigner ? "Creating account..." : "가입 중...") : (isForeigner ? "Join NightFlow" : "가입 완료")}
+                {uploadingImage ? tt("업로드 중...", "Uploading...") : loading ? tt("가입 중...", "Creating account...") : tt("가입 완료", "Join NightFlow")}
               </Button>
               <button
                 type="button"
                 onClick={() => setStep(isForeigner ? "country" : "otp")}
                 className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" /> {isForeigner ? "Back" : "이전"}
+                <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
               </button>
             </div>
           </div>
@@ -889,8 +889,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "country" && (
           <div className="space-y-6">
             <div className="space-y-1 text-center">
-              <p className="text-[22px] font-bold text-white tracking-tight">Where are you from?</p>
-              <p className="text-[13px] text-neutral-500">Your flag will appear on your posts</p>
+              <p className="text-[22px] font-bold text-white tracking-tight">{tt("", "Where are you from?")}</p>
+              <p className="text-[13px] text-neutral-500">{tt("", "Your flag will appear on your posts")}</p>
             </div>
 
             <div className="relative">
@@ -902,7 +902,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 )}
                 <input
                   type="text"
-                  placeholder="Search country..."
+                  placeholder={tt("", "Search country...")}
                   value={countrySearch}
                   onChange={(e) => {
                     setCountrySearch(e.target.value);
@@ -950,7 +950,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             {isForeigner && authUser && !authUser.email && (
               <div className="space-y-1.5">
                 <p className="text-[13px] text-neutral-400">
-                  Email <span className="text-neutral-600">— we'll notify you when clubs send offers</span>
+                  {tt("", "Email")} <span className="text-neutral-600">{tt("", "— we'll notify you when clubs send offers")}</span>
                 </p>
                 <input
                   type="email"
@@ -971,7 +971,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                       onClick={() => setEmailInput(sug)}
                       className="text-[12px] text-amber-400 hover:text-amber-300 transition-colors"
                     >
-                      Did you mean <span className="font-bold underline">{sug}</span>?
+                      {tt("", "Did you mean")} <span className="font-bold underline">{sug}</span>?
                     </button>
                   );
                 })()}
@@ -984,14 +984,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 disabled={!countryCode || (isForeigner && !!authUser && !authUser.email && !isValidEmailFormat(emailInput))}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
-                Next →
+                {tt("", "Next")} →
               </Button>
               <button
                 type="button"
                 onClick={() => setStep("agree")}
                 className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
               >
-                <ArrowLeft className="w-4 h-4" /> Back
+                <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
               </button>
             </div>
           </div>

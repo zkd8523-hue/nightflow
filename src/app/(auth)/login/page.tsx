@@ -11,6 +11,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { isInstantEnabled } from "@/lib/features";
 import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
 import { BackButton } from "@/components/ui/BackButton";
+import { getLang, makeT } from "@/lib/i18n";
 import { Suspense } from "react";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -43,7 +44,9 @@ function LoginContent() {
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/";
   const lang = searchParams.get("lang");
-  const isForeigner = lang === "en";
+  // 외국인 = 한국어 아닌 모든 언어(en/ja/zh). lang==="en"만 보던 버그로 ja/zh가 한글 보던 문제 수정.
+  const isForeigner = !!lang && lang !== "ko";
+  const tt = makeT(getLang(lang));
   const authError = getAuthErrorMessage(searchParams.get("error"));
   const [isInAppAndroid, setIsInAppAndroid] = useState(false);
   const [isIOSNative, setIsIOSNative] = useState(false);
@@ -222,7 +225,7 @@ function LoginContent() {
       }
 
       // 웹: 기존 플로우 유지
-      const langParam = isForeigner ? "?lang=en" : "";
+      const langParam = isForeigner ? `?lang=${lang}` : "";
       const targetWithLang = isForeigner && !target.includes("lang=en")
         ? target + (target.includes("?") ? "&lang=en" : "?lang=en")
         : target;
@@ -403,11 +406,11 @@ function LoginContent() {
           >
             <span className="block text-2xl font-bold">NightFlow</span>
             <span className="block text-sm font-medium text-neutral-300">
-              {isForeigner ? "VIP access to Seoul's best clubs" : "밤이 더 밝아진다, 나플"}
+              {tt("밤이 더 밝아진다, 나플", "VIP access to Seoul's best clubs")}
             </span>
           </h1>
           <div className="flex items-center justify-center text-[11px] text-neutral-500 font-normal whitespace-nowrap">
-            {isForeigner ? "Free to join" : "모든 서비스 무료"}
+            {tt("모든 서비스 무료", "Free to join")}
           </div>
         </div>
 
@@ -454,8 +457,8 @@ function LoginContent() {
                     <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
                   </svg>
                   {loading
-                    ? (isForeigner ? "Signing in..." : "로그인 중...")
-                    : (isForeigner ? "Sign in with Apple" : "Apple로 시작하기")}
+                    ? tt("로그인 중...", "Signing in...")
+                    : tt("Apple로 시작하기", "Sign in with Apple")}
                 </Button>
               )}
 
@@ -470,7 +473,7 @@ function LoginContent() {
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
-                {loading ? (isForeigner ? "Signing in..." : "로그인 중...") : (isForeigner ? "Sign in with Google" : "Google로 시작하기")}
+                {loading ? tt("로그인 중...", "Signing in...") : tt("Google로 시작하기", "Sign in with Google")}
               </Button>
 
               {!isForeigner && (
@@ -491,10 +494,10 @@ function LoginContent() {
           <p className="text-xs text-center text-neutral-500">
             {isForeigner ? (
               <>
-                By signing in you agree to our{" "}
-                <a href="/terms" className="underline">Terms of Service</a>{" "}
-                and{" "}
-                <a href="/privacy" className="underline">Privacy Policy</a>.
+                {tt("", "By signing in, you agree to our")}{" "}
+                <a href={`/terms?lang=${lang}`} className="underline">{tt("서비스 이용약관", "Terms")}</a>
+                {" & "}
+                <a href={`/privacy?lang=${lang}`} className="underline">{tt("개인정보 처리방침", "Privacy")}</a>.
               </>
             ) : (
               <>

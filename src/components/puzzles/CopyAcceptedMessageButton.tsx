@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { buildAcceptedFlagMessage } from "@/lib/utils/puzzleMessage";
+import { type Lang, makeT } from "@/lib/i18n";
 
 interface Props {
   puzzle: {
@@ -19,12 +20,13 @@ interface Props {
     includes: string[];
     club?: { name: string } | null;
   } | null | undefined;
-  isForeigner?: boolean;
+  lang?: Lang;
 }
 
-export function CopyAcceptedMessageButton({ puzzle, offer, isForeigner }: Props) {
+export function CopyAcceptedMessageButton({ puzzle, offer, lang = "ko" }: Props) {
+  const isForeigner = lang !== "ko";
   const [copied, setCopied] = useState(false);
-  const t = (ko: string, en: string) => (isForeigner ? en : ko);
+  const t = makeT(lang);
 
   const handleCopy = async () => {
     const msg = buildAcceptedFlagMessage(puzzle, offer, window.location.origin, isForeigner);

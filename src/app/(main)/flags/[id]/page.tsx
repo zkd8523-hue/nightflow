@@ -20,7 +20,7 @@ const AREA_EN: Record<string, string> = {
 export async function generateMetadata({ params, searchParams }: PageProps): Promise<Metadata> {
   const { id } = await params;
   const { lang } = await searchParams;
-  const isForeigner = lang === "en";
+  const isForeigner = !!lang && lang !== "ko";
   const supabase = await createClient();
 
   const { data: puzzle } = await supabase

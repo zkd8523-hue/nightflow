@@ -2,11 +2,13 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { FaqTab } from "./FaqTab";
 import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
+import { LangSwitcher } from "@/components/layout/LangSwitcher";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -46,13 +48,6 @@ type FlagItem = {
   offerCount: number;
 };
 
-const AREA_EN: Record<string, string> = {
-  "서울 어디든": "Anywhere in Seoul",
-  강남: "Gangnam", 홍대: "Hongdae", 이태원: "Itaewon",
-  건대: "Konkuk", 부산: "Busan", 대구: "Daegu",
-  인천: "Incheon", 광주: "Gwangju", 대전: "Daejeon",
-  울산: "Ulsan", 세종: "Sejong",
-};
 
 function formatEventDate(dateStr: string): string {
   const date = new Date(dateStr);
@@ -76,14 +71,28 @@ function formatBudget(total: number | null, perPerson: number, count: number): s
 }
 
 // ── My flags (로그인 유저의 내 깃발) ──────────────────────────────
-const MY_STATUS_LABEL: Record<string, { label: string; cls: string }> = {
-  open: { label: "Open", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
-  selecting: { label: "Reviewing", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
-  accepted: { label: "Matched", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+const MY_STATUS_LABEL: Record<string, { label: string; ja: string; zh: string; cls: string }> = {
+  open: { label: "Open", ja: "募集中", zh: "招募中", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
+  selecting: { label: "Reviewing", ja: "確認中", zh: "确认中", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  accepted: { label: "Matched", ja: "成立", zh: "已成立", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
 };
+
+// ?lang= (ja/zh) 읽기 — mount 후 client에서. (useSearchParams Suspense 회피)
+// 기본 en. 랜딩 하드코딩 영어를 makeT 사전으로 ja/zh 변환.
+function useTr() {
+  const [lang, setLang] = useState<Lang>("en");
+  useEffect(() => {
+    const l = new URLSearchParams(window.location.search).get("lang");
+    setLang(l === "ja" ? "ja" : l === "zh" ? "zh" : "en");
+  }, []);
+  const t = makeT(lang);
+  // tr: 영어 키로 사전 조회 / t: 명시적 (ko,en,ja,zh) — 동음이의어(예: 상태 "Open") 처리용
+  return { lang, t, tr: (en: string) => t("", en) };
+}
 
 function MyRequestsTab() {
   const { user, isLoading } = useCurrentUser();
+  const { lang, t, tr } = useTr();
   const [flags, setFlags] = useState<MyFlag[] | null>(null);
 
   useEffect(() => {
@@ -119,10 +128,10 @@ function MyRequestsTab() {
   if (!isLoading && !user) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-[15px] font-bold text-neutral-300">Log in to see your requests</p>
-        <p className="text-[13px] text-neutral-500">Track your requests and the offers clubs send you.</p>
-        <Link href="/login?lang=en" className="px-7 py-3 rounded-full bg-white text-black font-black text-[14px] hover:bg-neutral-200 transition-colors">
-          Log in
+        <p className="text-[15px] font-bold text-neutral-300">{tr("Log in to see your requests")}</p>
+        <p className="text-[13px] text-neutral-500">{tr("Track your requests and the offers clubs send you.")}</p>
+        <Link href={`/login?lang=${lang}`} className="px-7 py-3 rounded-full bg-white text-black font-black text-[14px] hover:bg-neutral-200 transition-colors">
+          {tr("Log in")}
         </Link>
       </div>
     );
@@ -131,7 +140,7 @@ function MyRequestsTab() {
   if (isLoading || flags === null) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-[13px] text-neutral-500">Loading…</p>
+        <p className="text-[13px] text-neutral-500">{tr("Loading…")}</p>
       </div>
     );
   }
@@ -139,10 +148,10 @@ function MyRequestsTab() {
   if (flags.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-[15px] font-bold text-neutral-300">No requests yet</p>
-        <p className="text-[13px] text-neutral-500">Post your date &amp; budget — top clubs send you offers.</p>
-        <Link href="/flags/new?lang=en" className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
-          Get VIP offers
+        <p className="text-[15px] font-bold text-neutral-300">{tr("No requests yet")}</p>
+        <p className="text-[13px] text-neutral-500">{tr("Post your date & budget — top clubs send you offers.")}</p>
+        <Link href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
+          {tr("Get VIP offers")}
         </Link>
       </div>
     );
@@ -150,16 +159,16 @@ function MyRequestsTab() {
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-2.5">
-      <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">My requests</p>
+      <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">{tr("My requests")}</p>
       {flags.map((f) => {
-        const area = AREA_EN[f.area] ?? f.area;
+        const area = areaLabel(f.area, lang);
         const date = formatEventDate(f.event_date);
         const budget = formatBudget(f.total_budget, f.budget_per_person, f.target_count);
         const st = MY_STATUS_LABEL[f.status] ?? MY_STATUS_LABEL.open;
         return (
           <Link
             key={f.id}
-            href={`/flags/${f.id}?lang=en`}
+            href={`/flags/${f.id}?lang=${lang}`}
             className="flex items-center justify-between gap-3 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-neutral-700 p-4 transition-colors"
           >
             <div className="min-w-0">
@@ -171,14 +180,14 @@ function MyRequestsTab() {
                 <span className="font-black text-amber-400">{budget}</span>
                 {f.offerCount > 0 && (
                   <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
-                    {f.offerCount} offer{f.offerCount !== 1 ? "s" : ""}
+                    {f.offerCount} {tr("offers")}
                   </span>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${st.cls}`}>
-                {st.label}
+                {t("", st.label, st.ja, st.zh)}
               </span>
               <ChevronRight className="w-4 h-4 text-neutral-600" />
             </div>
@@ -191,7 +200,8 @@ function MyRequestsTab() {
 
 // ── 한국 깃발 캐러셀 카드 (우상단 🇰🇷 = 소셜 프루프) ───────────────
 function FlagCarouselCard({ flag }: { flag: FlagItem }) {
-  const area = AREA_EN[flag.area] ?? flag.area;
+  const { lang, t, tr } = useTr();
+  const area = areaLabel(flag.area, lang);
   const date = formatEventDate(flag.event_date);
   const budget = formatBudget(flag.total_budget, flag.budget_per_person, flag.target_count);
   const isSelecting = flag.status === "selecting";
@@ -207,11 +217,11 @@ function FlagCarouselCard({ flag }: { flag: FlagItem }) {
       </div>
       <p className="text-[18px] font-black text-amber-400 mt-3">{budget}</p>
       <div className="flex items-center gap-1.5 mt-1 text-[12px] text-neutral-400">
-        <span className="font-bold text-white">{flag.target_count} ppl</span>
+        <span className="font-bold text-white">{flag.target_count}{tr(" ppl")}</span>
         {flag.offerCount > 0 && (
           <>
             <span className="text-neutral-700">·</span>
-            <span className="text-green-400 font-bold">{flag.offerCount} offer{flag.offerCount !== 1 ? "s" : ""}</span>
+            <span className="text-green-400 font-bold">{flag.offerCount} {tr("offers")}</span>
           </>
         )}
       </div>
@@ -220,7 +230,7 @@ function FlagCarouselCard({ flag }: { flag: FlagItem }) {
           ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
           : "bg-green-500/20 text-green-400 border border-green-500/30"
       }`}>
-        {isSelecting ? "Reviewing" : "Open"}
+        {isSelecting ? t("", "Reviewing", "確認中", "确认中") : t("", "Open", "募集中", "招募中")}
       </span>
     </div>
   );
@@ -253,18 +263,13 @@ const CLUB_NAME_EN: Record<string, string> = {
 const clubNameEn = (name: string) => CLUB_NAME_EN[name.trim()] ?? name;
 
 function ClubThumb({ club }: { club: ClubItem }) {
+  const { lang, tr } = useTr();
   const name = clubNameEn(club.name);
-  // 클릭 시 구글 검색(클럽 정보 패널: 사진·리뷰·지도·영업시간). 외국인용 영어 UI(hl=en).
-  // 검색어는 한글 원본명 + 위치 힌트 — 구글이 정확히 그 클럽을 찾도록.
-  const googleQuery = [club.name.trim(), club.address?.trim() || club.area]
-    .filter(Boolean)
-    .join(" ");
-  const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(googleQuery)}&hl=en`;
+  // 클릭 시 우리 클럽 페이지(/en/clubs)의 해당 클럽으로 앵커 스크롤.
+  // 가격표·영업시간·평점 등 정보를 우리 페이지에서 보여주고, 리뷰만 거기서 Google 버튼으로.
   return (
-    <a
-      href={googleUrl}
-      target="_blank"
-      rel="noopener noreferrer"
+    <Link
+      href={`/en/clubs?lang=${lang}#club-${club.id}`}
       className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity"
     >
       <div className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-neutral-800 border border-neutral-800">
@@ -272,19 +277,26 @@ function ClubThumb({ club }: { club: ClubItem }) {
           // eslint-disable-next-line @next/next/no-img-element
           <img src={club.thumbnail_url} alt={name} loading="lazy" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[11px] font-bold">No image</div>
+          <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[11px] font-bold">{tr("No image")}</div>
         )}
       </div>
       <p className="text-[12px] font-bold text-neutral-200 mt-1.5 truncate">{name}</p>
-    </a>
+    </Link>
   );
 }
 
 function RegionSection({ clubs }: { clubs: ClubItem[] }) {
+  const { lang, tr } = useTr();
   return (
     <div className="pt-5 pb-6 border-b border-neutral-900 space-y-5">
-      <div className="px-4 text-center">
-        <p className="text-[22px] font-black text-neutral-100 tracking-tight">Spots competing for you</p>
+      <div className="px-4 flex items-center justify-between gap-2">
+        <p className="text-[22px] font-black text-neutral-100 tracking-tight">{tr("Spots competing for you")}</p>
+        <Link
+          href={`/en/clubs?lang=${lang}`}
+          className="shrink-0 text-[12px] font-bold text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap"
+        >
+          {tr("See all")} →
+        </Link>
       </div>
 
       {REGIONS.map((r) => {
@@ -293,8 +305,8 @@ function RegionSection({ clubs }: { clubs: ClubItem[] }) {
           <div key={r.ko} className="space-y-2.5">
             <div className="px-4">
               <p className="text-[15px] leading-snug">
-                <span className="font-black">{r.emoji} {r.en}</span>
-                <span className="text-neutral-400 font-medium text-[13px]"> — {r.tagline}</span>
+                <span className="font-black">{r.emoji} {areaLabel(r.ko, lang)}</span>
+                <span className="text-neutral-400 font-medium text-[13px]"> — {tr(r.tagline)}</span>
               </p>
             </div>
             {regionClubs.length > 0 && (
@@ -308,23 +320,23 @@ function RegionSection({ clubs }: { clubs: ClubItem[] }) {
 
       {/* 지역 버튼 → 해당 지역 깃발 등록 바로 */}
       <div className="px-4 space-y-2.5">
-        <p className="text-center text-[13px] font-bold text-neutral-300">Which area do you want?</p>
+        <p className="text-center text-[13px] font-bold text-neutral-300">{tr("Which area do you want?")}</p>
         <div className="grid grid-cols-2 gap-3">
           {REGIONS.map((r) => (
             <Link
               key={r.ko}
-              href={`/flags/new?lang=en&area=${encodeURIComponent(r.ko)}`}
+              href={`/flags/new?lang=${lang}&area=${encodeURIComponent(r.ko)}`}
               className="flex items-center justify-center py-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-amber-500/50 active:scale-[0.98] transition-all"
             >
-              <span className="text-[16px] font-black">{r.en}</span>
+              <span className="text-[16px] font-black">{areaLabel(r.ko, lang)}</span>
             </Link>
           ))}
         </div>
         <Link
-          href="/flags/new?lang=en"
+          href={`/flags/new?lang=${lang}`}
           className="block w-full mt-1 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
         >
-          Get VIP offers
+          {tr("Get VIP offers")}
         </Link>
       </div>
     </div>
@@ -333,18 +345,19 @@ function RegionSection({ clubs }: { clubs: ClubItem[] }) {
 
 // ── Flags 탭 ─────────────────────────────────────────────────────
 function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
+  const { lang, tr } = useTr();
   return (
     <div className="flex-1 overflow-y-auto">
       {/* ① 타겟 후킹 + 설명 (헤더 아래) */}
       <div className="px-5 pt-6 pb-5 text-center space-y-3 border-b border-neutral-900">
         <h1 className="text-[24px] font-black leading-[1.18] tracking-tight">
-          Want an unforgettable<br />night in Seoul Club?
+          {tr("Want an unforgettable night in Seoul Club?")}
         </h1>
-        <p className="text-[18px] font-black text-amber-400 pt-1">You&apos;re in the right place.</p>
+        <p className="text-[18px] font-black text-amber-400 pt-1">{tr("You're in the right place.")}</p>
         <p className="text-[14px] text-neutral-200 leading-relaxed font-medium">
-          Just enter your date &amp; budget<br />
-          Korea&apos;s best clubs send you their offers.<br />
-          Just pick one!
+          {tr("Just enter your date & budget")}<br />
+          {tr("Korea's best clubs send you their offers.")}<br />
+          {tr("Just pick one!")}
         </p>
       </div>
 
@@ -352,8 +365,8 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
       {flags.length > 0 && (
         <div className="pt-5 pb-5 border-b border-neutral-900">
           <div className="px-4 mb-3">
-            <p className="text-[14px] font-black text-neutral-200">🇰🇷 Koreans are doing it right now</p>
-            <p className="text-[12px] text-neutral-500 mt-0.5">Live requests from people in Seoul</p>
+            <p className="text-[14px] font-black text-neutral-200">{tr("🇰🇷 Koreans are doing it right now")}</p>
+            <p className="text-[12px] text-neutral-500 mt-0.5">{tr("Live requests from people in Seoul")}</p>
           </div>
           <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x snap-mandatory">
             {flags.map((f) => <FlagCarouselCard key={f.id} flag={f} />)}
@@ -367,7 +380,7 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
           <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer list-none select-none">
             <span className="flex items-center gap-2 font-bold text-[14px]">
               <Info className="w-4 h-4 text-neutral-400" />
-              How it works?
+              {tr("How it works?")}
             </span>
             <ChevronDown className="w-4 h-4 text-neutral-500 group-open:rotate-180 transition-transform" />
           </summary>
@@ -380,17 +393,17 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
               <div key={s.n} className="flex gap-3">
                 <div className="shrink-0 w-7 h-7 rounded-full bg-white text-black font-black text-[12px] flex items-center justify-center">{s.n}</div>
                 <div className="space-y-0.5">
-                  <p className="font-bold text-[14px]">{s.title}</p>
-                  <p className="text-[12px] text-neutral-500 leading-relaxed">{s.body}</p>
+                  <p className="font-bold text-[14px]">{tr(s.title)}</p>
+                  <p className="text-[12px] text-neutral-500 leading-relaxed">{tr(s.body)}</p>
                 </div>
               </div>
             ))}
             {/* Zero 바가지 보장 — How it works 안에 포함 */}
             <div className="mt-1 pt-3 border-t border-neutral-800">
-              <p className="flex items-center gap-2 text-[13px] font-black text-green-400">🛡️ Zero rip-off, guaranteed</p>
+              <p className="flex items-center gap-2 text-[13px] font-black text-green-400">{tr("🛡️ Zero rip-off, guaranteed")}</p>
               <p className="text-[12px] text-neutral-400 leading-relaxed mt-1">
-                Pay more than the standard price?{" "}
-                <span className="font-bold text-white">We refund you 200%.</span>
+                {tr("Pay more than the standard price?")}{" "}
+                <span className="font-bold text-white">{tr("We refund you 200%.")}</span>
               </p>
             </div>
           </div>
@@ -402,7 +415,7 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
 
       {/* Safety tips */}
       <div className="px-4 pb-6 space-y-3">
-        <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">Know before you go</p>
+        <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">{tr("Know before you go")}</p>
         {[
           {
             title: "🚩 Common scams to watch for",
@@ -423,12 +436,12 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
         ].map((t) => (
           <details key={t.title} className="group rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden">
             <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer list-none select-none">
-              <span className="font-bold text-[14px]">{t.title}</span>
+              <span className="font-bold text-[14px]">{tr(t.title)}</span>
               <span className="text-neutral-500 group-open:rotate-180 transition-transform text-[12px]">▾</span>
             </summary>
             <div className="px-4 pb-4 space-y-2">
               {t.items.map((it, i) => (
-                <p key={i} className="text-[12px] text-neutral-400 leading-relaxed">• {it}</p>
+                <p key={i} className="text-[12px] text-neutral-400 leading-relaxed">• {tr(it)}</p>
               ))}
             </div>
           </details>
@@ -438,24 +451,27 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
       {/* Bottom CTA */}
       <div className="px-4 pb-6 space-y-3">
         <Link
-          href="/flags/new?lang=en"
+          href={`/flags/new?lang=${lang}`}
           className="block w-full py-4 rounded-xl bg-white text-black font-black text-[15px] text-center hover:bg-neutral-200 transition-colors"
         >
-          Get VIP offers
+          {tr("Get VIP offers")}
         </Link>
         <p className="text-center text-[11px] text-neutral-600 leading-relaxed">
-          19+ only · Bring your passport to the venue.
+          {tr("19+ only · Bring your passport to the venue.")}
         </p>
       </div>
 
-      {/* 푸터 — 약관 링크 + 사업자 정보 (법적 필수) */}
+      {/* 푸터 — 언어 전환 + 약관 링크 + 사업자 정보 (법적 필수) */}
       <footer className="px-4 pt-5 pb-10 border-t border-neutral-900 space-y-4">
+        <div className="flex justify-center">
+          <LangSwitcher />
+        </div>
         <nav className="flex flex-wrap justify-center items-center gap-x-5 gap-y-2 text-[12px] text-neutral-500">
-          <Link href="/terms?lang=en" className="hover:text-white transition-colors">Terms</Link>
-          <Link href="/privacy?lang=en" className="hover:text-white transition-colors">Privacy</Link>
-          <a href="https://www.instagram.com/nightflow.kr" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Contact</a>
+          <Link href={`/terms?lang=${lang}`} className="hover:text-white transition-colors">{tr("Terms")}</Link>
+          <Link href={`/privacy?lang=${lang}`} className="hover:text-white transition-colors">{tr("Privacy")}</Link>
+          <a href="https://www.instagram.com/nightflow.kr" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{tr("Contact")}</a>
         </nav>
-        <BusinessInfo />
+        <BusinessInfo lang={lang} />
       </footer>
     </div>
   );
@@ -463,16 +479,17 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
 
 // ── Map 탭 ───────────────────────────────────────────────────────
 function MapTab() {
+  const { tr } = useTr();
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-6 text-center">
       <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
         <Map className="w-8 h-8 text-blue-400" />
       </div>
       <div className="space-y-2">
-        <h3 className="text-[18px] font-black">Seoul Club Map</h3>
+        <h3 className="text-[18px] font-black">{tr("Seoul Club Map")}</h3>
         <p className="text-[13px] text-neutral-500 leading-relaxed">
-          Browse clubs in Gangnam and Hongdae.<br />
-          See menus, ratings, and opening hours.
+          {tr("Browse clubs in Gangnam and Hongdae.")}<br />
+          {tr("See menus, ratings, and opening hours.")}
         </p>
       </div>
       <div className="w-full space-y-3">
@@ -480,7 +497,7 @@ function MapTab() {
           href="/en/clubs"
           className="block w-full py-4 rounded-xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 transition-colors"
         >
-          🗺️ Open club map
+          {tr("🗺️ Open club map")}
         </Link>
         <div className="grid grid-cols-2 gap-2">
           {[
@@ -489,7 +506,7 @@ function MapTab() {
           ].map((area) => (
             <div key={area.label} className="rounded-xl bg-[#1C1C1E] border border-neutral-800 p-3 text-center">
               <p className="text-xl mb-1">{area.emoji}</p>
-              <p className="text-[12px] font-bold text-white">{area.label}</p>
+              <p className="text-[12px] font-bold text-white">{tr(area.label)}</p>
             </div>
           ))}
         </div>
@@ -502,12 +519,13 @@ function MapTab() {
 export function EnHomeClient({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubItem[] }) {
   const [tab, setTab] = useState<Tab>("flags");
   const { user, isLoading } = useCurrentUser();
+  const { lang, tr } = useTr();
 
   const tabs: { code: Tab; label: string; icon: React.ReactNode }[] = [
-    { code: "flags", label: "Home", icon: <Home className="w-4 h-4" /> },
-    { code: "my",    label: "My",    icon: <User className="w-4 h-4" /> },
-    { code: "qa",    label: "Q&A",   icon: <HelpCircle className="w-4 h-4" /> },
-    { code: "map",   label: "Map",   icon: <Map className="w-4 h-4" /> },
+    { code: "flags", label: tr("Home"),  icon: <Home className="w-4 h-4" /> },
+    { code: "my",    label: tr("My"),    icon: <User className="w-4 h-4" /> },
+    { code: "qa",    label: tr("Q&A"),   icon: <HelpCircle className="w-4 h-4" /> },
+    { code: "map",   label: tr("Map"),   icon: <Map className="w-4 h-4" /> },
   ];
 
   return (
@@ -517,7 +535,7 @@ export function EnHomeClient({ flags, clubs = [] }: { flags: FlagItem[]; clubs?:
         {tab === "flags" ? (
           <div>
             <span className="text-[17px] font-black tracking-tight">NightFlow</span>
-            <p className="text-[11px] text-neutral-500 leading-none mt-0.5">The easiest way to book Seoul clubs.</p>
+            <p className="text-[11px] text-neutral-500 leading-none mt-0.5">{tr("The easiest way to book Seoul clubs.")}</p>
           </div>
         ) : (
           <button
@@ -532,17 +550,17 @@ export function EnHomeClient({ flags, clubs = [] }: { flags: FlagItem[]; clubs?:
           <div className="w-[88px] h-9 rounded-full bg-neutral-800 animate-pulse" />
         ) : user ? (
           <Link
-            href="/flags/new?lang=en"
+            href={`/flags/new?lang=${lang}`}
             className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-amber-500 text-black font-black text-[13px] hover:bg-amber-400 transition-colors"
           >
-            Get offers
+            {tr("Get offers")}
           </Link>
         ) : (
           <Link
-            href="/login?lang=en"
+            href={`/login?lang=${lang}`}
             className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-white text-black font-black text-[13px] hover:bg-neutral-200 transition-colors"
           >
-            Log in
+            {tr("Log in")}
           </Link>
         )}
       </header>
