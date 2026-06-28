@@ -149,6 +149,44 @@ const PRICE_TIERS = [
 ];
 
 export default function EnglishLanding() {
+  // Schema.org Article — Google Top Stories 노출 후보.
+  // FAQPage와 함께 = 검색 결과 영역 압도적 확장.
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: "Seoul Club Booking Guide — Be a VIP at Gangnam, Hongdae, Itaewon Clubs",
+    description:
+      "Book Seoul's hottest clubs without speaking Korean. Best VIP tables in Gangnam, Hongdae, Itaewon, Apgujeong. Fair prices, skip the line and the broker.",
+    image: ["https://nightflow.kr/og-image.png"],
+    datePublished: "2026-01-01T00:00:00+09:00",
+    dateModified: new Date().toISOString().split("T")[0] + "T00:00:00+09:00",
+    author: {
+      "@type": "Organization",
+      name: "NightFlow",
+      url: "https://nightflow.kr/en",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "NightFlow",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://nightflow.kr/og-image.png",
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": "https://nightflow.kr/en/guide",
+    },
+    inLanguage: "en-US",
+    about: [
+      { "@type": "Thing", name: "Seoul Nightlife" },
+      { "@type": "Thing", name: "Korea Club Booking" },
+      { "@type": "Thing", name: "Gangnam VIP Table" },
+      { "@type": "Thing", name: "Hongdae Nightclub" },
+      { "@type": "Thing", name: "Itaewon Nightlife" },
+    ],
+  };
+
   // Schema.org FAQPage — 외국인 검색 결과에 펼침형 FAQ 노출.
   // Google "Seoul club booking", "Korea nightlife" 검색 시 우리 글이 일반 결과보다 큼.
   const faqJsonLd = {
@@ -216,6 +254,10 @@ export default function EnglishLanding() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}

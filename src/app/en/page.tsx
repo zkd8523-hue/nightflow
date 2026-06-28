@@ -392,11 +392,23 @@ export default async function EnHomePage() {
             </a>
           </li>
           <li>
+            <a href="/en/clubs/apgujeong">
+              Apgujeong &amp; Cheongdam lounges — High-end VIP, champagne
+              service
+            </a>
+          </li>
+          <li>
             <a href="/en/clubs/busan">
               Busan clubs — Haeundae beach &amp; Seomyeon downtown
             </a>
           </li>
         </ul>
+        <h2>Common Questions About Seoul Club Booking</h2>
+        <p>
+          For detailed answers about Seoul club prices, dress codes, broker
+          problems, and how foreigners book VIP tables, see our{" "}
+          <a href="/en/faq">Seoul Club Booking FAQ</a>.
+        </p>
 
         <h2>Why Book Korea Clubs Through NightFlow</h2>
         <ul>

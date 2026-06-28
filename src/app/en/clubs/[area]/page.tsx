@@ -7,7 +7,7 @@ import { ClubsClient } from "../ClubsClient";
 // "Gangnam club booking", "Hongdae nightclub", "Itaewon club" 등
 // 각 동네 키워드 검색에 정확히 매칭되도록 설계.
 
-type AreaSlug = "gangnam" | "hongdae" | "itaewon" | "busan";
+type AreaSlug = "gangnam" | "hongdae" | "itaewon" | "busan" | "apgujeong";
 
 const AREA_CONFIG: Record<
   AreaSlug,
@@ -110,6 +110,36 @@ const AREA_CONFIG: Record<
       "Cakeshop Seoul",
       "Itaewon house club",
       "Seoul club booking",
+      "Korea club booking",
+    ],
+  },
+  apgujeong: {
+    koreanArea: "강남",
+    en: "Apgujeong",
+    title:
+      "Apgujeong Lounge Booking 2026 — Cheongdam High-End VIP Lounges (Seoul)",
+    description:
+      "Book Apgujeong & Cheongdam high-end VIP lounges in Seoul. Champagne service, premium bottles, exclusive crowds. Real prices, no broker, no Korean needed.",
+    intro:
+      "Apgujeong and Cheongdam host Seoul's most exclusive VIP lounges. Champagne culture, premium bottle service, fashion-forward crowds. NightFlow makes Apgujeong lounge booking accessible to foreign travelers — book the same lounges Koreans book at the same prices.",
+    vibe:
+      "Apgujeong lounges are high-end, intimate, and curated. Tables start at ₩2,000,000+. Crowd is upscale 20s–30s, often industry/fashion. Music spans EDM, hip-hop lounge, and house depending on the venue. Dress code is strict smart-casual minimum.",
+    topClubsNote:
+      "Top Apgujeong & Cheongdam lounges include Core Lounge (Apgujeong, EDM, opened 2026), Club Arzu (Cheongdam, high-end hip-hop), DM Seoul (Apgujeong, hip-hop lounge), and Lion (Cheongdam, ultra high-end celebrity venue).",
+    keywords: [
+      "Apgujeong lounge",
+      "Apgujeong lounge booking",
+      "Apgujeong club",
+      "Cheongdam lounge",
+      "Cheongdam club",
+      "Cheongdam VIP",
+      "Seoul VIP lounge",
+      "Seoul champagne lounge",
+      "Core Lounge Seoul",
+      "Club Arzu",
+      "DM Seoul",
+      "Apgujeong high-end club",
+      "Korea VIP lounge",
       "Korea club booking",
     ],
   },

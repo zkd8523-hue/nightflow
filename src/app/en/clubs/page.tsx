@@ -141,12 +141,24 @@ export default async function EnClubsPage() {
             </a>
           </li>
           <li>
+            <a href="/en/clubs/apgujeong">
+              Apgujeong Lounge Booking — Cheongdam high-end VIP lounges &amp;
+              champagne service
+            </a>
+          </li>
+          <li>
             <a href="/en/clubs/busan">
               Busan Club Booking — Haeundae &amp; Seomyeon nightlife (Korea&apos;s
               second city)
             </a>
           </li>
         </ul>
+        <h2>FAQ — Seoul Club Booking Questions Answered</h2>
+        <p>
+          For prices, dress codes, broker problems, and how foreigners actually
+          book VIP tables in Seoul, see our{" "}
+          <a href="/en/faq">Seoul Club Booking FAQ</a>.
+        </p>
       </div>
       <ClubsClient clubs={clubList} />
     </>
