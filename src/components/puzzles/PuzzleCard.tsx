@@ -9,6 +9,7 @@ import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
 import { countryFlag, countryNameKo } from "@/lib/utils/countryFlag";
+import { useTranslatedText } from "@/hooks/useTranslatedComment";
 
 interface PuzzleCardProps {
   puzzle: Puzzle;
@@ -171,6 +172,12 @@ export const PuzzleCard = memo(function PuzzleCard({
 
   const leaderTier = getDealTier(puzzle.leader?.deal_amount_total ?? 0);
 
+  // 외국어로 쓴 깃발 notes를 한국 화면에선 한국어로 번역 (작성자 lang != ko일 때).
+  // 한국 MD가 일본인/중국인 깃발을 읽고 오퍼할 수 있게. (소스 언어 자동감지, 캐시)
+  const leaderLang = (puzzle.leader as { lang?: string } | null | undefined)?.lang;
+  const notesKo = useTranslatedText(puzzle.notes, "ko", !!leaderLang && leaderLang !== "ko");
+  const displayNotes = notesKo ?? puzzle.notes;
+
   const isMd = userRole === "md" || userRole === "admin";
   const isRecruitingParty = puzzle.is_recruiting_party;
   const isFull = puzzle.current_count >= puzzle.target_count;
@@ -209,7 +216,7 @@ export const PuzzleCard = memo(function PuzzleCard({
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-1 flex-1 min-w-0">
           <div className="text-[16px] font-bold leading-snug break-keep tracking-tight line-clamp-2 text-neutral-100">
-            {puzzle.notes || `${puzzle.area}에서 모여요`}
+            {displayNotes || `${puzzle.area}에서 모여요`}
           </div>
           {puzzle.leader?.display_name && (
             <div className="flex items-center gap-1.5 flex-wrap">

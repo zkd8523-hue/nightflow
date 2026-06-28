@@ -97,7 +97,7 @@ export default async function HomePage() {
       hideTestData(
         supabase
           .from("puzzles")
-          .select("*, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender, is_test, country_code)")
+          .select("*, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender, is_test, country_code, lang)")
           .in("status", ["open", "selecting"])
           .gt("expires_at", nowIso)
           .order("created_at", { ascending: false })

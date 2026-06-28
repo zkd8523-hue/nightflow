@@ -51,3 +51,47 @@ export function useTranslatedComment(
 
   return translated;
 }
+
+// 범용 번역 훅 — 임의 텍스트를 targetLang(ko 포함)으로. 소스 언어는 라우트가 자동감지.
+// 외국어로 쓴 깃발 notes를 한국 MD에게 한국어로 보여주는 등 양방향 번역에 사용.
+// enabled=false(작성자 언어 == 보는 언어 등)면 원문 그대로.
+export function useTranslatedText(
+  text: string | null | undefined,
+  targetLang: Lang,
+  enabled: boolean,
+): string | null {
+  const [translated, setTranslated] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled || !text || !text.trim()) {
+      setTranslated(null);
+      return;
+    }
+    const cacheKey = `nf_tr:${targetLang}:${text}`;
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) { setTranslated(cached); return; }
+    } catch { /* noop */ }
+
+    let cancelled = false;
+    fetch("/api/translate", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ text, lang: targetLang }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled) return;
+        const t: string | null = d?.translated ?? null;
+        if (t) {
+          try { sessionStorage.setItem(cacheKey, t); } catch { /* noop */ }
+          setTranslated(t);
+        }
+      })
+      .catch(() => { /* 실패 시 원문 폴백 */ });
+
+    return () => { cancelled = true; };
+  }, [text, targetLang, enabled]);
+
+  return translated;
+}

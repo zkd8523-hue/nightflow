@@ -24,6 +24,7 @@ import { getPublicIncludes } from "@/lib/utils/liquor";
 import { toEnglishInclude } from "@/lib/utils/liquorEn";
 import { getLang, makeT, areaLabel } from "@/lib/i18n";
 import { OfferCommentText } from "./OfferCommentText";
+import { useTranslatedText } from "@/hooks/useTranslatedComment";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
@@ -158,6 +159,12 @@ export function PuzzleDetailClient({
   const lang = getLang(searchParams.get("lang"));
   const isForeigner = lang !== "ko";
   const t = makeT(lang);
+
+  // 깃발 notes를 보는 사람 언어로 번역 (작성자 언어 != 보는 언어일 때).
+  // 한국 MD ← 외국어 깃발 = 한국어로 / 외국인 ← 한국어 깃발 = 모국어로. (양방향, 캐시)
+  const notesAuthorLang = (puzzle.leader as { lang?: string } | null | undefined)?.lang ?? "ko";
+  const notesTr = useTranslatedText(puzzle.notes, lang, notesAuthorLang !== lang);
+  const displayNotes = notesTr ?? puzzle.notes;
   const lq = isForeigner ? "?lang=en" : "";
   // 외국인 모드에서 상대시간(fromNow)·요일을 영어로
   useEffect(() => {
@@ -656,7 +663,7 @@ export function PuzzleDetailClient({
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-wrap items-baseline gap-x-2 min-w-0">
                 {puzzle.notes && (
-                  <p className="text-[22px] font-black text-white leading-snug tracking-tight break-keep">{puzzle.notes}</p>
+                  <p className="text-[22px] font-black text-white leading-snug tracking-tight break-keep">{displayNotes}</p>
                 )}
                 <span className="text-[14px] text-neutral-400">{areaLabel(puzzle.area, lang)}</span>
               </div>
