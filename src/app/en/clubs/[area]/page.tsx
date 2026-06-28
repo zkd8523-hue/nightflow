@@ -198,8 +198,69 @@ export default async function EnClubsAreaPage({
   const clubList = clubs ?? [];
   const clubCount = clubList.length;
 
+  // Schema.org — Place + ItemList (Google: 별점·리스트 노출)
+  // 외국인이 "Hongdae clubs" 검색 시 클럽 목록 카드로 노출.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ItemList",
+        "@id": `https://nightflow.kr/en/clubs/${area}/#itemlist`,
+        name: `${config.en} Clubs — Seoul Club Booking`,
+        description: config.intro,
+        numberOfItems: clubCount,
+        itemListElement: clubList.slice(0, 10).map((c, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          item: {
+            "@type": "NightClub",
+            name: c.name,
+            address: c.address
+              ? { "@type": "PostalAddress", addressLocality: config.en, addressCountry: "KR" }
+              : undefined,
+            aggregateRating: c.google_rating
+              ? {
+                  "@type": "AggregateRating",
+                  ratingValue: c.google_rating,
+                  reviewCount: c.google_review_count ?? 1,
+                }
+              : undefined,
+            url: `https://nightflow.kr/clubs/${c.id}`,
+          },
+        })),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "NightFlow",
+            item: "https://nightflow.kr/en",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Seoul Clubs",
+            item: "https://nightflow.kr/en/clubs",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: `${config.en} Clubs`,
+            item: `https://nightflow.kr/en/clubs/${area}`,
+          },
+        ],
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="sr-only">
         <h1>
           {config.en} Club Booking — {clubCount} Nightclubs in {config.en},

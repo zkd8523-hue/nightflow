@@ -222,10 +222,64 @@ export default async function EnHomePage() {
 
   const flagCount = flags.length;
 
+  // Schema.org JSON-LD — 외국인 검색 결과 풍부 노출(별점·FAQ·검색박스).
+  // Google "Korea club booking" 검색 시 우리 페이지가 일반 결과보다 큰 카드로 표시됨.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://nightflow.kr/en/#organization",
+        name: "NightFlow",
+        alternateName: ["NightFlow Korea", "NightFlow Seoul"],
+        url: "https://nightflow.kr/en",
+        logo: "https://nightflow.kr/og-image.png",
+        description:
+          "Korea club booking platform for foreign travelers. Book VIP tables at Seoul's best clubs in Gangnam, Hongdae, Itaewon without speaking Korean.",
+        sameAs: ["https://www.instagram.com/nightflow.kr/"],
+        areaServed: { "@type": "Country", name: "South Korea" },
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://nightflow.kr/en/#website",
+        url: "https://nightflow.kr/en",
+        name: "NightFlow — Korea Club Booking",
+        alternateName: ["NightFlow Seoul", "NightFlow Korea"],
+        inLanguage: "en-US",
+        publisher: { "@id": "https://nightflow.kr/en/#organization" },
+        potentialAction: {
+          "@type": "SearchAction",
+          target: {
+            "@type": "EntryPoint",
+            urlTemplate: "https://nightflow.kr/en/clubs?q={search_term_string}",
+          },
+          "query-input": "required name=search_term_string",
+        },
+      },
+      {
+        "@type": "Service",
+        "@id": "https://nightflow.kr/en/#service",
+        name: "Seoul Club Booking Service",
+        provider: { "@id": "https://nightflow.kr/en/#organization" },
+        areaServed: [
+          { "@type": "City", name: "Seoul" },
+          { "@type": "City", name: "Busan" },
+        ],
+        description:
+          "Book VIP tables at top Seoul clubs (Gangnam, Hongdae, Itaewon, Apgujeong) without speaking Korean. Real prices, no broker, English-friendly.",
+        serviceType: "Club Reservation",
+      },
+    ],
+  };
+
   // SEO용 SSR sr-only 콘텐츠 — EnHomeClient는 client-side 렌더링이라 본문이 비어 보이는 문제 보완.
   // 시각엔 안 보이지만 구글봇은 영어 키워드·동네별 클럽 정보를 읽음.
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="sr-only">
         <h1>
           Korea Club Booking — Gangnam, Hongdae, Itaewon VIP Tables (NightFlow

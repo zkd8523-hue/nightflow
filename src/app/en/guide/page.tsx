@@ -149,8 +149,77 @@ const PRICE_TIERS = [
 ];
 
 export default function EnglishLanding() {
+  // Schema.org FAQPage — 외국인 검색 결과에 펼침형 FAQ 노출.
+  // Google "Seoul club booking", "Korea nightlife" 검색 시 우리 글이 일반 결과보다 큼.
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "Do I need to speak Korean to book a Seoul club?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "No. NightFlow lets foreign travelers book Seoul clubs entirely in English. You plant a flag with your date, group size, and budget, and Seoul clubs send you private VIP offers — no Korean required, no broker.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How much does a Seoul club night cost for foreigners?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Casual entry is ₩20,000–30,000 per person. Main VIP tables in Gangnam start at ₩750,000 (₩150–300K per person split among 4–6). Apgujeong premium lounges start at ₩2,000,000. Through NightFlow you pay the same prices Koreans pay — no tourist tax.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Which Seoul district is best for foreigners?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Itaewon is most foreigner-friendly with English staff and international crowd. Hongdae is best for K-pop and hip-hop fans, walk-in friendly. Gangnam is for luxury VIP table experiences. Apgujeong is for high-end lounges.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "How early should I book a Seoul club?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Best 3–7 days before your night. Acceptable 24 hours before. Last resort same day — still works but fewer offers. Friday/Saturday peak nights have the most action.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Is there a booking fee or deposit?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "No booking fee, no deposit. Planting a flag on NightFlow is free. You receive offers free. You only pay the club directly when you accept and arrive — at Korean prices, no broker markup.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Can I book a VIP table without Korean MD connections?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. Traditional Seoul club booking required Korean MD (promoter) contacts. NightFlow inverts this — clubs and their MDs send you offers. You pick the best one. No connections, no language barrier.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What's the dress code for Seoul clubs?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Gangnam: smart casual minimum — no flip flops, shorts, or ripped jeans. Hongdae: anything goes including streetwear. Itaewon: international smart casual standard. Always bring your passport (Korean ID law).",
+        },
+      },
+    ],
+  };
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       {/* SEO용 sr-only 콘텐츠 — booking 키워드 자연 등장 + Seoul/Gangnam/Hongdae/Itaewon 매칭 강화 */}
       <div className="sr-only">
         <h1>
