@@ -16,6 +16,13 @@ export const metadata: Metadata = {
     "Hongdae club questions",
     "Korea club guide",
     "foreigner Seoul nightlife",
+    // "Korean" 형용사 패턴
+    "Korean club FAQ",
+    "Korean nightlife guide",
+    "Korean club questions",
+    "Korean bar guide",
+    "K-pop club FAQ",
+    "Korean VIP table",
   ],
   alternates: {
     canonical: "https://nightflow.kr/en/faq",

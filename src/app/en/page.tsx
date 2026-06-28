@@ -22,6 +22,19 @@ export const metadata: Metadata = {
     "South Korea club",
     "South Korea nightlife",
     "clubs in Korea",
+    // "Korean" 형용사 패턴 (검색량 ↑↑↑)
+    "Korean club",
+    "Korean clubs",
+    "Korean nightclub",
+    "Korean nightlife",
+    "Korean bar",
+    "Korean party",
+    "Korean clubbing",
+    "K-pop club",
+    "K-pop nightclub",
+    "Korean VIP table",
+    "Korean DJ",
+    "Korean rave",
     // 추천 키워드 (외국인 일반 검색)
     "best clubs in Korea",
     "best clubs in Seoul",
@@ -286,12 +299,14 @@ export default async function EnHomePage() {
           Seoul)
         </h1>
         <p>
-          NightFlow is a Korea club booking platform for foreign travelers and
-          tourists visiting Seoul. Book VIP tables at the best Korea clubs in
+          NightFlow is a Korean club booking platform for foreign travelers and
+          tourists visiting Seoul. Book VIP tables at the best Korean clubs in
           Gangnam, Hongdae, Itaewon, and Apgujeong without speaking Korean.
-          Real prices, no broker, no hidden fees. Top Seoul clubs send you
+          Real prices, no broker, no hidden fees. Top Seoul nightclubs send you
           private offers — you compare and pick the best one for your night
-          out. Korea nightlife made easy.
+          out. Korean nightlife made easy. Whether you&apos;re looking for a
+          Korean bar, a K-pop club, a hip-hop nightclub, or a high-end VIP
+          lounge, NightFlow handles the booking in English.
         </p>
 
         <h2>Hongdae Club Booking — Hip-Hop &amp; Foreigner-Friendly</h2>
@@ -325,15 +340,16 @@ export default async function EnHomePage() {
           disco, R&amp;B, and hip-hop.
         </p>
 
-        <h2>Best Korea Clubs Recommendation by District</h2>
+        <h2>Best Korean Clubs Recommendation by District</h2>
         <p>
-          Wondering where to club in Korea? Here&apos;s the best clubs
+          Wondering where to club in Korea? Here&apos;s the best Korean clubs
           recommendation by district. For Hongdae hip-hop and foreigner-friendly
-          vibes, try Club Dokkaebi or NB2. For Gangnam EDM and VIP tables, Club
-          ACE leads the scene. For Itaewon international crowd, Soap Seoul is
-          the top recommendation. For Apgujeong high-end lounges, Core Lounge
-          and Club Arzu top the list. NightFlow lets you compare and book the
-          best clubs in Seoul without speaking Korean.
+          Korean nightlife, try Club Dokkaebi or NB2. For Gangnam EDM nightclubs
+          and VIP tables, Club ACE leads the Korean scene. For Itaewon
+          international crowd and English-friendly Korean bars, Soap Seoul is
+          the top recommendation. For Apgujeong high-end Korean VIP lounges,
+          Core Lounge and Club Arzu top the list. NightFlow lets you compare
+          and book the best Korean clubs in Seoul without speaking Korean.
         </p>
 
         <h2>Apgujeong &amp; Cheongdam VIP Lounges</h2>

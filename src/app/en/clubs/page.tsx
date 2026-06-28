@@ -18,6 +18,15 @@ export const metadata: Metadata = {
     "Korea nightlife guide",
     "clubs in Korea",
     "South Korea club",
+    // "Korean" 형용사 패턴
+    "Korean club",
+    "Korean clubs",
+    "Korean nightclub",
+    "Korean nightlife",
+    "Korean bar",
+    "Korean clubs guide",
+    "K-pop club",
+    "best Korean clubs",
     // Seoul-level
     "Seoul club booking",
     "Seoul clubs",

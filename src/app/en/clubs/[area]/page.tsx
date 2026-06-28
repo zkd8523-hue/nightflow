@@ -52,6 +52,11 @@ const AREA_CONFIG: Record<
       "Korea VIP table",
       "Seoul club booking",
       "Korea club booking",
+      "Korean club",
+      "Korean clubs",
+      "Korean nightlife",
+      "Korean nightclub",
+      "Korean bar",
     ],
   },
   hongdae: {
@@ -82,6 +87,11 @@ const AREA_CONFIG: Record<
       "NB2 Seoul",
       "Seoul club booking",
       "Korea club booking",
+      "Korean club",
+      "Korean clubs",
+      "Korean nightlife",
+      "Korean nightclub",
+      "Korean bar",
     ],
   },
   itaewon: {
@@ -111,6 +121,11 @@ const AREA_CONFIG: Record<
       "Itaewon house club",
       "Seoul club booking",
       "Korea club booking",
+      "Korean club",
+      "Korean clubs",
+      "Korean nightlife",
+      "Korean nightclub",
+      "Korean bar",
     ],
   },
   apgujeong: {
@@ -141,6 +156,11 @@ const AREA_CONFIG: Record<
       "Apgujeong high-end club",
       "Korea VIP lounge",
       "Korea club booking",
+      "Korean club",
+      "Korean clubs",
+      "Korean nightlife",
+      "Korean nightclub",
+      "Korean bar",
     ],
   },
   busan: {
@@ -169,6 +189,11 @@ const AREA_CONFIG: Record<
       "Korea second city nightlife",
       "Busan VIP table",
       "Korea club booking",
+      "Korean club",
+      "Korean clubs",
+      "Korean nightlife",
+      "Korean nightclub",
+      "Korean bar",
     ],
   },
 };
@@ -317,10 +342,12 @@ export default async function EnClubsAreaPage({
         <h2>How to Book a {config.en} Club Through NightFlow</h2>
         <p>
           Plant a flag with your date, party size, and budget. {config.en}{" "}
-          clubs send you private VIP offers within hours. Compare prices and
-          table maps on one screen, then book with a single tap. No Korean
-          required, no broker fees, no deposit. You pay the club directly when
-          you arrive.
+          Korean clubs send you private VIP offers within hours. Compare prices
+          and table maps on one screen, then book with a single tap. No Korean
+          required, no broker fees, no deposit. You pay the {config.en} Korean
+          club directly when you arrive — same prices Koreans pay, no tourist
+          tax. NightFlow makes {config.en} Korean nightlife accessible to
+          foreign travelers and English speakers.
         </p>
 
         <h2>Why Book {config.en} Clubs Through NightFlow</h2>
