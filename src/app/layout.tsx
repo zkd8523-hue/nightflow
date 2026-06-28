@@ -75,6 +75,8 @@ export const metadata: Metadata = {
     languages: {
       "ko-KR": "https://nightflow.kr",
       "en-US": "https://nightflow.kr/en",
+      "zh-CN": "https://nightflow.kr/zh",
+      "zh-TW": "https://nightflow.kr/zh",
       "x-default": "https://nightflow.kr",
     },
   },
