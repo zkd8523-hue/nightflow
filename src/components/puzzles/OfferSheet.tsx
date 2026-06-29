@@ -147,7 +147,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       const { data, error } = await supabase.rpc("withdraw_offer", { p_offer_id: offerId });
       if (error) throw error;
       if (!data?.success) { toast.error(data?.error || "철회에 실패했습니다"); return; }
-      toast.success("오퍼가 철회됐습니다. 슬롯이 회복됐습니다.");
+      toast.success("오퍼가 철회됐습니다.");
       await loadMdInfo();
       setShowSlotDropdown(false);
     } catch {
@@ -183,12 +183,6 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       toast.error("포함 내역을 최소 1개 이상 선택해주세요");
       return;
     }
-    // 수정 모드는 슬롯 카운트 검증 스킵 (이미 차지하고 있는 슬롯)
-    if (!editingOffer && activeOffers >= 5) {
-      toast.error("동시 활성 오퍼는 최대 5건입니다");
-      return;
-    }
-
     // 식별 정보 검증 (코멘트 + 모든 includes 항목)
     const allInputs = [comment, ...selectedIncludes];
     const allFound = allInputs.flatMap(detectContactInfo);
@@ -326,8 +320,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             >
               <div>
                 <p className="text-[11px] text-neutral-500">활성 오퍼</p>
-                <p className={`text-[14px] font-black ${activeOffers >= 5 ? "text-red-400" : "text-white"}`}>
-                  {activeOffers}/5 슬롯 사용 중
+                <p className="text-[14px] font-black text-white">
+                  {activeOffers}건 진행 중
                 </p>
               </div>
               {activeOffers > 0 && (
@@ -546,7 +540,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
                   ✓ 방장이 수락하면 <strong className="text-amber-400">30 크레딧</strong>이 차감됩니다.<br />
                 </>
               )}
-              ✓ 거절/미선택 시 슬롯이 회복됩니다.
+              ✓ 거절/미선택 시 크레딧은 차감되지 않아요.
             </p>
           </div>
 
@@ -568,17 +562,11 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           <Button
             onClick={handleSubmit}
-            disabled={loading || myClubs.length === 0 || currentBudget <= 0 || selectedIncludes.length === 0 || (!editingOffer && activeOffers >= 5) || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
+            disabled={loading || myClubs.length === 0 || currentBudget <= 0 || selectedIncludes.length === 0 || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
             className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
             {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "제안서 보내기")}
           </Button>
-
-          {!editingOffer && activeOffers >= 5 && (
-            <p className="text-center text-[12px] text-red-400">
-              슬롯이 가득 찼습니다. 위에서 오퍼를 철회하고 새로 제안하세요.
-            </p>
-          )}
         </div>
       </SheetContent>
     </Sheet>
