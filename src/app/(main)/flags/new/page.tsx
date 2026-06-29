@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
+import { getLang, makeT } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
 
@@ -12,11 +13,17 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<{ lang?: string }>;
 }): Promise<Metadata> {
-  const { lang } = await searchParams;
-  if (lang && lang !== "ko") {
-    return { title: { absolute: "Get VIP offers | NightFlow" } };
-  }
-  return { title: "깃발 꽂기" };
+  const { lang: raw } = await searchParams;
+  const lang = getLang(raw);
+  if (lang === "ko") return { title: "깃발 꽂기" };
+  const t = makeT(lang);
+  const title = t(
+    "깃발 꽂기",
+    "Get VIP offers",
+    "VIPオファーを獲得",
+    "获取 VIP 报价"
+  );
+  return { title: { absolute: `${title} | NightFlow` } };
 }
 
 export default async function PuzzleNewPage({
@@ -24,8 +31,12 @@ export default async function PuzzleNewPage({
 }: {
   searchParams: Promise<{ lang?: string }>;
 }) {
-  const { lang } = await searchParams;
-  const isForeigner = !!lang && lang !== "ko";
+  const { lang: raw } = await searchParams;
+  const lang = getLang(raw);
+  const isForeigner = lang !== "ko";
+  const t = makeT(lang);
+  // 외국인 트랙 홈 (lang에 따라 /en, /ja, /zh)
+  const foreignHome = lang === "ko" ? "/en" : `/${lang}`;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -50,27 +61,35 @@ export default async function PuzzleNewPage({
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-20">
       <div className="max-w-lg mx-auto p-6">
-        {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 /en 복귀 링크 제공 */}
+        {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공 */}
         {isForeigner && (
           <Link
-            href={`/en?lang=${lang}`}
-            aria-label="Back"
+            href={foreignHome}
+            aria-label={t("뒤로", "Back", "戻る", "返回")}
             className="inline-flex items-center gap-1 -ml-1 mb-4 px-2 py-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
-            <span className="text-[14px] font-bold">Back</span>
+            <span className="text-[14px] font-bold">{t("뒤로", "Back", "戻る", "返回")}</span>
           </Link>
         )}
 
         {/* 헤더 */}
         <div className="mb-8">
           <h1 className="text-2xl font-black text-white tracking-tight">
-            {isForeigner ? "Tell us your night" : "🚩 깃발 꽂기"}
+            {t(
+              "🚩 깃발 꽂기",
+              "Tell us your night",
+              "あなたの夜を教えて",
+              "告诉我们您的夜晚"
+            )}
           </h1>
           <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">
-            {isForeigner
-              ? "Set your budget — Seoul's clubs send you private VIP offers"
-              : "예산만 정하면 클럽에서 시크릿오퍼를 제안해요"}
+            {t(
+              "예산만 정하면 클럽에서 시크릿오퍼를 제안해요",
+              "Set your budget — Seoul's clubs send you private VIP offers",
+              "予算を設定 — ソウルのクラブからプライベートVIPオファーが届きます",
+              "设置预算 — 首尔的夜店为您发送专属 VIP 报价"
+            )}
           </p>
         </div>
 
