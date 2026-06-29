@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
-import { Search, X, Camera, MessageCircle } from "lucide-react";
+import { Search, X, Camera } from "lucide-react";
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
@@ -31,8 +31,7 @@ export type ProfileEditSection =
   | "bio"
   | "music"
   | "area"
-  | "club"
-  | "openchat";
+  | "club";
 
 const SECTION_TITLES: Record<ProfileEditSection, string> = {
   all: "프로필 편집",
@@ -40,7 +39,6 @@ const SECTION_TITLES: Record<ProfileEditSection, string> = {
   music: "좋아하는 음악",
   area: "주로 가는 지역",
   club: "좋아하는 클럽",
-  openchat: "오픈채팅",
 };
 
 interface Props {
@@ -55,7 +53,6 @@ interface Props {
     genres: string[];
     areas: string[];
     pinnedClubs: PinnedClubLite[];
-    kakaoOpenChatUrl: string;
   };
   onSaved: (next: {
     displayName: string;
@@ -63,7 +60,6 @@ interface Props {
     bio: string | null;
     genres: string[];
     areas: string[];
-    kakaoOpenChatUrl: string | null;
   }) => void;
 }
 
@@ -81,7 +77,6 @@ export function ProfileEditSheet({
   const showMusic = showAll || section === "music";
   const showArea = showAll || section === "area";
   const showClub = showAll || section === "club";
-  const showOpenChat = showAll || section === "openchat";
   const { user } = useCurrentUser();
   const [displayName, setDisplayName] = useState(initial.displayName);
   const [profileImage, setProfileImage] = useState<string | null>(
@@ -92,9 +87,6 @@ export function ProfileEditSheet({
   const [areas, setAreas] = useState<string[]>(initial.areas);
   const [favClubs, setFavClubs] = useState<PinnedClubLite[]>(
     initial.pinnedClubs
-  );
-  const [kakaoOpenChatUrl, setKakaoOpenChatUrl] = useState(
-    initial.kakaoOpenChatUrl
   );
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -113,7 +105,6 @@ export function ProfileEditSheet({
       setGenres(initial.genres);
       setAreas(initial.areas);
       setFavClubs(initial.pinnedClubs);
-      setKakaoOpenChatUrl(initial.kakaoOpenChatUrl);
       setClubQuery("");
       setClubResults([]);
     }
@@ -281,21 +272,9 @@ export function ProfileEditSheet({
       toast.error(`자기소개는 ${MAX_BIO_LENGTH}자 이하로 작성해주세요`);
       return;
     }
-    // 오픈채팅 URL 형식 검증 (입력된 경우에만)
-    const trimmedKakao = kakaoOpenChatUrl.trim();
-    if (
-      showOpenChat &&
-      trimmedKakao &&
-      !/^https:\/\/open\.kakao\.com\//.test(trimmedKakao)
-    ) {
-      toast.error("카카오톡 오픈채팅 URL 형식이 올바르지 않습니다");
-      return;
-    }
-
     setSaving(true);
     const supabase = createClient();
     const newBio = bio.trim() === "" ? null : bio.trim();
-    const newKakao = trimmedKakao === "" ? null : trimmedKakao;
 
     // 0. 닉네임 변경된 경우 서버 API로 처리 (제한/중복 체크 포함)
     //    닉네임 변경은 14일에 최대 2회 (인스타그램 "이름" 변경 정책과 동일)
@@ -330,12 +309,10 @@ export function ProfileEditSheet({
       bio?: string | null;
       preferred_music_genres?: string[];
       preferred_areas?: string[];
-      kakao_open_chat_url?: string | null;
     } = {};
     if (showBio) userUpdate.bio = newBio;
     if (showMusic) userUpdate.preferred_music_genres = genres;
     if (showArea) userUpdate.preferred_areas = areas;
-    if (showOpenChat) userUpdate.kakao_open_chat_url = newKakao;
 
     if (Object.keys(userUpdate).length > 0) {
       const { error: userErr } = await supabase
@@ -391,7 +368,6 @@ export function ProfileEditSheet({
       bio: newBio,
       genres,
       areas,
-      kakaoOpenChatUrl: newKakao,
     });
   }
 
@@ -412,10 +388,8 @@ export function ProfileEditSheet({
       favClubs.map((c) => c.id),
       initial.pinnedClubs.map((c) => c.id)
     );
-  const openChatDirty =
-    showOpenChat && kakaoOpenChatUrl.trim() !== initial.kakaoOpenChatUrl.trim();
   const isDirty =
-    nameDirty || bioDirty || musicDirty || areaDirty || clubDirty || openChatDirty;
+    nameDirty || bioDirty || musicDirty || areaDirty || clubDirty;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>

@@ -71,10 +71,6 @@ export function LeaderInfoSheet({ open, onOpenChange, leader, title = "방장 �
           })()
         : null;
 
-    const daysAgo = leader.created_at
-        ? Math.floor((Date.now() - new Date(leader.created_at).getTime()) / 86400000)
-        : null;
-
     const tierLabel = tier === "president" ? "President"
         : tier === "vvip" ? "VVIP"
         : tier === "vip" ? "VIP"

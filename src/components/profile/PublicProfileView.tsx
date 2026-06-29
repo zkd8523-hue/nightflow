@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, MessageCircle } from "lucide-react";
+import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { MUSIC_GENRE_MAP } from "@/lib/users/musicGenres";
@@ -72,9 +72,6 @@ export function PublicProfileView({
   const [displayName, setDisplayName] = useState(profile.display_name);
   const [profileImage, setProfileImage] = useState<string | null>(
     profile.profile_image
-  );
-  const [kakaoOpenChatUrl, setKakaoOpenChatUrl] = useState<string | null>(
-    profile.kakao_open_chat_url
   );
   // 어떤 섹션을 편집할지. null이면 시트 닫힘.
   const [editSection, setEditSection] = useState<ProfileEditSection | null>(
@@ -467,7 +464,6 @@ export function PublicProfileView({
             pinnedClubs: pinnedClubs
               .map((fc) => fc.club)
               .filter((c): c is NonNullable<typeof c> => c !== null),
-            kakaoOpenChatUrl: kakaoOpenChatUrl ?? "",
           }}
           onSaved={(next) => {
             setDisplayName(next.displayName);
@@ -475,7 +471,6 @@ export function PublicProfileView({
             setBio(next.bio);
             setGenres(next.genres);
             setAreas(next.areas);
-            setKakaoOpenChatUrl(next.kakaoOpenChatUrl);
             setEditSection(null);
             router.refresh();
           }}
