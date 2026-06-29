@@ -86,9 +86,9 @@ const PUZZLE_ONBOARDING_STEPS = [
     color: "bg-emerald-500/10",
   },
   {
-    title: "3. 예약 확정",
-    desc: "마음에 드는 오퍼 수락 → MD 매치\n바로 연락하면 예약 끝!",
-    icon: <span className="text-[20px]">🎉</span>,
+    title: "3. 고르기",
+    desc: "마음에 드는 오퍼와 채팅하고\n부담 없이 상담받아봐요!",
+    icon: <span className="text-[20px]">🤝</span>,
     color: "bg-rose-500/10",
   },
 ];

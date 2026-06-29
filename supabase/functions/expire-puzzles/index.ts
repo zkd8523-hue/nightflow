@@ -58,6 +58,15 @@ serve(async (req: Request) => {
       throw updateError;
     }
 
+    // 만료된 깃발에 박제된 pending 오퍼를 expired 처리하고 MD 슬롯 카운터 재동기화
+    // (Migration 329 — 미선택 마감 시 오퍼 슬롯 누수 방지)
+    const { data: syncResult, error: syncError } = await supabase.rpc("sync_md_offer_slots");
+    if (syncError) {
+      console.error("⚠️ 오퍼 슬롯 동기화 실패:", syncError);
+    } else {
+      console.log("🔄 오퍼 슬롯 동기화:", syncResult);
+    }
+
     const typedExpired = expiredPuzzles as Array<{
       id: string;
       leader_id: string;

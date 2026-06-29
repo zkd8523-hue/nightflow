@@ -135,6 +135,27 @@ export const trackShareEvent = (
 };
 
 /**
+ * 안드로이드 앱 다운로드(Play Store) CTA 클릭을 추적하는 도우미 함수.
+ * GA4에서 event_name = 'app_download_click', location으로 노출 위치 구분.
+ *
+ * location:
+ * - 'banner': 하단 플로팅 배너
+ * - 'footer': 푸터 상시 버튼
+ * - 'flag_created_sheet': 깃발 꽂은 직후 1회성 팝업
+ */
+export const trackAppDownloadClick = (
+  location: 'banner' | 'footer' | 'flag_created_sheet',
+  params: Record<string, unknown> = {},
+) => {
+  trackEvent('app_download_click', {
+    platform: 'android',
+    store: 'play_store',
+    location,
+    ...params,
+  });
+};
+
+/**
  * 유저를 식별하기 위한 함수 (ID와 프로퍼티 설정)
  */
 export const identifyUser = (userId: string, params: Record<string, unknown> = {}) => {

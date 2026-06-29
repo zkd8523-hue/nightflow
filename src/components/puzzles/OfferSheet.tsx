@@ -18,6 +18,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { LiquorSelector } from "@/components/md/LiquorSelector";
 import { EXTRAS_OPTIONS, LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
 import { detectContactInfo, describeContactDetection } from "@/lib/utils/contact-detector";
+import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 
 interface OfferSheetProps {
   puzzle: Puzzle;
@@ -33,6 +34,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
   const [loading, setLoading] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
+  const offerChatOn = useOfferChatFlag();
   const [activeOffers, setActiveOffers] = useState<number>(0);
   const [activeOfferList, setActiveOfferList] = useState<{ id: string; puzzle_title: string; table_type: string; proposed_price: number }[]>([]);
   const [showSlotDropdown, setShowSlotDropdown] = useState(false);
@@ -531,22 +533,32 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             </p>
           </div>
 
-          {/* 수락 시 크레딧 안내 */}
+          {/* 크레딧 안내 */}
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
             <p className="text-[12px] text-amber-400/80 leading-relaxed">
               ✓ 제안 전송은 무료입니다.<br />
-              ✓ 방장이 수락하면 <strong className="text-amber-400">30 크레딧</strong>이 차감됩니다.<br />
+              {offerChatOn ? (
+                <>
+                  ✓ 매칭되면 <strong className="text-amber-400">15 크레딧</strong> 1회 (대화 첫 답장 또는 수락 시)<br />
+                </>
+              ) : (
+                <>
+                  ✓ 방장이 수락하면 <strong className="text-amber-400">30 크레딧</strong>이 차감됩니다.<br />
+                </>
+              )}
               ✓ 거절/미선택 시 슬롯이 회복됩니다.
             </p>
           </div>
 
-          {credits !== null && credits < 30 && (
+          {credits !== null && credits < (offerChatOn ? 15 : 30) && (
             <Link
               href="/md/credits"
               className="flex items-center justify-between gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 hover:bg-red-500/15 transition-colors"
             >
               <p className="text-[12px] text-red-400 leading-relaxed">
-                크레딧이 부족합니다 ({credits}/30). 충전 후 제안할 수 있어요.
+                {offerChatOn
+                  ? `대화 답장하려면 크레딧이 필요해요 (${credits}/15). 제안은 지금도 무료로 보낼 수 있어요.`
+                  : `크레딧이 부족합니다 (${credits}/30). 충전 후 제안할 수 있어요.`}
               </p>
               <span className="flex items-center gap-0.5 shrink-0 text-[12px] font-black text-amber-400">
                 충전 <ArrowRight className="w-3.5 h-3.5" />
@@ -556,7 +568,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           <Button
             onClick={handleSubmit}
-            disabled={loading || myClubs.length === 0 || currentBudget <= 0 || selectedIncludes.length === 0 || (!editingOffer && activeOffers >= 5) || (!editingOffer && credits !== null && credits < 30)}
+            disabled={loading || myClubs.length === 0 || currentBudget <= 0 || selectedIncludes.length === 0 || (!editingOffer && activeOffers >= 5) || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
             className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
             {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "제안서 보내기")}

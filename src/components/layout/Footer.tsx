@@ -4,7 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
+import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { useAppDownloadCta, PLAY_STORE_URL } from "@/hooks/useAppDownloadCta";
+import { trackAppDownloadClick } from "@/lib/analytics/events";
 
 export function Footer() {
   const { user, isLoading } = useCurrentUser();
@@ -21,9 +23,7 @@ export function Footer() {
           >
             Vision
           </Link>
-          <Link href="/en" className="text-sm hover:text-white transition-colors">
-            🌍 English
-          </Link>
+          <LangSwitcher />
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
             <Link href="/terms" className="hover:text-white transition-colors">
               이용약관
@@ -31,14 +31,9 @@ export function Footer() {
             <Link href="/privacy" className="hover:text-white transition-colors">
               개인정보처리방침
             </Link>
-            <a
-              href="https://www.instagram.com/nightflow.kr"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
-            >
+            <Link href="/contact" className="hover:text-white transition-colors">
               고객문의
-            </a>
+            </Link>
           </nav>
           {!isPartner && (
             <Link
@@ -53,6 +48,11 @@ export function Footer() {
               href={PLAY_STORE_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() =>
+                trackAppDownloadClick("footer", {
+                  user_role: user?.role ?? "guest",
+                })
+              }
               className="inline-flex items-center gap-2.5 rounded-2xl border border-neutral-800 bg-[#1C1C1E] px-3 py-1.5 hover:bg-neutral-800/60 transition-colors"
             >
               <Image

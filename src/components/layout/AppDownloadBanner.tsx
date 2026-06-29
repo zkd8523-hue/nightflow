@@ -9,6 +9,7 @@ import {
 } from "@/hooks/useAppDownloadCta";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useHasActivePuzzle } from "@/hooks/useHasActivePuzzle";
+import { trackAppDownloadClick } from "@/lib/analytics/events";
 
 /**
  * 하단 플로팅 앱 다운로드 배너 (안드로이드 웹 전용, 닫기 가능).
@@ -55,6 +56,12 @@ export function AppDownloadBanner() {
           href={PLAY_STORE_URL}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() =>
+            trackAppDownloadClick("banner", {
+              user_role: user?.role ?? "guest",
+              has_active_flag: hasActiveFlag,
+            })
+          }
           className="shrink-0 rounded-full bg-green-600 px-4 py-2 text-sm font-bold text-white transition-transform active:scale-95"
         >
           앱 사용하기

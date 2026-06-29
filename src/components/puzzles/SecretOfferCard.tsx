@@ -86,7 +86,7 @@ export function SecretOfferCard({
         </div>
         {offer.status === "accepted" ? (
           <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold">
-            {t("✓ 수락됨", "✓ Accepted")}
+            {t("✓ 매치됨", "✓ Matched")}
           </span>
         ) : (
           <span className="text-[11px] text-neutral-500 font-medium" suppressHydrationWarning>
@@ -150,37 +150,61 @@ export function SecretOfferCard({
       )}
 
       {isOpen && offer.status === "pending" && (
-        <div className="space-y-2 pt-1">
-          <div className="flex gap-2">
-            <Button
-              onClick={() => onAccept(offer.id)}
-              disabled={actionLoading}
-              className="flex-1 h-10 bg-white hover:bg-neutral-200 text-black font-black text-[13px] rounded-xl"
-            >
-              <CheckCircle2 className="w-4 h-4 mr-1.5" />
-              {t("수락", "Accept")}
-            </Button>
-            <Button
-              onClick={() => onReject(offer.id)}
-              disabled={actionLoading}
-              variant="outline"
-              className="flex-1 h-10 border-red-500/40 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[13px] rounded-xl"
-            >
-              <XCircle className="w-4 h-4 mr-1.5" />
-              {t("거절", "Reject")}
-            </Button>
-          </div>
-          {/* Migration 332: 수락 전 1:1 대화 (warm lead). 플래그 OFF면 숨김 */}
-          <FeatureGate flag="offer_chat">
+        <FeatureGate
+          flag="offer_chat"
+          fallback={
+            <div className="flex gap-2 pt-1">
+              <Button
+                onClick={() => onAccept(offer.id)}
+                disabled={actionLoading}
+                className="flex-1 h-10 bg-white hover:bg-neutral-200 text-black font-black text-[13px] rounded-xl"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                {t("수락하기", "Accept")}
+              </Button>
+              <Button
+                onClick={() => onReject(offer.id)}
+                disabled={actionLoading}
+                variant="outline"
+                className="flex-1 h-10 border-red-500/40 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[13px] rounded-xl"
+              >
+                <XCircle className="w-4 h-4 mr-1.5" />
+                {t("거절", "Reject")}
+              </Button>
+            </div>
+          }
+        >
+          {offer.leader_chat_started_at ? (
+            /* 채팅 진행 중: 회색 "채팅중" 하나만 (즉시수락 숨겨 혼동 방지) */
             <Link
               href={`/messages/${offer.id}`}
-              className="flex items-center justify-center gap-1.5 h-10 rounded-xl border border-neutral-700 bg-transparent text-neutral-200 hover:bg-neutral-800 font-bold text-[13px]"
+              className="flex items-center justify-center gap-1.5 w-full h-11 mt-1 rounded-xl bg-neutral-700 hover:bg-neutral-600 text-neutral-100 font-bold text-[13px]"
             >
               <MessageCircle className="w-4 h-4" />
-              {t("대화하기", "Chat")}
+              {t("상담중", "Chatting")}
             </Link>
-          </FeatureGate>
-        </div>
+          ) : (
+            /* 2분화: 채팅하기(흰색·왼쪽 강조) / 즉시수락(보조). 한 줄 나란히 */
+            <div className="flex gap-2 pt-1">
+              <Link
+                href={`/messages/${offer.id}`}
+                className="flex-[1.6] flex items-center justify-center gap-1.5 h-11 rounded-xl bg-white hover:bg-neutral-200 text-black font-black text-[13px]"
+              >
+                <MessageCircle className="w-4 h-4" />
+                {t("대화하기", "Chat")}
+              </Link>
+              <Button
+                onClick={() => onAccept(offer.id)}
+                disabled={actionLoading}
+                variant="outline"
+                className="flex-1 h-11 border-neutral-700 bg-transparent text-neutral-200 hover:bg-neutral-800 font-bold text-[13px] rounded-xl"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                {t("즉시수락", "Accept now")}
+              </Button>
+            </div>
+          )}
+        </FeatureGate>
       )}
 
       {isAdmin && offer.md && (

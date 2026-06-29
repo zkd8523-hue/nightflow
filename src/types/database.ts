@@ -114,7 +114,7 @@ export interface User {
   /** 공개 프로필: 주로 가는 지역 (최대 3개, AREA_OPTIONS와 동일). Migration 280 */
   preferred_areas: string[] | null;
 
-  // MD 크레딧 (오퍼 1건당 1크레딧 차감)
+  // MD 크레딧 잔액 (대화 첫 답장 15 / 수락 등 기능 이용 시 차감)
   md_credits: number | null;
 
   // MD 전용
@@ -811,8 +811,47 @@ export interface PuzzleOffer {
   visit_requested_by: string | null;
   /** Migration 146: 신청 시각. 7일 무응답 자동 만료 기준 */
   visit_requested_at: string | null;
+  /** Migration 332: 방장이 이 오퍼 채팅을 마지막으로 읽은 시각 (카톡 "1") */
+  leader_read_at: string | null;
+  /** Migration 332: MD가 이 오퍼 채팅을 마지막으로 읽은 시각 (카톡 "1") */
+  md_read_at: string | null;
+  /** Migration 332: 방장이 이 오퍼에 첫 메시지를 보낸 시각 = 상담 시작 ("상담중"·슬롯 기준) */
+  leader_chat_started_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/** Migration 332: 깃발 오퍼 1:1 채팅 메시지 */
+export interface OfferMessage {
+  id: string;
+  offer_id: string;
+  sender_id: string;
+  content: string;
+  media: ChatMediaItem[];
+  is_deleted: boolean;
+  created_at: string;
+  // joined
+  sender?: { id: string; display_name: string | null; profile_image: string | null };
+}
+
+// 고객 문의 1:1 채팅 (유저 ↔ admin 운영팀) — Migration 337
+export interface SupportMessage {
+  id: string;
+  thread_user_id: string;
+  sender_id: string | null;
+  sender_role: "user" | "admin";
+  body: string;
+  created_at: string;
+}
+
+export interface SupportThreadSummary {
+  user_id: string;
+  user_name: string;
+  profile_image: string | null;
+  last_message_at: string | null;
+  last_message_body: string | null;
+  last_sender_role: "user" | "admin" | null;
+  unread: boolean;
 }
 
 export interface PuzzleMember {

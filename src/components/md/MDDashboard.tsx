@@ -29,7 +29,8 @@ import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByD
 import { ShareOptionManager } from "@/components/md/ShareOptionManager";
 import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
 import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
-import { Plus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins } from "lucide-react";
+import { Plus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle } from "lucide-react";
+import { FeatureGate } from "@/components/common/FeatureGate";
 import { toast } from "sonner";
 
 import { createClient } from "@/lib/supabase/client";
@@ -687,7 +688,7 @@ export function MDDashboard({
                                                                     ? "bg-green-500/20 text-green-400"
                                                                     : "bg-amber-500/20 text-amber-400"
                                                             }`}>
-                                                                {isAccepted ? "수락됨" : "대기중"}
+                                                                {isAccepted ? "매치됨" : "대기중"}
                                                             </span>
                                                         </div>
                                                         <h3 className="font-black text-[18px] text-white truncate leading-tight">
@@ -725,16 +726,30 @@ export function MDDashboard({
                                             {/* Footer */}
                                             <div className="mt-2 pt-2 border-t border-neutral-800/60 flex items-center justify-end">
                                                 {isAccepted ? (
-                                                    <a
-                                                        href={p.kakao_open_chat_url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="h-8 px-3 rounded-lg bg-[#FEE500] text-[#3C1E1E] font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-[#FDD835] transition-colors"
+                                                    <FeatureGate
+                                                        flag="offer_chat"
+                                                        fallback={
+                                                            <a
+                                                                href={p.kakao_open_chat_url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="h-8 px-3 rounded-lg bg-[#FEE500] text-[#3C1E1E] font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-[#FDD835] transition-colors"
+                                                            >
+                                                                <ExternalLink className="w-3.5 h-3.5" />
+                                                                오픈채팅 연락
+                                                            </a>
+                                                        }
                                                     >
-                                                        <ExternalLink className="w-3.5 h-3.5" />
-                                                        오픈채팅 연락
-                                                    </a>
+                                                        <Link
+                                                            href={`/messages/${offer.id}`}
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="h-8 px-3 rounded-lg bg-white text-black font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-neutral-200 transition-colors"
+                                                        >
+                                                            <MessageCircle className="w-3.5 h-3.5" />
+                                                            채팅
+                                                        </Link>
+                                                    </FeatureGate>
                                                 ) : (
                                                     <Button
                                                         size="sm"

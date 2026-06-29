@@ -44,14 +44,6 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
     q: "여성무료는 어떻게 받나요?",
     a: "여성무료는 클럽이 특정 요일/시간대에 여성 게스트에게 무료입장을 제공하는 혜택입니다. 나플의 게스트 간판에서 해당 클럽이 여성 무료를 운영하는 요일을 확인하고, 표시된 MD에게 인스타 DM 또는 카카오톡 오픈채팅으로 게스트 명단 등록을 요청하면 됩니다.",
   },
-  {
-    q: "경매는 어떻게 진행되나요?",
-    a: "MD가 클럽 테이블을 등록하면 경매가 시작됩니다. 회원들이 원하는 금액을 입찰하고, 마감 시간에 가장 높은 금액을 제시한 회원이 낙찰받습니다.",
-  },
-  {
-    q: "낙찰 후 어떻게 진행되나요?",
-    a: "낙찰자는 정해진 시간 안에 MD에게 직접 연락(인스타그램 DM 또는 전화)해서 예약을 확정합니다. 미연락 시 차순위 입찰자에게 기회가 넘어가고 노쇼 스트라이크가 부여됩니다.",
-  },
 ];
 
 const faqJsonLd = {
@@ -203,88 +195,6 @@ export default function FAQPage() {
                                     여성 무료를 운영하는 요일을 확인하고, 표시된 MD에게 인스타 DM
                                     또는 카카오톡 오픈채팅으로 게스트 명단 등록을 요청하면 됩니다.
                                 </p>
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        <AccordionItem value="item-1" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                경매는 어떻게 진행되나요?
-                            </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>1. MD가 클럽 테이블을 등록하면 경매가 시작됩니다.</p>
-                                <p>2. 회원들이 원하는 금액을 입찰합니다.</p>
-                                <p>3. 경매 종료 시점에 가장 높은 금액을 입찰한 분이 낙찰됩니다.</p>
-                                <p>4. 마감 3분 전 입찰 시 자동으로 3분 연장됩니다. (스나이핑 방지)</p>
-                                <p>5. 경매 종료 시 최고가 입찰자가 자동으로 낙찰됩니다.</p>
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        <AccordionItem value="item-2" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                입찰은 어떻게 하나요?
-                            </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>1. 원하는 경매를 클릭하여 상세 페이지로 이동합니다.</p>
-                                <p>2. 현재가보다 높은 금액을 입력합니다. (최소 5,000원 단위)</p>
-                                <p>3. "입찰하기" 버튼을 누르면 확인 팝업이 표시됩니다.</p>
-                                <p>4. "확인"을 누르면 입찰이 완료됩니다.</p>
-                                <p className="mt-2 text-amber-500 font-bold">⚠️ 입찰 후에는 취소가 불가능하니 신중하게 입찰해주세요!</p>
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        <AccordionItem value="item-3" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                낙찰 후 어떻게 하나요?
-                            </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>1. 낙찰되면 제한 시간 내에 MD에게 연락해야 합니다.</p>
-                                <p>2. 경매 상세 페이지에서 MD의 연락처(인스타그램 DM/전화)를 확인할 수 있습니다.</p>
-                                <p>3. MD에게 직접 연락하여 방문 일정을 확인합니다.</p>
-                                <p>4. 테이블 이용 금액은 MD에게 직접 결제합니다.</p>
-                                <p className="mt-2 text-red-500 font-bold">⚠️ 제한 시간 내 미연락 시 낙찰이 취소되며, 스트라이크가 부과됩니다!</p>
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        <AccordionItem value="item-4" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                금액은 어떻게 결제하나요?
-                            </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>NightFlow는 결제를 중개하지 않습니다. 낙찰 후 MD에게 직접 결제합니다.</p>
-                                <p className="mt-2">• 현장에서 MD에게 직접 금액을 지불합니다.</p>
-                                <p>• 결제 방식은 MD와 협의하여 결정합니다. (현금, 계좌이체 등)</p>
-                                <p>• NightFlow는 경매 연결만 담당하며, 금전 거래에는 관여하지 않습니다.</p>
-                                <p className="mt-3 text-green-500">💡 금액 관련 분쟁은 MD와 직접 해결해주세요. 문제 발생 시 고객센터로 신고할 수 있습니다.</p>
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        <AccordionItem value="item-5" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                낙찰 취소하면 어떻게 되나요?
-                            </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>취소 시점에 따라 경고점이 다르게 부과됩니다:</p>
-                                <p className="mt-2">• <span className="text-green-500 font-bold">즉시 취소 (2분 이내):</span> 패널티 없음</p>
-                                <p>• <span className="text-amber-500 font-bold">Grace 취소 (타이머 전반):</span> 경고 1점</p>
-                                <p>• <span className="text-red-500 font-bold">Late 취소 (타이머 후반):</span> 경고 2점</p>
-                                <p className="mt-2">경고 3점이 누적되면 스트라이크 1회로 자동 전환됩니다.</p>
-                                <p>취소 시 차순위 입찰자에게 낙찰이 자동으로 넘어갑니다.</p>
-                            </AccordionContent>
-                        </AccordionItem>
-
-                        <AccordionItem value="item-5b" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                미연락·노쇼 시 불이익이 있나요?
-                            </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p><span className="text-white font-bold">미연락</span> (연락 타이머 만료 시): <span className="text-red-500 font-bold">즉시 스트라이크 1회</span> 부과</p>
-                                <p className="mt-1"><span className="text-white font-bold">노쇼</span> (연락 후 방문하지 않은 경우): MD 신고 시 <span className="text-red-500 font-bold">즉시 스트라이크 1회</span> 부과</p>
-                                <p className="mt-2 font-bold text-white">스트라이크 제재:</p>
-                                <p>• <span className="text-amber-500 font-bold">1회:</span> 3일간 서비스 이용 정지</p>
-                                <p>• <span className="text-amber-500 font-bold">2회:</span> 14일간 서비스 이용 정지</p>
-                                <p>• <span className="text-red-500 font-bold">3회:</span> 60일간 서비스 이용 정지</p>
-                                <p>• <span className="text-red-500 font-bold">4회:</span> 영구 차단</p>
-                                <p className="mt-2 text-neutral-500">취소 경고(3점)로도 스트라이크가 누적될 수 있으니 주의하세요.</p>
                             </AccordionContent>
                         </AccordionItem>
 

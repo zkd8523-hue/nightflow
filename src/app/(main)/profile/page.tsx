@@ -12,10 +12,10 @@ import {
   ShieldAlert,
   Clock,
   ChevronRight,
-  Heart,
   MessageCircle,
   Instagram,
   Check,
+  X,
 } from "lucide-react";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { toast } from "sonner";
@@ -59,12 +59,23 @@ export default function ProfilePage() {
       .from("puzzles")
       .select("*")
       .eq("leader_id", user.id)
+      .is("leader_hidden_at", null)
       .order("created_at", { ascending: false })
-      .limit(3)
       .then(({ data }) => {
         if (data) setMyFlags(data as Puzzle[]);
       });
   }, [user]);
+
+  const handleHideFlag = async (id: string) => {
+    if (typeof window !== "undefined" &&
+        !window.confirm("삭제하면 복구할 수 없습니다.\n이 깃발을 목록에서 삭제할까요?")) return;
+    const { data, error } = await supabase.rpc("hide_my_puzzle", { p_puzzle_id: id });
+    if (error || !data?.success) {
+      toast.error(data?.error || "삭제에 실패했습니다");
+      return;
+    }
+    setMyFlags((prev) => prev.filter((f) => f.id !== id));
+  };
 
   // 로딩 타임아웃: 5초 후 강제 해제
   const [timedOut, setTimedOut] = useState(false);
@@ -148,7 +159,7 @@ export default function ProfilePage() {
           >
             <ArrowLeft className="w-5 h-5 text-neutral-400" />
           </button>
-          <h1 className="text-xl font-black text-white">내 정보</h1>
+          <h1 className="text-xl font-black text-white">MY</h1>
         </div>
 
         {/* 제재 상태 배너 */}
@@ -340,21 +351,13 @@ export default function ProfilePage() {
         <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-[15px] font-bold text-white">내 깃발</h2>
-            {myFlags.length > 0 && (
-              <Link
-                href="/bids"
-                className="inline-flex items-center gap-0.5 text-[12px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
-              >
-                전체 보기
-                <ChevronRight className="w-3.5 h-3.5" />
-              </Link>
-            )}
           </div>
 
           {myFlags.length > 0 ? (
             <div className="flex flex-col gap-2">
               {myFlags.map((flag) => {
                 const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-neutral-400" };
+                const budget = flag.total_budget ?? (flag.budget_per_person ?? 0) * (flag.target_count ?? 1);
                 return (
                   <Link
                     key={flag.id}
@@ -363,15 +366,27 @@ export default function ProfilePage() {
                   >
                     <div className="min-w-0">
                       <p className="text-[14px] font-bold text-white truncate">
-                        {flag.area} · {dayjs(flag.event_date).format("M월 D일")}
-                      </p>
-                      <p className="text-[12px] text-neutral-500">
-                        {flag.current_count}/{flag.target_count}명
+                        {dayjs(flag.event_date).format("M/D")} · {flag.area} · {flag.target_count}명{budget ? ` · ${Math.round(budget / 10000)}만원` : ""}
                       </p>
                     </div>
-                    <span className={`shrink-0 text-[12px] font-bold ${st.tone}`}>
-                      {st.text}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[12px] font-bold ${st.tone}`}>
+                        {st.text}
+                      </span>
+                      {flag.status !== "open" && flag.status !== "selecting" && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleHideFlag(flag.id);
+                          }}
+                          className="p-1 -mr-1 text-neutral-600 hover:text-red-400 transition-colors"
+                          aria-label="삭제"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </Link>
                 );
               })}
@@ -413,71 +428,8 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* 찜 */}
-        <Link
-          href="/favorites"
-          className="bg-[#1C1C1E] rounded-2xl p-5 mb-4 flex items-center justify-between hover:bg-neutral-800/30 transition-colors block"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-              <Heart className="w-5 h-5 text-red-500" />
-            </div>
-            <div>
-              <p className="text-[15px] font-bold text-white">찜 목록</p>
-              <p className="text-[12px] text-neutral-500">내가 찜한 클럽의 지금 혜택보기</p>
-            </div>
-          </div>
-          <ChevronRight className="w-5 h-5 text-neutral-600" />
-        </Link>
         </>
         )}
-
-        {/* 바로가기 */}
-        <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
-          <Link
-            href="/settings/notifications"
-            className="flex items-center justify-between px-5 py-4 hover:bg-neutral-800/30 transition-colors border-b border-neutral-800/50"
-          >
-            <span className="text-[14px] text-neutral-300">알림 설정</span>
-            <ChevronRight className="w-4 h-4 text-neutral-600" />
-          </Link>
-          <Link
-            href="/faq"
-            className="flex items-center justify-between px-5 py-4 hover:bg-neutral-800/30 transition-colors border-b border-neutral-800/50"
-          >
-            <span className="text-[14px] text-neutral-300">자주 묻는 질문</span>
-            <ChevronRight className="w-4 h-4 text-neutral-600" />
-          </Link>
-          <Link
-            href="/contact"
-            className="flex items-center justify-between px-5 py-4 hover:bg-neutral-800/30 transition-colors border-b border-neutral-800/50"
-          >
-            <span className="text-[14px] text-neutral-300">고객 문의</span>
-            <ChevronRight className="w-4 h-4 text-neutral-600" />
-          </Link>
-          <Link
-            href="/terms"
-            className="flex items-center justify-between px-5 py-4 hover:bg-neutral-800/30 transition-colors border-b border-neutral-800/50"
-          >
-            <span className="text-[14px] text-neutral-300">이용약관</span>
-            <ChevronRight className="w-4 h-4 text-neutral-600" />
-          </Link>
-          <Link
-            href="/privacy"
-            className="flex items-center justify-between px-5 py-4 hover:bg-neutral-800/30 transition-colors"
-          >
-            <span className="text-[14px] text-neutral-300">개인정보처리방침</span>
-            <ChevronRight className="w-4 h-4 text-neutral-600" />
-          </Link>
-        </div>
-
-        {/* 탈퇴 */}
-        <Link
-          href="/profile/delete"
-          className="block text-center text-[12px] text-neutral-600 mt-6 hover:text-red-400 transition-colors"
-        >
-          회원탈퇴
-        </Link>
       </div>
     </div>
   );

@@ -8,6 +8,8 @@ import { ChevronDown, ChevronUp, History, Store, Users } from "lucide-react";
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** 시트 제목 (기본 "방장 정보"). 채팅 등에서 "MD 정보"로 재사용 */
+    title?: string;
     leader: {
         deal_count_total?: number | null;
         deal_amount_total?: number | null;
@@ -49,7 +51,7 @@ function formatKRW(amount: number): string {
     return `${amount.toLocaleString("ko-KR")}원`;
 }
 
-export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
+export function LeaderInfoSheet({ open, onOpenChange, leader, title = "방장 정보" }: Props) {
     const [showTierInfo, setShowTierInfo] = useState(false);
 
     if (!leader) return null;
@@ -97,7 +99,7 @@ export function LeaderInfoSheet({ open, onOpenChange, leader }: Props) {
             >
                 <SheetHeader className="mb-5 text-left">
                     <SheetTitle className="text-white font-black text-xl">
-                        방장 정보
+                        {title}
                     </SheetTitle>
                 </SheetHeader>
 

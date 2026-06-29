@@ -75,10 +75,8 @@ export function useAppDownloadCta() {
       const androidWeb = isAndroid() && !isIOS() && !isNative;
       setEligible(androidWeb);
       if (androidWeb) {
-        // '닫기' 기억은 프로덕션(nightflow.kr)에서만.
-        // 테스트 서버/로컬에선 새로고침할 때마다 다시 노출(디자인 확인 편의).
-        const isProd = /(^|\.)nightflow\.kr$/.test(window.location.hostname);
-        setDismissed(isProd && localStorage.getItem(DISMISS_KEY) === "1");
+        // '닫기'를 누르면 어디서든(테스트/프로덕션) 영구히 다시 안 뜸.
+        setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
       }
     })();
 

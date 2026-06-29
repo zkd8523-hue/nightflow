@@ -35,6 +35,10 @@ import {
   TrendingUp,
   Star,
   ChevronLeft,
+  ChevronRight,
+  Settings,
+  HelpCircle,
+  Headset,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -310,7 +314,7 @@ export function Header({
                   <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
                 </Link>
               )}
-              {!compact && user.role === "user" && user.md_status !== "pending" && !pathname?.startsWith("/auctions/") && !pathname?.startsWith("/flags/") && (
+              {!compact && user.role === "user" && user.md_status !== "pending" && !pathname?.startsWith("/auctions/") && !pathname?.startsWith("/flags/") && !pathname?.startsWith("/messages") && (
                 <Link
                   href="/flags/new"
                   className="h-9 px-3.5 flex items-center rounded-full bg-amber-500 hover:bg-amber-400 transition-colors shadow-sm"
@@ -340,16 +344,32 @@ export function Header({
                 onTouchEnd={onTouchEnd}
               >
                 <SheetHeader className="p-6 pb-2 border-b border-neutral-800/50 shrink-0">
-                  <div className="text-left">
-                    <SheetTitle
-                      className="text-white font-black cursor-pointer hover:text-neutral-300 transition-colors"
-                      onClick={() => { setMenuOpen(false); router.push("/profile"); }}
-                    >
-                      {user.display_name || user.name || "사용자"}
-                    </SheetTitle>
-                    <p className="text-[12px] text-neutral-500">
-                      {user.role === "md" ? "MD · 파트너" : user.role === "admin" ? "관리자" : "일반 회원"}
-                    </p>
+                  <div
+                    className="flex items-center gap-3 text-left cursor-pointer"
+                    onClick={() => { setMenuOpen(false); router.push(`/u/${user.id}`); }}
+                  >
+                    <div className="relative w-12 h-12 rounded-full overflow-hidden bg-neutral-800 shrink-0 ring-1 ring-neutral-700">
+                      {user.profile_image ? (
+                        <Image src={user.profile_image} alt="" fill sizes="48px" className="object-cover" />
+                      ) : (
+                        <div className="w-full h-full grid place-items-center text-neutral-500">
+                          <User className="w-6 h-6" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <SheetTitle className="text-white font-black hover:text-neutral-300 transition-colors truncate">
+                        {user.display_name || user.name || "사용자"}
+                      </SheetTitle>
+                      {(user.role === "md" || user.role === "admin") ? (
+                        <p className="text-[12px] text-neutral-500">
+                          {user.role === "md" ? "MD · 파트너" : "관리자"}
+                        </p>
+                      ) : (
+                        <p className="text-[12px] text-neutral-500">프로필 보기</p>
+                      )}
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-neutral-500 ml-auto shrink-0 mr-4" />
                   </div>
                 </SheetHeader>
 
@@ -449,35 +469,6 @@ export function Header({
                   </div>
 
                   <nav className="flex flex-col p-4 gap-1 pb-8">
-                    <Link
-                      href={`/u/${user.id}`}
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                    >
-                      {user.profile_image ? (
-                        <div className="relative w-5 h-5 rounded-full overflow-hidden bg-neutral-800 shrink-0 ring-1 ring-neutral-600">
-                          <Image
-                            src={user.profile_image}
-                            alt="내 프로필"
-                            fill
-                            sizes="20px"
-                            className="object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <User className="w-5 h-5 text-neutral-500" />
-                      )}
-                      <span className="text-[15px] font-bold">프로필</span>
-                    </Link>
-
-                    <Link
-                      href="/favorites"
-                      onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                    >
-                      <Heart className="w-5 h-5 text-red-500" />
-                      <span className="text-[15px] font-bold">찜 목록</span>
-                    </Link>
 
                     {user.role === "admin" && (
                       <>
@@ -502,10 +493,16 @@ export function Header({
                             </span>
                           )}
                         </Link>
+                        <Link
+                          href="/admin/support"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                        >
+                          <Headset className="w-5 h-5 text-blue-400" />
+                          <span className="text-[15px] font-bold">고객 문의</span>
+                        </Link>
                       </>
                     )}
-
-                    <div className="h-px bg-neutral-800/50 my-2" />
 
                     {((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
                       <Link
@@ -519,35 +516,42 @@ export function Header({
                     )}
 
                     <Link
-                      href="/profile"
+                      href="/favorites"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
-                      <User className="w-5 h-5 text-neutral-500" />
-                      <span className="text-[15px] font-bold">내 정보</span>
+                      <Heart className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">찜 목록</span>
                     </Link>
 
                     <Link
-                      href="/settings/notifications"
+                      href="/faq"
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
-                      <Bell className="w-5 h-5 text-neutral-500" />
-                      <span className="text-[15px] font-bold">알림 설정</span>
+                      <HelpCircle className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">자주 묻는 질문</span>
+                    </Link>
+
+                    <Link
+                      href="/contact"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <Headset className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">고객 문의</span>
+                    </Link>
+
+                    <Link
+                      href="/settings"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <Settings className="w-5 h-5 text-neutral-500" />
+                      <span className="text-[15px] font-bold">설정</span>
                     </Link>
 
                     <div className="h-px bg-neutral-800/50 my-2" />
-
-                    {user.role === "user" && user.md_status !== "pending" && (
-                      <Link
-                        href="/md/apply"
-                        onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
-                      >
-                        <Star className="w-5 h-5 text-amber-500" />
-                        <span className="text-[15px] font-bold">MD · 파트너 신청</span>
-                      </Link>
-                    )}
 
                     <button
                       onClick={handleLogout}
@@ -558,6 +562,20 @@ export function Header({
                     </button>
                   </nav>
                 </div>
+
+                {/* 화면 최하단 고정: MD·파트너 신청 */}
+                {user.role === "user" && user.md_status !== "pending" && (
+                  <div className="shrink-0 border-t border-neutral-800/50 p-3">
+                    <Link
+                      href="/md/apply"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                    >
+                      <Star className="w-5 h-5 text-amber-500" />
+                      <span className="text-[15px] font-bold">MD · 파트너 신청</span>
+                    </Link>
+                  </div>
+                )}
               </SheetContent>
             </Sheet>
           </>

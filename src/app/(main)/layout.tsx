@@ -8,6 +8,7 @@ import { AppDownloadBanner } from "@/components/layout/AppDownloadBanner";
 import { PullToRefresh } from "@/components/auctions/PullToRefresh";
 import { SelectingFlagAlertSheet } from "@/components/puzzles/SelectingFlagAlertSheet";
 import { FlagCreatedInstallSheet } from "@/components/puzzles/FlagCreatedInstallSheet";
+import { ChatUpdateSheet } from "@/components/common/ChatUpdateSheet";
 import { CancellationSurveySheet } from "@/components/puzzles/CancellationSurveySheet";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -77,11 +78,17 @@ export default function MainLayout({
 
   const isChatPage = pathname === "/chat" || pathname?.startsWith("/chat/");
 
+  // 오퍼 1:1 채팅 상세는 자체 헤더로 풀스크린 (Migration 332)
+  const isMessageDetail = !!pathname && /^\/messages\/.+/.test(pathname);
+
+  // 고객 문의 채팅도 자체 헤더로 풀스크린 (Migration 337)
+  const isContact = pathname === "/contact";
+
   // Vision은 풀스크린 매니페스토 — 헤더/푸터/바텀네비 없이 단독 노출
   const isVisionPage = pathname === "/vision";
 
-  // 헤더/푸터/바텀네비를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드 + 외국인 트랙)
-  const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner;
+  // 헤더/푸터/바텀네비를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드 + 외국인 트랙 + 오퍼 채팅)
+  const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner || isMessageDetail || isContact;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
@@ -105,6 +112,7 @@ export default function MainLayout({
         <SelectingFlagAlertSheet />
         <CancellationSurveySheet isOtherSheetOpen={false} />
         <FlagCreatedInstallSheet />
+        <ChatUpdateSheet />
       </div>
     </PullToRefresh>
   );

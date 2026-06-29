@@ -9,6 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useAppDownloadCta, PLAY_STORE_URL } from "@/hooks/useAppDownloadCta";
+import { trackAppDownloadClick } from "@/lib/analytics/events";
 
 const SEEN_KEY = "naflFlagInstallPromptSeen";
 
@@ -16,8 +17,7 @@ const SEEN_KEY = "naflFlagInstallPromptSeen";
  * 깃발 꽂은 직후 1회성 앱설치 팝업.
  * PuzzleForm 생성 성공 시 dispatch되는 "flag-created" 이벤트를 받아 노출.
  * - 안드로이드 웹에서만(인앱·iOS·PC 제외) — useAppDownloadCta.eligible 재사용
- * - 프로덕션(nightflow.kr)에선 한 번 보면 다시 안 뜸(localStorage),
- *   테스트/로컬에선 매번 노출(확인 편의) — 배너와 동일 정책
+ * - 한 번 보면 어디서든(테스트/프로덕션) 다시 안 뜸(localStorage)
  */
 export function FlagCreatedInstallSheet() {
   const { eligible } = useAppDownloadCta();
@@ -28,11 +28,9 @@ export function FlagCreatedInstallSheet() {
   useEffect(() => {
     const onFlagCreated = () => {
       if (!eligibleRef.current) return; // 안드로이드 웹에서만
-      const isProd = /(^|\.)nightflow\.kr$/.test(window.location.hostname);
-      if (isProd) {
-        if (localStorage.getItem(SEEN_KEY) === "1") return;
-        localStorage.setItem(SEEN_KEY, "1");
-      }
+      // 한 번 보면 어디서든(테스트/프로덕션) 다시 안 뜸.
+      if (localStorage.getItem(SEEN_KEY) === "1") return;
+      localStorage.setItem(SEEN_KEY, "1");
       setOpen(true);
     };
     window.addEventListener("flag-created", onFlagCreated);
@@ -69,7 +67,10 @@ export function FlagCreatedInstallSheet() {
               href={PLAY_STORE_URL}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                trackAppDownloadClick("flag_created_sheet");
+                setOpen(false);
+              }}
               className="block w-full rounded-full bg-green-600 py-3.5 text-center text-base font-bold text-white transition-transform active:scale-[0.98]"
             >
               앱 설치하고 알림 받기

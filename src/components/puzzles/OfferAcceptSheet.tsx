@@ -8,6 +8,7 @@ import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import type { PublicUserProfile } from "@/types/database";
 import { type Lang, makeT } from "@/lib/i18n";
+import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 
 type MDInfo = Pick<PublicUserProfile,
   "id" | "display_name" | "profile_image" |
@@ -45,6 +46,7 @@ type Step = "confirm" | "success";
 export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, lang = "ko" }: OfferAcceptSheetProps) {
   const isForeigner = lang !== "ko";
   const t = makeT(lang);
+  const offerChatOn = useOfferChatFlag();
   const [step, setStep] = useState<Step>("confirm");
   const [submitting, setSubmitting] = useState(false);
 
@@ -58,6 +60,10 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, l
   if (!md) return null;
 
   const handleAccept = async () => {
+    const confirmMsg = isForeigner
+      ? "Accepting closes and removes all other offers & chats. Match with this offer?"
+      : "수락하면 나머지 오퍼와 대화는 모두 사라집니다.\n이 오퍼로 매치할까요?";
+    if (typeof window !== "undefined" && !window.confirm(confirmMsg)) return;
     setSubmitting(true);
     try {
       const success = await onAccept();
@@ -78,11 +84,15 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, l
             <div>
               <SheetTitle className="text-white font-black text-[18px] flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-green-400" />
-                {t("제안을 수락하시겠어요?", "Accept this offer?")}
+                {offerChatOn
+                  ? t("즉시 수락하시겠어요?", "Accept now?")
+                  : t("제안을 수락하시겠어요?", "Accept this offer?")}
               </SheetTitle>
               <SheetDescription className="text-neutral-400 text-[13px] mt-1.5 leading-relaxed">
                 {isForeigner ? (
                   <>Accepting reveals the <strong className="text-white">club host&apos;s name and contact</strong>.</>
+                ) : offerChatOn ? (
+                  <>채팅으로 먼저 상담해볼 수도 있어요.<br />수락하면 <strong className="text-white">MD의 연락처</strong>를 안내해드려요.</>
                 ) : (
                   <>수락하면 <strong className="text-white">MD의 닉네임과 연락처</strong>가 공개됩니다.</>
                 )}

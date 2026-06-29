@@ -11,7 +11,6 @@ import { createClient } from "@/lib/supabase/client";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
 import { OfferAcceptSheet } from "./OfferAcceptSheet";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
@@ -131,7 +130,7 @@ function SelectingBanner({ expiresAt, en }: { expiresAt: string; en?: boolean })
 
 const OFFER_STATUS_LABEL: Record<string, string> = {
   pending: "제안 중",
-  accepted: "수락됨",
+  accepted: "매치됨",
   rejected: "거절됨",
   withdrawn: "철회됨",
   expired: "미선택",
@@ -188,7 +187,6 @@ export function PuzzleDetailClient({
   const [showAcceptSheet, setShowAcceptSheet] = useState(false);
   const [pendingAcceptOfferId, setPendingAcceptOfferId] = useState<string | null>(null);
   const [acceptingMd, setAcceptingMd] = useState<NonNullable<PuzzleOffer["md"]> | null>(null);
-  const [showKakaoNotice, setShowKakaoNotice] = useState(false);
   const [showLeaderInfo, setShowLeaderInfo] = useState(false);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
   const [showMatchedShowcase, setShowMatchedShowcase] = useState(false);
@@ -414,7 +412,6 @@ export function PuzzleDetailClient({
     }
   };
 
-  const KAKAO_NOTICE_KEY = currentUserId ? `puzzle_kakao_notice_seen_${currentUserId}` : null;
 
   const handleAcceptOffer = (offerId: string) => {
     const offer = offers.find((o) => o.id === offerId);
@@ -424,38 +421,7 @@ export function PuzzleDetailClient({
     }
     setAcceptingMd(offer.md);
     setPendingAcceptOfferId(offerId);
-
-    // 최초 수락 시도 + 카카오 미등록 → 안내 모달 (이후엔 안 보임)
-    const hasKakao = !!currentUserKakaoUrl;
-    const noticeSeen = KAKAO_NOTICE_KEY && typeof window !== "undefined"
-      ? localStorage.getItem(KAKAO_NOTICE_KEY) === "true"
-      : true;
-    if (!hasKakao && !noticeSeen) {
-      setShowKakaoNotice(true);
-      return;
-    }
-
-    setShowAcceptSheet(true);
-  };
-
-  const markKakaoNoticeSeen = () => {
-    if (KAKAO_NOTICE_KEY && typeof window !== "undefined") {
-      localStorage.setItem(KAKAO_NOTICE_KEY, "true");
-    }
-  };
-
-  const handleKakaoNoticeRegister = () => {
-    markKakaoNoticeSeen();
-    setShowKakaoNotice(false);
-    // 진행 중 수락 정보 초기화 (등록 후 다시 수락하도록)
-    setPendingAcceptOfferId(null);
-    setAcceptingMd(null);
-    router.push("/profile");
-  };
-
-  const handleKakaoNoticeSkip = () => {
-    markKakaoNoticeSeen();
-    setShowKakaoNotice(false);
+    // 인앱 채팅(Migration 332)이 연락을 대체 → 방장 카카오 등록 안내 제거
     setShowAcceptSheet(true);
   };
 
@@ -465,7 +431,6 @@ export function PuzzleDetailClient({
     try {
       const { data, error } = await supabase.rpc("accept_offer", {
         p_offer_id: pendingAcceptOfferId,
-        p_kakao_open_chat_url: null,
       });
       if (error) throw error;
       if (!data?.success) {
@@ -1064,6 +1029,11 @@ export function PuzzleDetailClient({
             {/* 방장: 진행 중인(pending) 제안만 — 수락된 오퍼는 위 성사됨 카드에 이미 표시 */}
             {isLeader && !isAccepted && pendingOffers.length > 0 && (
               <div className="space-y-3">
+                <FeatureGate flag="offer_chat">
+                  <p className="text-[12px] text-neutral-400 bg-neutral-900/60 border border-neutral-800 rounded-xl px-3 py-2.5">
+                    💬 마음에 드는 오퍼와 <span className="text-white font-bold">채팅으로 상담</span>해보세요 · 깃발당 최대 3개
+                  </p>
+                </FeatureGate>
                 {pendingOffers.map((offer, idx) => (
                   <SecretOfferCard
                     key={offer.id}
@@ -1095,13 +1065,18 @@ export function PuzzleDetailClient({
                     key={offer.id}
                     className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
                   >
-                    <div>
-                      <p className="text-[14px] font-bold text-amber-300">Offer #{idx + 1}</p>
-                      {offer.club?.name ? (
-                        <span className="inline-block text-[18px] font-black text-white -mt-0.5 blur-sm select-none pointer-events-none">
-                          {offer.club.name}
-                        </span>
-                      ) : null}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[14px] font-bold text-amber-300">Offer #{idx + 1}</p>
+                        {offer.club?.name ? (
+                          <span className="inline-block text-[18px] font-black text-white -mt-0.5 blur-sm select-none pointer-events-none">
+                            {offer.club.name}
+                          </span>
+                        ) : null}
+                      </div>
+                      {offer.leader_chat_started_at && (
+                        <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-white text-black font-bold">상담중</span>
+                      )}
                     </div>
                     <div className="space-y-1.5 blur-sm select-none pointer-events-none">
                       {offer.public.liquorCategories.length > 0 && (
@@ -1139,9 +1114,14 @@ export function PuzzleDetailClient({
                     key={offer.id}
                     className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
                   >
-                    <p className="text-[14px] font-bold text-amber-300">
-                      Offer #{publicOffers.length + i + 1}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-[14px] font-bold text-amber-300">
+                        Offer #{publicOffers.length + i + 1}
+                      </p>
+                      {offer.leader_chat_started_at && (
+                        <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-white text-black font-bold">상담중</span>
+                      )}
+                    </div>
                     <div className="space-y-1.5 blur-sm select-none pointer-events-none">
                       {offer.public.liquorCategories.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
@@ -1220,22 +1200,9 @@ export function PuzzleDetailClient({
                       className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-neutral-700 bg-transparent text-neutral-200 hover:bg-neutral-800 font-bold text-[13px]"
                     >
                       <MessageCircle className="w-4 h-4" />
-                      방장과 대화
+                      채팅 바로가기
                     </Link>
                   </FeatureGate>
-                )}
-                {myOffer.status === "accepted" && puzzle.kakao_open_chat_url && (
-                  <a
-                    href={puzzle.kakao_open_chat_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold text-[13px] rounded-xl hover:bg-[#FDD835] transition-colors"
-                  >
-                    카카오 오픈채팅 입장하기
-                  </a>
-                )}
-                {myOffer.status === "accepted" && !puzzle.kakao_open_chat_url && (
-                  <p className="text-[12px] text-amber-400">방장이 회원님께 직접 연락드릴 예정입니다.</p>
                 )}
                 {myOffer.status === "pending" && isOpen && (
                   <div className="flex gap-2">
@@ -1394,7 +1361,12 @@ export function PuzzleDetailClient({
                 제안하기
               </Button>
               <p className="text-[11px] text-neutral-600 text-center leading-relaxed">
-                수락 시 30크레딧 차감 · 미선택 시 크레딧 차감 없음
+                <FeatureGate
+                  flag="offer_chat"
+                  fallback={<>수락 시 30크레딧 차감 · 미선택 시 크레딧 차감 없음</>}
+                >
+                  제안 무료 · 매칭 시 15크레딧 1회 (대화 첫 답장 또는 수락)
+                </FeatureGate>
               </p>
             </div>
           )}
@@ -1488,17 +1460,6 @@ export function PuzzleDetailClient({
         onConfirm={handleCancelWithReason}
       />
 
-      <ConfirmDialog
-        isOpen={showKakaoNotice}
-        onOpenChange={setShowKakaoNotice}
-        onConfirm={handleKakaoNoticeRegister}
-        onCancel={handleKakaoNoticeSkip}
-        title="오픈채팅으로 받고 싶다면?"
-        description="개인정보 공개를 원치 않으신다면 오픈채팅을 등록해보세요. 등록 후 MD에게 전화번호 대신 오픈채팅 링크가 전달됩니다."
-        confirmText="오픈채팅 등록"
-        cancelText="그냥 수락하기"
-        variant="default"
-      />
     </div>
   );
 }
