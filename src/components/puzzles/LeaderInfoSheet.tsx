@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
-import { ChevronDown, ChevronUp, History, Store, Users } from "lucide-react";
+import { ChevronDown, ChevronUp, History, Store } from "lucide-react";
 
 interface Props {
     open: boolean;
@@ -217,22 +217,6 @@ export function LeaderInfoSheet({ open, onOpenChange, leader, title = "방장 �
                             </p>
                             <p className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
                                 거래가 쌓이면 MD가 남긴 평가가 표시됩니다
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* 파티원 평가 (예정) */}
-                    <div>
-                        <div className="flex items-center gap-1.5 mb-2 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
-                            <Users className="w-3.5 h-3.5" />
-                            같이 간 파티원 평가
-                        </div>
-                        <div className="bg-neutral-900/30 border border-dashed border-neutral-800 rounded-2xl py-6 text-center px-4">
-                            <p className="text-[12px] text-neutral-500 font-bold">
-                                받은 평가가 아직 없어요
-                            </p>
-                            <p className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
-                                함께 놀러 간 멤버들의 평가가 표시됩니다
                             </p>
                         </div>
                     </div>

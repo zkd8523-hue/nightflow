@@ -279,46 +279,23 @@ export function PublicProfileView({
                 {partnerClubs.map((c) => c.name).join(" · ")}
               </p>
             )}
-            {/* 핸들 + 오픈채팅 칩 (한 줄) */}
-            {(profile.md_unique_slug || kakaoOpenChatUrl) && (
+            {/* 핸들 (인스타 연결) */}
+            {profile.md_unique_slug && (
               <div className="flex items-center gap-2 mt-0.5 min-w-0">
-                {profile.md_unique_slug &&
-                  (profile.instagram ? (
-                    <a
-                      href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[13px] text-neutral-500 truncate hover:text-neutral-300 active:opacity-70 transition-colors"
-                    >
-                      @{profile.md_unique_slug}
-                    </a>
-                  ) : (
-                    <p className="text-[13px] text-neutral-500 truncate">
-                      @{profile.md_unique_slug}
-                    </p>
-                  ))}
-
-                {/* 오픈채팅 — 핸들과 같은 회색 톤, 메타 정보처럼 차분하게 */}
-                {kakaoOpenChatUrl &&
-                  (isMe ? (
-                    <button
-                      onClick={() => setEditSection("openchat")}
-                      className="shrink-0 inline-flex items-center gap-0.5 text-[13px] text-neutral-500 hover:text-neutral-300 active:opacity-70 transition-colors"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      오픈채팅
-                    </button>
-                  ) : (
-                    <a
-                      href={kakaoOpenChatUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 inline-flex items-center gap-0.5 text-[13px] text-neutral-500 hover:text-neutral-300 active:opacity-70 transition-colors"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      오픈채팅
-                    </a>
-                  ))}
+                {profile.instagram ? (
+                  <a
+                    href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[13px] text-neutral-500 truncate hover:text-neutral-300 active:opacity-70 transition-colors"
+                  >
+                    @{profile.md_unique_slug}
+                  </a>
+                ) : (
+                  <p className="text-[13px] text-neutral-500 truncate">
+                    @{profile.md_unique_slug}
+                  </p>
+                )}
               </div>
             )}
 
@@ -346,17 +323,6 @@ export function PublicProfileView({
           >
             <Pencil className="w-3.5 h-3.5" />
             프로필 편집
-          </button>
-        )}
-
-        {/* 오픈채팅 — 등록됨이면 핸들 옆 칩으로 노출(위 참조). 본인 + 미등록일 때만 등록 유도 버튼 */}
-        {isMe && !kakaoOpenChatUrl && (
-          <button
-            onClick={() => setEditSection("openchat")}
-            className="mt-3 w-full h-9 rounded-lg border border-dashed border-neutral-700 text-[13px] font-bold text-neutral-400 hover:text-neutral-200 hover:border-neutral-500 transition-colors flex items-center justify-center gap-1.5"
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            오픈채팅 등록 (프로필에 공개)
           </button>
         )}
 

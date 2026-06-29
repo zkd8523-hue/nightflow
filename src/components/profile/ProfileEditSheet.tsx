@@ -700,27 +700,6 @@ export function ProfileEditSheet({
           </div>
           )}
 
-          {/* 오픈채팅 */}
-          {showOpenChat && (
-          <div>
-            <label className="flex items-center gap-1.5 text-[13px] font-bold text-neutral-400 mb-2">
-              <MessageCircle className="w-3.5 h-3.5" />
-              오픈채팅
-            </label>
-            <input
-              type="url"
-              value={kakaoOpenChatUrl}
-              onChange={(e) => setKakaoOpenChatUrl(e.target.value)}
-              placeholder="https://open.kakao.com/o/..."
-              className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl px-3 py-2.5 text-[14px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600"
-            />
-            <p className="mt-1.5 text-[12px] text-neutral-500 leading-relaxed">
-              등록하면 내 프로필에 공개돼요. 와글에서 내 글을 본 사람이 전화번호
-              없이 오픈채팅으로 합류할 수 있어요.
-            </p>
-          </div>
-          )}
-
           {/* 저장 버튼 */}
           <div className="flex gap-2 pt-2 sticky bottom-0 bg-[#1C1C1E] pb-2">
             <button

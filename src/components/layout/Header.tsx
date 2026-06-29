@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useSupportUnread } from "@/hooks/useSupportUnread";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -129,6 +130,7 @@ export function Header({
     deleteNotification,
     deleteAllNotifications,
   } = useNotifications(user?.id);
+  const supportUnread = useSupportUnread(user?.id);
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
@@ -329,7 +331,7 @@ export function Header({
                 aria-label="메뉴 열기"
               >
                 <Menu className="w-5 h-5 text-neutral-300" />
-                {unreadCount > 0 && (
+                {(unreadCount > 0 || supportUnread) && (
                   <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
                 )}
               </button>
@@ -540,6 +542,9 @@ export function Header({
                     >
                       <Headset className="w-5 h-5 text-neutral-500" />
                       <span className="text-[15px] font-bold">고객 문의</span>
+                      {supportUnread && (
+                        <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
+                      )}
                     </Link>
 
                     <Link
