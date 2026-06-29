@@ -29,7 +29,7 @@ export function CopyAcceptedMessageButton({ puzzle, offer, lang = "ko" }: Props)
   const t = makeT(lang);
 
   const handleCopy = async () => {
-    const msg = buildAcceptedFlagMessage(puzzle, offer, window.location.origin, isForeigner);
+    const msg = buildAcceptedFlagMessage(puzzle, offer, window.location.origin, lang);
     try {
       await navigator.clipboard.writeText(msg);
       setCopied(true);

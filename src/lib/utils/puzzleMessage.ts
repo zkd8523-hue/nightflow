@@ -14,6 +14,7 @@ type AcceptedOfferLite = {
 } | null | undefined;
 
 import { toEnglishInclude } from "./liquorEn";
+import { type Lang, areaLabel } from "@/lib/i18n";
 
 function formatMsgDate(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
@@ -23,24 +24,30 @@ function formatMsgDate(dateStr: string): string {
   return `${m}/${day}(${days[d.getDay()]})`;
 }
 
-function formatMsgDateEn(dateStr: string): string {
+const FOREIGN_LOCALE: Record<string, string> = { en: "en-US", ja: "ja-JP", zh: "zh-CN" };
+function formatMsgDateForeign(dateStr: string, lang: string): string {
   const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  return d.toLocaleDateString(FOREIGN_LOCALE[lang] ?? "en-US", {
+    weekday: "short",
+    month: lang === "en" ? "short" : "numeric",
+    day: "numeric",
+  });
 }
 
-const AREA_EN_MSG: Record<string, string> = {
-  "강남": "Gangnam", "홍대": "Hongdae", "이태원": "Itaewon",
-  "서울 어디든": "Anywhere in Seoul",
-  "부산": "Busan", "대구": "Daegu", "인천": "Incheon",
-  "광주": "Gwangju", "대전": "Daejeon", "울산": "Ulsan", "세종": "Sejong",
+// 외국인 블록 정적 문구 (언어별)
+const MSG_STRINGS: Record<string, { greet: string; ask: string; ppl: (n: number) => string; club: string }> = {
+  en: { greet: "Hi! I'm a NightFlow guest 🙌", ask: "I accepted your offer — please help me book!", ppl: (n) => `${n} ppl`, club: "Club" },
+  ja: { greet: "こんにちは！NightFlowのゲストです 🙌", ask: "オファーを受けました — 予約をお願いします！", ppl: (n) => `${n}名`, club: "クラブ" },
+  zh: { greet: "你好！我是NightFlow的客人 🙌", ask: "我接受了您的报价——请帮我预订！", ppl: (n) => `${n}人`, club: "夜店" },
 };
 
 export function buildAcceptedFlagMessage(
   puzzle: PuzzleLite,
   offer: AcceptedOfferLite,
   origin: string,
-  isForeigner = false,
+  lang: Lang = "ko",
 ): string {
+  const isForeigner = lang !== "ko";
   const date = formatMsgDate(puzzle.event_date);
   const headcount = puzzle.is_recruiting_party
     ? `${puzzle.current_count}명`
@@ -68,15 +75,17 @@ export function buildAcceptedFlagMessage(
     ].join("\n");
   }
 
-  // 외국인: 한국어 전문(MD가 읽고 예약) + 영어 전문(외국인이 확인) 분리
-  const dateEn = formatMsgDateEn(puzzle.event_date);
-  const areaEn = AREA_EN_MSG[puzzle.area] ?? puzzle.area;
-  const headcountEn = `${puzzle.is_recruiting_party ? puzzle.current_count : puzzle.target_count} ppl`;
-  const enInfo: string[] = [`${dateEn} · ${areaEn} · ${headcountEn}`];
+  // 외국인: 한국어 전문(MD가 읽고 예약) + 외국인 모국어 전문(en/ja/zh) 분리
+  const S = MSG_STRINGS[lang] ?? MSG_STRINGS.en;
+  const dateF = formatMsgDateForeign(puzzle.event_date, lang);
+  const areaF = areaLabel(puzzle.area, lang);
+  const headcountF = S.ppl(puzzle.is_recruiting_party ? puzzle.current_count : puzzle.target_count);
+  const fInfo: string[] = [`${dateF} · ${areaF} · ${headcountF}`];
   if (offer) {
-    enInfo.push(`${club || "Club"} · ₩${price}`);
+    fInfo.push(`${club || S.club} · ₩${price}`);
     if (offer.includes.length > 0) {
-      enInfo.push(offer.includes.map(toEnglishInclude).join(", "));
+      // 술 브랜드명은 글로벌 표기(라틴) — en/ja/zh 모두 동일하게 인식
+      fInfo.push(offer.includes.map(toEnglishInclude).join(", "));
     }
   }
 
@@ -88,10 +97,10 @@ export function buildAcceptedFlagMessage(
     ``,
     `————————————`,
     ``,
-    `Hi! I'm a NightFlow guest 🙌`,
-    `I accepted your offer — please help me book!`,
+    S.greet,
+    S.ask,
     ``,
-    ...enInfo,
+    ...fInfo,
     ``,
     url,
   ].join("\n");
