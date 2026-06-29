@@ -15,7 +15,12 @@ export default function NotFound() {
 
                 <div className="space-y-3">
                     <h1 className="text-4xl font-black text-white tracking-tighter">404</h1>
-                    <h2 className="text-xl font-bold text-neutral-200">페이지를 찾을 수 없습니다</h2>
+                    <h2 className="text-xl font-bold text-neutral-200">
+                        페이지를 찾을 수 없습니다
+                    </h2>
+                    <p className="text-[13px] text-neutral-400">
+                        Page not found · ページが見つかりません · 找不到页面
+                    </p>
                     <p className="text-neutral-500 font-medium leading-relaxed">
                         요청하신 페이지가 삭제되었거나<br />
                         주소가 잘못되었습니다.
@@ -29,6 +34,20 @@ export default function NotFound() {
                             메인으로 돌아가기
                         </Button>
                     </Link>
+                    {/* 외국인 트랙 진입 안내 (lang별 폴백) */}
+                    <div className="flex flex-wrap gap-2 justify-center text-[12px] pt-2">
+                        <Link href="/en" className="text-neutral-500 hover:text-white underline">
+                            English
+                        </Link>
+                        <span className="text-neutral-700">·</span>
+                        <Link href="/ja" className="text-neutral-500 hover:text-white underline">
+                            日本語
+                        </Link>
+                        <span className="text-neutral-700">·</span>
+                        <Link href="/zh" className="text-neutral-500 hover:text-white underline">
+                            中文
+                        </Link>
+                    </div>
                 </div>
             </div>
         </div>
