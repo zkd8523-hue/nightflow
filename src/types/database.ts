@@ -829,6 +829,7 @@ export interface OfferMessage {
   content: string;
   media: ChatMediaItem[];
   is_deleted: boolean;
+  edited_at?: string | null;
   created_at: string;
   // joined
   sender?: { id: string; display_name: string | null; profile_image: string | null };

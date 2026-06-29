@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, ChevronRight, ImageIcon, Send, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronRight, ImageIcon, Pencil, Send, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
@@ -100,6 +100,7 @@ export function MessageRoom({
     messages,
     loading,
     addLocalMessage,
+    updateLocalMessage,
     leaderReadAt,
     mdReadAt,
   } = useOfferMessages(offerId);
@@ -107,6 +108,11 @@ export function MessageRoom({
   const [input, setInput] = useState("");
   const [media, setMedia] = useState<ChatMediaItem[]>([]);
   const [sending, setSending] = useState(false);
+  // 본인 메시지 수정/삭제
+  const [menuMsg, setMenuMsg] = useState<OfferMessage | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(offerStatus === "accepted");
@@ -155,6 +161,45 @@ export function MessageRoom({
     toast.success("상담을 종료했어요. 다른 오퍼와 대화할 수 있어요.");
     router.push("/messages");
   }
+
+  // 본인 메시지 롱프레스 → 수정/삭제 메뉴
+  function startPress(m: OfferMessage) {
+    if (m.is_deleted || m.sender_id !== me.id) return;
+    cancelPress();
+    pressTimer.current = setTimeout(() => setMenuMsg(m), 450);
+  }
+  function cancelPress() {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  }
+
+  function startEditMessage(m: OfferMessage) {
+    setMenuMsg(null);
+    setEditingId(m.id);
+    setInput(m.content);
+    setMedia([]);
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }
+  function cancelEdit() {
+    setEditingId(null);
+    setInput("");
+  }
+
+  async function handleDeleteMessage(id: string) {
+    setMenuMsg(null);
+    if (typeof window !== "undefined" && !window.confirm("이 메시지를 삭제할까요?")) return;
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc("delete_offer_message", { p_message_id: id });
+    if (error || !data?.success) {
+      toast.error(data?.error || error?.message || "삭제에 실패했어요");
+      return;
+    }
+    updateLocalMessage(id, { is_deleted: true, content: "", media: [] });
+    if (editingId === id) cancelEdit();
+  }
+
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -212,6 +257,35 @@ export function MessageRoom({
     const trimmed = (isPreset ? textOverride : input).trim();
     const useMedia = isPreset ? [] : media;
     if (sending || readOnly) return;
+
+    // 수정 모드: 텍스트만 교체
+    if (editingId && !isPreset) {
+      if (trimmed.length < 1) {
+        toast.error("내용을 입력해주세요");
+        return;
+      }
+      if (trimmed.length > MAX_LEN) {
+        toast.error(`${MAX_LEN}자를 넘을 수 없어요`);
+        return;
+      }
+      setSending(true);
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("edit_offer_message", {
+        p_message_id: editingId,
+        p_content: trimmed,
+      });
+      if (error || !data?.success) {
+        toast.error(data?.error || error?.message || "수정에 실패했어요");
+        setSending(false);
+        return;
+      }
+      updateLocalMessage(editingId, { content: trimmed, edited_at: new Date().toISOString() });
+      setEditingId(null);
+      setInput("");
+      setSending(false);
+      return;
+    }
+
     if (trimmed.length < 1 && useMedia.length === 0) return;
     if (trimmed.length > MAX_LEN) {
       toast.error(`${MAX_LEN}자를 넘을 수 없어요`);
@@ -290,7 +364,10 @@ export function MessageRoom({
       addLocalMessage(local);
     }
     setSending(false);
-  }, [input, media, sending, readOnly, mdBlocked, mdFirstReply, myRole, iHaveSent, puzzleId, offerId, me, addLocalMessage]);
+  }, [input, media, sending, readOnly, mdBlocked, mdFirstReply, myRole, iHaveSent, puzzleId, offerId, me, addLocalMessage, editingId, updateLocalMessage]);
+
+  // 삭제된 메시지는 흔적 없이 숨김 (인스타 언센드식)
+  const shownMessages = messages.filter((m) => !m.is_deleted);
 
   return (
     <div className="max-w-lg mx-auto min-h-dvh bg-[#0A0A0A] flex flex-col">
@@ -375,7 +452,7 @@ export function MessageRoom({
       <div className="flex-1 px-4 py-4 space-y-3 overflow-y-auto">
         {loading ? (
           <p className="text-center text-[13px] text-neutral-600 mt-10">불러오는 중…</p>
-        ) : messages.length === 0 ? (
+        ) : shownMessages.length === 0 ? (
           <p className="text-center text-[13px] text-neutral-600 mt-10">
             {isMd
               ? accepted
@@ -384,12 +461,12 @@ export function MessageRoom({
               : "예약 문의를 시작해보세요"}
           </p>
         ) : (
-          messages.map((m, i) => {
+          shownMessages.map((m, i) => {
             const mine = m.sender_id === me.id;
             const d = new Date(m.created_at);
-            const prev = i > 0 ? messages[i - 1] : null;
+            const prev = i > 0 ? shownMessages[i - 1] : null;
             const showDate = !prev || !isSameDay(new Date(prev.created_at), d);
-            const next = i < messages.length - 1 ? messages[i + 1] : null;
+            const next = i < shownMessages.length - 1 ? shownMessages[i + 1] : null;
             // 같은 사람·같은 분의 연속 메시지는 마지막 것만 시간 표시 (카톡식)
             const showTime =
               !next ||
@@ -409,7 +486,20 @@ export function MessageRoom({
                 <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                   <div className={`flex items-end gap-1.5 max-w-[80%] ${mine ? "flex-row-reverse" : ""}`}>
                     <div
-                      className={`px-3 py-2 rounded-2xl ${
+                      onContextMenu={(e) => {
+                        if (mine) {
+                          e.preventDefault();
+                          setMenuMsg(m);
+                        }
+                      }}
+                      onDoubleClick={() => { if (mine) setMenuMsg(m); }}
+                      onTouchStart={() => startPress(m)}
+                      onTouchEnd={cancelPress}
+                      onTouchMove={cancelPress}
+                      onPointerDown={() => startPress(m)}
+                      onPointerUp={cancelPress}
+                      onPointerLeave={cancelPress}
+                      className={`px-3 py-2 rounded-2xl select-none ${
                         mine
                           ? "bg-white text-black rounded-br-md"
                           : "bg-[#1C1C1E] text-white rounded-bl-md"
@@ -428,6 +518,9 @@ export function MessageRoom({
                     <div className="flex flex-col items-end justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
                       {unreadByOther && (
                         <span className="text-[11px] font-bold text-amber-400">1</span>
+                      )}
+                      {m.edited_at && (
+                        <span className="text-[10px] text-neutral-600 whitespace-nowrap">수정됨</span>
                       )}
                       {showTime && (
                         <span className="text-[10px] text-neutral-500 whitespace-nowrap">
@@ -503,16 +596,27 @@ export function MessageRoom({
               ))}
             </div>
           )}
+          {editingId && (
+            <div className="flex items-center justify-between px-4 pt-2.5 pb-0.5">
+              <span className="text-[12px] font-bold text-amber-400">메시지 수정 중</span>
+              <button onClick={cancelEdit} className="text-[12px] text-neutral-500 hover:text-neutral-300">
+                취소
+              </button>
+            </div>
+          )}
           <div className="flex items-end gap-2 px-3 py-3">
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="p-2 text-neutral-400 shrink-0"
-              aria-label="사진 첨부"
-            >
-              <ImageIcon className="w-5 h-5" />
-            </button>
+            {!editingId && (
+              <button
+                onClick={() => fileRef.current?.click()}
+                className="p-2 text-neutral-400 shrink-0"
+                aria-label="사진 첨부"
+              >
+                <ImageIcon className="w-5 h-5" />
+              </button>
+            )}
             <input ref={fileRef} type="file" accept="image/*,video/*" multiple hidden onChange={handleFilePick} />
             <textarea
+              ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -523,7 +627,7 @@ export function MessageRoom({
                 }
               }}
               rows={1}
-              placeholder="메시지 보내기"
+              placeholder={editingId ? "메시지 수정…" : "메시지 보내기"}
               className="flex-1 min-w-0 resize-none bg-[#1C1C1E] text-white text-[14px] rounded-2xl px-4 py-2.5 outline-none placeholder:text-neutral-600 max-h-28"
             />
             <button
@@ -533,6 +637,45 @@ export function MessageRoom({
               aria-label="전송"
             >
               <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 본인 메시지 수정/삭제 액션 시트 */}
+      {menuMsg && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+          onClick={() => setMenuMsg(null)}
+        >
+          <div
+            className="w-full max-w-lg p-3 space-y-2"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
+              {!!menuMsg.content && (
+                <button
+                  onClick={() => startEditMessage(menuMsg)}
+                  className="w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-white hover:bg-neutral-800/40 border-b border-neutral-800/60"
+                >
+                  <Pencil className="w-5 h-5 text-neutral-400" />
+                  수정
+                </button>
+              )}
+              <button
+                onClick={() => handleDeleteMessage(menuMsg.id)}
+                className="w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-red-400 hover:bg-neutral-800/40"
+              >
+                <Trash2 className="w-5 h-5" />
+                삭제
+              </button>
+            </div>
+            <button
+              onClick={() => setMenuMsg(null)}
+              className="w-full bg-[#1C1C1E] rounded-2xl px-5 py-4 text-[15px] font-black text-white hover:bg-neutral-800/40"
+            >
+              취소
             </button>
           </div>
         </div>

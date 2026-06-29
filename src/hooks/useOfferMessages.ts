@@ -27,7 +27,7 @@ export function useOfferMessages(offerId: string) {
       supabase
         .from("puzzle_offer_messages")
         .select(
-          `id, offer_id, sender_id, content, media, is_deleted, created_at,
+          `id, offer_id, sender_id, content, media, is_deleted, edited_at, created_at,
            sender:public_user_profiles!puzzle_offer_messages_sender_id_fkey(id, display_name, profile_image)`
         )
         .eq("offer_id", offerId)
@@ -60,6 +60,7 @@ export function useOfferMessages(offerId: string) {
           content: d.content ?? "",
           media: ((d as { media?: ChatMediaItem[] }).media ?? []) as ChatMediaItem[],
           is_deleted: d.is_deleted,
+          edited_at: (d as { edited_at?: string | null }).edited_at ?? null,
           created_at: d.created_at,
           sender,
         };
@@ -122,11 +123,43 @@ export function useOfferMessages(offerId: string) {
                 content: m.content ?? "",
                 media: m.media ?? [],
                 is_deleted: m.is_deleted,
+                edited_at: null,
                 created_at: m.created_at,
                 sender: sender ?? undefined,
               },
             ];
           });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "puzzle_offer_messages",
+          filter: `offer_id=eq.${offerId}`,
+        },
+        (payload) => {
+          const m = payload.new as {
+            id: string;
+            content: string;
+            media: ChatMediaItem[] | null;
+            is_deleted: boolean;
+            edited_at: string | null;
+          };
+          setMessages((prev) =>
+            prev.map((x) =>
+              x.id === m.id
+                ? {
+                    ...x,
+                    content: m.content ?? "",
+                    media: m.media ?? [],
+                    is_deleted: m.is_deleted,
+                    edited_at: m.edited_at ?? null,
+                  }
+                : x
+            )
+          );
         }
       )
       .on(
@@ -159,11 +192,20 @@ export function useOfferMessages(offerId: string) {
     });
   }, []);
 
+  // 수정/삭제 옵티미스틱 반영 (realtime UPDATE 도착 전 즉시 갱신)
+  const updateLocalMessage = useCallback(
+    (id: string, patch: Partial<OfferMessage>) => {
+      setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+    },
+    []
+  );
+
   return {
     messages,
     loading,
     reload: loadInitial,
     addLocalMessage,
+    updateLocalMessage,
     leaderReadAt,
     mdReadAt,
   };
