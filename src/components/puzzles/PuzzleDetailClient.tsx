@@ -1011,13 +1011,20 @@ export function PuzzleDetailClient({
                   )}
                 </h2>
               </div>
-              {puzzle.status === "open" ? (
-                <span className="text-[12px] text-neutral-400 whitespace-nowrap">
-                  {isForeigner
-                    ? `⏰ Offers close at ${puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h A") : "5 PM"} today`
-                    : `⏰ 당일 ${puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시"} 오퍼 마감`}
-                </span>
-              ) : (
+              {puzzle.status === "open" ? (() => {
+                const timeKo = puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시";
+                const timeF = puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h A") : "5 PM";
+                return (
+                  <span className="text-[12px] text-neutral-400 whitespace-nowrap">
+                    {t(
+                      `⏰ 당일 ${timeKo} 오퍼 마감`,
+                      `⏰ Offers close ${timeF} on event day`,
+                      `⏰ 当日${timeF} オファー締切`,
+                      `⏰ 当天${timeF} 报价截止`,
+                    )}
+                  </span>
+                );
+              })() : (
                 (isAccepted || pendingOffers.length === 0) && (
                   <span className="text-[11px] text-neutral-500">
                     {isAccepted ? t("제안 마감", "Offers closed") : t("아직 제안 없음", "No offers yet")}
@@ -1060,6 +1067,21 @@ export function PuzzleDetailClient({
                 <p className="text-[13px] text-neutral-400 font-medium">
                   {t("오퍼는 작성자만 볼 수 있어요✨", "Offers are visible to the author only✨")}
                 </p>
+                {/* 시크릿 오퍼 이유 + 소비자 이득 (왜 비공개인지 궁금증 해소) */}
+                <details className="group rounded-xl bg-neutral-900/50 border border-neutral-800 overflow-hidden">
+                  <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-amber-400">
+                    ⓘ {t("왜 오퍼가 비공개인가요?", "Why are offers secret?", "なぜオファーは非公開？", "为什么报价不公开？")}
+                    <span className="ml-auto text-neutral-500 group-open:rotate-180 transition-transform text-[11px]">▾</span>
+                  </summary>
+                  <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep">
+                    {t(
+                      "클럽끼리 서로의 오퍼를 볼 수 없어요. 그래서 눈치 보지 않고 각자 최고 조건을 던집니다 — 1원 깎기 경쟁이 아니라 진짜 베스트가 모입니다. 그중 마음에 드는 걸 고르면 끝.",
+                      "Clubs can't see each other's offers, so they bid blind — each gives their real best instead of barely undercutting a rival. You get genuine best deals, then pick the one you like.",
+                      "クラブはお互いのオファーを見られません。だから様子見せず、各自が最高の条件を出します — わずかに下回るだけの競争ではなく、本物のベストが集まります。気に入ったものを選ぶだけ。",
+                      "夜店看不到彼此的报价，所以各自盲投——给出真正的最优条件，而不是只比对手低一点。你能拿到真正的好价，然后挑你喜欢的就行。",
+                    )}
+                  </p>
+                </details>
                 {publicOffers.map((offer, idx) => (
                   <div
                     key={offer.id}

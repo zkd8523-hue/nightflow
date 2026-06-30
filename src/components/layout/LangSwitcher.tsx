@@ -57,6 +57,7 @@ export function LangSwitcher() {
             <a
               key={o.lang}
               href={o.href}
+              onClick={() => { try { localStorage.setItem("nf_lang_pref", o.lang); } catch { /* noop */ } }}
               className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
                 o.lang === current
                   ? "text-white bg-neutral-800"

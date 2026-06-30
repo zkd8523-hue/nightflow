@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { HomeContent } from "@/components/home/HomeContent";
+import { LangAutoRedirect } from "@/components/layout/LangAutoRedirect";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
 import { hideTestData, hideForeignerFlags } from "@/lib/utils/testData";
 
@@ -166,6 +167,8 @@ export default async function HomePage() {
 
   return (
     <div className="container mx-auto max-w-lg px-4 pt-2 pb-4">
+      {/* 기기 언어 자동 감지 → 외국어면 해당 언어 진입 (국제 앱 표준) */}
+      <LangAutoRedirect />
       <h1 className="sr-only">
         나플 - 강남·홍대 클럽 테이블 예약 (나이트플로우)
       </h1>

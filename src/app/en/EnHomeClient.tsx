@@ -9,6 +9,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
+import { ForeignAppCta } from "@/components/layout/ForeignAppCta";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -206,7 +207,10 @@ function FlagCarouselCard({ flag }: { flag: FlagItem }) {
   const budget = formatBudget(flag.total_budget, flag.budget_per_person, flag.target_count);
   const isSelecting = flag.status === "selecting";
   return (
-    <div className="shrink-0 w-[180px] rounded-2xl bg-[#1C1C1E] border border-neutral-800 p-4 snap-start">
+    <Link
+      href={`/flags/${flag.id}?lang=${lang}`}
+      className="block shrink-0 w-[180px] rounded-2xl bg-[#1C1C1E] border border-neutral-800 p-4 snap-start active:opacity-70 transition-opacity"
+    >
       <div className="flex items-start justify-between gap-1">
         <div className="min-w-0">
           <p className="font-black text-[15px] leading-tight truncate">{area}</p>
@@ -232,7 +236,7 @@ function FlagCarouselCard({ flag }: { flag: FlagItem }) {
       }`}>
         {isSelecting ? t("", "Reviewing", "確認中", "确认中") : t("", "Open", "募集中", "招募中")}
       </span>
-    </div>
+    </Link>
   );
 }
 
@@ -373,6 +377,9 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
           </div>
         </div>
       )}
+
+      {/* 앱 다운로드 CTA (플랫폼 자동 감지: iPhone→App Store / Android→Play) */}
+      <ForeignAppCta lang={lang} />
 
       {/* How it works (드롭다운) */}
       <div className="px-4 pb-6">
