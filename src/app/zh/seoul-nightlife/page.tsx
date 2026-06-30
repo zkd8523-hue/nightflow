@@ -5,7 +5,16 @@ export const metadata: Metadata = {
   title: { absolute: "首尔夜生活指南 2026 — 去哪里、订哪里 (外国游客版)" },
   description: "完整的首尔夜生活指南，专为外国游客打造。江南 EDM、弘大嘻哈、梨泰院国际化、狎鸥亭 VIP 包间。真实价格，无中介，无需韩语。",
   keywords: ["首尔夜生活","首尔夜生活指南","韩国夜生活","韩国夜生活指南","首尔夜场","首尔派对","首尔夜店","首尔最好的夜生活","首尔夜生活技巧","首尔夜生活区","江南夜生活","弘大夜生活","梨泰院夜生活","狎鸥亭夜生活","首尔酒吧和夜店","韩国旅游夜生活"],
-  alternates: { canonical: "https://nightflow.kr/zh/seoul-nightlife" },
+  alternates: {
+    canonical: "https://nightflow.kr/zh/seoul-nightlife",
+    languages: {
+        "en-US": "https://nightflow.kr/en/seoul-nightlife",
+        "zh-CN": "https://nightflow.kr/zh/seoul-nightlife",
+        "zh-TW": "https://nightflow.kr/zh/seoul-nightlife",
+        "ja-JP": "https://nightflow.kr/ja/seoul-nightlife",
+        "x-default": "https://nightflow.kr/en/seoul-nightlife",
+    },
+  },
   openGraph: { title: "首尔夜生活指南 2026 — 去哪里、订哪里", description: "外国游客的诚实指南。江南、弘大、梨泰院、狎鸥亭。真实价格，无中介。", url: "https://nightflow.kr/zh/seoul-nightlife", locale: "zh_CN", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
 };
 

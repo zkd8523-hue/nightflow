@@ -39,6 +39,13 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://nightflow.kr/en/vip-tables",
+    languages: {
+        "en-US": "https://nightflow.kr/en/vip-tables",
+        "zh-CN": "https://nightflow.kr/zh/vip-tables",
+        "zh-TW": "https://nightflow.kr/zh/vip-tables",
+        "ja-JP": "https://nightflow.kr/ja/vip-tables",
+        "x-default": "https://nightflow.kr/en/vip-tables",
+    },
   },
   openGraph: {
     title: "Seoul VIP Table Booking — Korea Club Bottle Service Guide",
@@ -47,7 +54,7 @@ export const metadata: Metadata = {
     url: "https://nightflow.kr/en/vip-tables",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://nightflow.kr/api/og?title=Seoul+VIP+Table+Booking&sub=Korea+Club+Bottle+Service+%E2%80%94+Real+Prices%2C+No+Broker&lang=en", width: 1200, height: 630 }],
   },
 };
 

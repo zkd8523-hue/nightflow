@@ -5,7 +5,16 @@ export const metadata: Metadata = {
   title: { absolute: "ソウルクラブ ゲストリスト — 韓国クラブ無料入場 (韓国語不要)" },
   description: "ソウルのトップクラブにゲストリストで無料入場 — 江南・弘大・梨泰院。入場料をスキップ。本物のクラブMDからの週次ゲストディール。ブローカーなし、韓国語不要。",
   keywords: ["ソウルクラブ ゲストリスト","ソウルクラブ 無料入場","ソウルナイトクラブ ゲストリスト","ソウルクラブ 入場料","韓国クラブ ゲストリスト","韓国クラブ 無料入場","江南クラブ ゲストリスト","弘大クラブ ゲストリスト","梨泰院クラブ ゲストリスト","ソウルクラブMD","韓国クラブプロモーター","ソウルクラブ割引"],
-  alternates: { canonical: "https://nightflow.kr/ja/guests" },
+  alternates: {
+    canonical: "https://nightflow.kr/ja/guests",
+    languages: {
+        "en-US": "https://nightflow.kr/en/guests",
+        "zh-CN": "https://nightflow.kr/zh/guests",
+        "zh-TW": "https://nightflow.kr/zh/guests",
+        "ja-JP": "https://nightflow.kr/ja/guests",
+        "x-default": "https://nightflow.kr/en/guests",
+    },
+  },
   openGraph: { title: "ソウルクラブ ゲストリスト — 韓国クラブ無料入場", description: "ソウルのトップクラブの入場料をスキップ。週次ゲストディール、韓国語不要。", url: "https://nightflow.kr/ja/guests", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
 };
 

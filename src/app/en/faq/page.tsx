@@ -26,6 +26,14 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://nightflow.kr/en/faq",
+    languages: {
+        "ko-KR": "https://nightflow.kr/faq",
+        "en-US": "https://nightflow.kr/en/faq",
+        "zh-CN": "https://nightflow.kr/zh/faq",
+        "zh-TW": "https://nightflow.kr/zh/faq",
+        "ja-JP": "https://nightflow.kr/ja/faq",
+        "x-default": "https://nightflow.kr/faq",
+    },
   },
   openGraph: {
     title: "Seoul Club Booking FAQ — Korea Nightlife Questions Answered",
@@ -34,7 +42,7 @@ export const metadata: Metadata = {
     url: "https://nightflow.kr/en/faq",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://nightflow.kr/api/og?title=Seoul+Club+FAQ&sub=Real+Answers+%E2%80%94+Booking%2C+Prices%2C+Dress+Code%2C+VIP+Tables&lang=en", width: 1200, height: 630 }],
   },
 };
 

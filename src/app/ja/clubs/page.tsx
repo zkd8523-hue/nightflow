@@ -30,7 +30,17 @@ export const metadata: Metadata = {
     "ソウルベストクラブ",
     "韓国旅行クラブ",
   ],
-  alternates: { canonical: "https://nightflow.kr/ja/clubs" },
+  alternates: {
+    canonical: "https://nightflow.kr/ja/clubs",
+    languages: {
+        "ko-KR": "https://nightflow.kr/clubs",
+        "en-US": "https://nightflow.kr/en/clubs",
+        "zh-CN": "https://nightflow.kr/zh/clubs",
+        "zh-TW": "https://nightflow.kr/zh/clubs",
+        "ja-JP": "https://nightflow.kr/ja/clubs",
+        "x-default": "https://nightflow.kr/clubs",
+    },
+  },
   openGraph: {
     title: "韓国クラブガイド 2026 — 江南・弘大・梨泰院",
     description: "韓国ソウルのベストクラブを本物の価格とVIPルーム予約で。ブローカーなし。",

@@ -5,7 +5,16 @@ export const metadata: Metadata = {
   title: { absolute: "ソウルのK-POPクラブ — K-POPライブが聴ける場所 (日本人旅行者ガイド 2026)" },
   description: "ソウルのベストK-POPクラブとナイトライフガイド、日本人K-POPファン向け。弘大NB2、K-POPダンスパーティー、アイドル名曲を一晩中。本物の価格、ブローカーなし、日本語フレンドリー。",
   keywords: ["K-POPクラブ","ソウルK-POPクラブ","K-POPナイトクラブ","ソウルK-POPナイトライフ","韓国K-POPクラブ","韓国K-POPナイトライフ","弘大K-POPクラブ","NB2 ソウル","NB2 弘大","K-POPバー","K-POPダンスクラブ","ソウルアイドルクラブ","BTSクラブソウル","K-POPファンクラブ","K-POP旅行ソウル"],
-  alternates: { canonical: "https://nightflow.kr/ja/kpop-clubs" },
+  alternates: {
+    canonical: "https://nightflow.kr/ja/kpop-clubs",
+    languages: {
+        "en-US": "https://nightflow.kr/en/kpop-clubs",
+        "zh-CN": "https://nightflow.kr/zh/kpop-clubs",
+        "zh-TW": "https://nightflow.kr/zh/kpop-clubs",
+        "ja-JP": "https://nightflow.kr/ja/kpop-clubs",
+        "x-default": "https://nightflow.kr/en/kpop-clubs",
+    },
+  },
   openGraph: { title: "ソウルのK-POPクラブ — 日本人旅行者ガイド", description: "ソウルのベストK-POPナイトクラブ。本物の価格、日本語フレンドリー。K-POPファンが実際に行く場所。", url: "https://nightflow.kr/ja/kpop-clubs", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
 };
 

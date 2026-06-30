@@ -21,7 +21,16 @@ export const metadata: Metadata = {
     "韩国夜店推广员",
     "首尔夜店折扣",
   ],
-  alternates: { canonical: "https://nightflow.kr/zh/guests" },
+  alternates: {
+    canonical: "https://nightflow.kr/zh/guests",
+    languages: {
+        "en-US": "https://nightflow.kr/en/guests",
+        "zh-CN": "https://nightflow.kr/zh/guests",
+        "zh-TW": "https://nightflow.kr/zh/guests",
+        "ja-JP": "https://nightflow.kr/ja/guests",
+        "x-default": "https://nightflow.kr/en/guests",
+    },
+  },
   openGraph: {
     title: "首尔夜店 Guest List — 韩国夜店免费入场",
     description: "跳过首尔顶级夜店的入场费。每周 guest 优惠，无需韩语。",

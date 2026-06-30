@@ -118,6 +118,9 @@ export const metadata: Metadata = {
   verification: {
     other: {
       "naver-site-verification": "43d940356195c90cde1de23bc0d9b3b255fe5fa3",
+      // TODO: Baidu Webmaster (ziyuan.baidu.com) 등록 후 verification 코드 받아 채우기.
+      // 중국 본토 검색 트래픽 (Google 차단됨, Baidu 80%+ 점유).
+      // "baidu-site-verification": "code_here",
     },
   },
 };

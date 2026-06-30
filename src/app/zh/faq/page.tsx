@@ -22,6 +22,14 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://nightflow.kr/zh/faq",
+    languages: {
+        "ko-KR": "https://nightflow.kr/faq",
+        "en-US": "https://nightflow.kr/en/faq",
+        "zh-CN": "https://nightflow.kr/zh/faq",
+        "zh-TW": "https://nightflow.kr/zh/faq",
+        "ja-JP": "https://nightflow.kr/ja/faq",
+        "x-default": "https://nightflow.kr/faq",
+    },
   },
   openGraph: {
     title: "首尔夜店预订 FAQ — 韩国夜生活常见问题",

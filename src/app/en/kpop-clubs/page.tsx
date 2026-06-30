@@ -35,6 +35,13 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://nightflow.kr/en/kpop-clubs",
+    languages: {
+        "en-US": "https://nightflow.kr/en/kpop-clubs",
+        "zh-CN": "https://nightflow.kr/zh/kpop-clubs",
+        "zh-TW": "https://nightflow.kr/zh/kpop-clubs",
+        "ja-JP": "https://nightflow.kr/ja/kpop-clubs",
+        "x-default": "https://nightflow.kr/en/kpop-clubs",
+    },
   },
   openGraph: {
     title: "K-Pop Clubs in Seoul — Foreign Traveler Guide",
@@ -43,7 +50,7 @@ export const metadata: Metadata = {
     url: "https://nightflow.kr/en/kpop-clubs",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://nightflow.kr/api/og?title=K-Pop+Clubs+in+Seoul&sub=Where+K-Pop+Fans+Actually+Go+%E2%80%94+Foreign+Traveler+Guide&lang=en", width: 1200, height: 630 }],
   },
 };
 

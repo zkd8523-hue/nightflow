@@ -26,7 +26,16 @@ export const metadata: Metadata = {
     "韩国夜店包间",
     "首尔夜店包间",
   ],
-  alternates: { canonical: "https://nightflow.kr/zh/vip-tables" },
+  alternates: {
+    canonical: "https://nightflow.kr/zh/vip-tables",
+    languages: {
+        "en-US": "https://nightflow.kr/en/vip-tables",
+        "zh-CN": "https://nightflow.kr/zh/vip-tables",
+        "zh-TW": "https://nightflow.kr/zh/vip-tables",
+        "ja-JP": "https://nightflow.kr/ja/vip-tables",
+        "x-default": "https://nightflow.kr/en/vip-tables",
+    },
+  },
   openGraph: {
     title: "首尔 VIP 包间预订 — 韩国夜店瓶装服务指南",
     description: "预订首尔顶级夜店，无需韩语。真实价格，无中介。",

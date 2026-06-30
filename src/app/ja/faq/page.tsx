@@ -19,7 +19,17 @@ export const metadata: Metadata = {
     "ソウルルーム価格",
     "韓国VIPルーム",
   ],
-  alternates: { canonical: "https://nightflow.kr/ja/faq" },
+  alternates: {
+    canonical: "https://nightflow.kr/ja/faq",
+    languages: {
+        "ko-KR": "https://nightflow.kr/faq",
+        "en-US": "https://nightflow.kr/en/faq",
+        "zh-CN": "https://nightflow.kr/zh/faq",
+        "zh-TW": "https://nightflow.kr/zh/faq",
+        "ja-JP": "https://nightflow.kr/ja/faq",
+        "x-default": "https://nightflow.kr/faq",
+    },
+  },
   openGraph: {
     title: "ソウルクラブ予約 FAQ — 韓国ナイトライフ よくある質問",
     description: "韓国クラブの本物の価格、ドレスコード、日本人がVIPルームを予約する方法。",

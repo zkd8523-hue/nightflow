@@ -187,6 +187,13 @@ export async function generateMetadata({
     keywords: config.keywords,
     alternates: {
       canonical: `https://nightflow.kr/ja/clubs/${area}`,
+      languages: {
+        "en-US": `https://nightflow.kr/en/clubs/${area}`,
+        "zh-CN": `https://nightflow.kr/zh/clubs/${area}`,
+        "zh-TW": `https://nightflow.kr/zh/clubs/${area}`,
+        "ja-JP": `https://nightflow.kr/ja/clubs/${area}`,
+        "x-default": `https://nightflow.kr/en/clubs/${area}`,
+      },
     },
     openGraph: {
       title: config.title,

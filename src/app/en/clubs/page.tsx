@@ -68,6 +68,14 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://nightflow.kr/en/clubs",
+    languages: {
+        "ko-KR": "https://nightflow.kr/clubs",
+        "en-US": "https://nightflow.kr/en/clubs",
+        "zh-CN": "https://nightflow.kr/zh/clubs",
+        "zh-TW": "https://nightflow.kr/zh/clubs",
+        "ja-JP": "https://nightflow.kr/ja/clubs",
+        "x-default": "https://nightflow.kr/clubs",
+    },
   },
   openGraph: {
     title: "Seoul Club Booking 2026 — Gangnam, Hongdae, Itaewon Guide",
@@ -76,7 +84,7 @@ export const metadata: Metadata = {
     url: "https://nightflow.kr/en/clubs",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://nightflow.kr/api/og?title=Seoul+Club+Booking+2026&sub=Gangnam%2C+Hongdae%2C+Itaewon+Guide+%E2%80%94+Real+Prices%2C+No+Broker&lang=en", width: 1200, height: 630 }],
   },
 };
 

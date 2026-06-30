@@ -69,11 +69,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://nightflow.kr/zh",
     languages: {
-      "zh-CN": "https://nightflow.kr/zh",
-      "zh-TW": "https://nightflow.kr/zh",
-      "ko-KR": "https://nightflow.kr",
-      "en-US": "https://nightflow.kr/en",
-      "x-default": "https://nightflow.kr",
+        "ko-KR": "https://nightflow.kr/",
+        "en-US": "https://nightflow.kr/en",
+        "zh-CN": "https://nightflow.kr/zh",
+        "zh-TW": "https://nightflow.kr/zh",
+        "ja-JP": "https://nightflow.kr/ja",
+        "x-default": "https://nightflow.kr/",
     },
   },
   openGraph: {

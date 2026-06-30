@@ -29,14 +29,23 @@ export const metadata: Metadata = {
     "Seoul bars and clubs",
     "Korea travel nightlife",
   ],
-  alternates: { canonical: "https://nightflow.kr/en/seoul-nightlife" },
+  alternates: {
+    canonical: "https://nightflow.kr/en/seoul-nightlife",
+    languages: {
+        "en-US": "https://nightflow.kr/en/seoul-nightlife",
+        "zh-CN": "https://nightflow.kr/zh/seoul-nightlife",
+        "zh-TW": "https://nightflow.kr/zh/seoul-nightlife",
+        "ja-JP": "https://nightflow.kr/ja/seoul-nightlife",
+        "x-default": "https://nightflow.kr/en/seoul-nightlife",
+    },
+  },
   openGraph: {
     title: "Seoul Nightlife Guide 2026 — Where to Go, What to Book",
     description: "Honest guide for foreign travelers. Gangnam, Hongdae, Itaewon, Apgujeong. Real prices, no broker.",
     url: "https://nightflow.kr/en/seoul-nightlife",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://nightflow.kr/api/og?title=Seoul+Nightlife+Guide+2026&sub=Where+to+Go%2C+What+to+Book+%E2%80%94+Honest+Guide+for+Travelers&lang=en", width: 1200, height: 630 }],
   },
 };
 

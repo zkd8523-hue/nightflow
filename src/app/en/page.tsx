@@ -96,9 +96,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://nightflow.kr/en",
     languages: {
-      "en-US": "https://nightflow.kr/en",
-      "ko-KR": "https://nightflow.kr",
-      "x-default": "https://nightflow.kr",
+        "ko-KR": "https://nightflow.kr/",
+        "en-US": "https://nightflow.kr/en",
+        "zh-CN": "https://nightflow.kr/zh",
+        "zh-TW": "https://nightflow.kr/zh",
+        "ja-JP": "https://nightflow.kr/ja",
+        "x-default": "https://nightflow.kr/",
     },
   },
   openGraph: {
@@ -109,14 +112,7 @@ export const metadata: Metadata = {
     siteName: "NightFlow",
     locale: "en_US",
     type: "website",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "NightFlow — Seoul Club Booking for Travelers",
-      },
-    ],
+    images: [{ url: "https://nightflow.kr/api/og?title=Korea+Club+Booking&sub=Gangnam%2C+Hongdae%2C+Itaewon+VIP+Tables+%E2%80%94+No+Korean+Needed&lang=en", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",

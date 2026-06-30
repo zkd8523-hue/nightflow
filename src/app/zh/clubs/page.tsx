@@ -32,6 +32,14 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://nightflow.kr/zh/clubs",
+    languages: {
+        "ko-KR": "https://nightflow.kr/clubs",
+        "en-US": "https://nightflow.kr/en/clubs",
+        "zh-CN": "https://nightflow.kr/zh/clubs",
+        "zh-TW": "https://nightflow.kr/zh/clubs",
+        "ja-JP": "https://nightflow.kr/ja/clubs",
+        "x-default": "https://nightflow.kr/clubs",
+    },
   },
   openGraph: {
     title: "韩国夜店指南 2026 — 江南·弘大·梨泰院",

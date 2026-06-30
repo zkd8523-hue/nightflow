@@ -59,6 +59,13 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://nightflow.kr/en/guide",
+    languages: {
+        "en-US": "https://nightflow.kr/en/guide",
+        "zh-CN": "https://nightflow.kr/zh/guide",
+        "zh-TW": "https://nightflow.kr/zh/guide",
+        "ja-JP": "https://nightflow.kr/ja/guide",
+        "x-default": "https://nightflow.kr/en/guide",
+    },
   },
   openGraph: {
     title: "Seoul Club Booking Guide — Be a VIP at Seoul's Best Clubs",
@@ -67,7 +74,7 @@ export const metadata: Metadata = {
     url: "https://nightflow.kr/en/guide",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://nightflow.kr/api/og?title=Seoul+Club+Booking+Guide&sub=Be+a+VIP+at+Seoul%27s+Best+Clubs+%E2%80%94+No+Korean+Needed&lang=en", width: 1200, height: 630 }],
   },
 };
 

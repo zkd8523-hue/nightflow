@@ -25,7 +25,16 @@ export const metadata: Metadata = {
     "K-POP粉丝夜店",
     "K-POP旅游首尔",
   ],
-  alternates: { canonical: "https://nightflow.kr/zh/kpop-clubs" },
+  alternates: {
+    canonical: "https://nightflow.kr/zh/kpop-clubs",
+    languages: {
+        "en-US": "https://nightflow.kr/en/kpop-clubs",
+        "zh-CN": "https://nightflow.kr/zh/kpop-clubs",
+        "zh-TW": "https://nightflow.kr/zh/kpop-clubs",
+        "ja-JP": "https://nightflow.kr/ja/kpop-clubs",
+        "x-default": "https://nightflow.kr/en/kpop-clubs",
+    },
+  },
   openGraph: {
     title: "首尔 K-POP 夜店 — 中国游客指南",
     description: "首尔最佳 K-POP 夜店。真实价格，中文友好。K-POP 粉丝真正去的地方。",

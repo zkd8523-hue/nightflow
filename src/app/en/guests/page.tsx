@@ -32,6 +32,13 @@ export const metadata: Metadata = {
   ],
   alternates: {
     canonical: "https://nightflow.kr/en/guests",
+    languages: {
+        "en-US": "https://nightflow.kr/en/guests",
+        "zh-CN": "https://nightflow.kr/zh/guests",
+        "zh-TW": "https://nightflow.kr/zh/guests",
+        "ja-JP": "https://nightflow.kr/ja/guests",
+        "x-default": "https://nightflow.kr/en/guests",
+    },
   },
   openGraph: {
     title: "Seoul Club Guest List — Free Entry to Korean Clubs",
@@ -40,7 +47,7 @@ export const metadata: Metadata = {
     url: "https://nightflow.kr/en/guests",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "https://nightflow.kr/api/og?title=Seoul+Club+Guest+List&sub=Free+Entry+to+Korean+Clubs+%E2%80%94+Weekly+Deals&lang=en", width: 1200, height: 630 }],
   },
 };
 

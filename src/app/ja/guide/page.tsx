@@ -5,7 +5,16 @@ export const metadata: Metadata = {
   title: { absolute: "韓国クラブ予約ガイド — 江南・弘大・梨泰院でVIPに" },
   description: "韓国語不要でソウルのトップクラブを予約。江南・弘大・梨泰院・狎鴎亭のベストVIPルーム。公平な価格、列とブローカーをスキップ。日本人旅行者向け韓国ナイトライフガイド。",
   keywords: ["韓国クラブ予約ガイド","韓国ナイトライフガイド","韓国VIPルーム","韓国クラブガイド","ソウルクラブ予約ガイド","ソウルVIPルーム予約","ソウルパーティー予約","ソウルクラブガイド","弘大クラブ予約","弘大VIPルーム","弘大クラブガイド","江南クラブ予約","江南VIPルーム","江南クラブガイド","梨泰院クラブ予約","梨泰院ナイトライフガイド","狎鴎亭ラウンジ予約","清潭ラウンジ"],
-  alternates: { canonical: "https://nightflow.kr/ja/guide" },
+  alternates: {
+    canonical: "https://nightflow.kr/ja/guide",
+    languages: {
+        "en-US": "https://nightflow.kr/en/guide",
+        "zh-CN": "https://nightflow.kr/zh/guide",
+        "zh-TW": "https://nightflow.kr/zh/guide",
+        "ja-JP": "https://nightflow.kr/ja/guide",
+        "x-default": "https://nightflow.kr/en/guide",
+    },
+  },
   openGraph: { title: "韓国クラブ予約ガイド — 江南・弘大・梨泰院でVIPに", description: "韓国語不要でソウルのトップクラブを予約。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/guide", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
 };
 

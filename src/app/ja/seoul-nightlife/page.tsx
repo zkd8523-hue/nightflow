@@ -5,7 +5,16 @@ export const metadata: Metadata = {
   title: { absolute: "ソウルナイトライフガイド 2026 — どこへ行く、何を予約 (日本人旅行者版)" },
   description: "日本人旅行者向け完全ソウルナイトライフガイド。江南EDM、弘大ヒップホップ、梨泰院国際的、狎鴎亭VIPラウンジ。本物の価格、ブローカーなし、韓国語不要。",
   keywords: ["ソウルナイトライフ","ソウルナイトライフガイド","韓国ナイトライフ","韓国ナイトライフガイド","ソウル夜遊び","ソウルパーティー","ソウル夜","ソウル夜遊びガイド","ソウル夜遊びおすすめ","江南ナイトライフ","弘大ナイトライフ","梨泰院ナイトライフ","狎鴎亭ナイトライフ","ソウルバーとクラブ","韓国旅行ナイトライフ"],
-  alternates: { canonical: "https://nightflow.kr/ja/seoul-nightlife" },
+  alternates: {
+    canonical: "https://nightflow.kr/ja/seoul-nightlife",
+    languages: {
+        "en-US": "https://nightflow.kr/en/seoul-nightlife",
+        "zh-CN": "https://nightflow.kr/zh/seoul-nightlife",
+        "zh-TW": "https://nightflow.kr/zh/seoul-nightlife",
+        "ja-JP": "https://nightflow.kr/ja/seoul-nightlife",
+        "x-default": "https://nightflow.kr/en/seoul-nightlife",
+    },
+  },
   openGraph: { title: "ソウルナイトライフガイド 2026 — どこへ行く、何を予約", description: "日本人旅行者向け正直なガイド。江南、弘大、梨泰院、狎鴎亭。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/seoul-nightlife", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
 };
 

@@ -5,7 +5,16 @@ export const metadata: Metadata = {
   title: { absolute: "ソウルVIPルーム予約 — 韓国クラブボトルサービスガイド (2026)" },
   description: "ソウルのトップクラブVIPルーム予約 — 江南・弘大・梨泰院・狎鴎亭。本物の価格、ボトルサービス、ブローカーなし、韓国語不要。韓国人と同じ予約方法。",
   keywords: ["ソウルVIPルーム","ソウルVIP予約","ソウルボトルサービス","ソウルVIPクラブ","韓国VIPルーム","韓国VIP予約","韓国ボトルサービス","韓国VIPクラブ","江南VIPルーム","江南VIP予約","江南ボトルサービス","江南VIPクラブ","狎鴎亭VIP","狎鴎亭ラウンジ","清潭VIP","清潭ラウンジ","韓国クラブテーブル","ソウルクラブテーブル","ソウルナイトクラブVIP"],
-  alternates: { canonical: "https://nightflow.kr/ja/vip-tables" },
+  alternates: {
+    canonical: "https://nightflow.kr/ja/vip-tables",
+    languages: {
+        "en-US": "https://nightflow.kr/en/vip-tables",
+        "zh-CN": "https://nightflow.kr/zh/vip-tables",
+        "zh-TW": "https://nightflow.kr/zh/vip-tables",
+        "ja-JP": "https://nightflow.kr/ja/vip-tables",
+        "x-default": "https://nightflow.kr/en/vip-tables",
+    },
+  },
   openGraph: { title: "ソウルVIPルーム予約 — 韓国クラブボトルサービスガイド", description: "韓国語不要でソウルのトップクラブを予約。本物の価格、ブローカーなし。", url: "https://nightflow.kr/ja/vip-tables", locale: "ja_JP", type: "website", images: [{ url: "/og-image.png", width: 1200, height: 630 }] },
 };
 

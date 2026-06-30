@@ -28,7 +28,16 @@ export const metadata: Metadata = {
     "狎鸥亭包间预订",
     "清潭包间",
   ],
-  alternates: { canonical: "https://nightflow.kr/zh/guide" },
+  alternates: {
+    canonical: "https://nightflow.kr/zh/guide",
+    languages: {
+        "en-US": "https://nightflow.kr/en/guide",
+        "zh-CN": "https://nightflow.kr/zh/guide",
+        "zh-TW": "https://nightflow.kr/zh/guide",
+        "ja-JP": "https://nightflow.kr/ja/guide",
+        "x-default": "https://nightflow.kr/en/guide",
+    },
+  },
   openGraph: {
     title: "韩国夜店预订指南 — 在江南、弘大、梨泰院做 VIP",
     description: "无需韩语预订首尔顶级夜店。真实价格，无中介。",
