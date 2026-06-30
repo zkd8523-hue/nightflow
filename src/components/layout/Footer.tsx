@@ -31,6 +31,9 @@ export function Footer() {
             <Link href="/privacy" className="hover:text-white transition-colors">
               개인정보처리방침
             </Link>
+            <Link href="/refund-policy" className="hover:text-white transition-colors">
+              환불정책
+            </Link>
             <Link href="/contact" className="hover:text-white transition-colors">
               고객문의
             </Link>

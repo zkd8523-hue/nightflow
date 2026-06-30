@@ -1401,6 +1401,12 @@ export function PuzzleDetailClient({
           {/* MD/Admin 제안하기 버튼 */}
           {(isMd || isAdmin) && isOpen && !myOffer && (
             <div className="space-y-2">
+              {/* 외국인 깃발 안내 (Migration 343 Escrow 결제 트리거) */}
+              {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR" && (
+                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[12px] text-amber-300 leading-relaxed">
+                  💳 <strong>외국인 깃발</strong> — 매칭 시 사용자가 즉시 선결제, 방문 확정 후 정산 (NightFlow 9% 차감 후 송금)
+                </div>
+              )}
               <Button
                 onClick={() => setShowOffer(true)}
                 className="w-full h-13 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl"

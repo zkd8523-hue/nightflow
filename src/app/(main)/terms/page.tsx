@@ -133,6 +133,20 @@ export default function TermsPage() {
                             <p className="pl-4">5. 이미 사용한(차감된) 크레딧은 환불되지 않습니다. 다만, 회사의 시스템 오류로 부당하게 차감된 경우에는 복구 또는 환불됩니다.</p>
                             <p className="pl-4">6. 회원 탈퇴 시 잔여 크레딧은 소멸되며, 환불을 원하는 경우 탈퇴 전 제4호에 따라 환불을 신청해야 합니다.</p>
 
+                            <p className="text-white font-bold mt-4">④ 외국인 사용자 깃발 매칭 선결제 (Escrow)</p>
+                            <p className="pl-4">1. 외국인 사용자(영어/중국어/일본어 트랙으로 가입한 사용자)의 깃발 매칭 거래는 회사가 지정한 결제대행사(PG, 엑심베이 등)를 통해 선결제 방식(Escrow)으로 진행됩니다.</p>
+                            <p className="pl-4">2. 결제 금액의 9%는 회사의 플랫폼 운영비로 차감되며, 나머지 91%에서 PG 결제 수수료를 차감한 후 매칭된 클럽(MD) 측에 정산됩니다.</p>
+                            <p className="pl-4">3. 결제 수단은 해외 신용카드(VISA, MasterCard, JCB, AMEX, UnionPay), WeChat Pay, Alipay+, PayPal 등을 포함합니다.</p>
+                            <p className="pl-4">4. 결제 통화는 KRW(한국 원)를 기본으로 하며, USD, JPY, TWD, HKD 등 외화 결제도 지원합니다.</p>
+                            <p className="pl-4">5. 환불 정책은 다음과 같습니다:</p>
+                            <p className="pl-8">- 방문 예약 시간 48시간 이전 취소: 100% 환불 (PG 수수료는 회사가 부담)</p>
+                            <p className="pl-8">- 24-48시간 전 취소: 50% 환불</p>
+                            <p className="pl-8">- 24시간 이내 취소 또는 노쇼(미방문): 0% (환불 불가)</p>
+                            <p className="pl-4">6. 회사 또는 클럽(MD)의 책임 있는 사유로 매칭이 무효가 된 경우 100% 환불됩니다.</p>
+                            <p className="pl-4">7. 환불 처리 기간은 카드사 정책에 따라 영업일 기준 3~7일이며, WeChat Pay/Alipay+ 등 국제 결제는 추가 7~14일이 소요될 수 있습니다.</p>
+                            <p className="pl-4">8. 자세한 환불 정책은 <Link href="/refund-policy" className="text-amber-400 underline">환불·취소 정책 페이지</Link>를 참조하시기 바랍니다.</p>
+                            <p className="pl-4">9. 미성년자(19세 미만)는 외국인 깃발 매칭 및 결제를 이용할 수 없으며, 회원가입 시 본인인증을 통해 확인됩니다.</p>
+
                         </div>
                     </section>
 

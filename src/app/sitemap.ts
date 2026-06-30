@@ -50,6 +50,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${BASE_URL}/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     { url: `${BASE_URL}/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/refund-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE_URL}/en/refund-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE_URL}/zh/refund-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE_URL}/ja/refund-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    // 외국어 트랙 약관·개인정보 stub (PG 심사 + 외국인 사용자 친화)
+    { url: `${BASE_URL}/en/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/en/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/zh/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/zh/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/ja/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/ja/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
     // /en — 외국인 트랙 (구글 SEO 타겟). 한국어 메인이랑 hreflang으로 분리.
     { url: `${BASE_URL}/en`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE_URL}/en/guide`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
