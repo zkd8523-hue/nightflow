@@ -10,7 +10,7 @@
 //   RESEND_FROM      — 발신 주소 (기본 "NightFlow <team@nightflow.kr>")
 //   RESEND_REPLY_TO  — 답장 받을 주소 (기본 문의용 이메일)
 
-const DEFAULT_REPLY_TO = "zkd8523@gmail.com";
+const DEFAULT_REPLY_TO = "team@nightflow.kr";
 
 export async function resendSend(opts: {
   to: string;

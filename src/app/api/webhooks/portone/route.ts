@@ -1,22 +1,63 @@
 import { NextResponse } from "next/server";
+import { createHmac, timingSafeEqual } from "crypto";
 import { verifyAndCreditPayment } from "@/lib/payments/verify";
+
+export const runtime = "nodejs";
 
 /**
  * 포트원 V2 웹훅 수신.
  * 결제 완료 시 포트원이 서버로 직접 통보 → 가장 신뢰할 수 있는 적립 경로.
  * (클라이언트가 창을 닫아도 적립이 누락되지 않게 하는 안전망)
  *
- * 보안: @portone/server-sdk 의 Webhook.verify 로 서명 검증을 하는 것이 정석이나,
- * 본 핸들러는 서명 검증 후에도 verifyAndCreditPayment 가 포트원 API 로 금액을
- * 재대조하므로, 위조 webhook 으로는 적립이 불가능하다(2차 방어).
- *
- * TODO(실연동 시): PORTONE_WEBHOOK_SECRET 로 서명 검증 추가.
+ * 보안 (2중 방어):
+ *  1) PORTONE_WEBHOOK_SECRET 으로 서명 검증 (Standard Webhooks 규격).
+ *  2) verifyAndCreditPayment 가 포트원 API 로 금액을 재대조 → 위조 webhook 으로는 적립 불가.
+ * 시크릿 미설정 시에는 1) 을 스킵하되 2) 가 안전망으로 동작한다.
  */
+
+// 포트원 V2 웹훅은 Standard Webhooks 규격(=Svix 호환): webhook-id/-timestamp/-signature 헤더,
+// 시크릿은 whsec_ 접두사 base64. (Svix 호환 별칭 헤더도 함께 허용)
+function verifyWebhookSignature(secret: string, headers: Headers, body: string): boolean {
+  const id = headers.get("webhook-id") ?? headers.get("svix-id");
+  const timestamp = headers.get("webhook-timestamp") ?? headers.get("svix-timestamp");
+  const sigHeader = headers.get("webhook-signature") ?? headers.get("svix-signature");
+  if (!id || !timestamp || !sigHeader) return false;
+
+  const keyB64 = secret.startsWith("whsec_") ? secret.slice(6) : secret;
+  const keyBytes = Buffer.from(keyB64, "base64");
+  const signedContent = `${id}.${timestamp}.${body}`;
+  const expected = createHmac("sha256", keyBytes).update(signedContent).digest("base64");
+
+  // "v1,<sig> v1,<sig2>" 형태 (공백 구분), timingSafeEqual 로 타이밍 공격 방어
+  return sigHeader.split(" ").some((part) => {
+    const sig = part.includes(",") ? part.split(",")[1] : part;
+    try {
+      const a = Buffer.from(sig);
+      const b = Buffer.from(expected);
+      return a.length === b.length && timingSafeEqual(a, b);
+    } catch {
+      return false;
+    }
+  });
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const raw = await req.text();
+
+    const secret = process.env.PORTONE_WEBHOOK_SECRET;
+    if (secret && !verifyWebhookSignature(secret, req.headers, raw)) {
+      return NextResponse.json({ error: "invalid signature" }, { status: 401 });
+    }
 
     // 포트원 V2 웹훅 페이로드: { type, data: { paymentId, ... } }
+    let body: { data?: { paymentId?: string }; payment_id?: string; paymentId?: string };
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      return NextResponse.json({ ok: false }, { status: 200 });
+    }
+
     const paymentId: string | undefined =
       body?.data?.paymentId ?? body?.payment_id ?? body?.paymentId;
 

@@ -23,15 +23,13 @@ export default async function MDVipPage() {
     // VIP 목록 조회
     const { data: vipList } = await supabase
         .from("md_vip_users")
-        .select("*, user:users(id, name)")
+        .select("*, user:users(id, display_name)")
         .eq("md_id", authUser.id)
         .order("created_at", { ascending: false });
 
-    // 신뢰 점수 뷰 조회 (내 경매에 참여한 유저들)
+    // 신뢰 점수 조회 (MD/admin 전용 RPC — 뷰 직접 접근은 Migration 340에서 차단됨)
     const { data: trustScores } = await supabase
-        .from("user_trust_scores")
-        .select("*")
-        .limit(50);
+        .rpc("get_trust_scores", { p_limit: 50 });
 
     return (
         <div className="max-w-lg mx-auto px-4 py-8">

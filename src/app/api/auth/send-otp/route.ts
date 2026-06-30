@@ -13,6 +13,11 @@ import {
   sendOtpSms,
 } from "@/lib/auth/otp";
 
+// 로그에 전화번호 원문이 남지 않도록 가운데를 마스킹 (010****1234)
+function maskPhone(p: string): string {
+  return p.length >= 7 ? `${p.slice(0, 3)}****${p.slice(-4)}` : "***";
+}
+
 function getClientIp(req: NextRequest): string {
   const fwd = req.headers.get("x-forwarded-for");
   if (fwd) return fwd.split(",")[0].trim();
@@ -93,7 +98,7 @@ export async function POST(req: NextRequest) {
       console.error("[send-otp magic] insert failed:", insertError.message);
       return NextResponse.json({ error: "server_error" }, { status: 500 });
     }
-    console.log(`[send-otp MAGIC] phone=${phone} → ${magicCode} (SMS 발송 안 함)`);
+    console.log(`[send-otp MAGIC] phone=${maskPhone(phone)} → ${magicCode} (SMS 발송 안 함)`);
     return NextResponse.json({ ok: true, expires_at: expiresAt.toISOString(), magic: true });
   }
 
@@ -165,7 +170,7 @@ export async function POST(req: NextRequest) {
 
   // 5. SMS 발송 (테스트 환경은 SMS 발송 스킵, 코드 000000으로 인증 가능)
   if (isTestEnv()) {
-    console.log(`[send-otp TEST] phone=${phone}, code=${code} (실제 발송 안 함, 000000 입력 시 통과)`);
+    console.log(`[send-otp TEST] phone=${maskPhone(phone)}, code=${code} (실제 발송 안 함, 000000 입력 시 통과)`);
     return NextResponse.json({ ok: true, expires_at: expiresAt.toISOString(), dev_mode: true });
   }
 

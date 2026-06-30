@@ -11,6 +11,12 @@ const TEST_ACCOUNTS: Record<string, { phone: string; role: TestRole; displayName
 };
 
 export async function POST() {
+  // 프로덕션 차단: 이 엔드포인트는 호출자를 admin 으로 승격시킬 수 있으므로
+  // 운영 환경에서는 절대 노출하지 않는다 (dev/preview/QA 전용).
+  if (process.env.VERCEL_ENV === "production") {
+    return NextResponse.json({ error: "not_found" }, { status: 404 });
+  }
+
   const serverSupabase = await createServerSupabase();
   const { data: { user }, error: authError } = await serverSupabase.auth.getUser();
 

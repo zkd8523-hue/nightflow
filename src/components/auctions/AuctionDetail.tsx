@@ -247,14 +247,12 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
   const handleBidderClick = async (bidderId: string) => {
     if (!isMdOwner) return;
 
+    // MD/admin 전용 RPC (뷰 직접 접근은 Migration 340에서 차단됨)
     const { data } = await supabase
-      .from("user_trust_scores")
-      .select("*")
-      .eq("id", bidderId)
-      .single();
+      .rpc("get_trust_score", { p_user_id: bidderId });
 
-    if (data) {
-      setSelectedBidderScore(data);
+    if (data && data[0]) {
+      setSelectedBidderScore(data[0]);
       setProfileModalOpen(true);
     }
   };
