@@ -21,6 +21,7 @@ import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, 
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { toEnglishInclude } from "@/lib/utils/liquorEn";
+import { LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
 import { getLang, makeT, areaLabel } from "@/lib/i18n";
 import { OfferCommentText } from "./OfferCommentText";
 import { useTranslatedText } from "@/hooks/useTranslatedComment";
@@ -1075,10 +1076,10 @@ export function PuzzleDetailClient({
                   </summary>
                   <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep">
                     {t(
-                      "클럽끼리 서로의 오퍼를 볼 수 없어요. 그래서 눈치 보지 않고 각자 최고 조건을 던집니다 — 1원 깎기 경쟁이 아니라 진짜 베스트가 모입니다. 그중 마음에 드는 걸 고르면 끝.",
-                      "Clubs can't see each other's offers, so they bid blind — each gives their real best instead of barely undercutting a rival. You get genuine best deals, then pick the one you like.",
-                      "クラブはお互いのオファーを見られません。だから様子見せず、各自が最高の条件を出します — わずかに下回るだけの競争ではなく、本物のベストが集まります。気に入ったものを選ぶだけ。",
-                      "夜店看不到彼此的报价，所以各自盲投——给出真正的最优条件，而不是只比对手低一点。你能拿到真正的好价，然后挑你喜欢的就行。",
+                      "클럽끼리 서로의 오퍼를 볼 수 없어요. 그래서 눈치 보지 않고 각자 최고 조건을 던집니다.",
+                      "Clubs can't see each other's offers, so each gives their real best without second-guessing.",
+                      "クラブはお互いのオファーを見られません。だから様子見せず、各自が最高の条件を出します。",
+                      "夜店看不到彼此的报价，所以各自盲投，给出真正的最优条件。",
                     )}
                   </p>
                 </details>
@@ -1178,44 +1179,68 @@ export function PuzzleDetailClient({
               </div>
             )}
 
-            {/* MD/Admin 본인 오퍼 상태 */}
+            {/* MD/Admin 본인 오퍼 상태 — SecretOfferCard와 동일한 카드 디자인(중립 테마) */}
             {(isMd || isAdmin) && myOffer && (
-              <div className={`rounded-2xl border p-4 space-y-2 ${
+              <div className={`rounded-2xl border p-4 space-y-3 ${
                 myOffer.status === "accepted"
                   ? "bg-amber-500/10 border-amber-500/30"
-                  : myOffer.status === "pending"
-                  ? "bg-[#1C1C1E] border-green-500/30"
                   : "bg-[#1C1C1E] border-neutral-800"
               }`}>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <p className="text-[13px] font-bold text-white">내 제안</p>
+                {/* 헤더: 내 제안 라벨 + 클럽·지역 / 상태 */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-bold text-neutral-500 mb-0.5">내 제안</p>
+                    <p className="text-[15px] font-black text-white truncate">
+                      {(myOffer.club as { name?: string } | null)?.name || "클럽"}
+                    </p>
                   </div>
-                  <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold ${
-                    myOffer.status === "accepted"
-                      ? "bg-amber-500/20 text-amber-400"
-                      : myOffer.status === "pending"
-                      ? "bg-green-500/20 text-green-400"
-                      : "bg-neutral-700 text-neutral-500"
-                  }`}>
-                    {OFFER_STATUS_LABEL[myOffer.status]}
-                  </span>
+                  {myOffer.status === "accepted" && (
+                    <span className="shrink-0 text-[11px] px-2.5 py-1 rounded-full font-bold bg-amber-500/20 text-amber-400">
+                      {OFFER_STATUS_LABEL[myOffer.status]}
+                    </span>
+                  )}
                 </div>
-                <p className="text-[14px] font-black text-white">
-                  {myOffer.proposed_price.toLocaleString()}원
-                </p>
-                {myOffer.includes?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 w-full">
-                    {myOffer.includes.map((item: string) => (
-                      <span key={item} className="text-[11px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 break-words max-w-full">{item}</span>
-                    ))}
-                  </div>
-                )}
-                {myOffer.comment && (
-                  <p className="text-[12px] text-neutral-400 italic">"{myOffer.comment}"</p>
-                )}
-                {/* Migration 332: 방장과 1:1 대화 (방장이 먼저 말 걸면 답장 가능, 첫 답장 15크레딧) */}
-                {(myOffer.status === "pending" || myOffer.status === "accepted") && (
+
+                {/* 가격 + includes + 코멘트 */}
+                <div className="space-y-2 pt-2 border-t border-neutral-800/60">
+                  <p className="text-[16px] font-black text-green-400">
+                    {myOffer.proposed_price.toLocaleString()}원
+                  </p>
+                  {myOffer.includes?.length > 0 && (() => {
+                    const liquors = myOffer.includes.filter((i: string) => LIQUOR_KEYWORDS.some((kw) => i.includes(kw)));
+                    const extras = myOffer.includes.filter((i: string) => !LIQUOR_KEYWORDS.some((kw) => i.includes(kw)));
+                    return (
+                      <div className="space-y-1.5">
+                        {liquors.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {liquors.map((inc: string) => (
+                              <span key={inc} className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                                🍾 {isForeigner ? toEnglishInclude(inc) : inc}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {extras.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {extras.map((inc: string) => (
+                              <span key={inc} className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800">
+                                {isForeigner ? toEnglishInclude(inc) : inc}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {myOffer.comment && (
+                    <OfferCommentText comment={myOffer.comment} lang={lang} />
+                  )}
+                </div>
+
+                {/* Migration 332: 방장과 1:1 대화 — 방장이 먼저 말 걸어야 채팅 생성됨(콜드블록).
+                    방장이 대화 시작(leader_chat_started_at) 했거나 매치(accepted)된 경우에만 바로가기 노출 */}
+                {(myOffer.leader_chat_started_at || myOffer.status === "accepted") &&
+                  (myOffer.status === "pending" || myOffer.status === "accepted") && (
                   <FeatureGate flag="offer_chat">
                     <Link
                       href={`/messages/${myOffer.id}`}
@@ -1393,13 +1418,6 @@ export function PuzzleDetailClient({
             </div>
           )}
 
-          {/* MD/Admin 이미 제안한 경우 */}
-          {(isMd || isAdmin) && isOpen && myOffer && myOffer.status === "pending" && (
-            <div className="bg-green-500/10 border border-green-500/20 rounded-2xl p-4 text-center">
-              <p className="text-[13px] text-green-400 font-bold">제안서를 보냈습니다</p>
-              <p className="text-[12px] text-neutral-500 mt-1">방장의 수락을 기다리고 있습니다</p>
-            </div>
-          )}
 
           {/* 로그인 유도: 파티원 모집 ON 일 때만 */}
           {!currentUserId && isOpen && isRecruitingParty && (
