@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { ArrowLeft, Instagram, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { ArrowLeft, Instagram, Sparkles, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "나플(나이트플로우) 소개 - 강남·홍대 클럽 테이블 예약",
@@ -55,8 +55,28 @@ export default function AboutPage() {
                     </p>
                 </div>
 
+                {/* 홈으로 CTA */}
+                <div className="pt-8 space-y-3">
+                    <Link
+                        href="/"
+                        className="group flex flex-col items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 px-5 py-5 hover:border-amber-500/50 hover:bg-neutral-900 transition-colors"
+                    >
+                        <div className="text-center">
+                            <p className="text-[13px] text-neutral-500 leading-tight">
+                                전국 클럽지도 · 예약 · 조각 · 게스트
+                            </p>
+                            <p className="text-[15px] font-black text-white leading-tight mt-1">
+                                한눈에 보러가기
+                            </p>
+                        </div>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 text-black group-hover:scale-105 transition-transform">
+                            <ArrowRight className="w-5 h-5" />
+                        </div>
+                    </Link>
+                </div>
+
                 {/* 인스타 버튼 */}
-                <div className="flex justify-center pt-6 pb-2">
+                <div className="flex justify-center pt-4 pb-2">
                     <a
                         href="https://instagram.com/nightflow.kr"
                         target="_blank"
