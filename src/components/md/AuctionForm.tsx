@@ -34,7 +34,7 @@ import { uploadImage } from "@/lib/utils/upload";
 import { ShareSuccessSheet } from "./ShareSuccessSheet";
 import { TemplateSelector } from "./TemplateSelector";
 
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent } from "@/lib/analytics/events";
 import { trackShareEvent } from "@/lib/analytics/events";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
 import { isInstantEnabled } from "@/lib/features";

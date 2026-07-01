@@ -78,13 +78,21 @@ const MY_STATUS_LABEL: Record<string, { label: string; ja: string; zh: string; c
   accepted: { label: "Matched", ja: "成立", zh: "已成立", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
 };
 
-// ?lang= (ja/zh) 읽기 — mount 후 client에서. (useSearchParams Suspense 회피)
-// 기본 en. 랜딩 하드코딩 영어를 makeT 사전으로 ja/zh 변환.
+// 언어 판별 — mount 후 client에서. (useSearchParams Suspense 회피)
+// 경로 기반 SEO 라우트(/ja, /zh)는 쿼리 없이도 언어 확정 → 그 외(/en)만 ?lang= 로 판별.
+// (EnHomeClient가 /ja·/zh page.tsx에서 lang prop 없이 재사용되기 때문에 pathname 우선)
 function useTr() {
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => {
+    const path = window.location.pathname;
     const l = new URLSearchParams(window.location.search).get("lang");
-    setLang(l === "ja" ? "ja" : l === "zh" ? "zh" : "en");
+    setLang(
+      path.startsWith("/zh") ? "zh"
+        : path.startsWith("/ja") ? "ja"
+        : l === "ja" ? "ja"
+        : l === "zh" ? "zh"
+        : "en"
+    );
   }, []);
   const t = makeT(lang);
   // tr: 영어 키로 사전 조회 / t: 명시적 (ko,en,ja,zh) — 동음이의어(예: 상태 "Open") 처리용

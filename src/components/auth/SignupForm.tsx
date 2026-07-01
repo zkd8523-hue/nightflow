@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { logger } from "@/lib/utils/logger";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent } from "@/lib/analytics/events";
 import { validateDisplayName, isDisplayNameTaken } from "@/lib/utils/displayName";
 import { normalizeProfileImage } from "@/lib/utils/image";
 import { ChevronRight, Check, ArrowLeft, Camera } from "lucide-react";

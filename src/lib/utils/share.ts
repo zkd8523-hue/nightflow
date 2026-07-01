@@ -2,7 +2,7 @@ import { toast } from "sonner";
 import type { Auction } from "@/types/database";
 import { formatEventDate, formatEntryTime } from "./format";
 import { logger } from "./logger";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent } from "@/lib/analytics/events";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
 

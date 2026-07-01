@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Phone, Instagram, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { formatPrice, formatEventDate, formatEntryTime } from "@/lib/utils/format";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent } from "@/lib/analytics/events";
 
 interface ContactButtonProps {
   auctionId: string;

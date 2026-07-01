@@ -18,7 +18,7 @@ import { isAuctionActive } from "@/lib/utils/auction";
 import { getVisibleContactMethods } from "@/lib/utils/contact-methods";
 import { ShieldCheck, MessageCircle, Instagram, Phone } from "lucide-react";
 import { getErrorMessage, logError } from "@/lib/utils/error";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent } from "@/lib/analytics/events";
 import { ContactButton } from "@/components/auctions/ContactButton";
 
 interface MDContactInfo {

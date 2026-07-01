@@ -9,7 +9,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PromptDialog } from "@/components/ui/prompt-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { logger } from "@/lib/utils/logger";
-import { trackEvent } from "@/lib/analytics";
+import { trackEvent } from "@/lib/analytics/events";
 
 interface ConfirmVisitButtonProps {
     auctionId: string;
