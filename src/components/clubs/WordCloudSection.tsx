@@ -24,7 +24,9 @@ import {
   normalizeWord,
   shuffle,
   validateWords,
+  type WordCloudEntry,
 } from "@/lib/clubs/wordCloud";
+import { WordVotersSheet } from "./WordVotersSheet";
 
 interface Props {
   clubId: string;
@@ -78,6 +80,29 @@ export function WordCloudSection({ clubId }: Props) {
   }, [fetchData, userLoading]);
 
   const entries = useMemo(() => aggregateWords(rows), [rows]);
+
+  // ── 단어별 작성자 목록 (normalized → author_id[]) ──
+  const authorsByWord = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const row of rows) {
+      for (const raw of row.words ?? []) {
+        const norm = normalizeWord(raw);
+        if (!norm) continue;
+        const arr = m.get(norm) ?? [];
+        if (!arr.includes(row.author_id)) arr.push(row.author_id);
+        m.set(norm, arr);
+      }
+    }
+    return m;
+  }, [rows]);
+
+  // ── 단어 탭 → 작성자 시트 ──
+  const [selectedEntry, setSelectedEntry] = useState<WordCloudEntry | null>(
+    null
+  );
+  const selectedAuthorIds = selectedEntry
+    ? (authorsByWord.get(selectedEntry.normalized) ?? [])
+    : [];
 
   // ── 셔플 (마운트 후 + 10초마다, 하이드레이션 안전) ──
   const [mounted, setMounted] = useState(false);
@@ -319,18 +344,20 @@ export function WordCloudSection({ clubId }: Props) {
             const glow = `0 0 ${Math.round(glowStrength)}px rgba(236,72,153,${glowAlpha.toFixed(2)})`;
 
             return (
-              <span
+              <button
                 key={e.normalized}
+                type="button"
+                onClick={() => setSelectedEntry(e)}
                 ref={(el) => {
                   if (el && !isJust) wordRefs.current.set(e.normalized, el);
                   else wordRefs.current.delete(e.normalized);
                 }}
-                className={`${color} ${weight} leading-none inline-block will-change-transform ${isJust ? "wc-word-pop" : ""}`}
+                className={`${color} ${weight} leading-none inline-block will-change-transform cursor-pointer transition-transform hover:scale-110 active:scale-95 ${isJust ? "wc-word-pop" : ""}`}
                 style={{ fontSize: fontSize(c), textShadow: glow }}
-                title={`${c}명`}
+                title={`${c}명 · 눌러서 누가 남겼는지 보기`}
               >
                 {e.label}
-              </span>
+              </button>
             );
           })
         )}
@@ -384,6 +411,17 @@ export function WordCloudSection({ clubId }: Props) {
           </p>
         )}
       </div>
+
+      {/* 단어 탭 → 남긴 사람들 프로필 */}
+      <WordVotersSheet
+        open={selectedEntry !== null}
+        onOpenChange={(o) => {
+          if (!o) setSelectedEntry(null);
+        }}
+        label={selectedEntry?.label ?? null}
+        authorIds={selectedAuthorIds}
+        myId={user?.id ?? null}
+      />
     </section>
   );
 }

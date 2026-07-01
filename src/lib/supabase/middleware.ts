@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // 로그인 필수 경로 (prefix 매칭)
-const PROTECTED_PREFIXES = ["/md/", "/admin/", "/bids", "/my-wins", "/profile", "/favorites", "/settings", "/my-penalties"];
+const PROTECTED_PREFIXES = ["/md/", "/admin", "/bids", "/my-wins", "/profile", "/favorites", "/settings", "/my-penalties"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -33,7 +33,21 @@ export async function updateSession(request: NextRequest) {
   );
 
   // 세션 갱신 (IMPORTANT: getUser()로 서버 검증)
-  const { data: { user: rawUser }, error: getUserError } = await supabase.auth.getUser();
+  // undici fetch가 간헐적으로 hang하면 미들웨어 전체가 멈춰 모든 페이지가 무한 로딩됨.
+  // 3초 타임아웃 → 실패로 간주(로그인 필요 처리)해 hang을 끊는다. signOut 타임아웃과 동일 패턴.
+  const { data: { user: rawUser }, error: getUserError } = await Promise.race([
+    supabase.auth.getUser(),
+    new Promise<Awaited<ReturnType<typeof supabase.auth.getUser>>>((resolve) =>
+      setTimeout(
+        () =>
+          resolve({
+            data: { user: null },
+            error: new Error("getUser timeout"),
+          } as Awaited<ReturnType<typeof supabase.auth.getUser>>),
+        3000
+      )
+    ),
+  ]);
 
   // scope: 'local' → 네트워크 호출 없이 setAll 콜백만 실행되어 만료 쿠키 정리.
   // 기본값('global')은 Supabase /logout POST가 hang하면 미들웨어 전체가 멈춤.
@@ -89,7 +103,7 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(new URL("/recover-account", request.url));
     }
 
-    if (pathname.startsWith("/admin/") && profile?.role !== "admin") {
+    if ((pathname === "/admin" || pathname.startsWith("/admin/")) && profile?.role !== "admin") {
       console.warn(`[Middleware] Admin 접근 거부 - userId: ${user.id}, role: ${profile?.role}, path: ${pathname}`);
       return NextResponse.redirect(new URL("/", request.url));
     }
