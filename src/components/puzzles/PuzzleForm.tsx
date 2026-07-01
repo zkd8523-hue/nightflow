@@ -151,7 +151,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // 지역은 draft 복원 제외 — 매 진입 시 미선택으로 리셋해 사용자가 의식적으로 지역을 고르도록 유도.
   // 단, ?area= 파라미터(외국인 /en 지역 버튼)로 들어오면 프리셋.
   const presetArea = searchParams.get("area");
-  const initialArea = puzzle?.area ?? (presetArea && ([...MAIN_AREAS, "서울 어디든"] as string[]).includes(presetArea) ? presetArea : "");
+  // 이태원은 준비중(선택 불가) → preset으로도 자동선택 안 되게 제외
+  const initialArea = puzzle?.area ?? (presetArea && ([...MAIN_AREAS.filter((a) => a !== "이태원"), "서울 어디든"] as string[]).includes(presetArea) ? presetArea : "");
   // budgetAmount 의미: 퍼즐(모집 ON)=인당가 / 깃발(모집 OFF)=총액
   // edit 모드: puzzle에서 모드에 맞춰 변환 / 신규: draft 또는 0
   const initialBudget = puzzle
@@ -812,42 +813,55 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         </div>
         <div>
           <div className="flex flex-wrap items-start gap-2">
-            {/* 외국인은 강남/홍대만 (이태원=MD 없음 제외) */}
-            {(isForeigner ? MAIN_AREAS.filter((a) => a !== "이태원") : MAIN_AREAS).map((a) => (
-              <button
-                key={a}
-                type="button"
-                onClick={() => handleAreaChange(a)}
-                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
-                  area === a
-                    ? "bg-white text-black"
-                    : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
-                }`}
-              >
-                {aL(a)}
-              </button>
-            ))}
-            {/* 서울 어디든: 외국인 제외 (강남/홍대만). 안내 문구는 흐름에서 빼서(absolute) 버튼 위치 고정 */}
-            {!isForeigner && (
-              <div className="relative">
+            {/* 강남·홍대 = 선택 가능 / 이태원 = 준비중(MD 없음 → 오퍼 못 받을 가능성 높음) — 한중일 동일 */}
+            {MAIN_AREAS.map((a) => {
+              const comingSoon = a === "이태원";
+              return (
                 <button
+                  key={a}
                   type="button"
-                  onClick={() => handleAreaChange("서울 어디든")}
+                  onClick={() =>
+                    comingSoon
+                      ? toast(t("이태원은 준비중이에요", "Itaewon is coming soon"))
+                      : handleAreaChange(a)
+                  }
+                  aria-disabled={comingSoon}
                   className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
-                    area === "서울 어디든"
+                    area === a
                       ? "bg-white text-black border-transparent"
+                      : comingSoon
+                      ? "bg-neutral-900 text-neutral-600 border-neutral-800 opacity-60"
                       : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:bg-neutral-800 hover:text-white"
                   }`}
                 >
-                  {aL("서울 어디든")}
+                  {aL(a)}
+                  {comingSoon && (
+                    <span className="ml-1.5 text-[10px] text-amber-400/80">
+                      {t("준비중", "Soon")}
+                    </span>
+                  )}
                 </button>
-                {area === "서울 어디든" && (
-                  <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 text-[11px] text-amber-400/80 leading-relaxed whitespace-nowrap">
-                    {t("* 가장 많은 옵션을 받아봐요 *", "* Most offers *")}
-                  </p>
-                )}
-              </div>
-            )}
+              );
+            })}
+            {/* 서울 어디든: 전체 노출 (가장 많은 오퍼). 안내 문구는 흐름에서 빼서(absolute) 버튼 위치 고정 */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => handleAreaChange("서울 어디든")}
+                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
+                  area === "서울 어디든"
+                    ? "bg-white text-black border-transparent"
+                    : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                }`}
+              >
+                {aL("서울 어디든")}
+              </button>
+              {area === "서울 어디든" && (
+                <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 text-[11px] text-amber-400/80 leading-relaxed whitespace-nowrap">
+                  {t("* 가장 많은 옵션을 받아봐요 *", "* Most offers *")}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       </section>

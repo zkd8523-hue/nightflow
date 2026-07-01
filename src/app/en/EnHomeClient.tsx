@@ -262,6 +262,12 @@ const REGIONS = [
     emoji: "🎧",
     tagline: "Young, wild night",
   },
+  {
+    ko: "이태원",
+    en: "Itaewon",
+    emoji: "🌏",
+    tagline: "Global, borderless night",
+  },
 ] as const;
 
 // 영어 사이트 전용 클럽명 표기 (한글 클럽명 → 영문)
@@ -334,15 +340,36 @@ function RegionSection({ clubs }: { clubs: ClubItem[] }) {
       <div className="px-4 space-y-2.5">
         <p className="text-center text-[13px] font-bold text-neutral-300">{tr("Which area do you want?")}</p>
         <div className="grid grid-cols-2 gap-3">
-          {REGIONS.map((r) => (
-            <Link
-              key={r.ko}
-              href={`/flags/new?lang=${lang}&area=${encodeURIComponent(r.ko)}`}
-              className="flex items-center justify-center py-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-amber-500/50 active:scale-[0.98] transition-all"
-            >
-              <span className="text-[16px] font-black">{areaLabel(r.ko, lang)}</span>
-            </Link>
-          ))}
+          {REGIONS.map((r) =>
+            r.ko === "이태원" ? (
+              // 이태원: MD 없음 → 준비중(선택 불가). 홈에서도 노출하되 등록 유도 안 함.
+              <div
+                key={r.ko}
+                aria-disabled
+                className="relative flex items-center justify-center py-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 opacity-50 cursor-not-allowed"
+              >
+                <span className="text-[16px] font-black">{areaLabel(r.ko, lang)}</span>
+                <span className="absolute top-1.5 right-2.5 text-[10px] font-bold text-amber-400/80">
+                  {tr("Soon")}
+                </span>
+              </div>
+            ) : (
+              <Link
+                key={r.ko}
+                href={`/flags/new?lang=${lang}&area=${encodeURIComponent(r.ko)}`}
+                className="flex items-center justify-center py-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-amber-500/50 active:scale-[0.98] transition-all"
+              >
+                <span className="text-[16px] font-black">{areaLabel(r.ko, lang)}</span>
+              </Link>
+            )
+          )}
+          {/* 서울 어디든: 가장 많은 오퍼 */}
+          <Link
+            href={`/flags/new?lang=${lang}&area=${encodeURIComponent("서울 어디든")}`}
+            className="flex items-center justify-center py-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-amber-500/50 active:scale-[0.98] transition-all"
+          >
+            <span className="text-[16px] font-black">{areaLabel("서울 어디든", lang)}</span>
+          </Link>
         </div>
         <Link
           href={`/flags/new?lang=${lang}`}

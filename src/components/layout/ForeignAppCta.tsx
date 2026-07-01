@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Apple, Smartphone } from "lucide-react";
 import type { Lang } from "@/lib/i18n";
 
-// 외국인용 앱 다운로드 CTA. 플랫폼 자동 감지:
-//   iPhone → App Store(미/중/일 스토어) / Android → Google Play(hl=언어) / 데스크탑 → 둘 다
+// 외국인용 앱 다운로드 CTA. 기종 무관 App Store + Google Play 둘 다 노출
+// (플랫폼 감지는 iPad·인앱브라우저 등에서 오탐 → 항상 둘 다 보여줘 다운로드 옵션 최대화).
 // iOS 앱은 미국·중국·일본 스토어 출시 (한국 제외 = 외국인 전용).
 const APP_STORE_URL = "https://apps.apple.com/app/id6769749996";
 const playUrl = (lang: Lang) =>
@@ -18,12 +17,6 @@ const STR: Record<"en" | "ja" | "zh", { title: string; sub: string; ios: string;
 };
 
 export function ForeignAppCta({ lang }: { lang: Lang }) {
-  const [platform, setPlatform] = useState<"ios" | "android" | "other">("other");
-  useEffect(() => {
-    const ua = navigator.userAgent || "";
-    setPlatform(/iPhone|iPad|iPod/.test(ua) ? "ios" : /Android/.test(ua) ? "android" : "other");
-  }, []);
-
   const t = STR[lang === "ko" ? "en" : (lang as "en" | "ja" | "zh")] ?? STR.en;
 
   const AppStoreBtn = (
@@ -54,9 +47,8 @@ export function ForeignAppCta({ lang }: { lang: Lang }) {
         <p className="text-[12px] text-neutral-500 mt-0.5">{t.sub}</p>
       </div>
       <div className="flex gap-2">
-        {platform === "ios" && AppStoreBtn}
-        {platform === "android" && PlayBtn}
-        {platform === "other" && (<>{AppStoreBtn}{PlayBtn}</>)}
+        {AppStoreBtn}
+        {PlayBtn}
       </div>
     </div>
   );

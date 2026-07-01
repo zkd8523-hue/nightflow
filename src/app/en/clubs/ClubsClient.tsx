@@ -43,8 +43,8 @@ export function ClubsClient({ clubs }: { clubs: Club[] }) {
     () => [...clubs].sort((a, b) => (b.google_review_count ?? 0) - (a.google_review_count ?? 0)),
     [clubs],
   );
-  // 강남/홍대 두 줄 가로 스크롤 (한국 가이드처럼). 해당 지역 클럽 없으면 섹션 생략.
-  const groups = ["강남", "홍대"]
+  // 강남/홍대/이태원 가로 스크롤 (한국 가이드처럼). 해당 지역 클럽 없으면 섹션 생략.
+  const groups = ["강남", "홍대", "이태원"]
     .map((ko) => ({ ko, items: sorted.filter((c) => c.area === ko) }))
     .filter((g) => g.items.length > 0);
   const shownCount = groups.reduce((n, g) => n + g.items.length, 0);

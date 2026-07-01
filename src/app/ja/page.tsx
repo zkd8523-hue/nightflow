@@ -181,7 +181,7 @@ export default async function JaHomePage() {
   const { data: clubsRaw } = await supabase
     .from("clubs")
     .select("id, name, area, thumbnail_url, address")
-    .in("area", ["강남", "홍대"])
+    .in("area", ["강남", "홍대", "이태원"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
     .eq("is_test", false)

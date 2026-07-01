@@ -149,12 +149,12 @@ export default async function EnHomePage() {
     .order("created_at", { ascending: false })
     .limit(30);
 
-  // 강남·홍대 클럽 (지역 섹션용 — 이태원 제외: MD 없음)
+  // 강남·홍대·이태원 클럽 (지역 섹션용). 이태원은 쇼케이스 노출용(등록은 준비중)
   // /en/clubs 와 동일한 필터: 삭제·운영자·테스트 클럽 제외 + 썸네일 있는 것만 + 이름 중복 제거
   const { data: clubsRaw } = await supabase
     .from("clubs")
     .select("id, name, area, thumbnail_url, address")
-    .in("area", ["강남", "홍대"])
+    .in("area", ["강남", "홍대", "이태원"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
     .eq("is_test", false)
