@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { data: userRow } = await supabaseAdmin.from("users").select("role").eq("id", authUser.id).single();
     if (!userRow || userRow.role !== "admin") return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
 
-    const { clubId, name, address, operating_hours, entry_fee_detail, instagram, aliases, drink_menu_url, drink_menu_urls } = await request.json() as {
+    const { clubId, name, address, operating_hours, entry_fee_detail, instagram, aliases, drink_menu_url, drink_menu_urls, floor_plan_urls } = await request.json() as {
       clubId: string;
       name?: string;
       address?: string;
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
       aliases?: string[];
       drink_menu_url?: string | null;
       drink_menu_urls?: string[];
+      floor_plan_urls?: string[];
     };
     if (!clubId) return NextResponse.json({ error: "clubId 누락" }, { status: 400 });
 
@@ -58,6 +59,12 @@ export async function POST(request: NextRequest) {
       patch.drink_menu_url = trimmed;
       patch.drink_menu_urls = trimmed ? [trimmed] : [];
       patch.drink_menu_updated_at = trimmed ? new Date().toISOString() : null;
+    }
+    if (floor_plan_urls !== undefined) {
+      const cleaned = Array.from(new Set((floor_plan_urls || []).map((u) => (u || "").trim()).filter(Boolean)));
+      patch.floor_plan_urls = cleaned;
+      // 하위 호환: 첫 번째 URL을 floor_plan_url에 미러링
+      patch.floor_plan_url = cleaned[0] ?? null;
     }
     if (aliases !== undefined) {
       // 빈 문자열·중복·대소문자 통일

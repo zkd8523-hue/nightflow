@@ -123,6 +123,12 @@ export function ClubDetailContent({
       ? club.drink_menu_urls
       : (club.drink_menu_url ? [club.drink_menu_url] : [])
   );
+  const [clubFloorPlanUrl, setClubFloorPlanUrl] = useState<string | null>(club.floor_plan_url ?? null);
+  const [clubFloorPlanUrls, setClubFloorPlanUrls] = useState<string[]>(
+    () => (club.floor_plan_urls && club.floor_plan_urls.length > 0)
+      ? club.floor_plan_urls
+      : (club.floor_plan_url ? [club.floor_plan_url] : [])
+  );
   const [favoriteCount, setFavoriteCount] = useState<number | null>(null);
   const isAdmin = user?.role === "admin";
   const { isPartner: isPartnerOrAdmin } = useIsClubPartner(club.id);
@@ -336,6 +342,8 @@ export function ClubDetailContent({
               initialDresscode={clubDresscode}
               initialDrinkMenuUrl={clubDrinkMenuUrl}
               initialDrinkMenuUrls={clubDrinkMenuUrls}
+              initialFloorPlanUrl={clubFloorPlanUrl}
+              initialFloorPlanUrls={clubFloorPlanUrls}
               onSaved={(next) => {
                 setClubTags(next.tags);
                 setClubName(next.name);
@@ -352,6 +360,9 @@ export function ClubDetailContent({
                 if (head !== clubDrinkMenuUrl) {
                   setClubDrinkMenuUpdatedAt(head ? new Date().toISOString() : null);
                 }
+                const floorUrls = next.floorPlanUrls ?? (next.floorPlanUrl ? [next.floorPlanUrl] : []);
+                setClubFloorPlanUrls(floorUrls);
+                setClubFloorPlanUrl(floorUrls[0] ?? null);
               }}
             />
           </div>
@@ -393,6 +404,8 @@ export function ClubDetailContent({
               initialDresscode={clubDresscode}
               initialDrinkMenuUrl={clubDrinkMenuUrl}
               initialDrinkMenuUrls={clubDrinkMenuUrls}
+              initialFloorPlanUrl={clubFloorPlanUrl}
+              initialFloorPlanUrls={clubFloorPlanUrls}
               mode="partner"
               hideTrigger
               externalOpen={partnerEditorOpen}
@@ -401,6 +414,16 @@ export function ClubDetailContent({
                 setClubTags(next.tags);
                 setClubOperatingHours(next.operatingHours);
                 setClubDresscode(next.dresscode);
+                const urls = next.drinkMenuUrls ?? (next.drinkMenuUrl ? [next.drinkMenuUrl] : []);
+                const head = urls[0] ?? null;
+                setClubDrinkMenuUrls(urls);
+                setClubDrinkMenuUrl(head);
+                if (head !== clubDrinkMenuUrl) {
+                  setClubDrinkMenuUpdatedAt(head ? new Date().toISOString() : null);
+                }
+                const floorUrls = next.floorPlanUrls ?? (next.floorPlanUrl ? [next.floorPlanUrl] : []);
+                setClubFloorPlanUrls(floorUrls);
+                setClubFloorPlanUrl(floorUrls[0] ?? null);
               }}
             />
           )}
@@ -551,14 +574,14 @@ export function ClubDetailContent({
             </a>
           )}
 
-          {(clubDrinkMenuUrls.length > 0 || clubDrinkMenuUrl || club.drink_menu_url || club.floor_plan_url || (club.floor_plan_urls && club.floor_plan_urls.length > 0)) && (
+          {(clubDrinkMenuUrls.length > 0 || clubDrinkMenuUrl || club.drink_menu_url || clubFloorPlanUrl || clubFloorPlanUrls.length > 0) && (
             <DrinkMenuViewer
               urls={clubDrinkMenuUrls}
               url={clubDrinkMenuUrl ?? club.drink_menu_url}
               updatedAt={clubDrinkMenuUpdatedAt ?? club.drink_menu_updated_at}
               clubName={clubName}
-              floorPlanUrl={club.floor_plan_url}
-              floorPlanUrls={club.floor_plan_urls}
+              floorPlanUrl={clubFloorPlanUrl}
+              floorPlanUrls={clubFloorPlanUrls}
             />
           )}
 

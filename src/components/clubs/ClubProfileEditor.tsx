@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { Pencil, Loader2, Wine, Trash2, GripVertical, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Pencil, Loader2, Wine, Trash2, GripVertical, X, ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -13,7 +13,7 @@ import {
 import { CLUB_TAG_GROUPS, makeTag, parseTag } from "@/lib/clubs/tags";
 import { updateClubPartnerFields } from "@/lib/clubs/update";
 import { createClient } from "@/lib/supabase/client";
-import { compressImage } from "@/lib/utils/upload";
+import { compressImage, uploadImage } from "@/lib/utils/upload";
 import {
   DndContext,
   closestCenter,
@@ -45,7 +45,9 @@ interface Props {
   initialDresscode?: string;
   initialDrinkMenuUrl?: string | null;
   initialDrinkMenuUrls?: string[];
-  /** "admin": 모든 필드 편집 (기존). "partner": tags + operating_hours + dresscode만 즉시 저장. */
+  initialFloorPlanUrl?: string | null;
+  initialFloorPlanUrls?: string[];
+  /** "admin": 모든 필드 편집 (기존). "partner": tags + operating_hours + dresscode + 가격표 + 테이블맵만 즉시 저장. */
   mode?: "admin" | "partner";
   /** 외부에서 트리거된 open 상태 (트리거 버튼 안 쓰고 인라인/배너에서 열 때) */
   externalOpen?: boolean;
@@ -63,10 +65,12 @@ interface Props {
     dresscode: string;
     drinkMenuUrl: string | null;
     drinkMenuUrls: string[];
+    floorPlanUrl: string | null;
+    floorPlanUrls: string[];
   }) => void;
 }
 
-export function ClubProfileEditor({ clubId, initialTags, initialName, initialAddress, initialOperatingHours, initialEntryFeeDetail, initialInstagram, initialAliases = [], initialDresscode = "", initialDrinkMenuUrl = null, initialDrinkMenuUrls, mode = "admin", externalOpen, onExternalOpenChange, hideTrigger = false, onSaved }: Props) {
+export function ClubProfileEditor({ clubId, initialTags, initialName, initialAddress, initialOperatingHours, initialEntryFeeDetail, initialInstagram, initialAliases = [], initialDresscode = "", initialDrinkMenuUrl = null, initialDrinkMenuUrls, initialFloorPlanUrl = null, initialFloorPlanUrls, mode = "admin", externalOpen, onExternalOpenChange, hideTrigger = false, onSaved }: Props) {
   const isPartnerMode = mode === "partner";
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -90,9 +94,18 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       : (initialDrinkMenuUrl ? [initialDrinkMenuUrl] : [])
   );
   const [drinkMenuUploading, setDrinkMenuUploading] = useState(false);
+  // 테이블맵(플로어맵) 다중 사진. 다중 우선, 없으면 단일 URL 폴백.
+  const [floorPlanUrls, setFloorPlanUrls] = useState<string[]>(
+    () => (initialFloorPlanUrls && initialFloorPlanUrls.length > 0)
+      ? initialFloorPlanUrls
+      : (initialFloorPlanUrl ? [initialFloorPlanUrl] : [])
+  );
+  const [floorPlanUploading, setFloorPlanUploading] = useState(false);
   const [saving, setSaving] = useState(false);
-  // 라이트박스: 미리보기에서 클릭하면 확대해서 보기
+  // 라이트박스: 미리보기에서 클릭하면 확대해서 보기. 가격표/테이블맵 공용.
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [lightboxSource, setLightboxSource] = useState<"menu" | "floor">("menu");
+  const lightboxUrls = lightboxSource === "floor" ? floorPlanUrls : drinkMenuUrls;
   // 하위 호환: 첫 번째 url을 단일 슬롯으로도 노출
   const drinkMenuUrl = drinkMenuUrls[0] ?? null;
 
@@ -163,7 +176,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       }
       if (e.key === "ArrowRight") {
         setLightboxIdx((i) =>
-          i === null ? null : Math.min(drinkMenuUrls.length - 1, i + 1)
+          i === null ? null : Math.min(lightboxUrls.length - 1, i + 1)
         );
       }
     };
@@ -174,12 +187,60 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [lightboxIdx, drinkMenuUrls.length]);
+  }, [lightboxIdx, lightboxUrls.length]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setDrinkMenuUrls((prev) => {
+      const oldIdx = prev.indexOf(String(active.id));
+      const newIdx = prev.indexOf(String(over.id));
+      if (oldIdx < 0 || newIdx < 0) return prev;
+      return arrayMove(prev, oldIdx, newIdx);
+    });
+  };
+
+  const MAX_FLOOR_PLANS = 8;
+
+  const handleFloorPlanUpload = async (files: FileList | File[]) => {
+    const list = Array.from(files);
+    if (list.length === 0) return;
+    if (floorPlanUrls.length + list.length > MAX_FLOOR_PLANS) {
+      toast.error(`최대 ${MAX_FLOOR_PLANS}장까지 등록할 수 있어요`);
+      return;
+    }
+    for (const f of list) {
+      if (f.size > 10 * 1024 * 1024) {
+        toast.error(`${f.name}: 이미지는 10MB 이하만 가능합니다`);
+        return;
+      }
+    }
+    setFloorPlanUploading(true);
+    try {
+      const uploaded: string[] = [];
+      for (const file of list) {
+        // 테이블맵은 auction-images 버킷(floor-plans/club/...)을 사용 → 인증 MD 업로드 허용됨
+        const url = await uploadImage(file, `floor-plans/club/${clubId}`, { maxWidth: 2048 });
+        if (!url) throw new Error("upload failed"); // uploadImage 내부에서 toast.error 처리됨
+        uploaded.push(url);
+      }
+      setFloorPlanUrls((prev) => [...prev, ...uploaded]);
+      toast.success(`테이블맵 사진 ${uploaded.length}장 업로드 완료. 저장을 눌러주세요`);
+    } catch (err) {
+      console.error("[floor plan upload]", err);
+    } finally {
+      setFloorPlanUploading(false);
+    }
+  };
+
+  const handleFloorPlanRemove = (url: string) => {
+    setFloorPlanUrls((prev) => prev.filter((u) => u !== url));
+  };
+
+  const handleFloorPlanDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setFloorPlanUrls((prev) => {
       const oldIdx = prev.indexOf(String(active.id));
       const newIdx = prev.indexOf(String(over.id));
       if (oldIdx < 0 || newIdx < 0) return prev;
@@ -217,6 +278,16 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
     setAliases(initialAliases);
     setAliasInput("");
     setDresscode(initialDresscode);
+    setDrinkMenuUrls(
+      (initialDrinkMenuUrls && initialDrinkMenuUrls.length > 0)
+        ? initialDrinkMenuUrls
+        : (initialDrinkMenuUrl ? [initialDrinkMenuUrl] : [])
+    );
+    setFloorPlanUrls(
+      (initialFloorPlanUrls && initialFloorPlanUrls.length > 0)
+        ? initialFloorPlanUrls
+        : (initialFloorPlanUrl ? [initialFloorPlanUrl] : [])
+    );
   };
 
   const toggleTag = (tag: string) => {
@@ -245,11 +316,23 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       try {
         const trimmedHours = operatingHours.trim();
         const trimmedDresscode = dresscode.trim();
+        const baseDrinkUrls = (initialDrinkMenuUrls && initialDrinkMenuUrls.length > 0)
+          ? initialDrinkMenuUrls
+          : (initialDrinkMenuUrl ? [initialDrinkMenuUrl] : []);
+        const baseFloorUrls = (initialFloorPlanUrls && initialFloorPlanUrls.length > 0)
+          ? initialFloorPlanUrls
+          : (initialFloorPlanUrl ? [initialFloorPlanUrl] : []);
         const tagsChanged =
           tags.length !== initialTags.length || tags.some((t, i) => t !== initialTags[i]);
         const hoursChanged = trimmedHours !== initialOperatingHours;
         const dresscodeChanged = trimmedDresscode !== (initialDresscode ?? "");
-        if (!tagsChanged && !hoursChanged && !dresscodeChanged) {
+        const drinkMenuChanged =
+          drinkMenuUrls.length !== baseDrinkUrls.length
+          || drinkMenuUrls.some((u, i) => u !== baseDrinkUrls[i]);
+        const floorPlanChanged =
+          floorPlanUrls.length !== baseFloorUrls.length
+          || floorPlanUrls.some((u, i) => u !== baseFloorUrls[i]);
+        if (!tagsChanged && !hoursChanged && !dresscodeChanged && !drinkMenuChanged && !floorPlanChanged) {
           toast.info("변경된 내용이 없어요");
           setSaving(false);
           return;
@@ -258,6 +341,8 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
           tags: tagsChanged ? tags : undefined,
           operating_hours: hoursChanged ? trimmedHours : undefined,
           dresscode: dresscodeChanged ? trimmedDresscode : undefined,
+          drink_menu_urls: drinkMenuChanged ? drinkMenuUrls : undefined,
+          floor_plan_urls: floorPlanChanged ? floorPlanUrls : undefined,
         });
         if (!result.success) {
           toast.error(result.error || "저장 실패");
@@ -272,8 +357,10 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
           instagram: initialInstagram,
           aliases: initialAliases,
           dresscode: trimmedDresscode,
-          drinkMenuUrl: initialDrinkMenuUrl,
-          drinkMenuUrls: initialDrinkMenuUrls ?? (initialDrinkMenuUrl ? [initialDrinkMenuUrl] : []),
+          drinkMenuUrl: drinkMenuUrls[0] ?? null,
+          drinkMenuUrls,
+          floorPlanUrl: floorPlanUrls[0] ?? null,
+          floorPlanUrls,
         });
         toast.success("저장됐어요");
         setOpen(false);
@@ -301,16 +388,23 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       const baseInitialUrls = (initialDrinkMenuUrls && initialDrinkMenuUrls.length > 0)
         ? initialDrinkMenuUrls
         : (initialDrinkMenuUrl ? [initialDrinkMenuUrl] : []);
+      const baseInitialFloorUrls = (initialFloorPlanUrls && initialFloorPlanUrls.length > 0)
+        ? initialFloorPlanUrls
+        : (initialFloorPlanUrl ? [initialFloorPlanUrl] : []);
       const drinkMenuChanged =
         drinkMenuUrls.length !== baseInitialUrls.length
         || drinkMenuUrls.some((u, i) => u !== baseInitialUrls[i]);
+      const floorPlanChanged =
+        floorPlanUrls.length !== baseInitialFloorUrls.length
+        || floorPlanUrls.some((u, i) => u !== baseInitialFloorUrls[i]);
       const baseChanged = trimmedName !== initialName
         || trimmedAddress !== initialAddress
         || trimmedHours !== initialOperatingHours
         || trimmedFee !== initialEntryFeeDetail
         || trimmedInstagram !== initialInstagram
         || aliasesChanged
-        || drinkMenuChanged;
+        || drinkMenuChanged
+        || floorPlanChanged;
       if (baseChanged) {
         const res = await fetch(`/api/admin/clubs/update-name`, {
           method: "POST",
@@ -324,6 +418,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
             instagram: trimmedInstagram,
             aliases,
             drink_menu_urls: drinkMenuUrls,
+            floor_plan_urls: floorPlanUrls,
           }),
         });
         if (!res.ok) {
@@ -376,6 +471,8 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
         dresscode: initialDresscode,
         drinkMenuUrl,
         drinkMenuUrls,
+        floorPlanUrl: floorPlanUrls[0] ?? null,
+        floorPlanUrls,
       });
       toast.success("클럽 프로필이 저장됐어요");
       setOpen(false);
@@ -560,8 +657,10 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
                 자주 잘못 검색되는 표기를 등록해두면 그 검색어로도 노출돼요 (Enter·쉼표로 추가)
               </p>
             </div>
+            </>
+            )}
 
-            {/* 가격표 사진 (여러 장) — 클럽 상세에서 슬라이드로 노출됨 */}
+            {/* 가격표 사진 (여러 장) — admin & partner 모두 편집 가능. 클럽 상세에서 슬라이드로 노출됨 */}
             <div>
               <div className="text-[12px] text-neutral-400 font-bold mb-2 flex items-center gap-1.5">
                 <Wine className="w-3.5 h-3.5 text-amber-400" /> 가격표 사진
@@ -583,7 +682,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
                           url={url}
                           index={idx}
                           onRemove={handleDrinkMenuRemove}
-                          onClick={() => setLightboxIdx(idx)}
+                          onClick={() => { setLightboxSource("menu"); setLightboxIdx(idx); }}
                           disabled={saving || drinkMenuUploading}
                         />
                       ))}
@@ -620,8 +719,66 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
               )}
               <p className="text-[10px] text-neutral-600 mt-1">메뉴판·가격표 사진을 여러 장 등록할 수 있어요 (최대 {MAX_DRINK_MENUS}장). 드래그로 순서 변경</p>
             </div>
-            </>
-            )}
+
+            {/* 테이블맵 사진 (여러 장) — admin & partner 모두 편집 가능. 클럽 상세에서 슬라이드로 노출됨 */}
+            <div>
+              <div className="text-[12px] text-neutral-400 font-bold mb-2 flex items-center gap-1.5">
+                <LayoutGrid className="w-3.5 h-3.5 text-amber-400" /> 테이블맵 사진
+                <span className="text-[10px] text-neutral-600 font-medium">
+                  ({floorPlanUrls.length}/{MAX_FLOOR_PLANS})
+                </span>
+              </div>
+              {floorPlanUrls.length > 0 && (
+                <DndContext
+                  sensors={dndSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleFloorPlanDragEnd}
+                >
+                  <SortableContext items={floorPlanUrls} strategy={rectSortingStrategy}>
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      {floorPlanUrls.map((url, idx) => (
+                        <SortableDrinkMenuItem
+                          key={url}
+                          url={url}
+                          index={idx}
+                          onRemove={handleFloorPlanRemove}
+                          onClick={() => { setLightboxSource("floor"); setLightboxIdx(idx); }}
+                          disabled={saving || floorPlanUploading}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+              {floorPlanUrls.length < MAX_FLOOR_PLANS && (
+                <label className={`flex items-center justify-center gap-2 w-full h-20 border border-dashed border-neutral-700 rounded-xl text-[12px] font-bold text-neutral-400 hover:border-amber-500/50 hover:text-amber-300 hover:bg-amber-500/5 transition-colors ${(saving || floorPlanUploading) ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
+                  {floorPlanUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> 업로드 중…
+                    </>
+                  ) : (
+                    <>
+                      <LayoutGrid className="w-4 h-4 text-amber-400" />
+                      {floorPlanUrls.length === 0 ? "테이블맵 사진 업로드" : "사진 추가"}
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    disabled={saving || floorPlanUploading}
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleFloorPlanUpload(e.target.files);
+                      }
+                      e.currentTarget.value = "";
+                    }}
+                  />
+                </label>
+              )}
+              <p className="text-[10px] text-neutral-600 mt-1">클럽 테이블 배치도·평면도 사진을 여러 장 등록할 수 있어요 (최대 {MAX_FLOOR_PLANS}장). 드래그로 순서 변경</p>
+            </div>
 
             {CLUB_TAG_GROUPS.map((g) => (
               <div key={g.group}>
@@ -680,14 +837,14 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
         </SheetContent>
       </Sheet>
 
-      {/* 가격표 사진 라이트박스 — 편집 sheet 위로 떠서 큰 사이즈로 미리보기 */}
-      {lightboxIdx !== null && drinkMenuUrls[lightboxIdx] && (
+      {/* 가격표·테이블맵 사진 라이트박스 — 편집 sheet 위로 떠서 큰 사이즈로 미리보기 */}
+      {lightboxIdx !== null && lightboxUrls[lightboxIdx] && (
         <div
           className="fixed inset-0 z-[400] bg-black/95 flex items-center justify-center"
           onClick={() => setLightboxIdx(null)}
           role="dialog"
           aria-modal="true"
-          aria-label="가격표 확대 보기"
+          aria-label={lightboxSource === "floor" ? "테이블맵 확대 보기" : "가격표 확대 보기"}
         >
           {/* 닫기 */}
           <button
@@ -703,7 +860,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
           </button>
 
           {/* 좌 */}
-          {drinkMenuUrls.length > 1 && lightboxIdx > 0 && (
+          {lightboxUrls.length > 1 && lightboxIdx > 0 && (
             <button
               type="button"
               onClick={(e) => {
@@ -718,12 +875,12 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
           )}
 
           {/* 우 */}
-          {drinkMenuUrls.length > 1 && lightboxIdx < drinkMenuUrls.length - 1 && (
+          {lightboxUrls.length > 1 && lightboxIdx < lightboxUrls.length - 1 && (
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setLightboxIdx(Math.min(drinkMenuUrls.length - 1, lightboxIdx + 1));
+                setLightboxIdx(Math.min(lightboxUrls.length - 1, lightboxIdx + 1));
               }}
               aria-label="다음 사진"
               className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
@@ -733,9 +890,9 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
           )}
 
           {/* 카운터 */}
-          {drinkMenuUrls.length > 1 && (
+          {lightboxUrls.length > 1 && (
             <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-sm text-white text-[12px] font-bold">
-              {lightboxIdx + 1} / {drinkMenuUrls.length}
+              {lightboxIdx + 1} / {lightboxUrls.length}
             </div>
           )}
 
@@ -744,8 +901,8 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={drinkMenuUrls[lightboxIdx]}
-              alt={`가격표 ${lightboxIdx + 1}`}
+              src={lightboxUrls[lightboxIdx]}
+              alt={`${lightboxSource === "floor" ? "테이블맵" : "가격표"} ${lightboxIdx + 1}`}
               width={1600}
               height={2400}
               className="h-auto w-full mx-auto select-none object-contain"
