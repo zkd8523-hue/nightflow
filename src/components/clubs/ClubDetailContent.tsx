@@ -34,6 +34,7 @@ import { ClubLocationModal } from "./ClubLocationModal";
 import { ClubProfileEditor } from "./ClubProfileEditor";
 import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
 import { WordCloudSection } from "./WordCloudSection";
+import { FlagExplainerSheet } from "./FlagExplainerSheet";
 import { useIsClubPartner } from "@/hooks/useIsClubPartner";
 import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -100,6 +101,7 @@ export function ClubDetailContent({
   }, []);
 
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isFlagExplainerOpen, setIsFlagExplainerOpen] = useState(false);
   const [userBidMap, setUserBidMap] = useState<Map<string, number>>(new Map());
   const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(new Set());
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(club.thumbnail_url);
@@ -632,21 +634,30 @@ export function ClubDetailContent({
       {/* 플로팅 CTA - 깃발 꽂기 (게스트 간판 MD가 없는 클럽에서만 노출) */}
       {showFlagCta && (
         <div
-          className="fixed left-0 right-0 z-40 px-4 pt-4 pb-3 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/95 to-transparent pointer-events-none"
-          style={{ bottom: user ? "60px" : 0 }}
+          className="fixed left-0 right-0 bottom-0 z-40 px-4 pt-8 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] via-[70%] to-transparent pointer-events-none"
+          style={{ paddingBottom: "calc(60px + env(safe-area-inset-bottom) + 12px)" }}
         >
           <div className="max-w-lg mx-auto pointer-events-auto">
-            <Link
-              href={ctaHref}
-              className="flex items-center justify-center gap-2 w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
+            <button
+              type="button"
+              onClick={() => setIsFlagExplainerOpen(true)}
+              className="flex items-center justify-center gap-1.5 w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
             >
-              <span className="text-[18px]">⛳</span>
-              {club.area
-                ? `${club.area} 갈래? 깃발 꽂고 오퍼받기`
-                : "깃발 꽂고 오퍼받기"}
-            </Link>
+              {clubName} 예약하려면?
+              <span className="text-[17px]">🚩</span>
+            </button>
           </div>
         </div>
+      )}
+
+      {showFlagCta && (
+        <FlagExplainerSheet
+          open={isFlagExplainerOpen}
+          onOpenChange={setIsFlagExplainerOpen}
+          area={club.area}
+          clubName={clubName}
+          ctaHref={ctaHref}
+        />
       )}
     </div>
   );

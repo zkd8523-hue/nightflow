@@ -20,6 +20,21 @@ interface ClubBenefitItem {
 }
 
 const MAX_CARDS = 12;
+const PRIORITY_GROUP_SIZE = 8;
+// "오퍼 많은 그룹" 상위노출 큐레이션. 클럽 id 또는 이름(name)으로 지정.
+// 여기 속한 클럽은 최상위(최대 PRIORITY_GROUP_SIZE개)로 노출되며, 이 그룹 내에서 새로고침마다 셔플.
+// 비워두면 기존 혜택-우선 정렬을 그대로 사용 (비회귀).
+// 아래 목록 = 누적 오퍼 수 상위 8개 클럽 (프로덕션 puzzle_offers 집계, 2026-07-01 기준).
+const PRIORITY_CLUBS: string[] = [
+  "d912c171-7b9c-40a4-8c89-dc05caf35ebd", // CLUB BERMUDA (홍대) · 38
+  "93f1081a-250c-402a-a0d4-9b8a309aff57", // 도깨비 (홍대) · 13
+  "bd820f57-46b6-4d95-822a-4f0cf8e84542", // OCEAN (홍대) · 12
+  "35de296e-5fdc-435b-baf2-1c7c05538687", // Club Ace (강남) · 10
+  "fa3c81f0-29ab-4756-8f87-8c681b5cde10", // K-bat 빠따 (홍대) · 4
+  "80ba0738-ffbb-4463-b97e-7e68e4c0da60", // 컬러 압구 (강남) · 3
+  "cc7db051-b75d-4c1f-9f95-29f7d8ce70d7", // DM SEOUL (강남) · 3
+  "a0890c9f-ac6e-4c2f-9665-c45667ca10e4", // Core Seoul (강남) · 2
+];
 const HIDDEN_PATTERN = /운영자/;
 const SHOW_TEST_CLUBS = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
 
@@ -143,19 +158,29 @@ export function ClubBenefitSection() {
         return !hotdealOccupied.has(c.id);
       });
 
-      // 혜택 있는 클럽 최우선 → 혜택 없는 클럽은 셔플 (Fisher-Yates)
-      const withBenefit = remaining.filter((c) => slotMap.has(c.id));
-      const withoutBenefit = remaining.filter((c) => !slotMap.has(c.id));
-      // 혜택 유무 그룹 내에서 각각 셔플 (새로고침마다 다르게 노출)
-      for (let i = withBenefit.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [withBenefit[i], withBenefit[j]] = [withBenefit[j], withBenefit[i]];
-      }
-      for (let i = withoutBenefit.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [withoutBenefit[i], withoutBenefit[j]] = [withoutBenefit[j], withoutBenefit[i]];
-      }
-      let ordered = [...withBenefit, ...withoutBenefit];
+      // 셔플 헬퍼 (Fisher-Yates) — 그룹 내 순서를 새로고침마다 랜덤화
+      const shuffle = <T,>(arr: T[]): T[] => {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+
+      // "오퍼 많은 그룹" 큐레이션: PRIORITY_CLUBS에 속한 클럽을 최상위(최대 8)로 →
+      // 그 그룹 안에서 셔플. 큐레이션이 비어있으면 priorityGroup=[] 이라 기존 동작과 동일.
+      const priorityGroup = shuffle(
+        remaining.filter(
+          (c) => PRIORITY_CLUBS.includes(c.id) || PRIORITY_CLUBS.includes(c.name)
+        )
+      ).slice(0, PRIORITY_GROUP_SIZE);
+      const prioritySet = new Set(priorityGroup.map((c) => c.id));
+      const rest = remaining.filter((c) => !prioritySet.has(c.id));
+
+      // 나머지: 혜택 있는 클럽 최우선 → 혜택 없는 클럽. 각 그룹 내 셔플.
+      const withBenefit = shuffle(rest.filter((c) => slotMap.has(c.id)));
+      const withoutBenefit = shuffle(rest.filter((c) => !slotMap.has(c.id)));
+      let ordered = [...priorityGroup, ...withBenefit, ...withoutBenefit];
 
       // 비프로덕션: 테스트 클럽(운영자/...)을 최상위로 끌어올림 (Hot Deal Now와 동일 패턴)
       if (SHOW_TEST_CLUBS) {

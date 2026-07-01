@@ -77,7 +77,7 @@ export default async function PuzzleNewPage({
         <div className="mb-8">
           <h1 className="text-2xl font-black text-white tracking-tight">
             {t(
-              "🚩 깃발 꽂기",
+              "🚩 깃발",
               "Tell us your night",
               "あなたの夜を教えて",
               "告诉我们您的夜晚"
