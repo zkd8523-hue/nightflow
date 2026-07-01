@@ -6,12 +6,13 @@ import { Globe, Check, ChevronDown } from "lucide-react";
 import { getLang, type Lang } from "@/lib/i18n";
 
 // 언어 선택 드롭다운 (푸터). 한/영/일/중.
-// 한국어=/ , 외국어=/en?lang=xx (랜딩은 /en, 언어는 쿼리로 전파).
+// 각 언어 = 전용 경로(/, /en, /ja, /zh) — 네이티브 타이틀·메타데이터·SEO가 심긴 페이지로 보냄.
+// (/en?lang=xx 쿼리형은 영어 타이틀이라 부적합 → 깨끗한 경로 사용)
 const OPTIONS: { lang: Lang; label: string; href: string }[] = [
   { lang: "ko", label: "한국어", href: "/" },
   { lang: "en", label: "English", href: "/en" },
-  { lang: "ja", label: "日本語", href: "/en?lang=ja" },
-  { lang: "zh", label: "中文", href: "/en?lang=zh" },
+  { lang: "ja", label: "日本語", href: "/ja" },
+  { lang: "zh", label: "中文", href: "/zh" },
 ];
 
 export function LangSwitcher() {
@@ -25,9 +26,14 @@ export function LangSwitcher() {
     setLangParam(new URLSearchParams(window.location.search).get("lang"));
   }, [pathname]);
 
-  // 현재 언어: /en 경로면 ?lang(기본 en), 아니면 ko
-  const onForeign = pathname?.startsWith("/en");
-  const current: Lang = onForeign ? (getLang(langParam) === "ko" ? "en" : getLang(langParam)) : "ko";
+  // 현재 언어: 경로 우선(/zh·/ja), /en 은 ?lang(레거시) 반영, 그 외 ko
+  const current: Lang = pathname?.startsWith("/zh")
+    ? "zh"
+    : pathname?.startsWith("/ja")
+    ? "ja"
+    : pathname?.startsWith("/en")
+    ? (getLang(langParam) === "ko" ? "en" : getLang(langParam))
+    : "ko";
 
   useEffect(() => {
     if (!open) return;

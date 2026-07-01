@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { FaqTab } from "./FaqTab";
-import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map, Check } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
@@ -398,6 +398,18 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
           {tr("Korea's best clubs send you their offers.")}<br />
           {tr("Just pick one!")}
         </p>
+      </div>
+
+      {/* ② 신뢰 배지 — 被宰(바가지) 공포 해결. 프리미엄 유지 위해 초록 체크만(붉은색 X) */}
+      <div className="px-5 py-4 border-b border-neutral-900">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-w-[320px] mx-auto">
+          {["No middleman", "Real price", "Zero fee", "No deposit"].map((b) => (
+            <div key={b} className="flex items-center gap-1.5">
+              <Check className="w-4 h-4 text-green-500 shrink-0" strokeWidth={3} />
+              <span className="text-[13px] font-bold text-neutral-200">{tr(b)}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* ③ 한국인이 지금 올린 깃발 = 소셜 프루프 (캐러셀) */}
