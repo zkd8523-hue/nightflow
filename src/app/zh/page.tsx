@@ -164,6 +164,47 @@ export default async function ZhHomePage() {
 
   const flagCount = flags.length;
 
+  // 강남·홍대 클럽 (지역 섹션 "Spots competing for you"용) — /en 홈과 동일 로직
+  const { data: clubsRaw } = await supabase
+    .from("clubs")
+    .select("id, name, area, thumbnail_url, address")
+    .in("area", ["강남", "홍대"])
+    .is("deleted_at", null)
+    .not("name", "ilike", "%운영자%")
+    .eq("is_test", false)
+    .not("thumbnail_url", "is", null)
+    .neq("thumbnail_url", "")
+    .order("google_review_count", { ascending: false, nullsFirst: false })
+    .limit(60);
+  const seenClubNames = new Set<string>();
+  const clubs = (clubsRaw ?? [])
+    .filter((c) => {
+      const key = c.name.trim().toLowerCase();
+      if (seenClubNames.has(key)) return false;
+      seenClubNames.add(key);
+      return true;
+    })
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      area: c.area,
+      thumbnail_url: c.thumbnail_url,
+      address: c.address,
+    }));
+  const clubIds = clubs.map((c) => c.id);
+  if (clubIds.length > 0) {
+    const { data: clubOfferRows } = await supabase
+      .from("puzzle_offers")
+      .select("club_id")
+      .in("club_id", clubIds)
+      .limit(5000);
+    const clubOfferCount: Record<string, number> = {};
+    clubOfferRows?.forEach((r: { club_id: string | null }) => {
+      if (r.club_id) clubOfferCount[r.club_id] = (clubOfferCount[r.club_id] || 0) + 1;
+    });
+    clubs.sort((a, b) => (clubOfferCount[b.id] ?? 0) - (clubOfferCount[a.id] ?? 0));
+  }
+
   // Schema.org JSON-LD — 中国/华语区搜索结果中的丰富展示
   const jsonLd = {
     "@context": "https://schema.org",
@@ -322,7 +363,7 @@ export default async function ZhHomePage() {
           </li>
         </ul>
       </div>
-      <EnHomeClient flags={flags} />
+      <EnHomeClient flags={flags} clubs={clubs} />
     </>
   );
 }
