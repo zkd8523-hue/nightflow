@@ -66,7 +66,7 @@ export async function generateMetadata({
     notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
   const title = `${area} 클럽 게스트 - 무료입장·게스트 명단 정보`;
-  const description = `${area} 클럽 게스트 입장·무료입장 정보 모음. ${area} 인기 클럽의 이번 주 게스트 간판, 요일별 무료입장 혜택, 게스트 명단을 한곳에서. 나플(나이트플로우)에서 ${area} 클럽 게스트 정보 확인.`;
+  const description = `${area} 클럽 게스트 입장·무료입장 정보 모음. ${area} 인기 클럽의 이번 주 게스트 간판, 요일별 무료입장 혜택, 게스트 명단을 한곳에서. 나플에서 ${area} 클럽 게스트 정보 확인.`;
   const canonical = `https://nightflow.kr/guest/${encodeURIComponent(area)}`;
   return {
     title,
@@ -232,7 +232,7 @@ export default async function GuestAreaPage({ params }: PageProps) {
           간판은 매주 갱신되며 요일별로 무료입장 혜택, 프리드링크, 여성 무료
           등 다양한 옵션이 제공됩니다.
         </p>
-        <h2>나플(나이트플로우)의 {area} 게스트 정보</h2>
+        <h2>나플의 {area} 게스트 정보</h2>
         <p>
           나플에서 {area} 클럽 {areaClubs.length}곳의 이번 주 게스트 간판 정보를
           확인할 수 있습니다. {area} 클럽 무료입장 가능 여부, 게스트 명단 등록

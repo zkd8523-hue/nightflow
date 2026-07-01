@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${headName} - 클럽 테이블 가격·예약`,
-    description: `${headName}${descAliases} 테이블을 정가보다 저렴하게 예약. 잔여 테이블 실시간 가격 비교, MD 직거래로 수수료 없음. 나이트플로우(나플)에서 입찰하세요.`,
+    description: `${headName}${descAliases} 테이블을 정가보다 저렴하게 예약. 잔여 테이블 실시간 가격 비교, MD 직거래로 수수료 없음. 나플에서 입찰하세요.`,
     keywords: [
       club.name,
       ...aliases,
@@ -348,7 +348,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
           <p>
             {ssrHead}은(는) {ssrAliasSentence} 등으로도 불리는
             {club.area ? ` ${club.area} ` : " "}인기 클럽입니다.
-            나플(나이트플로우)에서 {ssrHead} 테이블 가격을 확인하고
+            나플에서 {ssrHead} 테이블 가격을 확인하고
             예약하세요.
           </p>
         )}
@@ -363,7 +363,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         <p>
           {ssrHead} 위치·주소·영업시간·흡연/금연 구역·담배 가능 여부·테이블
           위치(테이블석)·드레스코드·연령대 등 가기 전에 확인해야 할 정보를
-          나플(나이트플로우)에서 한곳에 모아 확인하세요.
+          나플에서 한곳에 모아 확인하세요.
         </p>
         {/* 결정 단계 롱테일 키워드 — 얼마/비용/입장료/요일/오픈마감/혼자/근처 */}
         <p>
@@ -375,14 +375,14 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
         <p>
           {ssrHead}의 테이블 가격, 테이블석·VIP 테이블·룸·라운지·스탠딩(입석)
           정보, 부킹·이벤트·DJ·음악·프로모션, 드레스코드, 분위기, 후기,
-          여성무료·커플·단체 입장 안내를 나플(나이트플로우)에서 한곳에 모아
+          여성무료·커플·단체 입장 안내를 나플에서 한곳에 모아
           비교할 수 있습니다.
         </p>
         {/* 게스트 간판 미등록 클럽에도 키워드 보장 — 등록되면 아래 ssrWeeklyBenefits 섹션에서 더 풍부히 노출. */}
         <p>
           {ssrAreaPrefix}{club.name} 게스트·무료입장 정보는 매주 갱신됩니다.
           {ssrHead} 게스트 명단, 무료입장 가능 여부, 게스트 간판 혜택은
-          나플(나이트플로우)에서 확인하세요. {ssrAreaPrefix}클럽 게스트 입장,
+          나플에서 확인하세요. {ssrAreaPrefix}클럽 게스트 입장,
           {ssrAreaPrefix}무료입장 안내는 매주 월요일 오후 6시에 새 데이터로
           갱신됩니다.
         </p>
@@ -395,7 +395,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
           <p>
             {ssrHead} 이번 주 요일별 게스트 간판·무료입장 혜택을 안내합니다.
             {ssrAreaPrefix}클럽 게스트 명단 등록, 무료입장, 게스트 입장
-            정보를 나플(나이트플로우)에서 확인하고 클럽 테이블 가격·핫딜도
+            정보를 나플에서 확인하고 클럽 테이블 가격·핫딜도
             함께 비교하세요.
           </p>
           <ul>

@@ -9,7 +9,7 @@ import { AgreeBackButton } from "@/components/ui/AgreeBackButton";
 export const metadata: Metadata = {
   title: "개인정보처리방침",
   description:
-    "나이트플로우(나플) 개인정보처리방침. 수집 항목, 이용 목적, 보관 기간 등 개인정보 보호 정책을 투명하게 안내합니다.",
+    "나플 개인정보처리방침. 수집 항목, 이용 목적, 보관 기간 등 개인정보 보호 정책을 투명하게 안내합니다.",
   alternates: { canonical: "https://nightflow.kr/privacy" },
 };
 

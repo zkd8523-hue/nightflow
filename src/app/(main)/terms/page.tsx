@@ -9,7 +9,7 @@ import { AgreeBackButton } from "@/components/ui/AgreeBackButton";
 export const metadata: Metadata = {
   title: "이용약관",
   description:
-    "나이트플로우(나플) 서비스 이용약관. 회원, MD, 경매 거래 관련 권리와 의무를 안내합니다.",
+    "나플 서비스 이용약관. 회원, MD, 경매 거래 관련 권리와 의무를 안내합니다.",
   alternates: { canonical: "https://nightflow.kr/terms" },
 };
 

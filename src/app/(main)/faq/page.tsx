@@ -13,7 +13,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "나플 FAQ - 자주 묻는 질문 (나이트플로우)",
   description:
-    "나플(나이트플로우) 이용 가이드. 나플이 뭔지, 클럽 게스트·무료입장이 뭔지, 입찰 방법, 낙찰 후 MD 연락 절차, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
+    "나플 이용 가이드. 나플이 뭔지, 클럽 게스트·무료입장이 뭔지, 입찰 방법, 낙찰 후 MD 연락 절차, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
   alternates: { canonical: "https://nightflow.kr/faq" },
 };
 
@@ -133,7 +133,7 @@ export default function FAQPage() {
                                     방식입니다.
                                 </p>
                                 <p className="mt-2">
-                                    나플(나이트플로우)의 <strong className="text-white">게스트 간판</strong>은 매주 월요일
+                                    나플의 <strong className="text-white">게스트 간판</strong>은 매주 월요일
                                     오후 6시에 갱신됩니다. 각 클럽 × 요일별로 게스트 입장 혜택
                                     (여성 무료, 프리드링크, 신청곡 등)이 다르게 적용됩니다.
                                 </p>
@@ -155,7 +155,7 @@ export default function FAQPage() {
                                     게스트 명단에 올려줍니다.
                                 </p>
                                 <p className="mt-2">
-                                    나플(나이트플로우)에서 클럽 상세 페이지에 들어가면 이번 주
+                                    나플에서 클럽 상세 페이지에 들어가면 이번 주
                                     게스트 간판 MD가 표시되며, 인스타그램 DM 또는 카카오톡
                                     오픈채팅으로 직접 연락해 무료입장·게스트 입장 정보를 받을 수
                                     있습니다.
@@ -173,7 +173,7 @@ export default function FAQPage() {
                                     MD가 테이블에 합석할 사람을 안내해주는 방식을 말합니다.
                                 </p>
                                 <p className="mt-2">
-                                    나플(나이트플로우)에서는 부킹 대신 <strong className="text-white">테이블 경매</strong>,{" "}
+                                    나플에서는 부킹 대신 <strong className="text-white">테이블 경매</strong>,{" "}
                                     <strong className="text-white">조각(합석)</strong>,{" "}
                                     <strong className="text-white">게스트 간판</strong> 등 더 투명한 방식으로
                                     같은 목적(테이블·일행 매칭)을 해결합니다.

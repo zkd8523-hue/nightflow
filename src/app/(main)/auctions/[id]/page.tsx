@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title = `${head} 조각 - 1인 ₩${perPerson}`;
     description = `${areaLabel}클럽 조각 매물. ${head}${
       auction.title ? ` ${auction.title}` : ""
-    }. 1인 ₩${perPerson}. ${areaLabel}조각·합석으로 같이 갈 일행을 나플(나이트플로우)에서 찾으세요.`;
+    }. 1인 ₩${perPerson}. ${areaLabel}조각·합석으로 같이 갈 일행을 나플에서 찾으세요.`;
   } else {
     const currentPrice = formatPrice(
       auction.current_bid || auction.start_price
@@ -168,7 +168,7 @@ export default async function AuctionDetailPage({ params }: PageProps) {
             <p>
               {ssrAreaPrefix}클럽 조각 매물입니다. {ssrHead}에서 같이 갈 일행을
               모집합니다. 인당 가격 ₩{ssrPerPerson}. {ssrAreaPrefix}조각·합석으로
-              혼자 가기 부담스러운 클럽에 안전하게 함께 가는 방법, 나플(나이트플로우)에서
+              혼자 가기 부담스러운 클럽에 안전하게 함께 가는 방법, 나플에서
               {ssrAreaPrefix}조각 매물을 확인하고 합류하세요.
             </p>
           </>
@@ -179,7 +179,7 @@ export default async function AuctionDetailPage({ params }: PageProps) {
             </h1>
             <p>
               {ssrHead} 클럽 테이블 경매 매물입니다.
-              나플(나이트플로우)에서 {ssrAreaPrefix}클럽 테이블을 정가보다
+              나플에서 {ssrAreaPrefix}클럽 테이블을 정가보다
               저렴하게 입찰로 예약하세요.
             </p>
           </>

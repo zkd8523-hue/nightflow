@@ -61,7 +61,7 @@ export async function generateMetadata({
     notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
   const title = `${area} 핫플 지도 - ${area} 클럽 위치·정보 한눈에`;
-  const description = `${area} 핫플(핫플레이스) 클럽 지도. ${area} 인기 클럽의 위치, 영업시간, 게스트·무료입장, 테이블 가격 정보를 한곳에서 비교하세요. 강남·홍대 등 ${area} 클럽 추천은 나플(나이트플로우)에서.`;
+  const description = `${area} 핫플(핫플레이스) 클럽 지도. ${area} 인기 클럽의 위치, 영업시간, 게스트·무료입장, 테이블 가격 정보를 한곳에서 비교하세요. 강남·홍대 등 ${area} 클럽 추천은 나플에서.`;
   const canonical = `https://nightflow.kr/hotplace/${encodeURIComponent(area)}`;
   return {
     title,
@@ -265,7 +265,7 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
         <h2>{area} 핫플이란?</h2>
         <p>
           {area} 핫플(핫플레이스)은 {area} 지역에서 요즘 가장 인기 있는 클럽과
-          장소를 의미합니다. 나플(나이트플로우)에서는 {area} 인기 클럽
+          장소를 의미합니다. 나플에서는 {area} 인기 클럽
           {areaClubs.length}곳의 위치 지도, 영업시간, 게스트·무료입장 혜택,
           테이블 가격 정보를 한곳에서 비교할 수 있습니다.
         </p>

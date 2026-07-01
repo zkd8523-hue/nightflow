@@ -5,7 +5,7 @@ import { BackButton } from "@/components/ui/BackButton";
 
 export const metadata: Metadata = {
   title: "마케팅 정보 수신 동의",
-  description: "나이트플로우(나플) 마케팅 정보 수신 동의 안내. 수신 채널, 발송 내용, 철회 방법을 안내합니다.",
+  description: "나플 마케팅 정보 수신 동의 안내. 수신 채널, 발송 내용, 철회 방법을 안내합니다.",
   alternates: { canonical: "https://nightflow.kr/marketing-consent" },
 };
 

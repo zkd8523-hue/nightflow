@@ -50,7 +50,7 @@ export async function generateMetadata({
     notFound(); // HTTP 404 응답 (Soft 404 방지)
   }
   const title = `${area} 조각 - ${area} 클럽 조각·합석 일행 모집`;
-  const description = `${area} 클럽 조각 매물 모음. ${area} 클럽 인당 가격으로 같이 갈 일행을 모집·합류하세요. ${area} 인기 클럽 정보와 진행 중인 조각·합석 매물을 한곳에. 나플(나이트플로우)에서 확인.`;
+  const description = `${area} 클럽 조각 매물 모음. ${area} 클럽 인당 가격으로 같이 갈 일행을 모집·합류하세요. ${area} 인기 클럽 정보와 진행 중인 조각·합석 매물을 한곳에. 나플에서 확인.`;
   const canonical = `https://nightflow.kr/share/${encodeURIComponent(area)}`;
   return {
     title,
@@ -212,9 +212,9 @@ export default async function ShareAreaPage({ params }: PageProps) {
           한 자리씩 합류해서 같이 입장합니다. 클럽 조각·합석으로 부르기도
           합니다.
         </p>
-        <h2>나플(나이트플로우) {area} 조각</h2>
+        <h2>나플 {area} 조각</h2>
         <p>
-          나플(나이트플로우)에서 {area} 조각 매물 {shareItems.length}건이 진행
+          나플에서 {area} 조각 매물 {shareItems.length}건이 진행
           중입니다. {area} 인기 클럽 {areaClubs.length}곳에서 조각·합석·일행
           모집이 가능합니다.
         </p>

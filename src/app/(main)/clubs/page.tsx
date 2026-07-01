@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "우리나라 클럽 정보를 한눈에. 강남·홍대·이태원·부산·광주·대구 인기 클럽을 둘러보고, 예약 가능한 곳은 깃발로 바로 잡으세요.",
   alternates: { canonical: "https://nightflow.kr/clubs" },
   openGraph: {
-    title: "전국 클럽 가이드 - 나이트플로우(나플)",
+    title: "전국 클럽 가이드 - 강남·홍대·이태원 클럽 정보 한눈에",
     description:
       "전국 인기 클럽 정보를 한눈에 비교. 마음에 드는 클럽은 깃발 한 번으로 예약.",
     url: "https://nightflow.kr/clubs",
@@ -161,7 +161,7 @@ export default async function ClubsIndexPage() {
       <div className="sr-only">
         <h1>전국 클럽 가이드 - 강남·홍대·이태원·부산·광주·대구 클럽 정보</h1>
         <p>
-          나플(나이트플로우)에서 운영 중인 전국 클럽 목록입니다.
+          나플에서 운영 중인 전국 클럽 목록입니다.
           강남, 홍대, 이태원, 부산, 광주, 대구 지역의 인기 클럽을
           한곳에서 둘러보고 핫딜·테이블 예약·일행 모집까지 한 번에 해결하세요.
         </p>

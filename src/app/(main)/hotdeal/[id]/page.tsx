@@ -46,7 +46,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = `${clubName} 핫딜 - ${dealTitle}${priceLabel ? ` ${priceLabel}` : ""} (${areaLabel}클럽)`;
   const description = `${clubName}${area ? ` (${area})` : ""} 클럽 ${dealTitle}.${
     priceLabel ? ` ${priceLabel}` : ""
-  }${originalLabel ? ` (정가 ${originalLabel})` : ""}. 강남·홍대 클럽 테이블 특가는 나플(나이트플로우)에서.`;
+  }${originalLabel ? ` (정가 ${originalLabel})` : ""}. 강남·홍대 클럽 테이블 특가는 나플에서.`;
 
   return {
     title,
