@@ -113,19 +113,19 @@ const SHARE_ONBOARDING_STEPS = [
     title: "1. 조각 등록",
     desc: "조각을 등록하면\n관심있는 친구들이 채팅방에 합류해요!",
     icon: <span className="text-[20px]">🧩</span>,
-    color: "bg-green-500/10",
+    color: "bg-green-500/15",
   },
   {
     title: "2. 시크릿오퍼 받기",
     desc: "선택한 지역 클럽들이 오퍼를 보내요.\n→ 오퍼는 파티원에게만 공개\n→ **100% 맞춤 패키지!**",
     icon: <span className="text-[20px]">💌</span>,
-    color: "bg-emerald-500/10",
+    color: "bg-sky-500/15",
   },
   {
     title: "3. 선택하고 예약",
     desc: "마음에 드는 클럽을 채팅방에 초대하고\n상담, 예약하면 끝!",
     icon: <span className="text-[20px]">🤝</span>,
-    color: "bg-rose-500/10",
+    color: "bg-violet-500/15",
   },
 ];
 
@@ -211,7 +211,7 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
     content: (
       <>
         <div className="text-[14.5px] text-white">예산은 있는데, 인원이 모자라다면?</div>
-        <div className="text-[15.5px] text-white">클릭 한 번으로 파티 참가!</div>
+        <div className="text-[14.5px] text-white">클릭 한 번으로 파티 참가!</div>
       </>
     ),
   },
@@ -1558,7 +1558,7 @@ export function HomeContent({
                         key={idx}
                         className="bg-neutral-700/60 border border-neutral-600 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default relative overflow-hidden"
                       >
-                        {idx === 0 && currentTab === "puzzle" && !isMdOrAdmin && (
+                        {idx === 0 && (currentTab === "puzzle" || currentTab === "share") && !isMdOrAdmin && (
                           <span className="absolute top-0 right-0 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-tr-2xl rounded-bl-xl rounded-tl-none rounded-br-none leading-none z-10">
                             모든 서비스 무료
                           </span>
