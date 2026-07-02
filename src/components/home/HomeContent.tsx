@@ -281,8 +281,6 @@ export function HomeContent({
   const [guideMode, setGuideMode] = useState<"full">("full");
   // 첫 방문 시 캐러셀 위 인라인 가이드 (Tip 박스 자리). 닫으면 영구 숨김.
   const [showTopGuide, setShowTopGuide] = useState(false);
-  // 조각 이용방법 가이드 — 깃발과 독립
-  const [showShareGuide, setShowShareGuide] = useState(false);
 
   // Tip 박스 콘텐츠 로테이션 (기본 메시지 ↔ 매치 오퍼 보기)
   const [tipRotation, setTipRotation] = useState(0);
@@ -1346,82 +1344,6 @@ export function HomeContent({
           {/* ── 조각 섹션 (탭 토글 제거 → 깃발 아래 항상 노출. showShareTab으로 게이팅) ── */}
           {showShareTab && (
             <>
-              {/* 조각 Tip 박스 + 이용방법 (유저 전용) — 깃발 팁박스와 동일한 UI */}
-              {!isMdOrAdmin && (
-                <section className="space-y-2 mb-3 mt-2">
-                  <div
-                    className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${showShareGuide ? "" : "pr-[88px]"}`}
-                  >
-                    <div className="text-[14px] text-neutral-100 font-black leading-snug break-keep">
-                      오픈채팅의 시대는 갔다!
-                    </div>
-                    {!showShareGuide && (
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setShowShareGuide(v => !v); }}
-                        className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-amber-300 hover:bg-amber-400/25 hover:text-amber-200 active:scale-95 transition-all"
-                      >
-                        이용방법
-                      </button>
-                    )}
-                  </div>
-                  {showShareGuide && (
-                    <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative">
-                      <button
-                        onClick={() => setShowShareGuide(false)}
-                        aria-label="가이드 닫기"
-                        className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                      <div className="flex flex-col gap-2">
-                        {SHARE_ONBOARDING_STEPS.map((step, idx) => (
-                          <div
-                            key={idx}
-                            className="bg-neutral-700/60 border border-neutral-600 rounded-2xl p-3 flex flex-row items-center gap-3 relative overflow-hidden"
-                          >
-                            <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
-                              {step.icon}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="text-[14.5px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
-                              <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
-                                {step.desc.split("\n").map((line, lineIdx, arr) => {
-                                  const parts = line.split(/(\*\*[^*]+\*\*)/g);
-                                  return (
-                                    <span key={lineIdx}>
-                                      {parts.map((part, pIdx) =>
-                                        /^\*\*[^*]+\*\*$/.test(part) ? (
-                                          <span key={pIdx} className="text-neutral-200 font-semibold">
-                                            {part.slice(2, -2)}
-                                          </span>
-                                        ) : (
-                                          <span key={pIdx}>{part}</span>
-                                        )
-                                      )}
-                                      {lineIdx < arr.length - 1 && "\n"}
-                                    </span>
-                                  );
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex justify-end mt-3">
-                        <Link
-                          href={user ? "/shares/new" : "/login?redirect=/shares/new"}
-                          onClick={() => setShowShareGuide(false)}
-                          className="inline-flex items-center gap-1 h-9 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.97] text-black font-black text-[13px] rounded-full transition-all"
-                        >
-                          🧩 바로가기
-                        </Link>
-                      </div>
-                    </div>
-                  )}
-                </section>
-              )}
-
               {/* ── 조각 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
               {renderSectionRow({ icon: "🧩", label: "조각", detailTab: "share", dateLabel: shareHeaderDate })}
 
@@ -1509,14 +1431,15 @@ export function HomeContent({
           const visibleSteps = steps;
           const guideCard = (
             <section className="space-y-2 -mx-2 mb-3">
-              {/* TIP 박스 — 항시 노출 (매치 깃발 있으면 슬라이드). 조각(share)은 제외 */}
-              {currentTab !== "share" && overriddenTabPromises[currentTab]?.content && (
-                <div className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${(currentTab === "puzzle" || currentTab === "advance") ? "pr-[88px]" : ""}`}>
+              {/* TIP 박스 — 항시 노출 (매치 깃발 있으면 슬라이드) */}
+              {overriddenTabPromises[currentTab]?.content && (
+                <div className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${(currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") ? "pr-[88px]" : ""}`}>
                   {(() => {
                     // compact와 동일한 3장 슬라이드 — 인트로 + (매치 있으면) "오퍼 궁금해?" + 본문
+                    const introText = currentTab === "share" ? "오픈채팅의 시대는 갔다!" : "가장 똑똑한 클럽 예약 방법";
                     const detailSlides: React.ReactNode[] = [
-                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">가장 똑똑한 클럽 예약 방법</div>,
-                      ...(!isMdOrAdmin && recentMatchedPuzzle ? [
+                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">{introText}</div>,
+                      ...(!isMdOrAdmin && currentTab !== "share" && recentMatchedPuzzle ? [
                         <button
                           key="offer"
                           type="button"
@@ -1608,7 +1531,7 @@ export function HomeContent({
                       </>
                     );
                   })()}
-                  {(currentTab === "puzzle" || currentTab === "advance") && (
+                  {(currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
@@ -1676,6 +1599,17 @@ export function HomeContent({
                         className="inline-flex items-center gap-1 h-9 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.97] text-black font-black text-[13px] rounded-full transition-all"
                       >
                         🚩 바로가기
+                      </Link>
+                    </div>
+                  )}
+                  {currentTab === "share" && !isMdOrAdmin && (
+                    <div className="flex justify-end mt-3">
+                      <Link
+                        href={user ? "/shares/new" : "/login?redirect=/shares/new"}
+                        onClick={dismissGuide}
+                        className="inline-flex items-center gap-1 h-9 px-4 bg-amber-500 hover:bg-amber-400 active:scale-[0.97] text-black font-black text-[13px] rounded-full transition-all"
+                      >
+                        🧩 바로가기
                       </Link>
                     </div>
                   )}
