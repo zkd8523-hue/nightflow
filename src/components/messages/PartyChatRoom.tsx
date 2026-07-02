@@ -37,10 +37,15 @@ interface Props {
   me: Me;
   isLeader: boolean;
   isMd?: boolean;
+  /** MD가 상담(크레딧 사용)에 이미 동의했는지. false면 입장 시 동의 모달 노출 */
+  mdConsented?: boolean;
   puzzleStatus: string;
   partyInfo: PartyInfo;
   participants: PartyParticipant[];
 }
+
+// 조각 매치 크레딧 정액 (Migration 358 / OfferSheet와 일치)
+const PARTY_MATCH_CREDIT_COST = 10;
 
 // 첫 진입 인사말 추천 (한 번이라도 보내면 사라짐)
 const GREETING_PRESETS = [
@@ -76,6 +81,7 @@ export function PartyChatRoom({
   me,
   isLeader,
   isMd = false,
+  mdConsented = false,
   puzzleStatus,
   partyInfo,
   participants: initialParticipants,
@@ -91,6 +97,34 @@ export function PartyChatRoom({
 
   const [participants, setParticipants] = useState<PartyParticipant[]>(initialParticipants);
   const [offersOpen, setOffersOpen] = useState(false);
+  // MD 입장 동의(크레딧 사용) 상태. 미동의면 상담 시작 모달을 띄우고 채팅 차단.
+  const [consented, setConsented] = useState(mdConsented);
+  const [consentBusy, setConsentBusy] = useState(false);
+  const showConsentGate = isMd && !consented;
+
+  async function handleStartConsult() {
+    setConsentBusy(true);
+    const { data, error } = await createClient().rpc("start_party_consultation", { p_puzzle_id: puzzleId });
+    setConsentBusy(false);
+    if (error || (data && !(data as { success?: boolean }).success)) {
+      toast.error((data as { error?: string })?.error ?? "상담을 시작하지 못했어요");
+      return;
+    }
+    setConsented(true);
+    toast.success(`매치 크레딧 ${PARTY_MATCH_CREDIT_COST}개를 사용해 상담을 시작했어요`);
+  }
+
+  async function handleDeclineConsult() {
+    setConsentBusy(true);
+    const { data, error } = await createClient().rpc("decline_party_consultation", { p_puzzle_id: puzzleId });
+    setConsentBusy(false);
+    if (error || (data && !(data as { success?: boolean }).success)) {
+      toast.error((data as { error?: string })?.error ?? "처리하지 못했어요");
+      return;
+    }
+    toast.success("상담을 거절했어요. 오퍼가 철회됐어요");
+    router.push(`/flags/${puzzleId}`);
+  }
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [releasing, setReleasing] = useState(false);
   // 롱프레스 → 리액션/답글 메뉴
@@ -1044,6 +1078,49 @@ export function PartyChatRoom({
             >
               취소
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MD 입장 동의 게이트: 미동의 시 채팅 차단 + 크레딧 사용 확인 */}
+      {showConsentGate && (
+        <div className="fixed inset-0 z-[80] bg-black/80 flex items-end justify-center">
+          <div
+            className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 space-y-5"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+          >
+            <div className="space-y-2 text-center">
+              <div className="text-[34px] leading-none">💳</div>
+              <p className="text-[19px] font-black text-white">상담을 시작할까요?</p>
+              <p className="text-[14px] text-neutral-300 leading-relaxed">
+                상담을 시작하면 <strong className="text-amber-400 font-bold">매치 크레딧 {PARTY_MATCH_CREDIT_COST}개</strong>가
+                <br />사용돼요. (조각 매치 1회 정액)
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-neutral-900/70 border border-neutral-800 px-4 py-3">
+              <p className="text-[12.5px] text-neutral-400 leading-relaxed">
+                · 크레딧은 이 상담에서 <strong className="text-neutral-200">한 번만</strong> 사용돼요.<br />
+                · <strong className="text-red-400">거절하면 오퍼가 철회</strong>되고, 방장은 다른 파트너를 초대할 수 있어요.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <button
+                onClick={handleStartConsult}
+                disabled={consentBusy}
+                className="w-full py-4 rounded-2xl bg-white text-black font-black text-[16px] disabled:opacity-50 active:scale-[0.98] transition-all"
+              >
+                {consentBusy ? "처리 중…" : `크레딧 ${PARTY_MATCH_CREDIT_COST}개 사용하고 상담 시작`}
+              </button>
+              <button
+                onClick={handleDeclineConsult}
+                disabled={consentBusy}
+                className="w-full py-3 rounded-2xl text-[14px] text-neutral-400 hover:text-red-400 font-bold disabled:opacity-50 transition-colors"
+              >
+                거절 (오퍼 철회)
+              </button>
+            </div>
           </div>
         </div>
       )}

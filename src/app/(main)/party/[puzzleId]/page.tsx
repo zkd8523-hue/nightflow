@@ -69,10 +69,12 @@ export default async function PartyChatPage({ params }: PageProps) {
   // 초대된 MD (조각당 1명)
   const { data: partyMd } = await supabase
     .from("puzzle_party_md")
-    .select("md_id, offer_id, md:public_user_profiles!puzzle_party_md_md_id_fkey(id, display_name, profile_image)")
+    .select("md_id, offer_id, consented_at, md:public_user_profiles!puzzle_party_md_md_id_fkey(id, display_name, profile_image)")
     .eq("puzzle_id", puzzleId)
     .maybeSingle();
   const invitedMdId = partyMd?.md_id ?? null;
+  // MD가 아직 상담(크레딧 사용)에 동의하지 않았으면 입장 시 동의 모달 노출
+  const mdConsented = !!(partyMd as { consented_at?: string | null } | null)?.consented_at;
 
   // MD의 클럽명 (초대 오퍼 기준)
   let invitedMdClub: string | null = null;
@@ -158,6 +160,7 @@ export default async function PartyChatPage({ params }: PageProps) {
       me={{ id: me.id, display_name: me.display_name, profile_image: me.profile_image }}
       isLeader={isLeader}
       isMd={isInvitedMd}
+      mdConsented={mdConsented}
       puzzleStatus={puzzle.status}
       partyInfo={{
         dateLabel,

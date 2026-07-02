@@ -19,11 +19,25 @@ export interface DisplayNameValidation {
   message?: string;
 }
 
+// 한글 낱자(완성되지 않은 자음/모음): ㄱ-ㆍ 영역. "ㅎㅇ", "ㅋㅋ", "ㅏㅏ" 등 차단용.
+const HANGUL_JAMO = /[ㄱ-ㆎ]/;
+
 export function validateDisplayName(value: string): DisplayNameValidation {
   const trimmed = value.trim();
 
   if (trimmed.length < MIN_LENGTH || trimmed.length > MAX_LENGTH) {
     return { ok: false, message: `닉네임은 ${MIN_LENGTH}-${MAX_LENGTH}자여야 합니다.` };
+  }
+
+  // 자음/모음 낱자(ㅎㅇ, ㄴㅇㄴㅇ, ㅋㅋ 등)가 하나라도 포함되면 거부
+  if (HANGUL_JAMO.test(trimmed)) {
+    return { ok: false, message: "완성된 글자만 사용할 수 있어요 (ㅎㅇ, ㅋㅋ 등 불가)." };
+  }
+
+  // 공백만으로 벌어진 이름(자모/특수문자 제외) 방지: 문자·숫자가 최소 2자 이상
+  const alnum = trimmed.replace(/[^0-9A-Za-z가-힣]/g, "");
+  if (alnum.length < MIN_LENGTH) {
+    return { ok: false, message: `닉네임은 글자·숫자 ${MIN_LENGTH}자 이상이어야 해요.` };
   }
 
   const lower = trimmed.toLowerCase();
