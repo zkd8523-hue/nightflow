@@ -34,6 +34,7 @@ import { ClubLocationModal } from "./ClubLocationModal";
 import { ClubProfileEditor } from "./ClubProfileEditor";
 import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
 import { WordCloudSection } from "./WordCloudSection";
+import { ClubShotSection } from "./ClubShotSection";
 import { FlagExplainerSheet } from "./FlagExplainerSheet";
 import { useIsClubPartner } from "@/hooks/useIsClubPartner";
 import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
@@ -628,6 +629,13 @@ export function ClubDetailContent({
           onOpenChange={setReportSheetOpen}
         />
       )}
+
+      {/* 클럽 LIVE (SHOT) — 정보 아래, 리뷰 위 */}
+      <ClubShotSection
+        clubId={club.id}
+        clubName={clubName}
+        clubAreaKr={club.area ?? null}
+      />
 
       {/* 5자 리뷰 워드클라우드 */}
       <WordCloudSection clubId={club.id} clubName={clubName} />

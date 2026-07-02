@@ -1285,7 +1285,10 @@ export interface ChatMessageReport {
  */
 export interface ChatShot {
   id: string;
-  area: VerifiableArea;
+  /** Migration 404 — NULL 허용 (일반 SHOT). 지역방 SHOT/LIVE는 인증 area */
+  area: VerifiableArea | null;
+  /** Migration 341 — 지정 시 LIVE. 클럽 페이지 노출 대상 */
+  club_id: string | null;
   author_id: string;
   media_type: 'image' | 'video';
   media_url: string;

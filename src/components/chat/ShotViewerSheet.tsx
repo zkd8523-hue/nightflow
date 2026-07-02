@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Flag,
   Heart,
@@ -10,6 +11,7 @@ import {
   MoreVertical,
   Trash2,
   X,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -143,6 +145,7 @@ function ShotViewerContent({
   onOpenComments: () => void;
   onRequireLogin?: () => void;
 }) {
+  const router = useRouter();
   const isMine = shot.author_id === currentUserId;
   const remaining = remainingTimeText(shot.expires_at);
   const [deleting, setDeleting] = useState(false);
@@ -322,10 +325,21 @@ function ShotViewerContent({
               <span className="text-white text-[13px] font-black truncate drop-shadow-lg">
                 {shot.author?.display_name ?? "익명"}
               </span>
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-300 text-[10px] font-bold">
-                <MapPin className="w-2.5 h-2.5" />
-                {ROOM_LABEL[shot.area]}
-              </span>
+              {shot.club_id ? (
+                <button
+                  type="button"
+                  onClick={() => router.push(`/clubs/${shot.club_id}`)}
+                  className="pointer-events-auto inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/25 text-red-200 text-[10px] font-black active:scale-95 transition"
+                >
+                  <Zap className="w-2.5 h-2.5 fill-red-200" />
+                  LIVE
+                </button>
+              ) : shot.area ? (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-300 text-[10px] font-bold">
+                  <MapPin className="w-2.5 h-2.5" />
+                  {ROOM_LABEL[shot.area]}
+                </span>
+              ) : null}
               <span className="text-[10px] text-white/60 drop-shadow-lg shrink-0">
                 {remaining}
               </span>

@@ -7,14 +7,17 @@ import type { ChatShot, VerifiableArea } from "@/types/database";
 
 /**
  * 활성 SHOT 목록 (만료 안 된 것만, 최신순)
- * - `areas` undefined or 빈 배열: 모든 지역 (잡담방용)
- * - `areas` 지정: 해당 지역만 (지역방용)
+ * Migration 404 기준: 모든 방 통합 캐러셀 — 필터 X, 정렬만 사용자 area 우선
+ * - `areas` 파라미터는 하위호환 유지용 (내부에선 필터 X)
+ * - `userArea` 지정 시 그 area 매치 SHOT을 앞으로 정렬 (LIVE 그룹 등 활용)
+ * - `clubId` 지정 시 특정 클럽 페이지에 필터 (SELECT WHERE club_id = ?)
  * + Realtime INSERT/DELETE 구독
  * + 좋아요 토글 (currentUserId 있을 때 liked_by_me 채움)
  */
 export function useChatShots(
   areas?: VerifiableArea[],
-  currentUserId?: string
+  currentUserId?: string,
+  clubId?: string
 ) {
   const [shots, setShots] = useState<ChatShot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +26,7 @@ export function useChatShots(
     ReturnType<typeof createClient>["channel"]
   > | null>(null);
 
-  // areas 배열을 안정적인 키로 (재구독 폭주 방지)
+  // areas 는 이제 하위호환 파라미터 (내부에선 무시). 재구독 트리거 방지 위해 key 유지
   const areasKey = (areas ?? []).slice().sort().join(",");
 
   const load = useCallback(async () => {
@@ -32,15 +35,15 @@ export function useChatShots(
     let q = supabase
       .from("chat_shots")
       .select(
-        `id, area, author_id, media_type, media_url, width, height, duration, caption, like_count, comment_count, created_at, expires_at,
+        `id, area, club_id, author_id, media_type, media_url, width, height, duration, caption, like_count, comment_count, created_at, expires_at,
          author:public_user_profiles!author_id(id, display_name, profile_image)`
       )
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(50);
-    const list = areasKey ? areasKey.split(",") : [];
-    if (list.length > 0) {
-      q = q.in("area", list);
+    // 클럽 페이지 = 그 club_id LIVE만
+    if (clubId) {
+      q = q.eq("club_id", clubId);
     }
     // 프로덕션 빌드에선 테스트 계정 SHOT 제외 (Migration 317)
     if (process.env.NODE_ENV === "production") {
@@ -63,7 +66,8 @@ export function useChatShots(
           : (rawAuthor as ChatShot["author"]);
         return {
           id: d.id,
-          area: d.area as VerifiableArea,
+          area: (d.area ?? null) as VerifiableArea | null,
+          club_id: (d as { club_id?: string | null }).club_id ?? null,
           author_id: d.author_id,
           media_type: d.media_type as "image" | "video",
           media_url: d.media_url,
@@ -122,8 +126,8 @@ export function useChatShots(
         },
         async (payload) => {
           const newShot = payload.new as ChatShot;
-          const list = areasKey ? areasKey.split(",") : [];
-          if (list.length > 0 && !list.includes(newShot.area)) return;
+          // 클럽 페이지 컨텍스트면 그 club_id만 반영
+          if (clubId && newShot.club_id !== clubId) return;
           // 작성자 프로필 join
           const { data: author } = await supabase
             .from("public_user_profiles")

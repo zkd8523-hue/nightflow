@@ -3,17 +3,20 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Heart, Plus } from "lucide-react";
+import { Heart, Plus, Zap } from "lucide-react";
 import { useChatShots } from "@/hooks/useChatShots";
-import { ROOM_LABEL } from "@/lib/chat/areas";
 import type { ChatShot, VerifiableArea } from "@/types/database";
 import { ShotViewerSheet } from "./ShotViewerSheet";
 import { getViewedShotIds, markShotViewed } from "@/lib/chat/viewedShots";
 
 interface Props {
-  /** 표시할 area 필터. 비우거나 undefined면 전체(잡담방) */
+  /** (하위호환) 필터 파라미터 — Migration 404 이후 무시됨 */
   areas?: VerifiableArea[];
-  /** "SHOT 올리기" 버튼 표시 여부 (지역방에서만) */
+  /** 사용자 인증 area — 매치되는 SHOT을 앞으로 정렬 */
+  userArea?: VerifiableArea | null;
+  /** 특정 클럽 페이지 컨텍스트 — 그 club_id LIVE만 로드 */
+  clubId?: string;
+  /** "SHOT 올리기" 버튼 표시 여부 */
   showComposeButton?: boolean;
   onComposeClick?: () => void;
   currentUserId?: string;
@@ -21,34 +24,54 @@ interface Props {
 }
 
 /**
- * 와글 SHOT 가로 캐러셀 — 메시지 리스트 위에 표시
- * 인스타 스토리 스타일
+ * 와글 SHOT 통합 캐러셀 (Migration 404 이후)
+ *  - 방 필터 X, 사용자 area 매치 SHOT을 앞으로 정렬
+ *  - LIVE 그룹 슬롯: 클럽 지정된 LIVE만 모아서 첫 자리에 노출
+ *  - 클럽 페이지에서는 clubId로 필터
  */
 export function ShotCarousel({
   areas,
+  userArea,
+  clubId,
   showComposeButton,
   onComposeClick,
   currentUserId,
   currentUserProfile,
 }: Props) {
   const router = useRouter();
-  const { shots, loading, toggleLike } = useChatShots(areas, currentUserId);
+  const { shots, loading, toggleLike } = useChatShots(areas, currentUserId, clubId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [liveMode, setLiveMode] = useState(false);
 
-  // 본 SHOT 추적 (인스타 스토리 패턴) — localStorage
   const [viewedSet, setViewedSet] = useState<Set<string>>(new Set());
   useEffect(() => {
     setViewedSet(getViewedShotIds());
   }, [shots]);
 
-  // 안 본 SHOT 먼저 → 본 SHOT 끝쪽으로 정렬
+  // 통합 정렬: (1) 안 본 것 우선 → (2) 사용자 area 매치 우선 → (3) 최신순 보존
   const sortedShots = useMemo(() => {
-    const unseen = shots.filter((s) => !viewedSet.has(s.id));
-    const seen = shots.filter((s) => viewedSet.has(s.id));
-    return [...unseen, ...seen];
-  }, [shots, viewedSet]);
+    const withRank = shots.map((s, i) => ({
+      s,
+      i,
+      viewed: viewedSet.has(s.id),
+      areaMatch: userArea ? s.area === userArea : false,
+    }));
+    withRank.sort((a, b) => {
+      if (a.viewed !== b.viewed) return a.viewed ? 1 : -1;
+      if (a.areaMatch !== b.areaMatch) return a.areaMatch ? -1 : 1;
+      return a.i - b.i;
+    });
+    return withRank.map((r) => r.s);
+  }, [shots, viewedSet, userArea]);
 
-  // SHOT이 하나도 없고 컴포즈 버튼도 안 보일 거면 렌더 안 함
+  // LIVE(클럽 지정)만 별도 배열 — 그룹 슬롯 썸네일 + LIVE 모드 뷰어용
+  const liveShots = useMemo(
+    () => sortedShots.filter((s) => s.club_id !== null),
+    [sortedShots]
+  );
+
+  const displayShots = liveMode ? liveShots : sortedShots;
+
   if (!loading && shots.length === 0 && !showComposeButton) return null;
 
   return (
@@ -68,7 +91,6 @@ export function ShotCarousel({
             aria-label="SHOT 올리기"
           >
             <div className="relative w-16 h-16">
-              {/* 본인 프로필 이미지 (인스타 '내 스토리' 패턴) */}
               <div className="relative w-16 h-16 rounded-full overflow-hidden bg-neutral-900 border-2 border-neutral-800">
                 {currentUserProfile?.profile_image ? (
                   <Image
@@ -84,11 +106,57 @@ export function ShotCarousel({
                   </div>
                 )}
               </div>
-              {/* 우하단 + 배지 (인스타 패턴) */}
               <span className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-amber-500 ring-2 ring-[#0B0A11] flex items-center justify-center">
                 <Plus className="w-3 h-3 text-black" strokeWidth={3} />
               </span>
             </div>
+          </button>
+        )}
+
+        {/* LIVE 그룹 슬롯 — 클럽 페이지 컨텍스트가 아닐 때만, LIVE가 1개 이상 있을 때 */}
+        {!clubId && liveShots.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              setLiveMode(true);
+              markShotViewed(liveShots[0].id);
+              setViewedSet((prev) => new Set(prev).add(liveShots[0].id));
+              setViewerIndex(0);
+            }}
+            className="shrink-0 w-16 flex flex-col items-center gap-1"
+            aria-label="LIVE 모아보기"
+          >
+            <div className="relative w-16 h-16 rounded-full p-[2px] bg-gradient-to-br from-red-500 via-pink-500 to-amber-500">
+              <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
+                {liveShots[0].media_type === "image" ? (
+                  <Image
+                    src={liveShots[0].media_url}
+                    alt=""
+                    fill
+                    sizes="64px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <video
+                    src={liveShots[0].media_url}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                )}
+                <div className="absolute inset-0 bg-black/25" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[9px] font-black leading-none">
+                    <Zap className="w-2.5 h-2.5 fill-white" />
+                    LIVE
+                  </span>
+                </div>
+              </div>
+            </div>
+            <span className="text-[10px] truncate w-full text-center font-bold text-red-400">
+              LIVE
+            </span>
           </button>
         )}
 
@@ -99,6 +167,7 @@ export function ShotCarousel({
               key={shot.id}
               type="button"
               onClick={() => {
+                setLiveMode(false);
                 markShotViewed(shot.id);
                 setViewedSet((prev) => new Set(prev).add(shot.id));
                 setViewerIndex(idx);
@@ -132,13 +201,14 @@ export function ShotCarousel({
       </div>
 
       <ShotViewerSheet
-        shots={sortedShots}
+        shots={displayShots}
         index={viewerIndex}
         onIndexChange={(idx) => {
-          if (idx !== null && sortedShots[idx]) {
-            markShotViewed(sortedShots[idx].id);
-            setViewedSet((prev) => new Set(prev).add(sortedShots[idx].id));
+          if (idx !== null && displayShots[idx]) {
+            markShotViewed(displayShots[idx].id);
+            setViewedSet((prev) => new Set(prev).add(displayShots[idx].id));
           }
+          if (idx === null) setLiveMode(false);
           setViewerIndex(idx);
         }}
         currentUserId={currentUserId}
@@ -158,12 +228,15 @@ function ShotThumb({
   isMine: boolean;
   isViewed: boolean;
 }) {
-  // 인스타 스토리 패턴: 본 SHOT은 회색 링, 안 본 SHOT은 그라데이션 링
+  // LIVE(클럽 지정)는 red-amber, 일반은 인스타 스토리 그라데이션, 본 SHOT은 회색
+  const isLive = shot.club_id !== null;
   const ringClass = isViewed
     ? "bg-neutral-700"
-    : isMine
-      ? "bg-gradient-to-br from-amber-400 to-amber-600"
-      : "bg-gradient-to-br from-[#A78BFA] to-[#C084FC]";
+    : isLive
+      ? "bg-gradient-to-br from-red-500 via-pink-500 to-amber-500"
+      : isMine
+        ? "bg-gradient-to-br from-amber-400 to-amber-600"
+        : "bg-gradient-to-br from-[#A78BFA] to-[#C084FC]";
   return (
     <div className={`relative w-16 h-16 rounded-full p-[2px] ${ringClass}`}>
       <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
@@ -192,9 +265,12 @@ function ShotThumb({
           </>
         )}
       </div>
-      <span className="absolute -bottom-0.5 -right-0.5 text-[8px] font-black bg-black text-white px-1 py-0.5 rounded-full border border-[#0B0A11] leading-none">
-        {ROOM_LABEL[shot.area].slice(0, 2)}
-      </span>
+      {isLive && (
+        <span className="absolute -bottom-0.5 -right-0.5 inline-flex items-center gap-0.5 text-[8px] font-black bg-red-500 text-white px-1 py-0.5 rounded-full border border-[#0B0A11] leading-none">
+          <Zap className="w-2 h-2 fill-white" />
+          LIVE
+        </span>
+      )}
       {shot.like_count > 0 && (
         <span className="absolute -top-0.5 -right-0.5 inline-flex items-center gap-0.5 text-[8px] font-black bg-red-500 text-white px-1 py-0.5 rounded-full border border-[#0B0A11] leading-none">
           <Heart className="w-2 h-2 fill-white" />

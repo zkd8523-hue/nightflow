@@ -109,17 +109,14 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
     return isVerified(room as VerifiableArea);
   }, [requiresVerification, room, isVerified]);
 
-  // SHOT 캐러셀에 표시할 area 필터
-  // - 잡담방(all): 모든 지역
-  // - 지역방: 해당 지역만
-  const shotAreas = useMemo<VerifiableArea[] | undefined>(() => {
-    if (room === "all") return undefined; // 전체
-    return [room as VerifiableArea];
-  }, [room]);
-
-  // SHOT 작성 가능 여부 — 인증된 지역이 1개 이상 있어야
-  const canPostShot = !!user && activeAreas.length > 0;
-  // SHOT 작성 시 사용할 area — 현재 방이 지역방이면 그 지역, 잡담방이면 인증된 지역 중 첫 번째
+  // Migration 404 이후: SHOT 캐러셀은 모든 방 통합. area는 정렬 힌트로만 사용.
+  // 현재 방이 지역방이면 그 area 우선, 잡담방이면 인증된 area 중 첫 번째
+  const shotSortArea: VerifiableArea | null = useMemo(() => {
+    if (room !== "all") return room as VerifiableArea;
+    if (activeAreas.length > 0) return activeAreas[0].area;
+    return null;
+  }, [room, activeAreas]);
+  // LIVE 작성 시 사용할 area (인증된 지역이 필요)
   const shotAuthorArea: VerifiableArea | null = useMemo(() => {
     if (room !== "all" && verifiedForRoom) return room as VerifiableArea;
     if (activeAreas.length > 0) return activeAreas[0].area;
@@ -521,9 +518,9 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
 
   return (
     <div className="flex flex-col pb-40">
-      {/* 와글 SHOT 캐러셀 */}
+      {/* 와글 SHOT 통합 캐러셀 (Migration 404 이후 방 필터 X) */}
       <ShotCarousel
-        areas={shotAreas}
+        userArea={shotSortArea}
         showComposeButton={true}
         currentUserId={user?.id}
         currentUserProfile={user ? { profile_image: user.profile_image ?? null, display_name: user.display_name ?? null } : null}
@@ -532,18 +529,13 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
             router.push(loginTarget);
             return;
           }
-          if (!canPostShot || !shotAuthorArea) {
-            // 인증된 지역 없음 → 인증 시트 오픈 (SHOT 작성 안내 컨텍스트)
-            setVerifyReason("shot");
-            setVerifyOpen(true);
-            return;
-          }
+          // 인증 여부 상관 없이 항상 캡처 시트 오픈 — 안에서 일반/LIVE 분기
           setShotComposeOpen(true);
         }}
       />
 
-      {/* SHOT 캡처 시트 */}
-      {user && shotAuthorArea && (
+      {/* SHOT 캡처 시트 — area 없어도 일반 SHOT은 게시 가능 */}
+      {user && (
         <ShotCaptureSheet
           open={shotComposeOpen}
           onOpenChange={setShotComposeOpen}
@@ -552,6 +544,11 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
           userProfile={{
             display_name: user.display_name ?? null,
             profile_image: user.profile_image ?? null,
+          }}
+          onRequestAreaVerify={() => {
+            setShotComposeOpen(false);
+            setVerifyReason("shot");
+            setVerifyOpen(true);
           }}
         />
       )}
