@@ -257,9 +257,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   // ⚠️ 폴백으로 setTab("puzzle")을 호출하면 onTabChange가 부모 URL을 puzzle로 덮어써서
   //    "조각 더보기"(?tab=share) 진입이 깃발로 튕기는 버그가 났음 → 폴백 제거.
   //    조각 탭 버튼은 아래 canShowShareTab && 로만 숨기고, tab 강제 전환은 하지 않는다.
-  const hasAnyShare = deferredAuctions.some(a => a.listing_type === 'share');
-  // 조각 탭 진입(?tab=share) 시엔 리스트가 비어도 탭을 보여준다 — 사용자가 명시적으로 요청한 뷰.
-  const canShowShareTab = userRole === "md" || userRole === "admin" || hasAnyShare || tab === "share";
+  // 조각은 유저 주도 1급 기능. 리스트가 비어도 탭은 항상 노출.
+  const canShowShareTab = true;
 
   // 퍼즐: 지역 필터 적용 ("서울 어디든"은 강남/홍대/이태원/건대 어느 것 선택해도 매칭)
   const filteredPuzzles = useMemo(() => {
