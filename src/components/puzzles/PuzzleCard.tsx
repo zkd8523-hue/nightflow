@@ -1,7 +1,9 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Share2 } from "lucide-react";
+import { ShareCreatedSheet } from "./ShareCreatedSheet";
 import { Button } from "@/components/ui/button";
 import type { Puzzle, GenderPref, AgePref, VibePref, MusicPref } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
@@ -162,6 +164,29 @@ export const PuzzleCard = memo(function PuzzleCard({
     ? Math.floor(puzzle.total_budget / puzzle.target_count)
     : puzzle.budget_per_person;
 
+  // 조각 카드 공유 → 카톡 공유 시트 (상세와 동일)
+  const [shareOpen, setShareOpen] = useState(false);
+  const shareBtn = (
+    <button
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareOpen(true); }}
+      aria-label="공유"
+      className="h-8 px-3 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition-colors text-[12px] font-bold active:scale-[0.97]"
+    >
+      <Share2 className="w-4 h-4" />
+      공유
+    </button>
+  );
+  const shareSheet = shareOpen ? (
+    <ShareCreatedSheet
+      puzzleId={puzzle.id}
+      eventDate={puzzle.event_date}
+      area={puzzle.area}
+      perPerson={perPersonBudget}
+      mode="share"
+      onClose={() => setShareOpen(false)}
+    />
+  ) : null;
+
   // Migration 171: age_pref가 배열. 'any' 포함 시 null, 외엔 라벨 조합 ("20초·20후")
   const ageTag = puzzle.age_pref.includes("any")
     ? null
@@ -208,6 +233,7 @@ export const PuzzleCard = memo(function PuzzleCard({
       className={`relative bg-[#1C1C1E] rounded-2xl p-3 flex flex-col gap-2 h-full ${isCardClickable ? "cursor-pointer active:scale-[0.98] transition-all" : ""}`}
       onClick={isCardClickable ? () => router.push(`/flags/${puzzle.id}`) : undefined}
     >
+      {shareSheet}
       {isNew && !hideNewBadge && !isSelecting && (
         <div
           className="animate-new-badge pointer-events-none absolute -top-2 -right-1 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none shadow-lg shadow-rose-900/40"
@@ -255,14 +281,14 @@ export const PuzzleCard = memo(function PuzzleCard({
       <div className="flex flex-col gap-1.5 mt-auto">
         {isRecruitingParty ? (
           <>
-            {/* 파티원 모집 중: 예산/인원 진행 바 */}
+            {/* 파티원 모집 중: 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음) */}
             <div className="flex items-baseline gap-1">
               <span className="text-[18px] font-black text-green-400">
-                현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
+                1인 {perPersonBudget.toLocaleString()}원
               </span>
               <span className="text-[14px] font-bold text-neutral-600">/</span>
               <span className="text-[14px] font-bold text-neutral-500">
-                목표 {totalBudget.toLocaleString()}원
+                현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
               </span>
             </div>
             <div className="space-y-1">
@@ -364,28 +390,32 @@ export const PuzzleCard = memo(function PuzzleCard({
           <div className="min-w-0 flex-1">{userOfferBadge}</div>
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-300 hover:bg-white text-black shrink-0"
+            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700 shrink-0"
           >
             자세히
           </Button>
         </div>
       ) : isFull ? (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
           <span className="text-[12px] text-neutral-500 font-medium">파티 마감</span>
-          <Button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              trackEvent("puzzle_cta_click", { source: "card" });
-              router.push("/shares/new");
-            }}
-            className="h-8 px-4 rounded-full font-black text-[12px] transition-all active:scale-[0.97] bg-white hover:bg-neutral-200 text-black shrink-0"
-          >
-            모집하기
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {shareBtn}
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                trackEvent("puzzle_cta_click", { source: "card" });
+                router.push("/shares/new");
+              }}
+              className="h-8 px-4 rounded-full font-black text-[12px] transition-all active:scale-[0.97] bg-white hover:bg-neutral-200 text-black shrink-0"
+            >
+              모집하기
+            </Button>
+          </div>
         </div>
       ) : isLeader ? (
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-2">
+          {shareBtn}
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
             className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-neutral-800 border border-neutral-700 text-neutral-300 pointer-events-none"
@@ -394,7 +424,8 @@ export const PuzzleCard = memo(function PuzzleCard({
           </Button>
         </div>
       ) : isMember ? (
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-2">
+          {shareBtn}
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
             className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-green-500/15 border border-green-500/30 text-green-400 pointer-events-none"
@@ -403,10 +434,11 @@ export const PuzzleCard = memo(function PuzzleCard({
           </Button>
         </div>
       ) : (
-        <div className="flex justify-end">
+        <div className="flex justify-end items-center gap-2">
+          {shareBtn}
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-300 hover:bg-white text-black"
+            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700"
           >
             자세히
           </Button>

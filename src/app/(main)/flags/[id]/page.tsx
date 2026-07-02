@@ -65,6 +65,11 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const title = `나플 ${puzzle.is_recruiting_party ? "조각" : "깃발"} · ${area}${eventDate ? ` · ${eventDate}` : ""}`;
   const description = [budgetText, countText].filter(Boolean).join(" · ");
 
+  // 조각은 동적 OG 이미지(날짜·지역·인당가·N/M명), 깃발은 기존 정적 이미지
+  const ogImage = puzzle.is_recruiting_party
+    ? `https://nightflow.kr/api/puzzles/${id}/share-image`
+    : "/og-flag-moon.png";
+
   return {
     title,
     description,
@@ -93,11 +98,11 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       type: "article",
       images: [
         {
-          url: "/og-flag-moon.png",
+          url: ogImage,
           width: 1200,
           height: 630,
           type: "image/png",
-          alt: `${area} 클럽 깃발 - 나이트플로우`,
+          alt: `${area} 클럽 ${puzzle.is_recruiting_party ? "조각" : "깃발"} - 나이트플로우`,
         },
       ],
     },
@@ -105,7 +110,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       card: "summary_large_image",
       title,
       description,
-      images: ["/og-flag-moon.png"],
+      images: [ogImage],
     },
   };
 }

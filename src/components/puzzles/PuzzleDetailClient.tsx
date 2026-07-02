@@ -193,8 +193,9 @@ export function PuzzleDetailClient({
   const [showLeaderInfo, setShowLeaderInfo] = useState(false);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
   const [showMatchedShowcase, setShowMatchedShowcase] = useState(false);
-  // 조각 등록 직후 카톡 공유 시트 (?created=share)
+  // 조각 카톡 공유 시트 (?created=share 자동 오픈 / 공유 버튼 수동 오픈)
   const [showShareCreated, setShowShareCreated] = useState(searchParams.get("created") === "share");
+  const [shareCreatedMode, setShareCreatedMode] = useState<"created" | "share">("created");
   const recentMatchedPuzzle = useRecentMatchedPuzzle();
 
   const handleShare = useCallback(async () => {
@@ -637,7 +638,18 @@ export function PuzzleDetailClient({
                 )}
                 <span className="text-[14px] text-neutral-400">{areaLabel(puzzle.area, lang)}</span>
               </div>
-              <button onClick={handleShare} className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mr-1 shrink-0">
+              <button
+                onClick={() => {
+                  if (isRecruitingParty) {
+                    // 조각: 카톡 공유 시트 (홈과 동일)
+                    setShareCreatedMode("share");
+                    setShowShareCreated(true);
+                  } else {
+                    handleShare();
+                  }
+                }}
+                className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mr-1 shrink-0"
+              >
                 <Share2 className="w-4.5 h-4.5" />
               </button>
             </div>
@@ -647,25 +659,13 @@ export function PuzzleDetailClient({
               {isRecruitingParty ? (
                 <>
                   <div className="flex items-center gap-2 flex-wrap">
-                    {isLeader || isMd ? (
-                      <>
-                        <span className="text-[19px] font-bold text-green-400">
-                          현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
-                        </span>
-                        <span className="text-[13px] text-neutral-500">
-                          / 목표 {baseBudget.toLocaleString()}원
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-[19px] font-bold text-green-400">
-                          1인 {perPersonBudget.toLocaleString()}원
-                        </span>
-                        <span className="text-[13px] text-neutral-500">
-                          / 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
-                        </span>
-                      </>
-                    )}
+                    {/* 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음) */}
+                    <span className="text-[19px] font-bold text-green-400">
+                      1인 {perPersonBudget.toLocaleString()}원
+                    </span>
+                    <span className="text-[13px] text-neutral-500">
+                      / 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
+                    </span>
                     {puzzle.leader && (
                       <button
                         type="button"
@@ -1546,8 +1546,8 @@ export function PuzzleDetailClient({
         shareMode={isRecruitingParty}
       />
 
-      {/* 조각 등록 직후 카톡 공유 강조 시트 (방장·조각만) */}
-      {showShareCreated && isRecruitingParty && isLeader && (
+      {/* 조각 카톡 공유 시트 (등록 직후 자동 / 공유 버튼 수동) */}
+      {showShareCreated && isRecruitingParty && (
         <ShareCreatedSheet
           puzzleId={puzzle.id}
           eventDate={puzzle.event_date}
@@ -1556,8 +1556,7 @@ export function PuzzleDetailClient({
             puzzle.budget_per_person ??
             (puzzle.target_count ? Math.round((puzzle.total_budget ?? 0) / puzzle.target_count) : 0)
           }
-          currentCount={puzzle.current_count}
-          targetCount={puzzle.target_count}
+          mode={shareCreatedMode}
           onClose={() => setShowShareCreated(false)}
         />
       )}

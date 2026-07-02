@@ -34,8 +34,10 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
   }, [open]);
 
   const hasOther = selected.has("other");
-  const isSubmittable =
-    selected.size > 0 && !(hasOther && !text.trim()) && !submitting;
+  // 조각은 설문 없이 단순 확인(항상 활성). 깃발은 사유 선택 필수.
+  const isSubmittable = shareMode
+    ? !submitting
+    : selected.size > 0 && !(hasOther && !text.trim()) && !submitting;
 
   const toggleReason = (value: PuzzleCancelReason) => {
     setSelected((prev) => {
@@ -52,7 +54,10 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
 
   const handleConfirm = async () => {
     if (!isSubmittable) return;
-    await onConfirm(Array.from(selected), text.trim() || null);
+    await onConfirm(
+      shareMode ? [] : Array.from(selected),
+      shareMode ? null : text.trim() || null
+    );
   };
 
   return (
@@ -70,7 +75,8 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
             </p>
           </div>
 
-          {/* 사유 옵션 (복수선택) */}
+          {/* 사유 옵션 (복수선택) — 깃발만. 조각은 설문 없이 단순 확인 */}
+          {!shareMode && (
           <div className="space-y-2 px-1">
             <p className="text-[12px] text-neutral-500 px-1">이유를 선택해주세요 (여러 개 선택 가능)</p>
             {REASONS.map(({ value, label }) => {
@@ -91,6 +97,7 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
               );
             })}
           </div>
+          )}
 
           {/* 자유서술 */}
           {selected.size > 0 && (

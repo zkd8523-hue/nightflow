@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Link2, X } from "lucide-react";
@@ -18,27 +19,29 @@ interface Props {
   eventDate: string;
   area: string;
   perPerson: number;
-  currentCount: number;
-  targetCount: number;
   onClose: () => void;
+  /** "created": 등록 직후 / "share": 홈·상세에서 공유 버튼 누른 경우 */
+  mode?: "created" | "share";
 }
 
 /**
- * 조각 등록 직후 "지금 카톡으로 공유" 강조 시트.
- * 오픈챗에 바로 뿌려 파티원을 모으는 핵심 동선.
+ * 조각 카톡 공유 강조 시트.
+ * 등록 직후(created) 또는 홈·상세 공유 버튼(share)에서 재사용.
  */
 export function ShareCreatedSheet({
   puzzleId,
   eventDate,
   area,
   perPerson,
-  currentCount,
-  targetCount,
   onClose,
+  mode = "created",
 }: Props) {
   const router = useRouter();
   const { shareToKakao, isAvailable } = useKakaoShare();
   const [copying, setCopying] = useState(false);
+  // 캐러셀 등 transform 조상 안에서도 화면 전체를 덮도록 body로 포탈
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const areaLabel = AREA_LABEL[area] ?? area;
   const origin = typeof window !== "undefined" ? window.location.origin : "";
@@ -94,9 +97,13 @@ export function ShareCreatedSheet({
     onClose();
     router.push(`/flags/${puzzleId}`);
   }
+  // 등록 직후엔 닫으면 상세로, 공유 버튼에서 열었으면 그냥 닫기
+  const dismiss = mode === "created" ? goDetail : onClose;
 
-  return (
-    <div className="fixed inset-0 z-[70] bg-black/60 flex items-end justify-center" onClick={goDetail}>
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[70] bg-black/60 flex items-end justify-center" onClick={dismiss}>
       <div
         className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 space-y-5"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
@@ -104,36 +111,17 @@ export function ShareCreatedSheet({
       >
         <div className="flex items-start justify-between">
           <div className="space-y-1.5">
-            <p className="text-[20px] font-black text-white">🧩 조각 등록 완료!</p>
+            <p className="text-[20px] font-black text-white">
+              {mode === "created" ? "🧩 조각 등록 완료!" : "🧩 조각 공유하기"}
+            </p>
             <p className="text-[14px] text-neutral-300 leading-relaxed">
-              지금 바로 <span className="text-green-400 font-bold">오픈챗에 공유</span>해서
-              <br />함께 갈 파티원을 모아보세요.
+              <span className="text-green-400 font-bold">링크를 공유</span>해서
+              <br />파티원을 빠르게 모아보세요.
             </p>
           </div>
-          <button onClick={goDetail} className="p-1 -mr-1 text-neutral-500">
+          <button onClick={dismiss} className="p-1 -mr-1 text-neutral-500">
             <X className="w-5 h-5" />
           </button>
-        </div>
-
-        {/* 공유 이미지 미리보기 (카톡에 이렇게 나가요) */}
-        <div className="rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-900">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={imageUrl}
-            alt="공유 이미지 미리보기"
-            className="w-full block"
-            style={{ aspectRatio: "1200 / 630", objectFit: "cover" }}
-          />
-        </div>
-
-        {/* 요약 */}
-        <div className="rounded-2xl bg-neutral-900/60 border border-neutral-800 px-4 py-3">
-          <p className="text-[14px] font-bold text-white">
-            {areaLabel} · 인당 {perPerson.toLocaleString()}원
-          </p>
-          <p className="text-[12px] text-neutral-400 mt-0.5">
-            현재 {currentCount}/{targetCount}명 모집 중
-          </p>
         </div>
 
         {/* 메인 CTA: 카카오톡 공유 */}
@@ -155,13 +143,14 @@ export function ShareCreatedSheet({
             링크 복사
           </button>
           <button
-            onClick={goDetail}
+            onClick={dismiss}
             className="flex-1 py-3 rounded-xl bg-neutral-800 text-neutral-400 font-bold text-[14px]"
           >
-            나중에
+            {mode === "created" ? "나중에" : "닫기"}
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
