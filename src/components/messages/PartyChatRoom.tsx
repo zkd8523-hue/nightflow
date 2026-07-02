@@ -100,6 +100,7 @@ export function PartyChatRoom({
   // MD 입장 동의(크레딧 사용) 상태. 미동의면 상담 시작 모달을 띄우고 채팅 차단.
   const [consented, setConsented] = useState(mdConsented);
   const [consentBusy, setConsentBusy] = useState(false);
+  const [declineConfirm, setDeclineConfirm] = useState(false);
   const showConsentGate = isMd && !consented;
 
   async function handleStartConsult() {
@@ -120,6 +121,7 @@ export function PartyChatRoom({
     setConsentBusy(false);
     if (error || (data && !(data as { success?: boolean }).success)) {
       toast.error((data as { error?: string })?.error ?? "처리하지 못했어요");
+      setDeclineConfirm(false);
       return;
     }
     toast.success("상담을 거절했어요. 오퍼가 철회됐어요");
@@ -1090,18 +1092,10 @@ export function PartyChatRoom({
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
           >
             <div className="space-y-2 text-center">
-              <div className="text-[34px] leading-none">💳</div>
+              <div className="text-[34px] leading-none">🤝</div>
               <p className="text-[19px] font-black text-white">상담을 시작할까요?</p>
-              <p className="text-[14px] text-neutral-300 leading-relaxed">
-                상담을 시작하면 <strong className="text-amber-400 font-bold">매치 크레딧 {PARTY_MATCH_CREDIT_COST}개</strong>가
-                <br />사용돼요. (조각 매치 1회 정액)
-              </p>
-            </div>
-
-            <div className="rounded-xl bg-neutral-900/70 border border-neutral-800 px-4 py-3">
-              <p className="text-[12.5px] text-neutral-400 leading-relaxed">
-                · 크레딧은 이 상담에서 <strong className="text-neutral-200">한 번만</strong> 사용돼요.<br />
-                · <strong className="text-red-400">거절하면 오퍼가 철회</strong>되고, 방장은 다른 파트너를 초대할 수 있어요.
+              <p className="text-[14px] text-neutral-300">
+                수락 시 <span className="text-amber-400 font-bold">{PARTY_MATCH_CREDIT_COST}크레딧</span>이 소모돼요
               </p>
             </div>
 
@@ -1111,14 +1105,45 @@ export function PartyChatRoom({
                 disabled={consentBusy}
                 className="w-full py-4 rounded-2xl bg-white text-black font-black text-[16px] disabled:opacity-50 active:scale-[0.98] transition-all"
               >
-                {consentBusy ? "처리 중…" : `크레딧 ${PARTY_MATCH_CREDIT_COST}개 사용하고 상담 시작`}
+                {consentBusy ? "처리 중…" : "상담 시작"}
               </button>
               <button
-                onClick={handleDeclineConsult}
+                onClick={() => setDeclineConfirm(true)}
                 disabled={consentBusy}
                 className="w-full py-3 rounded-2xl text-[14px] text-neutral-400 hover:text-red-400 font-bold disabled:opacity-50 transition-colors"
               >
                 거절 (오퍼 철회)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 거절 재확인 */}
+      {declineConfirm && (
+        <div className="fixed inset-0 z-[90] bg-black/80 flex items-end justify-center">
+          <div
+            className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 space-y-5"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+          >
+            <div className="space-y-2 text-center">
+              <p className="text-[19px] font-black text-white">정말 거절할까요?</p>
+              <p className="text-[14px] text-neutral-300">거절 시 오퍼가 철회됩니다.</p>
+            </div>
+            <div className="space-y-2">
+              <button
+                onClick={handleDeclineConsult}
+                disabled={consentBusy}
+                className="w-full py-4 rounded-2xl bg-red-500 text-white font-black text-[16px] disabled:opacity-50 active:scale-[0.98] transition-all"
+              >
+                {consentBusy ? "처리 중…" : "거절하기"}
+              </button>
+              <button
+                onClick={() => setDeclineConfirm(false)}
+                disabled={consentBusy}
+                className="w-full py-3 rounded-2xl text-[14px] text-neutral-400 hover:text-white font-bold disabled:opacity-50 transition-colors"
+              >
+                돌아가기
               </button>
             </div>
           </div>
