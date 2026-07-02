@@ -6,10 +6,13 @@
 --   - 클럽 담당 MD(clubs.md_id)가 본인 클럽 LIVE 삭제 가능
 
 -- ============================================
--- 1) club_id 컬럼 추가
+-- 1) 컬럼 추가 (club_id, is_hidden — 인덱스 WHERE절에서 참조하므로 먼저)
 -- ============================================
 ALTER TABLE chat_shots
   ADD COLUMN IF NOT EXISTS club_id UUID REFERENCES clubs(id) ON DELETE SET NULL;
+
+ALTER TABLE chat_shots
+  ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- 인덱스: 클럽 페이지에서 그 클럽 활성 LIVE 빠른 조회
 CREATE INDEX IF NOT EXISTS idx_chat_shots_club_active
@@ -109,12 +112,8 @@ CREATE POLICY "Author or admin or club_md can delete shots"
   );
 
 -- ============================================
--- 4) is_hidden 컬럼 추가 (초상권 신고 1건 즉시 비공개용)
+-- 4) 활성 SHOT 조회 정책 갱신 — is_hidden=FALSE 추가
 -- ============================================
-ALTER TABLE chat_shots
-  ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN NOT NULL DEFAULT FALSE;
-
--- 활성 SHOT 조회 정책 갱신 — is_hidden=FALSE 추가
 DROP POLICY IF EXISTS "Anyone can read active shots" ON chat_shots;
 CREATE POLICY "Anyone can read active shots"
   ON chat_shots
