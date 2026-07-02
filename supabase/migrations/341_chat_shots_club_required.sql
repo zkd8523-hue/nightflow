@@ -104,9 +104,9 @@ CREATE POLICY "Author or admin or club_md can delete shots"
     OR (
       club_id IS NOT NULL
       AND EXISTS (
-        SELECT 1 FROM clubs c
-        WHERE c.id = chat_shots.club_id
-          AND c.md_id = auth.uid()
+        SELECT 1 FROM club_partners cp
+        WHERE cp.club_id = chat_shots.club_id
+          AND cp.md_id = auth.uid()
       )
     )
   );
