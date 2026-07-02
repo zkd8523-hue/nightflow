@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   searchParams: Promise<{
-    tab?: string; area?: string; status?: string; sort?: string;
+    tab?: string; area?: string; status?: string; sort?: string; kind?: string;
     from?: string; to?: string; trigger?: string; category?: string; page?: string;
   }>;
 }
@@ -56,10 +56,11 @@ const STATUS_COLOR: Record<string, string> = {
 export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
   const supabase = await createClient();
   const {
-    tab = "list", area: areaFilter, status: statusFilter, sort: sortParam,
+    tab = "list", area: areaFilter, status: statusFilter, sort: sortParam, kind: kindFilter,
     from: fromParam, to: toParam, trigger: triggerParam, category: categoryParam, page: pageParam,
   } = await searchParams;
   const sortKey: SortKey = sortParam === "created" ? "created" : "event";
+  const kindLabel = kindFilter === "share" ? "조각" : kindFilter === "flag" ? "깃발" : "게시물";
 
   // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
   const headersList = await headers();
@@ -83,7 +84,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
   // 전체 깃발 탭 데이터 (sort 분기: 영업일순 vs 등록순)
   const baseQuery = supabase
     .from("puzzles")
-    .select("id, area, event_date, status, target_count, current_count, notes, created_at, leader_id");
+    .select("id, area, event_date, status, target_count, current_count, notes, created_at, leader_id, is_recruiting_party");
   const { data: allPuzzles } = sortKey === "created"
     ? await baseQuery.order("created_at", { ascending: false })
     : await baseQuery.order("event_date", { ascending: false }).order("created_at", { ascending: false });
@@ -119,18 +120,28 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
     return acc;
   }, {});
 
-  // 지역 목록 추출 (전체 퍼즐 기준, 카운트 포함)
-  const areaCountMap = (allPuzzles || []).reduce<Record<string, number>>((acc, p) => {
+  // 깃발/조각 서브필터 (kind: flag | share | 없음=전체)
+  const flagCountAll = (allPuzzles || []).filter((p) => !p.is_recruiting_party).length;
+  const shareCountAll = (allPuzzles || []).filter((p) => p.is_recruiting_party).length;
+  const puzzlesAfterKind =
+    kindFilter === "flag"
+      ? (allPuzzles || []).filter((p) => !p.is_recruiting_party)
+      : kindFilter === "share"
+      ? (allPuzzles || []).filter((p) => p.is_recruiting_party)
+      : (allPuzzles || []);
+
+  // 지역 목록 추출 (kind 필터 적용 후 — 칩이 선택 종류의 분포를 반영)
+  const areaCountMap = puzzlesAfterKind.reduce<Record<string, number>>((acc, p) => {
     if (!p.area) return acc;
     acc[p.area] = (acc[p.area] || 0) + 1;
     return acc;
   }, {});
   const areaList = Object.entries(areaCountMap).sort((a, b) => b[1] - a[1]);
 
-  // 상태별 카운트 (지역 필터 적용 후 집계 — 칩이 현재 보이는 범위의 분포를 반영)
+  // 상태별 카운트 (kind + 지역 필터 적용 후 집계 — 칩이 현재 보이는 범위의 분포를 반영)
   const puzzlesAfterArea = areaFilter
-    ? (allPuzzles || []).filter((p) => p.area === areaFilter)
-    : (allPuzzles || []);
+    ? puzzlesAfterKind.filter((p) => p.area === areaFilter)
+    : puzzlesAfterKind;
   const statusCountMap = puzzlesAfterArea.reduce<Record<string, number>>((acc, p) => {
     if (!p.status) return acc;
     acc[p.status] = (acc[p.status] || 0) + 1;
@@ -225,7 +236,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <Flag className="w-5 h-5 text-purple-400" />
-          <h1 className="text-[20px] font-black text-white">깃발 관리</h1>
+          <h1 className="text-[20px] font-black text-white">깃발·조각 관리</h1>
         </div>
 
         {/* 탭 */}
@@ -238,7 +249,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                   : "bg-neutral-800 text-neutral-400 border border-neutral-700"
               }`}
             >
-              전체 깃발 {allPuzzles ? `${allPuzzles.length}건` : ""}
+              전체 목록 {allPuzzles ? `${allPuzzles.length}건` : ""}
             </button>
           </Link>
           <Link href="?tab=offers">
@@ -278,12 +289,14 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
 
         {/* 전체 깃발 탭 */}
         {tab === "list" && (() => {
-          const buildHref = (overrides: { area?: string | null; status?: string | null; sort?: SortKey | null }) => {
+          const buildHref = (overrides: { area?: string | null; status?: string | null; sort?: SortKey | null; kind?: string | null }) => {
             const params = new URLSearchParams();
             params.set("tab", "list");
             const nextArea = overrides.area === undefined ? areaFilter : overrides.area;
             const nextStatus = overrides.status === undefined ? statusFilter : overrides.status;
             const nextSort = overrides.sort === undefined ? sortKey : overrides.sort;
+            const nextKind = overrides.kind === undefined ? kindFilter : overrides.kind;
+            if (nextKind) params.set("kind", nextKind);
             if (nextArea) params.set("area", nextArea);
             if (nextStatus) params.set("status", nextStatus);
             if (nextSort && nextSort !== "event") params.set("sort", nextSort);
@@ -291,6 +304,26 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
           };
           return (
           <div className="space-y-4">
+            {/* 깃발/조각 토글 (kind 변경 시 지역·상태 필터 초기화) */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-neutral-500 font-bold mr-1">종류:</span>
+              <Link href={buildHref({ kind: null, area: null, status: null })}>
+                <button className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${!kindFilter ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 border border-neutral-700"}`}>
+                  전체 {allPuzzles?.length || 0}
+                </button>
+              </Link>
+              <Link href={buildHref({ kind: "flag", area: null, status: null })}>
+                <button className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${kindFilter === "flag" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 border border-neutral-700"}`}>
+                  🚩 깃발 {flagCountAll}
+                </button>
+              </Link>
+              <Link href={buildHref({ kind: "share", area: null, status: null })}>
+                <button className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${kindFilter === "share" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 border border-neutral-700"}`}>
+                  🧩 조각 {shareCountAll}
+                </button>
+              </Link>
+            </div>
+
             {/* 정렬 토글 */}
             <div className="flex items-center gap-1.5">
               <span className="text-[11px] text-neutral-500 font-bold mr-1">정렬:</span>
@@ -386,7 +419,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
             {filteredPuzzles.length === 0 ? (
               <div className="text-center py-20 text-neutral-500">
                 <Flag className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                <p>{areaFilter ? `${areaFilter} 지역에 깃발이 없습니다` : "깃발이 없습니다"}</p>
+                <p>{areaFilter ? `${areaFilter} 지역에 ${kindLabel}이 없습니다` : `${kindLabel}이 없습니다`}</p>
               </div>
             ) : (
               (() => {
@@ -447,9 +480,16 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                                 등록 {new Date(puzzle.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                               </p>
                             </div>
-                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[puzzle.status] || "bg-neutral-700 text-neutral-400"}`}>
-                              {STATUS_LABEL[puzzle.status] || puzzle.status}
-                            </span>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              {!kindFilter && (
+                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${puzzle.is_recruiting_party ? "bg-green-500/15 text-green-400" : "bg-neutral-700 text-neutral-300"}`}>
+                                  {puzzle.is_recruiting_party ? "🧩 조각" : "🚩 깃발"}
+                                </span>
+                              )}
+                              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[puzzle.status] || "bg-neutral-700 text-neutral-400"}`}>
+                                {STATUS_LABEL[puzzle.status] || puzzle.status}
+                              </span>
+                            </div>
                           </div>
                         </Link>
 
