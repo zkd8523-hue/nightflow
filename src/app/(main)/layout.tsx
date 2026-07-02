@@ -46,19 +46,19 @@ export default function MainLayout({
       setIsClubMapView(false);
       return;
     }
-    // 기본값이 map이라 view=list가 명시되지 않으면 map으로 간주
+    // 기본값이 list라 view=map이 명시된 경우만 map으로 간주
     const urlView = new URLSearchParams(window.location.search).get("view");
-    setIsClubMapView(urlView !== "list");
+    setIsClubMapView(urlView === "map");
 
     // 이벤트 기반 후속 동기화 (토글 변경)
     const onChange = (e: Event) => {
       const detail = (e as CustomEvent<{ view?: string }>).detail;
       if (detail?.view) {
-        setIsClubMapView(detail.view !== "list");
+        setIsClubMapView(detail.view === "map");
       } else {
-        // detail 없으면 URL 재조회 fallback (기본 map)
+        // detail 없으면 URL 재조회 fallback (기본 list)
         setIsClubMapView(
-          new URLSearchParams(window.location.search).get("view") !== "list"
+          new URLSearchParams(window.location.search).get("view") === "map"
         );
       }
     };

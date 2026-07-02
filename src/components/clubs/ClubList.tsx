@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Map as MapIcon, LocateFixed, LayoutGrid, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, ClubAreaChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
@@ -65,14 +65,14 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
     venueTypes: parseList(searchParams.get("venue_type")),
   }));
   const [view, setView] = useState<ViewMode>(
-    () => (searchParams.get("view") === "list" ? "list" : "map")
+    () => (searchParams.get("view") === "map" ? "map" : "list")
   );
   const [query, setQuery] = useState("");
   // 지도 모드에서 클럽 상세 모달이 열렸는지 — 열리면 검색/필터 overlay 숨김
   const [mapDetailOpen, setMapDetailOpen] = useState(false);
   // 지도 모드에서는 필터가 지도를 가리므로 기본 접힘. 리스트 모드는 펼침.
   const [filtersOpen, setFiltersOpen] = useState(
-    () => searchParams.get("view") === "list"
+    () => searchParams.get("view") !== "map"
   );
 
   // 지역(area)은 1차 필터로 항상 노출되므로 세부 필터 카운트에서 제외
@@ -90,7 +90,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
     if (filters.areas.length) params.set("area", filters.areas.join(","));
     if (filters.genres.length) params.set("genre", filters.genres.join(","));
     if (filters.venueTypes.length) params.set("venue_type", filters.venueTypes.join(","));
-    if (view === "list") params.set("view", "list");
+    if (view === "map") params.set("view", "map");
     const qs = params.toString();
     const url = qs ? `/clubs?${qs}` : "/clubs";
     router.replace(url, { scroll: false });
@@ -335,7 +335,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               </>
             ) : (
               <>
-                <MapIcon className="w-3.5 h-3.5" />
+                <LocateFixed className="w-3.5 h-3.5" />
                 지도
               </>
             )}
