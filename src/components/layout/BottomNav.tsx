@@ -11,10 +11,6 @@ import { useOfferChats } from "@/hooks/useOfferChats";
 import { usePartyChats } from "@/hooks/usePartyChats";
 import { WagleIcon } from "@/components/icons/WagleIcon";
 
-// 와글은 아직 준비 단계 — 로컬(npm run dev)에서만 노출, 배포(production)에서는 숨김.
-// NODE_ENV는 빌드 시 정적 치환되어 production 번들에서 와글 탭이 트리셰이킹됨.
-const IS_DEV = process.env.NODE_ENV === "development";
-
 export function BottomNav() {
   const pathname = usePathname();
   const { user, isLoading } = useCurrentUser();
@@ -50,7 +46,7 @@ export function BottomNav() {
   const tabs = [
     { label: "홈", icon: Home, href: "/" },
     { label: "주변", icon: Map, href: "/clubs" },
-    ...(IS_DEV ? [{ label: "와글", icon: WagleIcon, href: "/chat" }] : []),
+    { label: "와글", icon: WagleIcon, href: "/chat" },
     offerChatOn
       ? { label: "채팅", icon: MessageCircle, href: "/messages" }
       : { label: "찜", icon: Heart, href: "/favorites" },
