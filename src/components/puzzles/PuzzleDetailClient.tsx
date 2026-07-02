@@ -16,6 +16,7 @@ import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
 import { PuzzleCancelConfirmSheet } from "./PuzzleCancelConfirmSheet";
 import { SecretOfferCard } from "./SecretOfferCard";
+import { ShareCreatedSheet } from "./ShareCreatedSheet";
 import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
@@ -192,6 +193,8 @@ export function PuzzleDetailClient({
   const [showLeaderInfo, setShowLeaderInfo] = useState(false);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
   const [showMatchedShowcase, setShowMatchedShowcase] = useState(false);
+  // 조각 등록 직후 카톡 공유 시트 (?created=share)
+  const [showShareCreated, setShowShareCreated] = useState(searchParams.get("created") === "share");
   const recentMatchedPuzzle = useRecentMatchedPuzzle();
 
   const handleShare = useCallback(async () => {
@@ -644,12 +647,25 @@ export function PuzzleDetailClient({
               {isRecruitingParty ? (
                 <>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[19px] font-bold text-green-400">
-                      현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
-                    </span>
-                    <span className="text-[13px] text-neutral-500">
-                      / 목표 {baseBudget.toLocaleString()}원
-                    </span>
+                    {isLeader || isMd ? (
+                      <>
+                        <span className="text-[19px] font-bold text-green-400">
+                          현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
+                        </span>
+                        <span className="text-[13px] text-neutral-500">
+                          / 목표 {baseBudget.toLocaleString()}원
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-[19px] font-bold text-green-400">
+                          1인 {perPersonBudget.toLocaleString()}원
+                        </span>
+                        <span className="text-[13px] text-neutral-500">
+                          / 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
+                        </span>
+                      </>
+                    )}
                     {puzzle.leader && (
                       <button
                         type="button"
@@ -1406,7 +1422,7 @@ export function PuzzleDetailClient({
               onClick={() => setShowJoin(true)}
               className="w-full h-13 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
             >
-              합류하기
+              참가하기
             </Button>
           )}
 
@@ -1434,7 +1450,7 @@ export function PuzzleDetailClient({
                 onClick={() => setShowOffer(true)}
                 className="w-full h-13 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl"
               >
-                {isRecruitingParty ? "오퍼하기" : "깃발 뽑기"}
+                오퍼하기
               </Button>
               <p className="text-[11px] text-neutral-600 text-center leading-relaxed">
                 <FeatureGate
@@ -1529,6 +1545,22 @@ export function PuzzleDetailClient({
         onConfirm={handleCancelWithReason}
         shareMode={isRecruitingParty}
       />
+
+      {/* 조각 등록 직후 카톡 공유 강조 시트 (방장·조각만) */}
+      {showShareCreated && isRecruitingParty && isLeader && (
+        <ShareCreatedSheet
+          puzzleId={puzzle.id}
+          eventDate={puzzle.event_date}
+          area={puzzle.area}
+          perPerson={
+            puzzle.budget_per_person ??
+            (puzzle.target_count ? Math.round((puzzle.total_budget ?? 0) / puzzle.target_count) : 0)
+          }
+          currentCount={puzzle.current_count}
+          targetCount={puzzle.target_count}
+          onClose={() => setShowShareCreated(false)}
+        />
+      )}
 
     </div>
   );

@@ -69,10 +69,22 @@ export default async function PartyChatPage({ params }: PageProps) {
   // 초대된 MD (조각당 1명)
   const { data: partyMd } = await supabase
     .from("puzzle_party_md")
-    .select("md_id, md:public_user_profiles!puzzle_party_md_md_id_fkey(id, display_name, profile_image)")
+    .select("md_id, offer_id, md:public_user_profiles!puzzle_party_md_md_id_fkey(id, display_name, profile_image)")
     .eq("puzzle_id", puzzleId)
     .maybeSingle();
   const invitedMdId = partyMd?.md_id ?? null;
+
+  // MD의 클럽명 (초대 오퍼 기준)
+  let invitedMdClub: string | null = null;
+  if (partyMd?.offer_id) {
+    const { data: off } = await supabase
+      .from("puzzle_offers")
+      .select("club:clubs(name)")
+      .eq("id", partyMd.offer_id)
+      .maybeSingle();
+    const club = off ? (Array.isArray(off.club) ? off.club[0] : off.club) : null;
+    invitedMdClub = (club as { name?: string } | null)?.name ?? null;
+  }
 
   const isLeader = puzzle.leader_id === user.id;
   const isMember = members.some((m) => m.user_id === user.id);
@@ -118,6 +130,7 @@ export default async function PartyChatPage({ params }: PageProps) {
       is_leader: false,
       guest_count: 0,
       is_md: true,
+      club_name: invitedMdClub,
     });
   }
   // 정렬: 방장 → MD → 일반 멤버

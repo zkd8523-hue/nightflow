@@ -364,17 +364,6 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {guideSlot}
 
-      {/* 조각 탭: "모집 중인 조각" 헤더 (지역 필터로 0건이어도 조각 탭이면 유지) */}
-      {tab === "share" && canShowShareTab && (
-        <div className="flex items-center gap-2.5 px-1 mb-2">
-          <span className="relative flex h-2.5 w-2.5 mt-[1px] flex-shrink-0">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 animate-ping" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500" />
-          </span>
-          <span className="text-[19px] font-black text-white tracking-tight">모집 중인 조각</span>
-        </div>
-      )}
-
       {/* 필터 줄: 지역필터 숨김 + advance탭 아님 = 내용 없음 → 빈 박스 제거 (클럽 상세) */}
       {!(hideAreaFilter && tab !== "advance") && (
       <div className={`flex items-center gap-2 h-9 ${tab === "share" ? "mb-1.5" : "mb-5"}`}>
@@ -430,6 +419,21 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               })()}
             </div>
           </div>
+          )}
+          {/* 조각 탭: 지역 칩 행 오른쪽에 필터 아이콘 */}
+          {tab === "share" && (
+            <div className="relative flex-shrink-0">
+              <button
+                onClick={() => setPuzzleFilterOpen(true)}
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white transition-colors"
+                aria-label="필터"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+              </button>
+              {puzzleHasActiveFilter && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full" />
+              )}
+            </div>
           )}
           {tab === "advance" && deferredAuctions.some(a => a.listing_type === "auction") && (
             <div className="flex items-center gap-1.5 flex-shrink-0 pb-1">
@@ -851,6 +855,9 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           userRole={userRole}
           offerCounts={puzzleOfferCounts}
           selectedArea={effectiveShareArea}
+          filterOpen={puzzleFilterOpen}
+          onFilterOpenChange={setPuzzleFilterOpen}
+          onActiveFilterChange={setPuzzleHasActiveFilter}
           partyOnly
           shareMode
         />

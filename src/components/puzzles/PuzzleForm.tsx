@@ -673,7 +673,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       navigating = true;
       // 깃발 꽂은 직후 1회성 앱설치 팝업 트리거 (안드로이드 웹에서만 실제 노출)
       window.dispatchEvent(new CustomEvent("flag-created"));
-      router.push(`/flags/${created.id}${isForeigner ? "?lang=en" : ""}`);
+      // 조각은 등록 직후 카톡 공유 시트 노출(파티원 모집 동선)
+      const createdQuery = shareMode
+        ? (isForeigner ? "?created=share&lang=en" : "?created=share")
+        : (isForeigner ? "?lang=en" : "");
+      router.push(`/flags/${created.id}${createdQuery}`);
     } catch (err) {
       console.error("puzzle submit error:", err);
       toast.error(err instanceof Error ? err.message : t(isEditMode ? "수정에 실패했습니다" : "등록에 실패했습니다", isEditMode ? "Update failed" : "Submission failed"));

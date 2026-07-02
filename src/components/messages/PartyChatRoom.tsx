@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ChevronDown, ChevronRight, CornerDownRight, ImageIcon, Send, Share2, SmilePlus, ThumbsDown, ThumbsUp, Trash2, UserPlus, Users, X } from "lucide-react";
+import { ArrowLeft, AtSign, ChevronDown, ChevronRight, CornerDownRight, ImageIcon, Send, SmilePlus, ThumbsDown, ThumbsUp, Trash2, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
@@ -479,7 +479,16 @@ export function PartyChatRoom({
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="text-[14px] font-bold text-white truncate">
-                          {o.club_name ?? "클럽"}
+                          {o.club_id ? (
+                            <Link
+                              href={`/clubs/${o.club_id}`}
+                              className="hover:text-amber-300 hover:underline"
+                            >
+                              {o.club_name ?? "클럽"}
+                            </Link>
+                          ) : (
+                            o.club_name ?? "클럽"
+                          )}
                           {o.is_invited && (
                             <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold align-middle">
                               초대됨
@@ -520,10 +529,10 @@ export function PartyChatRoom({
                       <button
                         onClick={() => handleShareOffer(o.offer_id)}
                         className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300 hover:text-white text-[12px] font-bold"
-                        aria-label="채팅에 공유"
+                        aria-label="채팅에 언급"
                       >
-                        <Share2 className="w-3.5 h-3.5" />
-                        공유
+                        <AtSign className="w-3.5 h-3.5" />
+                        언급하기
                       </button>
                       {isLeader && (
                         o.is_invited ? (
@@ -895,6 +904,9 @@ export function PartyChatRoom({
                         {p.display_name ?? "멤버"}
                         {p.id === me.id && <span className="ml-1 text-[11px] text-amber-400">나</span>}
                       </p>
+                      {p.is_md && p.club_name && (
+                        <p className="text-[11px] text-green-400 font-medium truncate">{p.club_name}</p>
+                      )}
                       {p.guest_count > 0 && (
                         <p className="text-[11px] text-neutral-500">+{p.guest_count}명 동행</p>
                       )}

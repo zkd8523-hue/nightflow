@@ -273,7 +273,14 @@ export function PublicProfileView({
             {/* MD 소속 클럽 한 줄 라벨 */}
             {profile.md_status === "approved" && partnerClubs.length > 0 && (
               <p className="text-[13px] text-amber-400/80 mt-1 truncate font-bold">
-                {partnerClubs.map((c) => c.name).join(" · ")}
+                {partnerClubs.map((c, i) => (
+                  <span key={c.id}>
+                    {i > 0 && " · "}
+                    <Link href={`/clubs/${c.id}`} className="hover:text-amber-300 hover:underline">
+                      {c.name}
+                    </Link>
+                  </span>
+                ))}
               </p>
             )}
             {/* 핸들 (인스타 연결) */}

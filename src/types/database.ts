@@ -863,12 +863,15 @@ export interface PartyParticipant {
   guest_count: number;
   /** Migration 352: 초대되어 단체방에 들어온 MD */
   is_md?: boolean;
+  /** MD의 클럽명 (is_md일 때) */
+  club_name?: string | null;
 }
 
 /** Migration 352: 조각 단체방 오퍼 리스트 항목 (get_party_offers RPC) */
 export interface PartyOffer {
   offer_id: string;
   md_id: string;
+  club_id: string | null;
   club_name: string | null;
   table_type: string | null;
   proposed_price: number;

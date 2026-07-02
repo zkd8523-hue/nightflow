@@ -333,7 +333,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           {offerCount > 0 && (
             <span className="text-[12px] text-amber-400 font-bold tabular-nums">{offerCount} offers</span>
           )}
-          <div className={!isSelecting && !hasOffered && offerCount === 0 ? "w-full" : "ml-auto"}>
+          <div className="ml-auto">
             {isSelecting ? (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
@@ -351,26 +351,27 @@ export const PuzzleCard = memo(function PuzzleCard({
             ) : (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-                className={`h-8 px-3 rounded-full font-black text-[12px] bg-amber-500 hover:bg-amber-400 text-black active:scale-[0.97] transition-all ${offerCount > 0 ? "shrink-0" : "w-full"}`}
+                className="h-8 px-3 rounded-full font-black text-[12px] bg-amber-500 hover:bg-amber-400 text-black active:scale-[0.97] transition-all shrink-0"
               >
-                {!isRecruitingParty ? "깃발 뽑기" : "조각 줍기"}
+                자세히
               </Button>
             )}
           </div>
         </div>
       ) : !isRecruitingParty ? (
-        // 인원 확정 깃발: 카드 전체 클릭으로 상세 이동 (별도 버튼 불필요)
-        // 지역은 오퍼 유무와 무관하게 항상 오른쪽 고정 (ml-auto). 오퍼배지가 null이면
-        // justify-between만으론 지역이 왼쪽으로 붙어버려 위치가 오락가락함.
-        // 일반 유저: 별도 "자세히" 버튼 없이 카드 전체 클릭으로 상세 이동. 오퍼 배지만 노출.
-        userOfferBadge ? (
-          <div className="flex items-center gap-2">
-            {userOfferBadge}
-          </div>
-        ) : null
+        // 깃발: 오퍼수(왼쪽) + "자세히"(우측). 유저·비로그인 모두 노출.
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">{userOfferBadge}</div>
+          <Button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
+            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-300 hover:bg-white text-black shrink-0"
+          >
+            자세히
+          </Button>
+        </div>
       ) : isFull ? (
-        <div className="space-y-2">
-          <p className="text-[12px] text-neutral-500 font-medium text-center">파티 마감</p>
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[12px] text-neutral-500 font-medium">파티 마감</span>
           <Button
             onClick={(e) => {
               e.preventDefault();
@@ -378,32 +379,38 @@ export const PuzzleCard = memo(function PuzzleCard({
               trackEvent("puzzle_cta_click", { source: "card" });
               router.push("/shares/new");
             }}
-            className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
+            className="h-8 px-4 rounded-full font-black text-[12px] transition-all active:scale-[0.97] bg-white hover:bg-neutral-200 text-black shrink-0"
           >
-            나도 파티원 모집하기 →
+            모집하기
           </Button>
         </div>
       ) : isLeader ? (
-        <Button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          className="w-full h-11 font-black text-[13px] rounded-xl transition-all bg-neutral-800 border border-neutral-700 text-neutral-300 pointer-events-none"
-        >
-          내 조각
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-neutral-800 border border-neutral-700 text-neutral-300 pointer-events-none"
+          >
+            내 조각
+          </Button>
+        </div>
       ) : isMember ? (
-        <Button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          className="w-full h-11 font-black text-[13px] rounded-xl transition-all bg-green-500/15 border border-green-500/30 text-green-400 pointer-events-none"
-        >
-          합류 완료
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-green-500/15 border border-green-500/30 text-green-400 pointer-events-none"
+          >
+            합류 완료
+          </Button>
+        </div>
       ) : (
-        <Button
-          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onJoin?.(puzzle); }}
-          className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
-        >
-          합류하기
-        </Button>
+        <div className="flex justify-end">
+          <Button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
+            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-300 hover:bg-white text-black"
+          >
+            자세히
+          </Button>
+        </div>
       )}
       </div>
     </div>
