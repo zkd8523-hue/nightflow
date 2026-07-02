@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Home, User, Map, Heart, MessageCircle } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -23,13 +24,19 @@ export function BottomNav() {
   const offerChatOn = useOfferChatFlag();
   // 채팅 점 = 실제 노출되는 것과 일치: 깃발(비모집) 1:1 오퍼 + 조각 단체방.
   // 조각 1:1 오퍼 채팅은 단체방으로 통합돼 목록에서 빠졌으므로 점 계산에서도 제외.
-  const { chats: offerChats } = useOfferChats(user?.id);
-  const { rooms: partyRooms } = usePartyChats(user?.id);
-  // 종료된 대화(만료/거절/철회)는 읽을 수 없으므로 점 계산에서 제외
+  const { chats: offerChats, reload: reloadOffers } = useOfferChats(user?.id);
+  const { rooms: partyRooms, reload: reloadParty } = usePartyChats(user?.id);
+  // 화면 이동 시마다 채팅 안읽음 재조회 (realtime 누락 대비 → 점 stale 방지)
+  useEffect(() => {
+    reloadOffers();
+    reloadParty();
+  }, [pathname, reloadOffers, reloadParty]);
+  // 종료된 대화는 읽을 수 없으므로 점 계산에서 제외
   const isClosed = (s: string) => s === "expired" || s === "rejected" || s === "withdrawn";
+  const isClosedPuzzle = (s: string) => s === "expired" || s === "cancelled";
   const hasUnreadChat =
     offerChats.some((c) => !c.is_recruiting_party && !isClosed(c.offer_status) && c.unread) ||
-    partyRooms.some((r) => r.unread);
+    partyRooms.some((r) => r.unread && !isClosedPuzzle(r.puzzle_status));
   const hasNewOffer = notifications.some(
     (n) => !n.is_read && n.type === "puzzle_offer_received"
   );

@@ -47,7 +47,57 @@ export function MessagesListClient() {
   const flagOn = useOfferChatFlag();
   const { user, isLoading } = useCurrentUser();
   const { chats, loading, reload } = useOfferChats(user?.id);
-  const { rooms: partyRooms, loading: partyLoading } = usePartyChats(user?.id);
+  const { rooms: partyRooms, loading: partyLoading, reload: reloadParty } = usePartyChats(user?.id);
+
+  // 롱프레스 → 채팅방 나가기
+  type LeaveTarget =
+    | { kind: "party"; puzzleId: string; isLeader: boolean; label: string }
+    | { kind: "offer"; offerId: string; myRole: "leader" | "md"; label: string };
+  const [leaveTarget, setLeaveTarget] = useState<LeaveTarget | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressedRef = useRef(false);
+  const startPress = (t: LeaveTarget) => {
+    longPressedRef.current = false;
+    if (pressTimer.current) clearTimeout(pressTimer.current);
+    pressTimer.current = setTimeout(() => {
+      longPressedRef.current = true;
+      setLeaveTarget(t);
+    }, 450);
+  };
+  const cancelPress = () => {
+    if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; }
+  };
+  const suppressIfLongPress = (e: React.MouseEvent) => {
+    if (longPressedRef.current) { e.preventDefault(); longPressedRef.current = false; }
+  };
+
+  async function handleLeave() {
+    if (!leaveTarget || leaving) return;
+    setLeaving(true);
+    const supabase = createClient();
+    let res;
+    if (leaveTarget.kind === "party") {
+      res = await supabase.rpc("leave_party", { p_puzzle_id: leaveTarget.puzzleId });
+    } else {
+      // 깃발 1:1: 대화 종료 (방장=거절 / MD=철회)
+      res = await supabase.rpc(
+        leaveTarget.myRole === "leader" ? "reject_offer" : "withdraw_offer",
+        { p_offer_id: leaveTarget.offerId }
+      );
+    }
+    const { data, error } = res;
+    if (error || !data?.success) {
+      toast.error(data?.error || error?.message || "나가기에 실패했어요");
+      setLeaving(false);
+      return;
+    }
+    toast.success("채팅방에서 나왔어요");
+    setLeaveTarget(null);
+    setLeaving(false);
+    reload();
+    reloadParty();
+  }
 
   const handleDeleteChat = async (offerId: string) => {
     if (typeof window !== "undefined" &&
@@ -177,6 +227,11 @@ export function MessagesListClient() {
             <Link
               key={room.puzzle_id}
               href={`/party/${room.puzzle_id}`}
+              onClick={suppressIfLongPress}
+              onContextMenu={(e) => { e.preventDefault(); setLeaveTarget({ kind: "party", puzzleId: room.puzzle_id, isLeader: room.is_leader, label: `${formatDate(room.event_date)} · ${room.area}` }); }}
+              onPointerDown={() => startPress({ kind: "party", puzzleId: room.puzzle_id, isLeader: room.is_leader, label: `${formatDate(room.event_date)} · ${room.area}` })}
+              onPointerUp={cancelPress}
+              onPointerLeave={cancelPress}
               className={`flex items-center gap-3 px-4 py-3.5 active:bg-neutral-900/60 ${["expired", "cancelled"].includes(room.puzzle_status) ? "opacity-50" : ""}`}
             >
               <div className="relative w-11 h-11 rounded-full overflow-hidden bg-green-500/15 grid place-items-center shrink-0">
@@ -238,6 +293,11 @@ export function MessagesListClient() {
                     <li key={c.offer_id}>
                       <Link
                         href={`/messages/${c.offer_id}`}
+                        onClick={suppressIfLongPress}
+                        onContextMenu={isClosed ? undefined : (e) => { e.preventDefault(); setLeaveTarget({ kind: "offer", offerId: c.offer_id, myRole: c.my_role, label: `${formatDate(head.event_date)} · ${head.area}` }); }}
+                        onPointerDown={isClosed ? undefined : () => startPress({ kind: "offer", offerId: c.offer_id, myRole: c.my_role, label: `${formatDate(head.event_date)} · ${head.area}` })}
+                        onPointerUp={cancelPress}
+                        onPointerLeave={cancelPress}
                         className={`flex items-center gap-3 px-4 py-3.5 active:bg-neutral-900/60 ${isClosed ? "opacity-50" : ""}`}
                       >
                         <div className="relative w-11 h-11 rounded-full overflow-hidden bg-neutral-800 shrink-0">
@@ -288,6 +348,51 @@ export function MessagesListClient() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* 채팅방 나가기 확인 시트 */}
+      {leaveTarget && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/60 flex items-end justify-center"
+          onClick={() => !leaving && setLeaveTarget(null)}
+        >
+          <div
+            className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-5 space-y-4"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-1.5">
+              <p className="text-[16px] font-black text-white">
+                이 채팅방에서 나갈까요?
+              </p>
+              <p className="text-[13px] text-neutral-400 leading-relaxed">
+                {leaveTarget.label}
+                <br />
+                {leaveTarget.kind === "party"
+                  ? leaveTarget.isLeader
+                    ? "남은 멤버가 있으면 방장이 넘어가고, 없으면 조각이 마감돼요."
+                    : "단체채팅에서 나가고 조각 인원에서 빠져요."
+                  : "나가면 이 상담이 종료돼요(상대도 종료)."}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setLeaveTarget(null)}
+                disabled={leaving}
+                className="flex-1 py-3 rounded-xl bg-neutral-800 text-white font-bold text-[14px] disabled:opacity-50"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleLeave}
+                disabled={leaving}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-black text-[14px] disabled:opacity-50"
+              >
+                {leaving ? "나가는 중…" : "나가기"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
