@@ -107,23 +107,23 @@ const SECRET_OFFER_INTRO_USER = {
   ],
 };
 
-// 유저용 조각 이용방법 (등록·모집 → 시크릿오퍼 → 팀원 상담)
+// 유저용 조각 이용방법 (등록 → 시크릿오퍼 → 선택·예약)
 const SHARE_ONBOARDING_STEPS = [
   {
-    title: "1. 조각 등록 + 팀원 모집",
-    desc: "조각을 올리면 팀원들이\n자유롭게 들락날락 참여해요.",
+    title: "1. 조각 등록",
+    desc: "조각을 등록하면\n관심있는 친구들이 채팅방에 합류해요!",
     icon: <span className="text-[20px]">🧩</span>,
     color: "bg-green-500/10",
   },
   {
     title: "2. 시크릿오퍼 받기",
-    desc: "선택한 지역 클럽들이 오퍼를 보내요.\n→ 오퍼는 방장에게만 공개\n→ **100% 기밀, 맞춤 패키지!**",
+    desc: "선택한 지역 클럽들이 오퍼를 보내요.\n→ 오퍼는 파티원에게만 공개\n→ **100% 맞춤 패키지!**",
     icon: <span className="text-[20px]">💌</span>,
     color: "bg-emerald-500/10",
   },
   {
-    title: "3. 팀원이랑 상담",
-    desc: "마음에 드는 오퍼로\n팀원이랑 함께 상담 시작!",
+    title: "3. 선택하고 예약",
+    desc: "마음에 드는 클럽을 채팅방에 초대하고\n상담, 예약하면 끝!",
     icon: <span className="text-[20px]">🤝</span>,
     color: "bg-rose-500/10",
   },
