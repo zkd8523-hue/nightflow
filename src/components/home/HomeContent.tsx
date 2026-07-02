@@ -107,25 +107,25 @@ const SECRET_OFFER_INTRO_USER = {
   ],
 };
 
-// MD 전용 퍼즐 이용방법 (시크릿오퍼 핵심 가치 강조)
+// 유저용 조각 이용방법 (등록·모집 → 시크릿오퍼 → 팀원 상담)
 const SHARE_ONBOARDING_STEPS = [
   {
-    title: "1. 파티 선택",
-    desc: "MD가 세팅한 테이블에서\n원하는 조각을 골라요.",
+    title: "1. 조각 등록 + 팀원 모집",
+    desc: "조각을 올리면 팀원들이\n자유롭게 들락날락 참여해요.",
     icon: <span className="text-[20px]">🧩</span>,
     color: "bg-green-500/10",
   },
   {
-    title: "2. 참여 신청",
-    desc: "참여하기 버튼을 누르면\n오픈채팅방에 바로 입장해요.",
-    icon: <span className="text-[20px]">✋</span>,
+    title: "2. 시크릿오퍼 받기",
+    desc: "선택한 지역 클럽들이 오퍼를 보내요.\n→ 오퍼는 방장에게만 공개\n→ **100% 기밀, 맞춤 패키지!**",
+    icon: <span className="text-[20px]">💌</span>,
     color: "bg-emerald-500/10",
   },
   {
-    title: "3. 현장 N빵",
-    desc: "인원이 다 모이면 당일 클럽에서\nMD에게 인당 금액 직접 결제!",
-    icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
-    color: "bg-blue-500/10",
+    title: "3. 팀원이랑 상담",
+    desc: "마음에 드는 오퍼로\n팀원이랑 함께 상담 시작!",
+    icon: <span className="text-[20px]">🤝</span>,
+    color: "bg-rose-500/10",
   },
 ];
 
