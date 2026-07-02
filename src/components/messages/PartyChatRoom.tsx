@@ -631,7 +631,7 @@ export function PartyChatRoom({
                   <div className="flex justify-end">
                     <div className="flex flex-col items-end max-w-[80%]">
                       <div className="flex items-end gap-1.5 flex-row-reverse group">
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity self-center shrink-0">
+                        <div className="hidden group-hover:flex items-center gap-0.5 self-center shrink-0">
                           <button
                             onClick={() => setReplyTarget(m)}
                             className="p-1 text-neutral-500 hover:text-white"
@@ -649,7 +649,7 @@ export function PartyChatRoom({
                         </div>
                         <div
                           onContextMenu={(e) => { e.preventDefault(); setMenuMsg(m); }}
-                          onDoubleClick={() => setMenuMsg(m)}
+                          onDoubleClick={() => !m.is_system && toggleReaction(m.id, "❤️")}
                           onTouchStart={() => startPress(m)}
                           onTouchEnd={cancelPress}
                           onTouchMove={cancelPress}
@@ -689,7 +689,12 @@ export function PartyChatRoom({
                   <div className="flex justify-start gap-2">
                     {/* 아바타: 그룹 첫 메시지만, 아니면 자리만 확보 */}
                     {firstOfGroup ? (
-                      <div className="relative w-8 h-8 rounded-full overflow-hidden bg-neutral-800 shrink-0 mt-4">
+                      <button
+                        type="button"
+                        onClick={() => m.sender_id && router.push(`/u/${m.sender_id}`)}
+                        className="relative w-8 h-8 rounded-full overflow-hidden bg-neutral-800 shrink-0 mt-4"
+                        aria-label={`${senderName} 프로필 보기`}
+                      >
                         {m.sender?.profile_image ? (
                           <Image src={m.sender.profile_image} alt="" fill className="object-cover" sizes="32px" />
                         ) : (
@@ -697,7 +702,7 @@ export function PartyChatRoom({
                             {senderName.slice(0, 1)}
                           </div>
                         )}
-                      </div>
+                      </button>
                     ) : (
                       <div className="w-8 shrink-0" aria-hidden />
                     )}
@@ -708,7 +713,7 @@ export function PartyChatRoom({
                       <div className="flex items-end gap-1.5 max-w-full group">
                         <div
                           onContextMenu={(e) => { e.preventDefault(); setMenuMsg(m); }}
-                          onDoubleClick={() => setMenuMsg(m)}
+                          onDoubleClick={() => !m.is_system && toggleReaction(m.id, "❤️")}
                           onTouchStart={() => startPress(m)}
                           onTouchEnd={cancelPress}
                           onTouchMove={cancelPress}
@@ -740,7 +745,7 @@ export function PartyChatRoom({
                             )}
                           </div>
                         )}
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity self-center shrink-0">
+                        <div className="hidden group-hover:flex items-center gap-0.5 self-center shrink-0">
                           <button
                             onClick={() => setReplyTarget(m)}
                             className="p-1 text-neutral-500 hover:text-white"
