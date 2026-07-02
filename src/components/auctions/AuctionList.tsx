@@ -258,7 +258,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
   //    "조각 더보기"(?tab=share) 진입이 깃발로 튕기는 버그가 났음 → 폴백 제거.
   //    조각 탭 버튼은 아래 canShowShareTab && 로만 숨기고, tab 강제 전환은 하지 않는다.
   const hasAnyShare = deferredAuctions.some(a => a.listing_type === 'share');
-  const canShowShareTab = userRole === "md" || userRole === "admin" || hasAnyShare;
+  // 조각 탭 진입(?tab=share) 시엔 리스트가 비어도 탭을 보여준다 — 사용자가 명시적으로 요청한 뷰.
+  const canShowShareTab = userRole === "md" || userRole === "admin" || hasAnyShare || tab === "share";
 
   // 퍼즐: 지역 필터 적용 ("서울 어디든"은 강남/홍대/이태원/건대 어느 것 선택해도 매칭)
   const filteredPuzzles = useMemo(() => {
@@ -715,14 +716,14 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                       아직 등록된 조각이 없어요
                     </p>
                     <p className="text-neutral-500 text-[12.5px] font-medium leading-relaxed break-keep">
-                      깃발을 꽂으면 MD가 직접 제안을 보내요
+                      먼저 조각을 올려서 인원을 모아보세요
                     </p>
                   </div>
                   <Link
-                    href="/flags/new"
+                    href="/shares/new"
                     className="inline-flex items-center gap-1.5 h-11 px-6 bg-amber-500 text-black font-black text-[13.5px] rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
-                    🚩 깃발 꽂으러 가기
+                    🧩 조각 등록하기
                   </Link>
                 </>
               )}
@@ -756,14 +757,14 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                       아직 등록된 조각이 없어요
                     </p>
                     <p className="text-neutral-500 text-[12.5px] font-medium leading-relaxed break-keep">
-                      깃발을 꽂으면 MD가 직접 제안을 보내요
+                      먼저 조각을 올려서 인원을 모아보세요
                     </p>
                   </div>
                   <Link
-                    href="/flags/new"
+                    href="/shares/new"
                     className="inline-flex items-center gap-1.5 h-11 px-6 bg-amber-500 text-black font-black text-[13.5px] rounded-full hover:bg-amber-400 transition-colors active:scale-[0.98] tracking-tight"
                   >
-                    🚩 깃발 꽂으러 가기
+                    🧩 조각 등록하기
                   </Link>
                 </>
               )}
