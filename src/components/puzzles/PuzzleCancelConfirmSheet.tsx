@@ -17,9 +17,12 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   submitting?: boolean;
   onConfirm: (reasons: PuzzleCancelReason[], reasonText: string | null) => Promise<void> | void;
+  /** 조각(파티원 모집)이면 "깃발" → "조각" 문구로 전환 */
+  shareMode?: boolean;
 }
 
-export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onConfirm }: Props) {
+export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onConfirm, shareMode = false }: Props) {
+  const kind = shareMode ? "조각" : "깃발";
   const [selected, setSelected] = useState<Set<PuzzleCancelReason>>(new Set());
   const [text, setText] = useState("");
 
@@ -61,7 +64,7 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
         <div className="space-y-5 pt-2">
           {/* 헤더 — 망설이게 만드는 톤 */}
           <div className="space-y-1 text-center">
-            <p className="text-[20px] font-black text-white">정말 깃발을 내리시겠어요?</p>
+            <p className="text-[20px] font-black text-white">정말 {kind}을 내리시겠어요?</p>
             <p className="text-[13px] text-neutral-400">
               제안한 MD들에게 알림이 발송됩니다
             </p>
@@ -115,7 +118,7 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
               disabled={!isSubmittable}
               className="w-full py-4 rounded-2xl bg-red-500 text-white font-black text-[16px] disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
             >
-              {submitting ? "처리 중…" : "깃발 내리기"}
+              {submitting ? "처리 중…" : `${kind} 내리기`}
             </button>
             <button
               type="button"

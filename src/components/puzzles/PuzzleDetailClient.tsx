@@ -1527,6 +1527,7 @@ export function PuzzleDetailClient({
         onOpenChange={setShowCancelSheet}
         submitting={actionLoading}
         onConfirm={handleCancelWithReason}
+        shareMode={isRecruitingParty}
       />
 
     </div>

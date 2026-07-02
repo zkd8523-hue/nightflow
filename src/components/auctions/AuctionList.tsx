@@ -269,6 +269,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
     return filtered;
   }, [puzzles, selectedArea, puzzleSortMode, puzzleOfferCounts]);
 
+  // 조각 탭: 파티원 모집(is_recruiting_party) 퍼즐만, 조각 전용 지역필터(effectiveShareArea) 적용.
+  // (구 auctions listing_type='share' 소스는 폐기 — 조각 모델이 puzzles로 이전됨)
+  const sharePuzzles = useMemo(
+    () => puzzles.filter((p) => p.is_recruiting_party && matchesArea(p.area, effectiveShareArea ?? null)),
+    [puzzles, effectiveShareArea]
+  );
+
   // 오늘특가: 날짜별 그룹핑
   const { groupedInstant, sortedInstantDates } = useMemo(() => {
     const grouped = todayAuctions.reduce((groups, auction) => {
@@ -639,7 +646,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         </div>
       )}
 
-      {tab === "share" && (
+      {/* (폐기) 구 auctions listing_type='share' 조각 렌더 — 조각 모델이 puzzles로 이전됨. 아래 PuzzleList(shareMode)로 대체 */}
+      {false && tab === "share" && (
         <div className="space-y-2">
           {/* 가격 필터 버튼 (헤더는 영역 필터 위로 이동됨) */}
           {shareAuctions.length > 0 && (
@@ -837,9 +845,20 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
         </div>
       )}
 
+      {tab === "share" && (
+        <PuzzleList
+          puzzles={sharePuzzles}
+          userRole={userRole}
+          offerCounts={puzzleOfferCounts}
+          selectedArea={effectiveShareArea}
+          partyOnly
+          shareMode
+        />
+      )}
+
       {tab === "puzzle" && (
         <PuzzleList
-          puzzles={filteredPuzzles}
+          puzzles={filteredPuzzles.filter((p) => !p.is_recruiting_party)}
           userRole={userRole}
           offerCounts={puzzleOfferCounts}
           selectedArea={selectedArea}

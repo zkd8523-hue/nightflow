@@ -93,6 +93,8 @@ interface PuzzleListProps {
   budgetSort?: boolean;
   sortMode?: "none" | "popular" | "budget" | "recent";
   onSortModeChange?: (mode: "none" | "popular" | "budget" | "recent") => void;
+  /** 조각(파티원 모집) 탭에서 재사용 — "깃발" 문구/빈상태/CTA를 조각으로 전환 */
+  shareMode?: boolean;
 }
 
 export function PuzzleList({
@@ -111,6 +113,7 @@ export function PuzzleList({
   budgetSort = false,
   sortMode: externalSortMode = "none",
   onSortModeChange,
+  shareMode = false,
 }: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
@@ -355,6 +358,20 @@ export function PuzzleList({
                   필터 초기화
                 </button>
               </>
+            ) : shareMode ? (
+              <>
+                <span className="text-[40px] leading-none">🧩</span>
+                <p className="text-[15px] font-bold text-white">아직 등록된 조각이 없어요</p>
+                <p className="text-[12px] text-neutral-500 leading-relaxed">먼저 조각을 올려서 인원을 모아보세요</p>
+                {userRole !== "md" && userRole !== "admin" && (
+                  <Link
+                    href={userRole ? "/shares/new" : "/login?redirect=/shares/new"}
+                    className="inline-flex items-center gap-1.5 mt-3 bg-amber-500 hover:bg-amber-400 text-black rounded-full px-5 py-2.5 text-[13px] font-black transition-colors"
+                  >
+                    🧩 조각 등록하기
+                  </Link>
+                )}
+              </>
             ) : null}
           </div>
         </div>
@@ -430,7 +447,7 @@ export function PuzzleList({
             const recentPuzzles = filteredPuzzles
               .filter(p => now - new Date(p.created_at).getTime() < RECENT_THRESHOLD_MS)
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-            const recentTitle = "방금 꽂힌 깃발";
+            const recentTitle = shareMode ? "방금 올라온 조각" : "방금 꽂힌 깃발";
             // "방금 꽂힌 깃발"에 노출된 깃발은 아래 날짜별 전체 목록에서 제외 (중복 방지)
             const recentIds = new Set(recentPuzzles.map(p => p.id));
             const rest = filteredPuzzles.filter(p => !recentIds.has(p.id));
@@ -591,14 +608,14 @@ export function PuzzleList({
       {/* Floating CTA 버튼 (MD 제외) — 빈 상태/리스트 끝 도달 시 숨김 */}
       {userRole !== "md" && filteredPuzzles.length > 0 && (
         <Link
-          href={userRole ? "/flags/new" : "/login?redirect=/flags/new"}
+          href={shareMode ? (userRole ? "/shares/new" : "/login?redirect=/shares/new") : (userRole ? "/flags/new" : "/login?redirect=/flags/new")}
           onClick={() => trackEvent("puzzle_cta_click", { source: "list_float" })}
           className={`fixed bottom-24 right-4 flex items-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-full pl-4 pr-3 py-3 shadow-lg z-40 border-2 border-black transition-opacity duration-200 ${
             listEndVisible ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >
           <span className="text-black text-sm font-semibold whitespace-nowrap">
-            깃발꽂기
+            {shareMode ? "조각 올리기" : "깃발꽂기"}
           </span>
           <Plus className="w-5 h-5 text-black" />
         </Link>
