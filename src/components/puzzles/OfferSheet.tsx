@@ -46,11 +46,48 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   const [comment, setComment] = useState("");
   const [customExtra, setCustomExtra] = useState<string>("");
   const [showCustomExtraInput, setShowCustomExtraInput] = useState(false);
+  // 자주 쓰는 코멘트 프리셋 (계정 단위 DB 저장, 최대 5개) — Migration 347
+  const [savedComments, setSavedComments] = useState<{ id: string; content: string }[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data } = await supabase
+        .from("md_comment_presets")
+        .select("id, content")
+        .order("created_at", { ascending: true });
+      const rows = (data as { id: string; content: string }[] | null) ?? [];
+      // 빈 content(유령 칩) 제외
+      setSavedComments(rows.filter((p) => (p.content ?? "").trim().length > 0));
+    })();
+    // supabase 인스턴스는 매 렌더 새로 생성될 수 있어 deps에서 제외 (재조회·삭제 레이스 방지)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+  const saveCurrentComment = async () => {
+    const c = comment.trim();
+    if (!c) return;
+    if (savedComments.some((p) => p.content === c)) { toast("이미 저장된 문장이에요"); return; }
+    if (savedComments.length >= 5) { toast.error("최대 5개까지 저장할 수 있어요"); return; }
+    const { data, error } = await supabase
+      .from("md_comment_presets")
+      .insert({ content: c })
+      .select("id, content")
+      .single();
+    if (error || !data) { toast.error("멘트 저장에 실패했어요"); return; }
+    setSavedComments((prev) => [...prev, data as { id: string; content: string }]);
+    toast.success("자주 쓰는 문장으로 저장했어요");
+  };
+  const removeSavedComment = async (id: string) => {
+    const { error } = await supabase.from("md_comment_presets").delete().eq("id", id);
+    if (error) { toast.error("삭제에 실패했어요"); return; }
+    setSavedComments((prev) => prev.filter((p) => p.id !== id));
+  };
 
   const baseBudget = puzzle.total_budget ?? (puzzle.budget_per_person * puzzle.target_count);
   const currentBudget = puzzle.current_count === puzzle.target_count
     ? baseBudget
     : Math.round(baseBudget * puzzle.current_count / puzzle.target_count);
+  // Migration 358: 조각 매치 크레딧 정액 10, 깃발 15. (DB puzzle_match_credit_cost와 일치)
+  const matchCost = puzzle.is_recruiting_party ? 10 : 15;
 
   useEffect(() => {
     if (open) {
@@ -125,7 +162,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     const puzzleIds = offerData.map((o) => o.puzzle_id);
     const { data: puzzleData } = await supabase
       .from("puzzles")
-      .select("id, notes, area")
+      .select("id, notes, area, is_recruiting_party")
       .in("id", puzzleIds);
 
     const puzzleMap = Object.fromEntries((puzzleData ?? []).map((p) => [p.id, p]));
@@ -134,7 +171,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       id: o.id,
       table_type: o.table_type,
       proposed_price: o.proposed_price,
-      puzzle_title: puzzleMap[o.puzzle_id]?.notes || puzzleMap[o.puzzle_id]?.area || "깃발",
+      puzzle_title: puzzleMap[o.puzzle_id]?.notes || puzzleMap[o.puzzle_id]?.area || (puzzleMap[o.puzzle_id]?.is_recruiting_party ? "조각" : "깃발"),
     }));
 
     setActiveOfferList(list);
@@ -176,11 +213,16 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       return;
     }
     if (currentBudget <= 0) {
-      toast.error("예산이 0원인 깃발에는 제안할 수 없습니다");
+      toast.error(puzzle.is_recruiting_party ? "예산이 0원인 조각에는 제안할 수 없습니다" : "예산이 0원인 깃발에는 제안할 수 없습니다");
       return;
     }
-    if (selectedIncludes.length === 0) {
+    if (!puzzle.is_recruiting_party && selectedIncludes.length === 0) {
       toast.error("포함 내역을 최소 1개 이상 선택해주세요");
+      return;
+    }
+    // 조각: 인원·가격 실시간 변동 → 구성 대신 코멘트 필수
+    if (puzzle.is_recruiting_party && !comment.trim()) {
+      toast.error("코멘트를 입력해주세요");
       return;
     }
     // 식별 정보 검증 (코멘트 + 모든 includes 항목)
@@ -225,7 +267,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         proposed_price: currentBudget,
       });
 
-      toast.success(editingOffer ? "제안이 수정되었습니다." : "제안서가 전송되었습니다! 방장의 수락을 기다려주세요.");
+      toast.success(editingOffer ? "제안이 수정되었습니다." : "제안서가 전송되었습니다! 방장의 채팅을 기다려주세요!");
       onSubmitted?.();
       onClose();
     } catch (err: unknown) {
@@ -278,25 +320,26 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         <SheetHeader className="p-0 mb-3">
           <div className="flex items-center gap-2 pr-8">
             <SheetTitle className="text-white text-[17px] font-black text-left">
-              {editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼"}
+              {editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼"}{puzzle.is_recruiting_party ? " 🧩" : ""}
             </SheetTitle>
             <span className="flex items-center gap-1 text-[10px] text-neutral-400 font-bold flex-shrink-0">
               <Lock className="w-3 h-3" />
               방장에게만 공개돼요
             </span>
           </div>
-          <p className="text-[14px] text-amber-400 font-bold leading-snug mt-0.5 text-left">
-            오직 클럽명과 조건만으로 깃발을 따보세요!
-          </p>
-          <div className="text-left space-y-0">
-            <p className="text-[13px] text-neutral-400">
-              {formatDate(puzzle.event_date)} {puzzle.area}
+          {!puzzle.is_recruiting_party && (
+            <p className="text-[14px] text-amber-400 font-bold leading-snug mt-0.5 text-left">
+              오직 클럽명과 조건만으로 깃발을 따보세요!
             </p>
-            {puzzle.is_recruiting_party ? (
-              <p className="text-[13px] text-neutral-500">
-                현재 {currentBudget.toLocaleString()}원 / 목표 {baseBudget.toLocaleString()}원 · {puzzle.current_count}/{puzzle.target_count}명
+          )}
+          <div className="text-left space-y-0">
+            {/* 조각은 인원·가격이 실시간 변동 → 헤더에서 날짜/예산 요약 제거 */}
+            {!puzzle.is_recruiting_party && (
+              <p className="text-[13px] text-neutral-400">
+                {formatDate(puzzle.event_date)} {puzzle.area}
               </p>
-            ) : (
+            )}
+            {!puzzle.is_recruiting_party && (
               <p className="text-[14px] text-neutral-300 font-bold">
                 {baseBudget.toLocaleString()}원 <span className="text-[13px] text-neutral-500 font-normal ml-1">· {puzzle.target_count}명</span>
               </p>
@@ -397,7 +440,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           </div>
 
 
-          {/* 제안 금액 (예산 정가 고정) */}
+          {/* 제안 금액 (예산 정가 고정) — 조각(파티원 모집)은 인원에 따라 총액이 변동되므로 숨김 */}
+          {!puzzle.is_recruiting_party && (
           <div className="space-y-2">
             <p className="text-[11px] font-bold text-neutral-500 tracking-wide">제안 금액</p>
             <div className="bg-neutral-900 border border-neutral-800 rounded-xl h-11 px-4 flex items-center justify-between">
@@ -413,7 +457,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               깃발 예산과 동일한 금액으로만 제안할 수 있어요. 보틀·서비스 구성으로 차별화하세요.
             </p>
           </div>
+          )}
 
+          {/* 주류·테이블 구성 — 조각은 인원·가격이 실시간 변동되므로 제거(코멘트만) */}
+          {!puzzle.is_recruiting_party && (<>
           {/* 주류 선택 */}
           <LiquorSelector
             selected={liquorItems}
@@ -508,11 +555,12 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               </div>
             )}
           </div>
+          </>)}
 
           {/* MD 코멘트 */}
           <div className="space-y-2">
             <p className="text-[11px] font-bold text-neutral-500 tracking-wide">
-              MD 코멘트 <span className="font-normal">(선택)</span>
+              MD 코멘트 <span className="font-normal">{puzzle.is_recruiting_party ? "(필수)" : "(선택)"}</span>
             </p>
             <textarea
               value={comment}
@@ -522,9 +570,39 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               maxLength={200}
               className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-[13px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
             />
-            <p className="text-[12px] text-white leading-snug">
-              공정한 경쟁을 위해 전화번호·카톡·인스타등 기재가 제한됩니다.
-            </p>
+            {/* 자주 쓰는 문장 (최대 5개, 기기 저장). 칩 클릭 = 코멘트 채우기 */}
+            {(savedComments.length > 0 || comment.trim().length > 0) && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                {savedComments.map((p) => (
+                  <span key={p.id} className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 max-w-full">
+                    <button
+                      type="button"
+                      onClick={() => setComment(p.content)}
+                      className="text-[12px] text-neutral-300 hover:text-white truncate max-w-[160px] text-left"
+                    >
+                      {p.content}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeSavedComment(p.id)}
+                      aria-label="문장 삭제"
+                      className="text-neutral-500 hover:text-red-400 shrink-0"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+                {comment.trim().length > 0 && !savedComments.some((p) => p.content === comment.trim()) && savedComments.length < 5 && (
+                  <button
+                    type="button"
+                    onClick={saveCurrentComment}
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-neutral-800 border border-dashed border-neutral-600 text-[12px] font-bold text-neutral-400 hover:text-white hover:border-neutral-400 transition-colors"
+                  >
+                    + 멘트 저장하기
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* 크레딧 안내 */}
@@ -533,7 +611,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               ✓ 제안 전송은 무료입니다.<br />
               {offerChatOn ? (
                 <>
-                  ✓ 매칭되면 <strong className="text-amber-400">15 크레딧</strong> 1회 (대화 첫 답장 또는 수락 시)<br />
+                  ✓ 매칭되면 <strong className="text-amber-400">{matchCost} 크레딧</strong> 1회 ({puzzle.is_recruiting_party ? "상담 시작 또는 수락 시" : "대화 첫 답장 또는 수락 시"})<br />
                 </>
               ) : (
                 <>
@@ -544,14 +622,14 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             </p>
           </div>
 
-          {credits !== null && credits < (offerChatOn ? 15 : 30) && (
+          {credits !== null && credits < (offerChatOn ? matchCost : 30) && (
             <Link
               href="/md/credits"
               className="flex items-center justify-between gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 hover:bg-red-500/15 transition-colors"
             >
               <p className="text-[12px] text-red-400 leading-relaxed">
                 {offerChatOn
-                  ? `대화 답장하려면 크레딧이 필요해요 (${credits}/15). 제안은 지금도 무료로 보낼 수 있어요.`
+                  ? `${puzzle.is_recruiting_party ? "상담하려면" : "대화 답장하려면"} 크레딧이 필요해요 (${credits}/${matchCost}). 제안은 지금도 무료로 보낼 수 있어요.`
                   : `크레딧이 부족합니다 (${credits}/30). 충전 후 제안할 수 있어요.`}
               </p>
               <span className="flex items-center gap-0.5 shrink-0 text-[12px] font-black text-amber-400">
@@ -562,7 +640,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           <Button
             onClick={handleSubmit}
-            disabled={loading || myClubs.length === 0 || currentBudget <= 0 || selectedIncludes.length === 0 || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
+            disabled={loading || myClubs.length === 0 || currentBudget <= 0 || (puzzle.is_recruiting_party ? !comment.trim() : selectedIncludes.length === 0) || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
             className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
             {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "제안서 보내기")}

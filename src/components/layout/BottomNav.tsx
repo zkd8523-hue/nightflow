@@ -7,6 +7,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 import { useOfferChats } from "@/hooks/useOfferChats";
+import { usePartyChats } from "@/hooks/usePartyChats";
 import { WagleIcon } from "@/components/icons/WagleIcon";
 
 // 와글은 아직 준비 단계 — 로컬(npm run dev)에서만 노출, 배포(production)에서는 숨김.
@@ -20,7 +21,15 @@ export function BottomNav() {
   // Hooks 규칙상 early return보다 위에서 호출. 비로그인 시 빈 배열 반환됨.
   const { notifications } = useNotifications(user?.id);
   const offerChatOn = useOfferChatFlag();
-  const { hasUnread: hasUnreadChat } = useOfferChats(user?.id);
+  // 채팅 점 = 실제 노출되는 것과 일치: 깃발(비모집) 1:1 오퍼 + 조각 단체방.
+  // 조각 1:1 오퍼 채팅은 단체방으로 통합돼 목록에서 빠졌으므로 점 계산에서도 제외.
+  const { chats: offerChats } = useOfferChats(user?.id);
+  const { rooms: partyRooms } = usePartyChats(user?.id);
+  // 종료된 대화(만료/거절/철회)는 읽을 수 없으므로 점 계산에서 제외
+  const isClosed = (s: string) => s === "expired" || s === "rejected" || s === "withdrawn";
+  const hasUnreadChat =
+    offerChats.some((c) => !c.is_recruiting_party && !isClosed(c.offer_status) && c.unread) ||
+    partyRooms.some((r) => r.unread);
   const hasNewOffer = notifications.some(
     (n) => !n.is_read && n.type === "puzzle_offer_received"
   );

@@ -468,7 +468,9 @@ export function HomeContent({
   const shareCount = activeAuctions.filter(a => a.listing_type === 'share').length;
   const isMdOrAdminUser = user?.role === "md" || user?.role === "admin";
   // 조각 탭 노출 조건: MD/Admin은 항상, 일반/비로그인은 조각이 1개 이상일 때만
-  const showShareTab = isMdOrAdminUser || shareCount > 0;
+  // 조각은 유저 주도 기능 → 조각 올리기 진입점을 상시 노출 (0개여도 빈 상태 CTA 표시).
+  // shareCount는 유지(향후 조건 재도입/로깅 대비). 길이값이라 항상 true.
+  const showShareTab = isMdOrAdminUser || shareCount >= 0;
 
   // MD 로그인 시 깃발 지역 필터 기본값을 본인 활동 지역으로 1회 자동 선택.
   // (MAIN_AREAS = 강남/홍대/이태원 칩만 제공하므로 그 안에 드는 첫 지역만 적용)
@@ -646,6 +648,9 @@ export function HomeContent({
   // 홈 캐러셀은 항상 전체 노출 (지역 필터 없음 — 더보기에서 바꾼 selectedArea 영향 안 받음).
   // 지역 탐색은 더보기(AuctionList)가 자체 selectedArea로 담당.
   const areaFilteredPuzzles = visiblePuzzles;
+  // 깃발(인원 확정) vs 조각(파티원 모집) 분리 — 각각 별도 캐러셀로 노출.
+  const flagPuzzles = useMemo(() => areaFilteredPuzzles.filter((p) => !p.is_recruiting_party), [areaFilteredPuzzles]);
+  const sharePuzzles = useMemo(() => areaFilteredPuzzles.filter((p) => p.is_recruiting_party), [areaFilteredPuzzles]);
   const areaFilteredShares = useMemo(
     () => visibleAuctions.filter((a) => a.listing_type === "share"),
     [visibleAuctions]
@@ -681,13 +686,13 @@ export function HomeContent({
         });
 
       // NEW 그룹을 절대 앞에 두고, 각 그룹 내부는 tier→마감순으로 정렬.
-      const news = rank(areaFilteredPuzzles.filter(isNew));
-      const olds = rank(areaFilteredPuzzles.filter((p) => !isNew(p)));
+      const news = rank(flagPuzzles.filter(isNew));
+      const olds = rank(flagPuzzles.filter((p) => !isNew(p)));
       return [...news, ...olds].slice(0, CAROUSEL_SLOTS);
     }
 
     // ── 유저/비로그인: NEW 최우선, 각 그룹 내 오퍼 많은 순 → 마감일순 ──
-    const news = areaFilteredPuzzles
+    const news = flagPuzzles
       .filter(isNew)
       .sort((a, b) => {
         const diff = (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
@@ -695,7 +700,7 @@ export function HomeContent({
       })
       .slice(0, CAROUSEL_SLOTS);
     const remainingSlots = Math.max(0, CAROUSEL_SLOTS - news.length);
-    const picked = areaFilteredPuzzles
+    const picked = flagPuzzles
       .filter((p) => !isNew(p))
       .sort((a, b) => {
         const diff = (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
@@ -703,7 +708,7 @@ export function HomeContent({
       })
       .slice(0, remainingSlots);
     return [...news, ...picked];
-  }, [areaFilteredPuzzles, puzzleOfferCounts, isMdOrAdminUser, user?.area, myOfferedPuzzleIds]);
+  }, [flagPuzzles, puzzleOfferCounts, isMdOrAdminUser, user?.area, myOfferedPuzzleIds]);
 
   // Props 업데이트 시 로컬 상태 동기화 (global router.refresh 대응)
   useEffect(() => {
@@ -1025,6 +1030,7 @@ export function HomeContent({
     const detailHref = (tab: string) => `/?tab=${tab}&detail=1`;
     const isMdOrAdmin = user?.role === "md" || user?.role === "admin";
     const newFlagHref = user ? "/flags/new" : "/login?redirect=/flags/new";
+    const newShareHref = user ? "/shares/new" : "/login?redirect=/shares/new";
 
     // 탭별 Tip 콘텐츠 (풀 화면과 일관)
     const userPuzzleTipContent = (
@@ -1323,7 +1329,7 @@ export function HomeContent({
           <div className="mb-2">
             <HomePuzzleCarousel
               puzzles={carouselPuzzles}
-              totalCount={areaFilteredPuzzles.length}
+              totalCount={flagPuzzles.length}
               offerCounts={puzzleOfferCounts}
               userRole={user?.role as "user" | "md" | "admin" | undefined}
               detailHref={detailHref("puzzle")}
@@ -1341,24 +1347,20 @@ export function HomeContent({
               {/* ── 조각 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
               {renderSectionRow({ icon: "🧩", label: "조각", detailTab: "share", dateLabel: shareHeaderDate })}
 
+              {/* 유저 조각(파티원 모집) 캐러셀 — HomePuzzleCarousel 재사용(shareMode) */}
               <div className="mb-2">
-                <HomeShareCarousel
-                  shares={areaFilteredShares}
-                  currentUserId={user?.id}
-                  detailHref={detailHref("share")}
-                  newFlagHref={newFlagHref}
+                <HomePuzzleCarousel
+                  puzzles={sharePuzzles}
+                  totalCount={sharePuzzles.length}
+                  offerCounts={puzzleOfferCounts}
                   userRole={user?.role as "user" | "md" | "admin" | undefined}
-                  isAreaFiltered={!!selectedShareArea}
-                  onClearAreaFilter={() => setSelectedShareArea(null)}
+                  detailHref={detailHref("share")}
+                  newFlagHref={newShareHref}
+                  showFlagCTA
+                  shareMode
                   onActiveDateChange={setShareHeaderDate}
                 />
               </div>
-              {/* MD 전용 조각 행동 유도 CTA — 미리보기 Sheet 트리거 */}
-              {isMdOrAdmin && (
-                <div className="mb-2">
-                  <ShareMdCta />
-                </div>
-              )}
             </>
           )}
 

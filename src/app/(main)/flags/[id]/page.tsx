@@ -39,7 +39,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       ? new Date(puzzle.event_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
       : "";
     return {
-      title: { absolute: `NightFlow Flag · ${areaEn}${dateEn ? ` · ${dateEn}` : ""}` },
+      title: { absolute: `NightFlow ${puzzle.is_recruiting_party ? "Share" : "Flag"} · ${areaEn}${dateEn ? ` · ${dateEn}` : ""}` },
       alternates: { canonical: `https://nightflow.kr/flags/${id}` },
     };
   }
@@ -62,7 +62,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     : "";
   const countText = puzzle.target_count ? `${puzzle.target_count}명` : "";
 
-  const title = `나플 깃발 · ${area}${eventDate ? ` · ${eventDate}` : ""}`;
+  const title = `나플 ${puzzle.is_recruiting_party ? "조각" : "깃발"} · ${area}${eventDate ? ` · ${eventDate}` : ""}`;
   const description = [budgetText, countText].filter(Boolean).join(" · ");
 
   return {

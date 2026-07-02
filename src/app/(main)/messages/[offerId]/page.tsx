@@ -21,8 +21,10 @@ interface PuzzleRel {
   area: string;
   event_date: string;
   target_count: number;
+  current_count: number;
   total_budget: number | null;
   budget_per_person: number | null;
+  is_recruiting_party: boolean | null;
 }
 
 export default async function OfferChatPage({ params }: PageProps) {
@@ -45,7 +47,7 @@ export default async function OfferChatPage({ params }: PageProps) {
   const { data: offer } = await supabase
     .from("puzzle_offers")
     .select(
-      "id, md_id, club_id, table_type, proposed_price, includes, status, puzzle:puzzles!puzzle_offers_puzzle_id_fkey(id, leader_id, status, area, event_date, target_count, total_budget, budget_per_person)"
+      "id, md_id, club_id, table_type, proposed_price, includes, status, puzzle:puzzles!puzzle_offers_puzzle_id_fkey(id, leader_id, status, area, event_date, target_count, current_count, total_budget, budget_per_person, is_recruiting_party)"
     )
     .eq("id", offerId)
     .maybeSingle();
@@ -56,6 +58,9 @@ export default async function OfferChatPage({ params }: PageProps) {
     Array.isArray(offer.puzzle) ? offer.puzzle[0] : offer.puzzle
   ) as PuzzleRel | undefined;
   if (!puzzle) notFound();
+
+  // 조각(파티)은 1:1 오퍼 채팅 폐지 → 단체채팅으로 통합. 옛 링크는 단체방으로.
+  if (puzzle.is_recruiting_party) redirect(`/party/${puzzle.id}`);
 
   const isLeader = puzzle.leader_id === user.id;
   const isMd = offer.md_id === user.id;
@@ -98,6 +103,9 @@ export default async function OfferChatPage({ params }: PageProps) {
     puzzle.total_budget ??
     (puzzle.budget_per_person ?? 0) * (puzzle.target_count ?? 1);
   const budgetText = budget ? `${Math.round(budget / 10000)}만원` : "";
+  const perPerson =
+    puzzle.budget_per_person ??
+    (puzzle.target_count ? Math.round((puzzle.total_budget ?? 0) / puzzle.target_count) : 0);
 
   return (
     <MessageRoom
@@ -118,8 +126,12 @@ export default async function OfferChatPage({ params }: PageProps) {
       puzzleId={puzzle.id}
       puzzleInfo={{
         dateLabel,
+        area: puzzle.area,
         targetCount: puzzle.target_count,
+        currentCount: puzzle.current_count,
+        perPerson,
         budgetText,
+        isRecruitingParty: !!puzzle.is_recruiting_party,
       }}
       offerSummary={{
         clubName,

@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Camera, ImagePlus, Loader2, X } from "lucide-react";
+import { Camera, ImagePlus, Loader2, MapPin, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -13,6 +13,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
 import { ROOM_LABEL } from "@/lib/chat/areas";
+import { fetchNearestClubs, type NearestClub } from "@/lib/clubs/nearestClubs";
 import type { ChatShot, VerifiableArea } from "@/types/database";
 import { CameraCaptureView } from "./CameraCaptureView";
 
@@ -28,6 +29,8 @@ interface Props {
   };
   /** 업로드 성공 후 옵티미스틱 prepend 트리거 */
   onPosted?: (shot: ChatShot) => void;
+  /** 클럽 사전 지정 — 클럽 페이지의 빈 CTA에서 진입 시 자동 픽 */
+  presetClub?: { id: string; name: string } | null;
 }
 
 const MAX_CAPTION = 200;
@@ -43,6 +46,7 @@ export function ShotCaptureSheet({
   userId,
   userProfile,
   onPosted,
+  presetClub = null,
 }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +55,57 @@ export function ShotCaptureSheet({
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
+
+  // LIVE 클럽 지정 (필수, Migration 341)
+  const [selectedClub, setSelectedClub] = useState<{ id: string; name: string } | null>(presetClub);
+  const [nearestClubs, setNearestClubs] = useState<NearestClub[] | null>(null);
+  const [clubsLoading, setClubsLoading] = useState(false);
+
+  // 동의 모달 (14일 1회)
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [needConsent, setNeedConsent] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem("liveCameraConsent");
+      if (!raw) {
+        setNeedConsent(true);
+        return;
+      }
+      const at = Number(raw);
+      const stale = Date.now() - at > 14 * 24 * 60 * 60 * 1000;
+      setNeedConsent(stale);
+    } catch {
+      setNeedConsent(true);
+    }
+  }, [open]);
+
+  // 시트 열릴 때마다 클럽 추천 GPS 호출 (presetClub 없으면)
+  useEffect(() => {
+    if (!open || presetClub) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    setClubsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const clubs = await fetchNearestClubs(
+          area,
+          pos.coords.latitude,
+          pos.coords.longitude,
+          5,
+          1.5
+        );
+        setNearestClubs(clubs);
+        setClubsLoading(false);
+      },
+      (err) => {
+        console.warn("[ShotCaptureSheet] geo error", err);
+        setNearestClubs([]);
+        setClubsLoading(false);
+      },
+      { timeout: 8000 }
+    );
+  }, [open, area, presetClub]);
 
   /**
    * 인스타식 풀카메라 사용 가능 여부
@@ -68,6 +123,8 @@ export function ShotCaptureSheet({
     setPreviewUrl(null);
     setCaption("");
     setUploading(false);
+    setSelectedClub(presetClub);
+    setConsentChecked(false);
   }
 
   function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -81,6 +138,14 @@ export function ShotCaptureSheet({
 
   async function handlePost() {
     if (!file || uploading) return;
+    if (!selectedClub) {
+      toast.error("클럽을 선택해주세요");
+      return;
+    }
+    if (needConsent && !consentChecked) {
+      toast.error("개인정보 안내에 동의해주세요");
+      return;
+    }
     setUploading(true);
 
     const media = await uploadChatMedia(file, userId);
@@ -95,6 +160,7 @@ export function ShotCaptureSheet({
       .insert({
         area,
         author_id: userId,
+        club_id: selectedClub.id,
         media_type: media.type,
         media_url: media.url,
         width: media.width ?? null,
@@ -103,27 +169,50 @@ export function ShotCaptureSheet({
         caption: caption.trim() || null,
       })
       .select(
-        `id, area, author_id, media_type, media_url, width, height, duration, caption, created_at, expires_at`
+        `id, area, author_id, club_id, media_type, media_url, width, height, duration, caption, created_at, expires_at`
       )
       .single();
 
     if (error || !data) {
       console.error("[ShotCaptureSheet] insert error", error);
-      if (
+      const msg = error?.message ?? "";
+      if (msg.includes("LIVE_LOCKED_30MIN")) {
+        toast.error("30분 후에 다시 올릴 수 있어요");
+      } else if (msg.includes("LIVE_DAILY_LIMIT")) {
+        toast.error("하루에 LIVE 7개까지 올릴 수 있어요");
+      } else if (msg.includes("LIVE_AREA_MISMATCH")) {
+        toast.error("인증된 지역과 클럽 지역이 달라요");
+      } else if (msg.includes("LIVE_CLUB_REQUIRED")) {
+        toast.error("클럽을 선택해주세요");
+      } else if (
         error?.code === "42501" ||
-        error?.message?.includes("row-level security")
+        msg.includes("row-level security")
       ) {
         toast.error("지역 인증이 만료되었어요. 다시 인증해주세요");
       } else if (error?.code === "42P01" || error?.code === "42703") {
-        toast.error("SHOT 마이그레이션이 적용되지 않았습니다 (315)");
+        toast.error("DB 마이그레이션 미적용 (341)");
       } else {
-        toast.error(`업로드 실패: ${error?.message ?? "알 수 없는 오류"}`);
+        toast.error(`업로드 실패: ${msg || "알 수 없는 오류"}`);
       }
       setUploading(false);
       return;
     }
 
-    toast.success(`${ROOM_LABEL[area]} SHOT을 올렸어요 (9시간 후 사라져요)`);
+    // 동의 시점 기록 (14일 후 재안내)
+    try {
+      window.localStorage.setItem("liveCameraConsent", String(Date.now()));
+    } catch {
+      /* noop */
+    }
+
+    toast.success(`${selectedClub.name} LIVE 올렸어요 (9시간 후 사라져요)`);
+    // 업로드 직후 초상권 검토 안내
+    setTimeout(() => {
+      toast.message(
+        "⚠️ 본인 외 다른 사람 얼굴이 식별 가능하게 찍혔다면 직접 삭제해주세요"
+      );
+    }, 1000);
+
     onPosted?.({
       ...data,
       area: data.area as VerifiableArea,

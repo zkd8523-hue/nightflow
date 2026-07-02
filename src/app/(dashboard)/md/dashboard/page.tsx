@@ -169,7 +169,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 puzzle:puzzles!puzzle_offers_puzzle_id_fkey (
                     id, area, event_date, total_budget, budget_per_person,
                     target_count, current_count, status, kakao_open_chat_url,
-                    leader_id
+                    is_recruiting_party, leader_id
                 )
             `)
             .eq("md_id", userId)

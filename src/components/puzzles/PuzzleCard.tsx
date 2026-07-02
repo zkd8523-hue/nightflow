@@ -16,6 +16,8 @@ interface PuzzleCardProps {
   userRole?: "user" | "md" | "admin";
   offerCount?: number;
   isMember?: boolean;
+  /** 현재 유저가 이 퍼즐의 방장인지 — 조각 카드에서 "내 조각" 표시용 */
+  isLeader?: boolean;
   hasOffered?: boolean;
   hideNewBadge?: boolean;
   onJoin?: (puzzle: Puzzle) => void;
@@ -29,18 +31,19 @@ const GENDER_LABEL: Record<GenderPref, string | null> = {
 };
 
 const AGE_LABEL: Record<AgePref, string | null> = {
+  "20s": "20대",
+  "30s": "30대",
   early_20s: "20초",
   late_20s: "20후",
-  "30s": "30대",
   early_30s: "30초",
   mid_30s: "30중",
   any: null,
 };
 
-// Phase 1: 바이브 라벨 정정 (PuzzleForm과 동기화)
+// 바이브 라벨 (PuzzleForm과 동기화): 내향/외향 축
 const VIBE_LABEL: Record<VibePref, string | null> = {
-  chill: "편하게",
-  active: "신나게",
+  chill: "내향인",
+  active: "외향인",
   any: null,
 };
 
@@ -74,7 +77,7 @@ export function PuzzlePiece({
       : "bg-pink-500/80"
     : isNeutral
       ? isLeader
-        ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]"
+        ? "bg-green-500"
         : "bg-green-500/80"
       : isLeader
         ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
@@ -85,12 +88,12 @@ export function PuzzlePiece({
     : gender === 'male'
       ? "bg-neutral-800/50 border border-dashed border-blue-500/40"
       : isNeutral
-        ? "bg-neutral-800/50 border border-dashed border-neutral-600"
+        ? "bg-neutral-800/50 border border-dashed border-green-500/40"
         : "bg-neutral-800/50 border border-dashed border-neutral-600";
 
   return (
     <div className={`relative ${size} rounded-lg flex items-center justify-center transition-all ${filled ? filledClass : emptyClass}`}>
-      <svg viewBox="0 0 24 24" className={`${iconSize} ${filled ? "text-black/40" : isFemale ? "text-pink-500/40" : gender === 'male' ? "text-blue-500/40" : "text-neutral-700"}`}>
+      <svg viewBox="0 0 24 24" className={`${iconSize} ${filled ? "text-black/40" : isFemale ? "text-pink-500/40" : gender === 'male' ? "text-blue-500/40" : "text-green-500/40"}`}>
         <path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-2 .9-2 2v3.8h1.5c1.38 0 2.5 1.12 2.5 2.5S4.88 15.8 3.5 15.8H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/>
       </svg>
     </div>
@@ -110,13 +113,13 @@ export function buildPuzzleSlotLayout(puzzle: {
   target_count: number;
   current_count: number;
   leader?: { gender?: 'male' | 'female' | null } | null;
-}): { gender: 'male' | 'female'; filled: boolean; isLeader: boolean }[] {
+}): { gender: 'male' | 'female' | null; filled: boolean; isLeader: boolean }[] {
   const tM = puzzle.target_male ?? 0;
   const tF = puzzle.target_female ?? 0;
-  // 슬롯 데이터가 비어있는 레거시 퍼즐: 모두 동일 색 (구 동작 보존)
+  // 성별 슬롯 없음(조각 등 성별 무관): 중립(초록)으로 통일
   if (tM + tF === 0) {
     return Array.from({ length: puzzle.target_count }).map((_, i) => ({
-      gender: 'male' as const,
+      gender: null,
       filled: i < puzzle.current_count,
       isLeader: i === 0,
     }));
@@ -147,6 +150,7 @@ export const PuzzleCard = memo(function PuzzleCard({
   userRole,
   offerCount = 0,
   isMember = false,
+  isLeader = false,
   hasOffered = false,
   hideNewBadge = false,
   onJoin,
@@ -230,9 +234,6 @@ export const PuzzleCard = memo(function PuzzleCard({
                 </span>
               )}
               {leaderTier && <TrustBadge tier={leaderTier} size="sm" />}
-              {isMd && puzzle.area && (
-                <p className="text-[12px] text-neutral-500 font-medium">· {puzzle.area}</p>
-              )}
             </div>
           )}
         </div>
@@ -242,16 +243,10 @@ export const PuzzleCard = memo(function PuzzleCard({
               검토 중
             </span>
           )}
-          {!isSelecting && !(isNew && !hideNewBadge) && (
-            isRecruitingParty && !isFull ? (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[11px] font-bold">
-                🧩
-              </span>
-            ) : (
-              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[11px]" style={{lineHeight: 1}}>
-                🚩
-              </span>
-            )
+          {puzzle.area && (
+            <span className="text-[12px] font-bold text-neutral-300 whitespace-nowrap">
+              {puzzle.area}
+            </span>
           )}
         </div>
       </div>
@@ -330,7 +325,8 @@ export const PuzzleCard = memo(function PuzzleCard({
       )}
 
       {/* CTA 버튼 (작성날짜는 카드 상단 깃발 배지 아래로 이동) */}
-      <div className="relative -mt-2">
+      {/* 조각/모집 카드는 슬롯과 버튼 사이 간격 확보(mt-2), 그 외는 기존대로(-mt-2) */}
+      <div className={`relative ${isRecruitingParty ? "mt-2" : "-mt-2"}`}>
       {isMd ? (
         // MD: 풀 버튼 대신 작고 둥근 자세히 스타일 버튼 — 오퍼수 + 버튼 한 행
         <div className="flex items-center justify-between gap-2">
@@ -355,9 +351,9 @@ export const PuzzleCard = memo(function PuzzleCard({
             ) : (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-                className={`h-8 px-3 rounded-full font-black text-[12px] bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_7px_rgba(245,158,11,0.35)] active:scale-[0.97] transition-all ${offerCount > 0 ? "shrink-0" : "w-full"}`}
+                className={`h-8 px-3 rounded-full font-black text-[12px] bg-amber-500 hover:bg-amber-400 text-black active:scale-[0.97] transition-all ${offerCount > 0 ? "shrink-0" : "w-full"}`}
               >
-                {offerCount > 0 ? "나도 오퍼하기" : "먼저 오퍼하기"}
+                {!isRecruitingParty ? "깃발 뽑기" : "조각 줍기"}
               </Button>
             )}
           </div>
@@ -380,13 +376,20 @@ export const PuzzleCard = memo(function PuzzleCard({
               e.preventDefault();
               e.stopPropagation();
               trackEvent("puzzle_cta_click", { source: "card" });
-              router.push("/flags/new");
+              router.push("/shares/new");
             }}
             className="w-full h-11 font-black text-[13px] rounded-xl transition-all active:scale-[0.98] bg-white hover:bg-neutral-200 text-black"
           >
             나도 파티원 모집하기 →
           </Button>
         </div>
+      ) : isLeader ? (
+        <Button
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          className="w-full h-11 font-black text-[13px] rounded-xl transition-all bg-neutral-800 border border-neutral-700 text-neutral-300 pointer-events-none"
+        >
+          내 조각
+        </Button>
       ) : isMember ? (
         <Button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}

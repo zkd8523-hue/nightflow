@@ -11,6 +11,7 @@ export interface OfferChatSummary {
   area: string;
   event_date: string;
   budget: number | null;
+  is_recruiting_party: boolean;
   my_role: "leader" | "md";
   counterpart_id: string;
   counterpart_name: string | null;

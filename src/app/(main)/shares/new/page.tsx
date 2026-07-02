@@ -1,0 +1,42 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
+
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "조각 올리기" };
+
+// 조각(파티원 모집) 신규 등록 — 깃발과 별개 진입점.
+// 밑단은 파티원 모집 배관(puzzles.is_recruiting_party=true) 재사용, 화면만 조각으로 분리.
+export default async function ShareNewPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  // 조각은 유저 주도 기능 — MD는 등록 대상 아님
+  if (profile?.role === "md") redirect("/");
+
+  return (
+    <div className="min-h-screen bg-[#0A0A0A] pb-20">
+      <div className="max-w-lg mx-auto p-6">
+        {/* 헤더 */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-black text-white tracking-tight">🧩 조각</h1>
+          <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">
+            파티원을 모아 테이블을 예약해요
+          </p>
+        </div>
+
+        <PuzzleForm userId={user.id} shareMode />
+      </div>
+    </div>
+  );
+}

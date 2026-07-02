@@ -318,11 +318,11 @@ export function Header({
               )}
               {!compact && user.role === "user" && user.md_status !== "pending" && !pathname?.startsWith("/auctions/") && !pathname?.startsWith("/flags/") && !pathname?.startsWith("/messages") && (
                 <Link
-                  href="/flags/new"
-                  className="h-9 px-3.5 flex items-center rounded-full bg-amber-500 hover:bg-amber-400 transition-colors shadow-sm"
-                  aria-label="깃발 꽂기"
+                  href="/start"
+                  className="h-9 px-3.5 flex items-center rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
+                  aria-label="예약하기"
                 >
-                  <span className="text-[12px] font-black text-black whitespace-nowrap">깃발 꽂기</span>
+                  <span className="text-[12px] font-black text-black whitespace-nowrap">예약하기</span>
                 </Link>
               )}
               <button

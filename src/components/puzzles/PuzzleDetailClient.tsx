@@ -70,16 +70,17 @@ const GENDER_LABEL: Record<GenderPref, string | null> = {
   any: null,
 };
 const AGE_LABEL: Record<AgePref, string | null> = {
+  "20s": "20대",
+  "30s": "30대",
   early_20s: "20초",
   late_20s: "20후",
-  "30s": "30대",
   early_30s: "30초",
   mid_30s: "30중",
   any: null,
 };
 const VIBE_LABEL: Record<VibePref, string | null> = {
-  chill: "조용히",
-  active: "신나게",
+  chill: "내향인",
+  active: "외향인",
   any: null,
 };
 
@@ -173,7 +174,7 @@ export function PuzzleDetailClient({
 
   useEffect(() => {
     if (searchParams.get("edit_blocked") === "offers") {
-      toast.error(t("MD 제안이 들어온 깃발은 수정할 수 없어요", "Requests with offers can't be edited"));
+      toast.error(t(isRecruitingParty ? "MD 제안이 들어온 조각은 수정할 수 없어요" : "MD 제안이 들어온 깃발은 수정할 수 없어요", "Requests with offers can't be edited"));
       router.replace(`/flags/${puzzle.id}`);
     }
   }, [searchParams, router, puzzle.id]);
@@ -372,7 +373,7 @@ export function PuzzleDetailClient({
       if (error) throw error;
       if (!data?.success) { toast.error(data?.error || t("취소에 실패했습니다", "Failed to cancel")); return; }
       setShowCancelSheet(false);
-      toast.success(t("깃발을 내렸습니다", "Request taken down"));
+      toast.success(t(isRecruitingParty ? "조각을 내렸습니다" : "깃발을 내렸습니다", "Request taken down"));
       router.push(isForeigner ? "/en" : "/?tab=puzzle");
     } catch {
       toast.error(t("취소에 실패했습니다", "Failed to cancel"));
@@ -382,13 +383,13 @@ export function PuzzleDetailClient({
   };
 
   const handleLeave = async () => {
-    if (!confirm("이 깃발에서 나가시겠습니까?")) return;
+    if (!confirm(`이 ${isRecruitingParty ? "조각" : "깃발"}에서 나가시겠습니까?`)) return;
     setActionLoading(true);
     try {
       const { data, error } = await supabase.rpc("leave_puzzle", { p_puzzle_id: puzzle.id });
       if (error) throw error;
       if (!data?.success) { toast.error(data?.error || "나가기에 실패했습니다"); return; }
-      toast.success("깃발에서 나왔습니다");
+      toast.success(isRecruitingParty ? "조각에서 나왔습니다" : "깃발에서 나왔습니다");
       router.refresh();
     } catch {
       toast.error("나가기에 실패했습니다");
@@ -528,7 +529,7 @@ export function PuzzleDetailClient({
           <Link href={isForeigner ? "/en" : "/?tab=puzzle"} className="text-white">
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-[17px] font-black text-white flex-1">{t("깃발 상세", "Request detail")}</h1>
+          <h1 className="text-[17px] font-black text-white flex-1">{t(isRecruitingParty ? "조각 상세" : "깃발 상세", "Request detail")}</h1>
           {currentUserId === puzzle.leader_id && isOpen && pendingOffers.length === 0 && (
             <Link
               href={`/flags/${puzzle.id}/edit${lq}`}
@@ -725,7 +726,9 @@ export function PuzzleDetailClient({
                 <span className="text-[13px] text-neutral-400">
                   {puzzle.current_count >= puzzle.target_count
                     ? "퍼즐 완성!"
-                    : `파티원 ${puzzle.current_count}/${puzzle.target_count}명 (🧑 ${puzzle.current_male ?? 0}/${puzzle.target_male ?? 0} · 👩 ${puzzle.current_female ?? 0}/${puzzle.target_female ?? 0})`}
+                    : (puzzle.target_male ?? 0) === 0 && (puzzle.target_female ?? 0) === 0
+                      ? `파티원 ${puzzle.current_count}/${puzzle.target_count}명`
+                      : `파티원 ${puzzle.current_count}/${puzzle.target_count}명 (🧑 ${puzzle.current_male ?? 0}/${puzzle.target_male ?? 0} · 👩 ${puzzle.current_female ?? 0}/${puzzle.target_female ?? 0})`}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {buildPuzzleSlotLayout(puzzle).map((slot, i) => (
@@ -763,17 +766,6 @@ export function PuzzleDetailClient({
             </p>
           </section>
 
-          {/* 카카오 오픈채팅: 참여자면 항상 표시 */}
-          {(isLeader || isMember) && puzzle.kakao_open_chat_url && (
-            <a
-              href={puzzle.kakao_open_chat_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold text-[13px] rounded-xl hover:bg-[#FDD835] transition-colors animate-in slide-in-from-bottom-4 fade-in duration-500"
-            >
-              {t("카카오 오픈채팅 입장하기", "Open KakaoTalk chat")}
-            </a>
-          )}
 
           {/* 성사 기록 (accepted 상태) */}
           {isAccepted && (
@@ -1039,9 +1031,20 @@ export function PuzzleDetailClient({
               <div className="space-y-3">
                 <FeatureGate flag="offer_chat">
                   <p className="text-[12px] text-neutral-400 bg-neutral-900/60 border border-neutral-800 rounded-xl px-3 py-2.5">
-                    💬 마음에 드는 오퍼와 <span className="text-white font-bold">채팅으로 상담</span>해보세요 · 깃발당 최대 3개
+                    {isRecruitingParty
+                      ? "💬 채팅에서 파티원과 상의한 뒤, 마음에 드는 MD에게 예약하세요"
+                      : "💬 마음에 드는 오퍼와 채팅으로 상담해보세요 · 깃발당 최대 3개"}
                   </p>
                 </FeatureGate>
+                {isRecruitingParty && (
+                  <Link
+                    href={`/party/${puzzle.id}`}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-white text-black font-black text-[14px] rounded-xl hover:bg-neutral-100 transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    {t("단체채팅 바로가기", "Go to group chat")}
+                  </Link>
+                )}
                 {pendingOffers.map((offer, idx) => (
                   <SecretOfferCard
                     key={offer.id}
@@ -1057,6 +1060,7 @@ export function PuzzleDetailClient({
                     onWithdrawn={loadOffers}
                     onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
                     lang={lang}
+                    isRecruitingParty={isRecruitingParty}
                   />
                 ))}
               </div>
@@ -1201,11 +1205,13 @@ export function PuzzleDetailClient({
                   )}
                 </div>
 
-                {/* 가격 + includes + 코멘트 */}
+                {/* 가격 + includes + 코멘트 — 조각은 인원·가격 변동으로 고정가 숨김 */}
                 <div className="space-y-2 pt-2 border-t border-neutral-800/60">
-                  <p className="text-[16px] font-black text-green-400">
-                    {myOffer.proposed_price.toLocaleString()}원
-                  </p>
+                  {!isRecruitingParty && (
+                    <p className="text-[16px] font-black text-green-400">
+                      {myOffer.proposed_price.toLocaleString()}원
+                    </p>
+                  )}
                   {myOffer.includes?.length > 0 && (() => {
                     const liquors = myOffer.includes.filter((i: string) => LIQUOR_KEYWORDS.some((kw) => i.includes(kw)));
                     const extras = myOffer.includes.filter((i: string) => !LIQUOR_KEYWORDS.some((kw) => i.includes(kw)));
@@ -1237,9 +1243,10 @@ export function PuzzleDetailClient({
                   )}
                 </div>
 
-                {/* Migration 332: 방장과 1:1 대화 — 방장이 먼저 말 걸어야 채팅 생성됨(콜드블록).
-                    방장이 대화 시작(leader_chat_started_at) 했거나 매치(accepted)된 경우에만 바로가기 노출 */}
-                {(myOffer.leader_chat_started_at || myOffer.status === "accepted") &&
+                {/* Migration 332: 방장과 1:1 대화 (깃발 전용). 조각은 단체채팅으로 통합 →
+                    초대되면 나의 채팅/알림으로 진입하므로 여기 1:1 바로가기는 숨김. */}
+                {!isRecruitingParty &&
+                  (myOffer.leader_chat_started_at || myOffer.status === "accepted") &&
                   (myOffer.status === "pending" || myOffer.status === "accepted") && (
                   <FeatureGate flag="offer_chat">
                     <Link
@@ -1279,8 +1286,8 @@ export function PuzzleDetailClient({
           </section>
           )}
 
-          {/* 비방장·비멤버·비MD: 자기 깃발 등록 유도 CTA */}
-          {!isLeader && !isMember && !isMd && (
+          {/* 비방장·비멤버·비MD: 자기 깃발 등록 유도 CTA (비로그인·조각 상세는 숨김) */}
+          {currentUserId && !isLeader && !isMember && !isMd && !isRecruitingParty && (
             <div className="text-center space-y-1">
               {pendingOffers.length > 0 && !isAccepted && (
                 <button
@@ -1342,7 +1349,12 @@ export function PuzzleDetailClient({
                               {member.user?.display_name || member.user?.name || "알 수 없음"}
                             </Link>
                           ) : (
-                            <>{member.user?.display_name || member.user?.name || "알 수 없음"}</>
+                            <Link
+                              href={`/u/${member.user_id}`}
+                              className="hover:text-white/80 hover:underline transition-colors"
+                            >
+                              {member.user?.display_name || member.user?.name || "알 수 없음"}
+                            </Link>
                           )}
                           {isLeaderMember && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
@@ -1382,7 +1394,7 @@ export function PuzzleDetailClient({
                 variant="outline"
                 className="w-full h-12 border-red-500/50 bg-transparent text-red-400 hover:bg-red-500/10 font-bold text-[14px] rounded-2xl"
               >
-                {t("깃발 내리기", "Take down request")}
+                {t(isRecruitingParty ? "조각 내리기" : "깃발 내리기", "Take down request")}
               </Button>
             </section>
           )}
@@ -1392,10 +1404,21 @@ export function PuzzleDetailClient({
           {!isMember && !isLeader && !isMd && isOpen && currentUserId && isRecruitingParty && (
             <Button
               onClick={() => setShowJoin(true)}
-              className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
+              className="w-full h-13 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
             >
-              파티원 합류하기
+              합류하기
             </Button>
+          )}
+
+          {/* 합류한 파티원(방장 아님): 조각에서 나가기 */}
+          {isMember && !isLeader && !isMd && isRecruitingParty && (puzzle.status === "open" || puzzle.status === "selecting") && (
+            <button
+              type="button"
+              onClick={handleLeave}
+              className="w-full h-11 text-[13px] font-bold text-neutral-500 hover:text-red-400 transition-colors"
+            >
+              조각에서 나가기
+            </button>
           )}
 
           {/* MD/Admin 제안하기 버튼 */}
@@ -1404,21 +1427,21 @@ export function PuzzleDetailClient({
               {/* 외국인 깃발 안내 (Migration 343 Escrow 결제 트리거) */}
               {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR" && (
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[12px] text-amber-300 leading-relaxed">
-                  💳 <strong>외국인 깃발</strong> — 매칭 시 사용자가 즉시 선결제, 방문 확정 후 정산 (NightFlow 9% 차감 후 송금)
+                  💳 <strong>{t(isRecruitingParty ? "외국인 조각" : "외국인 깃발", isRecruitingParty ? "International Share" : "International Flag")}</strong> — {t("매칭 시 사용자가 즉시 선결제, 방문 확정 후 정산 (NightFlow 9% 차감 후 송금)", "Prepaid instantly on match, settled after the visit is confirmed (9% NightFlow fee deducted)")}
                 </div>
               )}
               <Button
                 onClick={() => setShowOffer(true)}
                 className="w-full h-13 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl"
               >
-                제안하기
+                {isRecruitingParty ? "오퍼하기" : "깃발 뽑기"}
               </Button>
               <p className="text-[11px] text-neutral-600 text-center leading-relaxed">
                 <FeatureGate
                   flag="offer_chat"
                   fallback={<>수락 시 30크레딧 차감 · 미선택 시 크레딧 차감 없음</>}
                 >
-                  제안 무료 · 매칭 시 15크레딧 1회 (대화 첫 답장 또는 수락)
+                  제안 무료 · {isRecruitingParty ? "상담 시작 또는 수락시" : "첫 채팅 또는 수락시"} 크레딧 소모
                 </FeatureGate>
               </p>
             </div>
@@ -1429,7 +1452,7 @@ export function PuzzleDetailClient({
           {!currentUserId && isOpen && isRecruitingParty && (
             <Link href="/login">
               <Button className="w-full h-12 bg-white text-black font-black text-[14px] rounded-2xl">
-                로그인하고 파티원 합류하기
+                로그인하고 조각 이용하기
               </Button>
             </Link>
           )}

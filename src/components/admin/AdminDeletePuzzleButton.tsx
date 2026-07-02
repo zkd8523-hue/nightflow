@@ -19,7 +19,7 @@ export function AdminDeletePuzzleButton({ puzzleId }: { puzzleId: string }) {
       if (error) throw error;
       const res = data as { success: boolean; error?: string };
       if (!res.success) throw new Error(res.error || "삭제 실패");
-      toast.success("깃발 기록이 삭제됐습니다");
+      toast.success("기록이 삭제됐습니다");
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "삭제 중 오류");

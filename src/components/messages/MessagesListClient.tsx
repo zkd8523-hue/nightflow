@@ -3,12 +3,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
-import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronLeft, ChevronRight, Users, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useOfferChats } from "@/hooks/useOfferChats";
+import { usePartyChats } from "@/hooks/usePartyChats";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 
 function formatDate(d: string): string {
@@ -20,14 +21,25 @@ function formatDate(d: string): string {
   }
 }
 
-function relTime(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "방금";
-  if (min < 60) return `${min}분`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}시간`;
-  return `${Math.floor(hr / 24)}일`;
+// 카톡식 목록 시간: 오늘=시간(오전/오후 h:mm), 어제="어제", 그 이전="M월 D일"
+function chatListTime(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startYesterday = new Date(startToday);
+  startYesterday.setDate(startToday.getDate() - 1);
+  if (d >= startToday) {
+    const h = d.getHours();
+    const h12 = h % 12 || 12;
+    return `${h < 12 ? "오전" : "오후"} ${h12}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+  if (d >= startYesterday) return "어제";
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
+
+// 종료된 대화(만료/거절/철회)는 읽을 수 없으므로 미읽음 집계에서 제외
+function isClosedStatus(status: string): boolean {
+  return status === "expired" || status === "rejected" || status === "withdrawn";
 }
 
 export function MessagesListClient() {
@@ -35,6 +47,7 @@ export function MessagesListClient() {
   const flagOn = useOfferChatFlag();
   const { user, isLoading } = useCurrentUser();
   const { chats, loading, reload } = useOfferChats(user?.id);
+  const { rooms: partyRooms, loading: partyLoading } = usePartyChats(user?.id);
 
   const handleDeleteChat = async (offerId: string) => {
     if (typeof window !== "undefined" &&
@@ -63,6 +76,31 @@ export function MessagesListClient() {
     });
   }, [chats]);
 
+  // 깃발 / 조각 섹션 분리 (is_recruiting_party 기준)
+  const sections = useMemo(() => [
+    { key: "flag", label: "🚩 깃발", items: groups.filter((g) => !g[0].is_recruiting_party) },
+    { key: "share", label: "🧩 조각", items: groups.filter((g) => g[0].is_recruiting_party) },
+  ], [groups]);
+
+  const [tab, setTab] = useState<"flag" | "share">("flag");
+  const activeSection = sections.find((s) => s.key === tab)!;
+  const didAutoSelect = useRef(false);
+
+  // 로드 후 1회: 현재 탭이 비어있으면 방이 있는 탭으로 자동 전환(미읽음 우선)
+  useEffect(() => {
+    if (didAutoSelect.current || loading || partyLoading) return;
+    const [flag] = sections;
+    const flagCount = flag.items.length;
+    const shareCount = partyRooms.length; // 조각 탭 = 파티 단체방만 (1:1 제거)
+    if (flagCount === 0 && shareCount === 0) return;
+    const flagUnread = flag.items.some((g) => g.some((c) => !isClosedStatus(c.offer_status) && c.unread));
+    const shareUnread = partyRooms.some((r) => r.unread);
+    if (flagUnread && !shareUnread) setTab("flag");
+    else if (shareUnread && !flagUnread) setTab("share");
+    else setTab(flagCount > 0 ? "flag" : "share");
+    didAutoSelect.current = true;
+  }, [loading, partyLoading, sections, partyRooms]);
+
   // 플래그 OFF면 기능 자체가 없음 → 홈으로
   useEffect(() => {
     if (!isLoading && !flagOn) router.replace("/");
@@ -70,33 +108,102 @@ export function MessagesListClient() {
 
   return (
     <div className="max-w-lg mx-auto min-h-dvh bg-[#0A0A0A] pb-24">
-      <header className="sticky top-0 z-20 flex items-center gap-2 px-3 py-3 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-neutral-800">
-        <button
-          onClick={() => {
-            if (typeof window !== "undefined" && window.history.length > 1) router.back();
-            else router.push("/");
-          }}
-          className="p-1 -ml-1 text-neutral-300"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-[16px] font-black text-white">나의 채팅</h1>
-      </header>
+      <div className="sticky top-0 z-20 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-neutral-800">
+        <header className="flex items-center gap-2 px-3 py-3">
+          <button
+            onClick={() => {
+              if (typeof window !== "undefined" && window.history.length > 1) router.back();
+              else router.push("/");
+            }}
+            className="p-1 -ml-1 text-neutral-300"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-[16px] font-black text-white">나의 채팅</h1>
+        </header>
+        {user && (chats.length > 0 || partyRooms.length > 0) && (
+          <div className="grid grid-cols-2 gap-1 p-1 mx-4 mb-2 bg-neutral-900 rounded-full">
+            {sections.map((s) => {
+              const isShare = s.key === "share";
+              // 조각 탭 = 파티 단체방만(1:1 제거), 깃발 탭 = 1:1 오퍼 채팅
+              const count = isShare ? partyRooms.length : s.items.length;
+              const hasUnread = isShare
+                ? partyRooms.some((r) => r.unread)
+                : s.items.some((g) => g.some((c) => !isClosedStatus(c.offer_status) && c.unread));
+              const active = tab === s.key;
+              const name = s.key === "flag" ? "깃발" : "조각";
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => {
+                    didAutoSelect.current = true;
+                    setTab(s.key as "flag" | "share");
+                  }}
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${active ? "bg-white/10 text-white" : "text-neutral-500"}`}
+                >
+                  <span>{name}</span>
+                  {count > 0 && (
+                    <span className={`text-[11px] ${active ? "text-neutral-300" : "text-neutral-500"}`}>
+                      {count}
+                    </span>
+                  )}
+                  {hasUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500" />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
-      {isLoading || loading ? (
+      {isLoading || loading || partyLoading ? (
         <p className="text-center text-[13px] text-neutral-600 mt-16">불러오는 중…</p>
       ) : !user ? (
         <p className="text-center text-[13px] text-neutral-500 mt-16">로그인이 필요해요</p>
-      ) : chats.length === 0 ? (
+      ) : chats.length === 0 && partyRooms.length === 0 ? (
         <div className="text-center mt-20 px-8">
           <p className="text-[14px] text-neutral-400 font-bold">아직 대화가 없어요</p>
           <p className="text-[13px] text-neutral-600 mt-1.5 leading-relaxed">
             깃발 상세에서 마음에 드는 오퍼에 <br />“대화하기”를 눌러 시작해보세요
           </p>
         </div>
+      ) : tab === "share" && partyRooms.length === 0 ? (
+        <p className="text-center text-[13px] text-neutral-600 mt-16">조각 대화가 없어요</p>
+      ) : tab === "flag" && activeSection.items.length === 0 ? (
+        <p className="text-center text-[13px] text-neutral-600 mt-16">깃발 대화가 없어요</p>
       ) : (
         <div>
-          {groups.map((group) => {
+          {/* 조각 탭: 단체채팅방(파티) 먼저 노출 */}
+          {tab === "share" && partyRooms.map((room) => (
+            <Link
+              key={room.puzzle_id}
+              href={`/party/${room.puzzle_id}`}
+              className={`flex items-center gap-3 px-4 py-3.5 active:bg-neutral-900/60 ${["expired", "cancelled"].includes(room.puzzle_status) ? "opacity-50" : ""}`}
+            >
+              <div className="relative w-11 h-11 rounded-full overflow-hidden bg-green-500/15 grid place-items-center shrink-0">
+                <Users className="w-5 h-5 text-green-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[14px] font-bold text-white truncate">
+                    {formatDate(room.event_date)} · {room.area}
+                    {room.budget ? ` · ${Math.round(room.budget / 10000)}만원` : ""}
+                  </p>
+                  <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400 font-bold">
+                    {room.member_count}명
+                  </span>
+                </div>
+                <p className={`text-[13px] truncate mt-0.5 ${room.unread ? "text-neutral-200 font-semibold" : "text-neutral-500"}`}>
+                  {room.last_content}
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className="text-[11px] text-neutral-600">{chatListTime(room.last_at)}</span>
+                {room.unread && <span className="w-2 h-2 rounded-full bg-red-500" />}
+              </div>
+            </Link>
+          ))}
+          {/* 깃발 탭만 1:1 오퍼 채팅 그룹 노출 (조각은 단체방으로 통합) */}
+          {tab === "flag" && activeSection.items.map((group) => {
             const head = group[0];
             const budgetText = head.budget ? ` · ${Math.round(head.budget / 10000)}만원` : "";
             const isMatched = group.some((c) => c.offer_status === "accepted");
@@ -156,7 +263,7 @@ export function MessagesListClient() {
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-1 shrink-0">
-                          <span className="text-[11px] text-neutral-600">{relTime(c.last_at)}</span>
+                          <span className="text-[11px] text-neutral-600">{chatListTime(c.last_at)}</span>
                           {isClosed ? (
                             <button
                               onClick={(e) => {

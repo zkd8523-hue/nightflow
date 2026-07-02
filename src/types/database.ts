@@ -733,7 +733,8 @@ export type PuzzleStatus = 'open' | 'selecting' | 'matched' | 'cancelled' | 'exp
 export type OfferStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'expired';
 
 export type GenderPref = 'male_only' | 'female_only' | 'any';
-export type AgePref = 'early_20s' | 'late_20s' | '30s' | 'early_30s' | 'mid_30s' | 'any';
+// '20s'/'30s' = 조각 3분할용(20대/30대). early_/late_/mid_ = 레거시 backward compat.
+export type AgePref = '20s' | '30s' | 'early_20s' | 'late_20s' | 'early_30s' | 'mid_30s' | 'any';
 export type VibePref = 'chill' | 'active' | 'any';
 // Migration 156: 음악 선호. NULL = 상관없음(필터 시 모두 통과)
 export type MusicPref = 'hiphop' | 'edm' | 'any';
@@ -833,6 +834,67 @@ export interface OfferMessage {
   created_at: string;
   // joined
   sender?: { id: string; display_name: string | null; profile_image: string | null };
+}
+
+/** Migration 349: 조각(파티) 단체채팅 메시지. sender_id=null 이면 시스템 메시지. */
+export interface PartyMessage {
+  id: string;
+  puzzle_id: string;
+  sender_id: string | null;
+  content: string;
+  media: ChatMediaItem[];
+  is_system: boolean;
+  is_deleted: boolean;
+  created_at: string;
+  /** Migration 356: 답글(인용) 대상 메시지 id */
+  reply_to?: string | null;
+  /** Migration 357: 채팅에 공유된 오퍼 id ("이거 어때요?" 카드) */
+  shared_offer_id?: string | null;
+  // joined
+  sender?: { id: string; display_name: string | null; profile_image: string | null } | null;
+}
+
+/** Migration 349: 조각 단체방 참여자 (방장 + 합류 멤버) */
+export interface PartyParticipant {
+  id: string;
+  display_name: string | null;
+  profile_image: string | null;
+  is_leader: boolean;
+  guest_count: number;
+  /** Migration 352: 초대되어 단체방에 들어온 MD */
+  is_md?: boolean;
+}
+
+/** Migration 352: 조각 단체방 오퍼 리스트 항목 (get_party_offers RPC) */
+export interface PartyOffer {
+  offer_id: string;
+  md_id: string;
+  club_name: string | null;
+  table_type: string | null;
+  proposed_price: number;
+  includes: string[];
+  comment: string | null;
+  status: OfferStatus;
+  created_at: string;
+  like_count: number;
+  dislike_count: number;
+  my_vote: 'like' | 'dislike' | null;
+  is_invited: boolean;
+}
+
+/** Migration 349: 나의 채팅 조각 탭 단체방 요약 (get_party_chats RPC) */
+export interface PartyChatSummary {
+  puzzle_id: string;
+  area: string;
+  event_date: string;
+  budget: number | null;
+  member_count: number;
+  is_leader: boolean;
+  puzzle_status: string;
+  last_content: string;
+  last_at: string;
+  last_sender_id: string | null;
+  unread: boolean;
 }
 
 // 고객 문의 1:1 채팅 (유저 ↔ admin 운영팀) — Migration 337

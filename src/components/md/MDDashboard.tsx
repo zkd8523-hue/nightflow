@@ -59,6 +59,7 @@ interface MDPuzzleOffer extends PuzzleOffer {
         current_count: number;
         status: string;
         kakao_open_chat_url: string;
+        is_recruiting_party?: boolean;
         leader?: { name?: string; display_name?: string } | null;
     };
     club?: Pick<import("@/types/database").Club, "id" | "name" | "area"> | null;
@@ -163,13 +164,15 @@ export function MDDashboard({
     const [hotdealInlineOpen, setHotdealInlineOpen] = useState(false);
     // 홈 CTA(?section=guestsign / share)로 진입 시 해당 탭을 열어준다.
     const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
-    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(initialSection === "guestsign");
-    const [shareInlineOpen, setShareInlineOpen] = useState(initialSection !== "guestsign");
+    // 조각 UI는 MD 대시보드에서 숨김(유저 주도 조각으로 전환). 기본 열림 탭 = 게스트 간판.
+    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(initialSection !== "hotdeal");
+    const [shareInlineOpen, setShareInlineOpen] = useState(false);
     const supabase = createClient();
 
     // 낙관적 슬롯 상태 — claim 즉시 세팅 영역 표시 (router.refresh() 대기 안 함)
     const [localShareSlots, setLocalShareSlots] = useState(shareSlots);
     const [planBoardResetKey, setPlanBoardResetKey] = useState(0);
+    const [activePuzzleTab, setActivePuzzleTab] = useState<"flag" | "share">("flag");
     useEffect(() => { setLocalShareSlots(shareSlots); }, [shareSlots]);
 
     // 내가 이번 주 선점한 조각 슬롯 — 슬롯이 있어야 조각 등록 가능(등록 버튼 노출 조건)
@@ -327,6 +330,11 @@ export function MDDashboard({
         return a.event_date.localeCompare(b.event_date);
     });
 
+    // 내 오퍼 탭: 깃발 / 조각 분리
+    const flagOffers = initialPuzzleOffers.filter((o) => !o.puzzle?.is_recruiting_party);
+    const shareOffers = initialPuzzleOffers.filter((o) => !!o.puzzle?.is_recruiting_party);
+    const tabOffers = activePuzzleTab === "share" ? shareOffers : flagOffers;
+
     return (
         <div className="max-w-lg mx-auto pb-24 relative">
             {/* 뒤로가기 — 오버레이 */}
@@ -426,23 +434,7 @@ export function MDDashboard({
             </div>
 
             {/* 액션 버튼 3종 */}
-            <div className="px-4 mt-3 grid grid-cols-3 gap-2">
-                <button
-                    type="button"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShareInlineOpen((v) => !v);
-                        setHotdealInlineOpen(false);
-                        setGuestSignInlineOpen(false);
-                    }}
-                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
-                        shareInlineOpen ? "border-amber-500" : "border-neutral-700"
-                    }`}
-                >
-                    <span className="text-[20px] leading-none">🧩</span>
-                    <span className="text-[11px] font-black text-white">조각</span>
-                </button>
+            <div className="px-4 mt-3 grid grid-cols-2 gap-2">
                 <button
                     type="button"
                     onClick={(e) => {
@@ -573,11 +565,14 @@ export function MDDashboard({
 
             {/* Auction Tabs + Register Button */}
             <div className="px-4 mt-3">
-                <Tabs defaultValue="puzzle" className="w-full">
+                <Tabs value={activePuzzleTab} onValueChange={(v) => setActivePuzzleTab(v as "flag" | "share")} className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">
-                            <TabsTrigger value="puzzle" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
-                                ⛳ 깃발 {initialPuzzleOffers.length > 0 && <span className="ml-0.5 text-amber-400">{initialPuzzleOffers.length}</span>}
+                            <TabsTrigger value="flag" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
+                                ⛳ 깃발 {flagOffers.length > 0 && <span className="ml-0.5 text-amber-400">{flagOffers.length}</span>}
+                            </TabsTrigger>
+                            <TabsTrigger value="share" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
+                                🧩 조각 {shareOffers.length > 0 && <span className="ml-0.5 text-green-400">{shareOffers.length}</span>}
                             </TabsTrigger>
                         </TabsList>
 
@@ -618,11 +613,11 @@ export function MDDashboard({
                         </TabsContent>
 
                         {/* 퍼즐 오퍼 */}
-                        <TabsContent value="puzzle" className="space-y-3 m-0">
+                        <TabsContent value={activePuzzleTab} className="space-y-3 m-0">
                             {/* 거래 확정 — 이벤트 지난 accepted 오퍼 (확정 안된 것 + 응답 대기 + 응답 차례) */}
                             {(() => {
                                 const today = new Date().toISOString().split("T")[0];
-                                const pendingVisit = initialPuzzleOffers.filter(o =>
+                                const pendingVisit = tabOffers.filter(o =>
                                     o.status === "accepted" &&
                                     o.puzzle?.event_date &&
                                     o.puzzle.event_date < today &&
@@ -659,15 +654,16 @@ export function MDDashboard({
                                     </div>
                                 );
                             })()}
-                            {initialPuzzleOffers.filter(o =>
+                            {tabOffers.filter(o =>
                                 !(o.status === "accepted" && o.puzzle?.event_date && o.puzzle.event_date < new Date().toISOString().split("T")[0] && !o.visit_marked_at)
                             ).length > 0 ? (
-                                initialPuzzleOffers.filter(o =>
+                                tabOffers.filter(o =>
                                     !(o.status === "accepted" && o.puzzle?.event_date && o.puzzle.event_date < new Date().toISOString().split("T")[0] && !o.visit_marked_at)
                                 ).map(offer => {
                                     const p = offer.puzzle;
                                     if (!p) return null;
                                     const isAccepted = offer.status === "accepted";
+                                    const isShare = !!p.is_recruiting_party;
                                     const budget = p.total_budget ?? p.budget_per_person * p.target_count;
                                     const eventDateStr = (() => {
                                         const d = new Date(p.event_date + "T00:00:00");
@@ -711,7 +707,8 @@ export function MDDashboard({
                                                     </div>
                                                 </div>
 
-                                                {/* 제안 상세 */}
+                                                {/* 제안 상세 — 조각은 인원·가격 변동이라 주류/구성 무의미 → 숨김 */}
+                                                {!isShare && (
                                                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
                                                     <span className="text-[11px] font-bold text-neutral-300 bg-neutral-800 px-2 py-0.5 rounded">{offer.table_type}</span>
                                                     {offer.includes?.slice(0, 3).map((item: string) => (
@@ -721,6 +718,7 @@ export function MDDashboard({
                                                         <span className="text-[11px] text-neutral-500">+{offer.includes.length - 3}</span>
                                                     )}
                                                 </div>
+                                                )}
                                             </Link>
 
                                             {/* Footer */}
@@ -778,19 +776,21 @@ export function MDDashboard({
                                         </Card>
                                     );
                                 })
-                            ) : initialPuzzleOffers.length === 0 ? (
+                            ) : tabOffers.length === 0 ? (
                                 <div className="py-16 text-center space-y-4 bg-[#1C1C1E]/30 rounded-3xl border border-dashed border-neutral-800/50">
                                     <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto text-3xl">
                                         📨
                                     </div>
-                                    <p className="text-neutral-500 font-medium text-sm">보낸 제안이 없습니다</p>
+                                    <p className="text-neutral-500 font-medium text-sm">{activePuzzleTab === "share" ? "보낸 조각 오퍼가 없습니다" : "보낸 깃발 오퍼가 없습니다"}</p>
                                     <p className="text-neutral-600 text-xs px-10 leading-relaxed">
-                                        홈 깃발 탭에서 유저들이 꽂은 깃발을 확인하고<br/>제안을 보내보세요
+                                        {activePuzzleTab === "share"
+                                            ? <>홈 조각 탭에서 유저들이 올린 조각을 확인하고<br/>오퍼를 보내보세요</>
+                                            : <>홈에서 유저들이 꽂은 깃발을 확인하고<br/>제안을 보내보세요</>}
                                     </p>
-                                    <Link href="/?tab=puzzle">
+                                    <Link href={activePuzzleTab === "share" ? "/?tab=share" : "/?tab=puzzle"}>
                                         <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">
-                                            <span className="mr-1">⛳</span>
-                                            깃발 둘러보기
+                                            <span className="mr-1">{activePuzzleTab === "share" ? "🧩" : "⛳"}</span>
+                                            둘러보기
                                         </Button>
                                     </Link>
                                 </div>

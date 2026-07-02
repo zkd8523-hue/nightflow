@@ -30,6 +30,8 @@ interface SecretOfferCardProps {
   onWithdrawn: () => void;
   onAdminEdit?: (offer: PuzzleOffer) => void;
   lang?: Lang;
+  /** 조각(파티): 1:1 대신 단체채팅에서 상담 */
+  isRecruitingParty?: boolean;
 }
 
 export function SecretOfferCard({
@@ -45,6 +47,7 @@ export function SecretOfferCard({
   onWithdrawn,
   onAdminEdit,
   lang = "ko",
+  isRecruitingParty = false,
 }: SecretOfferCardProps) {
   const isForeigner = lang !== "ko";
   const club = offer.club as { name?: string; area?: string } | null;
@@ -174,7 +177,10 @@ export function SecretOfferCard({
             </div>
           }
         >
-          {offer.leader_chat_started_at ? (
+          {isRecruitingParty ? (
+            /* 조각: 카드엔 액션 없음(보기 전용). 상담·초대·수락은 단체채팅에서 진행. */
+            null
+          ) : offer.leader_chat_started_at ? (
             /* 채팅 진행 중: 회색 "채팅중" 하나만 (즉시수락 숨겨 혼동 방지) */
             <Link
               href={`/messages/${offer.id}`}

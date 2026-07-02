@@ -52,9 +52,12 @@ export default function ProfilePage() {
   const [savingBusiness, setSavingBusiness] = useState(false);
 
   const [myFlags, setMyFlags] = useState<Puzzle[]>([]);
+  // 합류(참여)한 조각 — 내가 만든 게 아니라 puzzle_members로 들어간 조각
+  const [joinedShares, setJoinedShares] = useState<Puzzle[]>([]);
 
   useEffect(() => {
     if (!user) return;
+    // 내가 만든 깃발/조각
     supabase
       .from("puzzles")
       .select("*")
@@ -64,6 +67,27 @@ export default function ProfilePage() {
       .then(({ data }) => {
         if (data) setMyFlags(data as Puzzle[]);
       });
+
+    // 내가 합류한 조각 (방장 제외 — 내가 만든 건 위에서 이미 조회)
+    (async () => {
+      const { data: memberRows } = await supabase
+        .from("puzzle_members")
+        .select("puzzle_id")
+        .eq("user_id", user.id);
+      const joinedIds = (memberRows ?? []).map((r) => r.puzzle_id);
+      if (joinedIds.length === 0) {
+        setJoinedShares([]);
+        return;
+      }
+      const { data: joined } = await supabase
+        .from("puzzles")
+        .select("*")
+        .in("id", joinedIds)
+        .eq("is_recruiting_party", true)
+        .neq("leader_id", user.id)
+        .order("created_at", { ascending: false });
+      setJoinedShares((joined ?? []) as Puzzle[]);
+    })();
   }, [user]);
 
   const handleHideFlag = async (id: string) => {
@@ -76,6 +100,10 @@ export default function ProfilePage() {
     }
     setMyFlags((prev) => prev.filter((f) => f.id !== id));
   };
+
+  // 깃발(인원 확정) / 조각(파티원 모집) 분리
+  const flagsOnly = myFlags.filter((f) => !f.is_recruiting_party);
+  const sharesOnly = myFlags.filter((f) => f.is_recruiting_party);
 
   // 로딩 타임아웃: 5초 후 강제 해제
   const [timedOut, setTimedOut] = useState(false);
@@ -353,9 +381,9 @@ export default function ProfilePage() {
             <h2 className="text-[15px] font-bold text-white">내 깃발</h2>
           </div>
 
-          {myFlags.length > 0 ? (
+          {flagsOnly.length > 0 ? (
             <div className="flex flex-col gap-2">
-              {myFlags.map((flag) => {
+              {flagsOnly.map((flag) => {
                 const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-neutral-400" };
                 const budget = flag.total_budget ?? (flag.budget_per_person ?? 0) * (flag.target_count ?? 1);
                 return (
@@ -424,6 +452,63 @@ export default function ProfilePage() {
               <p className="text-[12px] text-amber-400">
                 정지 해제: {dayjs(user.blocked_until).format("YYYY.MM.DD HH:mm")}
               </p>
+            </div>
+          )}
+        </div>
+
+        {/* 내 조각 */}
+        <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-[15px] font-bold text-white">내 조각</h2>
+          </div>
+          {sharesOnly.length > 0 || joinedShares.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {[
+                ...sharesOnly.map((flag) => ({ flag, joined: false })),
+                ...joinedShares.map((flag) => ({ flag, joined: true })),
+              ].map(({ flag, joined }) => {
+                const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-neutral-400" };
+                const budget = flag.total_budget ?? (flag.budget_per_person ?? 0) * (flag.target_count ?? 1);
+                return (
+                  <Link
+                    key={flag.id}
+                    href={`/flags/${flag.id}`}
+                    className="flex items-center justify-between gap-3 bg-neutral-800/40 rounded-xl px-4 py-3 hover:bg-neutral-800/70 transition-colors"
+                  >
+                    <div className="min-w-0 flex items-center gap-2">
+                      {joined && (
+                        <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 font-bold">
+                          합류
+                        </span>
+                      )}
+                      <p className="text-[14px] font-bold text-white truncate">
+                        {dayjs(flag.event_date).format("M/D")} · {flag.area} · {flag.current_count}/{flag.target_count}명{budget ? ` · ${Math.round(budget / 10000)}만원` : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[12px] font-bold ${st.tone}`}>{st.text}</span>
+                      {/* 삭제는 내가 만든 조각(종료 상태)만 */}
+                      {!joined && flag.status !== "open" && flag.status !== "selecting" && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleHideFlag(flag.id);
+                          }}
+                          className="p-1 -mr-1 text-neutral-600 hover:text-red-400 transition-colors"
+                          aria-label="삭제"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-[13px] text-neutral-500">아직 올린 조각이 없어요</p>
             </div>
           )}
         </div>

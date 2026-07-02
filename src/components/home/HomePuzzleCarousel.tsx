@@ -21,8 +21,10 @@ interface Props {
   offerCounts: Record<string, number>;
   userRole?: "user" | "md" | "admin";
   detailHref: string;
-  /** 비로그인 → /login?redirect, 로그인 → /flags/new */
+  /** 비로그인 → /login?redirect, 로그인 → /flags/new (조각이면 /shares/new) */
   newFlagHref: string;
+  /** 조각(파티원 모집) 모드 — 빈상태/CTA 문구를 조각으로 전환 */
+  shareMode?: boolean;
   /** 마지막 카드 자리에 노출할 CTA. 없으면 "자세히 보기" 카드 노출. */
   showFlagCTA?: boolean;
   /**
@@ -46,6 +48,7 @@ export function HomePuzzleCarousel({
   userRole,
   detailHref,
   newFlagHref,
+  shareMode = false,
   showFlagCTA = false,
   totalCount,
   isAreaFiltered = false,
@@ -97,12 +100,14 @@ export function HomePuzzleCarousel({
   // 본인 합류/제안 상태 — "합류 완료"/"제안 완료" 배지 정확도용 (PuzzleList와 동일)
   const [myPuzzleIds, setMyPuzzleIds] = useState<Set<string>>(new Set());
   const [myOfferedPuzzleIds, setMyOfferedPuzzleIds] = useState<Set<string>>(new Set());
+  const [myUserId, setMyUserId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      setMyUserId(user.id);
 
       const [{ data: members }, { data: offers }] = await Promise.all([
         supabase.from("puzzle_members").select("puzzle_id").eq("user_id", user.id),
@@ -119,7 +124,7 @@ export function HomePuzzleCarousel({
     if (isAreaFiltered) {
       return (
         <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
-          <p className="text-[15px] text-white font-bold">이 지역엔 아직 깃발이 없어요</p>
+          <p className="text-[15px] text-white font-bold">{shareMode ? "이 지역엔 아직 조각이 없어요" : "이 지역엔 아직 깃발이 없어요"}</p>
           <p className="text-[12px] text-neutral-500">
             다른 지역을 선택하거나 전체에서 둘러보세요
           </p>
@@ -137,16 +142,21 @@ export function HomePuzzleCarousel({
     }
     return (
       <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
-        <p className="text-[15px] text-white font-bold">아직 등록된 깃발이 없어요</p>
-        <p className="text-[12px] text-neutral-500">
-          예산·인원·날짜만 정하면 MD들이 시크릿오퍼를 보내요
-        </p>
-        <Link
-          href={newFlagHref}
-          className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-amber-500 text-black text-[13px] font-black active:scale-95 transition"
-        >
-          ⛳ 깃발 꽂기
-        </Link>
+        <div className="space-y-1">
+          <p className="text-[15px] text-white font-bold">{shareMode ? "파티원과 함께 놀아요!" : "아직 등록된 깃발이 없어요"}</p>
+          <p className="text-[12px] text-neutral-500">
+            {shareMode ? "조각이 모이면 클럽에서 테이블을 제안해요" : "예산·인원·날짜만 정하면 MD들이 시크릿오퍼를 보내요"}
+          </p>
+        </div>
+        {/* 조각 등록은 유저 전용 — MD/Admin에겐 CTA 숨김 */}
+        {!(shareMode && (userRole === "md" || userRole === "admin")) && (
+          <Link
+            href={newFlagHref}
+            className={`inline-flex items-center gap-1 px-4 py-2 rounded-full text-black text-[13px] font-black active:scale-95 transition ${shareMode ? "bg-green-500 hover:bg-green-400" : "bg-amber-500"}`}
+          >
+            {shareMode ? "🧩 조각 올리기" : "⛳ 깃발 꽂기"}
+          </Link>
+        )}
       </div>
     );
   }
@@ -177,6 +187,7 @@ export function HomePuzzleCarousel({
                 userRole={userRole}
                 offerCount={offerCounts[puzzle.id] ?? 0}
                 isMember={myPuzzleIds.has(puzzle.id)}
+                isLeader={!!myUserId && myUserId === puzzle.leader_id}
                 hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
                 onUnlock={(p) => setUnlockTarget(p)}
                 onJoin={(p) => setJoinTarget(p)}
@@ -189,7 +200,7 @@ export function HomePuzzleCarousel({
           <Link
             href={detailHref}
             className="flex-shrink-0 w-[64%] max-w-[280px] snap-start snap-always flex items-center justify-center group"
-            aria-label="깃발 더보기"
+            aria-label={shareMode ? "조각 더보기" : "깃발 더보기"}
           >
             <div className="text-center w-full mt-8">
               <div className="inline-flex items-center gap-1 text-[15px] font-black text-neutral-300 group-hover:text-white transition-colors">
@@ -204,21 +215,27 @@ export function HomePuzzleCarousel({
             {hasMore && (
               <Link
                 href={detailHref}
-                className="flex-shrink-0 w-[64px] snap-start flex items-center justify-center pt-[22px] text-neutral-600 hover:text-neutral-400 transition-colors"
-                aria-label="깃발 더보기"
+                className="flex-shrink-0 w-[64%] max-w-[280px] snap-start snap-always flex items-center justify-center group"
+                aria-label={shareMode ? "조각 더보기" : "깃발 더보기"}
               >
-                <span className="text-[28px] leading-none font-black tracking-widest">⋯</span>
+                <div className="text-center w-full mt-8">
+                  <div className="inline-flex items-center gap-1 text-[15px] font-black text-neutral-300 group-hover:text-white transition-colors">
+                    더보기
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                  <p className="text-[11px] text-neutral-500 mt-1">{totalCount ?? puzzles.length}개 보러가기</p>
+                </div>
               </Link>
             )}
             {showFlagCTA && (
               <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
                 <div className="text-center w-full mt-8">
                   <p className="text-[14.5px] text-neutral-200 font-semibold mb-0.5">
-                    최고의 테이블을 잡으세요.
+                    {shareMode ? "파티원과 함께 놀아요!" : "최고의 테이블을 잡으세요."}
                   </p>
                   <Link href={newFlagHref}>
-                    <Button className="h-12 pl-7 pr-9 bg-amber-500 text-black font-black text-[15px] rounded-full hover:bg-amber-400">
-                      ⛳ 깃발꽂기
+                    <Button className={`h-12 pl-7 pr-9 text-black font-black text-[15px] rounded-full ${shareMode ? "bg-green-500 hover:bg-green-400" : "bg-amber-500 hover:bg-amber-400"}`}>
+                      {shareMode ? "🧩 조각 올리기" : "⛳ 깃발꽂기"}
                     </Button>
                   </Link>
                   <p className="text-[10px] text-neutral-300 mt-0.5">모든 서비스 무료</p>

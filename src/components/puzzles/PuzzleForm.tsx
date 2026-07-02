@@ -95,18 +95,16 @@ const GENDER_OPTIONS: { value: GenderPref; label: string; en: string }[] = [
 ];
 
 const AGE_OPTIONS: { value: AgePref; label: string; en: string }[] = [
-  { value: "early_20s", label: "20초", en: "Early 20s" },
-  { value: "late_20s", label: "20후", en: "Late 20s" },
-  { value: "early_30s", label: "30초", en: "Early 30s" },
-  { value: "mid_30s", label: "30중", en: "Mid 30s" },
   { value: "any", label: "상관없음", en: "Any" },
+  { value: "20s", label: "20대", en: "20s" },
+  { value: "30s", label: "30대", en: "30s" },
 ];
 
 // Phase 1: 바이브 라벨 정정 (조용히 → 편하게, 상관없음 → 누구나 환영)
 const VIBE_OPTIONS: { value: VibePref; label: string; en: string }[] = [
-  { value: "chill", label: "편하게", en: "Chill" },
-  { value: "active", label: "신나게", en: "Hyped" },
   { value: "any", label: "누구나 환영", en: "Anyone welcome" },
+  { value: "active", label: "외향인 환영", en: "Extroverts" },
+  { value: "chill", label: "내향인 환영", en: "Introverts" },
 ];
 
 // Phase 1 신규: 음악 선호 (한국 클럽씬 1차 분기 - 힙합/EDM)
@@ -116,7 +114,7 @@ const MUSIC_OPTIONS: { value: MusicPref; label: string; en: string }[] = [
   { value: "edm", label: "EDM", en: "EDM" },
 ];
 
-export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: PuzzleType }) {
+export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: string; puzzle?: PuzzleType; shareMode?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const lang = getLang(searchParams.get("lang"));
@@ -134,7 +132,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const aL = (a: string) => areaLabel(a, lang);
 
   // 자동저장 draft 로드 (신규 등록 시에만)
-  const DRAFT_KEY = `puzzle_form_draft_${userId}`;
+  const DRAFT_KEY = `${shareMode ? "share" : "puzzle"}_form_draft_${userId}`;
   const draft = (() => {
     if (typeof window === "undefined" || isEditMode) return null;
     try {
@@ -171,14 +169,15 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   // OFF: 총액 직접 입력 / ON: 인당 입력
   const [budgetAmount, setBudgetAmount] = useState(initialBudget);
   const [budgetInputStr, setBudgetInputStr] = useState(initialBudget ? initialBudget.toLocaleString() : "");
+  // shareMode(조각) 신규 등록은 파티원 모집 배관 재사용 → 기본 ON. 깃발은 기존대로 OFF.
   const [isRecruitingParty, setIsRecruitingParty] = useState<boolean>(
-    puzzle?.is_recruiting_party ?? false
+    puzzle?.is_recruiting_party ?? shareMode
   );
   // OFF 모드(인원 확정): 본인 포함 총 일행 수
   const [totalPeople, setTotalPeople] = useState(initialTotalPeople);
   // ON 모드(파티원 모집): 목표 인원 + 본인 동행
   const [targetCount, setTargetCount] = useState<number>(
-    (puzzle?.is_recruiting_party ? puzzle?.target_count : undefined) ?? (draft?.targetCount as number) ?? 4
+    (puzzle?.is_recruiting_party ? puzzle?.target_count : undefined) ?? (draft?.targetCount as number) ?? 5
   );
   // edit 모드에서 추가 멤버 없으므로 current_count - 1 = 방장 본인의 일행 수
   const initialGuest = puzzle?.is_recruiting_party ? Math.max(0, (puzzle?.current_count ?? 1) - 1) : 0;
@@ -283,6 +282,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const [submitted, setSubmitted] = useState(false);
   // "조각이란?" 용어 풀이 모달
   const [helpOpen, setHelpOpen] = useState(false);
+  // 깃발 예산 안내 옆 "예산이 50 언더라면?" 클릭 시 조각 회유 CTA 노출
+  const [showShareCta, setShowShareCta] = useState(false);
 
   // 신규: default 대비 변경 / 편집: 초기값 대비 변경
   const isDirty = !submitted && (isEditMode
@@ -309,7 +310,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         notes.trim() !== "" ||
         isRecruitingParty !== false ||
         totalPeople !== 2 ||
-        targetCount !== 4 ||
+        targetCount !== 5 ||
         hasGuest !== false
       ));
 
@@ -427,7 +428,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   const todayObj = new Date();
   const today = todayObj.toISOString().split("T")[0];
   const maxObj = new Date();
-  maxObj.setDate(todayObj.getDate() + 30);
+  // 조각은 근시일 위주(최대 14일), 깃발은 기존대로 30일.
+  maxObj.setDate(todayObj.getDate() + (shareMode ? 14 : 30));
   const maxDateStr = maxObj.toISOString().split("T")[0];
 
   // 모드별 인원/예산 파생값
@@ -508,10 +510,13 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     if (!area) {
       return fail('area', t('지역을 선택해주세요', 'Please select an area'));
     }
-    if (effectiveIsRecruiting && budgetAmount < 10000) {
-      return fail('budget_per_person', t('인당 예산은 최소 1만원 이상이어야 합니다', 'Minimum budget per person is ₩10,000'));
+    if (effectiveIsRecruiting && budgetAmount < (shareMode ? 70000 : 10000)) {
+      return fail('budget_per_person', shareMode
+        ? t('인당 예산은 최소 7만원 이상이어야 해요', 'Minimum budget per person is ₩70,000')
+        : t('인당 예산은 최소 1만원 이상이어야 합니다', 'Minimum budget per person is ₩10,000'));
     }
-    if (!isEditMode && effectiveIsRecruiting) {
+    // 조각(shareMode)은 인앱 오퍼 채팅을 쓰므로 카톡 오픈채팅을 받지 않음.
+    if (!isEditMode && effectiveIsRecruiting && !shareMode) {
       if (!kakaoUrl.trim()) {
         return fail('kakao_url_required', t('파티원 모집은 카톡 오픈채팅 링크가 필수예요', 'KakaoTalk open chat link is required'));
       }
@@ -528,12 +533,13 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
     if (!effectiveIsRecruiting && effectiveTargetCount < 2) {
       return fail('headcount_min', t('인원 확정 깃발은 2명 이상이어야 합니다', 'Minimum 2 people required'));
     }
-    if (effectiveIsRecruiting && !myGender) {
+    // 조각(shareMode)은 성별 슬롯을 쓰지 않으므로 성별을 묻지 않음.
+    if (effectiveIsRecruiting && !shareMode && !myGender) {
       return fail('gender_required', t('성별을 먼저 입력해주세요', 'Please set your gender first'));
     }
-    // 본인 성별 기반으로 슬롯 자동 매핑
-    const submitMaleSlot   = isHostMale  ? effectiveTargetCount : 0;
-    const submitFemaleSlot = !isHostMale ? effectiveTargetCount : 0;
+    // 본인 성별 기반으로 슬롯 자동 매핑. 조각은 성별 슬롯을 쓰지 않으므로 0/0(성별 무관).
+    const submitMaleSlot   = shareMode ? 0 : (isHostMale  ? effectiveTargetCount : 0);
+    const submitFemaleSlot = shareMode ? 0 : (!isHostMale ? effectiveTargetCount : 0);
 
     setSubmitting(true);
     // 성공 시 router.push 후에도 버튼을 "등록 중..."으로 유지해야
@@ -549,13 +555,13 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             area,
             event_date: eventDate,
             is_recruiting_party: effectiveIsRecruiting,
-            gender_pref: effectiveIsRecruiting ? genderPref : 'any',
+            gender_pref: (effectiveIsRecruiting && !shareMode) ? genderPref : 'any',
             age_pref: effectiveIsRecruiting ? agePref : ['any'],
             vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
             music_preference: musicPref === 'any' ? null : musicPref,
             // 카톡 오픈채팅: edit 모드에선 직접 수정 X. 단, 깃발(파티원 모집 OFF)로 전환되면
             // 카톡 URL은 더 이상 사용되지 않으므로 null로 정리 (데이터 정합성).
-            ...(effectiveIsRecruiting ? {} : { kakao_open_chat_url: null }),
+            ...((effectiveIsRecruiting && !shareMode) ? {} : { kakao_open_chat_url: null }),
             total_budget: totalBudget,
             budget_per_person: effectiveIsRecruiting
               ? budgetAmount
@@ -608,11 +614,11 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           leader_id: userId,
           area,
           event_date: eventDate,
-          gender_pref: effectiveIsRecruiting ? genderPref : 'any',
+          gender_pref: (effectiveIsRecruiting && !shareMode) ? genderPref : 'any',
           age_pref: effectiveIsRecruiting ? agePref : ['any'],
           vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
           music_preference: musicPref === 'any' ? null : musicPref,
-          kakao_open_chat_url: effectiveIsRecruiting ? (kakaoUrl.trim() || null) : null,
+          kakao_open_chat_url: (effectiveIsRecruiting && !shareMode) ? (kakaoUrl.trim() || null) : null,
           total_budget: totalBudget,
           budget_per_person: effectiveIsRecruiting
             ? budgetAmount
@@ -656,7 +662,9 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       });
 
       toast.success(
-        effectiveIsRecruiting
+        shareMode
+          ? t("조각이 올라갔어요! 파티원과 MD 제안을 받아보세요 🧩", "Your share is up! Get party members and club offers 🧩")
+          : effectiveIsRecruiting
           ? t("퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·MD 모집, 이후 60분간 검토할 수 있어요 🧩", "Posted! Offers close at 8pm. You have 60 min to review 🧩")
           : t("깃발이 올라갔어요! 🚩", "Done! Top clubs will send you offers 🎉")
       );
@@ -742,15 +750,22 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
   return (
     <div className="space-y-8 pb-12">
       {/* 성별 안내는 파티원 모집(퍼즐) 모드에서만 표시. 깃발(인원 확정) 모드에서는 불필요 */}
-      {isRecruitingParty && genderLoaded && !myGender && (
-        <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-2">
+      {isRecruitingParty && !shareMode && genderLoaded && !myGender && (
+        <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-3">
           <p className="text-[13px] font-bold text-white">{t("성별 정보가 필요해요", "We need your gender")}</p>
           <p className="text-[12px] text-neutral-400 leading-relaxed">
             {t(
-              "파티원 모집은 성별 슬롯 기반으로 매칭돼요. 조각 매물에 먼저 참여하면서 성별을 설정하면 모집도 시작할 수 있어요.",
-              "Recruiting is matched by gender slots. Set your gender to start recruiting."
+              "파티원 모집은 성별 슬롯 기반으로 매칭돼요. 성별을 설정하면 바로 올릴 수 있어요.",
+              "Recruiting is matched by gender slots. Set your gender to start."
             )}
           </p>
+          <button
+            type="button"
+            onClick={() => setGenderModalOpen(true)}
+            className="w-full h-11 rounded-xl bg-white text-black font-black text-[14px] hover:bg-neutral-200 active:scale-[0.99] transition-all"
+          >
+            {t("성별 설정하기", "Set gender")}
+          </button>
         </div>
       )}
       {/* 성별 입력 모달 (수동 트리거 전용) */}
@@ -801,7 +816,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           max={maxDateStr}
           onChange={(val) => setEventDate(val)}
           label={t("날짜 선택", "Select date")}
-          placeholder={t("최대 30일 뒤까지 선택 가능", "Up to 30 days ahead")}
+          placeholder={shareMode ? t("최대 14일 뒤까지 선택 가능", "Up to 14 days ahead") : t("최대 30일 뒤까지 선택 가능", "Up to 30 days ahead")}
         />
       </section>
 
@@ -856,7 +871,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               >
                 {aL("서울 어디든")}
               </button>
-              {area === "서울 어디든" && (
+              {area === "서울 어디든" && !shareMode && (
                 <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 text-[11px] text-amber-400/80 leading-relaxed whitespace-nowrap">
                   {t("* 가장 많은 옵션을 받아봐요 *", "* Most offers *")}
                 </p>
@@ -899,7 +914,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             /* ON 모드 (퍼즐): 단순 인원 picker */
             <>
               <div className="space-y-2">
-                <p className="text-[11px] text-neutral-400">{t("목표 인원 수 (본인 포함)", "Target headcount (including you)")}</p>
+                <p className="text-[11px] text-neutral-400">{t("최대 인원 (본인 포함)", "Max headcount (including you)")}</p>
                 <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
                   <button
                     type="button"
@@ -957,7 +972,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               {/* 모집 요약 */}
               {effectiveTargetCount - effectiveCurrentCount > 0 && (
                 <p className="text-[12px] text-green-400 font-bold">
-                  🧩 {t(`총 ${effectiveTargetCount - effectiveCurrentCount}명의 파티원을 구해요`, `Looking for ${effectiveTargetCount - effectiveCurrentCount} more`)}
+                  🧩 {t(`총 ${effectiveTargetCount - effectiveCurrentCount}명을 구해요`, `Looking for ${effectiveTargetCount - effectiveCurrentCount} more`)}
                 </p>
               )}
             </>
@@ -989,7 +1004,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               onBlur={() => {
                 if (budgetAmount > 0) setBudgetInputStr(budgetAmount.toLocaleString());
               }}
-              placeholder={isRecruitingParty ? t("예) 250,000", "e.g. 250,000") : t("예) 500,000", "e.g. 500,000")}
+              placeholder={isRecruitingParty ? t("예) 100,000", "e.g. 100,000") : t("예) 500,000", "e.g. 500,000")}
               className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 pr-12"
             />
             {isRecruitingParty && (
@@ -1040,20 +1055,52 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
           <p className="font-medium -my-2">
             <span className="text-[14px] text-amber-500/80">{t("MD가 예산에 맞춰 서비스를 구성해요", "Club offers match your budget")}</span>
             {!isRecruitingParty && (
-              <span className="text-[12px] text-neutral-400"> {t("(최소 금액 50만원)", "(minimum ₩500,000)")}</span>
+              <>
+                <span className="text-[12px] text-neutral-400"> {t("(최소 금액 50만원)", "(minimum ₩500,000)")}</span>
+                {!shareMode && (
+                  <button
+                    type="button"
+                    onClick={() => setShowShareCta((v) => !v)}
+                    className="ml-2 text-[12px] text-green-400 underline underline-offset-2 hover:text-green-300"
+                  >
+                    예산이 50 언더라면?
+                  </button>
+                )}
+              </>
             )}
           </p>
         </div>
+
+        {/* 50만원 장벽 회유 — "예산이 50 언더라면?" 클릭 시 조각으로 유도 */}
+        {!shareMode && showShareCta && (
+          <div className="bg-green-500/10 border border-green-500/25 rounded-2xl p-4">
+            <p className="text-[13.5px] font-black text-white break-keep">
+              조각을 이용하면 파티원을 모아 예약할 수 있어요
+            </p>
+            <p className="text-[12.5px] text-neutral-300 mt-1 leading-relaxed break-keep">
+              인당 7만원부터 시작되며, 깃발과 똑같은 오퍼를 받아요.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push("/shares/new")}
+              className="mt-3 w-full h-11 rounded-xl bg-green-500 hover:bg-green-400 text-black font-black text-[14px] active:scale-[0.99] transition-all"
+            >
+              🧩 조각 바로가기
+            </button>
+          </div>
+        )}
       </section>
 
       {/* 취향 태그 — 파티원 모집 중일 때만 */}
       {isRecruitingParty && <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">
           <Sparkles className="w-4 h-4 text-green-500" />
-          <span>{t("이런 분들과 함께해요", "Who you want to party with")}</span>
+          <span>{t("이런 분들을 선호해요", "Who you prefer")}</span>
         </div>
 
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-4 py-3 space-y-2.5">
+          {/* 성별 선호 — 조각은 성별 슬롯을 쓰지 않으므로 숨김 */}
+          {!shareMode && (
           <div className="flex items-center gap-3">
             <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("성별", "Gender")}</p>
             <div className="flex gap-1.5 flex-wrap">
@@ -1073,6 +1120,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
               ))}
             </div>
           </div>
+          )}
 
           <div className="flex items-center gap-3">
             <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("연령", "Age")}</p>
@@ -1144,7 +1192,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       <section className="space-y-4">
         <div className="flex items-baseline gap-2 text-white font-bold mb-2">
           <MessageCircle className="w-4 h-4 text-purple-500 self-center" />
-          <span>{isRecruitingParty ? t("퍼즐 소개", "About your group") : t("MD에게 한마디", "Message to club")}</span>
+          <span>{isRecruitingParty ? (shareMode ? t("조각 소개", "About your group") : t("퍼즐 소개", "About your group")) : t("MD에게 한마디", "Message to club")}</span>
           {isRecruitingParty && (
             <span className="text-[11px] text-neutral-500 font-normal">
               {t("참여자와 MD가 가장 먼저 읽어요", "First thing clubs see")}
@@ -1172,8 +1220,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         </div>
       </section>
 
-      {/* 카톡 오픈채팅 — 파티원 모집 중일 때만 (edit 모드에선 수정 불가) */}
-      {isRecruitingParty && (
+      {/* 카톡 오픈채팅 — 파티원 모집 중일 때만. 조각(shareMode)은 인앱 채팅 사용으로 숨김 */}
+      {isRecruitingParty && !shareMode && (
         <section className="space-y-4">
           <div className="flex items-baseline gap-2 text-white font-bold mb-2">
             <MessageCircle className="w-4 h-4 text-yellow-400 self-center" />
@@ -1201,7 +1249,7 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       <section className="space-y-4">
         <div className="flex items-baseline gap-2 text-white mb-2">
           <Sparkles className="w-4 h-4 text-green-500 self-center" />
-          <span className="text-[18px] font-bold">{t("깃발 요약", "Summary")}</span>
+          <span className="text-[18px] font-bold">{shareMode ? t("요약", "Summary") : t("깃발 요약", "Summary")}</span>
         </div>
         <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 space-y-3">
           {/* 보조: 날짜 · 지역 (한 줄) — green 톤 통일, 명도로 위계 */}
@@ -1244,8 +1292,8 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
       <div className="mt-4 px-1">
         <Button
           onClick={() => {
-            // 예산 하한(총 50만원)은 확인창 전에 즉시 차단 — 화면에 보이는 총액 기준
-            if (!isEditMode && totalBudget < 500000) {
+            // 예산 하한(총 50만원)은 깃발(인원 확정)에만 적용. 조각(파티원 모집)은 인당 하한(7만원)만 적용.
+            if (!isEditMode && !isRecruitingParty && totalBudget < 500000) {
               toast.error(t('예산은 50만원 이상이어야 해요', 'Minimum budget is ₩500,000'));
               return;
             }
@@ -1255,15 +1303,15 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
             }
             setShowSubmitConfirm(true);
           }}
-          disabled={submitting || (isEditMode && !isDirty) || (isRecruitingParty && !myGender)}
+          disabled={submitting || (isEditMode && !isDirty) || (isRecruitingParty && !myGender && !shareMode)}
           className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
           {submitting ? t(isEditMode ? "수정 중..." : "등록 중...", isEditMode ? "Saving..." : "Submitting...") : (
             <>
-              {isEditMode ? <Check className="w-5 h-5" /> : (isRecruitingParty ? <Users className="w-5 h-5" /> : null)}
+              {isEditMode ? <Check className="w-5 h-5" /> : ((isRecruitingParty && !shareMode) ? <Users className="w-5 h-5" /> : null)}
               {isEditMode
                 ? t("수정 완료", "Save changes")
-                : (isRecruitingParty ? t("파티원 모집 시작", "Start recruiting") : t("오퍼 받아보기", "Get offers"))}
+                : (shareMode ? t("등록하기", "Post") : (isRecruitingParty ? t("파티원 모집 시작", "Start recruiting") : t("오퍼 받아보기", "Get offers")))}
             </>
           )}
           {!submitting && !isEditMode && <ArrowRight className="w-5 h-5" />}
@@ -1285,13 +1333,15 @@ export function PuzzleForm({ userId, puzzle }: { userId: string; puzzle?: Puzzle
         onCancel={() => setShowSubmitConfirm(false)}
         title={isEditMode
           ? t("수정할까요?", "Save changes?")
-          : (isRecruitingParty
-            ? t("퍼즐이 완성되면 MD가 오퍼를 보내와요", "Clubs will send offers once your group is complete")
-            : t("마음에 드는 오퍼만 고르면 끝!", "Just pick the offer you like!"))}
+          : (shareMode
+            ? t("조각을 올리면 파티원·MD 제안이 바로 시작돼요", "Post your share — party members and club offers start right away")
+            : (isRecruitingParty
+              ? t("퍼즐이 완성되면 MD가 오퍼를 보내와요", "Clubs will send offers once your group is complete")
+              : t("마음에 드는 오퍼만 고르면 끝!", "Just pick the offer you like!")))}
         description={isEditMode
           ? t("변경된 내용으로 갱신됩니다.", "Your request will be updated.")
           : t("오퍼는 당일 8시 마감. 60분간 더 검토할 수 있어요.", "Offers close at 8pm today. You have 60 min to review.")}
-        confirmText={isEditMode ? t("수정 완료", "Save") : (isRecruitingParty ? t("파티원 모집 시작", "Start recruiting") : t("계속", "Continue"))}
+        confirmText={isEditMode ? t("수정 완료", "Save") : (shareMode ? t("등록 완료", "Post share") : (isRecruitingParty ? t("파티원 모집 시작", "Start recruiting") : t("계속", "Continue")))}
         cancelText={t("다시 확인", "Go back")}
         variant={!isEditMode && !isRecruitingParty ? "celebrate" : "default"}
       />

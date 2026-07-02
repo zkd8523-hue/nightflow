@@ -38,6 +38,10 @@ export default async function MDShareSlotsPage() {
   if (!userRow || (userRow.role !== "md" && userRow.role !== "admin")) {
     redirect("/");
   }
+  // MD 조각 등록(자리 선점) 경로 차단 — 유저 주도 조각으로 전환. 관리자만 접근 유지.
+  if (userRow.role === "md") {
+    redirect("/md/dashboard");
+  }
 
   // 오픈채팅 미등록 여부 — 등록돼 있으면 배너 안 띄움 (비었을 때만 경고)
   const missingOpenChat = !(userRow.kakao_open_chat_url ?? "").trim();

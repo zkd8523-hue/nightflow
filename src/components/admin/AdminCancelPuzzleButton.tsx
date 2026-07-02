@@ -48,7 +48,7 @@ export function AdminCancelPuzzleButton({ puzzleId }: { puzzleId: string }) {
         return;
       }
 
-      toast.success("깃발이 취소됐습니다");
+      toast.success("취소됐습니다");
       setOpen(false);
       setReason("");
       router.refresh();

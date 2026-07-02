@@ -33,8 +33,12 @@ interface OfferSummary {
 
 interface PuzzleInfo {
   dateLabel: string;
+  area: string;
   targetCount: number;
+  currentCount: number;
+  perPerson: number;
   budgetText: string;
+  isRecruitingParty: boolean;
 }
 
 interface Props {
@@ -220,8 +224,13 @@ export function MessageRoom({
   // 입장/메시지 변화 시 읽음 처리
   useEffect(() => {
     if (loading) return;
-    const supabase = createClient();
-    supabase.rpc("mark_offer_read", { p_offer_id: offerId });
+    (async () => {
+      const { error } = await createClient().rpc("mark_offer_read", { p_offer_id: offerId });
+      if (error) {
+        console.error("[mark_offer_read] failed", error);
+        toast.error(`읽음 처리 실패: ${error.message}`);
+      }
+    })();
   }, [offerId, loading, messages.length]);
 
   // 방장: 이 깃발의 활성 상담 수 (슬롯이 꽉 찼는지 — "상담 종료" 노출 판단)
@@ -319,7 +328,7 @@ export function MessageRoom({
       }
       if (
         typeof window !== "undefined" &&
-        !window.confirm(`이 깃발에서 ${n}/3번째 대화예요.\n대화를 시작할까요?`)
+        !window.confirm(`이 ${puzzleInfo.isRecruitingParty ? "조각" : "깃발"}에서 ${n}/3번째 대화예요.\n대화를 시작할까요?`)
       )
         return;
     }
@@ -405,11 +414,15 @@ export function MessageRoom({
           className="flex items-center gap-2 px-4 py-2.5 bg-[#141416] border-t border-neutral-800/70 active:bg-neutral-900"
         >
           <div className="flex-1 min-w-0">
-            {/* 위: 깃발 — 날짜 · 인원 · 금액 */}
+            {/* 위: 조각 — 날짜 · 지역 · 인당가 / 현재인원 · 깃발 — 날짜 · 인원 · 금액 */}
             <p className="text-[13px] font-bold text-white truncate">
-              {[puzzleInfo.dateLabel, `${puzzleInfo.targetCount}명`, puzzleInfo.budgetText]
-                .filter(Boolean)
-                .join(" · ")}
+              {puzzleInfo.isRecruitingParty
+                ? [puzzleInfo.dateLabel, puzzleInfo.area, `인당 ${puzzleInfo.perPerson.toLocaleString()}원 / 현재 ${puzzleInfo.currentCount}명`]
+                    .filter(Boolean)
+                    .join(" · ")
+                : [puzzleInfo.dateLabel, `${puzzleInfo.targetCount}명`, puzzleInfo.budgetText]
+                    .filter(Boolean)
+                    .join(" · ")}
             </p>
             {/* 아래: 오퍼 내용 */}
             <p className="text-[12px] text-neutral-400 truncate">
@@ -548,7 +561,7 @@ export function MessageRoom({
           </div>
         ) : (
           <div className="px-4 py-4 border-t border-neutral-800 text-center text-[13px] text-neutral-500">
-            종료된 깃발이에요. 대화를 더 보낼 수 없어요.
+            종료된 {puzzleInfo.isRecruitingParty ? "조각" : "깃발"}이에요. 대화를 더 보낼 수 없어요.
           </div>
         )
       ) : mdBlocked ? (

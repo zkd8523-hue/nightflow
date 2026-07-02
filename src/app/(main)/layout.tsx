@@ -81,6 +81,9 @@ export default function MainLayout({
   // 오퍼 1:1 채팅 상세는 자체 헤더로 풀스크린 (Migration 332)
   const isMessageDetail = !!pathname && /^\/messages\/.+/.test(pathname);
 
+  // 조각 단체채팅도 자체 헤더로 풀스크린 (Migration 349)
+  const isPartyChat = !!pathname && /^\/party\/.+/.test(pathname);
+
   // 고객 문의 채팅도 자체 헤더로 풀스크린 (Migration 337)
   const isContact = pathname === "/contact";
 
@@ -88,7 +91,7 @@ export default function MainLayout({
   const isVisionPage = pathname === "/vision";
 
   // 헤더/푸터/바텀네비를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드 + 외국인 트랙 + 오퍼 채팅)
-  const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner || isMessageDetail || isContact;
+  const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner || isMessageDetail || isPartyChat || isContact;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>

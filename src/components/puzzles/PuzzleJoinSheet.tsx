@@ -86,28 +86,34 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
   // 인원 확정 깃발은 참여 불가 — 상위에서 버튼 숨기지만 방어적 가드
   if (!puzzle.is_recruiting_party) return null;
 
+  // 조각(성별 슬롯 미사용): target_male/female이 둘 다 0이면 성별 무관 → 총원 기준으로만 매칭.
+  const genderNeutral = (puzzle.target_male ?? 0) === 0 && (puzzle.target_female ?? 0) === 0;
   // Migration 184: 본인 성별 슬롯 잔여 자리 계산
   const remainingMale   = Math.max(0, (puzzle.target_male   ?? 0) - (puzzle.current_male   ?? 0));
   const remainingFemale = Math.max(0, (puzzle.target_female ?? 0) - (puzzle.current_female ?? 0));
   const remainingTotal  = puzzle.target_count - puzzle.current_count;
-  const remainingMySlot = myGender === "female" ? remainingFemale : myGender === "male" ? remainingMale : remainingTotal;
+  const remainingMySlot = genderNeutral
+    ? remainingTotal
+    : (myGender === "female" ? remainingFemale : myGender === "male" ? remainingMale : remainingTotal);
 
-  // 본인 성별 슬롯 기준 최대 동행 수
+  // 잔여 자리 기준 최대 동행 수
   const maxGuest = Math.max(0, remainingMySlot - 1);
   const totalJoining = 1 + (hasGuest ? guestCount : 0);
   const perPerson = puzzle.total_budget
     ? Math.floor(puzzle.total_budget / puzzle.target_count)
     : puzzle.budget_per_person;
   const totalBudget = totalJoining * perPerson;
-  const slotFull = genderLoaded && myGender !== null && remainingMySlot <= 0;
+  const slotFull = genderNeutral
+    ? remainingTotal <= 0
+    : (genderLoaded && myGender !== null && remainingMySlot <= 0);
 
   const handleJoin = async () => {
-    if (!myGender) {
+    if (!genderNeutral && !myGender) {
       toast.error("성별을 먼저 선택해주세요");
       return;
     }
     if (slotFull) {
-      toast.error(myGender === "female" ? "여자 자리가 마감됐어요" : "남자 자리가 마감됐어요");
+      toast.error(genderNeutral ? "남은 자리가 없어요" : (myGender === "female" ? "여자 자리가 마감됐어요" : "남자 자리가 마감됐어요"));
       return;
     }
     setSubmitting(true);
@@ -125,19 +131,9 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
       }
 
       onClose();
-      if (puzzle.kakao_open_chat_url) {
-        toast("퍼즐이 완성되고 있어요! 얼른 오픈채팅에 입장해보세요!", {
-          duration: 8000,
-          action: {
-            label: "오픈채팅 열기",
-            onClick: () => window.open(puzzle.kakao_open_chat_url!, "_blank"),
-          },
-          description: "내 활동에서 언제든 다시 확인할 수 있어요",
-        });
-      } else {
-        toast.success("퍼즐이 완성되고 있어요!");
-      }
-      router.push(`/flags/${puzzle.id}`);
+      // 합류 즉시 인앱 단체채팅 입장 (오픈채팅 대체, Migration 349)
+      toast.success("합류 완료! 단체채팅에서 인사를 나눠보세요 👋");
+      router.push(`/party/${puzzle.id}`);
     } catch (err: unknown) {
       console.error("join_puzzle error:", JSON.stringify(err));
       const msg = err instanceof Error ? err.message : JSON.stringify(err);
@@ -152,7 +148,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
     const m = d.getMonth() + 1;
     const day = d.getDate();
     const days = ["일", "월", "화", "수", "목", "금", "토"];
-    return `${m}/${day} ${days[d.getDay()]}`;
+    return `${m}/${day}(${days[d.getDay()]})`;
   };
 
   return (
@@ -161,20 +157,22 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
         side="bottom"
         className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-5 pb-10"
       >
-        <SheetHeader className="mb-5">
+        <SheetHeader className="mb-3">
           <SheetTitle className="text-white text-[17px] font-black text-left">
             파티원 합류하기
           </SheetTitle>
           <p className="text-[13px] text-neutral-400 text-left">
-            {formatDate(puzzle.event_date)} {puzzle.area} · {perPerson.toLocaleString()}원/인
+            {formatDate(puzzle.event_date)} · {puzzle.area} · {perPerson.toLocaleString()}원/인
           </p>
           <p className="text-[13px] text-neutral-500 text-left">
-            🧑 남 {puzzle.current_male ?? 0}/{puzzle.target_male ?? 0} · 👩 여 {puzzle.current_female ?? 0}/{puzzle.target_female ?? 0}
+            {genderNeutral
+              ? `👥 ${puzzle.current_count}/${puzzle.target_count}명`
+              : `🧑 남 ${puzzle.current_male ?? 0}/${puzzle.target_male ?? 0} · 👩 여 ${puzzle.current_female ?? 0}/${puzzle.target_female ?? 0}`}
           </p>
         </SheetHeader>
 
-        {/* 성별 미입력 시: 조각으로 안내 (깃발에선 직접 묻지 않음) */}
-        {genderLoaded && !myGender && (
+        {/* 성별 미입력 시: 조각으로 안내 (성별 무관 조각에선 불필요) */}
+        {genderLoaded && !myGender && !genderNeutral && (
           <div className="space-y-2 mb-5 bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4">
             <p className="text-[13px] font-bold text-white">성별 정보가 필요해요</p>
             <p className="text-[12px] text-neutral-400 leading-relaxed">
@@ -183,20 +181,23 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
           </div>
         )}
 
-        {/* gender 입력 후에만 합류 UI 표시 */}
-        {myGender && (
+        {/* gender 입력 후 표시. 단, 성별 무관 조각은 성별 없이도 합류 UI 노출 */}
+        {(myGender || genderNeutral) && (
           <div className="space-y-4">
             {slotFull ? (
               <p className="text-[12px] text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-                {myGender === "female" ? "여자 자리가 모두 마감됐어요" : "남자 자리가 모두 마감됐어요"}
+                {genderNeutral ? "자리가 모두 마감됐어요" : (myGender === "female" ? "여자 자리가 모두 마감됐어요" : "남자 자리가 모두 마감됐어요")}
               </p>
             ) : maxGuest === 0 ? (
               <p className="text-[12px] text-neutral-500 bg-neutral-900/50 rounded-xl px-4 py-3">
-                {myGender === "female" ? "여자" : "남자"} 자리가 1명 남아 동행 없이 본인만 참여 가능합니다
+                {genderNeutral ? "자리가 1명 남아 동행 없이 본인만 참여 가능합니다" : `${myGender === "female" ? "여자" : "남자"} 자리가 1명 남아 동행 없이 본인만 참여 가능합니다`}
               </p>
             ) : (
               <>
-                <label className="flex items-center gap-3 cursor-pointer">
+                <label className="inline-flex items-center gap-2 cursor-pointer">
+                  <span className="text-[14px] font-bold text-white">
+                    동행이 있으신가요?
+                  </span>
                   <input
                     type="checkbox"
                     checked={hasGuest}
@@ -206,9 +207,6 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
                     }}
                     className="w-4 h-4 rounded accent-white"
                   />
-                  <span className="text-[14px] font-bold text-white">
-                    동행이 있으신가요?
-                  </span>
                 </label>
 
                 {hasGuest && (
@@ -228,25 +226,26 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
                         <Plus className="w-4 h-4 text-white" />
                       </button>
                     </div>
-                    <p className="text-[11px] text-neutral-500">
-                      동행은 본인과 같은 {myGender === "female" ? "여자" : "남자"} 슬롯으로 카운트돼요
-                    </p>
+                    {!genderNeutral && (
+                      <p className="text-[11px] text-neutral-500">
+                        동행은 본인과 같은 {myGender === "female" ? "여자" : "남자"} 슬롯으로 카운트돼요
+                      </p>
+                    )}
                   </>
                 )}
               </>
             )}
 
-            {/* 예산 미리보기 */}
-            <div className="bg-neutral-900/80 border border-neutral-700 rounded-xl p-3">
-              <p className="text-[12px] text-neutral-500 mb-0.5">예상 비용</p>
-              <p className="text-[17px] font-black text-green-400">
-                {totalJoining}명 × {perPerson.toLocaleString()}원 = {totalBudget.toLocaleString()}원
-              </p>
-            </div>
+            {/* 예산 미리보기 — 동행 있을 때만(1명이면 헤더의 인당가와 중복) */}
+            {totalJoining > 1 && (
+              <div className="bg-neutral-900/80 border border-neutral-700 rounded-xl p-3">
+                <p className="text-[12px] text-neutral-500 mb-0.5">예상 비용</p>
+                <p className="text-[17px] font-black text-green-400">
+                  {totalJoining}명 × {perPerson.toLocaleString()}원 = {totalBudget.toLocaleString()}원
+                </p>
+              </div>
+            )}
 
-            <p className="text-[12px] text-neutral-300 text-center">
-              뭉치면 파티원들의 오픈채팅에 입장할 수 있어요
-            </p>
             <Button
               onClick={handleJoin}
               disabled={submitting || slotFull}
