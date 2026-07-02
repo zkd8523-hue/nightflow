@@ -12,9 +12,9 @@ import {
 } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
-import { ROOM_LABEL } from "@/lib/chat/areas";
+import { ROOM_LABEL, type VerifiableArea } from "@/lib/chat/areas";
 import { fetchNearestClubs, type NearestClub } from "@/lib/clubs/nearestClubs";
-import type { ChatShot, VerifiableArea } from "@/types/database";
+import type { ChatShot } from "@/types/database";
 import { CameraCaptureView } from "./CameraCaptureView";
 
 interface Props {
