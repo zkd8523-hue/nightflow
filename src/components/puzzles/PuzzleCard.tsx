@@ -359,7 +359,9 @@ export const PuzzleCard = memo(function PuzzleCard({
           {offerCount > 0 && (
             <span className="text-[12px] text-amber-400 font-bold tabular-nums">{offerCount} offers</span>
           )}
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            {/* 조각은 MD에게도 공유 버튼 노출 (깃발은 제외) */}
+            {isRecruitingParty && shareBtn}
             {isSelecting ? (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
