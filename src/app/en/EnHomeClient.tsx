@@ -502,14 +502,8 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
         ))}
       </div>
 
-      {/* Bottom CTA */}
-      <div className="px-4 pb-6 space-y-3">
-        <Link
-          href={`/flags/new?lang=${lang}`}
-          className="block w-full py-4 rounded-xl bg-white text-black font-black text-[15px] text-center hover:bg-neutral-200 transition-colors"
-        >
-          {tr("Get VIP offers")}
-        </Link>
+      {/* 19+ 안내 — 하단 CTA 버튼은 상단 amber CTA와 중복이라 제거 */}
+      <div className="px-4 pb-6">
         <p className="text-center text-[11px] text-neutral-600 leading-relaxed">
           {tr("19+ only · Bring your passport to the venue.")}
         </p>
