@@ -65,9 +65,9 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const title = `나플 ${puzzle.is_recruiting_party ? "조각" : "깃발"} · ${area}${eventDate ? ` · ${eventDate}` : ""}`;
   const description = [budgetText, countText].filter(Boolean).join(" · ");
 
-  // 조각은 동적 OG 이미지(날짜·지역·인당가·N/M명), 깃발은 기존 정적 이미지
+  // 조각은 정적 조각 카드 이미지(1200x630 사전 합성), 깃발은 기존 정적 이미지
   const ogImage = puzzle.is_recruiting_party
-    ? `https://nightflow.kr/api/puzzles/${id}/share-image`
+    ? "https://nightflow.kr/og-jogak-card.jpg"
     : "/og-flag-moon.png";
 
   return {

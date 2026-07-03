@@ -47,10 +47,11 @@ export function ShareCreatedSheet({
   const rawArea = AREA_LABEL[area] ?? area;
   const areaLabel = /어디든/.test(rawArea) ? "서울" : rawArea;
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  // 카톡은 URL 단위로 OG를 캐싱 → 더미 쿼리로 매번 새로 스크랩되게
+  // 카톡은 URL 단위로 OG를 캐싱 → 링크는 더미 쿼리로 매번 새로 스크랩되게
   const bust = Date.now();
   const shareUrl = `${origin}/flags/${puzzleId}?t=${bust}`;
-  const imageUrl = `${origin}/api/puzzles/${puzzleId}/share-image?t=${bust}`;
+  // 썸네일은 정적 파일(1200x630 사전 합성) — 동적 라우트 렌더링 지연 제거 + Kakao 캐시 활용
+  const imageUrl = `${origin}/og-jogak-card.jpg`;
 
   async function handleKakao() {
     const ok = isAvailable
