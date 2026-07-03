@@ -1,4 +1,4 @@
--- Migration 406: 오퍼 채팅 admin 알림 (채팅 시작 + MD 3시간 무응답)
+-- Migration 406: 오퍼 채팅 admin 알림 (채팅 시작 + MD 2시간 무응답)
 -- 적용일: 2026-07-02
 --
 -- 배경: 앱 미출시 상태라 유저가 MD에게 채팅 시작해도 MD가 모를 수 있음.
@@ -6,13 +6,13 @@
 --
 --   1) 채팅 시작: 방장이 MD에게 첫 메시지 보낼 때 admin 푸시 1회
 --      → send_offer_message()에 추가 (leader_chat_started_at 세팅 지점)
---   2) MD 3시간 무응답: 방장 첫 메시지 후 3시간 지나도 MD 답 없으면 admin 푸시 1회
+--   2) MD 2시간 무응답: 방장 첫 메시지 후 2시간 지나도 MD 답 없으면 admin 푸시 1회
 --      → notify_admin_md_noreply() + cron(5분)
 --
 -- 둘 다 notify_admins_push 경유(Vault 인증), data.url로 /messages/{offer_id} 딥링크.
 -- 조각(is_recruiting_party)은 단체채팅이라 제외 (send_offer_message가 이미 차단).
 
--- 무응답 3시간 알림 중복방지 컬럼
+-- 무응답 알림 중복방지 컬럼
 ALTER TABLE puzzle_offers ADD COLUMN IF NOT EXISTS md_noreply_notified_at TIMESTAMPTZ;
 
 -- ============================================================================
@@ -93,7 +93,7 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================================
--- MD 3시간 무응답 → admin 알림 (cron 5분마다, 오퍼당 1회)
+-- MD 2시간 무응답 → admin 알림 (cron 5분마다, 오퍼당 1회)
 -- ============================================================================
 CREATE OR REPLACE FUNCTION notify_admin_md_noreply()
 RETURNS INTEGER AS $$
@@ -105,7 +105,7 @@ BEGIN
     SELECT o.id AS offer_id, o.puzzle_id, o.md_id, o.club_id, p.leader_id
     FROM puzzle_offers o JOIN puzzles p ON p.id = o.puzzle_id
     WHERE o.leader_chat_started_at IS NOT NULL
-      AND o.leader_chat_started_at < now() - interval '3 hours'
+      AND o.leader_chat_started_at < now() - interval '2 hours'
       AND o.md_noreply_notified_at IS NULL
       AND o.status NOT IN ('rejected','expired','withdrawn','accepted')
       AND p.status NOT IN ('expired','cancelled')
@@ -116,7 +116,7 @@ BEGIN
     SELECT display_name INTO v_md_name FROM users WHERE id = v_rec.md_id;
     SELECT name INTO v_club_name FROM clubs WHERE id = v_rec.club_id;
     PERFORM notify_admins_push(
-      '⏰ MD 답장 없음 (3시간)',
+      '⏰ MD 답장 없음 (2시간)',
       COALESCE(v_md_name,'MD') || '가 ' || COALESCE(v_leader_name,'유저') || '에게 답장 안 함'
         || CASE WHEN v_club_name IS NOT NULL THEN ' · ' || v_club_name ELSE '' END,
       jsonb_build_object('type','md_noreply','offer_id',v_rec.offer_id::TEXT,'url','/messages/' || v_rec.offer_id::TEXT)
