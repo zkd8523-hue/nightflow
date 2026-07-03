@@ -54,6 +54,8 @@ interface PuzzleLeaderInfo {
   is_blocked: boolean | null;
   last_sign_in_at: string | null;
   last_seen_at?: string | null;
+  alimtalk_consent?: boolean | null;
+  alimtalk_consent_at?: string | null;
 }
 
 interface PuzzleDetailClientProps {
@@ -982,6 +984,17 @@ export function PuzzleDetailClient({
                   <p className="text-neutral-500">상태</p>
                   <p className={`font-bold ${leader.is_blocked ? "text-red-400" : "text-green-400"}`}>
                     {leader.is_blocked ? "차단됨" : "정상"}
+                  </p>
+                </div>
+                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2 col-span-2">
+                  <p className="text-neutral-500">SMS·알림톡 수신동의</p>
+                  <p className={`font-bold ${leader.alimtalk_consent ? "text-green-400" : "text-red-400"}`}>
+                    {leader.alimtalk_consent ? "동의함" : "미동의"}
+                    {leader.alimtalk_consent && leader.alimtalk_consent_at && (
+                      <span className="ml-1.5 text-[10px] font-normal text-neutral-500">
+                        ({dayjs(leader.alimtalk_consent_at).format("YYYY-MM-DD")})
+                      </span>
+                    )}
                   </p>
                 </div>
                 <div className="bg-[#1C1C1E] rounded-lg px-3 py-2 col-span-2">

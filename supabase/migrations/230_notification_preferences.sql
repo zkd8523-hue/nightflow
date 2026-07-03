@@ -243,63 +243,47 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- MD: 새 깃발 (Migration 228)
+-- 깃발/조각 분기: is_recruiting_party=true 면 조각(🧩), 아니면 깃발(🚩). 수신자 로직 동일.
 CREATE OR REPLACE FUNCTION trg_puzzle_push_md_area_match()
 RETURNS TRIGGER AS $$
 DECLARE
   v_md RECORD;
   v_seoul_areas TEXT[] := ARRAY['강남', '홍대', '이태원', '건대'];
-  v_body TEXT;
-  v_budget_text TEXT;
+  v_title TEXT; v_body TEXT; v_type TEXT;
 BEGIN
   IF NEW.status <> 'open' THEN
     RETURN NEW;
   END IF;
 
-  v_budget_text := to_char(
-    COALESCE(NEW.total_budget, NEW.budget_per_person * NEW.target_count),
-    'FM999,999,999'
-  );
-  v_body := format('%s · %s명 · 총 %s원', NEW.area, NEW.target_count, v_budget_text);
+  IF COALESCE(NEW.is_recruiting_party, false) THEN
+    v_title := '🧩 새 조각이 올라왔어요!';
+    v_body  := NEW.area || ' ' || EXTRACT(MONTH FROM NEW.event_date)::TEXT || '/' || EXTRACT(DAY FROM NEW.event_date)::TEXT
+               || ' | ' || NEW.target_count::TEXT || '인 | 인당 ' || to_char(COALESCE(NEW.budget_per_person,0),'FM999,999,999') || '원';
+    v_type  := 'new_share';
+  ELSE
+    v_title := '🚩 새 깃발이 꽂혔어요!';
+    v_body  := format('%s · %s명 · 총 %s원', NEW.area, NEW.target_count,
+                 to_char(COALESCE(NEW.total_budget, NEW.budget_per_person * NEW.target_count),'FM999,999,999'));
+    v_type  := 'puzzle_new_in_area';
+  END IF;
 
   IF NEW.area = '서울 어디든' THEN
     FOR v_md IN
-      SELECT DISTINCT md_id
-      FROM md_puzzle_area_subs
-      WHERE area = ANY(v_seoul_areas)
-        AND md_id <> NEW.leader_id
+      SELECT DISTINCT md_id FROM md_puzzle_area_subs
+      WHERE area = ANY(v_seoul_areas) AND md_id <> NEW.leader_id
     LOOP
-      PERFORM notify_user_push(
-        v_md.md_id,
-        '🚩 새 깃발이 꽂혔어요!',
-        v_body,
-        jsonb_build_object(
-          'type', 'puzzle_new_in_area',
-          'puzzle_id', NEW.id::TEXT,
-          'area', NEW.area
-        ),
-        '/flags/' || NEW.id::TEXT,
-        'new_puzzle'
-      );
+      PERFORM notify_user_push(v_md.md_id, v_title, v_body,
+        jsonb_build_object('type',v_type,'puzzle_id',NEW.id::TEXT,'area',NEW.area),
+        '/flags/' || NEW.id::TEXT, 'new_puzzle');
     END LOOP;
   ELSE
     FOR v_md IN
-      SELECT md_id
-      FROM md_puzzle_area_subs
-      WHERE area = NEW.area
-        AND md_id <> NEW.leader_id
+      SELECT md_id FROM md_puzzle_area_subs
+      WHERE area = NEW.area AND md_id <> NEW.leader_id
     LOOP
-      PERFORM notify_user_push(
-        v_md.md_id,
-        '🚩 새 깃발이 꽂혔어요!',
-        v_body,
-        jsonb_build_object(
-          'type', 'puzzle_new_in_area',
-          'puzzle_id', NEW.id::TEXT,
-          'area', NEW.area
-        ),
-        '/flags/' || NEW.id::TEXT,
-        'new_puzzle'
-      );
+      PERFORM notify_user_push(v_md.md_id, v_title, v_body,
+        jsonb_build_object('type',v_type,'puzzle_id',NEW.id::TEXT,'area',NEW.area),
+        '/flags/' || NEW.id::TEXT, 'new_puzzle');
     END LOOP;
   END IF;
 

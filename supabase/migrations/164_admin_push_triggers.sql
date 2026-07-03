@@ -52,24 +52,23 @@ COMMENT ON FUNCTION notify_admins_push(TEXT, TEXT, JSONB)
 -- ============================================================================
 -- 트리거 1: 신규 깃발
 -- ============================================================================
+-- 깃발/조각 분기: is_recruiting_party=true 면 조각(🧩), 아니면 깃발(🚩).
 CREATE OR REPLACE FUNCTION trg_admin_push_new_puzzle()
 RETURNS TRIGGER AS $$
+DECLARE v_title TEXT; v_body TEXT; v_type TEXT;
 BEGIN
-  PERFORM notify_admins_push(
-    '🚩 새 깃발이 꽂혔어요!',
-    format('%s · %s명 · 총 %s원',
-      NEW.area,
-      NEW.target_count,
-      to_char(
-        COALESCE(NEW.total_budget, NEW.budget_per_person * NEW.target_count),
-        'FM999,999,999'
-      )
-    ),
-    jsonb_build_object(
-      'type', 'new_puzzle',
-      'puzzle_id', NEW.id::TEXT
-    )
-  );
+  IF COALESCE(NEW.is_recruiting_party, false) THEN
+    v_title := '🧩 새 조각이 올라왔어요!';
+    v_body  := NEW.area || ' ' || EXTRACT(MONTH FROM NEW.event_date)::TEXT || '/' || EXTRACT(DAY FROM NEW.event_date)::TEXT
+               || ' | ' || NEW.target_count::TEXT || '인 | 인당 ' || to_char(COALESCE(NEW.budget_per_person,0),'FM999,999,999') || '원';
+    v_type  := 'new_share';
+  ELSE
+    v_title := '🚩 새 깃발이 꽂혔어요!';
+    v_body  := format('%s · %s명 · 총 %s원', NEW.area, NEW.target_count,
+                 to_char(COALESCE(NEW.total_budget, NEW.budget_per_person * NEW.target_count),'FM999,999,999'));
+    v_type  := 'new_puzzle';
+  END IF;
+  PERFORM notify_admins_push(v_title, v_body, jsonb_build_object('type',v_type,'puzzle_id',NEW.id::TEXT));
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
