@@ -15,7 +15,28 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang: raw } = await searchParams;
   const lang = getLang(raw);
-  if (lang === "ko") return { title: "깃발 꽂기" };
+  if (lang === "ko") {
+    return {
+      title: "깃발 꽂기",
+      description: "날짜·지역·예산 정하면 강남·홍대 클럽 MD들이 시크릿오퍼를 보내요.",
+      alternates: { canonical: "https://nightflow.kr/flags/new" },
+      openGraph: {
+        title: "깃발 꽂기 — 시크릿오퍼 받기",
+        description: "예산만 정하면 클럽에서 시크릿오퍼를 보내요. 100% 기밀, 맞춤 패키지.",
+        url: "https://nightflow.kr/flags/new",
+        siteName: "나플",
+        locale: "ko_KR",
+        type: "website",
+        images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "나플 — 깃발 꽂기" }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "깃발 꽂기 — 시크릿오퍼 받기",
+        description: "예산만 정하면 클럽에서 시크릿오퍼를 보내요. 100% 기밀, 맞춤 패키지.",
+        images: ["/og-image.png"],
+      },
+    };
+  }
   const t = makeT(lang);
   const title = t(
     "깃발 꽂기",

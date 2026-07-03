@@ -5,7 +5,26 @@ import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = { title: "조각 올리기" };
+export const metadata: Metadata = {
+  title: "조각 올리기",
+  description: "친구가 모자라도 인당 부담 소액으로 좋은 자리. 조각 등록하고 시크릿오퍼 받으세요.",
+  alternates: { canonical: "https://nightflow.kr/shares/new" },
+  openGraph: {
+    title: "조각 올리기 — 파티원 모집",
+    description: "조각을 등록하면 친구들이 채팅방에 합류. 클럽에서 시크릿오퍼가 옵니다.",
+    url: "https://nightflow.kr/shares/new",
+    siteName: "나플",
+    locale: "ko_KR",
+    type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "나플 — 조각 올리기" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "조각 올리기 — 파티원 모집",
+    description: "조각을 등록하면 친구들이 채팅방에 합류. 클럽에서 시크릿오퍼가 옵니다.",
+    images: ["/og-image.png"],
+  },
+};
 
 // 조각(파티원 모집) 신규 등록 — 깃발과 별개 진입점.
 // 밑단은 파티원 모집 배관(puzzles.is_recruiting_party=true) 재사용, 화면만 조각으로 분리.
