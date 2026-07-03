@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getLang } from "@/lib/i18n";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -236,11 +237,19 @@ export function ClubDetailContent({
     );
   }, [activeAuctions, blockedUserIds]);
 
-  const flagHref = club.area
-    ? `/flags/new?area=${encodeURIComponent(club.area)}`
-    : "/flags/new";
-  // 로그인 페이지는 ?redirect= 파라미터를 읽음 (next는 미인식)
-  const ctaHref = user ? flagHref : `/login?redirect=${encodeURIComponent(flagHref)}`;
+  // 외국인 트랙(en/ja/zh) 진입 시 lang을 flag 등록·로그인까지 일관 전달
+  const searchParams = useSearchParams();
+  const lang = getLang(searchParams?.get("lang"));
+  const isForeigner = lang !== "ko";
+  const flagAreaParam = club.area ? `area=${encodeURIComponent(club.area)}` : "";
+  const flagLangParam = isForeigner ? `lang=${lang}` : "";
+  const flagQuery = [flagAreaParam, flagLangParam].filter(Boolean).join("&");
+  const flagHref = flagQuery ? `/flags/new?${flagQuery}` : "/flags/new";
+  // 로그인 페이지는 ?redirect= 파라미터를 읽음 (next는 미인식). lang도 유지.
+  const loginQuery = [isForeigner ? `lang=${lang}` : "", `redirect=${encodeURIComponent(flagHref)}`]
+    .filter(Boolean)
+    .join("&");
+  const ctaHref = user ? flagHref : `/login?${loginQuery}`;
   // 게스트 간판 MD가 있으면 본문에 이미 클럽 맥락 1순위 CTA(연락)가 있으므로
   // 지역 깃발 CTA는 숨겨 전환 충돌을 막는다. 없을 때만 노출.
   const showFlagCta = !guestSignSlot && !hideShareList;
@@ -674,7 +683,13 @@ export function ClubDetailContent({
               onClick={() => setIsFlagExplainerOpen(true)}
               className="flex items-center justify-center gap-1.5 w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
             >
-              {clubName} 예약하려면?
+              {lang === "en"
+                ? `Book ${clubName}?`
+                : lang === "ja"
+                  ? `${clubName}を予約?`
+                  : lang === "zh"
+                    ? `预订 ${clubName}?`
+                    : `${clubName} 예약하려면?`}
               <span className="text-[17px]">🚩</span>
             </button>
           </div>
@@ -688,6 +703,7 @@ export function ClubDetailContent({
           area={club.area}
           clubName={clubName}
           ctaHref={ctaHref}
+          lang={lang}
         />
       )}
     </div>

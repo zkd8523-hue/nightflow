@@ -105,7 +105,7 @@ function LoginContent() {
           const signupBase = "/signup";
           const signupParams = new URLSearchParams();
           if (redirectPath !== "/") signupParams.set("next", redirectPath);
-          if (isForeigner) signupParams.set("lang", "en");
+          if (isForeigner) signupParams.set("lang", lang || "en");
           const signupQuery = signupParams.toString();
           router.push(signupBase + (signupQuery ? `?${signupQuery}` : ""));
         }
@@ -179,9 +179,10 @@ function LoginContent() {
         return;
       }
 
-      // 웹: Apple OAuth (외국인 등 비네이티브)
-      const targetWithLang = isForeigner && !target.includes("lang=en")
-        ? target + (target.includes("?") ? "&lang=en" : "?lang=en")
+      // 웹: Apple OAuth (외국인 등 비네이티브) — 진입 시 lang(en/ja/zh) 유지
+      const langToken = isForeigner ? (lang || "en") : null;
+      const targetWithLang = langToken && !/[?&]lang=/.test(target)
+        ? target + (target.includes("?") ? `&lang=${langToken}` : `?lang=${langToken}`)
         : target;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "apple",
@@ -224,10 +225,11 @@ function LoginContent() {
         return;
       }
 
-      // 웹: 기존 플로우 유지
+      // 웹: 기존 플로우 유지 — 진입 lang(en/ja/zh) 유지
       const langParam = isForeigner ? `?lang=${lang}` : "";
-      const targetWithLang = isForeigner && !target.includes("lang=en")
-        ? target + (target.includes("?") ? "&lang=en" : "?lang=en")
+      const langToken = isForeigner ? (lang || "en") : null;
+      const targetWithLang = langToken && !/[?&]lang=/.test(target)
+        ? target + (target.includes("?") ? `&lang=${langToken}` : `?lang=${langToken}`)
         : target;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
