@@ -43,7 +43,9 @@ export function ShareCreatedSheet({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const areaLabel = AREA_LABEL[area] ?? area;
+  // "서울 어디든" 같은 광역 표기는 공유 멘트에서 "서울"로 축약
+  const rawArea = AREA_LABEL[area] ?? area;
+  const areaLabel = /어디든/.test(rawArea) ? "서울" : rawArea;
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   // 카톡은 URL 단위로 OG를 캐싱 → 더미 쿼리로 매번 새로 스크랩되게
   const bust = Date.now();

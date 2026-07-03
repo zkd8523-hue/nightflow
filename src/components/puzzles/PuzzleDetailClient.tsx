@@ -1481,7 +1481,7 @@ export function PuzzleDetailClient({
           {!currentUserId && isOpen && isRecruitingParty && (
             <Link href="/login">
               <Button className="w-full h-12 bg-white text-black font-black text-[14px] rounded-2xl">
-                로그인하고 조각 이용하기
+                로그인하고 조각 참가하기
               </Button>
             </Link>
           )}
