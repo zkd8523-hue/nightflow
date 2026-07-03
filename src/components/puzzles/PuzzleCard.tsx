@@ -381,7 +381,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
                 className="h-8 px-3 rounded-full font-black text-[12px] bg-amber-500 hover:bg-amber-400 text-black active:scale-[0.97] transition-all shrink-0"
               >
-                자세히
+                {isRecruitingParty ? "조각줍기" : "깃발뽑기"}
               </Button>
             )}
           </div>
