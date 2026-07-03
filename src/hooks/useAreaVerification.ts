@@ -11,6 +11,7 @@ import {
   ROOM_LABEL,
   type VerifiableArea,
 } from "@/lib/chat/areas";
+import { getCurrentCoords } from "@/lib/geo/currentCoords";
 
 /** 테스트(비프로덕션) 환경에선 GPS 우회 — 어디서든 인증 통과. */
 const SKIP_GPS_IN_DEV =
@@ -19,52 +20,6 @@ const SKIP_GPS_IN_DEV =
 interface VerificationState {
   area: VerifiableArea;
   expiresAt: string;
-}
-
-/**
- * 현재 GPS 좌표 가져오기 (Capacitor 우선, 웹 fallback)
- */
-async function getCurrentCoords(): Promise<{ latitude: number; longitude: number }> {
-  try {
-    const { Capacitor } = await import("@capacitor/core");
-    if (Capacitor.isNativePlatform()) {
-      const { Geolocation } = await import("@capacitor/geolocation");
-      const perm = await Geolocation.checkPermissions();
-      let granted =
-        perm.location === "granted" || perm.coarseLocation === "granted";
-      if (!granted) {
-        const req = await Geolocation.requestPermissions({
-          permissions: ["location"],
-        });
-        granted =
-          req.location === "granted" || req.coarseLocation === "granted";
-      }
-      if (!granted) throw new Error("위치 권한이 없습니다");
-      const pos = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 30000,
-      });
-      return { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-    }
-  } catch (e) {
-    console.warn("[useAreaVerification] capacitor fallback to web", e);
-  }
-
-  if (!("geolocation" in navigator)) {
-    throw new Error("위치 기능을 지원하지 않는 환경입니다");
-  }
-  return new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        resolve({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        }),
-      (err) => reject(err),
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
-    );
-  });
 }
 
 export function useAreaVerification() {

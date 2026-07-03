@@ -89,9 +89,11 @@
 
 	<!-- 권한 요청 메시지 (한국어 + 영어 병기 — App Review 영어권 리뷰어 대응) -->
 	<key>NSCameraUsageDescription</key>
-	<string>프로필 사진 등록에 카메라를 사용합니다. / Used to take a profile photo.</string>
+	<string>SHOT 촬영 및 프로필 사진 등록에 카메라를 사용합니다. / Used to capture SHOT and profile photos.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>SHOT 영상 녹화 시 음성을 함께 담기 위해 마이크를 사용합니다. / Used to record audio while capturing SHOT videos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>프로필 사진 등록에 사진 라이브러리를 사용합니다. / Used to choose a profile photo from your photo library.</string>
+	<string>SHOT 업로드 및 프로필 사진 등록에 사진 라이브러리를 사용합니다. / Used to choose media from your photo library.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>가까운 클럽을 지도에서 찾기 위해 위치 정보를 사용합니다. / Used to find nearby clubs on the map.</string>
 

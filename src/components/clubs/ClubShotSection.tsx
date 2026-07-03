@@ -62,7 +62,7 @@ export function ClubShotSection({ clubId, clubName, clubAreaKr }: Props) {
         <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />
         <span className="text-[12px] font-black text-white">LIVE</span>
         <span className="text-[11px] text-neutral-500">
-          — 지금 이 클럽 · 9시간 후 사라져요
+          — 지금 이 클럽의 분위기를 공유해요
         </span>
       </div>
 

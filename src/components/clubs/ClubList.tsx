@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Map as MapIcon, LocateFixed, LayoutGrid, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
+import { ChevronLeft, ChevronRight, Map as MapIcon, LayoutGrid, Search, X, ArrowLeft, Heart, SlidersHorizontal } from "lucide-react";
 import { FavoriteButton } from "@/components/auctions/FavoriteButton";
 import { ClubFilterChips, ClubAreaChips, type ClubFilters } from "./ClubFilterChips";
 import { ClubMap } from "./ClubMap";
@@ -17,6 +17,11 @@ import {
 } from "@/lib/clubs/tags";
 import { getClubAliases } from "@/lib/clubs/aliases";
 import { benefitLabel } from "@/lib/utils/hotdeal";
+import { distanceKm } from "@/lib/chat/areas";
+import { getCurrentCoords } from "@/lib/geo/currentCoords";
+
+/** 3km 이내면 표시 */
+const NEAR_KM_THRESHOLD = 3;
 
 interface ClubListItem {
   id: string;
@@ -70,19 +75,28 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
   const [query, setQuery] = useState("");
   // 지도 모드에서 클럽 상세 모달이 열렸는지 — 열리면 검색/필터 overlay 숨김
   const [mapDetailOpen, setMapDetailOpen] = useState(false);
-  // 지도 모드에서는 필터가 지도를 가리므로 기본 접힘. 리스트 모드는 펼침.
-  const [filtersOpen, setFiltersOpen] = useState(
-    () => searchParams.get("view") !== "map"
-  );
+  // 필터는 기본 접힘 (사용자 명시 요청)
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // 유저 GPS — 3km 이내 클럽에 거리 배지 표시.
+  // Capacitor 네이티브에선 권한 팝업 자동 요청, 웹은 브라우저 팝업. 실패해도 조용히 넘어감.
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getCurrentCoords()
+      .then((c) => {
+        if (!cancelled) setUserCoords({ lat: c.latitude, lng: c.longitude });
+      })
+      .catch(() => { /* silent — 배지만 안 뜨고 기능 정상 */ });
+    return () => { cancelled = true; };
+  }, []);
 
   // 지역(area)은 1차 필터로 항상 노출되므로 세부 필터 카운트에서 제외
   const activeFilterCount =
     filters.genres.length + filters.venueTypes.length;
 
-  // view 전환 시 필터 펼침 상태도 기본값으로 맞춤 (지도=접힘, 리스트=펼침)
   const changeView = (next: ViewMode) => {
     setView(next);
-    setFiltersOpen(next === "list");
   };
 
   useEffect(() => {
@@ -237,6 +251,18 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
 
   const mappableCount = filtered.filter((c) => c.latitude != null && c.longitude != null).length;
 
+  // 클럽별 거리(km) — 유저 GPS + 클럽 좌표 있을 때만 계산, 3km 이내만 저장
+  const distanceMap = useMemo<Record<string, number>>(() => {
+    if (!userCoords) return {};
+    const out: Record<string, number> = {};
+    for (const c of clubs) {
+      if (c.latitude == null || c.longitude == null) continue;
+      const d = distanceKm(userCoords.lat, userCoords.lng, c.latitude, c.longitude);
+      if (d <= NEAR_KM_THRESHOLD) out[c.id] = d;
+    }
+    return out;
+  }, [clubs, userCoords]);
+
   return (
     <div className={view === "map" ? "space-y-0" : "space-y-6"}>
       {view === "list" && (
@@ -321,25 +347,41 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               </span>
             )}
           </button>
-          {/* 단일 뷰 토글 — 리스트일 땐 "지도", 지도일 땐 "리스트"로 전환 */}
-          <button
-            type="button"
-            onClick={() => changeView(view === "map" ? "list" : "map")}
-            aria-label={view === "map" ? "리스트 보기" : "지도 보기"}
-            className="flex items-center justify-center gap-1.5 px-4 h-9 rounded-full bg-white text-black font-bold text-[13px] flex-shrink-0 active:scale-95 transition"
+          {/* 세그먼트 스위치 — 리스트/지도 양쪽 표시, 현재 상태 하이라이트 */}
+          <div
+            role="tablist"
+            aria-label="보기 방식"
+            className="flex items-center h-9 rounded-full bg-neutral-900 p-0.5 flex-shrink-0"
           >
-            {view === "map" ? (
-              <>
-                <LayoutGrid className="w-3.5 h-3.5" />
-                리스트
-              </>
-            ) : (
-              <>
-                <LocateFixed className="w-3.5 h-3.5" />
-                지도
-              </>
-            )}
-          </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "list"}
+              onClick={() => changeView("list")}
+              className={`flex items-center justify-center gap-1 px-3 h-8 rounded-full text-[12px] font-black transition ${
+                view === "list"
+                  ? "bg-white text-black"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              리스트
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={view === "map"}
+              onClick={() => changeView("map")}
+              className={`flex items-center justify-center gap-1 px-3 h-8 rounded-full text-[12px] font-black transition ${
+                view === "map"
+                  ? "bg-white text-black"
+                  : "text-neutral-400 hover:text-neutral-200"
+              }`}
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              지도
+            </button>
+          </div>
         </div>
         {/* 지역 필터는 항상 표시 (1차 필터) */}
         <ClubAreaChips value={filters} onChange={setFilters} />
@@ -383,6 +425,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
                 favCountMap={favCountMap}
                 hotdealMap={hotdealMap}
                 benefitTagsMap={benefitTagsMap}
+                distanceMap={distanceMap}
               />
             );
           })}
@@ -398,12 +441,14 @@ function AreaCarousel({
   favCountMap = {},
   hotdealMap = {},
   benefitTagsMap = {},
+  distanceMap = {},
 }: {
   area: string;
   clubs: ClubListItem[];
   favCountMap?: Record<string, number>;
   hotdealMap?: Record<string, string>;
   benefitTagsMap?: Record<string, string[]>;
+  distanceMap?: Record<string, number>;
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -437,16 +482,6 @@ function AreaCarousel({
         <span className="text-neutral-500 text-[11px] font-medium">
           {clubs.length}
         </span>
-        {hasHotplace && (
-          <Link
-            href={`/hotplace/${encodeURIComponent(area)}`}
-            className="ml-auto inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-amber-400 transition-colors font-medium"
-            aria-label={`${area} 핫플 지도 보기`}
-          >
-            <MapIcon className="w-3.5 h-3.5" />
-            지도
-          </Link>
-        )}
       </h2>
       <div className="-mx-4 px-4 relative group">
         <div ref={scrollRef} data-no-pull-refresh className="flex gap-3 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory touch-pan-x touch-pan-y">
@@ -457,6 +492,7 @@ function AreaCarousel({
               favCount={favCountMap[club.id] ?? 0}
               benefitText={hotdealMap[club.id] ?? null}
               benefitTags={benefitTagsMap[club.id] ?? []}
+              distanceKm={distanceMap[club.id]}
             />
           ))}
         </div>
@@ -489,11 +525,13 @@ function ClubCard({
   favCount = 0,
   benefitText = null,
   benefitTags = [],
+  distanceKm: distance,
 }: {
   club: ClubListItem;
   favCount?: number;
   benefitText?: string | null;
   benefitTags?: string[];
+  distanceKm?: number;
 }) {
   const genres = getTagsByGroup(club.tags || [], "genre");
   const metaLine = genres.slice(0, 2).map((g) => `#${g.label}`).join(" · ");
@@ -532,6 +570,13 @@ function ClubCard({
           </div>
         )}
         <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent" />
+        {distance !== undefined && (
+          <span className="absolute bottom-2 left-2 inline-flex items-center px-1.5 py-0.5 rounded-full bg-black/70 backdrop-blur-sm text-white text-[10px] font-black leading-none">
+            {distance < 1
+              ? `${Math.round(distance * 1000)}m`
+              : `${distance.toFixed(1)}km`}
+          </span>
+        )}
       </div>
       <div className="mt-2 px-0.5 space-y-0.5">
         <div className="flex items-center justify-between gap-1.5">

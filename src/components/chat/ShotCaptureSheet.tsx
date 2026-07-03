@@ -14,6 +14,7 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
 import { ROOM_LABEL, type VerifiableArea } from "@/lib/chat/areas";
 import { fetchNearestClubs, type NearestClub } from "@/lib/clubs/nearestClubs";
+import { getCurrentCoords } from "@/lib/geo/currentCoords";
 import type { ChatShot } from "@/types/database";
 import { CameraCaptureView } from "./CameraCaptureView";
 
@@ -78,31 +79,26 @@ export function ShotCaptureSheet({
     setSelectedClub(presetClub);
   }, [open, presetClub]);
 
-  // LIVE 모드로 전환 시 GPS로 클럽 로드
+  // LIVE 모드로 전환 시 GPS로 클럽 로드 (Capacitor 권한 팝업 자동)
   useEffect(() => {
     if (!open || mode !== "live" || !area) return;
     if (presetClub) return;
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    let cancelled = false;
     setClubsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const clubs = await fetchNearestClubs(
-          area,
-          pos.coords.latitude,
-          pos.coords.longitude,
-          5,
-          1.5
-        );
+    getCurrentCoords()
+      .then(async (c) => {
+        const clubs = await fetchNearestClubs(area, c.latitude, c.longitude, 5, 1.5);
+        if (cancelled) return;
         setNearestClubs(clubs);
         setClubsLoading(false);
-      },
-      (err) => {
+      })
+      .catch((err) => {
         console.warn("[ShotCaptureSheet] geo error", err);
+        if (cancelled) return;
         setNearestClubs([]);
         setClubsLoading(false);
-      },
-      { timeout: 8000 }
-    );
+      });
+    return () => { cancelled = true; };
   }, [open, mode, area, presetClub]);
 
   function canUseLiveCamera(): boolean {
@@ -253,7 +249,7 @@ export function ShotCaptureSheet({
           <SheetTitle className="text-white text-[16px] text-left flex items-center gap-2">
             🥃 SHOT 올리기
             <span className="text-[11px] font-normal text-neutral-500">
-              · 9시간 후 사라져요
+              · 오늘의 술을 공유해보세요
             </span>
           </SheetTitle>
         </SheetHeader>

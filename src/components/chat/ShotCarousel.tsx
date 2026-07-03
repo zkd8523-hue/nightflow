@@ -79,7 +79,7 @@ export function ShotCarousel({
       <div className="flex items-baseline gap-1.5 mb-2 px-1">
         <span className="text-[12px] font-bold text-amber-400">🥃 SHOT</span>
         <span className="text-[11px] text-neutral-500">
-          — 9시간만 남기는 지금 이 순간
+          — 오늘의 술을 공유해보세요!
         </span>
       </div>
       <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
