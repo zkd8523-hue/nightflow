@@ -44,6 +44,13 @@ const getAgeBand = (age: number | null): string => {
   return "40대+";
 };
 
+// 성별 라벨 (male=남 / female=여 / null=미입력)
+const getGenderLabel = (gender: "male" | "female" | null | undefined): string => {
+  if (gender === "male") return "남";
+  if (gender === "female") return "여";
+  return "미입력";
+};
+
 import {
   Search,
   ShieldBan,
@@ -87,6 +94,7 @@ interface UserManagementProps {
 export function UserManagement({ users, focusId }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female" | "none">("all");
   const [nationalityFilter, setNationalityFilter] = useState<"domestic" | "foreign">("domestic");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "recent_seen" | "long_inactive">("newest");
 
@@ -259,7 +267,11 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
       (statusFilter === "new_24h" && dayjs(u.created_at).isAfter(dayjs().subtract(1, "day"))) ||
       (statusFilter === "new_7d" && dayjs(u.created_at).isAfter(dayjs().subtract(7, "day")));
 
-    return matchesNationality && matchesSearch && matchesStatus;
+    const matchesGender =
+      genderFilter === "all" ||
+      (genderFilter === "none" ? u.gender == null : u.gender === genderFilter);
+
+    return matchesNationality && matchesSearch && matchesStatus && matchesGender;
   }).sort((a, b) => {
     if (sortOrder === "recent_seen" || sortOrder === "long_inactive") {
       // last_seen_at 기준 (null은 항상 맨 뒤로)
@@ -383,6 +395,17 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
             <SelectItem value="md">MD만</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={genderFilter} onValueChange={(v) => setGenderFilter(v as typeof genderFilter)}>
+          <SelectTrigger className="w-[130px] bg-[#1C1C1E] border-neutral-800 text-white">
+            <SelectValue placeholder="성별" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">성별 전체</SelectItem>
+            <SelectItem value="male">남성</SelectItem>
+            <SelectItem value="female">여성</SelectItem>
+            <SelectItem value="none">미입력</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as typeof sortOrder)}>
           <SelectTrigger className="w-[170px] bg-[#1C1C1E] border-neutral-800 text-white">
             <SelectValue placeholder="정렬" />
@@ -463,6 +486,8 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                           const age = getAge(user.birthday);
                           return (
                             <p className="text-[11px] text-neutral-500 mt-0.5">
+                              {getGenderLabel(user.gender)}
+                              {" · "}
                               {age !== null
                                 ? `만 ${age}세 · ${getAgeBand(age)}`
                                 : "나이 미입력"}
@@ -593,6 +618,10 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                   <div className="flex justify-between items-center">
                     <span className="text-neutral-500 text-sm">전화번호</span>
                     <span className="font-bold text-white">{selectedUser.phone || "-"}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 text-sm">성별</span>
+                    <span className="font-bold text-white text-sm">{getGenderLabel(selectedUser.gender)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-neutral-500 text-sm">생년월일 / 나이</span>

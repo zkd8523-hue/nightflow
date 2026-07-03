@@ -18,6 +18,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { COUNTRIES, countryFlag } from "@/lib/utils/countryFlag";
 import { isValidEmailFormat, suggestEmail } from "@/lib/utils/emailCheck";
 import { getLang, makeT } from "@/lib/i18n";
+import { DateWheelPicker } from "@/components/ui/DateWheelPicker";
 
 import type { User as AuthUser } from "@supabase/supabase-js";
 
@@ -34,7 +35,7 @@ interface SignupFormProps {
   mdReferrer?: string | null;
 }
 
-type Step = "agree" | "phone" | "otp" | "nickname" | "country";
+type Step = "agree" | "country" | "birthday" | "gender" | "phone" | "otp" | "nickname";
 
 const RESEND_COOLDOWN_SEC = 60;
 
@@ -66,14 +67,6 @@ const formatPhoneDisplay = (raw: string) => {
   if (digits.length < 4) return digits;
   if (digits.length < 8) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-};
-
-// 생년월일 8자리(YYYYMMDD)를 YYYY.MM.DD로 표시
-const formatBirthdayDisplay = (raw: string) => {
-  const digits = raw.replace(/\D/g, "").slice(0, 8);
-  if (digits.length < 5) return digits;
-  if (digits.length < 7) return `${digits.slice(0, 4)}.${digits.slice(4)}`;
-  return `${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6)}`;
 };
 
 const sendOtpErrorMessage = (code: string): string => {
@@ -129,6 +122,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [phoneInput, setPhoneInput] = useState("");
   // 생년월일 (phone 단계에서 입력 — 만 19세 미만 SMS 발송 전 차단용)
   const [birthdayInput, setBirthdayInput] = useState("");
+  // 성별 (birthday 다음 gender 단계 — 선택 항목, null = 선택안함)
+  const [gender, setGender] = useState<"male" | "female" | null>(null);
   const [otpCode, setOtpCode] = useState("");
   const [otpSending, setOtpSending] = useState(false);
   const [otpVerifying, setOtpVerifying] = useState(false);
@@ -285,7 +280,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     if (isForeigner) {
       setStep("country"); // 외국인: phone/otp 스킵, 나라 먼저
     } else {
-      setStep("phone");
+      setStep("birthday"); // 한국인: 생년월일 먼저 (19세 게이트) → phone
     }
   };
 
@@ -498,6 +493,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               display_name: displayName,
               phone: verifiedPhone,
               birthday: birthdayToSave,
+              gender,
               alimtalk_consent: agreeMarketing,
               alimtalk_consent_at: agreeMarketing ? new Date().toISOString() : null,
               ...(countryCode ? { country_code: countryCode } : {}),
@@ -511,6 +507,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             display_name: displayName,
             phone: verifiedPhone,
             birthday: birthdayToSave,
+            gender,
             profile_image: finalProfileImage,
             role: "user",
             alimtalk_consent: agreeMarketing,
@@ -637,6 +634,105 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
           </>
         )}
 
+        {step === "birthday" && (
+          <>
+            <div className="space-y-2 text-center">
+              <p className="text-[18px] font-bold text-white">{tt("생년월일을 알려주세요", "Your date of birth")}</p>
+              <p className="text-[13px] text-neutral-400">{tt("만 19세 이상만 가입할 수 있어요", "You must be 19 or older to join.")}</p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <DateWheelPicker
+                  value={birthdayInput}
+                  onChange={(v) => setBirthdayInput(v)}
+                />
+                {isUnderage && (
+                  <p className="text-[13px] text-red-400 px-1 text-center">
+                    {tt("만 19세 이상만 가입할 수 있어요", "You must be 19 or older to join.")}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                onClick={() => setStep("gender")}
+                disabled={!birthdayValid || !isAdult}
+                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+              >
+                {tt("다음", "Next")}
+              </Button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setStep(isForeigner ? "country" : "agree")}
+              className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
+            </button>
+          </>
+        )}
+
+        {step === "gender" && (
+          <>
+            <div className="space-y-2 text-center">
+              <p className="text-[18px] font-bold text-white">{tt("성별을 선택해주세요", "Select your gender")}</p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  { key: "male" as const, ko: "남성", en: "Male" },
+                  { key: "female" as const, ko: "여성", en: "Female" },
+                ]).map((opt) => {
+                  const active = gender === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setGender(opt.key)}
+                      className={`h-14 rounded-xl border text-[15px] font-bold transition-colors ${
+                        active
+                          ? "bg-white text-black border-white"
+                          : "bg-neutral-800 text-neutral-300 border-neutral-700 hover:border-neutral-500"
+                      }`}
+                    >
+                      {tt(opt.ko, opt.en)}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <Button
+                onClick={() => setStep(isForeigner ? "nickname" : "phone")}
+                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+              >
+                {tt("다음", "Next")}
+              </Button>
+
+              {/* 선택안함 — 작은 문구로 건너뛰기 */}
+              <button
+                type="button"
+                onClick={() => {
+                  setGender(null);
+                  setStep(isForeigner ? "nickname" : "phone");
+                }}
+                className="w-full text-center text-[13px] text-neutral-500 hover:text-neutral-300 transition-colors"
+              >
+                {tt("선택 안 하고 넘어가기", "Prefer not to say")}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setStep("birthday")}
+              className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
+            </button>
+          </>
+        )}
+
         {step === "phone" && (
           <>
             <div className="space-y-2 text-center">
@@ -645,26 +741,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             </div>
 
             <div className="space-y-3">
-              {/* 생년월일 — 만 19세 미만 차단 게이트 (SMS 발송 전). 숫자 직접 입력. */}
-              <div className="space-y-1.5">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="bday"
-                  value={formatBirthdayDisplay(birthdayInput)}
-                  onChange={(e) => setBirthdayInput(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                  placeholder="생년월일 8자리 (예: 19990101)"
-                  className={`w-full h-14 px-4 rounded-xl bg-neutral-800 border text-white text-[16px] placeholder-neutral-500 focus:outline-none transition-colors ${
-                    isUnderage ? "border-red-500 focus:border-red-500" : "border-neutral-700 focus:border-white"
-                  }`}
-                />
-                {isUnderage && (
-                  <p className="text-[13px] text-red-400 px-1">
-                    만 19세 이상만 가입할 수 있어요
-                  </p>
-                )}
-              </div>
-
               <input
                 type="tel"
                 inputMode="numeric"
@@ -686,7 +762,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
             <button
               type="button"
-              onClick={() => setStep("agree")}
+              onClick={() => setStep("gender")}
               className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> 이전
@@ -799,30 +875,6 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               />
             </div>
 
-            {/* 생년월일 — 외국인 전용 (한국인은 phone 스텝에서 입력) */}
-            {isForeigner && (
-              <div className="space-y-1.5">
-                <label className="text-[12px] text-neutral-500 font-medium px-1">Date of birth</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="bday"
-                  value={formatBirthdayDisplay(birthdayInput)}
-                  onChange={(e) => setBirthdayInput(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                  placeholder="YYYY.MM.DD"
-                  className={`w-full h-12 px-4 rounded-xl bg-neutral-800 border text-white text-[15px] placeholder-neutral-500 focus:outline-none transition-colors ${
-                    isUnderage ? "border-red-500 focus:border-red-500" : "border-neutral-700 focus:border-white"
-                  }`}
-                />
-                {isUnderage && (
-                  <p className="text-[12px] text-red-400 px-1">You must be 19 or older to use NightFlow.</p>
-                )}
-                {birthdayValid && isAdult && (
-                  <p className="text-[12px] text-green-400 px-1">Age verified ✓</p>
-                )}
-              </div>
-            )}
-
             <div className="space-y-2">
               <div className="relative">
                 <input
@@ -877,7 +929,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               </Button>
               <button
                 type="button"
-                onClick={() => setStep(isForeigner ? "country" : "otp")}
+                onClick={() => setStep(isForeigner ? "gender" : "otp")}
                 className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
@@ -980,7 +1032,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
             <div className="space-y-3 pt-1">
               <Button
-                onClick={() => setStep("nickname")}
+                onClick={() => setStep("birthday")}
                 disabled={!countryCode || (isForeigner && !!authUser && !authUser.email && !isValidEmailFormat(emailInput))}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
