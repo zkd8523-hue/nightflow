@@ -1061,7 +1061,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             {!isRecruitingParty && (
               <>
                 <span className="text-[12px] text-neutral-400"> {t("(최소 금액 50만원)", "(minimum ₩500,000)")}</span>
-                {!shareMode && (
+                {!shareMode && !isForeigner && (
                   <button
                     type="button"
                     onClick={() => setShowShareCta((v) => !v)}
@@ -1075,8 +1075,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           </p>
         </div>
 
-        {/* 50만원 장벽 회유 — "예산이 50 언더라면?" 클릭 시 조각으로 유도 */}
-        {!shareMode && showShareCta && (
+        {/* 50만원 장벽 회유 — "예산이 50 언더라면?" 클릭 시 조각으로 유도. 외국인 제외(조각 미제공) */}
+        {!shareMode && !isForeigner && showShareCta && (
           <div className="bg-green-500/10 border border-green-500/25 rounded-2xl p-4">
             <p className="text-[13.5px] font-black text-white break-keep">
               조각을 이용하면 파티원을 모아 예약할 수 있어요
