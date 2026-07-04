@@ -264,7 +264,7 @@ export default async function ZhClubsAreaPage({
           <li>免费插旗，免费收报价，无需押金。计划变更可随时取消。</li>
         </ul>
       </div>
-      <ClubsClient clubs={clubList} />
+      <ClubsClient clubs={clubList} lang="zh" />
     </>
   );
 }

@@ -160,7 +160,7 @@ function MyRequestsTab() {
         <p className="text-[15px] font-bold text-neutral-300">{tr("No requests yet")}</p>
         <p className="text-[13px] text-neutral-500">{tr("Post your date & budget — top clubs send you offers.")}</p>
         <Link href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
-          {tr("Get VIP offers")}
+          {tr("Book with NightFlow")}
         </Link>
       </div>
     );
@@ -209,11 +209,10 @@ function MyRequestsTab() {
 
 // ── 한국 깃발 캐러셀 카드 (우상단 🇰🇷 = 소셜 프루프) ───────────────
 function FlagCarouselCard({ flag }: { flag: FlagItem }) {
-  const { lang, t, tr } = useTr();
+  const { lang, tr } = useTr();
   const area = areaLabel(flag.area, lang);
   const date = formatEventDate(flag.event_date);
   const budget = formatBudget(flag.total_budget, flag.budget_per_person, flag.target_count);
-  const isSelecting = flag.status === "selecting";
   return (
     <Link
       href={`/flags/${flag.id}?lang=${lang}`}
@@ -237,13 +236,6 @@ function FlagCarouselCard({ flag }: { flag: FlagItem }) {
           </>
         )}
       </div>
-      <span className={`inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${
-        isSelecting
-          ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-          : "bg-green-500/20 text-green-400 border border-green-500/30"
-      }`}>
-        {isSelecting ? t("", "Reviewing", "確認中", "确认中") : t("", "Open", "募集中", "招募中")}
-      </span>
     </Link>
   );
 }
@@ -375,7 +367,7 @@ function RegionSection({ clubs }: { clubs: ClubItem[] }) {
           href={`/flags/new?lang=${lang}`}
           className="block w-full mt-1 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
         >
-          {tr("Get VIP offers")}
+          {tr("Book with NightFlow")}
         </Link>
       </div>
     </div>
@@ -601,7 +593,7 @@ export function EnHomeClient({ flags, clubs = [] }: { flags: FlagItem[]; clubs?:
             href={`/flags/new?lang=${lang}`}
             className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-amber-500 text-black font-black text-[13px] hover:bg-amber-400 transition-colors"
           >
-            {tr("Get offers")}
+            {tr("Book now")}
           </Link>
         ) : (
           <Link

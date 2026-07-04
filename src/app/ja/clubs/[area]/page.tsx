@@ -268,7 +268,7 @@ export default async function JaClubsAreaPage({
           <li>旗立て無料、オファー受信無料、デポジット不要。プラン変更時はいつでもキャンセル可能。</li>
         </ul>
       </div>
-      <ClubsClient clubs={clubList} />
+      <ClubsClient clubs={clubList} lang="ja" />
     </>
   );
 }

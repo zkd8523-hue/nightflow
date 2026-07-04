@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { useRouter, useSearchParams } from "next/navigation";
 import { logger } from "@/lib/utils/logger";
-import { trackEvent } from "@/lib/analytics/events";
+import { trackEvent, trackForeignEvent } from "@/lib/analytics/events";
 import { isInstantEnabled } from "@/lib/features";
 import { isInAppBrowser, isIOS } from "@/lib/utils/browser";
 import { BackButton } from "@/components/ui/BackButton";
@@ -67,6 +67,15 @@ function LoginContent() {
   // 외국인(lang=en) 진입 시 브라우저 탭 제목을 영어로 (client 페이지라 metadata 불가)
   useEffect(() => {
     if (isForeigner) document.title = "Log in | NightFlow";
+  }, [isForeigner]);
+
+  // 외국인 이탈퍼널 4단계 — 로그인 페이지 노출.
+  // redirect가 있는 진입만 카운트 (그냥 로그인 페이지 열어본 게 아니라 CTA 눌러 튕겨온 유입).
+  useEffect(() => {
+    if (isForeigner && redirectPath !== "/") {
+      trackForeignEvent("foreign_login_view", { source: redirectPath });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isForeigner]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -419,7 +428,14 @@ function LoginContent() {
         {/* 세션 만료 안내 */}
         {redirectPath !== "/" && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
-            <p className="text-[13px] text-amber-400 font-bold">로그인 후 이용할 수 있습니다.</p>
+            <p className="text-[13px] text-amber-400 font-bold">
+              {tt(
+                "로그인 후 이용할 수 있습니다.",
+                "Sign in to continue.",
+                "ログインしてご利用ください。",
+                "登录后即可使用。",
+              )}
+            </p>
           </div>
         )}
 

@@ -177,7 +177,7 @@ export default async function EnClubsPage() {
           <a href="/en/faq">Seoul Club Booking FAQ</a>.
         </p>
       </div>
-      <ClubsClient clubs={clubList} />
+      <ClubsClient clubs={clubList} lang="en" />
     </>
   );
 }

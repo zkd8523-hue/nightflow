@@ -8,6 +8,7 @@ import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
+import { trackForeignEvent } from "@/lib/analytics/events";
 
 type Club = {
   id: string;
@@ -27,16 +28,26 @@ type Club = {
   instagram: string | null;
 };
 
-export function ClubsClient({ clubs }: { clubs: Club[] }) {
-  const [lang, setLang] = useState<Lang>("en");
+// 로그인 후 깃발 폼으로 복귀하는 링크. 미로그인이면 폼 서버 컴포넌트가 자동으로 /login?redirect= 로 튕김.
+function buildFlagHref(lang: Lang, area?: string) {
+  const params = new URLSearchParams();
+  params.set("lang", lang);
+  if (area) params.set("area", area);
+  return `/flags/new?${params.toString()}`;
+}
+
+export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang }) {
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
-  useEffect(() => {
-    const l = new URLSearchParams(window.location.search).get("lang");
-    setLang(l === "ja" ? "ja" : l === "zh" ? "zh" : "en");
-  }, []);
   const t = makeT(lang);
-  const tr = (en: string) => t("", en);
-  const langQ = `?lang=${lang}`;
+
+  // 랜딩 노출 이벤트 — 이탈퍼널 1단계 (외국인 트랙 진입 총량)
+  useEffect(() => {
+    if (lang === "ko") return;
+    // 현재 경로에서 area 세그먼트 추출 (/{lang}/clubs/{area} → {area})
+    const seg = typeof window !== "undefined" ? window.location.pathname.split("/") : [];
+    const areaSlug = seg[3] ?? null;
+    trackForeignEvent("foreign_clubs_view", { area: areaSlug, source: "seo" });
+  }, [lang]);
 
   // 리뷰 많은 순 정렬 (필터 없음 — 한국 가이드처럼 지역 섹션으로 보여줌)
   const sorted = useMemo(
@@ -49,24 +60,59 @@ export function ClubsClient({ clubs }: { clubs: Club[] }) {
     .filter((g) => g.items.length > 0);
   const shownCount = groups.reduce((n, g) => n + g.items.length, 0);
 
+  const homeHref = lang === "ko" ? "/" : `/${lang}`;
+  const bottomCtaHref = buildFlagHref(lang);
+  const guideTitle = t("서울 클럽 가이드", "Seoul Club Guide", "ソウル クラブガイド", "首尔夜店指南");
+  const clubsSuffix = t("곳", "clubs", "軒", "家");
+  const noClubs = t("등록된 클럽이 없습니다.", "No clubs found.", "登録されたクラブがありません。", "暂无登记的夜店。");
+  const noImage = t("이미지 없음", "No image", "画像なし", "无图片");
+  const notSureCopy = t("어디로 갈지 모르겠나요?", "Not sure where to go?", "どこに行くか迷っていますか？", "不知道去哪家?");
+  const ctaLabel = t(
+    "🚩 깃발 꽂기 — 클럽이 오퍼 보내요",
+    "🚩 Plant your flag — clubs send you VIP offers",
+    "🚩 旗を立てる — クラブがVIPオファーを送ります",
+    "🚩 插旗 — 夜店主动发送 VIP 报价",
+  );
+  const ctaSubLine1 = t(
+    "날짜·인원·예산만 알려주세요.",
+    "Tell us your date, budget, and group size.",
+    "日付・人数・予算を教えてください。",
+    "告诉我们日期、预算和人数。",
+  );
+  const ctaSubLine2 = t(
+    "서울 주요 클럽들이 시크릿오퍼를 보내요. 당신이 골라요.",
+    "Top Seoul clubs send you private VIP offers. You pick.",
+    "ソウルの人気クラブがプライベートVIPオファーを送ります。あなたが選ぶ。",
+    "首尔顶级夜店发来专属 VIP 报价，任你挑选。",
+  );
+  const googleReviewsLabel = t("구글 리뷰", "Google reviews", "Googleレビュー", "谷歌评价");
+  const searchReviewsLabel = t("구글에서 리뷰 검색", "Search reviews on Google", "Googleでレビュー検索", "在谷歌搜索评价");
+  const bookAtClubLabel = (name: string) =>
+    t(
+      `🚩 ${name} 예약하기`,
+      `🚩 Book ${name} on NightFlow`,
+      `🚩 ${name}をNightFlowで予約`,
+      `🚩 在 NightFlow 预订 ${name}`,
+    );
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
       <div className="max-w-lg mx-auto px-4 py-12 space-y-6">
 
         {/* Header */}
         <header className="space-y-3">
-          <Link href={`/en${langQ}`} className="inline-block text-[13px] text-neutral-500 hover:text-white transition-colors">
+          <Link href={homeHref} className="inline-block text-[13px] text-neutral-500 hover:text-white transition-colors">
             ← NightFlow
           </Link>
           <div className="space-y-1">
-            <h1 className="text-[28px] font-black tracking-tight">{tr("Seoul Club Guide")}</h1>
-            <p className="text-[13px] text-neutral-500">{shownCount} {tr("clubs")}</p>
+            <h1 className="text-[28px] font-black tracking-tight">{guideTitle}</h1>
+            <p className="text-[13px] text-neutral-500">{shownCount} {clubsSuffix}</p>
           </div>
         </header>
 
         {/* 지역별 가로 스크롤 (한국 가이드처럼 강남/홍대 두 줄) */}
         {shownCount === 0 && (
-          <p className="text-center text-neutral-500 py-12">{tr("No clubs found.")}</p>
+          <p className="text-center text-neutral-500 py-12">{noClubs}</p>
         )}
         {groups.map((g) => (
           <section key={g.ko} className="space-y-3">
@@ -78,14 +124,23 @@ export function ClubsClient({ clubs }: { clubs: Club[] }) {
               {g.items.map((club) => (
                 <button
                   key={club.id}
-                  onClick={() => setSelectedClub(club)}
+                  onClick={() => {
+                    setSelectedClub(club);
+                    if (lang !== "ko") {
+                      trackForeignEvent("foreign_club_card_click", {
+                        area: club.area,
+                        club_id: club.id,
+                        club_name: club.name,
+                      });
+                    }
+                  }}
                   className="shrink-0 w-[140px] snap-start text-left active:opacity-70 transition-opacity"
                 >
                   <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden bg-neutral-800 border border-neutral-800">
                     {club.thumbnail_url ? (
                       <Image src={club.thumbnail_url} alt={club.name} fill className="object-cover" sizes="140px" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[11px] font-bold">{tr("No image")}</div>
+                      <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[11px] font-bold">{noImage}</div>
                     )}
                   </div>
                   <p className="text-[13px] font-bold text-white mt-2 truncate">{club.name}</p>
@@ -98,18 +153,23 @@ export function ClubsClient({ clubs }: { clubs: Club[] }) {
           </section>
         ))}
 
-        {/* Bottom CTA */}
+        {/* Bottom CTA — 로그인 벽 대신 폼 먼저. 미로그인이면 /flags/new 서버가 /login?redirect= 로 튕김 */}
         <div className="space-y-4 pt-4 pb-8">
-          <p className="text-center text-[14px] text-neutral-400">{tr("Not sure where to go?")}</p>
+          <p className="text-center text-[14px] text-neutral-400">{notSureCopy}</p>
           <Link
-            href={`/login${langQ}`}
+            href={bottomCtaHref}
+            onClick={() => {
+              if (lang !== "ko") {
+                trackForeignEvent("foreign_plant_flag_click", { source: "bottom_cta" });
+              }
+            }}
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
           >
-            {tr("✨ Get VIP offers — clubs compete to host you")}
+            {ctaLabel}
           </Link>
           <p className="text-center text-[12px] text-neutral-600 leading-relaxed">
-            {tr("Tell us your date, budget, and group size.")}<br />
-            {tr("Top Seoul clubs send you private VIP offers. You pick.")}
+            {ctaSubLine1}<br />
+            {ctaSubLine2}
           </p>
           <div className="flex justify-center pt-2">
             <LangSwitcher />
@@ -117,13 +177,14 @@ export function ClubsClient({ clubs }: { clubs: Club[] }) {
         </div>
       </div>
 
-      {/* 클럽 상세 바텀시트 (카드 클릭 시) — 가격표·영업시간·평점 + 구글 리뷰 */}
+      {/* 클럽 상세 바텀시트 (카드 클릭 시) — 가격표·영업시간·평점 + 구글 리뷰 + 예약 CTA */}
       <Sheet open={!!selectedClub} onOpenChange={(o) => !o && setSelectedClub(null)}>
         <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
           {selectedClub && (() => {
             const club = selectedClub;
             const hasDrinkMenu = club.drink_menu_url || (club.drink_menu_urls && club.drink_menu_urls.length > 0);
             const googleUrl = getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, lang);
+            const clubFlagHref = buildFlagHref(lang, club.area);
             return (
               <div className="pb-8">
                 {club.thumbnail_url && (
@@ -144,7 +205,7 @@ export function ClubsClient({ clubs }: { clubs: Club[] }) {
                       className="inline-flex items-center gap-1.5 text-[13px] text-amber-400 hover:text-amber-300 transition-colors">
                       ⭐ {club.google_rating.toFixed(1)}
                       {club.google_review_count != null && (
-                        <span className="text-neutral-500">· {club.google_review_count.toLocaleString()} {tr("Google reviews")} →</span>
+                        <span className="text-neutral-500">· {club.google_review_count.toLocaleString()} {googleReviewsLabel} →</span>
                       )}
                     </a>
                   )}
@@ -173,13 +234,31 @@ export function ClubsClient({ clubs }: { clubs: Club[] }) {
                     />
                   )}
 
+                  {/* 예약 CTA — 카드 클릭 유저를 구글로 내보내지 않고 깃발 폼으로 유도 */}
+                  <Link
+                    href={clubFlagHref}
+                    onClick={() => {
+                      if (lang !== "ko") {
+                        trackForeignEvent("foreign_book_at_club_click", {
+                          area: club.area,
+                          club_id: club.id,
+                          club_name: club.name,
+                        });
+                      }
+                      setSelectedClub(null);
+                    }}
+                    className="flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 transition-colors"
+                  >
+                    {bookAtClubLabel(club.name)}
+                  </Link>
+
                   <a
                     href={googleUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 w-full mt-1 py-3 rounded-xl bg-neutral-800 border border-neutral-700 text-[14px] font-bold text-neutral-200 hover:bg-neutral-700/60 transition-colors"
+                    className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-neutral-800 border border-neutral-700 text-[14px] font-bold text-neutral-200 hover:bg-neutral-700/60 transition-colors"
                   >
-                    🔍 {tr("Search reviews on Google")}
+                    🔍 {searchReviewsLabel}
                   </a>
                 </div>
               </div>

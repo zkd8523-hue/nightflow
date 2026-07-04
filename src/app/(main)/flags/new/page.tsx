@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; area?: string }>;
 }): Promise<Metadata> {
   const { lang: raw } = await searchParams;
   const lang = getLang(raw);
@@ -50,9 +50,9 @@ export async function generateMetadata({
 export default async function PuzzleNewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string }>;
+  searchParams: Promise<{ lang?: string; area?: string }>;
 }) {
-  const { lang: raw } = await searchParams;
+  const { lang: raw, area } = await searchParams;
   const lang = getLang(raw);
   const isForeigner = lang !== "ko";
   const t = makeT(lang);
@@ -62,13 +62,19 @@ export default async function PuzzleNewPage({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 비로그인 → 로그인 후 깃발 등록으로 복귀(redirect 보존). 외국인은 lang(en/ja/zh) 유지.
+  // 비로그인 → 로그인 후 깃발 등록으로 복귀(redirect 보존). 외국인은 lang(en/ja/zh) + area(강남 등) 유지.
   if (!user) {
-    redirect(
-      isForeigner
-        ? `/login?lang=${lang}&redirect=${encodeURIComponent(`/flags/new?lang=${lang}`)}`
-        : "/login"
-    );
+    if (isForeigner) {
+      const returnParams = new URLSearchParams();
+      returnParams.set("lang", lang);
+      if (area) returnParams.set("area", area);
+      const returnPath = `/flags/new?${returnParams.toString()}`;
+      redirect(`/login?lang=${lang}&redirect=${encodeURIComponent(returnPath)}`);
+    }
+    const koParams = new URLSearchParams();
+    if (area) koParams.set("area", area);
+    const koReturn = koParams.toString() ? `/flags/new?${koParams.toString()}` : "/flags/new";
+    redirect(`/login?redirect=${encodeURIComponent(koReturn)}`);
   }
 
   const { data: profile } = await supabase

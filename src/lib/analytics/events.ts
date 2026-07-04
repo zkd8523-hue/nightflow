@@ -5,22 +5,42 @@ import { trackEvent as trackMixpanel, identifyUser as identifyMixpanel, resetAna
 /**
  * GA4 및 Mixpanel 통합 이벤트 추적을 위한 유틸리티 함수
  */
+/**
+ * 현재 유저의 언어 트랙(ko/en/ja/zh) 감지.
+ * 우선순위: URL 경로 세그먼트(/en, /ja, /zh) > ?lang= 쿼리 > "ko"
+ * 외국인 이탈퍼널 분석 시 이 lang 속성 하나로 트랙 전체 필터 가능.
+ */
+const detectLang = (): 'ko' | 'en' | 'ja' | 'zh' => {
+  if (typeof window === 'undefined') return 'ko';
+  const path = window.location.pathname;
+  if (path.startsWith('/en/') || path === '/en') return 'en';
+  if (path.startsWith('/ja/') || path === '/ja') return 'ja';
+  if (path.startsWith('/zh/') || path === '/zh') return 'zh';
+  const q = new URLSearchParams(window.location.search).get('lang');
+  if (q === 'en' || q === 'ja' || q === 'zh') return q;
+  return 'ko';
+};
+
 export const trackEvent = (eventName: string, params: Record<string, unknown> = {}) => {
   try {
+    // 모든 이벤트에 lang 자동 부착 (외국인 이탈퍼널 필터용).
+    // 호출부에서 명시적으로 lang을 넘겼으면 그걸 우선.
+    const enriched = { lang: detectLang(), ...params };
+
     // 1. GA4 추적
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', eventName, {
-        ...params,
+        ...enriched,
         timestamp: new Date().toISOString(),
       });
     }
 
     // 2. Mixpanel 추적
-    trackMixpanel(eventName, params);
+    trackMixpanel(eventName, enriched);
 
     // 개발 모드 로그 확인
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[Analytics Event] ${eventName}:`, params);
+      console.log(`[Analytics Event] ${eventName}:`, enriched);
     }
   } catch (e) {
     // 분석 툴 에러가 메인 로직을 중단시키지 않도록 방어
@@ -130,6 +150,44 @@ export const trackShareEvent = (
 ) => {
   trackEvent(eventName, {
     listing_type: 'share',
+    ...params,
+  });
+};
+
+/**
+ * 외국인 트랙(/en, /ja, /zh) 이탈퍼널 이벤트.
+ *
+ * 퍼널 단계 (SEO 랜딩 → 깃발 제출):
+ *   1. foreign_clubs_view          — /{lang}/clubs 또는 /{lang}/clubs/{area} 랜딩
+ *   2. foreign_club_card_click     — 지역 카드(썸네일) 탭 → 시트 오픈
+ *   3. foreign_book_at_club_click  — 시트 안 "🚩 예약하기" CTA 탭 → /flags/new 이동
+ *   3'. foreign_plant_flag_click   — 하단 CTA "🚩 Plant your flag" 탭 → /flags/new 이동
+ *   4. foreign_login_view          — 로그인 페이지 노출 (redirect=/flags/new 로 왔을 때)
+ *   5. foreign_login_success       — 로그인 성공 (auth/callback 이후)
+ *   6. puzzle_form_view (기존)     — /flags/new 폼 노출 (lang 자동 첨부)
+ *   7. puzzle_created (기존)       — 깃발 등록 완료 (lang 자동 첨부)
+ *
+ * 이탈률 = 1 - (다음 단계 이벤트 수 / 현재 단계 이벤트 수), lang별 group by.
+ * 상세 분석 SOP: .claude/plans/foreign-funnel-analysis-sop.md
+ */
+export const trackForeignEvent = (
+  eventName:
+    | 'foreign_clubs_view'
+    | 'foreign_club_card_click'
+    | 'foreign_book_at_club_click'
+    | 'foreign_plant_flag_click'
+    | 'foreign_login_view'
+    | 'foreign_login_success',
+  params: {
+    area?: string | null;
+    club_id?: string;
+    club_name?: string;
+    source?: string;
+    [key: string]: unknown;
+  } = {},
+) => {
+  trackEvent(eventName, {
+    funnel: 'foreign',
     ...params,
   });
 };

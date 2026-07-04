@@ -127,7 +127,7 @@ export default async function ZhClubsPage() {
           <a href="/zh/faq">首尔夜店预订 FAQ</a>。
         </p>
       </div>
-      <ClubsClient clubs={clubList} />
+      <ClubsClient clubs={clubList} lang="zh" />
     </>
   );
 }

@@ -105,7 +105,7 @@ export default async function JaClubsPage() {
           価格、ドレスコード、ブローカー問題、そして日本人旅行者がVIPルームを予約する方法については、<a href="/ja/faq">ソウルクラブ予約FAQ</a>をご覧ください。
         </p>
       </div>
-      <ClubsClient clubs={clubList} />
+      <ClubsClient clubs={clubList} lang="ja" />
     </>
   );
 }

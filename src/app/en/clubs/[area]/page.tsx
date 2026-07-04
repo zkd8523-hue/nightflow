@@ -378,7 +378,7 @@ export default async function EnClubsAreaPage({
           </li>
         </ul>
       </div>
-      <ClubsClient clubs={clubList} />
+      <ClubsClient clubs={clubList} lang="en" />
     </>
   );
 }
