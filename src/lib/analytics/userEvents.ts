@@ -16,8 +16,16 @@ const SESSION_KEY = "nf_session_id";
 const SESSION_STARTED_KEY = "nf_session_started_at";
 const SESSION_UTM_KEY = "nf_session_utm";
 const LAST_EVENT_AT_KEY = "nf_last_event_at";
+const SESSION_EVENT_COUNT_KEY = "nf_session_event_count";
 
-const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30분 무활동 = 새 세션
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000;     // 30분 무활동 = 새 세션
+const MAX_EVENTS_PER_SESSION = 300;             // 세션당 이벤트 상한 (봇/무한루프 방어)
+const MAX_PROPERTIES_BYTES = 4096;              // properties JSONB 크기 상한 (서버 트리거와 일치)
+
+// 초당 dedupe (같은 이벤트 이름 1초 내 중복 발동 방어).
+// 콤포넌트 리렌더로 useEffect 재실행되는 경우 등.
+const recentEventCache = new Map<string, number>();
+const DEDUPE_WINDOW_MS = 1000;
 
 // UUID v4 생성 (crypto.randomUUID는 iOS 15 Safari 미지원 케이스 대응)
 function uuidv4(): string {
@@ -124,6 +132,7 @@ function getOrRotateSession(anonId: string): SessionInfo {
     localStorage.setItem(SESSION_STARTED_KEY, String(now));
     localStorage.setItem(LAST_EVENT_AT_KEY, String(now));
     localStorage.setItem(SESSION_UTM_KEY, JSON.stringify(utm));
+    localStorage.setItem(SESSION_EVENT_COUNT_KEY, "0");  // 세션당 이벤트 상한 리셋
 
     return {
       session_id: newSessionId,
@@ -187,11 +196,45 @@ export async function trackUserEvent(
   if (typeof window === "undefined") return; // SSR 스킵
 
   try {
+    // 방어 1: event_name 길이 (서버 트리거와 대칭)
+    if (!eventName || eventName.length > 64) return;
+
+    // 방어 2: 초당 dedupe — 같은 이벤트 1초 내 중복 방지
+    const now = Date.now();
+    const last = recentEventCache.get(eventName) ?? 0;
+    if (now - last < DEDUPE_WINDOW_MS) return;
+    recentEventCache.set(eventName, now);
+    // 캐시 크기 폭주 방지 (30개 초과 시 오래된 것부터 제거)
+    if (recentEventCache.size > 30) {
+      const oldest = [...recentEventCache.entries()].sort((a, b) => a[1] - b[1])[0];
+      if (oldest) recentEventCache.delete(oldest[0]);
+    }
+
+    // 방어 3: 세션당 이벤트 상한
+    try {
+      const count = Number(localStorage.getItem(SESSION_EVENT_COUNT_KEY) || 0);
+      if (count >= MAX_EVENTS_PER_SESSION) return;
+      localStorage.setItem(SESSION_EVENT_COUNT_KEY, String(count + 1));
+    } catch {
+      // localStorage 실패해도 트래킹은 계속. 무한 루프 위험은 dedupe로 커버.
+    }
+
+    // 방어 4: properties 크기 (JSON.stringify 후 4KB 초과 시 스킵)
+    const propsJson = JSON.stringify(properties);
+    if (propsJson.length > MAX_PROPERTIES_BYTES) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(`[trackUserEvent] ${eventName} properties too large (${propsJson.length}B), skipped`);
+      }
+      return;
+    }
+
     const anonId = getOrCreateAnonId();
     const session = getOrRotateSession(anonId);
     const userId = await getCurrentUserId();
 
     const supabase = createClient();
+    // 방어 5: user_id는 auth 세션에서만 가져옴. 클라 임의 값 못 넣도록 인자로 안 받음.
+    // RLS가 user_id = auth.uid() 검증하므로 위조 시 INSERT 거부됨.
     const { error } = await supabase.from("user_events").insert({
       anon_id: anonId,
       user_id: userId,
