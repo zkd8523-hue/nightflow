@@ -1,6 +1,7 @@
 'use client';
 
 import { trackEvent as trackMixpanel, identifyUser as identifyMixpanel, resetAnalytics } from "@/lib/analytics";
+import { trackUserEvent } from "@/lib/analytics/userEvents";
 
 /**
  * GA4 및 Mixpanel 통합 이벤트 추적을 위한 유틸리티 함수
@@ -37,6 +38,10 @@ export const trackEvent = (eventName: string, params: Record<string, unknown> = 
 
     // 2. Mixpanel 추적
     trackMixpanel(eventName, enriched);
+
+    // 3. user_events 테이블 raw 저장 (Claude가 SQL로 유저 여정 조회하는 용도)
+    //    fire-and-forget. Supabase 통신 실패해도 GA4·Mixpanel엔 이미 감.
+    void trackUserEvent(eventName, enriched);
 
     // 개발 모드 로그 확인
     if (process.env.NODE_ENV === 'development') {

@@ -279,13 +279,15 @@ export default function PrivacyPage() {
                     <section className="space-y-3">
                         <h2 className="text-lg font-black text-white">9. 쿠키(Cookie) 및 자동 수집 장치</h2>
                         <div className="space-y-2">
-                            <p className="text-white font-bold">① 쿠키란?</p>
-                            <p className="pl-4">쿠키는 웹사이트가 귀하의 브라우저로 전송하는 소량의 텍스트 파일로, 귀하의 컴퓨터 하드디스크에 저장됩니다.</p>
+                            <p className="text-white font-bold">① 쿠키 및 브라우저 저장소</p>
+                            <p className="pl-4">쿠키는 웹사이트가 귀하의 브라우저로 전송하는 소량의 텍스트 파일이며, localStorage 등 브라우저 저장소도 유사한 목적으로 사용됩니다.</p>
+                            <p className="pl-4 mt-2">당사는 서비스 개선을 위해 방문자에게 개인을 식별할 수 없는 <span className="text-white font-bold">익명 식별자</span>를 부여하여, 방문 페이지·클릭·유입 경로 등 이용 패턴을 통계 목적으로 수집합니다.</p>
 
-                            <p className="text-white font-bold mt-4">② 쿠키 사용 목적</p>
+                            <p className="text-white font-bold mt-4">② 쿠키 및 저장소 사용 목적</p>
                             <p className="pl-4">1. 로그인 상태 유지 (세션 쿠키)</p>
                             <p className="pl-4">2. 서비스 이용 패턴 분석 및 맞춤형 서비스 제공</p>
                             <p className="pl-4">3. 방문 빈도 파악 및 마케팅 활용</p>
+                            <p className="pl-4">4. 이탈 지점·전환 분석을 위한 익명 이벤트 로그 수집</p>
 
                             <p className="text-white font-bold mt-4">③ 쿠키 거부 방법</p>
                             <p className="pl-4">브라우저 설정에서 쿠키를 차단할 수 있습니다:</p>

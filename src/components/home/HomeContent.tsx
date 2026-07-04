@@ -282,6 +282,12 @@ export function HomeContent({
   // 첫 방문 시 캐러셀 위 인라인 가이드 (Tip 박스 자리). 닫으면 영구 숨김.
   const [showTopGuide, setShowTopGuide] = useState(false);
 
+  // 홈 랜딩 이벤트 — 세션→깃발 전환율 퍼널 1단계.
+  // 마운트 1회만 발동. StrictMode dev double-invoke는 GA4/Mixpanel 중복이지만 raw 로그 분석엔 무해.
+  useEffect(() => {
+    trackEvent("home_view");
+  }, []);
+
   // Tip 박스 콘텐츠 로테이션 (기본 메시지 ↔ 매치 오퍼 보기)
   const [tipRotation, setTipRotation] = useState(0);
   const [tipResetKey, setTipResetKey] = useState(0);
