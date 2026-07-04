@@ -44,7 +44,9 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     };
   }
 
-  const area = puzzle.area || "서울";
+  // "서울 어디든" 같은 광역 표기는 공유 미리보기에서 "서울"로 축약
+  const rawArea = puzzle.area || "서울";
+  const area = /어디든/.test(rawArea) ? "서울" : rawArea;
   const eventDate = puzzle.event_date
     ? new Date(puzzle.event_date).toLocaleDateString("ko-KR", {
         month: "numeric",
@@ -57,13 +59,24 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     (puzzle.budget_per_person
       ? puzzle.budget_per_person * (puzzle.target_count ?? 1)
       : null);
-  const budgetText = totalBudget
-    ? `총 ${Math.round(totalBudget / 10000)}만원`
-    : "";
-  const countText = puzzle.target_count ? `${puzzle.target_count}명` : "";
+  const perPerson =
+    puzzle.budget_per_person ??
+    (totalBudget && puzzle.target_count ? Math.round(totalBudget / puzzle.target_count) : null);
 
-  const title = `나플 ${puzzle.is_recruiting_party ? "조각" : "깃발"} · ${area}${eventDate ? ` · ${eventDate}` : ""}`;
-  const description = [budgetText, countText].filter(Boolean).join(" · ");
+  let title: string;
+  let description: string;
+  if (puzzle.is_recruiting_party) {
+    // 조각: 인앱 카톡 공유 카드와 동일한 톤
+    title = `${eventDate ? `${eventDate} ` : ""}${area} 테이블 같이 잡을래?`;
+    description = perPerson
+      ? `인당 ${perPerson.toLocaleString()}원 · 파티원 찾는 중 🔥`
+      : "파티원 찾는 중 🔥";
+  } else {
+    const budgetText = totalBudget ? `총 ${Math.round(totalBudget / 10000)}만원` : "";
+    const countText = puzzle.target_count ? `${puzzle.target_count}명` : "";
+    title = `나플 깃발 · ${area}${eventDate ? ` · ${eventDate}` : ""}`;
+    description = [budgetText, countText].filter(Boolean).join(" · ");
+  }
 
   // 조각은 정적 조각 카드 이미지(1200x630 사전 합성), 깃발은 기존 정적 이미지
   const ogImage = puzzle.is_recruiting_party

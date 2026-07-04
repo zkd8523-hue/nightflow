@@ -37,7 +37,7 @@ export function ShareCreatedSheet({
   mode = "created",
 }: Props) {
   const router = useRouter();
-  const { shareToKakao, isAvailable } = useKakaoShare();
+  const { shareToKakao } = useKakaoShare();
   const [copying, setCopying] = useState(false);
   // 캐러셀 등 transform 조상 안에서도 화면 전체를 덮도록 body로 포탈
   const [mounted, setMounted] = useState(false);
@@ -54,33 +54,35 @@ export function ShareCreatedSheet({
   const imageUrl = `${origin}/og-jogak-card.jpg`;
 
   async function handleKakao() {
-    const ok = isAvailable
-      ? await shareToKakao({
-          clubName: areaLabel,
-          tableInfo: "",
-          startPrice: perPerson,
-          auctionUrl: shareUrl,
-          thumbnailUrl: imageUrl,
-          listingType: "share",
-          isFromMD: false,
-          eventDate,
-          area: areaLabel,
-        })
-      : false;
+    // isAvailable(React state)가 늦게 갱신되는 레이스 방지 — shareToKakao가
+    // window.Kakao.isInitialized()를 직접 확인하므로 상태 게이트 없이 바로 시도.
+    const ok = await shareToKakao({
+      clubName: areaLabel,
+      tableInfo: "",
+      startPrice: perPerson,
+      auctionUrl: shareUrl,
+      thumbnailUrl: imageUrl,
+      listingType: "share",
+      isFromMD: false,
+      eventDate,
+      area: areaLabel,
+    });
     if (!ok) {
-      // 카카오 SDK 불가 → OS 공유 / 링크 복사 폴백
-      const title = `${areaLabel} 조각 같이 갈래?`;
-      const text = `인당 ${perPerson.toLocaleString()}원 · 같이 갈 사람 구해요`;
+      // 카카오 SDK 미로드(광고차단/네트워크) 등 → OS 공유 시도, 실패하면 반드시 링크 복사로 피드백
+      const title = `${areaLabel} 테이블 같이 잡을래?`;
+      const text = `인당 ${perPerson.toLocaleString()}원 · 파티원 찾는 중 🔥`;
       if (typeof navigator !== "undefined" && navigator.share) {
         try {
           await navigator.share({ title, text, url: shareUrl });
-        } catch {
-          /* 취소 */
+          return; // 공유 성공/취소 모두 종료
+        } catch (e) {
+          // 사용자가 취소한 경우(AbortError)는 조용히 종료, 그 외(미지원 등)는 복사 폴백
+          if (e instanceof Error && e.name === "AbortError") return;
         }
-      } else {
-        await copyLink();
-        toast.success("링크가 복사됐어요. 오픈챗에 붙여넣어주세요!");
       }
+      // 공유 API 없음/실패 → 링크 복사로 확실히 피드백 (무반응 방지)
+      await copyLink();
+      toast.success("링크가 복사됐어요. 붙여넣어 공유하세요!");
     }
   }
 
