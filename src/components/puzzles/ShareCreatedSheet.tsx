@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Link2, X } from "lucide-react";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
+import { shareViaNative } from "@/lib/native/nativeShare";
 
 const AREA_LABEL: Record<string, string> = {
   gangnam: "강남",
@@ -54,6 +55,13 @@ export function ShareCreatedSheet({
   const imageUrl = `${origin}/og-jogak-card.jpg`;
 
   async function handleKakao() {
+    const title = `${areaLabel} 테이블 같이 잡을래?`;
+    const text = `인당 ${perPerson.toLocaleString()}원 · 파티원 찾는 중 🔥`;
+
+    // 앱(Capacitor 네이티브): Kakao JS SDK sendDefault가 WebView에서 먹통 → OS 공유 시트 사용
+    const native = await shareViaNative({ title, text, url: shareUrl });
+    if (native.handled) return;
+
     // isAvailable(React state)가 늦게 갱신되는 레이스 방지 — shareToKakao가
     // window.Kakao.isInitialized()를 직접 확인하므로 상태 게이트 없이 바로 시도.
     const ok = await shareToKakao({
@@ -69,8 +77,6 @@ export function ShareCreatedSheet({
     });
     if (!ok) {
       // 카카오 SDK 미로드(광고차단/네트워크) 등 → OS 공유 시도, 실패하면 반드시 링크 복사로 피드백
-      const title = `${areaLabel} 테이블 같이 잡을래?`;
-      const text = `인당 ${perPerson.toLocaleString()}원 · 파티원 찾는 중 🔥`;
       if (typeof navigator !== "undefined" && navigator.share) {
         try {
           await navigator.share({ title, text, url: shareUrl });

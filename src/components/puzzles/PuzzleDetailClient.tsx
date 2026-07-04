@@ -41,6 +41,7 @@ import { normalizeProfileImage } from "@/lib/utils/image";
 import { LeaderInfoSheet } from "./LeaderInfoSheet";
 import { ContentMoreMenu } from "@/components/moderation/ContentMoreMenu";
 import { RecentMatchShowcaseSheet, useRecentMatchedPuzzle } from "./RecentMatchShowcaseSheet";
+import { shareViaNative } from "@/lib/native/nativeShare";
 
 interface PuzzleLeaderInfo {
   id: string;
@@ -208,6 +209,9 @@ export function PuzzleDetailClient({
     const text = isForeigner
       ? `${areaLabel(puzzle.area, lang)} · ₩${totalBudget.toLocaleString()} · ${puzzle.target_count} ppl`
       : `${puzzle.area} · 총 ${Math.round(totalBudget / 10000)}만원 · ${puzzle.target_count}명`;
+    // 앱(Capacitor): OS 공유 시트 우선 (WebView에서 navigator.share가 불안정)
+    const native = await shareViaNative({ title, text, url });
+    if (native.handled) return;
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url });
