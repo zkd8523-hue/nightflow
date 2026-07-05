@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, Ticket, Sparkles, type LucideIcon, Milk, ShoppingBag, Dice5 } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Ticket, Sparkles, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
 import { useMyStamps } from "@/hooks/useMyStamps";
 
@@ -11,45 +12,66 @@ import { useMyStamps } from "@/hooks/useMyStamps";
  * 실제 카탈로그/교환 RPC는 후속 마이그레이션(414+)에서 도입.
  */
 
+interface RaffleTier {
+  rank: string; // "1등", "2등"
+  label: string;
+  image: string;
+}
+
 interface RewardItem {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   stamp_cost: number;
-  icon: LucideIcon;
+  image: string; // /public/rewards/*.png|jpg
   stock?: string; // "재고 3" 등 표시용
+  raffleTiers?: RaffleTier[]; // 추첨형이면 등수별 구분 UI
 }
 
 // 1차 오픈 카탈로그 (2/5/10 스탬프 티어)
 const REWARDS: RewardItem[] = [
   {
     id: "chocoemong",
-    name: "초코에몽",
-    description: "편의점 초코에몽",
+    name: "GS25 초코에몽",
     stamp_cost: 2,
-    icon: Milk,
+    image: "/rewards/chocoemong.jpg",
     stock: "주 100개 선착순",
+  },
+  {
+    id: "voucher-10k",
+    name: "GS25 1만원 상품권",
+    stamp_cost: 10,
+    image: "/rewards/gs25.png",
+    stock: "주 20개",
   },
   {
     id: "raffle",
     name: "월간 추첨 응모",
-    description: "1등 숙박권 40만원 · 2등 스타벅스 5천원 × 50명",
     stamp_cost: 5,
-    icon: Dice5,
+    image: "/rewards/yeogi-hotel.png",
     stock: "월 1회 추첨",
-  },
-  {
-    id: "voucher-10k",
-    name: "1만원 상품권",
-    description: "편의점·카페 어디든 사용",
-    stamp_cost: 10,
-    icon: ShoppingBag,
-    stock: "주 20개",
+    raffleTiers: [
+      { rank: "1등", label: "여기어때 숙박권 40만원", image: "/rewards/yeogi-hotel.png" },
+      { rank: "2등", label: "스타벅스 아메리카노 × 50명", image: "/rewards/starbucks.jpg" },
+    ],
   },
 ];
 
 export default function MyStampsPage() {
+  const router = useRouter();
   const { status, loading } = useMyStamps();
+  // 이번 달 추첨 응모 횟수 — 교환 시스템(redemptions) 붙기 전까진 0.
+  // 추후 my_stamp_status 뷰 또는 redemptions 조회로 연동.
+  const raffleEntries = 0;
+
+  function handleBack() {
+    // 직전 페이지로 복귀 (와글에서 왔으면 와글로). 히스토리 없으면 /profile.
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/profile");
+    }
+  }
 
   function handleRedeem(r: RewardItem) {
     if (loading) return;
@@ -66,13 +88,14 @@ export default function MyStampsPage() {
     <div className="max-w-lg mx-auto bg-[#0B0A11] min-h-screen pb-24">
       {/* 헤더 */}
       <header className="sticky top-0 z-20 bg-[#0B0A11]/95 backdrop-blur-sm border-b border-neutral-800 flex items-center px-3 py-3">
-        <Link
-          href="/profile"
+        <button
+          type="button"
+          onClick={handleBack}
           className="w-9 h-9 flex items-center justify-center text-neutral-400 hover:text-white"
           aria-label="뒤로"
         >
           <ArrowLeft className="w-5 h-5" />
-        </Link>
+        </button>
         <h1 className="text-white text-[16px] font-black">내 스탬프</h1>
       </header>
 
@@ -123,49 +146,93 @@ export default function MyStampsPage() {
           <Sparkles className="w-4 h-4 text-red-400" />
           <h2 className="text-white text-[15px] font-black">보상 카탈로그</h2>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           {REWARDS.map((r) => {
-            const Icon = r.icon;
             const enough = !loading && status.current_count >= r.stamp_cost;
             return (
               <div
                 key={r.id}
-                className="rounded-2xl border border-neutral-800 bg-[#1C1C1E] p-4 transition-colors"
+                className="rounded-2xl border border-neutral-800 bg-[#1C1C1E] p-3.5 transition-colors"
               >
-                <div className="flex items-start gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-neutral-800 flex items-center justify-center shrink-0 text-neutral-300">
-                    <Icon className="w-5 h-5" />
-                  </div>
+                <div className={`flex gap-3 ${r.raffleTiers ? "items-start" : "items-center"}`}>
+                  {!r.raffleTiers && (
+                    <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-white shrink-0">
+                      <Image
+                        src={r.image}
+                        alt={r.name}
+                        fill
+                        sizes="48px"
+                        className="object-contain p-1"
+                      />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="text-white text-[14px] font-black leading-tight">
                       {r.name}
                     </div>
-                    <div className="text-neutral-400 text-[11px] mt-0.5">
-                      {r.description}
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-black">
-                        <Ticket className="w-3 h-3" />
-                        {r.stamp_cost}
-                      </span>
-                      {r.stock && (
-                        <span className="text-neutral-500 text-[10px]">{r.stock}</span>
-                      )}
+                    {r.description && (
+                      <div className="text-neutral-500 text-[11.5px] mt-1 leading-tight">
+                        {r.description}
+                      </div>
+                    )}
+                  </div>
+                  <div className="shrink-0 flex flex-col items-end gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleRedeem(r)}
+                      disabled={loading}
+                      className={`px-3.5 py-1.5 rounded-full text-[12px] font-black whitespace-nowrap transition-colors ${
+                        enough
+                          ? "bg-white text-black hover:bg-neutral-200"
+                          : "bg-neutral-800 text-neutral-500"
+                      }`}
+                    >
+                      {r.stamp_cost}장 {r.raffleTiers ? "추첨" : "교환"}
+                    </button>
+                    {r.stock && (
+                      <span className="text-neutral-500 text-[10px]">{r.stock}</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* 추첨형: 등수별 상품 구분 UI */}
+                {r.raffleTiers && (
+                  <div className="mt-2.5 pt-2.5 border-t border-neutral-800 space-y-2.5">
+                    {r.raffleTiers.map((tier) => (
+                      <div key={tier.rank} className="flex items-center gap-3">
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-white shrink-0">
+                          <Image
+                            src={tier.image}
+                            alt={tier.rank}
+                            fill
+                            sizes="40px"
+                            className="object-contain p-0.5"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="shrink-0 px-1.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-black">
+                            {tier.rank}
+                          </span>
+                          <span className="text-neutral-300 text-[12.5px] font-bold truncate">
+                            {tier.label}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* 확률 안내 + 내 응모 횟수 */}
+                    <div className="mt-0.5 rounded-xl bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-amber-300 text-[11px] font-bold">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        많이 응모할수록 당첨 확률 ↑
+                      </div>
+                      <div className="text-[11px] text-neutral-400">
+                        내 응모{" "}
+                        <span className="text-white font-black">{raffleEntries}</span>회
+                      </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRedeem(r)}
-                    disabled={loading}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-[12px] font-black transition-colors ${
-                      enough
-                        ? "bg-white text-black hover:bg-neutral-200"
-                        : "bg-neutral-800 text-neutral-500"
-                    }`}
-                  >
-                    교환
-                  </button>
-                </div>
+                )}
               </div>
             );
           })}

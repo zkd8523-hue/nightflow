@@ -41,6 +41,20 @@ export function CameraCaptureView({ open, onClose, onCapture }: Props) {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
+  // 카메라 뷰가 열린 동안 롱프레스 컨텍스트 메뉴/텍스트 선택/이미지 저장 팝업 억제.
+  // 안드로이드 WebView·Chrome은 pointer 이벤트보다 먼저 롱프레스 기본 동작을 발동하므로,
+  // document 레벨에서 contextmenu / selectstart 를 막아야 캡처 버튼 롱프레스가 정상 동작한다.
+  useEffect(() => {
+    if (!open) return;
+    const prevent = (e: Event) => e.preventDefault();
+    document.addEventListener("contextmenu", prevent);
+    document.addEventListener("selectstart", prevent);
+    return () => {
+      document.removeEventListener("contextmenu", prevent);
+      document.removeEventListener("selectstart", prevent);
+    };
+  }, [open]);
+
   // 카메라 시작/정리
   useEffect(() => {
     if (!open) return;
