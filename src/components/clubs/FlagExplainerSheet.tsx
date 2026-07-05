@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ArrowDown } from "lucide-react";
 import { areaLabel, makeT, type Lang } from "@/lib/i18n";
+import { trackEvent } from "@/lib/analytics/events";
 
 interface Props {
   open: boolean;
@@ -28,6 +30,18 @@ interface Props {
  */
 export function FlagExplainerSheet({ open, onOpenChange, area, clubName, ctaHref, lang = "ko" }: Props) {
   const t = makeT(lang);
+
+  // 시트 열림 이벤트 (전환퍼널: CTA 클릭 → 시트 오픈)
+  useEffect(() => {
+    if (open) {
+      trackEvent("flag_explainer_open", {
+        club_name: clubName,
+        area: area ?? null,
+        lang,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
   const trimmedArea = area?.trim() || "";
   const areaLocalized = trimmedArea ? areaLabel(trimmedArea, lang) : "";
   const areaText = areaLocalized || t("주변", "Nearby", "近く", "附近");
@@ -153,7 +167,14 @@ export function FlagExplainerSheet({ open, onOpenChange, area, clubName, ctaHref
           {/* CTA — 여기서 '깃발' 용어 첫 등장 */}
           <Link
             href={ctaHref}
-            onClick={() => onOpenChange(false)}
+            onClick={() => {
+              trackEvent("flag_explainer_cta_click", {
+                club_name: clubName,
+                area: area ?? null,
+                lang,
+              });
+              onOpenChange(false);
+            }}
             className="w-full h-14 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform"
           >
             {ctaLabel}

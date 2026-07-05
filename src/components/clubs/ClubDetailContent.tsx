@@ -37,6 +37,7 @@ import { ClubInfoReportSheet } from "./ClubInfoReportSheet";
 import { WordCloudSection } from "./WordCloudSection";
 import { ClubShotSection } from "./ClubShotSection";
 import { FlagExplainerSheet } from "./FlagExplainerSheet";
+import { trackEvent } from "@/lib/analytics/events";
 import { useIsClubPartner } from "@/hooks/useIsClubPartner";
 import { getTagsByGroup, type ClubTagGroup } from "@/lib/clubs/tags";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -101,6 +102,16 @@ export function ClubDetailContent({
     if (typeof window === "undefined") return;
     setIsEmbedded(new URLSearchParams(window.location.search).get("embedded") === "1");
   }, []);
+
+  // 클럽 상세 페이지 노출 이벤트 (전환퍼널 CTA 노출 총량 분모)
+  useEffect(() => {
+    trackEvent("club_detail_view", {
+      club_id: club.id,
+      club_name: club.name,
+      area: club.area,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [club.id]);
 
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [isFlagExplainerOpen, setIsFlagExplainerOpen] = useState(false);
@@ -680,7 +691,14 @@ export function ClubDetailContent({
           <div className="max-w-lg mx-auto pointer-events-auto">
             <button
               type="button"
-              onClick={() => setIsFlagExplainerOpen(true)}
+              onClick={() => {
+                trackEvent("club_detail_cta_click", {
+                  club_id: club.id,
+                  club_name: club.name,
+                  area: club.area,
+                });
+                setIsFlagExplainerOpen(true);
+              }}
               className="flex items-center justify-center gap-1.5 w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
             >
               {lang === "en"
