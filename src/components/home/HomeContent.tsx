@@ -17,6 +17,7 @@ import { MAIN_AREAS } from "@/lib/constants/areas";
 import { closeExpiredAuctions } from "@/lib/utils/closeExpiredAuction";
 import { isInstantEnabled } from "@/lib/features";
 import { trackEvent, trackShareEvent } from "@/lib/analytics/events";
+import { getBrowserKind, isIOS, isAndroid } from "@/lib/utils/browser";
 import { adjustMockAuctionDates } from "@/lib/utils/mockDates";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { toast } from "sonner";
@@ -286,6 +287,26 @@ export function HomeContent({
   // 마운트 1회만 발동. StrictMode dev double-invoke는 GA4/Mixpanel 중복이지만 raw 로그 분석엔 무해.
   useEffect(() => {
     trackEvent("home_view");
+  }, []);
+
+  // 브라우저 종류 감지 — 인스타/페북/라인 인앱 유입 전환율 분석용.
+  // 세션당 1회만 발동 (sessionStorage로 중복 방지). 유저 UX 영향 없음.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SENT_KEY = "nf_in_app_detected_sent";
+    try {
+      if (sessionStorage.getItem(SENT_KEY)) return;
+      sessionStorage.setItem(SENT_KEY, "1");
+    } catch {
+      // sessionStorage 실패해도 1회 정도는 발동해도 무해
+    }
+    const kind = getBrowserKind();
+    trackEvent("in_app_detected", {
+      browser_kind: kind,                        // instagram | facebook | line | kakao | other
+      is_in_app: kind !== "other",               // 카톡 포함 인앱 여부 (분석 편의)
+      is_blocking_in_app: ["instagram", "facebook", "line"].includes(kind),  // OAuth 실패 위험군
+      os: isIOS() ? "ios" : isAndroid() ? "android" : "other",
+    });
   }, []);
 
   // Tip 박스 콘텐츠 로테이션 (기본 메시지 ↔ 매치 오퍼 보기)

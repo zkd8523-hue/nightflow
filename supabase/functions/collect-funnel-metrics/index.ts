@@ -96,6 +96,7 @@ async function fetchFunnelRows(propertyId: string, accessToken: string, periodDa
             "page_view",
             "home_view",
             "home_cta_click",
+            "in_app_detected",
             "club_detail_view",
             "club_detail_cta_click",
             "flag_explainer_open",
