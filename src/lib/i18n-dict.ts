@@ -514,3 +514,71 @@ export const EN_TO_ZH: Record<string, string> = {
   "Info cross-checked from public sources, current 2026.": "信息经公开来源交叉核实，2026年现状。",
   "Prices and venue policies vary — treat figures as ranges.": "价格和场所政策会变动——数字仅供参考。",
 };
+
+// ============================================================================
+// 번체 중국어 사전 (대만·홍콩용)
+// ============================================================================
+// 대만·홍콩 유저 대상. 넷플릭스·Trip.com·KKday 스타일의 대만식 번체 기준.
+// 어휘 차이 예시:
+//   간체 "首尔" → 번체 "首爾"
+//   간체 "预订" → 번체 "預訂"
+//   간체 "报价" → 번체 "報價"
+//   간체 "推荐" → 번체 "推薦"
+//
+// 사전에 없는 문구는 makeT()에서 자동으로 간체(zh)로 폴백. 유저가 이해 가능.
+export const EN_TO_ZH_TW: Record<string, string> = {
+  // 홈·랜딩
+  "The easiest way to book Seoul clubs.": "預訂首爾夜店最簡單的方式。",
+  "The easiest way to book Seoul clubs": "預訂首爾夜店最簡單的方式",
+  "Book Seoul clubs the smart way.": "聰明預訂首爾夜店。",
+  "Get VIP offers": "獲取 VIP 報價",
+  "Get VIP offers — clubs compete to host you": "獲取 VIP 報價 — 夜店爭相接待您",
+  "✨ Get VIP offers — clubs compete to host you": "✨ 獲取 VIP 報價 — 夜店爭相接待您",
+  "🚩 Get VIP offers": "🚩 獲取 VIP 報價",
+  "🚩 Plant your flag — clubs send you VIP offers": "🚩 插旗 — 夜店主動發送 VIP 報價",
+  "Book with NightFlow": "透過 NightFlow 預訂",
+  "Book now": "立即預訂",
+  "Free to join": "免費註冊",
+  "19+ only · Bring your passport to the venue.": "僅限 19 歲以上 · 請攜帶護照到場。",
+
+  // 클럽 가이드
+  "Seoul Club Guide": "首爾夜店指南",
+  "clubs": "家",
+  "No clubs found.": "暫無登記的夜店。",
+  "No image": "無圖片",
+  "Not sure where to go?": "不知道去哪家?",
+  "Tell us your date, budget, and group size.": "告訴我們日期、預算和人數。",
+  "Top Seoul clubs send you private VIP offers. You pick.": "首爾頂級夜店發來專屬 VIP 報價,任您挑選。",
+  "Google reviews": "Google 評價",
+  "Search reviews on Google": "在 Google 搜尋評價",
+  "Popular": "熱門",
+  "Top rated": "評分",
+
+  // 깃발·폼
+  "Tell us your night": "告訴我們您的夜晚",
+  "Set your budget — Seoul's clubs send you private VIP offers": "設定預算 — 首爾的夜店為您發送專屬 VIP 報價",
+  "Get offers": "獲取報價",
+  "Back": "返回",
+
+  // 로그인
+  "VIP access to Seoul's best clubs": "首爾頂級夜店的 VIP 通道",
+  "Sign in to continue.": "登入後即可繼續。",
+  "Signing in...": "登入中...",
+  "Sign in with Apple": "使用 Apple 登入",
+  "Sign in with Google": "使用 Google 登入",
+  "Log in": "登入",
+  "By signing in, you agree to our": "登入即表示您同意我們的",
+  "Terms": "服務條款",
+
+  // 컨텍스트 카드
+  "Clubs come to you with offers": "夜店主動發送報價",
+  "No deposit, no fees": "無預付款、無手續費",
+  "Cancel anytime": "隨時可取消",
+
+  // 시트 (클럽 상세)
+  "Nearby": "附近",
+
+  // 공통
+  "Language": "語言",
+  "Clear search": "清除搜尋",
+};

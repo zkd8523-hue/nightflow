@@ -12,9 +12,13 @@ export const metadata: Metadata = {
   alternates: {
     languages: {
       "zh-CN": "https://nightflow.kr/zh",
-      "zh-TW": "https://nightflow.kr/zh",
+      "zh-Hans": "https://nightflow.kr/zh",
+      "zh-TW": "https://nightflow.kr/zh-tw",
+      "zh-HK": "https://nightflow.kr/zh-tw",
+      "zh-Hant": "https://nightflow.kr/zh-tw",
       "ko-KR": "https://nightflow.kr",
       "en-US": "https://nightflow.kr/en",
+      "ja-JP": "https://nightflow.kr/ja",
       "x-default": "https://nightflow.kr",
     },
   },

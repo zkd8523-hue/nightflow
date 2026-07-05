@@ -1,40 +1,53 @@
-// 다국어(i18n) 공유 유틸 — 외국인 트랙 한/영/일/중 지원.
+// 다국어(i18n) 공유 유틸 — 외국인 트랙 한/영/일/중(간체)/중(번체) 지원.
 //
 // 기존 구조: isForeigner(불린) + t(ko, en) = isForeigner ? en : ko  (한/영 전용)
-// 확장: Lang(문자열) + makeT(lang)(ko, en, ja?, zh?)  — ja/zh 미제공 시 en 폴백
+// 확장: Lang(문자열) + makeT(lang)(ko, en, ja?, zh?, zhTw?)
 //
 // 사용:
 //   const lang = getLang(searchParams.get("lang"));
 //   const isForeigner = lang !== "ko";
 //   const t = makeT(lang);
-//   t("한글", "English", "日本語", "中文")   // 4개 다 주거나
-//   t("한글", "English")                      // ja/zh 생략 → en 폴백
+//   t("한글", "English", "日本語", "中文", "繁體中文")   // 5개 다 주거나
+//   t("한글", "English")                                 // 나머지 자동 폴백
+//
+// 폴백 규칙:
+//   - ja: ja 인자 → EN_TO_JA 사전 → en
+//   - zh: zh 인자 → EN_TO_ZH 사전 → en
+//   - zh-tw: zhTw 인자 → EN_TO_ZH_TW 사전 → 간체 zh 인자 → EN_TO_ZH 사전 → en
+//     (번체 없으면 간체로 우선 폴백, 최후 en. 대만·홍콩 유저가 간체 이해 가능)
 
-import { EN_TO_JA, EN_TO_ZH } from "./i18n-dict";
+import { EN_TO_JA, EN_TO_ZH, EN_TO_ZH_TW } from "./i18n-dict";
 
-export type Lang = "ko" | "en" | "ja" | "zh";
+export type Lang = "ko" | "en" | "ja" | "zh" | "zh-tw";
 
-export const FOREIGN_LANGS: Lang[] = ["en", "ja", "zh"];
+export const FOREIGN_LANGS: Lang[] = ["en", "ja", "zh", "zh-tw"];
 
 // URL ?lang= 값(또는 라우트 세그먼트) → Lang. 미지정/미지원 → ko
+// zh-TW·zh-HK·zh-Hant 계열 모두 "zh-tw"로 정규화 (대만·홍콩 통합 번체 트랙)
 export function getLang(raw: string | null | undefined): Lang {
-  switch (raw) {
+  if (!raw) return "ko";
+  const lower = raw.toLowerCase();
+  switch (lower) {
     case "en":
       return "en";
     case "ja":
       return "ja";
     case "zh":
+    case "zh-cn":
+    case "zh-hans":
       return "zh";
+    case "zh-tw":
+    case "zh-hk":
+    case "zh-hant":
+      return "zh-tw";
     default:
       return "ko";
   }
 }
 
 // 현재 언어 기준 번역 선택기.
-// ja/zh: 호출부에 직접 인자로 주면 그걸 쓰고, 없으면 영어를 키로 사전(i18n-dict)에서 찾고,
-//        그래도 없으면 영어로 폴백(영어가 최소 공통).
 export function makeT(lang: Lang) {
-  return (ko: string, en: string, ja?: string, zh?: string): string => {
+  return (ko: string, en: string, ja?: string, zh?: string, zhTw?: string): string => {
     switch (lang) {
       case "en":
         return en;
@@ -42,6 +55,8 @@ export function makeT(lang: Lang) {
         return ja ?? EN_TO_JA[en] ?? en;
       case "zh":
         return zh ?? EN_TO_ZH[en] ?? en;
+      case "zh-tw":
+        return zhTw ?? EN_TO_ZH_TW[en] ?? zh ?? EN_TO_ZH[en] ?? en;
       default:
         return ko;
     }
@@ -49,24 +64,27 @@ export function makeT(lang: Lang) {
 }
 
 // 지역명 다국어 (AREA_EN 대체 — 여러 파일에 흩어진 매핑 통합)
-const AREA_I18N: Record<string, { en: string; ja: string; zh: string }> = {
-  "강남": { en: "Gangnam", ja: "江南(カンナム)", zh: "江南" },
-  "홍대": { en: "Hongdae", ja: "弘大(ホンデ)", zh: "弘大" },
-  "이태원": { en: "Itaewon", ja: "梨泰院(イテウォン)", zh: "梨泰院" },
-  "건대": { en: "Konkuk", ja: "建大(コンデ)", zh: "建大" },
-  "서울 어디든": { en: "Anywhere in Seoul", ja: "ソウルどこでも", zh: "首尔任意地区" },
-  "부산": { en: "Busan", ja: "釜山(プサン)", zh: "釜山" },
-  "대구": { en: "Daegu", ja: "大邱(テグ)", zh: "大邱" },
-  "인천": { en: "Incheon", ja: "仁川(インチョン)", zh: "仁川" },
-  "광주": { en: "Gwangju", ja: "光州(クァンジュ)", zh: "光州" },
-  "대전": { en: "Daejeon", ja: "大田(テジョン)", zh: "大田" },
-  "울산": { en: "Ulsan", ja: "蔚山(ウルサン)", zh: "蔚山" },
-  "세종": { en: "Sejong", ja: "世宗(セジョン)", zh: "世宗" },
+const AREA_I18N: Record<string, { en: string; ja: string; zh: string; zhTw: string }> = {
+  "강남": { en: "Gangnam", ja: "江南(カンナム)", zh: "江南", zhTw: "江南" },
+  "홍대": { en: "Hongdae", ja: "弘大(ホンデ)", zh: "弘大", zhTw: "弘大" },
+  "이태원": { en: "Itaewon", ja: "梨泰院(イテウォン)", zh: "梨泰院", zhTw: "梨泰院" },
+  "건대": { en: "Konkuk", ja: "建大(コンデ)", zh: "建大", zhTw: "建大" },
+  "서울 어디든": { en: "Anywhere in Seoul", ja: "ソウルどこでも", zh: "首尔任意地区", zhTw: "首爾任何地區" },
+  "부산": { en: "Busan", ja: "釜山(プサン)", zh: "釜山", zhTw: "釜山" },
+  "대구": { en: "Daegu", ja: "大邱(テグ)", zh: "大邱", zhTw: "大邱" },
+  "인천": { en: "Incheon", ja: "仁川(インチョン)", zh: "仁川", zhTw: "仁川" },
+  "광주": { en: "Gwangju", ja: "光州(クァンジュ)", zh: "光州", zhTw: "光州" },
+  "대전": { en: "Daejeon", ja: "大田(テジョン)", zh: "大田", zhTw: "大田" },
+  "울산": { en: "Ulsan", ja: "蔚山(ウルサン)", zh: "蔚山", zhTw: "蔚山" },
+  "세종": { en: "Sejong", ja: "世宗(セジョン)", zh: "世宗", zhTw: "世宗" },
 };
 
 export function areaLabel(area: string, lang: Lang): string {
   if (lang === "ko") return area;
   const m = AREA_I18N[area];
   if (!m) return area;
-  return lang === "ja" ? m.ja : lang === "zh" ? m.zh : m.en;
+  if (lang === "ja") return m.ja;
+  if (lang === "zh") return m.zh;
+  if (lang === "zh-tw") return m.zhTw;
+  return m.en;
 }

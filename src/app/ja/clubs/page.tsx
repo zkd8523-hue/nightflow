@@ -36,7 +36,7 @@ export const metadata: Metadata = {
         "ko-KR": "https://nightflow.kr/clubs",
         "en-US": "https://nightflow.kr/en/clubs",
         "zh-CN": "https://nightflow.kr/zh/clubs",
-        "zh-TW": "https://nightflow.kr/zh/clubs",
+        "zh-TW": "https://nightflow.kr/zh-tw/clubs",
         "ja-JP": "https://nightflow.kr/ja/clubs",
         "x-default": "https://nightflow.kr/clubs",
     },

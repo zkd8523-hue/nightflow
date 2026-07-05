@@ -79,16 +79,18 @@ const MY_STATUS_LABEL: Record<string, { label: string; ja: string; zh: string; c
 };
 
 // 언어 판별 — mount 후 client에서. (useSearchParams Suspense 회피)
-// 경로 기반 SEO 라우트(/ja, /zh)는 쿼리 없이도 언어 확정 → 그 외(/en)만 ?lang= 로 판별.
-// (EnHomeClient가 /ja·/zh page.tsx에서 lang prop 없이 재사용되기 때문에 pathname 우선)
+// 경로 기반 SEO 라우트(/ja, /zh, /zh-tw)는 쿼리 없이도 언어 확정 → 그 외(/en)만 ?lang= 로 판별.
+// zh-tw 판정을 zh보다 먼저 (startsWith("/zh") 는 "/zh-tw"에도 true).
 function useTr() {
   const [lang, setLang] = useState<Lang>("en");
   useEffect(() => {
     const path = window.location.pathname;
     const l = new URLSearchParams(window.location.search).get("lang");
     setLang(
-      path.startsWith("/zh") ? "zh"
+      path.startsWith("/zh-tw") ? "zh-tw"
+        : path.startsWith("/zh") ? "zh"
         : path.startsWith("/ja") ? "ja"
+        : l === "zh-tw" ? "zh-tw"
         : l === "ja" ? "ja"
         : l === "zh" ? "zh"
         : "en"

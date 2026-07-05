@@ -66,9 +66,10 @@ function detectLang(): string {
   const path = window.location.pathname;
   if (path.startsWith("/en/") || path === "/en") return "en";
   if (path.startsWith("/ja/") || path === "/ja") return "ja";
+  if (path.startsWith("/zh-tw/") || path === "/zh-tw") return "zh-tw";
   if (path.startsWith("/zh/") || path === "/zh") return "zh";
   const q = new URLSearchParams(window.location.search).get("lang");
-  if (q === "en" || q === "ja" || q === "zh") return q;
+  if (q === "en" || q === "ja" || q === "zh" || q === "zh-tw") return q;
   return "ko";
 }
 

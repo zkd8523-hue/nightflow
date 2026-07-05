@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getLang } from "@/lib/i18n";
+import { getLang, makeT } from "@/lib/i18n";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -701,13 +701,16 @@ export function ClubDetailContent({
               }}
               className="flex items-center justify-center gap-1.5 w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
             >
-              {lang === "en"
-                ? `Book ${clubName}?`
-                : lang === "ja"
-                  ? `${clubName}を予約?`
-                  : lang === "zh"
-                    ? `预订 ${clubName}?`
-                    : `${clubName} 예약하려면?`}
+              {(() => {
+                const bookT = makeT(lang);
+                return bookT(
+                  `${clubName} 예약하려면?`,
+                  `Book ${clubName}?`,
+                  `${clubName}を予約?`,
+                  `预订 ${clubName}?`,
+                  `預訂 ${clubName}?`,
+                );
+              })()}
               <span className="text-[17px]">🚩</span>
             </button>
           </div>

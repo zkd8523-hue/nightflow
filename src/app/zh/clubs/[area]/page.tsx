@@ -186,7 +186,10 @@ export async function generateMetadata({
       languages: {
         "en-US": `https://nightflow.kr/en/clubs/${area}`,
         "zh-CN": `https://nightflow.kr/zh/clubs/${area}`,
-        "zh-TW": `https://nightflow.kr/zh/clubs/${area}`,
+        "zh-Hans": `https://nightflow.kr/zh/clubs/${area}`,
+        "zh-TW": `https://nightflow.kr/zh-tw/clubs/${area}`,
+        "zh-HK": `https://nightflow.kr/zh-tw/clubs/${area}`,
+        "zh-Hant": `https://nightflow.kr/zh-tw/clubs/${area}`,
         "ja-JP": `https://nightflow.kr/ja/clubs/${area}`,
         "x-default": `https://nightflow.kr/en/clubs/${area}`,
       },

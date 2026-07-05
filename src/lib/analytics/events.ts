@@ -11,14 +11,16 @@ import { trackUserEvent } from "@/lib/analytics/userEvents";
  * 우선순위: URL 경로 세그먼트(/en, /ja, /zh) > ?lang= 쿼리 > "ko"
  * 외국인 이탈퍼널 분석 시 이 lang 속성 하나로 트랙 전체 필터 가능.
  */
-const detectLang = (): 'ko' | 'en' | 'ja' | 'zh' => {
+const detectLang = (): 'ko' | 'en' | 'ja' | 'zh' | 'zh-tw' => {
   if (typeof window === 'undefined') return 'ko';
   const path = window.location.pathname;
   if (path.startsWith('/en/') || path === '/en') return 'en';
   if (path.startsWith('/ja/') || path === '/ja') return 'ja';
+  // zh-tw를 zh보다 먼저 판정 (/zh-tw는 /zh startsWith에도 매칭됨)
+  if (path.startsWith('/zh-tw/') || path === '/zh-tw') return 'zh-tw';
   if (path.startsWith('/zh/') || path === '/zh') return 'zh';
   const q = new URLSearchParams(window.location.search).get('lang');
-  if (q === 'en' || q === 'ja' || q === 'zh') return q;
+  if (q === 'en' || q === 'ja' || q === 'zh' || q === 'zh-tw') return q;
   return 'ko';
 };
 
