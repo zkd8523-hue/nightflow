@@ -27,7 +27,7 @@ import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { HotdealMdCta } from "@/components/home/HotdealMdCta";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
-import { ShareMdCta } from "@/components/home/ShareMdCta";
+import { ShareManageMdCta } from "@/components/home/ShareManageMdCta";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
 
@@ -1388,6 +1388,12 @@ export function HomeContent({
                   onActiveDateChange={setShareHeaderDate}
                 />
               </div>
+              {/* MD 전용 조각 관리 CTA — 조각 캐러셀 바로 아래, 게스트 간판과 동일 톤 */}
+              {isMdOrAdmin && (
+                <div className="mb-2">
+                  <ShareManageMdCta />
+                </div>
+              )}
             </>
           )}
 
