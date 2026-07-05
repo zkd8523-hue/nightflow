@@ -36,8 +36,11 @@ function buildFlagHref(lang: Lang, area?: string) {
   return `/flags/new?${params.toString()}`;
 }
 
+type SortKey = "popular" | "rating";
+
 export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang }) {
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("popular");
   const t = makeT(lang);
 
   // 랜딩 노출 이벤트 — 이탈퍼널 1단계 (외국인 트랙 진입 총량)
@@ -49,11 +52,50 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
     trackForeignEvent("foreign_clubs_view", { area: areaSlug, source: "seo" });
   }, [lang]);
 
-  // 리뷰 많은 순 정렬 (필터 없음 — 한국 가이드처럼 지역 섹션으로 보여줌)
-  const sorted = useMemo(
-    () => [...clubs].sort((a, b) => (b.google_review_count ?? 0) - (a.google_review_count ?? 0)),
-    [clubs],
-  );
+  // 스크롤 25%/50%/75% 도달 이벤트 — 이탈 지점 세분화 (외국인 트랙 UX 진단)
+  // 세션당 각 지점 1회씩만 발동. sessionStorage로 중복 방지.
+  useEffect(() => {
+    if (lang === "ko" || typeof window === "undefined") return;
+    const KEY_PREFIX = "nf_foreign_scroll_";
+    const thresholds = [25, 50, 75];
+    let ticking = false;
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const doc = document.documentElement;
+        const totalScrollable = doc.scrollHeight - window.innerHeight;
+        if (totalScrollable <= 0) { ticking = false; return; }
+        const scrolled = window.scrollY / totalScrollable;
+        for (const th of thresholds) {
+          if (scrolled >= th / 100) {
+            const key = KEY_PREFIX + th;
+            try {
+              if (!sessionStorage.getItem(key)) {
+                sessionStorage.setItem(key, "1");
+                trackForeignEvent("foreign_clubs_view", { scroll_depth: th, source: "scroll" });
+              }
+            } catch { /* private mode */ }
+          }
+        }
+        ticking = false;
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [lang]);
+
+  // 정렬: 인기순(리뷰 수) 기본 / 평점순
+  const sorted = useMemo(() => {
+    const arr = [...clubs];
+    if (sortKey === "rating") {
+      arr.sort((a, b) => (b.google_rating ?? 0) - (a.google_rating ?? 0));
+    } else {
+      arr.sort((a, b) => (b.google_review_count ?? 0) - (a.google_review_count ?? 0));
+    }
+    return arr;
+  }, [clubs, sortKey]);
   // 강남/홍대/이태원 가로 스크롤 (한국 가이드처럼). 해당 지역 클럽 없으면 섹션 생략.
   const groups = ["강남", "홍대", "이태원"]
     .map((ko) => ({ ko, items: sorted.filter((c) => c.area === ko) }))
@@ -94,10 +136,19 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
       `🚩 ${name}をNightFlowで予約`,
       `🚩 在 NightFlow 预订 ${name}`,
     );
+  const sortPopularLabel = t("인기순", "Popular", "人気順", "热门");
+  const sortRatingLabel = t("평점순", "Top rated", "評価順", "评分");
+  const stickyCtaLabel = t(
+    "🚩 시크릿오퍼 받기",
+    "🚩 Get VIP offers",
+    "🚩 VIPオファーを受け取る",
+    "🚩 获取 VIP 报价",
+  );
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white">
-      <div className="max-w-lg mx-auto px-4 py-12 space-y-6">
+      {/* pb-24: Sticky CTA 높이만큼 하단 여백 */}
+      <div className="max-w-lg mx-auto px-4 py-12 pb-24 space-y-6">
 
         {/* Header */}
         <header className="space-y-3">
@@ -108,6 +159,44 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
             <h1 className="text-[28px] font-black tracking-tight">{guideTitle}</h1>
             <p className="text-[13px] text-neutral-500">{shownCount} {clubsSuffix}</p>
           </div>
+
+          {/* 정렬 버튼 (인기순=구글 리뷰수 default / 평점순=구글 별점) */}
+          {shownCount > 0 && (
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSortKey("popular");
+                  if (lang !== "ko") {
+                    trackForeignEvent("foreign_clubs_view", { sort_change: "popular", source: "sort" });
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
+                  sortKey === "popular"
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                }`}
+              >
+                {sortPopularLabel}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSortKey("rating");
+                  if (lang !== "ko") {
+                    trackForeignEvent("foreign_clubs_view", { sort_change: "rating", source: "sort" });
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
+                  sortKey === "rating"
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                }`}
+              >
+                {sortRatingLabel}
+              </button>
+            </div>
+          )}
         </header>
 
         {/* 지역별 가로 스크롤 (한국 가이드처럼 강남/홍대 두 줄) */}
@@ -176,6 +265,29 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
           </div>
         </div>
       </div>
+
+      {/* Sticky CTA — 유저가 스크롤 안 해도 항상 보이도록 fixed. 외국인 트랙만. */}
+      {lang !== "ko" && shownCount > 0 && (
+        <div
+          className="fixed left-0 right-0 bottom-0 z-40 px-4 pb-4 pt-6 pointer-events-none
+                     bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] via-[60%] to-transparent"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
+        >
+          <div className="max-w-lg mx-auto pointer-events-auto">
+            <Link
+              href={bottomCtaHref}
+              onClick={() =>
+                trackForeignEvent("foreign_plant_flag_click", { source: "sticky_cta" })
+              }
+              className="flex items-center justify-center gap-1.5 w-full h-12
+                         bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px]
+                         rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
+            >
+              {stickyCtaLabel}
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* 클럽 상세 바텀시트 (카드 클릭 시) — 가격표·영업시간·평점 + 구글 리뷰 + 예약 CTA */}
       <Sheet open={!!selectedClub} onOpenChange={(o) => !o && setSelectedClub(null)}>
