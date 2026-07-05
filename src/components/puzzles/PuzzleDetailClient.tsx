@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User, Eye, MessageCircle, MapPin, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User, Eye, MessageCircle, MapPin, ChevronDown, Instagram } from "lucide-react";
 import { TableDetailsCard } from "@/components/auctions/TableDetailsCard";
 import { FloorPlanViewer } from "@/components/auctions/FloorPlanViewer";
 import { FeatureGate } from "@/components/common/FeatureGate";
@@ -188,6 +188,12 @@ export function PuzzleDetailClient({
   const [showJoin, setShowJoin] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
   const [floorPlanOpen, setFloorPlanOpen] = useState(false);
+  // admin 전용: MD 직통 조각(host_is_md)의 상담 상태 — puzzle_party_md 초대 여부
+  const [partyMdStatus, setPartyMdStatus] = useState<{
+    invited: boolean;
+    md_name?: string;
+    md_instagram?: string | null;
+  } | null>(null);
   const [editingOffer, setEditingOffer] = useState<PuzzleOffer | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [offers, setOffers] = useState<PuzzleOffer[]>([]);
@@ -344,6 +350,14 @@ export function PuzzleDetailClient({
   useEffect(() => {
     loadOffers();
   }, [loadOffers]);
+
+  // admin 전용: MD 직통 조각(host_is_md)의 상담 상태 (puzzle_party_md 초대 여부)
+  useEffect(() => {
+    if (!isAdmin || !puzzle.host_is_md) return;
+    supabase.rpc("admin_get_party_md_status", { p_puzzle_id: puzzle.id }).then(({ data }) => {
+      if (data?.success) setPartyMdStatus(data);
+    });
+  }, [isAdmin, puzzle.host_is_md, puzzle.id, supabase]);
 
   const pendingOffers = offers.filter((o) => o.status === "pending");
 
@@ -1135,7 +1149,53 @@ export function PuzzleDetailClient({
             </section>
           )}
 
-          {/* 오퍼 섹션 — MD 직통 조각(host_is_md)은 오퍼를 안 받으므로 시크릿오퍼 숨김 */}
+          {/* admin 전용: MD 직통 조각의 상담 상태 (오퍼 대신 puzzle_party_md 초대 여부로 판단) */}
+          {isAdmin && puzzle.host_is_md && (
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[16px] leading-none">💌</span>
+                <h2 className="text-[16px] font-bold text-neutral-200">상담 상태</h2>
+              </div>
+              <div className="rounded-2xl border border-neutral-800 bg-[#1C1C1E] p-4 space-y-3">
+                {partyMdStatus === null ? (
+                  <p className="text-[13px] text-neutral-500">불러오는 중…</p>
+                ) : partyMdStatus.invited ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[14px] font-bold text-white">{partyMdStatus.md_name}</p>
+                      <span className="text-[12px] px-2.5 py-1 rounded-full bg-neutral-700 text-neutral-300 font-bold">상담중</span>
+                    </div>
+                    <div className="pt-2 mt-1 border-t border-red-500/20 bg-red-500/5 -mx-4 -mb-4 px-4 pb-4 space-y-1">
+                      <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — MD 식별 정보</p>
+                      <div className="flex items-center gap-3 text-[12px] text-neutral-300 flex-wrap">
+                        <span className="inline-flex items-center gap-1">
+                          <User className="w-3 h-3 text-neutral-500" />
+                          <span className="font-bold text-white">{partyMdStatus.md_name}</span>
+                        </span>
+                        {partyMdStatus.md_instagram ? (
+                          <a
+                            href={`https://instagram.com/${partyMdStatus.md_instagram.replace(/^@/, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-pink-400 hover:text-pink-300"
+                          >
+                            <Instagram className="w-3 h-3" />
+                            <span className="font-mono">@{partyMdStatus.md_instagram.replace(/^@/, "")}</span>
+                          </a>
+                        ) : (
+                          <span className="text-neutral-600 text-[11px]">인스타 미등록</span>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <p className="text-[13px] text-neutral-500">아직 초대된 MD가 없어요</p>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* 오퍼 섹션 — MD 직통 조각(host_is_md)은 오퍼를 안 받으므로 시크릿오퍼 숨김 (admin 상담상태는 위 카드로 대체) */}
           {!puzzle.host_is_md && (!isAccepted || ((isMd || isAdmin) && myOffer)) && (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
