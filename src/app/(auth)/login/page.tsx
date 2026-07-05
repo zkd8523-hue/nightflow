@@ -439,6 +439,51 @@ function LoginContent() {
           </div>
         )}
 
+        {/* 외국인 전용 컨텍스트 카드 — "왜 로그인해야 하나?" 문맥 제공.
+            raw user_events에서 외국인 유저 로그인 페이지 도달 후 0% 진행 확인됨.
+            로그인 후 얻는 것을 명확히 제시해 이탈 감소 목표. */}
+        {isForeigner && (
+          <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-4 space-y-2.5">
+            <p className="text-[14px] text-white font-black">
+              🌟 {tt(
+                "",
+                "The easiest way to book Seoul clubs",
+                "ソウルのクラブを予約する一番カンタンな方法",
+                "预订首尔夜店最简单的方式",
+              )}
+            </p>
+            <ul className="space-y-1.5">
+              <li className="text-[13px] text-neutral-300 flex items-start gap-2">
+                <span className="text-emerald-400 shrink-0">✓</span>
+                <span>{tt(
+                  "",
+                  "Clubs come to you with offers",
+                  "クラブがオファーを送ってくれる",
+                  "夜店主动发送报价",
+                )}</span>
+              </li>
+              <li className="text-[13px] text-neutral-300 flex items-start gap-2">
+                <span className="text-emerald-400 shrink-0">✓</span>
+                <span>{tt(
+                  "",
+                  "No deposit, no fees",
+                  "予約金なし・手数料なし",
+                  "无预付款、无手续费",
+                )}</span>
+              </li>
+              <li className="text-[13px] text-neutral-300 flex items-start gap-2">
+                <span className="text-emerald-400 shrink-0">✓</span>
+                <span>{tt(
+                  "",
+                  "Cancel anytime",
+                  "いつでもキャンセル可能",
+                  "随时可取消",
+                )}</span>
+              </li>
+            </ul>
+          </div>
+        )}
+
         {(loginError || authError) && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
             <p className="text-[13px] text-red-400 font-bold">{loginError || authError}</p>
