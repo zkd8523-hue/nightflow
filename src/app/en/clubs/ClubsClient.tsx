@@ -242,28 +242,38 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
           </section>
         ))}
 
-        {/* Bottom CTA — 로그인 벽 대신 폼 먼저. 미로그인이면 /flags/new 서버가 /login?redirect= 로 튕김 */}
-        <div className="space-y-4 pt-4 pb-8">
-          <p className="text-center text-[14px] text-neutral-400">{notSureCopy}</p>
-          <Link
-            href={bottomCtaHref}
-            onClick={() => {
-              if (lang !== "ko") {
-                trackForeignEvent("foreign_plant_flag_click", { source: "bottom_cta" });
-              }
-            }}
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
-          >
-            {ctaLabel}
-          </Link>
-          <p className="text-center text-[12px] text-neutral-600 leading-relaxed">
-            {ctaSubLine1}<br />
-            {ctaSubLine2}
-          </p>
-          <div className="flex justify-center pt-2">
-            <LangSwitcher />
+        {/* Bottom CTA — 한국어 트랙에서만 노출. 외국인 트랙은 Sticky CTA(하단 fixed)로 대체됨. */}
+        {lang === "ko" && (
+          <div className="space-y-4 pt-4 pb-8">
+            <p className="text-center text-[14px] text-neutral-400">{notSureCopy}</p>
+            <Link
+              href={bottomCtaHref}
+              className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
+            >
+              {ctaLabel}
+            </Link>
+            <p className="text-center text-[12px] text-neutral-600 leading-relaxed">
+              {ctaSubLine1}<br />
+              {ctaSubLine2}
+            </p>
+            <div className="flex justify-center pt-2">
+              <LangSwitcher />
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* 외국인 트랙: Sticky CTA와 겹치지 않게 서브카피 + Language 스위처를 페이지 하단에 배치 (텍스트 링크만). */}
+        {lang !== "ko" && shownCount > 0 && (
+          <div className="pt-4 pb-8 space-y-3">
+            <p className="text-center text-[12px] text-neutral-500 leading-relaxed">
+              {ctaSubLine1}<br />
+              {ctaSubLine2}
+            </p>
+            <div className="flex justify-center">
+              <LangSwitcher />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sticky CTA — 유저가 스크롤 안 해도 항상 보이도록 fixed. 외국인 트랙만. */}
