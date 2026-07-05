@@ -82,12 +82,12 @@ export function AreaVerifySheet({
         <SheetHeader className="pb-2">
           <SheetTitle className="text-white text-[16px] text-left">
             {reason === "shot"
-              ? "🥃 SHOT은 현장 인증자만 올릴 수 있어요"
+              ? "🔴 클럽 지정 LIVE는 현장 인증자만 올릴 수 있어요"
               : "지금 위치를 확인할게요"}
           </SheetTitle>
           {reason === "shot" && (
             <p className="text-left text-[12px] text-neutral-400 pt-1">
-              지금 강남·홍대·이태원에 있다면 인증하고 SHOT을 올려보세요
+              지금 강남·홍대·이태원에 있다면 인증하고 LIVE를 올려보세요
             </p>
           )}
         </SheetHeader>

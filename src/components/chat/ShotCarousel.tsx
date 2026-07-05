@@ -29,6 +29,15 @@ interface Props {
  *  - LIVE 그룹 슬롯: 클럽 지정된 LIVE만 모아서 첫 자리에 노출
  *  - 클럽 페이지에서는 clubId로 필터
  */
+type AreaFilter = "all" | VerifiableArea;
+
+const AREA_FILTERS: { code: AreaFilter; label: string }[] = [
+  { code: "all", label: "전체" },
+  { code: "gangnam", label: "강남" },
+  { code: "hongdae", label: "홍대" },
+  { code: "itaewon", label: "이태원" },
+];
+
 export function ShotCarousel({
   areas,
   userArea,
@@ -42,15 +51,27 @@ export function ShotCarousel({
   const { shots, loading, toggleLike } = useChatShots(areas, currentUserId, clubId);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [liveMode, setLiveMode] = useState(false);
+  // 지역 서브 필터 — 인증 area가 있으면 그걸 기본 선택, 없으면 "전체"
+  const [areaFilter, setAreaFilter] = useState<AreaFilter>(userArea ?? "all");
+  useEffect(() => {
+    if (userArea) setAreaFilter(userArea);
+  }, [userArea]);
 
   const [viewedSet, setViewedSet] = useState<Set<string>>(new Set());
   useEffect(() => {
     setViewedSet(getViewedShotIds());
   }, [shots]);
 
+  // 지역 필터 적용 (클럽 페이지에선 필터 UI 숨김, 이 로직도 skip)
+  const filteredShots = useMemo(() => {
+    if (clubId) return shots;
+    if (areaFilter === "all") return shots;
+    return shots.filter((s) => s.area === areaFilter);
+  }, [shots, areaFilter, clubId]);
+
   // 통합 정렬: (1) 안 본 것 우선 → (2) 사용자 area 매치 우선 → (3) 최신순 보존
   const sortedShots = useMemo(() => {
-    const withRank = shots.map((s, i) => ({
+    const withRank = filteredShots.map((s, i) => ({
       s,
       i,
       viewed: viewedSet.has(s.id),
@@ -62,7 +83,7 @@ export function ShotCarousel({
       return a.i - b.i;
     });
     return withRank.map((r) => r.s);
-  }, [shots, viewedSet, userArea]);
+  }, [filteredShots, viewedSet, userArea]);
 
   // LIVE(클럽 지정)만 별도 배열 — 그룹 슬롯 썸네일 + LIVE 모드 뷰어용
   const liveShots = useMemo(
@@ -77,18 +98,40 @@ export function ShotCarousel({
   return (
     <div className="px-3 py-2.5 border-b border-neutral-900 bg-[#0B0A11]">
       <div className="flex items-baseline gap-1.5 mb-2 px-1">
-        <span className="text-[12px] font-bold text-amber-400">🥃 SHOT</span>
+        <span className="text-[12px] font-bold text-red-400">🔴 LIVE</span>
         <span className="text-[11px] text-neutral-500">
-          — 오늘의 술을 공유해보세요!
+          — 지금 이 순간을 공유해보세요!
         </span>
       </div>
+      {/* 지역 pill 필터 — 클럽 페이지에선 숨김 */}
+      {!clubId && (
+        <div className="flex gap-1.5 mb-2 overflow-x-auto no-scrollbar px-1">
+          {AREA_FILTERS.map((f) => {
+            const selected = areaFilter === f.code;
+            return (
+              <button
+                key={f.code}
+                type="button"
+                onClick={() => setAreaFilter(f.code)}
+                className={`shrink-0 px-3 py-1 rounded-full text-[11px] font-bold transition-colors ${
+                  selected
+                    ? "bg-white text-black"
+                    : "bg-neutral-900 text-neutral-400 hover:text-white"
+                }`}
+              >
+                {f.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
       <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
         {showComposeButton && (
           <button
             type="button"
             onClick={onComposeClick}
             className="shrink-0 w-16"
-            aria-label="SHOT 올리기"
+            aria-label="LIVE 올리기"
           >
             <div className="relative w-16 h-16">
               <div className="relative w-16 h-16 rounded-full overflow-hidden bg-neutral-900 border-2 border-neutral-800">

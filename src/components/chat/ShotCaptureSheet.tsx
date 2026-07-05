@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Camera, Check, ChevronRight, ImagePlus, Loader2, MapPin, X, Zap } from "lucide-react";
+import { Camera, Check, ChevronRight, Loader2, MapPin, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -21,9 +21,9 @@ import { CameraCaptureView } from "./CameraCaptureView";
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** 인증된 area — 없으면(null) 일반 SHOT만, 있으면 지역/LIVE 옵션 열림 */
+  /** 인증된 area — 없으면(null) 클럽 지정 불가, 일반 LIVE만 게시 */
   area?: VerifiableArea | null;
-  /** 로그인한 유저 (null이면 게시 자체 불가, 로그인 유도) */
+  /** 로그인한 유저 (null이면 게시 자체 불가) */
   userId: string;
   userProfile?: {
     display_name: string | null;
@@ -31,19 +31,21 @@ interface Props {
   };
   /** 업로드 성공 후 옵티미스틱 prepend 트리거 */
   onPosted?: (shot: ChatShot) => void;
-  /** 클럽 사전 지정 — 클럽 페이지의 빈 CTA에서 진입 시 자동 픽 (LIVE 모드로 시작) */
+  /** 클럽 사전 지정 — 클럽 페이지의 빈 CTA에서 진입 시 자동 픽 */
   presetClub?: { id: string; name: string } | null;
-  /** 지역 인증 유도 콜백 (미인증 상태에서 LIVE 선택 시) */
+  /** 지역 인증 유도 콜백 (미인증자에게 배지 클릭 시) */
   onRequestAreaVerify?: () => void;
 }
 
 const MAX_CAPTION = 200;
 
 /**
- * SHOT 캡처/업로드 시트 (Migration 404 이후)
- *   - 일반 SHOT: area/club 없이 누구나 게시
- *   - 지역 SHOT: area 인증자만
- *   - LIVE: area 인증자 + 클럽 지정
+ * LIVE 캡처/업로드 시트 (Migration 413 이후)
+ *   플로우: 시트 열림 → (인증자) 클럽 픽 시트 자동 오픈 → 카메라 → 캡션 → 게시
+ *
+ *   - 클럽 지정 시: club_id + area 있는 LIVE → 조건 충족하면 스탬프 1개
+ *   - 클럽 미지정 시: area/club 둘 다 null → 일반 게시 (스탬프 X)
+ *   - 미인증자: 클럽 픽 불가, 자동으로 일반 게시 모드
  */
 export function ShotCaptureSheet({
   open,
@@ -55,7 +57,6 @@ export function ShotCaptureSheet({
   presetClub = null,
   onRequestAreaVerify,
 }: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -63,8 +64,6 @@ export function ShotCaptureSheet({
   const [uploading, setUploading] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
 
-  // 모드: general (기본) / live (클럽 지정)
-  const [mode, setMode] = useState<"general" | "live">(presetClub ? "live" : "general");
   const [selectedClub, setSelectedClub] = useState<{ id: string; name: string } | null>(presetClub);
   const [clubSheetOpen, setClubSheetOpen] = useState(false);
   const [nearestClubs, setNearestClubs] = useState<NearestClub[] | null>(null);
@@ -72,17 +71,18 @@ export function ShotCaptureSheet({
 
   const isVerified = !!area;
 
-  // 초기화
+  // 시트 초기화 + 인증자면 클럽 픽 시트 자동 오픈 (presetClub 있으면 skip)
   useEffect(() => {
     if (!open) return;
-    setMode(presetClub ? "live" : "general");
     setSelectedClub(presetClub);
-  }, [open, presetClub]);
+    if (!presetClub && isVerified) {
+      setClubSheetOpen(true);
+    }
+  }, [open, presetClub, isVerified]);
 
-  // LIVE 모드로 전환 시 GPS로 클럽 로드 (Capacitor 권한 팝업 자동)
+  // 인증자면 GPS로 주변 클럽 로드
   useEffect(() => {
-    if (!open || mode !== "live" || !area) return;
-    if (presetClub) return;
+    if (!open || !area || presetClub) return;
     let cancelled = false;
     setClubsLoading(true);
     getCurrentCoords()
@@ -99,7 +99,7 @@ export function ShotCaptureSheet({
         setClubsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [open, mode, area, presetClub]);
+  }, [open, area, presetClub]);
 
   function canUseLiveCamera(): boolean {
     if (typeof window === "undefined") return false;
@@ -112,7 +112,6 @@ export function ShotCaptureSheet({
     setPreviewUrl(null);
     setCaption("");
     setUploading(false);
-    setMode(presetClub ? "live" : "general");
     setSelectedClub(presetClub);
   }
 
@@ -124,25 +123,8 @@ export function ShotCaptureSheet({
     e.target.value = "";
   }
 
-  function handleModeSelect(next: "general" | "live") {
-    if (next === "live" && !isVerified) {
-      toast.error("지역 인증 후 LIVE를 올릴 수 있어요");
-      onRequestAreaVerify?.();
-      return;
-    }
-    setMode(next);
-    if (next === "live" && !selectedClub && !presetClub) {
-      setClubSheetOpen(true);
-    }
-  }
-
   async function handlePost() {
     if (!file || uploading) return;
-    if (mode === "live" && !selectedClub) {
-      toast.error("클럽을 선택해주세요");
-      setClubSheetOpen(true);
-      return;
-    }
     setUploading(true);
 
     const media = await uploadChatMedia(file, userId);
@@ -151,9 +133,10 @@ export function ShotCaptureSheet({
       return;
     }
 
-    // 게시 페이로드 결정:
-    //   general → area/club 둘 다 null
-    //   live    → area + club_id 필수
+    // 페이로드 결정:
+    //   클럽 지정 → area + club_id 필수 (LIVE, 스탬프 대상)
+    //   클럽 미지정 → area/club 모두 null (일반, 스탬프 X)
+    const isLive = !!selectedClub;
     const payload: Record<string, unknown> = {
       author_id: userId,
       media_type: media.type,
@@ -162,8 +145,8 @@ export function ShotCaptureSheet({
       height: media.height ?? null,
       duration: media.duration ?? null,
       caption: caption.trim() || null,
-      area: mode === "live" ? area : null,
-      club_id: mode === "live" ? selectedClub?.id ?? null : null,
+      area: isLive ? area : null,
+      club_id: isLive ? selectedClub?.id ?? null : null,
     };
 
     const supabase = createClient();
@@ -178,9 +161,7 @@ export function ShotCaptureSheet({
     if (error || !data) {
       console.error("[ShotCaptureSheet] insert error", error);
       const msg = error?.message ?? "";
-      if (msg.includes("LIVE_DAILY_LIMIT")) {
-        toast.error("하루에 LIVE 7개까지 올릴 수 있어요");
-      } else if (msg.includes("LIVE_AREA_MISMATCH")) {
+      if (msg.includes("LIVE_AREA_MISMATCH")) {
         toast.error("인증된 지역과 클럽 지역이 달라요");
       } else if (msg.includes("LIVE_INVALID_CLUB")) {
         toast.error("선택한 클럽을 찾을 수 없어요");
@@ -189,12 +170,12 @@ export function ShotCaptureSheet({
         msg.includes("row-level security")
       ) {
         toast.error(
-          mode === "live"
+          isLive
             ? "지역 인증이 만료되었어요. 다시 인증해주세요"
             : "로그인이 필요해요"
         );
       } else if (error?.code === "42P01" || error?.code === "42703") {
-        toast.error("DB 마이그레이션 미적용 (341/404)");
+        toast.error("DB 마이그레이션 미적용 (413)");
       } else {
         toast.error(`업로드 실패: ${msg || "알 수 없는 오류"}`);
       }
@@ -202,17 +183,32 @@ export function ShotCaptureSheet({
       return;
     }
 
-    const label =
-      mode === "live" && selectedClub
-        ? `${selectedClub.name} LIVE 올렸어요`
-        : "SHOT 올렸어요";
-    toast.success(`${label} (9시간 후 사라져요)`);
-    // 초상권 검토 안내 (인스타 스타일 짧은 리마인더)
+    // 스탬프 적립 확인 (LIVE 게시 후, my_stamp_status 뷰로 마지막 적립 시각 확인)
+    if (isLive) {
+      const { data: stampStatus } = await supabase
+        .from("my_stamp_status")
+        .select("last_earned_at, next_eligible_at, earned_last_24h")
+        .maybeSingle();
+      const justEarned =
+        stampStatus?.last_earned_at &&
+        new Date(stampStatus.last_earned_at).getTime() > Date.now() - 10_000;
+      if (justEarned) {
+        toast.success(`🎫 스탬프 1개 적립! (${selectedClub?.name})`);
+      } else if (stampStatus?.earned_last_24h && stampStatus.earned_last_24h >= 7) {
+        toast.message("🎫 오늘 스탬프 한도(7개)에 도달했어요");
+      } else {
+        toast.message("🎫 30분 후 다음 스탬프를 받을 수 있어요");
+      }
+    } else {
+      toast.success("LIVE 올렸어요 (12시간 후 사라져요)");
+    }
+
+    // 초상권 리마인더
     setTimeout(() => {
       toast.message(
-        "⚠️ 본인 외 다른 사람 얼굴이 식별 가능하게 찍혔다면 직접 삭제해주세요"
+        "⚠️ 본인 외 얼굴이 식별 가능하게 찍혔다면 직접 삭제해주세요"
       );
-    }, 1200);
+    }, 1500);
 
     onPosted?.({
       ...data,
@@ -247,86 +243,68 @@ export function ShotCaptureSheet({
       >
         <SheetHeader className="px-4 pt-4 pb-3 border-b border-neutral-800 shrink-0">
           <SheetTitle className="text-white text-[16px] text-left flex items-center gap-2">
-            🥃 SHOT 올리기
+            <Zap className="w-4 h-4 fill-red-400 text-red-400" />
+            LIVE 올리기
             <span className="text-[11px] font-normal text-neutral-500">
-              · 오늘의 술을 공유해보세요
+              · 12시간 후 사라져요
             </span>
           </SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {/* 모드 선택 (일반 vs LIVE) */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => handleModeSelect("general")}
-              className={`p-3 rounded-2xl border-2 text-left transition-colors ${
-                mode === "general"
-                  ? "border-amber-500 bg-amber-500/10"
-                  : "border-neutral-800 bg-[#1C1C1E]"
-              }`}
-            >
-              <div className="text-[12px] font-black text-white">일반 SHOT</div>
-              <div className="text-[10px] text-neutral-500 mt-0.5">
-                누구나 · 태그 없이
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleModeSelect("live")}
-              className={`p-3 rounded-2xl border-2 text-left transition-colors ${
-                mode === "live"
-                  ? "border-red-500 bg-red-500/10"
-                  : isVerified
-                    ? "border-neutral-800 bg-[#1C1C1E]"
-                    : "border-neutral-900 bg-neutral-900/40 opacity-60"
-              }`}
-            >
-              <div className="text-[12px] font-black text-white flex items-center gap-1">
-                <Zap className="w-3 h-3 fill-red-400 text-red-400" />
-                LIVE
-              </div>
-              <div className="text-[10px] text-neutral-500 mt-0.5">
-                {isVerified ? "클럽 지정 · 하루 7개" : "지역 인증 필요"}
-              </div>
-            </button>
+          {/* 스탬프 안내 배너 */}
+          <div className="rounded-2xl bg-red-500/10 border border-red-500/30 px-3 py-2 flex items-center gap-2">
+            <span className="text-[16px]">🎫</span>
+            <div className="text-[12px] text-red-300 leading-tight">
+              <span className="font-black">클럽 지정 + 위치 확인</span>
+              <span className="text-red-300/70"> 시 스탬프 1개 지급 (30분/일7개)</span>
+            </div>
           </div>
 
-          {/* LIVE 클럽 선택 CTA */}
-          {mode === "live" && (
-            <button
-              type="button"
-              onClick={() => setClubSheetOpen(true)}
-              disabled={!!presetClub}
-              className="w-full flex items-center gap-2 p-3 rounded-2xl bg-[#1C1C1E] border border-neutral-800 text-left disabled:opacity-80"
-            >
-              <MapPin className="w-4 h-4 text-red-400 shrink-0" />
-              <div className="flex-1 min-w-0">
-                {selectedClub ? (
-                  <>
-                    <div className="text-[13px] font-black text-white truncate">
-                      {selectedClub.name}
-                    </div>
-                    <div className="text-[10px] text-neutral-500">
-                      {presetClub ? "이 클럽에 게시" : "탭해서 변경"}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-[13px] font-black text-white">
-                      클럽 선택하기
-                    </div>
-                    <div className="text-[10px] text-neutral-500">
-                      GPS로 주변 클럽 추천
-                    </div>
-                  </>
-                )}
-              </div>
-              {!presetClub && (
-                <ChevronRight className="w-4 h-4 text-neutral-600" />
+          {/* 클럽 선택 CTA */}
+          <button
+            type="button"
+            onClick={() => {
+              if (!isVerified) {
+                toast.message("지역 인증 후 클럽을 지정할 수 있어요");
+                onRequestAreaVerify?.();
+                return;
+              }
+              if (!presetClub) setClubSheetOpen(true);
+            }}
+            disabled={!!presetClub}
+            className={`w-full flex items-center gap-2 p-3 rounded-2xl border text-left disabled:opacity-80 ${
+              selectedClub
+                ? "bg-red-500/10 border-red-500/40"
+                : "bg-[#1C1C1E] border-neutral-800"
+            } ${!isVerified ? "opacity-60" : ""}`}
+          >
+            <MapPin className={`w-4 h-4 shrink-0 ${selectedClub ? "text-red-400" : "text-neutral-500"}`} />
+            <div className="flex-1 min-w-0">
+              {selectedClub ? (
+                <>
+                  <div className="text-[13px] font-black text-white truncate">
+                    📍 {selectedClub.name}
+                  </div>
+                  <div className="text-[10px] text-red-300/70">
+                    {presetClub ? "이 클럽에 게시" : "탭해서 변경"}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-[13px] font-black text-white">
+                    클럽 선택하기 <span className="text-neutral-500 text-[11px] font-normal">(선택)</span>
+                  </div>
+                  <div className="text-[10px] text-neutral-500">
+                    {isVerified ? "GPS로 주변 클럽 추천" : "지역 인증 후 이용 가능"}
+                  </div>
+                </>
               )}
-            </button>
-          )}
+            </div>
+            {!presetClub && isVerified && (
+              <ChevronRight className="w-4 h-4 text-neutral-600" />
+            )}
+          </button>
 
           {/* 미리보기 또는 파일 선택 */}
           {previewUrl && file ? (
@@ -359,7 +337,7 @@ export function ShotCaptureSheet({
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div>
               <button
                 type="button"
                 onClick={() => {
@@ -369,34 +347,20 @@ export function ShotCaptureSheet({
                     cameraInputRef.current?.click();
                   }
                 }}
-                className="flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-neutral-700 bg-[#1C1C1E] text-neutral-300 hover:border-amber-500 hover:text-amber-400 transition-colors"
+                className="w-full flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-neutral-700 bg-[#1C1C1E] text-neutral-300 hover:border-red-500 hover:text-red-400 transition-colors"
               >
-                <Camera className="w-8 h-8" />
-                <span className="text-[13px] font-bold">카메라</span>
-                <span className="text-[10px] text-neutral-500">
-                  {canUseLiveCamera() ? "탭=사진 · 꾹=영상" : "사진 촬영"}
+                <Camera className="w-10 h-10" />
+                <span className="text-[15px] font-bold">카메라로 촬영</span>
+                <span className="text-[11px] text-neutral-500">
+                  {canUseLiveCamera() ? "탭=사진 · 꾹=영상(12초)" : "사진 촬영"}
                 </span>
               </button>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-neutral-700 bg-[#1C1C1E] text-neutral-300 hover:border-amber-500 hover:text-amber-400 transition-colors"
-              >
-                <ImagePlus className="w-8 h-8" />
-                <span className="text-[13px] font-bold">갤러리</span>
-              </button>
+              {/* 갤러리 옵션 제거됨 — LIVE는 현장 카메라 촬영만 허용 */}
               <input
                 ref={cameraInputRef}
                 type="file"
                 accept="image/*,video/*"
                 capture="environment"
-                className="sr-only"
-                onChange={pickFile}
-              />
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
                 className="sr-only"
                 onChange={pickFile}
               />
@@ -425,7 +389,7 @@ export function ShotCaptureSheet({
                 <div className="text-[13px] text-neutral-300 font-bold">
                   {userProfile?.display_name ?? "나"}
                 </div>
-                {mode === "live" && area ? (
+                {selectedClub && area ? (
                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-black">
                     <Zap className="w-2.5 h-2.5 fill-red-300" />
                     LIVE · {ROOM_LABEL[area]}
@@ -463,11 +427,11 @@ export function ShotCaptureSheet({
         <div className="px-4 pt-2 border-t border-neutral-800 shrink-0">
           <button
             onClick={handlePost}
-            disabled={!file || uploading || (mode === "live" && !selectedClub)}
+            disabled={!file || uploading}
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-black transition-colors ${
-              mode === "live"
+              selectedClub
                 ? "bg-red-500 text-white"
-                : "bg-amber-500 text-black"
+                : "bg-white text-black"
             } disabled:bg-neutral-800 disabled:text-neutral-600`}
           >
             {uploading ? (
@@ -475,13 +439,13 @@ export function ShotCaptureSheet({
                 <Loader2 className="w-4 h-4 animate-spin" />
                 올리는 중...
               </>
-            ) : mode === "live" ? (
+            ) : selectedClub ? (
               <>
                 <Zap className="w-4 h-4 fill-white" />
-                LIVE 올리기
+                LIVE 올리기 · 🎫
               </>
             ) : (
-              <>🥃 SHOT 올리기</>
+              <>LIVE 올리기</>
             )}
           </button>
         </div>
@@ -499,6 +463,10 @@ export function ShotCaptureSheet({
           setSelectedClub(c);
           setClubSheetOpen(false);
         }}
+        onSkip={() => {
+          setSelectedClub(null);
+          setClubSheetOpen(false);
+        }}
       />
     </Sheet>
   );
@@ -512,6 +480,7 @@ function ClubPickerSheet({
   loading,
   selectedId,
   onSelect,
+  onSkip,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -520,6 +489,7 @@ function ClubPickerSheet({
   loading: boolean;
   selectedId: string | null;
   onSelect: (c: { id: string; name: string }) => void;
+  onSkip: () => void;
 }) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -538,7 +508,7 @@ function ClubPickerSheet({
             )}
           </SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto px-2 py-2">
+        <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="p-6 text-center text-neutral-500 text-[13px]">
               주변 클럽 찾는 중...
@@ -548,7 +518,7 @@ function ClubPickerSheet({
               1.5km 반경에 등록된 클럽이 없어요
             </div>
           ) : (
-            <ul className="divide-y divide-neutral-900">
+            <ul className="divide-y divide-neutral-900 px-2 py-2">
               {clubs.map((c) => {
                 const selected = selectedId === c.id;
                 return (
@@ -575,6 +545,16 @@ function ClubPickerSheet({
               })}
             </ul>
           )}
+        </div>
+        {/* 하단: 지정 안 함 옵션 */}
+        <div className="border-t border-neutral-800 px-4 py-3 shrink-0">
+          <button
+            type="button"
+            onClick={onSkip}
+            className="w-full text-[13px] text-neutral-400 hover:text-white transition-colors py-2"
+          >
+            클럽 지정 안 하고 게시하기 →
+          </button>
         </div>
       </SheetContent>
     </Sheet>

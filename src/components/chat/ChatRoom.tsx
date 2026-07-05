@@ -75,7 +75,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
   // 답글 시트
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
 
-  // SHOT 캡처 시트
+  // LIVE 캡처 시트
   const [shotComposeOpen, setShotComposeOpen] = useState(false);
 
   // 메시지 ID 리스트 (이모지 반응 일괄 로드)
@@ -109,7 +109,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
     return isVerified(room as VerifiableArea);
   }, [requiresVerification, room, isVerified]);
 
-  // Migration 404 이후: SHOT 캐러셀은 모든 방 통합. area는 정렬 힌트로만 사용.
+  // Migration 413 이후: LIVE 캐러셀은 모든 방 통합. area는 정렬 힌트로만 사용.
   // 현재 방이 지역방이면 그 area 우선, 잡담방이면 인증된 area 중 첫 번째
   const shotSortArea: VerifiableArea | null = useMemo(() => {
     if (room !== "all") return room as VerifiableArea;
@@ -518,7 +518,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
 
   return (
     <div className="flex flex-col pb-40">
-      {/* 와글 SHOT 통합 캐러셀 (Migration 404 이후 방 필터 X) */}
+      {/* 와글 LIVE 통합 캐러셀 (Migration 413 이후 방 필터 X) */}
       <ShotCarousel
         userArea={shotSortArea}
         showComposeButton={true}
@@ -534,7 +534,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
         }}
       />
 
-      {/* SHOT 캡처 시트 — area 없어도 일반 SHOT은 게시 가능 */}
+      {/* LIVE 캡처 시트 — area 없어도 클럽 미지정 LIVE는 게시 가능 */}
       {user && (
         <ShotCaptureSheet
           open={shotComposeOpen}

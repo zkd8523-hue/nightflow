@@ -25,10 +25,10 @@ interface Props {
 }
 
 /**
- * 클럽 상세 페이지 SHOT 섹션 (Migration 341/404 이후)
- *   - useChatShots(clubId=…) → 그 클럽 LIVE만 로드
- *   - 인증된 area가 클럽 area와 일치하면 "첫 SHOT 올리기" CTA
- *   - 미인증 유저는 SHOT이 없으면 섹션 자체를 숨김
+ * 클럽 상세 페이지 LIVE 섹션 (Migration 413 이후)
+ *   - useChatShots(clubId=…) → 그 클럽 LIVE만 로드 (12h 휘발)
+ *   - 인증된 area가 클럽 area와 일치하면 "첫 LIVE 올리기" CTA
+ *   - 미인증 유저는 LIVE가 없으면 섹션 자체를 숨김
  */
 export function ClubShotSection({ clubId, clubName, clubAreaKr }: Props) {
   const router = useRouter();

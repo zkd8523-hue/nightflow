@@ -8,11 +8,16 @@
 export type ChatRoomCode = "all" | "gangnam" | "hongdae" | "itaewon";
 export type VerifiableArea = Exclude<ChatRoomCode, "all">;
 
+/**
+ * 채팅 탭 목록.
+ *
+ * Migration 413 이후 통합: "서울" 단일 탭 = 기존 all(잡담) 방 재사용.
+ * 지역 필터(강남/홍대/이태원)는 LIVE 캐러셀 서브 필터로 이동.
+ *
+ * gangnam/hongdae/itaewon room 코드는 하위 호환용으로 유지 (기존 데이터).
+ */
 export const CHAT_ROOMS: { code: ChatRoomCode; label: string }[] = [
-  { code: "all", label: "잡담" },
-  { code: "gangnam", label: "강남" },
-  { code: "hongdae", label: "홍대" },
-  { code: "itaewon", label: "이태원" },
+  { code: "all", label: "서울" },
 ];
 
 export const VERIFIABLE_AREAS: { code: VerifiableArea; label: string; lat: number; lng: number; radiusKm: number }[] = [

@@ -1,7 +1,7 @@
 /**
- * 본 SHOT 추적 (인스타 스토리 패턴)
- * - localStorage에 SHOT id 배열 저장
- * - SHOT은 9시간 휘발이라 누적 부담 적음
+ * 본 LIVE 추적 (인스타 스토리 패턴)
+ * - localStorage에 LIVE id 배열 저장
+ * - LIVE는 12시간 휘발이라 누적 부담 적음
  * - 7일 지난 entry는 자동 정리 (최대 길이 500)
  */
 

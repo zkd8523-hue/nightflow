@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
+import { MyStampsCard } from "@/components/profile/MyStampsCard";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import type { ContactMethodType, Puzzle } from "@/types/database";
@@ -375,6 +376,9 @@ export default function ProfilePage() {
         {/* 내 깃발 + 찜 목록 — 일반 유저 전용 (MD/admin은 숨김) */}
         {user.role !== "md" && user.role !== "admin" && (
         <>
+        {/* 내 스탬프 카드 (LIVE 활동 리워드) */}
+        <MyStampsCard />
+
         {/* 내 깃발 */}
         <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
           <div className="flex items-center justify-between mb-4">

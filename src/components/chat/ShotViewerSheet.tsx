@@ -243,7 +243,7 @@ function ShotViewerContent({
   }
 
   async function handleDelete() {
-    if (!confirm("이 SHOT을 삭제할까요?")) return;
+    if (!confirm("이 LIVE를 삭제할까요?")) return;
     setDeleting(true);
     const supabase = createClient();
     const { error } = await supabase
@@ -274,7 +274,7 @@ function ShotViewerContent({
       message: reason.trim(),
     });
     if (error) {
-      if (error.code === "23505") toast.error("이미 신고하신 SHOT입니다");
+      if (error.code === "23505") toast.error("이미 신고하신 LIVE입니다");
       else if (error.code === "42P01" || error.code === "42703")
         toast.error("신고 마이그레이션 미적용 (322)");
       else toast.error("신고 처리에 실패했습니다");
@@ -427,7 +427,7 @@ function ShotViewerContent({
               return;
             }
             if (isMine) {
-              toast.error("본인 SHOT엔 좋아요할 수 없어요");
+              toast.error("본인 LIVE엔 좋아요할 수 없어요");
               return;
             }
             onToggleLike?.(shot.id);
@@ -474,7 +474,7 @@ function ShotViewerContent({
 
       {/* 하단 swipe 힌트 */}
       <div className="absolute bottom-1 inset-x-0 z-10 text-center pointer-events-none">
-        <span className="text-white/30 text-[10px]">위로 밀어 다음 SHOT</span>
+        <span className="text-white/30 text-[10px]">위로 밀어 다음 LIVE</span>
       </div>
     </div>
   );

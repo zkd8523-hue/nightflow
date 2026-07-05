@@ -1295,12 +1295,12 @@ export interface ChatMessageReport {
 }
 
 /**
- * 와글 SHOT (Migration 315) — 지역 인증된 유저의 휘발성 미디어 (9시간)
- * 작성은 인증자만, 노출은 잡담방 + 지역방 모두
+ * 와글 LIVE (Migration 413) — 유저의 휘발성 미디어 (12시간)
+ * 게시 자유, 클럽 지정 시 스탬프 대상. 노출은 잡담방 + 지역방 + 클럽 페이지
  */
 export interface ChatShot {
   id: string;
-  /** Migration 404 — NULL 허용 (일반 SHOT). 지역방 SHOT/LIVE는 인증 area */
+  /** Migration 404 — NULL 허용 (클럽 미지정). 클럽 지정 LIVE는 인증 area */
   area: VerifiableArea | null;
   /** Migration 341 — 지정 시 LIVE. 클럽 페이지 노출 대상 */
   club_id: string | null;
