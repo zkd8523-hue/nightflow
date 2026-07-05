@@ -67,7 +67,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   let description: string;
   if (puzzle.is_recruiting_party) {
     // 조각: 인앱 카톡 공유 카드와 동일한 톤
-    title = `${eventDate ? `${eventDate} ` : ""}${area} 테이블 같이 잡을래?`;
+    title = `${eventDate ? `${eventDate} ` : ""}${area} 테이블 같이 갈래?`;
     description = perPerson
       ? `인당 ${perPerson.toLocaleString()}원 · 파티원 찾는 중 🔥`
       : "파티원 찾는 중 🔥";
@@ -137,7 +137,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
   // puzzle 먼저 받아서 leader_id 확보
   const { data: puzzle } = await supabase
     .from("puzzles")
-    .select("*")
+    .select("*, club:clubs(id, name, area, thumbnail_url, floor_plan_url, latitude, longitude)")
     .eq("id", id)
     .single();
 

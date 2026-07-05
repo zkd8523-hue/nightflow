@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, Users, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -181,7 +181,7 @@ export function MessagesListClient() {
                 ? partyRooms.some((r) => r.unread)
                 : s.items.some((g) => g.some((c) => !isClosedStatus(c.offer_status) && c.unread));
               const active = tab === s.key;
-              const name = s.key === "flag" ? "깃발" : "조각";
+              const name = s.key === "flag" ? "🚩 깃발" : "🧩 조각";
               return (
                 <button
                   key={s.key}
@@ -222,41 +222,60 @@ export function MessagesListClient() {
         <p className="text-center text-[13px] text-neutral-600 mt-16">깃발 대화가 없어요</p>
       ) : (
         <div>
-          {/* 조각 탭: 단체채팅방(파티) 먼저 노출 */}
-          {tab === "share" && partyRooms.map((room) => (
-            <Link
-              key={room.puzzle_id}
-              href={`/party/${room.puzzle_id}`}
-              onClick={suppressIfLongPress}
-              onContextMenu={(e) => { e.preventDefault(); setLeaveTarget({ kind: "party", puzzleId: room.puzzle_id, isLeader: room.is_leader, label: `${formatDate(room.event_date)} · ${room.area}` }); }}
-              onPointerDown={() => startPress({ kind: "party", puzzleId: room.puzzle_id, isLeader: room.is_leader, label: `${formatDate(room.event_date)} · ${room.area}` })}
-              onPointerUp={cancelPress}
-              onPointerLeave={cancelPress}
-              className={`flex items-center gap-3 px-4 py-3.5 active:bg-neutral-900/60 ${["expired", "cancelled"].includes(room.puzzle_status) ? "opacity-50" : ""}`}
-            >
-              <div className="relative w-11 h-11 rounded-full overflow-hidden bg-green-500/15 grid place-items-center shrink-0">
-                <Users className="w-5 h-5 text-green-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-[14px] font-bold text-white truncate">
-                    {formatDate(room.event_date)} · {room.area}
-                    {room.budget ? ` · ${Math.round(room.budget / 10000)}만원` : ""}
+          {/* 조각 탭: 단체채팅방(파티) — 깃발과 동일한 헤더+행 구조 */}
+          {tab === "share" && partyRooms.map((room) => {
+            const budgetText = room.budget ? ` · ${Math.round(room.budget / 10000)}만원` : "";
+            return (
+              <div key={room.puzzle_id} className="mb-1">
+                {/* 조각 헤더 — 깃발 헤더와 동일한 톤 */}
+                <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-neutral-900/40">
+                  <p className="text-[13px] font-bold text-neutral-300 truncate">
+                    {formatDate(room.event_date)}
                   </p>
                   <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400 font-bold">
-                    {room.member_count}명
+                    {room.member_count}/{room.target_count}명
                   </span>
                 </div>
-                <p className={`text-[13px] truncate mt-0.5 ${room.unread ? "text-neutral-200 font-semibold" : "text-neutral-500"}`}>
-                  {room.last_content}
-                </p>
+                {/* 단체채팅 행 */}
+                <Link
+                  href={`/party/${room.puzzle_id}`}
+                  onClick={suppressIfLongPress}
+                  onContextMenu={(e) => { e.preventDefault(); setLeaveTarget({ kind: "party", puzzleId: room.puzzle_id, isLeader: room.is_leader, label: `${formatDate(room.event_date)} · ${room.area}` }); }}
+                  onPointerDown={() => startPress({ kind: "party", puzzleId: room.puzzle_id, isLeader: room.is_leader, label: `${formatDate(room.event_date)} · ${room.area}` })}
+                  onPointerUp={cancelPress}
+                  onPointerLeave={cancelPress}
+                  className={`flex items-center gap-3 px-4 py-3.5 active:bg-neutral-900/60 ${["expired", "cancelled"].includes(room.puzzle_status) ? "opacity-50" : ""}`}
+                >
+                  {/* 아바타: 클럽 대표 이미지 있으면 이미지, 없으면 지역 첫 글자 */}
+                  <div className="relative w-11 h-11 rounded-full overflow-hidden bg-neutral-800 shrink-0 grid place-items-center text-[14px] font-bold text-neutral-400">
+                    {room.club_thumbnail ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={room.club_thumbnail} alt="" className="w-full h-full object-cover" decoding="async" />
+                    ) : (
+                      (room.area || "?").slice(0, 1)
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[14px] font-bold text-white truncate">
+                        {room.notes || `${formatDate(room.event_date)} · ${room.area}${budgetText}`}
+                      </p>
+                      {room.is_leader && (
+                        <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold">MY</span>
+                      )}
+                    </div>
+                    <p className={`text-[13px] truncate mt-0.5 ${room.unread ? "text-neutral-200 font-semibold" : "text-neutral-500"}`}>
+                      {room.last_content}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[11px] text-neutral-600">{chatListTime(room.last_at)}</span>
+                    {room.unread && <span className="w-2 h-2 rounded-full bg-red-500" />}
+                  </div>
+                </Link>
               </div>
-              <div className="flex flex-col items-end gap-1 shrink-0">
-                <span className="text-[11px] text-neutral-600">{chatListTime(room.last_at)}</span>
-                {room.unread && <span className="w-2 h-2 rounded-full bg-red-500" />}
-              </div>
-            </Link>
-          ))}
+            );
+          })}
           {/* 깃발 탭만 1:1 오퍼 채팅 그룹 노출 (조각은 단체방으로 통합) */}
           {tab === "flag" && activeSection.items.map((group) => {
             const head = group[0];

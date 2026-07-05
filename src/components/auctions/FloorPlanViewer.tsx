@@ -102,7 +102,6 @@ export function FloorPlanViewer({
             <span className="text-xs text-amber-400 font-bold">
               {highlightLabel}
             </span>
-            <span className="text-[10px] text-neutral-500">테이블 위치</span>
           </div>
         )}
       </div>

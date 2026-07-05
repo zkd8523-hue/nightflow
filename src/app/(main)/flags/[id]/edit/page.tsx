@@ -48,13 +48,13 @@ export default async function PuzzleEditPage({ params }: PageProps) {
             <ChevronLeft className="w-4 h-4" />
             <span>상세로 돌아가기</span>
           </Link>
-          <h1 className="text-2xl font-black text-white tracking-tight">깃발 수정</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">{puzzle.is_recruiting_party ? "조각 수정" : "깃발 수정"}</h1>
           <p className="text-neutral-500 text-sm font-medium mt-0.5">
             날짜·지역·예산·인원·제목을 수정할 수 있어요
           </p>
         </div>
 
-        <PuzzleForm userId={user.id} puzzle={puzzle} />
+        <PuzzleForm userId={user.id} puzzle={puzzle} shareMode={puzzle.is_recruiting_party} />
       </div>
     </div>
   );

@@ -23,6 +23,10 @@ interface Props {
   onClose: () => void;
   /** "created": 등록 직후 / "share": 홈·상세에서 공유 버튼 누른 경우 */
   mode?: "created" | "share";
+  /** MD 직통 조각: 클럽 대표 이미지·이름 사용 ("{지역} {클럽이름}" + 클럽 썸네일) */
+  hostIsMd?: boolean;
+  clubName?: string | null;
+  clubThumbnail?: string | null;
 }
 
 /**
@@ -36,7 +40,11 @@ export function ShareCreatedSheet({
   perPerson,
   onClose,
   mode = "created",
+  hostIsMd = false,
+  clubName = null,
+  clubThumbnail = null,
 }: Props) {
+  const useClub = hostIsMd && !!clubName;
   const router = useRouter();
   const { shareToKakao } = useKakaoShare();
   const [copying, setCopying] = useState(false);
@@ -51,12 +59,14 @@ export function ShareCreatedSheet({
   // 카톡은 URL 단위로 OG를 캐싱 → 링크는 더미 쿼리로 매번 새로 스크랩되게
   const bust = Date.now();
   const shareUrl = `${origin}/flags/${puzzleId}?t=${bust}`;
-  // 썸네일은 정적 파일(1200x630 사전 합성) — 동적 라우트 렌더링 지연 제거 + Kakao 캐시 활용
-  const imageUrl = `${origin}/og-jogak-card.jpg`;
+  // MD 직통은 클럽 대표 이미지(Supabase 공개 URL) — 로컬에서도 카카오가 긁을 수 있음.
+  // 유저 조각은 정적 파일(1200x630 사전 합성) — 로컬 미노출, 프로덕션에서만.
+  const imageUrl = useClub && clubThumbnail ? clubThumbnail : `${origin}/og-jogak-card.jpg`;
 
   async function handleKakao() {
-    const title = `${areaLabel} 테이블 같이 잡을래?`;
-    const text = `인당 ${perPerson.toLocaleString()}원 · 파티원 찾는 중 🔥`;
+    // MD 직통: "{지역} {클럽이름}" / 유저 조각: "{지역} 테이블"
+    const title = `${areaLabel}${useClub ? ` ${clubName}` : " 테이블"} 같이 갈래?`;
+    const text = `1인 ${perPerson.toLocaleString()}₩ · 파티원 찾는 중 🔥`;
 
     // 앱(Capacitor 네이티브): Kakao JS SDK sendDefault가 WebView에서 먹통 → OS 공유 시트 사용
     const native = await shareViaNative({ title, text, url: shareUrl });
@@ -65,7 +75,7 @@ export function ShareCreatedSheet({
     // isAvailable(React state)가 늦게 갱신되는 레이스 방지 — shareToKakao가
     // window.Kakao.isInitialized()를 직접 확인하므로 상태 게이트 없이 바로 시도.
     const ok = await shareToKakao({
-      clubName: areaLabel,
+      clubName: useClub ? clubName! : "",
       tableInfo: "",
       startPrice: perPerson,
       auctionUrl: shareUrl,

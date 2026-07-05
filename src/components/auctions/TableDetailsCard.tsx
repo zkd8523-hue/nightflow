@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useMemo } from "react";
@@ -9,6 +11,10 @@ interface TableDetailsCardProps {
   notes?: string;
   /** 테이블맵(플로어맵) 토글 영역. 테이블 구성 칩 아래에 삽입됨 */
   floorPlanSlot?: React.ReactNode;
+  /** "테이블 구성" 제목 오버라이드 (예: MD 직통 조각의 클럽명) */
+  titleOverride?: string;
+  /** titleOverride 클릭 시 이동할 클럽 상세 링크 (MD 직통 조각용) */
+  titleHref?: string;
 }
 
 /**
@@ -17,7 +23,7 @@ interface TableDetailsCardProps {
  * - 테이블맵(선택)
  * - 참고 사항 표시
  */
-export function TableDetailsCard({ includes, notes, floorPlanSlot }: TableDetailsCardProps) {
+export function TableDetailsCard({ includes, notes, floorPlanSlot, titleOverride, titleHref }: TableDetailsCardProps) {
   const { liquorItems, extraItems } = useMemo(() => {
     const liquorKeywords = [
       "병",
@@ -48,9 +54,16 @@ export function TableDetailsCard({ includes, notes, floorPlanSlot }: TableDetail
     <Card className="bg-[#1C1C1E] border-neutral-800/50 rounded-2xl px-4 py-3 space-y-2.5">
       <div className="space-y-2.5">
         {/* 테이블 구성 (주류 포함) */}
-        {includes.length > 0 && (
+        {(includes.length > 0 || titleOverride) && (
           <div className="space-y-2.5">
-            <h2 className="text-[19px] font-black text-white tracking-tight">테이블 구성</h2>
+            {titleOverride && titleHref ? (
+              <Link href={titleHref} className="inline-flex items-center gap-1 group">
+                <h2 className="text-[19px] font-black text-white tracking-tight group-hover:text-amber-300 transition-colors">{titleOverride}</h2>
+                <ChevronRight className="w-4 h-4 text-neutral-500" />
+              </Link>
+            ) : (
+              <h2 className="text-[19px] font-black text-white tracking-tight">{titleOverride || "테이블 구성"}</h2>
+            )}
             {liquorItems.length > 0 && (
               <div className="flex flex-wrap gap-1.5 w-full">
                 {liquorItems.map((item) => (

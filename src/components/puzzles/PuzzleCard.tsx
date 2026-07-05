@@ -2,7 +2,9 @@
 
 import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Share2 } from "lucide-react";
+import { Share2, BadgeCheck, Minus, Plus } from "lucide-react";
+import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import { ShareCreatedSheet } from "./ShareCreatedSheet";
 import { Button } from "@/components/ui/button";
 import type { Puzzle, GenderPref, AgePref, VibePref, MusicPref } from "@/types/database";
@@ -159,6 +161,25 @@ export const PuzzleCard = memo(function PuzzleCard({
   onUnlock,
 }: PuzzleCardProps) {
   const router = useRouter();
+  // MD 직통 조각: 방장(MD)이 카드에서 "이미 찬 자리(외부 인원)" 조정
+  // 옛 AuctionCard 패턴 — +/-로 델타 누적(슬롯 즉시 미리 차고) → "반영"으로 저장
+  const [committedCount, setCommittedCount] = useState(puzzle.current_count);
+  const [extDelta, setExtDelta] = useState(0);
+  const [savingExt, setSavingExt] = useState(false);
+  const canAdjustExternal = isLeader && !!puzzle.host_is_md;
+  const displayCount = Math.max(1, Math.min(puzzle.target_count, committedCount + extDelta));
+  const applyExternal = async () => {
+    if (savingExt || extDelta === 0) return;
+    setSavingExt(true);
+    const { data } = await createClient().rpc("adjust_share_host_external", { p_puzzle_id: puzzle.id, p_delta: extDelta });
+    setSavingExt(false);
+    if (data?.success) {
+      setCommittedCount(data.current_count);
+      setExtDelta(0);
+      const remaining = puzzle.target_count - data.current_count;
+      toast.success(remaining > 0 ? `반영됐어요! · ${remaining}자리 남음` : "반영됐어요! · 꽉 찼어요 🎉");
+    } else if (data?.error) toast.error(data.error);
+  };
   const totalBudget = puzzle.total_budget ?? (puzzle.budget_per_person * puzzle.target_count);
   const perPersonBudget = puzzle.total_budget
     ? Math.floor(puzzle.total_budget / puzzle.target_count)
@@ -183,6 +204,9 @@ export const PuzzleCard = memo(function PuzzleCard({
       area={puzzle.area}
       perPerson={perPersonBudget}
       mode="share"
+      hostIsMd={puzzle.host_is_md}
+      clubName={puzzle.club?.name}
+      clubThumbnail={puzzle.club?.thumbnail_url}
       onClose={() => setShareOpen(false)}
     />
   ) : null;
@@ -253,6 +277,11 @@ export const PuzzleCard = memo(function PuzzleCard({
               <p className="text-[12px] text-neutral-500 font-medium">
                 by {puzzle.leader.display_name}
               </p>
+              {puzzle.host_is_md && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-[11px] font-bold whitespace-nowrap">
+                  <BadgeCheck className="w-3 h-3" />파트너 직통
+                </span>
+              )}
               {puzzle.leader.country_code && puzzle.leader.country_code !== "KR" && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-neutral-800 border border-neutral-700 text-[11px] font-bold text-neutral-300">
                   {countryFlag(puzzle.leader.country_code)}
@@ -298,7 +327,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 </span>
               )}
               <div className="flex flex-wrap gap-1.5">
-                {buildPuzzleSlotLayout(puzzle).map((slot, i) => (
+                {buildPuzzleSlotLayout({ ...puzzle, current_count: canAdjustExternal ? displayCount : puzzle.current_count }).map((slot, i) => (
                   <PuzzlePiece
                     key={i}
                     filled={slot.filled}
@@ -308,6 +337,39 @@ export const PuzzleCard = memo(function PuzzleCard({
                   />
                 ))}
               </div>
+              {/* 방장(MD) 전용: 이미 찬 자리(외부 인원) — 델타 누적 후 "반영"으로 저장 */}
+              {canAdjustExternal && (
+                <div className="flex items-center gap-2 pt-1.5">
+                  <span className="text-[11px] text-neutral-500 font-bold">인원 수정</span>
+                  <button
+                    type="button"
+                    disabled={savingExt || displayCount <= 1}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExtDelta((d) => d - 1); }}
+                    className="w-6 h-6 rounded-full bg-neutral-700 hover:bg-neutral-600 flex items-center justify-center disabled:opacity-30 transition-colors"
+                  >
+                    <Minus className="w-3 h-3 text-white" />
+                  </button>
+                  <span className="text-[13px] font-black text-white tabular-nums w-4 text-center">{displayCount}</span>
+                  <button
+                    type="button"
+                    disabled={savingExt || displayCount >= puzzle.target_count}
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExtDelta((d) => d + 1); }}
+                    className="w-6 h-6 rounded-full bg-neutral-700 hover:bg-neutral-600 flex items-center justify-center disabled:opacity-30 transition-colors"
+                  >
+                    <Plus className="w-3 h-3 text-white" />
+                  </button>
+                  {extDelta !== 0 && (
+                    <button
+                      type="button"
+                      disabled={savingExt}
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); applyExternal(); }}
+                      className="ml-1 px-3 h-6 rounded-full bg-white text-black text-[11px] font-black active:scale-95 transition disabled:opacity-50"
+                    >
+                      {savingExt ? "저장중" : "적용"}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -376,12 +438,15 @@ export const PuzzleCard = memo(function PuzzleCard({
               >
                 제안 완료
               </Button>
+            ) : puzzle.host_is_md ? (
+              /* MD 직통 조각엔 다른 MD가 오퍼 불가 (남의 클럽 직통) */
+              null
             ) : (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
                 className="h-8 px-3 rounded-full font-black text-[12px] bg-amber-500 hover:bg-amber-400 text-black active:scale-[0.97] transition-all shrink-0"
               >
-                {isRecruitingParty ? "조각줍기" : "깃발뽑기"}
+                오퍼하기
               </Button>
             )}
           </div>

@@ -746,7 +746,7 @@ export function HotdealSlotBoard({
                       ? "주 1간판"
                       : preOpen
                       ? "미오픈"
-                      : "선점하기"}
+                      : "간판 걸기"}
                   </button>
                 </div>
               );

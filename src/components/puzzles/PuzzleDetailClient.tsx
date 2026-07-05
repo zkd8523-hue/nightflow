@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User, Eye, MessageCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User, Eye, MessageCircle, MapPin, ChevronDown } from "lucide-react";
+import { TableDetailsCard } from "@/components/auctions/TableDetailsCard";
+import { FloorPlanViewer } from "@/components/auctions/FloorPlanViewer";
 import { FeatureGate } from "@/components/common/FeatureGate";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -185,6 +187,7 @@ export function PuzzleDetailClient({
 
   const [showJoin, setShowJoin] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
+  const [floorPlanOpen, setFloorPlanOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<PuzzleOffer | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [offers, setOffers] = useState<PuzzleOffer[]>([]);
@@ -542,8 +545,9 @@ export function PuzzleDetailClient({
           <h1 className="text-[17px] font-black text-white flex-1">{t(isRecruitingParty ? "조각 상세" : "깃발 상세", "Request detail")}</h1>
           {currentUserId === puzzle.leader_id && isOpen && pendingOffers.length === 0 && (
             <Link
-              href={`/flags/${puzzle.id}/edit${lq}`}
-              aria-label={t("깃발 수정", "Edit request")}
+              // MD 직통 조각(host_is_md)은 등록과 동일한 AuctionForm 수정 폼으로, 그 외는 유저 조각/깃발 폼으로
+              href={puzzle.host_is_md ? `/md/auctions/${puzzle.id}/edit` : `/flags/${puzzle.id}/edit${lq}`}
+              aria-label={t(isRecruitingParty ? "조각 수정" : "깃발 수정", "Edit request")}
               className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
             >
               <Pencil className="w-4 h-4" />
@@ -660,6 +664,34 @@ export function PuzzleDetailClient({
               </button>
             </div>
 
+            {/* 파트너 직통 — 제목 아래, 금액 위 (MD 직통만). 닉네임 버튼도 이 줄로 이동 */}
+            {isRecruitingParty && puzzle.host_is_md && (
+              <div className="space-y-2.5 pt-1 pb-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {puzzle.leader && (
+                    <button
+                      type="button"
+                      onClick={() => setShowLeaderInfo(true)}
+                      className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2.5 py-1 transition-colors"
+                    >
+                      {puzzle.leader.profile_image ? (
+                        <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-4 h-4 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
+                          {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
+                        </div>
+                      )}
+                      {puzzle.leader.display_name || puzzle.leader.name || "방장"}
+                    </button>
+                  )}
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-blue-400" />
+                    <h2 className="text-[14px] font-black text-blue-400">파트너 직통</h2>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 예산 + 인원 pill + 닉네임 버튼 + 신뢰도 */}
             <div className="space-y-0.5">
               {isRecruitingParty ? (
@@ -672,7 +704,7 @@ export function PuzzleDetailClient({
                     <span className="text-[13px] text-neutral-500">
                       / 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
                     </span>
-                    {puzzle.leader && (
+                    {puzzle.leader && !puzzle.host_is_md && (
                       <button
                         type="button"
                         onClick={() => setShowLeaderInfo(true)}
@@ -745,13 +777,9 @@ export function PuzzleDetailClient({
             {/* 인원 퍼즐 조각: 파티원 모집 중일 때만 표시 */}
             {isRecruitingParty && (
               <div className="space-y-1.5">
-                <span className="text-[13px] text-neutral-400">
-                  {puzzle.current_count >= puzzle.target_count
-                    ? "퍼즐 완성!"
-                    : (puzzle.target_male ?? 0) === 0 && (puzzle.target_female ?? 0) === 0
-                      ? `파티원 ${puzzle.current_count}/${puzzle.target_count}명`
-                      : `파티원 ${puzzle.current_count}/${puzzle.target_count}명 (🧑 ${puzzle.current_male ?? 0}/${puzzle.target_male ?? 0} · 👩 ${puzzle.current_female ?? 0}/${puzzle.target_female ?? 0})`}
-                </span>
+                {puzzle.current_count >= puzzle.target_count && (
+                  <span className="text-[13px] text-neutral-400">퍼즐 완성!</span>
+                )}
                 <div className="flex flex-wrap gap-1.5">
                   {buildPuzzleSlotLayout(puzzle).map((slot, i) => (
                     <PuzzlePiece
@@ -787,6 +815,89 @@ export function PuzzleDetailClient({
               {formatRelativeTime(puzzle.created_at)}
             </p>
           </section>
+
+          {/* MD 한마디 — 기본 정보 카드 바로 아래 (MD 직통만). 실제 한마디(md_comment) 있을 때만 노출.
+              제목(notes)을 한마디로 재출력하지 않음 — 중복이라 의미 없음 */}
+          {isRecruitingParty && puzzle.host_is_md && puzzle.md_comment && (
+            <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl px-5 py-4 space-y-1">
+              <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">MD 한마디</p>
+              <p className="text-[14px] text-neutral-200 leading-relaxed whitespace-pre-line">{puzzle.md_comment}</p>
+            </div>
+          )}
+
+          {/* MD 직통 테이블 정보 (파트너 헤더/클럽/이미지는 위 기본정보 안으로 이동) */}
+          {isRecruitingParty && puzzle.host_is_md && (
+            <>
+              {/* 4. Table Details Card (테이블 구성 + 테이블맵 통합) — AuctionDetail과 동일 */}
+              <TableDetailsCard
+                includes={puzzle.includes || []}
+                /* notes(제목)를 참고사항으로 재출력하면 상단 제목과 중복 → MD 한마디는 위 전용 박스로 노출 */
+                notes={undefined}
+                titleOverride={puzzle.club?.name ?? undefined}
+                titleHref={puzzle.club?.id ? `/clubs/${puzzle.club.id}` : undefined}
+                floorPlanSlot={
+                  puzzle.club?.floor_plan_url && puzzle.table_info ? (
+                    <div className="space-y-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setFloorPlanOpen((v) => !v)}
+                        className="w-full flex items-center justify-center gap-2"
+                        aria-expanded={floorPlanOpen}
+                      >
+                        <h2 className="text-[14px] font-bold text-white">
+                          {floorPlanOpen ? "테이블맵 닫기" : "테이블맵 보기"}
+                        </h2>
+                        <ChevronDown
+                          className={`w-4 h-4 text-neutral-500 transition-transform ${floorPlanOpen ? "rotate-180" : ""}`}
+                        />
+                      </button>
+                      <FloorPlanViewer
+                        floorPlanUrl={puzzle.club.floor_plan_url}
+                        positions={[]}
+                        highlightLabel={puzzle.table_info}
+                        showImage={floorPlanOpen}
+                      />
+                    </div>
+                  ) : null
+                }
+              />
+
+              {/* 클럽 위치 미니맵 — AuctionDetail과 동일 (모달 대신 지도앱 링크) */}
+              {puzzle.club?.latitude && puzzle.club?.longitude && (
+                <div>
+                  <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-neutral-500" />
+                        <h2 className="text-[14px] font-bold text-white">위치</h2>
+                      </div>
+                      <a
+                        href={`https://maps.google.com/maps?q=${puzzle.club.latitude},${puzzle.club.longitude}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center p-2 -m-2 rounded-lg text-[12px] text-neutral-400 font-bold hover:text-white transition-colors active:bg-neutral-800"
+                      >
+                        지도앱으로 열기 →
+                      </a>
+                    </div>
+                    <a
+                      href={`https://maps.google.com/maps?q=${puzzle.club.latitude},${puzzle.club.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative rounded-xl overflow-hidden border border-neutral-800 w-full cursor-pointer block"
+                    >
+                      <iframe
+                        src={`https://maps.google.com/maps?q=${puzzle.club.latitude},${puzzle.club.longitude}&z=16&output=embed&hl=ko`}
+                        className="w-full h-[130px] pointer-events-none"
+                        loading="lazy"
+                        title={`${puzzle.club.name} 위치`}
+                      />
+                    </a>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
 
 
           {/* 성사 기록 (accepted 상태) */}
@@ -1024,8 +1135,8 @@ export function PuzzleDetailClient({
             </section>
           )}
 
-          {/* 오퍼 섹션 — 성사 후엔 MD(본인 오퍼 상태 확인) 전용으로 축소. 일반 유저/방장은 위 성사됨 카드로 충분. */}
-          {(!isAccepted || ((isMd || isAdmin) && myOffer)) && (
+          {/* 오퍼 섹션 — MD 직통 조각(host_is_md)은 오퍼를 안 받으므로 시크릿오퍼 숨김 */}
+          {!puzzle.host_is_md && (!isAccepted || ((isMd || isAdmin) && myOffer)) && (
           <section className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1343,15 +1454,25 @@ export function PuzzleDetailClient({
             </div>
           )}
 
-          {/* 참여자 목록: 파티원 모집 중일 때만 */}
-          {isRecruitingParty && (
+          {/* 참여자 목록: 파티원 모집 중일 때만.
+              MD 직통 조각은 대표자(MD)가 주최자이지 파티원이 아니므로 목록에서 제외 → 실제 합류 유저만 노출 */}
+          {isRecruitingParty && (() => {
+            const partyMembers = puzzle.host_is_md
+              ? members.filter((m) => m.user_id !== puzzle.leader_id)
+              : members;
+            return (
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-neutral-400" />
               <h2 className="text-[14px] font-bold text-neutral-300">파티원</h2>
             </div>
+            {partyMembers.length === 0 ? (
+              <p className="text-[13px] text-neutral-500 bg-[#1C1C1E] rounded-xl px-4 py-4 text-center">
+                아직 합류한 파티원이 없어요
+              </p>
+            ) : (
             <div className="space-y-2">
-              {members.map((member) => {
+              {partyMembers.map((member) => {
                 const isMe = member.user_id === currentUserId;
                 const isLeaderMember = member.user_id === puzzle.leader_id;
                 return (
@@ -1415,8 +1536,10 @@ export function PuzzleDetailClient({
                 );
               })}
             </div>
+            )}
           </section>
-          )}
+          );
+          })()}
 
           {/* 대표자 전용 액션 */}
           {isLeader && isOpen && (
@@ -1454,8 +1577,8 @@ export function PuzzleDetailClient({
             </button>
           )}
 
-          {/* MD/Admin 제안하기 버튼 */}
-          {(isMd || isAdmin) && isOpen && !myOffer && (
+          {/* MD/Admin 제안하기 버튼 — MD 직통 조각(host_is_md)엔 다른 MD 오퍼 불가 */}
+          {(isMd || isAdmin) && isOpen && !myOffer && !puzzle.host_is_md && (
             <div className="space-y-2">
               {/* 외국인 깃발 안내 (Migration 343 Escrow 결제 트리거) */}
               {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR" && (
@@ -1574,6 +1697,9 @@ export function PuzzleDetailClient({
             (puzzle.target_count ? Math.round((puzzle.total_budget ?? 0) / puzzle.target_count) : 0)
           }
           mode={shareCreatedMode}
+          hostIsMd={puzzle.host_is_md}
+          clubName={puzzle.club?.name}
+          clubThumbnail={puzzle.club?.thumbnail_url}
           onClose={() => setShowShareCreated(false)}
         />
       )}

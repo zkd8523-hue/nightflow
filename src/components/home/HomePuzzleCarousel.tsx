@@ -196,11 +196,27 @@ export function HomePuzzleCarousel({
           );
         })}
         {isMd ? (
-          /* MD/Admin: 끝 슬라이드를 "더보기 >" 카드로. 깃발꽂기 CTA는 노출하지 않음. */
+          shareMode ? (
+            /* MD 조각: 매출 유도 CTA (등록은 무료, 유저 입장 시 크레딧 과금) */
+            <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
+              <div className="text-center w-full mt-8">
+                <p className="text-[14.5px] text-neutral-200 font-semibold mb-0.5">
+                  조각원을 모아 매출을 올려보세요!
+                </p>
+                <Link href="/md/auctions/new">
+                  <Button className="h-12 pl-7 pr-9 text-black font-black text-[15px] rounded-full bg-green-500 hover:bg-green-400">
+                    🧩 조각 올리기
+                  </Button>
+                </Link>
+                <p className="text-[10px] text-neutral-300 mt-0.5">등록 무료</p>
+              </div>
+            </div>
+          ) : (
+          /* MD/Admin 깃발: 끝 슬라이드를 "더보기 >" 카드로. 깃발꽂기 CTA는 노출하지 않음. */
           <Link
             href={detailHref}
             className="flex-shrink-0 w-[64%] max-w-[280px] snap-start snap-always flex items-center justify-center group"
-            aria-label={shareMode ? "조각 더보기" : "깃발 더보기"}
+            aria-label="깃발 더보기"
           >
             <div className="text-center w-full mt-8">
               <div className="inline-flex items-center gap-1 text-[15px] font-black text-neutral-300 group-hover:text-white transition-colors">
@@ -210,6 +226,7 @@ export function HomePuzzleCarousel({
               <p className="text-[11px] text-neutral-500 mt-1">{totalCount ?? puzzles.length}개 보러가기</p>
             </div>
           </Link>
+          )
         ) : (
           <>
             {hasMore && (

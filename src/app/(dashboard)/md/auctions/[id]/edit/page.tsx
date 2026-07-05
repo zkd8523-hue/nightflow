@@ -28,11 +28,39 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
 
     // 2. 경매 정보 데이터 조회 (admin은 모든 경매, 그 외엔 본인 경매만)
     const isAdmin = userData.role === "admin";
-    const { data: auction } = await supabase
+    let { data: auction } = await supabase
         .from("auctions")
         .select("*")
         .eq("id", id)
         .single();
+
+    // MD 직통 조각은 auctions가 아니라 puzzles에 저장됨 → puzzles에서 찾아
+    // AuctionForm이 기대하는 형태(listing_type='share')로 매핑해 동일 폼으로 수정.
+    if (!auction) {
+        const { data: puzzle } = await supabase
+            .from("puzzles")
+            .select("*")
+            .eq("id", id)
+            .eq("host_is_md", true)
+            .single();
+        if (puzzle) {
+            auction = {
+                id: puzzle.id,
+                md_id: puzzle.leader_id,
+                listing_type: "share",
+                club_id: puzzle.club_id,
+                event_date: puzzle.event_date,
+                total_seats: puzzle.target_count,
+                price_per_seat: puzzle.budget_per_person,
+                includes: puzzle.includes ?? [],
+                table_info: puzzle.table_info ?? null,
+                md_message: puzzle.notes ?? "",
+                md_comment: puzzle.md_comment ?? "",
+                target_male: 0,
+                target_female: 0,
+            } as typeof auction;
+        }
+    }
 
     if (!auction) {
         redirect("/md/dashboard");

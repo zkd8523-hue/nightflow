@@ -765,6 +765,17 @@ export interface Puzzle {
   current_female: number;
   /** true: 파티원 추가 모집(조각모음). false: 인원 확정 깃발 (target = current). Migration 125 */
   is_recruiting_party: boolean;
+  /** Migration 366: MD 직통 조각 (MD가 직접 올림). true면 카드/상세에 MD·클럽·테이블 표시 */
+  host_is_md?: boolean;
+  club_id?: string | null;
+  /** MD 직통: 주류·구성 */
+  includes?: string[];
+  /** MD 직통: 테이블 정보 */
+  table_info?: string | null;
+  /** MD 직통: MD 한마디 (자유 텍스트, notes와 별개) */
+  md_comment?: string | null;
+  /** MD 직통: 클럽 조인 (host_is_md 카드/상세/공유용) */
+  club?: { id: string; name: string; area: string | null; thumbnail_url: string | null; floor_plan_url?: string | null; latitude?: number | null; longitude?: number | null } | null;
   status: PuzzleStatus;
   /** Migration 167: 취소 사유 (admin이 입력 시) */
   cancelled_reason: string | null;
@@ -889,9 +900,13 @@ export interface PartyOffer {
 export interface PartyChatSummary {
   puzzle_id: string;
   area: string;
+  notes: string | null;
   event_date: string;
   budget: number | null;
   member_count: number;
+  target_count: number;
+  /** MD 직통 조각의 클럽 대표 이미지. 없으면 프론트에서 지역 첫 글자 폴백 (Migration 412) */
+  club_thumbnail: string | null;
   is_leader: boolean;
   puzzle_status: string;
   last_content: string;

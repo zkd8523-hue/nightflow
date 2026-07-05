@@ -100,7 +100,11 @@ export function useKakaoShare(): UseKakaoShareReturn {
         : "";
 
       const dateStr = params.eventDate
-        ? dayjs(params.eventDate).locale("ko").format("M/D(dd)")
+        ? (() => {
+            const d = dayjs(params.eventDate);
+            // dayjs ko 로케일이 번들에서 누락돼 dd가 "Mo"처럼 영어로 나오는 케이스 방지 → 한글 요일 직접
+            return `${d.month() + 1}/${d.date()}(${["일", "월", "화", "수", "목", "금", "토"][d.day()]})`;
+          })()
         : "";
 
       const title = isMD
@@ -108,13 +112,13 @@ export function useKakaoShare(): UseKakaoShareReturn {
         : isInstant
           ? `오늘 ${params.clubName} 어때?`
           : isShare
-            ? `${dateStr} ${params.clubName} 테이블 같이 잡을래?`
+            ? `${dateStr} ${params.area || params.clubName}${params.clubName ? ` ${params.clubName}` : " 테이블"} 같이 갈래?`
             : `${dateStr} ${params.clubName} 같이 갈래?`;
 
       const description = isInstant
         ? (isMD ? `${price}원 | 지금 바로 예약 가능!` : `${price}원 | 나플 특가! 웨이팅 없이 바로 고?`)
         : isShare
-          ? (isMD ? `인당 ${price}원 | 자리 모집 중!` : `인당 ${price}원 | 조각원 찾는 중 🔥`)
+          ? (isMD ? `1인 ${price}₩ | 자리 모집 중!` : `1인 ${price}₩ | 조각원 찾는 중 🔥`)
           : (isMD ? `시작가 ${price}원 | 경매 시작! 최저가 선점에 도전하세요.` : `${price}원 | 남들보다 싸게 잡을 기회! 지금 비딩 같이 가보자.`);
 
       const buttonTitle = isInstant

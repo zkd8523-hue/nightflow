@@ -29,7 +29,7 @@ import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByD
 import { ShareOptionManager } from "@/components/md/ShareOptionManager";
 import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
 import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
-import { Plus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle } from "lucide-react";
+import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle } from "lucide-react";
 import { FeatureGate } from "@/components/common/FeatureGate";
 import { toast } from "sonner";
 
@@ -173,6 +173,35 @@ export function MDDashboard({
     const [localShareSlots, setLocalShareSlots] = useState(shareSlots);
     const [planBoardResetKey, setPlanBoardResetKey] = useState(0);
     const [activePuzzleTab, setActivePuzzleTab] = useState<"flag" | "share">("flag");
+    // MD 직통 조각(내 조각) — host_is_md 퍼즐. 조각 인라인 "내 조각" 목록용
+    const [myShares, setMyShares] = useState<Array<{ id: string; notes: string | null; area: string; event_date: string; current_count: number; target_count: number; status: string }>>([]);
+    useEffect(() => {
+        (async () => {
+            const { data } = await supabase
+                .from("puzzles")
+                .select("id, notes, area, event_date, current_count, target_count, status")
+                .eq("leader_id", user.id)
+                .eq("host_is_md", true)
+                .neq("status", "cancelled")
+                .order("event_date", { ascending: false });
+            if (data) setMyShares(data);
+        })();
+    }, [user.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    // 내 조각 인원 수정(외부 인원 +/-) — 누적 후 "적용"으로 반영
+    const [shareCounts, setShareCounts] = useState<Record<string, number>>({});
+    const [shareDeltas, setShareDeltas] = useState<Record<string, number>>({});
+    const [shareSaving, setShareSaving] = useState<string | null>(null);
+    const applyShare = async (puzzleId: string) => {
+        const delta = shareDeltas[puzzleId] ?? 0;
+        if (shareSaving || delta === 0) return;
+        setShareSaving(puzzleId);
+        const { data } = await supabase.rpc("adjust_share_host_external", { p_puzzle_id: puzzleId, p_delta: delta });
+        setShareSaving(null);
+        if (data?.success) {
+            setShareCounts((m) => ({ ...m, [puzzleId]: data.current_count }));
+            setShareDeltas((m) => ({ ...m, [puzzleId]: 0 }));
+        } else if (data?.error) toast.error(data.error);
+    };
     useEffect(() => { setLocalShareSlots(shareSlots); }, [shareSlots]);
 
     // 내가 이번 주 선점한 조각 슬롯 — 슬롯이 있어야 조각 등록 가능(등록 버튼 노출 조건)
@@ -434,7 +463,8 @@ export function MDDashboard({
             </div>
 
             {/* 액션 버튼 3종 */}
-            <div className="px-4 mt-3 grid grid-cols-2 gap-2">
+            {/* 게스트 간판 — 전체 너비 한 줄 */}
+            <div className="px-4 mt-3">
                 <button
                     type="button"
                     onClick={(e) => {
@@ -444,12 +474,31 @@ export function MDDashboard({
                         setHotdealInlineOpen(false);
                         setShareInlineOpen(false);
                     }}
-                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
+                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
                         guestSignInlineOpen ? "border-amber-500" : "border-neutral-700"
                     }`}
                 >
-                    <span className="text-[20px] leading-none">🎫</span>
-                    <span className="text-[11px] font-black text-white">게스트 간판</span>
+                    <span className="text-[18px] leading-none">🎫</span>
+                    <span className="text-[12px] font-black text-white">게스트 간판</span>
+                </button>
+            </div>
+            {/* 조각 | 핫딜 — 반반 */}
+            <div className="px-4 mt-2 grid grid-cols-2 gap-2">
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShareInlineOpen((v) => !v);
+                        setGuestSignInlineOpen(false);
+                        setHotdealInlineOpen(false);
+                    }}
+                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
+                        shareInlineOpen ? "border-green-500" : "border-neutral-700"
+                    }`}
+                >
+                    <span className="text-[20px] leading-none">🧩</span>
+                    <span className="text-[12px] font-black text-white">조각</span>
                 </button>
                 <button
                     type="button"
@@ -465,7 +514,7 @@ export function MDDashboard({
                     }`}
                 >
                     <span className="text-[20px] leading-none">🔥</span>
-                    <span className="text-[11px] font-black text-white">Hot Deal</span>
+                    <span className="text-[12px] font-black text-white">핫딜</span>
                 </button>
             </div>
 
@@ -500,71 +549,56 @@ export function MDDashboard({
                 </div>
             )}
 
-            {/* 조각 인라인 영역 — 자리 선점 + 내 조각 목록 */}
+            {/* 조각 인라인 영역 — 새 조각 등록 + 내 조각 목록 (핫딜과 동일 패턴) */}
             {shareInlineOpen && (
-                <div className="px-2 mt-3 space-y-2">
-                    {/* 조각 자리 선점 + 세팅 — 게스트 간판처럼 한 박스 안에서 가로선으로 구분 */}
-                    {shareSlotThisWeekISO && (
-                        <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3 space-y-3">
-                            <ShareSlotBoard
-                                currentUserId={user.id}
-                                clubs={shareSlotClubs}
-                                slots={localShareSlots}
-                                thisWeekISO={shareSlotThisWeekISO}
-                                embedded
-                                isAdmin={user.role === "admin"}
-                                onClaim={(slot) => setLocalShareSlots((prev) => [...prev.filter((s) => !(s.club_id === slot.club_id && s.week_start === slot.week_start)), slot])}
-                                onRelease={(clubId) => { setLocalShareSlots((prev) => prev.filter((s) => !(s.club_id === clubId && s.md_id === user.id))); setPlanBoardResetKey((k) => k + 1); }}
-                                daysSetByClub={shareDaysSetByClub}
-                            />
+                <div className="px-4 mt-3">
+                    <div className="bg-[#1C1C1E] border border-green-500/30 rounded-2xl p-4 space-y-4">
+                        {/* 새 조각 등록 */}
+                        <Link
+                            href="/md/auctions/new"
+                            className="w-full h-12 flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl active:scale-[0.98] transition-transform"
+                        >
+                            <span className="text-[18px] leading-none">+</span> 새 조각 등록
+                        </Link>
 
-                            {/* 선점 중인 클럽별 프리셋 + 요일표 세팅 (같은 박스, 가로선 구분) */}
-                            {myShareSlots.map((slot) => {
-                                const club = shareSlotClubs.find((c) => c.id === slot.club_id);
-                                const clubOptions = shareOptions.filter((o) => o.club_id === slot.club_id);
-                                const clubPlans = shareWeekdayPlans.filter((p) => p.club_id === slot.club_id);
-                                return (
-                                    <div key={slot.club_id} className="space-y-3">
-                                        <div className="border-t border-neutral-800" />
-                                        <ShareOptionManager clubId={slot.club_id} options={clubOptions} floorPlanUrl={club?.floor_plan_url ?? null} />
-                                        <div className="border-t border-neutral-800" />
-                                        <ShareWeekdayPlanBoard key={`${slot.club_id}-${planBoardResetKey}`} clubId={slot.club_id} options={clubOptions} plans={clubPlans} />
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    {/* 내 조각 목록 — 슬롯 보유 시에만 노출 */}
-                    {hasShareSlot && (
-                        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-3 space-y-2">
-                            <p className="text-[13px] font-black text-white">내 조각</p>
-                            {shareAuctions.length > 0 ? (
-                                <ShareAuctionGroups
-                                    auctions={shareAuctions}
-                                    onDelete={handleAuctionDelete}
-                                    clubFavCounts={clubFavCounts}
-                                />
-                            ) : !user.kakao_open_chat_url ? (
-                                <div className="flex flex-col items-center justify-center py-5 text-center space-y-2">
-                                    <p className="text-2xl">💬</p>
-                                    <p className="text-white text-[13px] font-black">오픈채팅 URL을 먼저 등록해주세요</p>
-                                    <p className="text-neutral-500 text-[11px]">조각 생성에 오픈채팅이 필요해요</p>
-                                    <a href="/profile" className="mt-1 px-4 py-1.5 rounded-full bg-amber-500 text-black text-[12px] font-black">프로필 설정</a>
-                                </div>
+                        {/* 내 조각 */}
+                        <div className="space-y-2">
+                            <p className="text-[13px] font-black text-white px-1">내 조각</p>
+                            {myShares.length === 0 ? (
+                                <p className="text-center text-neutral-500 text-[13px] py-6">등록한 조각이 없어요</p>
                             ) : (
-                                <div className="flex flex-col items-center justify-center py-5 text-center space-y-1.5">
-                                    <p className="text-2xl">🧩</p>
-                                    <p className="text-neutral-400 text-[13px] font-medium">요일을 켜면 조각이 자동 생성돼요</p>
-                                </div>
+                                myShares.map((s) => {
+                                    const committed = shareCounts[s.id] ?? s.current_count;
+                                    const delta = shareDeltas[s.id] ?? 0;
+                                    const cnt = Math.max(1, Math.min(s.target_count, committed + delta));
+                                    return (
+                                        <div key={s.id} className="bg-neutral-900 rounded-xl px-4 py-3 space-y-2">
+                                            <Link href={`/flags/${s.id}`} className="block">
+                                                <p className="text-[14px] font-bold text-white truncate">{s.notes || `${s.area} 조각`}</p>
+                                            </Link>
+                                            {/* 인원 수정 (외부 인원 +/-, 누적 후 적용) — 오른쪽에 현재/목표 인원 */}
+                                            <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/60">
+                                                <span className="text-[11px] text-neutral-500 font-bold">인원 수정</span>
+                                                <button type="button" disabled={shareSaving === s.id || cnt <= 1} onClick={() => setShareDeltas((m) => ({ ...m, [s.id]: (m[s.id] ?? 0) - 1 }))} className="w-6 h-6 rounded-full bg-neutral-700 hover:bg-neutral-600 flex items-center justify-center disabled:opacity-30 transition-colors"><Minus className="w-3 h-3 text-white" /></button>
+                                                <span className="text-[13px] font-black text-white tabular-nums w-5 text-center">{cnt}</span>
+                                                <button type="button" disabled={shareSaving === s.id || cnt >= s.target_count} onClick={() => setShareDeltas((m) => ({ ...m, [s.id]: (m[s.id] ?? 0) + 1 }))} className="w-6 h-6 rounded-full bg-neutral-700 hover:bg-neutral-600 flex items-center justify-center disabled:opacity-30 transition-colors"><Plus className="w-3 h-3 text-white" /></button>
+                                                {delta !== 0 && (
+                                                    <button type="button" disabled={shareSaving === s.id} onClick={() => applyShare(s.id)} className="px-3 h-6 rounded-full bg-white text-black text-[11px] font-black active:scale-95 transition disabled:opacity-50">{shareSaving === s.id ? "저장중" : "적용"}</button>
+                                                )}
+                                                <span className="ml-auto text-[12px] text-neutral-400 font-bold tabular-nums">{cnt}/{s.target_count}명</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
 
-            {/* Auction Tabs + Register Button */}
-            <div className="px-4 mt-3">
+            {/* 내 오퍼 (받은 오퍼) — 위 조각 등록과 구분 */}
+            <div className="px-4 mt-5">
+                <p className="text-[13px] font-black text-neutral-400 mb-2 px-1">내 오퍼</p>
                 <Tabs value={activePuzzleTab} onValueChange={(v) => setActivePuzzleTab(v as "flag" | "share")} className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">

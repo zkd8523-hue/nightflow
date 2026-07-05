@@ -941,7 +941,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
               {/* 동행 일행 */}
               <div className="space-y-3 pt-3 border-t border-neutral-800">
                 <label className="flex items-center justify-between gap-3 cursor-pointer">
-                  <span className="text-[13px] font-bold text-white">{t("이미 일행이 있나요?", "Already with friends?")}</span>
+                  <span className="text-[13px] font-bold text-white">
+                    {puzzle?.host_is_md
+                      ? t("이미 모아진 인원이 있나요?", "Already have members?")
+                      : t("이미 일행이 있나요?", "Already with friends?")}
+                  </span>
                   <input
                     type="checkbox"
                     checked={hasGuest}
@@ -961,7 +965,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                     >
                       <Minus className="w-3.5 h-3.5 text-white" />
                     </button>
-                    <span className="text-[15px] font-black text-white">{t(`일행 ${guestCount}명`, `${guestCount} friend${guestCount > 1 ? "s" : ""}`)}</span>
+                    <span className="text-[15px] font-black text-white">
+                      {puzzle?.host_is_md
+                        ? t(`${guestCount}명`, `${guestCount}`)
+                        : t(`일행 ${guestCount}명`, `${guestCount} friend${guestCount > 1 ? "s" : ""}`)}
+                    </span>
                     <button
                       type="button"
                       onClick={() => setGuestCount(Math.min(targetCount - 1, guestCount + 1))}
@@ -1095,8 +1103,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         )}
       </section>
 
-      {/* 취향 태그 — 파티원 모집 중일 때만 */}
-      {isRecruitingParty && <section className="space-y-4">
+      {/* 취향 태그 — 파티원 모집 중일 때만. MD 직통 조각(host_is_md)은 취향 선호가 무의미하므로 숨김 */}
+      {isRecruitingParty && !puzzle?.host_is_md && <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">
           <Sparkles className="w-4 h-4 text-green-500" />
           <span>{t("이런 분들을 선호해요", "Who you prefer")}</span>

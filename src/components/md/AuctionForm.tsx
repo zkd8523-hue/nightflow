@@ -53,7 +53,7 @@ const formSchema = z.object({
     // 얼리버드에서는 auction_end_at을 직접 지정. instant에서는 duration_minutes 사용.
     auction_end_at: z.string().optional(),
     includes: z.array(z.string()).default([]),
-    md_comment: z.string().max(15, "최대 15자").optional(),
+    md_comment: z.string().max(200, "최대 200자").optional(),
     md_message: z.string().max(60, "최대 60자").optional(),
     // 조각(share) 전용 필드
     total_seats: z.number().min(2).max(20).optional(),
@@ -362,7 +362,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         const perPerson = totalPrice > 0 && seats > 0 ? Math.floor(totalPrice / seats) : 0;
         const parts = [
             clubName,
-            seats > 0 ? `${seats}명` : "",
             perPerson > 0 ? `N${Math.round(perPerson / 10000)}만` : "",
         ].filter(Boolean);
         if (eventDate) {
@@ -526,133 +525,101 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             if (values.listing_type === "share") {
                 const clubName = clubs.find(c => c.id === values.club_id)?.name || "";
 
-                // 오픈채팅 보유 사전 체크 (서버 게이트의 UX 보조)
-                // 미등록이면 유저가 참여(claim) 자체를 못 하므로 등록 단계에서 막고 프로필로 유도.
-                if (!initialData) {
-                    const { data: me } = await supabase
-                        .from("users")
-                        .select("kakao_open_chat_url")
-                        .eq("id", mdId)
-                        .maybeSingle();
-                    if (!(me?.kakao_open_chat_url ?? "").trim()) {
-                        toast.error("먼저 프로필에 카카오 오픈채팅 링크를 등록해야 조각을 올릴 수 있어요.");
-                        router.push("/profile");
-                        return;
-                    }
+                // MD 직통 조각은 무료·인앱 단체채팅 → 옛 카톡/슬롯 선점/1일1매물 게이트 전부 제거.
+                // 등록 제한(같은 클럽·같은 날 1개)은 DB 트리거(Migration 366)가 처리.
+
+                // ── MD 직통 조각 = puzzles (유저 조각과 같은 피드·인앱 채팅). 무료. ──
+                const club = clubs.find(c => c.id === values.club_id);
+                // puzzles.area는 NOT NULL — 클럽 지역이 없으면 등록 불가 → 클럽 편집으로 안내
+                if (!club?.area) {
+                    toast.error("이 클럽은 지역 정보가 없어요. 클럽 정보에서 지역을 먼저 등록해주세요.");
+                    if (values.club_id) router.push(`/md/clubs/${values.club_id}/edit`);
+                    return;
                 }
+                const seats = values.total_seats || targetCount;
+                const perSeat = values.price_per_seat || 0;
+                const eventDate = values.event_date || dayjs().format("YYYY-MM-DD");
+                const externalTotal = hasExternal ? externalCount : 0; // 성별무관
+                const offerDeadline = `${eventDate}T11:00:00.000Z`;
+                const expiresAt = `${eventDate}T12:00:00.000Z`;
+                const noteText = (values.md_message || values.md_comment || "").trim() || null;
+                // MD 한마디(md_comment)는 제목(notes)과 별개로 상세의 "MD 한마디" 박스에 노출
+                const mdCommentText = (values.md_comment || "").trim() || null;
 
-                // 1일 1매물 사전 체크 (KST 날짜 기준)
-                if (!initialData && values.share_deadline) {
-                    const deadlineKST = dayjs(values.share_deadline).tz("Asia/Seoul").format("YYYY-MM-DD");
-                    const { count } = await supabase
-                        .from("auctions")
-                        .select("id", { count: "exact", head: true })
-                        .eq("md_id", mdId)
-                        .eq("listing_type", "share")
-                        .eq("share_date", deadlineKST)
-                        .not("status", "in", '("cancelled","unsold")');
-                    if ((count ?? 0) > 0) {
-                        toast.error("같은 날짜에 이미 등록된 조각 매물이 있습니다.");
-                        return;
-                    }
-                }
-
-                // 조각 자리(주 단위 클럽 선점) 보유 사전 체크 (서버 게이트의 UX 보조)
-                // 방문일이 속한 주의 슬롯을 본인이 가졌는지 확인. 없으면 선점 페이지로 유도.
-                if (!initialData && values.event_date && values.club_id) {
-                    const weekStart = getWeekStartForDate(values.event_date);
-                    const { data: slot } = await supabase
-                        .from("weekly_share_slots")
-                        .select("id")
-                        .eq("club_id", values.club_id)
-                        .eq("week_start", weekStart)
-                        .eq("md_id", mdId)
-                        .maybeSingle();
-                    if (!slot) {
-                        toast.error("이번 주 이 클럽의 조각 자리를 먼저 선점해야 등록할 수 있어요.");
-                        router.push("/md/share-slots");
-                        return;
-                    }
-                }
-
-                const shareData: Record<string, unknown> = {
-                    md_id: mdId,
-                    listing_type: "share",
-                    club_id: values.club_id,
-                    title: `${clubName} ${values.table_info}`,
-                    table_info: values.table_info,
-                    event_date: values.event_date || dayjs().format("YYYY-MM-DD"),
-                    total_seats: values.total_seats,
-                    price_per_seat: values.price_per_seat,
-                    main_alcohol: values.main_alcohol || null,
-                    share_deadline: values.event_date ? dayjs(values.event_date).endOf("day").toISOString() : new Date().toISOString(),
-                    includes: values.includes || [],
-                    md_comment: values.md_comment || null,
-                    md_message: values.md_message || null,
-                    status: "active",
-                    // 경매 필수 컬럼 (legacy, 기본값)
-                    table_type: "Standard",
-                    min_people: values.total_seats || targetCount,
-                    max_people: values.total_seats || targetCount,
-                    target_male: useGenderSlot ? targetMale : 0,
-                    target_female: useGenderSlot ? targetFemale : 0,
-                    start_price: values.price_per_seat || 0,
-                    original_price: values.price_per_seat || 0,
-                    reserve_price: 0,
-                    current_bid: 0,
-                    bid_count: 0,
-                    bidder_count: 0,
-                    auction_start_at: new Date().toISOString(),
-                    auction_end_at: values.event_date ? dayjs(values.event_date).endOf("day").toISOString() : new Date().toISOString(),
-                    duration_minutes: 0,
-                    auto_extend_min: 0,
-                    max_extensions: 0,
-                    bid_increment: 0,
-                    seats_claimed: 0,
-                    external_attendees: hasExternal ? (useGenderSlot ? externalMale + externalFemale : externalCount) : 0,
-                    external_male: hasExternal && useGenderSlot ? externalMale : 0,
-                    external_female: hasExternal && useGenderSlot ? externalFemale : 0,
-                    kakao_open_chat_url: kakaoUrl.trim() || null,
-                };
-                if (thumbnailUrl) shareData.thumbnail_url = thumbnailUrl;
-
-                const res = await fetch("/api/auctions/create", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        auctionData: shareData,
-                        isUpdate: !!initialData,
-                        auctionId: initialData?.id || null,
-                    }),
-                });
-                const result = await res.json();
-                if (!res.ok) throw new Error(result.error || "등록에 실패했습니다.");
-
-                // 등록 성공 → 폼/버튼 잠금 (중복 제출 방지)
-                // 누락 시 시트를 닫거나 안 뜰 때 재클릭 → "하루 1조각" duplicate 에러 발생
-                setSubmitted(true);
-                router.refresh();
-                trackShareEvent('share_listing_created', {
-                    auction_id: result.id,
-                    club_id: values.club_id,
-                    area: clubs.find(c => c.id === values.club_id)?.area ?? null,
-                    price_per_seat: values.price_per_seat ?? 0,
-                    total_seats: values.total_seats ?? 0,
-                    main_alcohol: values.main_alcohol ?? null,
-                    is_update: !!initialData,
-                });
                 if (initialData) {
-                    toast.success("조각 매물이 수정되었습니다!");
-                    setTimeout(() => router.replace("/md/dashboard"), 300);
-                } else {
-                    setCreatedAuctionId(result.id);
-                    setCreatedShareData({
-                        total_seats: values.total_seats ?? 0,
-                        price_per_seat: values.price_per_seat ?? 0,
-                        main_alcohol: values.main_alcohol ?? "",
-                    });
-                    setShowShareSheet(true);
+                    const { error: upErr } = await supabase
+                        .from("puzzles")
+                        .update({
+                            club_id: values.club_id,
+                            area: club?.area ?? null,
+                            event_date: eventDate,
+                            target_count: seats,
+                            budget_per_person: perSeat,
+                            total_budget: perSeat * seats,
+                            includes: values.includes || [],
+                            table_info: values.table_info || null,
+                            notes: noteText,
+                            md_comment: mdCommentText,
+                            offer_deadline: offerDeadline,
+                            expires_at: expiresAt,
+                        })
+                        .eq("id", initialData.id)
+                        .eq("leader_id", mdId);
+                    if (upErr) throw new Error(upErr.message || "수정에 실패했습니다.");
+                    setSubmitted(true);
+                    toast.success("조각이 수정되었어요");
+                    setTimeout(() => router.replace(`/flags/${initialData.id}`), 200);
+                    return;
                 }
+
+                const { data: created, error: insErr } = await supabase
+                    .from("puzzles")
+                    .insert({
+                        leader_id: mdId,
+                        host_is_md: true,
+                        club_id: values.club_id,
+                        area: club?.area ?? null,
+                        event_date: eventDate,
+                        is_recruiting_party: true,
+                        gender_pref: "any",
+                        age_pref: ["any"],
+                        vibe_pref: "any",
+                        music_preference: null,
+                        kakao_open_chat_url: null,
+                        target_male: 0,
+                        target_female: 0,
+                        target_count: seats,
+                        current_count: 1 + externalTotal,
+                        budget_per_person: perSeat,
+                        total_budget: perSeat * seats,
+                        includes: values.includes || [],
+                        table_info: values.table_info || null,
+                        notes: noteText,
+                        md_comment: mdCommentText,
+                        offer_deadline: offerDeadline,
+                        expires_at: expiresAt,
+                    })
+                    .select("id")
+                    .single();
+                if (insErr || !created) throw new Error(insErr?.message || "등록에 실패했습니다.");
+
+                // 방장(MD)을 puzzle_members에 추가 (fire-and-forget)
+                supabase
+                    .from("puzzle_members")
+                    .insert({ puzzle_id: created.id, user_id: mdId, guest_count: externalTotal, gender: null })
+                    .then(({ error: mErr }) => { if (mErr) console.error("puzzle_members insert error:", mErr); });
+
+                setSubmitted(true);
+                trackShareEvent("share_listing_created", {
+                    auction_id: created.id,
+                    club_id: values.club_id,
+                    area: club?.area ?? null,
+                    price_per_seat: perSeat,
+                    total_seats: seats,
+                    main_alcohol: values.main_alcohol ?? null,
+                    is_update: false,
+                });
+                router.push(`/flags/${created.id}?created=share`);
                 return;
             }
 
@@ -1157,13 +1124,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     max={dayjs().add(SHARE_MAX_EVENT_DAYS_AHEAD, "day").format("YYYY-MM-DD")}
                     onChange={(val) => setValue("event_date", val)}
                     placeholder={`최대 ${SHARE_MAX_EVENT_DAYS_AHEAD}일 뒤까지 선택 가능`}
-                    hint={
-                      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-amber-200">
-                        <span className="font-bold text-amber-300">이번 주말만 올리시려구요?</span>
-                        <br />
-                        다음 주·다다음 주까지 미리 올리면 <span className="font-bold text-amber-300">당일까지 쭉~ 노출</span>됩니다
-                      </div>
-                    }
                   />
                   {errors.event_date && <p className="text-red-500 text-[11px]">{errors.event_date.message?.toString()}</p>}
                 </section>
@@ -1350,26 +1310,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         )}
                       </div>
 
-                      {/* 성비 설정 토글 */}
-                      <div className="flex items-center justify-between gap-3 pt-1 border-t border-neutral-800">
-                        <span className="text-[13px] font-bold text-white">성비를 설정하시겠습니까?</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const next = !useGenderSlot;
-                            setUseGenderSlot(next);
-                            if (next) {
-                              setTargetMale(Math.ceil(targetCount / 2));
-                              setTargetFemale(Math.floor(targetCount / 2));
-                              setExternalMale(externalCount);
-                              setExternalFemale(0);
-                            }
-                          }}
-                          className={`relative w-11 h-6 rounded-full transition-colors ${useGenderSlot ? "bg-white" : "bg-neutral-700"}`}
-                        >
-                          <span className={`absolute top-1 w-4 h-4 rounded-full bg-black transition-all ${useGenderSlot ? "left-6" : "left-1"}`} />
-                        </button>
-                      </div>
+                      {/* 성비 설정 토글 제거 — 조각은 성별무관(초록 슬롯) 통일 (target_male/female=0) */}
                       {/* 성비 슬롯 picker — 항상 합계 = targetCount */}
                       {useGenderSlot && (
                         <div className="grid grid-cols-2 gap-2">
@@ -1555,57 +1496,33 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                   </div>
                 </section>
 
-                {/* 5. MD 한마디 */}
+                {/* 조각 정보 섹션 제거 — md_message는 여전히 자동 생성되어 notes(카드 제목)로 저장됨 */}
+
+                {/* 6. MD 한마디 (직접 입력) */}
                 <section className="space-y-4">
                   <div className="flex items-baseline gap-2 text-white font-bold mb-2">
                     <MessageCircle className="w-4 h-4 text-purple-500 self-center" />
                     <span>MD 한마디</span>
                     <span className="text-[11px] text-neutral-500 font-normal">
-                      유저가 첫인상으로 읽어요{" "}
-                      <span className={(watch("md_message") || "").length >= 60 ? "text-amber-500" : ""}>
-                        ({(watch("md_message") || "").length}/60)
+                      {" "}
+                      <span className={(watch("md_comment") || "").length >= 200 ? "text-amber-500" : ""}>
+                        ({(watch("md_comment") || "").length}/200)
                       </span>
                     </span>
                   </div>
                   <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
                     <Input
                       type="text"
-                      value={watch("md_message") || ""}
-                      onChange={(e) => {
-                        setValue("md_message", e.target.value);
-                        setMdMessageEverEdited(true);
-                      }}
-                      placeholder="예) 5/17(토) 아레나 4명 N25만"
-                      maxLength={60}
+                      value={watch("md_comment") || ""}
+                      onChange={(e) => setValue("md_comment", e.target.value)}
+                      placeholder="예) 텐션 좋은 분들 환영!"
+                      maxLength={200}
                       className="bg-neutral-900 border-neutral-800 h-12 text-[14px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal"
                     />
                   </div>
                 </section>
 
-                {/* 6. 카톡 오픈채팅 */}
-                <section className="space-y-4">
-                  <div className="flex items-baseline gap-2 text-white font-bold mb-2">
-                    <MessageCircle className="w-4 h-4 text-yellow-400 self-center" />
-                    <span>카톡 오픈채팅 링크</span>
-                    {initialData && (
-                      <span className="text-[11px] text-neutral-500 font-normal">수정 불가</span>
-                    )}
-                  </div>
-                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
-                    <Input
-                      type="url"
-                      value={kakaoUrl}
-                      onChange={(e) => setKakaoUrl(e.target.value)}
-                      placeholder="https://open.kakao.com/..."
-                      readOnly={!!initialData}
-                      disabled={!!initialData}
-                      className="bg-neutral-900 border-neutral-800 h-11 text-[13px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal disabled:opacity-70 disabled:cursor-not-allowed"
-                    />
-                    {!initialData && (
-                      <KakaoOpenChatGuide suggestedTitle={`[나플] ${selectedClub?.name || ""} ${watch("event_date") ? watch("event_date").slice(5).replace("-", "/") : ""} ${targetCount}명`} />
-                    )}
-                  </div>
-                </section>
+                {/* 카톡 오픈채팅 섹션 제거 — MD 직통 조각은 인앱 단체채팅 사용 */}
               </>
             )}
 

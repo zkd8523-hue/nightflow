@@ -479,7 +479,7 @@ export function PartyChatRoom({
         >
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-bold text-white truncate">
-              {[partyInfo.dateLabel, partyInfo.area, `인당 ${partyInfo.perPerson.toLocaleString()}원`]
+              {[partyInfo.dateLabel, partyInfo.area, participants.find((p) => p.is_leader && p.is_md)?.club_name, `인당 ${partyInfo.perPerson.toLocaleString()}원`]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
@@ -954,8 +954,8 @@ export function PartyChatRoom({
                     </div>
                   </Link>
                   {p.is_leader ? (
-                    <span className="shrink-0 mr-2 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 font-bold">
-                      방장
+                    <span className={`shrink-0 mr-2 text-[11px] px-2 py-0.5 rounded-full font-bold ${p.is_md ? "bg-blue-500/15 text-blue-400" : "bg-amber-500/15 text-amber-400"}`}>
+                      {p.is_md ? "파트너" : "방장"}
                     </span>
                   ) : p.is_md ? (
                     <span className="shrink-0 mr-2 text-[11px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-bold">

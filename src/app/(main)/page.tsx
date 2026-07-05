@@ -98,7 +98,7 @@ export default async function HomePage() {
       hideTestData(
         supabase
           .from("puzzles")
-          .select("*, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender, is_test, country_code, lang)")
+          .select("*, leader:users!puzzles_leader_id_fkey!inner(id, display_name, name, profile_image, deal_count_total, deal_amount_total, created_at, gender, is_test, country_code, lang), club:clubs(id, name, area, thumbnail_url, floor_plan_url, latitude, longitude)")
           .in("status", ["open", "selecting"])
           .gt("expires_at", nowIso)
           .order("created_at", { ascending: false })
