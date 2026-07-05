@@ -106,6 +106,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/en/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE_URL}/zh/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE_URL}/ja/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
+    // /zh-tw — 번체 중국어 트랙 (대만·홍콩 SEO 타겟). 홈 + clubs + 지역 5개.
+    { url: `${BASE_URL}/zh-tw`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE_URL}/zh-tw/clubs`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${BASE_URL}/zh-tw/clubs/gangnam`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${BASE_URL}/zh-tw/clubs/hongdae`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${BASE_URL}/zh-tw/clubs/itaewon`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${BASE_URL}/zh-tw/clubs/apgujeong`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    { url: `${BASE_URL}/zh-tw/clubs/busan`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
   ];
 
   try {
