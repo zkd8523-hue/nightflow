@@ -322,7 +322,14 @@ export function CameraCaptureView({ open, onClose, onCapture }: Props) {
   const dashArray = `${(progressPct / 100) * circumference} ${circumference}`;
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] bg-black flex flex-col select-none">
+    <div
+      className="fixed inset-0 z-[100] bg-black flex flex-col select-none"
+      style={{
+        WebkitUserSelect: "none",
+        userSelect: "none",
+        WebkitTouchCallout: "none",
+      }}
+    >
       {/* 비디오 프리뷰 */}
       <div className="relative flex-1 overflow-hidden">
         <video
@@ -398,8 +405,15 @@ export function CameraCaptureView({ open, onClose, onCapture }: Props) {
             onPointerCancel={handlePointerCancel}
             onClick={(e) => e.stopPropagation()}
             onContextMenu={(e) => e.preventDefault()}
+            onTouchStart={(e) => e.preventDefault()}
             className="relative w-20 h-20 rounded-full flex items-center justify-center"
-            style={{ touchAction: "none", WebkitTouchCallout: "none" }}
+            style={{
+              touchAction: "none",
+              WebkitTouchCallout: "none",
+              WebkitUserSelect: "none",
+              userSelect: "none",
+              WebkitTapHighlightColor: "transparent",
+            }}
             aria-label="탭하면 사진, 길게 누르면 동영상"
           >
             {/* 외곽 흰 링 — pointer-events-none으로 부모 button이 이벤트 직접 받게 */}
