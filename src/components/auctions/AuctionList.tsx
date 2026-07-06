@@ -860,6 +860,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           onActiveFilterChange={setPuzzleHasActiveFilter}
           partyOnly
           shareMode
+          hideEmptyState={hideShareEmptyState}
         />
       )}
 

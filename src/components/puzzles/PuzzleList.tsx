@@ -95,6 +95,8 @@ interface PuzzleListProps {
   onSortModeChange?: (mode: "none" | "popular" | "budget" | "recent") => void;
   /** 조각(파티원 모집) 탭에서 재사용 — "깃발" 문구/빈상태/CTA를 조각으로 전환 */
   shareMode?: boolean;
+  /** 클럽 상세 등 이미 예약/깃발 CTA가 있는 화면에서 조각 빈상태 CTA 중복 노출 방지 */
+  hideEmptyState?: boolean;
 }
 
 export function PuzzleList({
@@ -114,6 +116,7 @@ export function PuzzleList({
   sortMode: externalSortMode = "none",
   onSortModeChange,
   shareMode = false,
+  hideEmptyState = false,
 }: PuzzleListProps) {
   const [joinTarget, setJoinTarget] = useState<Puzzle | null>(null);
   const [unlockTarget, setUnlockTarget] = useState<Puzzle | null>(null);
@@ -340,6 +343,7 @@ export function PuzzleList({
       </Sheet>
 
       {filteredPuzzles.length === 0 ? (
+        hideEmptyState && !hasActiveFilter ? null : (
         <div className="flex flex-col items-center justify-center py-20 gap-2">
           <div className="absolute top-0 right-0">{toggleButton}</div>
           <div className="space-y-2 text-center">
@@ -375,6 +379,7 @@ export function PuzzleList({
             ) : null}
           </div>
         </div>
+        )
       ) : (popularSort || recentSort || budgetSort) ? (
         /* 인기순/최신순/예산순: 날짜 그룹 헤더 유지 + 정렬 */
         <div className="pb-24 -mt-3">
