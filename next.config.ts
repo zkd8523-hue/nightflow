@@ -11,6 +11,20 @@ const nextConfig: NextConfig = {
       { source: "/flags", destination: "/?tab=puzzle&detail=1", permanent: true },
     ];
   },
+  async headers() {
+    // Content-Language HTTP 헤더 — Googlebot이 각 URL의 언어를 명확히 판정하도록.
+    // 미들웨어에서도 세팅하지만 Vercel 캐시 히트 시 미들웨어가 우회될 수 있어 config 레벨 백업.
+    return [
+      { source: "/en/:path*", headers: [{ key: "Content-Language", value: "en-US" }] },
+      { source: "/en", headers: [{ key: "Content-Language", value: "en-US" }] },
+      { source: "/ja/:path*", headers: [{ key: "Content-Language", value: "ja-JP" }] },
+      { source: "/ja", headers: [{ key: "Content-Language", value: "ja-JP" }] },
+      { source: "/zh-tw/:path*", headers: [{ key: "Content-Language", value: "zh-TW" }] },
+      { source: "/zh-tw", headers: [{ key: "Content-Language", value: "zh-TW" }] },
+      { source: "/zh/:path*", headers: [{ key: "Content-Language", value: "zh-CN" }] },
+      { source: "/zh", headers: [{ key: "Content-Language", value: "zh-CN" }] },
+    ];
+  },
   images: {
     remotePatterns: [
       {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CrawlerLangLinks } from "@/components/layout/CrawlerLangLinks";
 
 // /ja 하위 전체에 일본어 SEO 기본값 + html lang 일본어 안내.
 // 일본 관광객 검색·공유에서 한글·영어 기본값이 노출되지 않도록 차단.
@@ -28,5 +29,10 @@ export const metadata: Metadata = {
 export default function JaLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <div lang="ja">{children}</div>;
+  return (
+    <div lang="ja">
+      <CrawlerLangLinks />
+      {children}
+    </div>
+  );
 }

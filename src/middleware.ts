@@ -2,7 +2,19 @@ import { type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+  // 루트 레이아웃에서 <html lang> 동적 결정용으로 request 헤더에 pathname 주입.
+  // request.headers를 mutate하면 downstream(supabase middleware, 서버 컴포넌트)에서 next/headers로 읽을 수 있음.
+  request.headers.set("x-pathname", request.nextUrl.pathname);
+  const response = await updateSession(request);
+  // 응답에도 Content-Language 힌트 (Googlebot용)
+  const pathname = request.nextUrl.pathname;
+  const lang = pathname.startsWith("/en") ? "en-US"
+    : pathname.startsWith("/zh-tw") ? "zh-TW"
+    : pathname.startsWith("/zh") ? "zh-CN"
+    : pathname.startsWith("/ja") ? "ja-JP"
+    : "ko-KR";
+  response.headers.set("Content-Language", lang);
+  return response;
 }
 
 export const config = {

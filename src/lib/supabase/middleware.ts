@@ -5,8 +5,10 @@ import { NextResponse, type NextRequest } from "next/server";
 const PROTECTED_PREFIXES = ["/md/", "/admin", "/bids", "/my-wins", "/profile", "/favorites", "/settings", "/my-penalties"];
 
 export async function updateSession(request: NextRequest) {
+  // request.headers는 부모 미들웨어에서 x-pathname을 이미 세팅함.
+  // NextResponse.next({ request: { headers } })로 명시적으로 downstream(서버 컴포넌트)에 전달.
   let supabaseResponse = NextResponse.next({
-    request,
+    request: { headers: request.headers },
   });
 
   const supabase = createServerClient(
@@ -22,7 +24,7 @@ export async function updateSession(request: NextRequest) {
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
-            request,
+            request: { headers: request.headers },
           });
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)

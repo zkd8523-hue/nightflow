@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CrawlerLangLinks } from "@/components/layout/CrawlerLangLinks";
 
 // /zh-tw 하위 전체에 번체 중국어 (대만·홍콩) SEO 기본값.
 // 대만·홍콩 유저 대상. 넷플릭스·Trip.com·KKday 스타일 대만식 번체.
@@ -33,5 +34,10 @@ export const metadata: Metadata = {
 export default function ZhTwLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <div lang="zh-TW">{children}</div>;
+  return (
+    <div lang="zh-TW">
+      <CrawlerLangLinks />
+      {children}
+    </div>
+  );
 }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { Geist, Geist_Mono, Nanum_Pen_Script, Do_Hyeon } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -131,11 +132,23 @@ export const viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // /en, /ja, /zh, /zh-tw는 각자의 하위 layout에서 자체 JSON-LD와 lang을 사용.
+  // 루트에서는 pathname을 보고 <html lang>을 동적으로 결정하고, 한국어 트리에서만 한국어 Organization schema를 노출.
+  const hdrs = await headers();
+  const pathname = hdrs.get("x-pathname") || "/";
+  const htmlLang =
+    pathname.startsWith("/en") ? "en"
+    : pathname.startsWith("/zh-tw") ? "zh-TW"
+    : pathname.startsWith("/zh") ? "zh-CN"
+    : pathname.startsWith("/ja") ? "ja"
+    : "ko";
+  const isKoreanTree = htmlLang === "ko";
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -172,7 +185,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="ko" className="dark">
+    <html lang={htmlLang} className="dark">
       <head>
         {/* 외부 도메인 사전 연결 — DNS+TLS 핸드셰이크를 미리 끝내 첫 API/이미지 응답 단축 */}
         <link rel="preconnect" href="https://ihqztsakxczzsxfvdkpq.supabase.co" crossOrigin="anonymous" />
@@ -183,12 +196,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${nanumPen.variable} ${displayKr.variable} antialiased`}
       >
-        <Script
-          id="ld-json-organization"
-          type="application/ld+json"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        {isKoreanTree && (
+          <Script
+            id="ld-json-organization"
+            type="application/ld+json"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          />
+        )}
         {/* Google Analytics */}
         <GoogleAnalytics />
 

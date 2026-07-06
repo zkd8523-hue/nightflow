@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CrawlerLangLinks } from "@/components/layout/CrawlerLangLinks";
 
 // /zh 하위 전체에 중국어 SEO 기본값 + html lang 중국어 안내.
 // 중국·대만·홍콩 관광객 검색·공유에서 한글·영어 기본값이 노출되지 않도록 차단.
@@ -32,5 +33,10 @@ export const metadata: Metadata = {
 export default function ZhLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return <div lang="zh">{children}</div>;
+  return (
+    <div lang="zh">
+      <CrawlerLangLinks />
+      {children}
+    </div>
+  );
 }
