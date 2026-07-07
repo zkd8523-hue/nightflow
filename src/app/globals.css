@@ -340,11 +340,19 @@
     }
   }
 }
-/* 네이티브 카메라(toBack:true) 프리뷰가 WebView 뒤에 렌더될 때,
-   상위 배경 요소들이 카메라를 가리지 않도록 투명화.
+/* 네이티브 카메라(toBack:true) 프리뷰는 WebView 뒤에 렌더된다.
+   카메라가 열린 동안 WebView(html/body)를 투명화하고, 카메라 오버레이
+   (#cameraPreviewRoot)를 제외한 body 직계 자식을 모두 숨겨 프리뷰가 깨끗이 보이게 한다.
    NativeCameraView가 열릴 때 html.native-camera-open 을 토글한다. */
 html.native-camera-open,
-html.native-camera-open body,
-html.native-camera-open body > * {
+html.native-camera-open body {
   background: transparent !important;
+}
+/* 카메라 오버레이만 남기고 나머지 UI(와글 페이지, 시트, 오버레이 등)는 전부 숨김 */
+html.native-camera-open body > *:not(#cameraPreviewRoot) {
+  visibility: hidden !important;
+}
+html.native-camera-open #cameraPreviewRoot,
+html.native-camera-open #cameraPreviewRoot * {
+  visibility: visible !important;
 }
