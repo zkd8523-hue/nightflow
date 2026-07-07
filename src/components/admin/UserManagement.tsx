@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { countryFlag, countryNameKo } from "@/lib/utils/countryFlag";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/ko";
@@ -89,13 +90,16 @@ interface UserManagementProps {
   users: User[];
   bidStats: Record<string, unknown>[];
   focusId?: string;
+  /** 외국인 유저별 방문 상태: puzzles.event_date 기반 파생값. upcoming=방문 예정, past=방문 이력, none=미정 */
+  visitStatusMap?: Record<string, "upcoming" | "past" | "none">;
 }
 
-export function UserManagement({ users, focusId }: UserManagementProps) {
+export function UserManagement({ users, focusId, visitStatusMap = {} }: UserManagementProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<"all" | "male" | "female" | "none">("all");
   const [nationalityFilter, setNationalityFilter] = useState<"domestic" | "foreign">("domestic");
+  const [visitFilter, setVisitFilter] = useState<"all" | "upcoming" | "past" | "none">("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "recent_seen" | "long_inactive">("newest");
 
   const foreignCount = users.filter((u) => u.country_code != null && u.country_code !== "").length;
@@ -271,7 +275,13 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
       genderFilter === "all" ||
       (genderFilter === "none" ? u.gender == null : u.gender === genderFilter);
 
-    return matchesNationality && matchesSearch && matchesStatus && matchesGender;
+    // 방문 상태 필터: 외국인 탭에서만 유효
+    const matchesVisit =
+      nationalityFilter !== "foreign" ||
+      visitFilter === "all" ||
+      (visitStatusMap[u.id] ?? "none") === visitFilter;
+
+    return matchesNationality && matchesSearch && matchesStatus && matchesGender && matchesVisit;
   }).sort((a, b) => {
     if (sortOrder === "recent_seen" || sortOrder === "long_inactive") {
       // last_seen_at 기준 (null은 항상 맨 뒤로)
@@ -406,6 +416,19 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
             <SelectItem value="none">미입력</SelectItem>
           </SelectContent>
         </Select>
+        {nationalityFilter === "foreign" && (
+          <Select value={visitFilter} onValueChange={(v) => setVisitFilter(v as typeof visitFilter)}>
+            <SelectTrigger className="w-[160px] bg-[#1C1C1E] border-neutral-800 text-white">
+              <SelectValue placeholder="방문 상태" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">방문 전체</SelectItem>
+              <SelectItem value="upcoming">✈️ 방문 예정</SelectItem>
+              <SelectItem value="past">🏁 방문 이력</SelectItem>
+              <SelectItem value="none">❓ 미정</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
         <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as typeof sortOrder)}>
           <SelectTrigger className="w-[170px] bg-[#1C1C1E] border-neutral-800 text-white">
             <SelectValue placeholder="정렬" />
@@ -482,6 +505,18 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                       </td>
                       <td className="p-4 landscape:max-md:p-2">
                         <p className="text-sm text-neutral-400">{user.phone || "-"}</p>
+                        {/* 이메일은 외국인만 표시. 한국인은 카카오 OAuth로 자동 저장되지만 UI 노출 불필요 (Model B 알림은 알림톡 사용). */}
+                        {user.country_code && user.email && (
+                          <p
+                            className="text-[11px] text-neutral-400 mt-0.5 truncate max-w-[200px]"
+                            title={user.email}
+                          >
+                            ✉️ {user.email}
+                            {user.email_bounced && (
+                              <span className="ml-1 text-red-500 font-bold">⚠ bounce</span>
+                            )}
+                          </p>
+                        )}
                         {(() => {
                           const age = getAge(user.birthday);
                           return (
@@ -494,6 +529,21 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                             </p>
                           );
                         })()}
+                        {user.country_code && (
+                          <p className="text-[11px] text-neutral-400 mt-0.5">
+                            <span className="mr-1">{countryFlag(user.country_code)}</span>
+                            {countryNameKo(user.country_code)}
+                          </p>
+                        )}
+                        {user.country_code && visitStatusMap[user.id] && visitStatusMap[user.id] !== "none" && (
+                          <p className="text-[11px] mt-0.5">
+                            {visitStatusMap[user.id] === "upcoming" ? (
+                              <span className="text-emerald-400 font-bold">✈️ 방문 예정</span>
+                            ) : (
+                              <span className="text-neutral-500">🏁 방문 이력</span>
+                            )}
+                          </p>
+                        )}
                       </td>
                       <td className="p-4 landscape:max-md:p-2 text-center">
                         {getStatusBadge(user)}
@@ -619,6 +669,24 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                     <span className="text-neutral-500 text-sm">전화번호</span>
                     <span className="font-bold text-white">{selectedUser.phone || "-"}</span>
                   </div>
+                  {/* 이메일은 외국인만 표시. 한국인 이메일은 카카오 OAuth 자동 저장값이라 관리 의미 없음. */}
+                  {selectedUser.country_code && (
+                    <div className="flex justify-between items-start gap-3">
+                      <span className="text-neutral-500 text-sm shrink-0">이메일</span>
+                      <span className="font-bold text-white text-sm text-right break-all">
+                        {selectedUser.email ? (
+                          <>
+                            {selectedUser.email}
+                            {selectedUser.email_bounced && (
+                              <span className="ml-2 text-red-500 text-xs font-bold">⚠ bounce</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-neutral-500">-</span>
+                        )}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-neutral-500 text-sm">성별</span>
                     <span className="font-bold text-white text-sm">{getGenderLabel(selectedUser.gender)}</span>
@@ -632,6 +700,19 @@ export function UserManagement({ users, focusId }: UserManagementProps) {
                           ? `${selectedUser.birthday} (만 ${age}세 · ${getAgeBand(age)})`
                           : "미입력";
                       })()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 text-sm">국가</span>
+                    <span className="font-bold text-white text-sm">
+                      {selectedUser.country_code ? (
+                        <>
+                          <span className="mr-1">{countryFlag(selectedUser.country_code)}</span>
+                          {countryNameKo(selectedUser.country_code)} ({selectedUser.country_code})
+                        </>
+                      ) : (
+                        <span className="text-neutral-500">🇰🇷 내국인</span>
+                      )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">

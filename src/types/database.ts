@@ -105,6 +105,10 @@ export interface User {
   nationality: "LOCAL" | "FOREIGNER" | null;
   /** ISO 3166-1 alpha-2 국가 코드. 외국인 가입 시 선택 (Migration 320) */
   country_code: string | null;
+  /** 알림용 이메일. 외국인 우선, auth.users.email 복사 또는 폴백 입력값 (Migration 331) */
+  email: string | null;
+  /** Resend bounce 웹훅으로 도달 불가 감지 시 true. 다음 방문에서 재입력 유도 (Migration 331) */
+  email_bounced: boolean;
 
   /** 공개 프로필 자기소개. 최대 160자 (Migration 279) */
   bio: string | null;

@@ -34,6 +34,30 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
     .neq("role", "admin")
     .order("created_at", { ascending: false });
 
+  // 외국인 방문 상태 파생 계산: puzzles.event_date 기준으로 upcoming/past/none 판정
+  // 별도 컬럼 없이 방문 예정자·방문 이력자를 필터링할 수 있게 UserManagement에 전달.
+  const nowIso = new Date().toISOString();
+  const foreignUserIds = (users || [])
+    .filter((u) => u.country_code)
+    .map((u) => u.id);
+  const visitStatusMap: Record<string, "upcoming" | "past" | "none"> = {};
+  if (foreignUserIds.length > 0) {
+    const { data: puzzleRows } = await supabase
+      .from("puzzles")
+      .select("leader_id, event_date")
+      .in("leader_id", foreignUserIds);
+    for (const uid of foreignUserIds) visitStatusMap[uid] = "none";
+    for (const row of puzzleRows || []) {
+      const uid = row.leader_id as string;
+      const isFuture = row.event_date && row.event_date >= nowIso.slice(0, 10);
+      if (isFuture) {
+        visitStatusMap[uid] = "upcoming";
+      } else if (visitStatusMap[uid] !== "upcoming") {
+        visitStatusMap[uid] = "past";
+      }
+    }
+  }
+
   // 통계 집계
   const totalUsers = users?.length || 0;
   const blockedUsers = users?.filter(u => u.is_blocked).length || 0;
@@ -126,7 +150,7 @@ export default async function AdminUsersPage({ searchParams }: PageProps) {
         </header>
 
         {/* Content */}
-        <UserManagement users={users || []} bidStats={[]} focusId={focus} />
+        <UserManagement users={users || []} bidStats={[]} focusId={focus} visitStatusMap={visitStatusMap} />
       </div>
     </div>
   );
