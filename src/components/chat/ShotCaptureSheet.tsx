@@ -17,6 +17,7 @@ import { fetchNearestClubs, type NearestClub } from "@/lib/clubs/nearestClubs";
 import { getCurrentCoords } from "@/lib/geo/currentCoords";
 import type { ChatShot } from "@/types/database";
 import { useCameraStore } from "@/stores/useCameraStore";
+import { LiveEditView } from "./LiveEditView";
 
 interface Props {
   open: boolean;
@@ -144,9 +145,11 @@ export function ShotCaptureSheet({
     e.target.value = "";
   }
 
-  async function handlePost() {
+  async function handlePost(captionArg?: string) {
     if (!file || uploading) return;
     setUploading(true);
+
+    const finalCaption = (captionArg ?? caption).trim();
 
     const media = await uploadChatMedia(file, userId);
     if (!media) {
@@ -165,7 +168,7 @@ export function ShotCaptureSheet({
       width: media.width ?? null,
       height: media.height ?? null,
       duration: media.duration ?? null,
-      caption: caption.trim() || null,
+      caption: finalCaption || null,
       area: isLive ? area : null,
       club_id: isLive ? selectedClub?.id ?? null : null,
     };
@@ -251,6 +254,31 @@ export function ShotCaptureSheet({
   }
 
   return (
+    <>
+    {/* 촬영 결과 풀스크린 편집 (인스타식) — file 있으면 시트 위에 오버레이 */}
+    {file && previewUrl && (
+      <LiveEditView
+        open={!!file}
+        file={file}
+        previewUrl={previewUrl}
+        clubName={selectedClub?.name ?? null}
+        uploading={uploading}
+        onClose={() => {
+          setFile(null);
+          setPreviewUrl(null);
+        }}
+        onRetake={() => {
+          setFile(null);
+          setPreviewUrl(null);
+          openCamera((captured) => {
+            setFile(captured);
+            setPreviewUrl(URL.createObjectURL(captured));
+          });
+        }}
+        onPost={(cap) => handlePost(cap)}
+      />
+    )}
+
     <Sheet
       open={open}
       onOpenChange={(v) => {
@@ -327,143 +355,41 @@ export function ShotCaptureSheet({
             )}
           </button>
 
-          {/* 미리보기 또는 파일 선택 */}
-          {previewUrl && file ? (
-            <div className="relative w-full aspect-square rounded-2xl overflow-hidden bg-neutral-950">
-              {file.type.startsWith("image/") ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={previewUrl}
-                  alt="미리보기"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <video
-                  src={previewUrl}
-                  className="w-full h-full object-cover"
-                  controls
-                  playsInline
-                />
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setFile(null);
-                  setPreviewUrl(null);
-                }}
-                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center text-white"
-                aria-label="삭제"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          ) : (
-            <div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (canUseLiveCamera()) {
-                    // 전역 카메라 레이어 열기 — 캡처 결과를 콜백으로 받음
-                    openCamera((captured) => {
-                      setFile(captured);
-                      setPreviewUrl(URL.createObjectURL(captured));
-                    });
-                  } else {
-                    cameraInputRef.current?.click();
-                  }
-                }}
-                className="w-full flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-neutral-700 bg-[#1C1C1E] text-neutral-300 hover:border-red-500 hover:text-red-400 transition-colors"
-              >
-                <Camera className="w-10 h-10" />
-                <span className="text-[15px] font-bold">카메라로 촬영</span>
-                <span className="text-[11px] text-neutral-500">
-                  {canUseLiveCamera() ? "탭=사진 · 꾹=영상(12초)" : "사진 촬영"}
-                </span>
-              </button>
-              {/* 갤러리 옵션 제거됨 — LIVE는 현장 카메라 촬영만 허용 */}
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*,video/*"
-                capture="environment"
-                className="sr-only"
-                onChange={pickFile}
-              />
-            </div>
-          )}
-
-          {/* 작성자 + 캡션 */}
-          {file && (
-            <>
-              <div className="flex items-center gap-2">
-                <div className="relative w-7 h-7 rounded-full overflow-hidden bg-neutral-800 shrink-0">
-                  {userProfile?.profile_image ? (
-                    <Image
-                      src={userProfile.profile_image}
-                      alt=""
-                      fill
-                      sizes="28px"
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/50 text-[11px] font-black">
-                      {(userProfile?.display_name ?? "나").charAt(0)}
-                    </div>
-                  )}
-                </div>
-                <div className="text-[13px] text-neutral-300 font-bold">
-                  {userProfile?.display_name ?? "나"}
-                </div>
-                {selectedClub && area ? (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-300 text-[10px] font-black">
-                    <Zap className="w-2.5 h-2.5 fill-red-300" />
-                    LIVE · {ROOM_LABEL[area]}
-                  </span>
-                ) : null}
-              </div>
-              <div className="space-y-1">
-                <textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  placeholder="한 줄 캡션 (선택)"
-                  rows={2}
-                  maxLength={MAX_CAPTION}
-                  className="w-full bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-3 py-2 text-white text-[14px] placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600 resize-none"
-                />
-                <div className="text-right text-[10px] text-neutral-600">
-                  {caption.length}/{MAX_CAPTION}
-                </div>
-              </div>
-            </>
-          )}
+          {/* 카메라 진입 — 촬영하면 결과가 LiveEditView 풀스크린으로 넘어감 */}
+          <div>
+            <button
+              type="button"
+              onClick={() => {
+                if (canUseLiveCamera()) {
+                  // 전역 카메라 레이어 열기 — 캡처 결과를 콜백으로 받음
+                  openCamera((captured) => {
+                    setFile(captured);
+                    setPreviewUrl(URL.createObjectURL(captured));
+                  });
+                } else {
+                  cameraInputRef.current?.click();
+                }
+              }}
+              className="w-full flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-neutral-700 bg-[#1C1C1E] text-neutral-300 hover:border-red-500 hover:text-red-400 transition-colors"
+            >
+              <Camera className="w-10 h-10" />
+              <span className="text-[15px] font-bold">카메라로 촬영</span>
+              <span className="text-[11px] text-neutral-500">
+                {canUseLiveCamera() ? "탭=사진 · 꾹=영상(12초)" : "사진 촬영"}
+              </span>
+            </button>
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*,video/*"
+              capture="environment"
+              className="sr-only"
+              onChange={pickFile}
+            />
+          </div>
         </div>
 
-        {/* 액션 버튼 */}
-        <div className="px-4 pt-2 border-t border-neutral-800 shrink-0">
-          <button
-            onClick={handlePost}
-            disabled={!file || uploading}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-black transition-colors ${
-              selectedClub
-                ? "bg-red-500 text-white"
-                : "bg-white text-black"
-            } disabled:bg-neutral-800 disabled:text-neutral-600`}
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                올리는 중...
-              </>
-            ) : selectedClub ? (
-              <>
-                <Zap className="w-4 h-4 fill-white" />
-                LIVE 올리기 · 🎫
-              </>
-            ) : (
-              <>LIVE 올리기</>
-            )}
-          </button>
-        </div>
+        {/* 게시는 촬영 후 풀스크린 편집(LiveEditView)에서 처리 — 여기 하단 버튼 제거됨 */}
       </SheetContent>
 
       {/* 클럽 선택 서브 시트 */}
@@ -484,6 +410,7 @@ export function ShotCaptureSheet({
         }}
       />
     </Sheet>
+    </>
   );
 }
 
