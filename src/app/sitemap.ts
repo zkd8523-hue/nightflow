@@ -136,7 +136,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         .from("auctions")
         .select("id, updated_at, status, club:clubs!inner(is_test)")
         .eq("clubs.is_test", false)
-        .in("status", ["active", "scheduled", "won", "contacted", "confirmed"])
+        // 활성 경매만 sitemap 노출. 낙찰 후 상태(won/contacted/confirmed)는 유저 유입 무의미하고
+        // 종료 상태는 auctions/[id] 페이지에서 리디렉트 처리 → sitemap에서 미리 제거.
+        .in("status", ["active", "scheduled"])
         .order("updated_at", { ascending: false })
         .limit(1000),
       supabase

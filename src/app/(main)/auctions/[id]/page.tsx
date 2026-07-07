@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AuctionDetail } from "@/components/auctions/AuctionDetail";
 import { getPrimaryAlias } from "@/lib/clubs/aliases";
 import type { Metadata } from "next";
@@ -121,6 +121,18 @@ export default async function AuctionDetailPage({ params }: PageProps) {
 
   if (!auction) {
     notFound();
+  }
+
+  // 종료된 경매 페이지 이탈 방지 (view_auction 이탈률 3.6% 대응).
+  // Model B 피봇 후 경매는 레거시 기능. 종료된 경매에 SEO/알림 유입 시 유저는 뭘 해야 할지 모름 → 이탈.
+  // 활성 상태(active/scheduled)나 낙찰 후 처리 중(won/contacted/confirmed)은 페이지 유지,
+  // 그 외 상태(unsold/cancelled/expired)는 관련 클럽 페이지 or 홈으로 리디렉트.
+  const DEAD_STATUSES = ["unsold", "cancelled", "expired"];
+  if (DEAD_STATUSES.includes(auction.status as string)) {
+    if (auction.club?.id) {
+      redirect(`/clubs/${auction.club.id}?from=expired-auction`);
+    }
+    redirect("/?from=expired-auction");
   }
 
   // MD 거래 완료 건수 조회 (소셜 프루프)
