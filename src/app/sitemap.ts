@@ -106,7 +106,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/en/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE_URL}/zh/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
     { url: `${BASE_URL}/ja/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
-    // /zh-tw — 번체 중국어 트랙 (대만·홍콩 SEO 타겟). 홈 + clubs + 지역 5개.
+    // /zh-tw — 번체 중국어 트랙 (대만·홍콩 SEO 타겟). 홈 + clubs + 지역 5개 + 서브페이지 9개.
     { url: `${BASE_URL}/zh-tw`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
     { url: `${BASE_URL}/zh-tw/clubs`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${BASE_URL}/zh-tw/clubs/gangnam`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
@@ -114,6 +114,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/zh-tw/clubs/itaewon`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
     { url: `${BASE_URL}/zh-tw/clubs/apgujeong`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
     { url: `${BASE_URL}/zh-tw/clubs/busan`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
+    { url: `${BASE_URL}/zh-tw/guide`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE_URL}/zh-tw/faq`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${BASE_URL}/zh-tw/vip-tables`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${BASE_URL}/zh-tw/guests`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${BASE_URL}/zh-tw/kpop-clubs`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${BASE_URL}/zh-tw/seoul-nightlife`, lastModified: now, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${BASE_URL}/zh-tw/refund-policy`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${BASE_URL}/zh-tw/terms`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${BASE_URL}/zh-tw/privacy`, lastModified: now, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   try {
