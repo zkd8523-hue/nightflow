@@ -54,6 +54,8 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
   const tt = makeT(getLang(lang));
   const authError = getAuthErrorMessage(authErrorCode);
   const [isInAppAndroid, setIsInAppAndroid] = useState(false);
+  // iOS 인스타/페북/라인 인앱 감지. Apple 정책상 Safari 자동 이동 불가라 안내 배너만 노출.
+  const [isInAppIOS, setIsInAppIOS] = useState(false);
   const [isIOSNative, setIsIOSNative] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showDevLogin, setShowDevLogin] = useState(false);
@@ -61,6 +63,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
 
   useEffect(() => {
     setIsInAppAndroid(isInAppBrowser() && !isIOS());
+    setIsInAppIOS(isInAppBrowser() && isIOS());
     (async () => {
       const { Capacitor } = await import("@capacitor/core");
       setIsIOSNative(
@@ -502,6 +505,60 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
         {(loginError || authError) && (
           <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center">
             <p className="text-[13px] text-red-400 font-bold">{loginError || authError}</p>
+          </div>
+        )}
+
+        {/* iOS 인앱 브라우저 안내 배너.
+            Apple 정책상 Safari 자동 이동은 불가 → Kakao Developers 공식 권장대로 안내 문구만.
+            안드로이드는 아래 intent:// 스킴으로 자동 이동, iOS는 유저가 수동으로 "Safari에서 열기" 필요. */}
+        {isInAppIOS && (
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[18px]">📱</span>
+              <p className="text-[14px] font-black text-amber-300">
+                {tt(
+                  "Safari에서 열어주세요",
+                  "Open in Safari",
+                  "Safariで開いてください",
+                  "请在 Safari 中打开",
+                  "請在 Safari 中開啟",
+                )}
+              </p>
+            </div>
+            <p className="text-[12px] text-amber-200/90 leading-relaxed">
+              {tt(
+                "인스타·페북·라인 브라우저에서는 로그인이 안 돼요.",
+                "Login is blocked in Instagram/Facebook/Line browsers.",
+                "Instagram・Facebook・Lineブラウザではログインできません。",
+                "无法在 Instagram/Facebook/Line 浏览器中登录。",
+                "無法在 Instagram/Facebook/Line 瀏覽器中登入。",
+              )}
+            </p>
+            <div className="flex items-center gap-2 pt-1 text-[12px] text-neutral-300">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 font-black text-white">1</span>
+              <span>
+                {tt(
+                  "우측 상단",
+                  "Tap top-right",
+                  "右上の",
+                  "点击右上角",
+                  "點擊右上角",
+                )}{" "}
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-neutral-800 border border-neutral-600 font-black text-white text-[13px]">⋯</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[12px] text-neutral-300">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 font-black text-white">2</span>
+              <span>
+                {tt(
+                  '"Safari에서 열기" 선택',
+                  'Select "Open in Safari"',
+                  '「Safariで開く」を選択',
+                  '选择"在 Safari 中打开"',
+                  '選擇「在 Safari 中開啟」',
+                )}
+              </span>
+            </div>
           </div>
         )}
 

@@ -701,17 +701,20 @@ export function ClubDetailContent({
               }}
               className="flex items-center justify-center gap-1.5 w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-full shadow-lg shadow-black/40 transition-colors active:scale-[0.98]"
             >
+              <span className="text-[17px]">🚩</span>
               {(() => {
                 const bookT = makeT(lang);
+                // "예약" 강조 → 나플의 혜택 궁금증 유발형으로 변경.
+                // 이유: club_detail_view 이탈률 64.9% (한국어), CTA 클릭률 1.9%.
+                // "예약해라" 대신 유저 내면 질문 대신 물어주는 프레임.
                 return bookT(
-                  `${clubName} 예약하려면?`,
-                  `Book ${clubName}?`,
-                  `${clubName}を予約?`,
-                  `预订 ${clubName}?`,
-                  `預訂 ${clubName}?`,
+                  `나플에서 예약하면 뭐가 좋냐고?`,
+                  `What's good about booking on NightFlow?`,
+                  `NightFlowで予約すると何がいい?`,
+                  `在 NightFlow 预订有什么好处?`,
+                  `在 NightFlow 預訂有什麼好處?`,
                 );
               })()}
-              <span className="text-[17px]">🚩</span>
             </button>
           </div>
         </div>
