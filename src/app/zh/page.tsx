@@ -363,7 +363,7 @@ export default async function ZhHomePage() {
           </li>
         </ul>
       </div>
-      <EnHomeClient flags={flags} clubs={clubs} />
+      <EnHomeClient flags={flags} clubs={clubs} initialLang="zh" />
     </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { FaqTab } from "./FaqTab";
@@ -78,24 +78,13 @@ const MY_STATUS_LABEL: Record<string, { label: string; ja: string; zh: string; c
   accepted: { label: "Matched", ja: "成立", zh: "已成立", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
 };
 
-// 언어 판별 — mount 후 client에서. (useSearchParams Suspense 회피)
-// 경로 기반 SEO 라우트(/ja, /zh, /zh-tw)는 쿼리 없이도 언어 확정 → 그 외(/en)만 ?lang= 로 판별.
-// zh-tw 판정을 zh보다 먼저 (startsWith("/zh") 는 "/zh-tw"에도 true).
+// 언어 Context — 서버(page.tsx)에서 initialLang을 확정해 EnHomeClient에 prop 주입.
+// 이전엔 각 하위 컴포넌트가 useTr() 안에서 useEffect로 lang을 뒤늦게 확정 → 첫 프레임 flash.
+// 이제 EnHomeClient가 Provider로 lang을 내려 첫 렌더부터 정확한 언어.
+const LangContext = createContext<Lang>("en");
+
 function useTr() {
-  const [lang, setLang] = useState<Lang>("en");
-  useEffect(() => {
-    const path = window.location.pathname;
-    const l = new URLSearchParams(window.location.search).get("lang");
-    setLang(
-      path.startsWith("/zh-tw") ? "zh-tw"
-        : path.startsWith("/zh") ? "zh"
-        : path.startsWith("/ja") ? "ja"
-        : l === "zh-tw" ? "zh-tw"
-        : l === "ja" ? "ja"
-        : l === "zh" ? "zh"
-        : "en"
-    );
-  }, []);
+  const lang = useContext(LangContext);
   const t = makeT(lang);
   // tr: 영어 키로 사전 조회 / t: 명시적 (ko,en,ja,zh) — 동음이의어(예: 상태 "Open") 처리용
   return { lang, t, tr: (en: string) => t("", en) };
@@ -558,7 +547,24 @@ function MapTab() {
 }
 
 // ── Main ─────────────────────────────────────────────────────────
-export function EnHomeClient({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubItem[] }) {
+export function EnHomeClient({
+  flags,
+  clubs = [],
+  initialLang = "en",
+}: {
+  flags: FlagItem[];
+  clubs?: ClubItem[];
+  /** 서버에서 확정한 언어. Context로 하위 컴포넌트에 즉시 주입 → 첫 프레임 flash 제거. */
+  initialLang?: Lang;
+}) {
+  return (
+    <LangContext.Provider value={initialLang}>
+      <EnHomeInner flags={flags} clubs={clubs} />
+    </LangContext.Provider>
+  );
+}
+
+function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubItem[] }) {
   const [tab, setTab] = useState<Tab>("flags");
   const { user, isLoading } = useCurrentUser();
   const { lang, tr } = useTr();

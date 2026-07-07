@@ -47,20 +47,45 @@ export async function generateMetadata({
   return { title: { absolute: `${title} | NightFlow` } };
 }
 
+// country_code → 언어 매핑. 회원가입 완료 후 lang 파라미터 없이 도착한 외국인을 위한 폴백.
+// 실제 이탈 사례: en 유저 signup_completed 직후 /flags/new(lang 없음) → getLang="ko" → 한국어 폼.
+function inferLangFromCountry(countryCode: string | null | undefined): "ko" | "en" | "ja" | "zh" | null {
+  if (!countryCode) return null;
+  const c = countryCode.toUpperCase();
+  if (c === "KR") return "ko";
+  if (c === "JP") return "ja";
+  if (c === "CN" || c === "TW" || c === "HK" || c === "MO") return "zh";
+  return "en"; // 그 외 국가는 영어 폴백
+}
+
 export default async function PuzzleNewPage({
   searchParams,
 }: {
   searchParams: Promise<{ lang?: string; area?: string }>;
 }) {
   const { lang: raw, area } = await searchParams;
-  const lang = getLang(raw);
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // 로그인 유저의 country_code로 언어 폴백 (URL에 lang 없을 때만).
+  // 외국인 유저가 회원가입 직후 /flags/new로 오는 흐름에서 한국어 폼 노출을 방지.
+  let profile: { role: string | null; country_code: string | null } | null = null;
+  if (user) {
+    const { data } = await supabase
+      .from("users")
+      .select("role, country_code")
+      .eq("id", user.id)
+      .single();
+    profile = data;
+  }
+
+  const inferred = inferLangFromCountry(profile?.country_code);
+  const lang = raw ? getLang(raw) : (inferred ?? getLang(raw));
   const isForeigner = lang !== "ko";
   const t = makeT(lang);
   // 외국인 트랙 홈 (lang에 따라 /en, /ja, /zh)
   const foreignHome = lang === "ko" ? "/en" : `/${lang}`;
-
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
   // 비로그인 → 로그인 후 깃발 등록으로 복귀(redirect 보존). 외국인은 lang(en/ja/zh) + area(강남 등) 유지.
   if (!user) {
@@ -76,12 +101,6 @@ export default async function PuzzleNewPage({
     const koReturn = koParams.toString() ? `/flags/new?${koParams.toString()}` : "/flags/new";
     redirect(`/login?redirect=${encodeURIComponent(koReturn)}`);
   }
-
-  const { data: profile } = await supabase
-    .from("users")
-    .select("role")
-    .eq("id", user.id)
-    .single();
 
   if (profile?.role === "md") redirect("/?tab=puzzle");
 

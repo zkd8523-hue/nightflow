@@ -317,7 +317,7 @@ export default async function ZhTwHomePage() {
           <li><a href="/zh-tw/clubs/busan">釜山夜店 — 海雲台海灘 &amp; 西面市區</a></li>
         </ul>
       </div>
-      <EnHomeClient flags={flags} clubs={clubs} />
+      <EnHomeClient flags={flags} clubs={clubs} initialLang="zh-tw" />
     </>
   );
 }

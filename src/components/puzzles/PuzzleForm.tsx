@@ -149,8 +149,32 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
   // 지역은 draft 복원 제외 — 매 진입 시 미선택으로 리셋해 사용자가 의식적으로 지역을 고르도록 유도.
   // 단, ?area= 파라미터(외국인 /en 지역 버튼)로 들어오면 프리셋.
   const presetArea = searchParams.get("area");
+
+  // 외국인 유저가 클럽 상세에서 book_at_club 클릭 → 로그인/회원가입 후 이 폼으로 돌아옴.
+  // ClubsClient.tsx가 sessionStorage("nightflow_book_intent")에 area/lang을 미리 저장.
+  // 24시간 이내면 복원, 소비 후 삭제. presetArea가 이미 있으면 URL 우선.
+  const bookIntentArea = (() => {
+    if (puzzle || presetArea) return null;
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem("nightflow_book_intent");
+      if (!raw) return null;
+      const intent = JSON.parse(raw) as { area?: string; savedAt?: number };
+      if (!intent.savedAt || Date.now() - intent.savedAt > 24 * 60 * 60 * 1000) {
+        sessionStorage.removeItem("nightflow_book_intent");
+        return null;
+      }
+      const validAreas = [...MAIN_AREAS.filter((a) => a !== "이태원"), "서울 어디든"];
+      if (intent.area && validAreas.includes(intent.area)) return intent.area;
+      return null;
+    } catch {
+      return null;
+    }
+  })();
+
   // 이태원은 준비중(선택 불가) → preset으로도 자동선택 안 되게 제외
-  const initialArea = puzzle?.area ?? (presetArea && ([...MAIN_AREAS.filter((a) => a !== "이태원"), "서울 어디든"] as string[]).includes(presetArea) ? presetArea : "");
+  const validPresetArea = presetArea && ([...MAIN_AREAS.filter((a) => a !== "이태원"), "서울 어디든"] as string[]).includes(presetArea) ? presetArea : null;
+  const initialArea = puzzle?.area ?? validPresetArea ?? bookIntentArea ?? "";
   // budgetAmount 의미: 퍼즐(모집 ON)=인당가 / 깃발(모집 OFF)=총액
   // edit 모드: puzzle에서 모드에 맞춰 변환 / 신규: draft 또는 0
   const initialBudget = puzzle
@@ -200,6 +224,17 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
   const [targetFemale, setTargetFemale] = useState<number>(
     puzzle?.target_female ?? (draft?.targetFemale as number) ?? 0
   );
+  // book intent 소비 완료 시 sessionStorage에서 제거 (한 번만 사용).
+  // initialArea 계산에서 이미 참조 완료 → mount 시점에 정리.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (bookIntentArea) {
+      try {
+        sessionStorage.removeItem("nightflow_book_intent");
+      } catch { /* noop */ }
+    }
+  }, [bookIntentArea]);
+
   // 본인 성별 로드 (1회만)
   useEffect(() => {
     let cancelled = false;

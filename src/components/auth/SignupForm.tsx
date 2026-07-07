@@ -99,8 +99,28 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   // 외국인 = 한국어 아닌 모든 언어(en/ja/zh). 과거 lang==="en"만 보던 버그로 ja/zh가 한글을 보던 문제 수정.
   const isForeigner = !!lang && lang !== "ko";
   const tt = makeT(getLang(lang)); // 표시 문구 번역 (ja/zh는 사전 경유, 없으면 영어 폴백)
-  const redirectAfterSignup =
-    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : (isForeigner ? "/en" : "/");
+
+  // 외국인 유저가 회원가입 완료 후 next 경로로 이동할 때 lang 파라미터를 반드시 유지.
+  // 실제 이탈 사례: en 유저 → /flags/new?lang=en → login → /signup?next=/flags/new(lang 유실)
+  // → 회원가입 후 /flags/new(lang 없음) → getLang(undefined)="ko" → 한국어 폼 노출 → 이탈.
+  const appendLangIfMissing = (url: string, langCode: string | null): string => {
+    if (!langCode || langCode === "ko") return url;
+    // fragment 분리 (#) — 있으면 나중에 다시 붙임
+    const [pathAndQuery, hash] = url.split("#");
+    const [path, query] = pathAndQuery.split("?");
+    const params = new URLSearchParams(query || "");
+    if (!params.has("lang")) params.set("lang", langCode);
+    const qs = params.toString();
+    return path + (qs ? `?${qs}` : "") + (hash ? `#${hash}` : "");
+  };
+
+  const baseRedirect =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+      ? nextParam
+      : (isForeigner ? "/en" : "/");
+  const redirectAfterSignup = isForeigner
+    ? appendLangIfMissing(baseRedirect, lang)
+    : baseRedirect;
   const supabase = createClient();
   const [loading, setLoading] = useState(false);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
@@ -122,6 +142,9 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   const [phoneInput, setPhoneInput] = useState("");
   // 생년월일 (phone 단계에서 입력 — 만 19세 미만 SMS 발송 전 차단용)
   const [birthdayInput, setBirthdayInput] = useState("");
+  // DateWheelPicker가 마운트 시 자동으로 기본값(예: 2001-01-01)을 emit해 birthdayInput이 즉시 채워짐 → 다음 버튼이 조작 없이 활성.
+  // 유저가 실제로 휠을 돌리거나 다른 스텝에서 복귀한 경우만 유효 입력으로 간주하기 위해 별도 플래그.
+  const [birthdayTouched, setBirthdayTouched] = useState(false);
   // 성별 (birthday 다음 gender 단계 — 선택 항목, null = 선택안함)
   const [gender, setGender] = useState<"male" | "female" | null>(null);
   const [otpCode, setOtpCode] = useState("");
@@ -559,24 +582,24 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] p-4">
-      <Card className="w-full max-w-md p-8 space-y-6 bg-[#1C1C1E] border border-neutral-700 shadow-2xl">
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-black text-white tracking-tight">NightFlow</h1>
+      <Card className={`w-full max-w-md p-8 bg-[#1C1C1E] border border-neutral-700 shadow-2xl ${step === "agree" ? "space-y-6" : "space-y-4"}`}>
+        <div className={`text-center ${step === "agree" ? "space-y-1.5" : ""}`}>
+          <h1 className={`font-black text-white tracking-tight ${step === "agree" ? "text-3xl" : "text-xl"}`}>NightFlow</h1>
+          {/* 부제·무료 안내는 첫 스텝(약관 동의)에만 노출. 이후 스텝은 폼 집중을 위해 로고까지 축소. */}
+          {step === "agree" && (
+            <>
+              <p className="text-[15px] font-bold text-white/90">
+                {tt("밤이 더 밝아진다, 나플", "Your night, brighter — NightFlow")}
+              </p>
+              <p className="text-[12px] text-neutral-500">
+                {tt("모든 서비스 무료", "All services free")}
+              </p>
+            </>
+          )}
         </div>
 
         {step === "agree" && (
           <>
-            <button
-              type="button"
-              onClick={async () => {
-                await supabase.auth.signOut();
-                router.push(isForeigner ? `/login?lang=${lang}` : "/login");
-              }}
-              className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> {tt("로그인 화면으로", "Back to login")}
-            </button>
-
             <div className="space-y-2">
               <button
                 type="button"
@@ -593,8 +616,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
               <div className="h-px bg-neutral-700 mx-2" />
 
+              {/* "만 19세 이상" 항목 제거: birthday 스텝에서 실제 생년월일로 검증하므로 중복 게이트 → 이탈 유발 */}
               {[
-                { state: agreeAge, set: setAgreeAge, label: tt("만 19세 이상입니다", "I am 19 years of age or older"), required: true, href: null },
                 { state: agreeTerms, set: setAgreeTerms, label: tt("서비스 이용약관 동의", "Terms of Service"), required: true, href: isForeigner ? `/terms?lang=${lang}` : "/terms" },
                 { state: agreePrivacy, set: setAgreePrivacy, label: tt("개인정보 처리방침 동의", "Privacy Policy"), required: true, href: isForeigner ? `/privacy?lang=${lang}` : "/privacy" },
                 { state: agreeMarketing, set: setAgreeMarketing, label: tt("마케팅 정보 수신 동의 (알림톡·SMS·앱 푸시)", "Marketing notifications"), required: false, href: isForeigner ? `/marketing-consent?lang=${lang}` : "/marketing-consent" },
@@ -631,6 +654,17 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             >
               {tt("다음", "Next")}
             </Button>
+
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                router.push(isForeigner ? `/login?lang=${lang}` : "/login");
+              }}
+              className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> {tt("로그인 화면으로", "Back to login")}
+            </button>
           </>
         )}
 
@@ -645,7 +679,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               <div className="space-y-1.5">
                 <DateWheelPicker
                   value={birthdayInput}
-                  onChange={(v) => setBirthdayInput(v)}
+                  onChange={(v) => {
+                    // 마운트 직후 초기값 자동 emit은 touched로 취급 X.
+                    // 이전 값과 다르게 변할 때만(=휠 조작) touched로 세팅.
+                    setBirthdayInput((prev) => {
+                      if (prev && prev !== v) setBirthdayTouched(true);
+                      return v;
+                    });
+                  }}
                 />
                 {isUnderage && (
                   <p className="text-[13px] text-red-400 px-1 text-center">
@@ -656,7 +697,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
               <Button
                 onClick={() => setStep("gender")}
-                disabled={!birthdayValid || !isAdult}
+                disabled={!birthdayTouched || !birthdayValid || !isAdult}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
                 {tt("다음", "Next")}
@@ -705,6 +746,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
 
               <Button
                 onClick={() => setStep(isForeigner ? "nickname" : "phone")}
+                disabled={gender === null}
                 className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
               >
                 {tt("다음", "Next")}

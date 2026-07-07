@@ -2,17 +2,19 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Globe, Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { getLang, type Lang } from "@/lib/i18n";
 
-// 언어 선택 드롭다운 (푸터). 한/영/일/중.
-// 각 언어 = 전용 경로(/, /en, /ja, /zh) — 네이티브 타이틀·메타데이터·SEO가 심긴 페이지로 보냄.
-// (/en?lang=xx 쿼리형은 영어 타이틀이라 부적합 → 깨끗한 경로 사용)
-const OPTIONS: { lang: Lang; label: string; href: string }[] = [
-  { lang: "ko", label: "한국어", href: "/" },
-  { lang: "en", label: "English", href: "/en" },
-  { lang: "ja", label: "日本語", href: "/ja" },
-  { lang: "zh", label: "中文", href: "/zh" },
+type LangExt = Lang | "zh-tw";
+
+// 언어 선택 드롭다운 (푸터). 한/영/일/중(간체)/중(번체).
+// 각 언어 = 전용 경로(/, /en, /ja, /zh, /zh-tw) — 네이티브 타이틀·메타데이터·SEO가 심긴 페이지로 보냄.
+const OPTIONS: { lang: LangExt; label: string; href: string; flag: string }[] = [
+  { lang: "ko",    label: "한국어",      href: "/",       flag: "🇰🇷" },
+  { lang: "en",    label: "English",     href: "/en",     flag: "🇺🇸" },
+  { lang: "ja",    label: "日本語",      href: "/ja",     flag: "🇯🇵" },
+  { lang: "zh",    label: "简体中文",    href: "/zh",     flag: "🇨🇳" },
+  { lang: "zh-tw", label: "繁體中文",    href: "/zh-tw",  flag: "🇹🇼" },
 ];
 
 export function LangSwitcher() {
@@ -26,14 +28,18 @@ export function LangSwitcher() {
     setLangParam(new URLSearchParams(window.location.search).get("lang"));
   }, [pathname]);
 
-  // 현재 언어: 경로 우선(/zh·/ja), /en 은 ?lang(레거시) 반영, 그 외 ko
-  const current: Lang = pathname?.startsWith("/zh")
+  // 현재 언어: 경로 우선(/zh-tw > /zh > /ja > /en). /en 은 ?lang(레거시)도 반영.
+  const current: LangExt = pathname?.startsWith("/zh-tw")
+    ? "zh-tw"
+    : pathname?.startsWith("/zh")
     ? "zh"
     : pathname?.startsWith("/ja")
     ? "ja"
     : pathname?.startsWith("/en")
     ? (getLang(langParam) === "ko" ? "en" : getLang(langParam))
     : "ko";
+
+  const currentOption = OPTIONS.find((o) => o.lang === current) ?? OPTIONS[0];
 
   useEffect(() => {
     if (!open) return;
@@ -52,13 +58,13 @@ export function LangSwitcher() {
         className="flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white transition-colors"
         aria-label="Select language"
       >
-        <Globe className="w-4 h-4" />
+        <span className="text-base leading-none" aria-hidden="true">{currentOption.flag}</span>
         Language
         <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-36 rounded-xl bg-neutral-900 border border-neutral-700 overflow-hidden shadow-xl z-20">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 rounded-xl bg-neutral-900 border border-neutral-700 overflow-hidden shadow-xl z-20">
           {OPTIONS.map((o) => (
             <a
               key={o.lang}
@@ -70,7 +76,10 @@ export function LangSwitcher() {
                   : "text-neutral-300 hover:bg-neutral-800"
               }`}
             >
-              {o.label}
+              <span className="flex items-center gap-2">
+                <span aria-hidden="true">{o.flag}</span>
+                <span>{o.label}</span>
+              </span>
               {o.lang === current && <Check className="w-3.5 h-3.5 text-green-400" />}
             </a>
           ))}

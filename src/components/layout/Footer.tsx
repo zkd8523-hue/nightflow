@@ -25,13 +25,49 @@ export function Footer() {
           </Link>
           <LangSwitcher />
           {/* Google 발견용 — 크롤러가 볼 수 있는 언어 링크 (LangSwitcher는 open 상태에서만 링크 노출).
-              hreflang을 명시해 국가별 SERP에서 올바른 URL이 매칭되도록 함. */}
+              hreflang을 명시해 국가별 SERP에서 올바른 URL이 매칭되도록 함.
+              국기 이모지 + 호버 시 국가 상징색으로 시각적 구분. */}
           <nav aria-label="Language versions" className="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 text-xs text-neutral-500">
-            <a href="/" hrefLang="ko-KR" className="hover:text-white transition-colors">한국어</a>
-            <a href="/en" hrefLang="en-US" className="hover:text-white transition-colors">English</a>
-            <a href="/ja" hrefLang="ja-JP" className="hover:text-white transition-colors">日本語</a>
-            <a href="/zh" hrefLang="zh-CN" className="hover:text-white transition-colors">简体中文</a>
-            <a href="/zh-tw" hrefLang="zh-TW" className="hover:text-white transition-colors">繁體中文</a>
+            <a
+              href="/"
+              hrefLang="ko-KR"
+              className="inline-flex items-center gap-1 hover:text-red-400 transition-colors"
+            >
+              <span aria-hidden="true">🇰🇷</span>
+              <span>한국어</span>
+            </a>
+            <a
+              href="/en"
+              hrefLang="en-US"
+              className="inline-flex items-center gap-1 hover:text-blue-400 transition-colors"
+            >
+              <span aria-hidden="true">🇺🇸</span>
+              <span>English</span>
+            </a>
+            <a
+              href="/ja"
+              hrefLang="ja-JP"
+              className="inline-flex items-center gap-1 hover:text-rose-400 transition-colors"
+            >
+              <span aria-hidden="true">🇯🇵</span>
+              <span>日本語</span>
+            </a>
+            <a
+              href="/zh"
+              hrefLang="zh-CN"
+              className="inline-flex items-center gap-1 hover:text-red-500 transition-colors"
+            >
+              <span aria-hidden="true">🇨🇳</span>
+              <span>简体中文</span>
+            </a>
+            <a
+              href="/zh-tw"
+              hrefLang="zh-TW"
+              className="inline-flex items-center gap-1 hover:text-sky-400 transition-colors"
+            >
+              <span aria-hidden="true">🇹🇼</span>
+              <span>繁體中文</span>
+            </a>
           </nav>
           <nav className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
             <Link href="/terms" className="hover:text-white transition-colors">

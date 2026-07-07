@@ -360,6 +360,22 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   <Link
                     href={clubFlagHref}
                     onClick={() => {
+                      // 회원가입 완료 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트하기 위해
+                      // sessionStorage에 저장. 24시간 안에 소비 시 유효, PuzzleForm이 읽고 자동 삭제.
+                      if (typeof window !== "undefined") {
+                        try {
+                          sessionStorage.setItem(
+                            "nightflow_book_intent",
+                            JSON.stringify({
+                              club_id: club.id,
+                              club_name: club.name,
+                              area: club.area,
+                              lang,
+                              savedAt: Date.now(),
+                            })
+                          );
+                        } catch { /* noop */ }
+                      }
                       if (lang !== "ko") {
                         trackForeignEvent("foreign_book_at_club_click", {
                           area: club.area,

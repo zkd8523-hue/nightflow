@@ -463,7 +463,7 @@ export default async function EnHomePage() {
           </li>
         </ul>
       </div>
-      <EnHomeClient flags={flags} clubs={clubs} />
+      <EnHomeClient flags={flags} clubs={clubs} initialLang="en" />
     </>
   );
 }

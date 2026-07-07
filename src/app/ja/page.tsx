@@ -373,7 +373,7 @@ export default async function JaHomePage() {
           </li>
         </ul>
       </div>
-      <EnHomeClient flags={flags} clubs={clubs} />
+      <EnHomeClient flags={flags} clubs={clubs} initialLang="ja" />
     </>
   );
 }

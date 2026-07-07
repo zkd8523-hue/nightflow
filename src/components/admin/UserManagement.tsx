@@ -661,6 +661,24 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
               <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
                 <h3 className="text-sm font-black text-white uppercase tracking-tight">기본 정보</h3>
                 <div className="space-y-2">
+                  <div className="flex justify-between items-start gap-3">
+                    <span className="text-neutral-500 text-sm shrink-0">UUID</span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(selectedUser.id);
+                          toast.success("UUID 복사됨");
+                        } catch {
+                          toast.error("복사 실패");
+                        }
+                      }}
+                      className="font-mono text-[11px] text-neutral-300 hover:text-white text-right break-all cursor-pointer transition-colors"
+                      title="클릭하면 클립보드에 복사"
+                    >
+                      {selectedUser.id}
+                    </button>
+                  </div>
                   <div className="flex justify-between items-center">
                     <span className="text-neutral-500 text-sm">이름</span>
                     <span className="font-bold text-white">{selectedUser.name}</span>
