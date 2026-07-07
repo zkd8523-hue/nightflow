@@ -84,9 +84,11 @@ export function NativeCameraView({ open, onClose, onCapture }: Props) {
     return () => {
       cancelled = true;
       clearTimers();
-      // 진단: cleanup이 언제 왜 불리는지 화면 + 로그로 확인.
-      // 임시로 stop을 제거 — 카메라가 안 닫히면 cleanup(stop)이 자동종료 범인임이 확정된다.
-      console.warn("[NativeCameraView] CLEANUP FIRED (stop skipped for diagnosis)");
+      // 전역 레이어로 분리 후 cleanup은 카메라를 정말 닫을 때(open=false)만 불린다.
+      // start 완료를 기다린 뒤 stop (경쟁 상태 방지).
+      startPromise.finally(() => {
+        stopNativePreview();
+      });
       // 배경 복원
       html.style.background = prevHtmlBg;
       body.style.background = prevBodyBg;

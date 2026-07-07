@@ -63,6 +63,9 @@ export function ShotCaptureSheet({
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
   const openCamera = useCameraStore((s) => s.openCamera);
+  // 카메라(전역 레이어)가 열려있으면 이 시트를 DOM에서 제거 —
+  // Radix Sheet의 조상 불투명 레이어가 사라져 네이티브 프리뷰(toBack)가 보인다.
+  const cameraLayerOpen = useCameraStore((s) => s.open);
 
   const [selectedClub, setSelectedClub] = useState<{ id: string; name: string } | null>(presetClub);
   const [clubSheetOpen, setClubSheetOpen] = useState(false);
@@ -252,8 +255,10 @@ export function ShotCaptureSheet({
 
   return (
     <Sheet
-      open={open}
+      open={open && !cameraLayerOpen}
       onOpenChange={(v) => {
+        // 카메라 레이어가 떠서 시트가 잠깐 사라지는 동안엔 상위 open 상태를 건드리지 않음
+        if (cameraLayerOpen) return;
         if (!v) resetState();
         onOpenChange(v);
       }}
