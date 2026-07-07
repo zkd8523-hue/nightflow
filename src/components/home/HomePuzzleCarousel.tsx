@@ -165,7 +165,6 @@ export function HomePuzzleCarousel({
   // MD/Admin은 깃발을 "꽂는" 주체가 아니라 오퍼를 넣는 쪽 → 깃발꽂기 CTA 숨기고
   // 끝 슬라이드를 "더보기 >" 카드로 대체 (유저/비로그인은 기존 CTA 유지).
   const isMd = userRole === "md" || userRole === "admin";
-  const hasMore = (totalCount ?? puzzles.length) > MAX_CARDS;
 
   return (
     <div>
@@ -229,21 +228,6 @@ export function HomePuzzleCarousel({
           )
         ) : (
           <>
-            {hasMore && (
-              <Link
-                href={detailHref}
-                className="flex-shrink-0 w-[64%] max-w-[280px] snap-start snap-always flex items-center justify-center group"
-                aria-label={shareMode ? "조각 더보기" : "깃발 더보기"}
-              >
-                <div className="text-center w-full mt-8">
-                  <div className="inline-flex items-center gap-1 text-[15px] font-black text-neutral-300 group-hover:text-white transition-colors">
-                    더보기
-                    <ChevronRight className="w-4 h-4" />
-                  </div>
-                  <p className="text-[11px] text-neutral-500 mt-1">{totalCount ?? puzzles.length}개 보러가기</p>
-                </div>
-              </Link>
-            )}
             {showFlagCTA && (
               <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
                 <div className="text-center w-full mt-8">
