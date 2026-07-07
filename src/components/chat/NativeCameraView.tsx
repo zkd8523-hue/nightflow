@@ -60,16 +60,22 @@ export function NativeCameraView({ open, onClose, onCapture }: Props) {
     body.style.background = "transparent";
     html.classList.add("native-camera-open");
 
-    // start Promise를 추적 — cleanup에서 start 완료를 기다린 뒤 stop (순서 꼬임 방지).
-    // start가 진행 중일 때 stop이 불리면 좀비 프리뷰가 남아 capgo가 곧 자동 종료해버린다.
     const startPromise = (async () => {
       try {
+        setDbg("calling start...");
         await startNativePreview(position);
-        if (!cancelled) setReady(true);
+        if (!cancelled) {
+          setReady(true);
+          setDbg("started ok");
+        } else {
+          setDbg("started but cancelled");
+        }
       } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        setDbg(`start ERR ${msg.slice(0, 30)}`);
         console.error("[NativeCameraView] start error", e);
         if (!cancelled) {
-          toast.error("카메라를 시작할 수 없어요");
+          toast.error(`카메라 시작 실패: ${msg}`);
           onClose();
         }
       }
@@ -78,17 +84,14 @@ export function NativeCameraView({ open, onClose, onCapture }: Props) {
     return () => {
       cancelled = true;
       clearTimers();
-      console.warn("[NativeCameraView] cleanup fired — stopping preview");
-      // start 완료를 기다린 뒤 stop (경쟁 상태 방지)
-      startPromise.finally(() => {
-        stopNativePreview();
-      });
+      // 진단: cleanup이 언제 왜 불리는지 화면 + 로그로 확인.
+      // 임시로 stop을 제거 — 카메라가 안 닫히면 cleanup(stop)이 자동종료 범인임이 확정된다.
+      console.warn("[NativeCameraView] CLEANUP FIRED (stop skipped for diagnosis)");
       // 배경 복원
       html.style.background = prevHtmlBg;
       body.style.background = prevBodyBg;
       html.classList.remove("native-camera-open");
     };
-    // position 바뀌면 flip으로 처리하므로 open에만 의존
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
