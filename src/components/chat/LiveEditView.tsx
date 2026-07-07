@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2, Zap, RotateCcw } from "lucide-react";
 
@@ -19,7 +19,7 @@ interface Props {
 /**
  * 촬영 결과 풀스크린 편집 화면 (인스타 스토리식).
  * - 미디어 풀스크린 미리보기
- * - 하단 캡션 오버레이 입력
+ * - 하단 캡션 오버레이 입력 (uncontrolled — 부모 리렌더로 인한 포커스/입력 유실 방지)
  * - 우측 상단 X(닫기)
  * - 하단 [다시 촬영] [게시하기]
  */
@@ -33,7 +33,9 @@ export function LiveEditView({
   onRetake,
   onPost,
 }: Props) {
-  const [caption, setCaption] = useState("");
+  // uncontrolled input — 게시 시점에 ref로 값 읽음. 부모 state를 안 쓰므로
+  // 매 키 입력마다 리렌더/리마운트가 없어 타이핑·IME가 안정적.
+  const captionRef = useRef<HTMLInputElement>(null);
 
   if (!open) return null;
   if (typeof document === "undefined") return null;
@@ -85,11 +87,9 @@ export function LiveEditView({
       <div className="relative z-10 mt-auto bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-16 pb-6 px-4 space-y-3">
         {/* 캡션 입력 */}
         <input
+          ref={captionRef}
           type="text"
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
+          defaultValue=""
           placeholder="캡션을 추가해보세요..."
           maxLength={200}
           enterKeyHint="done"
@@ -100,7 +100,7 @@ export function LiveEditView({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onPost(caption)}
+            onClick={() => onPost(captionRef.current?.value ?? "")}
             disabled={uploading}
             className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-white text-black text-[15px] font-black active:scale-95 transition-transform disabled:opacity-70"
           >

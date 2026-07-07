@@ -181,7 +181,7 @@ export function ShotCarousel({
                   />
                 ) : (
                   <video
-                    src={liveShots[0].media_url}
+                    src={`${liveShots[0].media_url}#t=0.1`}
                     className="w-full h-full object-cover"
                     muted
                     playsInline
@@ -294,7 +294,9 @@ function ShotThumb({
         ) : (
           <>
             <video
-              src={shot.media_url}
+              // #t=0.1 — 모바일 WebView는 preload만으론 첫 프레임을 안 그린다.
+              // 미디어 프래그먼트로 0.1초 지점을 지정해 첫 프레임을 강제 표시.
+              src={`${shot.media_url}#t=0.1`}
               className="w-full h-full object-cover"
               muted
               playsInline

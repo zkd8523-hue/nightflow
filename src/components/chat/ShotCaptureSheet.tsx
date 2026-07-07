@@ -227,12 +227,19 @@ export function ShotCaptureSheet({
       toast.success("LIVE 올렸어요 (12시간 후 사라져요)");
     }
 
-    // 초상권 리마인더
-    setTimeout(() => {
-      toast.message(
-        "⚠️ 본인 외 얼굴이 식별 가능하게 찍혔다면 직접 삭제해주세요"
-      );
-    }, 1500);
+    // 초상권 리마인더 — 최초 게시 1회만 (매번 뜨면 성가심)
+    try {
+      if (!localStorage.getItem("live.privacyReminderSeen")) {
+        localStorage.setItem("live.privacyReminderSeen", "1");
+        setTimeout(() => {
+          toast.message(
+            "⚠️ 본인 외 얼굴이 식별 가능하게 찍혔다면 직접 삭제해주세요"
+          );
+        }, 1500);
+      }
+    } catch {
+      /* localStorage 실패 시 그냥 skip */
+    }
 
     onPosted?.({
       ...data,

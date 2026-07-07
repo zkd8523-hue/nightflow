@@ -3,18 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Zap, ChevronRight } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const STORAGE_KEY = "wagle.liveIntro.seen.v1";
-
-/** 테스트(비프로덕션) 환경에선 매 새로고침마다 팝업 노출 (QA 편의) */
-const ALWAYS_SHOW_IN_DEV =
-  process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
 
 /**
  * 와글 첫 진입 시 LIVE + 스탬프 안내 1회 팝업.
  * localStorage에 seen 플래그 저장 후 재방문 시 안 뜸.
- * 단, 비프로덕션에선 항상 노출 (테스트).
  */
 export function LiveIntroModal() {
   const router = useRouter();
@@ -24,7 +19,7 @@ export function LiveIntroModal() {
     if (typeof window === "undefined") return;
     try {
       const seen = window.localStorage.getItem(STORAGE_KEY);
-      if (ALWAYS_SHOW_IN_DEV || !seen) {
+      if (!seen) {
         // 페이지 렌더링 직후 잠깐 지연 (레이아웃 안정)
         const t = setTimeout(() => setOpen(true), 300);
         return () => clearTimeout(t);
@@ -53,6 +48,7 @@ export function LiveIntroModal() {
       <DialogContent
         className="bg-[#0B0A11] border-neutral-800 rounded-3xl max-w-sm p-0 overflow-hidden [&>button]:hidden"
       >
+        <DialogTitle className="sr-only">LIVE 안내</DialogTitle>
         {/* 헤더 아이콘 영역 */}
         <div className="relative bg-gradient-to-b from-red-500/20 to-transparent pt-5 pb-2 px-6 text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500 text-white text-[12px] font-black">
