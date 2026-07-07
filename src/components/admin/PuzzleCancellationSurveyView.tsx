@@ -10,13 +10,15 @@ interface Props {
 }
 
 const REASON_LABEL: Record<string, string> = {
+  // 현재 노출 중인 3개 (유저 화면과 문구 통일)
   schedule_change:    "약속/일정이 바뀌었어요",
-  no_preferred_venue: "원하는 장소가 없어요",
-  weak_offers:        "오퍼가 별로였어요",
-  mind_change:        "단순변심",
+  weak_offers:        "마음에 드는 오퍼가 없었어요",
   forgot_about_it:    "잊어버렸어요",
+  // 과거 응답 조회용 (현재 옵션에서는 제거됨)
+  no_preferred_venue: "원하는 장소가 없어요",
+  mind_change:        "단순변심",
   other:              "기타",
-  no_answer:          "잘 모르겠어요",
+  no_answer:          "넘어가기",
 };
 
 const TRIGGER_LABEL: Record<string, string> = {

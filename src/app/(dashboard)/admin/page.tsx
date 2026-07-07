@@ -15,6 +15,8 @@ import {
   CalendarCheck,
   LayoutGrid,
   Star,
+  MessageSquareWarning,
+  BarChart3,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -162,6 +164,15 @@ export default async function AdminDashboardPage() {
     .eq("visit_result", "noshow")
     .is("strike_applied_at", null);
 
+  // 깃발 노매치 알림 — 취소/실패 설문 응답 수 (최근 7일)
+  const [{ count: totalSurveyResponses }, { count: recentSurveyResponses }] = await Promise.all([
+    supabase.from("puzzle_cancellation_surveys").select("id", { count: "exact", head: true }),
+    supabase
+      .from("puzzle_cancellation_surveys")
+      .select("id", { count: "exact", head: true })
+      .gte("responded_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+  ]);
+
   // 클럽 요청 (영업 리드) — 최근 7일
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -275,6 +286,15 @@ export default async function AdminDashboardPage() {
       href: "/admin/marketing",
     },
     {
+      label: "이탈·전환 인사이트",
+      value: "퍼널 분석",
+      icon: BarChart3,
+      color: "text-cyan-400",
+      bgColor: "bg-cyan-500/10",
+      badge: "최근 7일",
+      href: "/admin/insights",
+    },
+    {
       label: "미처리 신고",
       value: `${pendingReportCount}건`,
       icon: Flag,
@@ -311,6 +331,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-red-500/10",
       badge: null,
       href: "/admin/abuse",
+    },
+    {
+      label: "깃발 노매치 알림",
+      value: `${totalSurveyResponses || 0}건`,
+      icon: MessageSquareWarning,
+      color: "text-purple-400",
+      bgColor: "bg-purple-500/10",
+      badge: recentSurveyResponses ? `최근 7일 ${recentSurveyResponses}건` : null,
+      href: "/admin/puzzles?tab=surveys",
     },
     {
       label: "클럽 요청 (영업 리드)",

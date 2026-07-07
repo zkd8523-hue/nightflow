@@ -24,13 +24,16 @@ export function FlagCreatedInstallSheet() {
   const eligibleRef = useRef(eligible);
   eligibleRef.current = eligible;
   const [open, setOpen] = useState(false);
+  const [isShare, setIsShare] = useState(false); // 조각 등록 여부 (깃발과 문구 분기)
 
   useEffect(() => {
-    const onFlagCreated = () => {
+    const onFlagCreated = (e: Event) => {
       if (!eligibleRef.current) return; // 안드로이드 웹에서만
       // 한 번 보면 어디서든(테스트/프로덕션) 다시 안 뜸.
       if (localStorage.getItem(SEEN_KEY) === "1") return;
       localStorage.setItem(SEEN_KEY, "1");
+      const shareMode = !!(e as CustomEvent<{ shareMode?: boolean }>).detail?.shareMode;
+      setIsShare(shareMode);
       setOpen(true);
     };
     window.addEventListener("flag-created", onFlagCreated);
@@ -55,9 +58,13 @@ export function FlagCreatedInstallSheet() {
             className="rounded-2xl"
           />
           <div className="space-y-1.5">
-            <p className="text-lg font-bold text-white">깃발 꽂았어요! 🚩</p>
+            <p className="text-lg font-bold text-white">
+              {isShare ? "조각 등록 완료! 🧩" : "깃발이 꽂혔어요! 🚩"}
+            </p>
             <p className="text-sm leading-relaxed text-neutral-400">
-              오퍼가 오면 바로 알림으로 받아보세요.
+              {isShare
+                ? "파티원·오퍼가 오면 바로 알림으로 받아보세요."
+                : "오퍼가 오면 바로 알림으로 받아보세요."}
               <br />
               앱에서 놓치지 않고 확인할 수 있어요.
             </p>

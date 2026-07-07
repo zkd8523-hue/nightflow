@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { AppDownloadBanner } from "@/components/layout/AppDownloadBanner";
 import { PullToRefresh } from "@/components/auctions/PullToRefresh";
 import { SelectingFlagAlertSheet } from "@/components/puzzles/SelectingFlagAlertSheet";
 import { FlagCreatedInstallSheet } from "@/components/puzzles/FlagCreatedInstallSheet";
@@ -111,7 +110,6 @@ export default function MainLayout({
         <main className={isChromeless ? "" : isChatPage ? "" : "pb-16"}>{children}</main>
         {!isChromeless && !isChatPage && <Footer />}
         {!isChromeless && !isChatPage && <BottomNav />}
-        {!isChromeless && !isChatPage && <AppDownloadBanner />}
         <SelectingFlagAlertSheet />
         <CancellationSurveySheet isOtherSheetOpen={false} />
         <FlagCreatedInstallSheet />
