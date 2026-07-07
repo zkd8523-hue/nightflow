@@ -356,39 +356,66 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                     />
                   )}
 
-                  {/* 예약 CTA — 카드 클릭 유저를 구글로 내보내지 않고 깃발 폼으로 유도 */}
-                  <Link
-                    href={clubFlagHref}
-                    onClick={() => {
-                      // 회원가입 완료 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트하기 위해
-                      // sessionStorage에 저장. 24시간 안에 소비 시 유효, PuzzleForm이 읽고 자동 삭제.
-                      if (typeof window !== "undefined") {
-                        try {
-                          sessionStorage.setItem(
-                            "nightflow_book_intent",
-                            JSON.stringify({
-                              club_id: club.id,
-                              club_name: club.name,
-                              area: club.area,
-                              lang,
-                              savedAt: Date.now(),
-                            })
-                          );
-                        } catch { /* noop */ }
-                      }
-                      if (lang !== "ko") {
-                        trackForeignEvent("foreign_book_at_club_click", {
-                          area: club.area,
-                          club_id: club.id,
-                          club_name: club.name,
-                        });
-                      }
-                      setSelectedClub(null);
-                    }}
-                    className="flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 transition-colors"
-                  >
-                    {bookAtClubLabel(club.name)}
-                  </Link>
+                  {/* 예약 CTA — 카드 클릭 유저를 구글로 내보내지 않고 깃발 폼으로 유도.
+                      이태원은 준비중(폼에서 area 선택 불가) → 예약 CTA 대신 "Coming soon" 안내.
+                      Maeve 사례: 이태원 클럽 예약 클릭 → 폼에서 area 프리셀렉트 실패 → 이탈. */}
+                  {club.area === "이태원" ? (
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center justify-center gap-1.5 w-full py-3.5 rounded-xl bg-neutral-900 border border-amber-500/30 text-amber-400 font-black text-[15px]">
+                        🚀 {t(
+                          "이태원은 준비중이에요",
+                          "Coming soon to NightFlow",
+                          "NightFlowで近日開始",
+                          "即将上线 NightFlow",
+                        )}
+                      </div>
+                      <Link
+                        href={`/en/clubs/hongdae?lang=${lang}`}
+                        onClick={() => setSelectedClub(null)}
+                        className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-white text-black text-[14px] font-black hover:bg-neutral-200 transition-colors"
+                      >
+                        {t(
+                          "→ 홍대·강남 클럽 예약하기",
+                          "→ Book Gangnam or Hongdae instead",
+                          "→ 江南・弘大クラブを予約",
+                          "→ 预订江南或弘大夜店",
+                        )}
+                      </Link>
+                    </div>
+                  ) : (
+                    <Link
+                      href={clubFlagHref}
+                      onClick={() => {
+                        // 회원가입 완료 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트하기 위해
+                        // sessionStorage에 저장. 24시간 안에 소비 시 유효, PuzzleForm이 읽고 자동 삭제.
+                        if (typeof window !== "undefined") {
+                          try {
+                            sessionStorage.setItem(
+                              "nightflow_book_intent",
+                              JSON.stringify({
+                                club_id: club.id,
+                                club_name: club.name,
+                                area: club.area,
+                                lang,
+                                savedAt: Date.now(),
+                              })
+                            );
+                          } catch { /* noop */ }
+                        }
+                        if (lang !== "ko") {
+                          trackForeignEvent("foreign_book_at_club_click", {
+                            area: club.area,
+                            club_id: club.id,
+                            club_name: club.name,
+                          });
+                        }
+                        setSelectedClub(null);
+                      }}
+                      className="flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 transition-colors"
+                    >
+                      {bookAtClubLabel(club.name)}
+                    </Link>
+                  )}
 
                   <a
                     href={googleUrl}
