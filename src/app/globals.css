@@ -340,19 +340,3 @@
     }
   }
 }
-/* 네이티브 카메라(toBack:true): capgo가 WebView 자체를 투명 처리해 프리뷰가 뒤로 비친다.
-   (capgo activateTransparentBackgroundsForToBack — webView.setBackgroundColor(TRANSPARENT))
-   따라서 우리는 요소를 숨기지 않는다(숨기면 터치도 죽음). 페이지 배경만 투명으로 비워
-   WebView 투명이 유효하도록 하고, 카메라 오버레이 위 UI는 그대로 터치 가능하게 둔다.
-   NativeCameraView가 열릴 때 html.native-camera-open 을 토글한다. */
-html.native-camera-open,
-html.native-camera-open body {
-  background: transparent !important;
-}
-/* 카메라가 열린 동안 Radix Sheet/Dialog 딤 오버레이를 투명화 (카메라 프리뷰 가림 방지).
-   오버레이는 pointer-events가 없어 터치와 무관하므로 시각만 제거. */
-html.native-camera-open [data-radix-dialog-overlay],
-html.native-camera-open [data-slot="sheet-overlay"],
-html.native-camera-open [data-slot="dialog-overlay"] {
-  background: transparent !important;
-}

@@ -5,11 +5,13 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.webkit.PermissionRequest;
 import android.webkit.WebChromeClient;
+import android.webkit.WebView;
 
 import androidx.core.app.ActivityCompat;
 
 import com.getcapacitor.BridgeActivity;
 import com.kakao.sdk.common.KakaoSdk;
+import kr.nightflow.app.camera.NativeCameraPlugin;
 
 /**
  * NightFlow MainActivity.
@@ -24,8 +26,15 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // 커스텀 네이티브 카메라 플러그인 등록 — 반드시 super.onCreate 전에.
+        registerPlugin(NativeCameraPlugin.class);
+
         super.onCreate(savedInstanceState);
         KakaoSdk.init(this, getString(R.string.kakao_app_key));
+
+        // 카메라 디버깅용 — release 빌드에서도 chrome://inspect 로 WebView JS 콘솔 접근 허용.
+        // (진단 끝나면 제거 예정)
+        WebView.setWebContentsDebuggingEnabled(true);
 
         // Capacitor Bridge 의 WebView 에 커스텀 WebChromeClient 설치.
         // Bridge 가 기본 WebChromeClient 를 세팅해두므로, 기본 동작을 유지하기 위해

@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
-import { NativeCameraView } from "./NativeCameraView";
 
 interface Props {
   open: boolean;
@@ -16,38 +15,11 @@ const LONG_PRESS_MS = 250;
 const MAX_RECORDING_MS = 12_000; // LIVE 최대 12초 (웹 fallback)
 
 /**
- * 인스타식 풀스크린 카메라 캡처.
- *
- * 앱(Capacitor) → NativeCameraView (네이티브 프리뷰, 저조도 화질 우수)
- * 웹            → 아래 getUserMedia 기반 fallback
- *
+ * 웹(비앱) getUserMedia 기반 카메라 캡처 — 앱은 네이티브 Activity(CameraLayer)를 쓴다.
  * - 탭 → 사진 / 꾹 → 영상 (max 12초)
  * - 전/후면 전환
  */
-export function CameraCaptureView({ open, onClose, onCapture }: Props) {
-  // 플랫폼 판별 — 동기(Capacitor.isNativePlatform은 동기 함수)로 첫 렌더부터 확정.
-  // effect로 늦추면 판별 전에 WebCameraCaptureView가 잠깐 떠서 getUserMedia로 카메라를
-  // 선점 → 곧이어 뜨는 네이티브 프리뷰와 충돌(CameraUnavailable)하며 카메라가 닫힌다.
-  const isNative = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    // 전역에 노출된 Capacitor 객체로 동기 판별 (dynamic import 없이)
-    const cap = (window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
-      .Capacitor;
-    return !!cap?.isNativePlatform?.();
-  }, []);
-
-  // 앱이면 네이티브 카메라 뷰, 웹이면 getUserMedia — 첫 렌더부터 하나만 마운트
-  if (isNative) {
-    return (
-      <NativeCameraView open={open} onClose={onClose} onCapture={onCapture} />
-    );
-  }
-  return (
-    <WebCameraCaptureView open={open} onClose={onClose} onCapture={onCapture} />
-  );
-}
-
-function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
+export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);

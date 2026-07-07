@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/black">
+
+    <!-- CameraX 프리뷰 (SurfaceView 기반 PERFORMANCE 모드 — 하드웨어 오버레이, 크래시 없음) -->
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 상단 컨트롤: 닫기(좌) + REC 인디케이터(중앙) + 플립(우) -->
+    <ImageButton
+        android:id="@+id/btnClose"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="20dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:contentDescription="닫기"
+        app:tint="@android:color/white"
+        xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+    <TextView
+        android:id="@+id/recIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="24dp"
+        android:background="#EF4444"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        android:text="● REC 0.0s / 12s"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+    <ImageButton
+        android:id="@+id/btnFlip"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_gravity="top|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="20dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_menu_camera"
+        android:contentDescription="카메라 전환"
+        app:tint="@android:color/white"
+        xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+    <!-- 안내 문구 -->
+    <TextView
+        android:id="@+id/hint"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="140dp"
+        android:text="탭=사진 · 꾹 누르면 동영상 (최대 12초)"
+        android:textColor="#E6FFFFFF"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:shadowColor="#000000"
+        android:shadowRadius="4" />
+
+    <!-- 셔터 버튼 (커스텀 View — 탭=사진 / 꾹=영상) -->
+    <kr.nightflow.app.camera.ShutterButton
+        android:id="@+id/shutter"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="40dp" />
+
+</FrameLayout>

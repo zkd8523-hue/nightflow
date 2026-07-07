@@ -14,8 +14,8 @@ android {
         applicationId "kr.nightflow.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 13
-        versionName "1.0.11"
+        versionCode 15
+        versionName "1.0.13"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -59,6 +59,14 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
     implementation "com.kakao.sdk:v2-user:2.20.1"
+
+    // 커스텀 네이티브 카메라 (NativeCameraActivity) — CameraX 풀스크린, 크래시 없는 SurfaceView 프리뷰
+    def cameraxVersion = "1.3.4"
+    implementation "androidx.camera:camera-core:$cameraxVersion"
+    implementation "androidx.camera:camera-camera2:$cameraxVersion"
+    implementation "androidx.camera:camera-lifecycle:$cameraxVersion"
+    implementation "androidx.camera:camera-view:$cameraxVersion"
+    implementation "androidx.camera:camera-video:$cameraxVersion"
 }
 
 apply from: 'capacitor.build.gradle'
