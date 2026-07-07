@@ -12,8 +12,7 @@ import { registerPlugin, Capacitor } from "@capacitor/core";
 interface CaptureResult {
   mediaType: "photo" | "video";
   mimeType: string;
-  base64?: string; // photo: JPEG base64
-  path?: string; // video: 앱 캐시 파일 경로
+  path?: string; // 앱 캐시 파일 경로 (사진/영상 공통) — readTemp로 base64 읽음
 }
 
 interface NativeCameraPlugin {
@@ -59,15 +58,18 @@ export async function captureNative(): Promise<File | null> {
     throw e;
   }
 
-  if (res.mediaType === "photo" && res.base64) {
-    const blob = base64ToBlob(res.base64, res.mimeType || "image/jpeg");
-    return new File([blob], `live-${stamp()}.jpg`, { type: "image/jpeg" });
-  }
-
-  if (res.mediaType === "video" && res.path) {
+  // 사진·영상 모두 파일 경로 → readTemp로 네이티브가 base64 읽어 반환
+  // (base64 직접 Intent 전달은 TransactionTooLargeException, WebView 오리진도 우회)
+  if (res.path) {
     const { base64 } = await NativeCamera.readTemp({ path: res.path });
-    const blob = base64ToBlob(base64, res.mimeType || "video/mp4");
-    return new File([blob], `live-${stamp()}.mp4`, { type: "video/mp4" });
+    if (res.mediaType === "photo") {
+      const blob = base64ToBlob(base64, res.mimeType || "image/jpeg");
+      return new File([blob], `live-${stamp()}.jpg`, { type: "image/jpeg" });
+    }
+    if (res.mediaType === "video") {
+      const blob = base64ToBlob(base64, res.mimeType || "video/mp4");
+      return new File([blob], `live-${stamp()}.mp4`, { type: "video/mp4" });
+    }
   }
 
   return null;

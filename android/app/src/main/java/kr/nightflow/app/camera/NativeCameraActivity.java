@@ -9,7 +9,6 @@ import android.graphics.Matrix;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Base64;
 import android.util.Range;
 import android.view.View;
 import android.widget.ImageButton;
@@ -226,9 +225,13 @@ public class NativeCameraActivity extends AppCompatActivity {
                     int rotation = image.getImageInfo().getRotationDegrees();
                     boolean front = cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA;
                     byte[] finalJpeg = applyOrientation(jpegBytes, rotation, front);
-                    String base64 = Base64.encodeToString(finalJpeg, Base64.NO_WRAP);
                     image.close();
-                    mainHandler.post(() -> returnPhoto(base64));
+                    // base64를 Intent로 넘기면 TransactionTooLargeException(>1MB) — 파일로 저장 후 path만 전달
+                    File photoFile = new File(getCacheDir(), "live_" + System.currentTimeMillis() + ".jpg");
+                    try (java.io.FileOutputStream fos = new java.io.FileOutputStream(photoFile)) {
+                        fos.write(finalJpeg);
+                    }
+                    mainHandler.post(() -> returnPhoto(photoFile.getAbsolutePath()));
                 } catch (Exception e) {
                     image.close();
                     mainHandler.post(() -> { setResult(RESULT_CANCELED); finish(); });
@@ -258,10 +261,10 @@ public class NativeCameraActivity extends AppCompatActivity {
         return out.toByteArray();
     }
 
-    private void returnPhoto(String base64) {
+    private void returnPhoto(String path) {
         Intent data = new Intent();
         data.putExtra("mediaType", "photo");
-        data.putExtra("base64", base64);
+        data.putExtra("path", path);
         setResult(RESULT_OK, data);
         finish();
     }

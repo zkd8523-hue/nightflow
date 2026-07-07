@@ -54,19 +54,17 @@ public class NativeCameraPlugin extends Plugin {
         String mediaType = data.getStringExtra("mediaType"); // "photo" | "video"
         JSObject ret = new JSObject();
 
+        // 사진·영상 모두 파일 경로로 반환 (base64를 Intent로 넘기면 TransactionTooLargeException).
+        // 웹이 readTemp로 네이티브에서 base64를 읽어간다.
         if ("photo".equals(mediaType)) {
-            // 사진: base64 직접 반환 (작아서 브릿지로 안전)
-            String base64 = data.getStringExtra("base64");
             ret.put("mediaType", "photo");
             ret.put("mimeType", "image/jpeg");
-            ret.put("base64", base64);
+            ret.put("path", data.getStringExtra("path"));
             call.resolve(ret);
         } else if ("video".equals(mediaType)) {
-            // 영상: 앱 캐시 파일 경로 반환 → 웹이 readTemp로 base64 요청
-            String path = data.getStringExtra("path");
             ret.put("mediaType", "video");
             ret.put("mimeType", "video/mp4");
-            ret.put("path", path);
+            ret.put("path", data.getStringExtra("path"));
             call.resolve(ret);
         } else {
             call.reject("CAMERA_UNKNOWN_RESULT");
