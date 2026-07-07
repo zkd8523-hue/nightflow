@@ -116,15 +116,14 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
           .maybeSingle();
 
         if (cancelled) return;
+        // 프로필이 완성된 로그인 유저만 자동으로 redirectPath(홈 등)로 보냄.
+        // 예전엔 프로필 미완성(가입 중도이탈로 세션만 남은 "좀비 세션") 유저를
+        // 여기서 곧바로 /signup으로 밀어냈는데, 헤더는 프로필 기준이라 "로그인" 버튼을
+        // 보여주고 있어 "로그인 눌렀는데 갑자기 회원가입으로 튕긴다"는 버그로 보였음.
+        // 이제 미완성 유저는 로그인 화면에 그대로 두고, 소셜 로그인 재진행 시
+        // /auth/callback이 프로필 없음을 감지해 signup으로 안내(복구 경로는 그대로 유지).
         if (profile?.phone || profile?.display_name) {
           router.push(redirectPath);
-        } else {
-          const signupBase = "/signup";
-          const signupParams = new URLSearchParams();
-          if (redirectPath !== "/") signupParams.set("next", redirectPath);
-          if (isForeigner) signupParams.set("lang", lang || "en");
-          const signupQuery = signupParams.toString();
-          router.push(signupBase + (signupQuery ? `?${signupQuery}` : ""));
         }
       }
     };

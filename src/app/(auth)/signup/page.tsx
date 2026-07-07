@@ -17,13 +17,23 @@ export async function generateMetadata({
   return { title: { absolute: `${title} | NightFlow` } };
 }
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lang?: string }>;
+}) {
   const cookieStore = await cookies();
   const referralCode = cookieStore.get('referral_code')?.value ?? null;
   const mdReferrer = cookieStore.get('md_referrer')?.value ?? null;
 
+  // 로딩 fallback을 진입 언어(?lang=) 하나로만 렌더.
+  // 이전엔 4개 언어를 한 줄에 다 넣어, 한국어 유저가 signup으로 튕길 때
+  // 중국어·일본어가 한꺼번에 스쳐 "버그"처럼 보였음.
+  const t = makeT(getLang((await searchParams).lang));
+  const loadingText = t("로딩 중...", "Loading...", "読み込み中...", "加载中...");
+
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p>로딩 중... / Loading... / 読み込み中... / 加载中...</p></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><p>{loadingText}</p></div>}>
       <SignupForm referralCode={referralCode} mdReferrer={mdReferrer} />
     </Suspense>
   );
