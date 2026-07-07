@@ -28,6 +28,7 @@ import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { HotdealMdCta } from "@/components/home/HotdealMdCta";
 import { GuestSignMdCta } from "@/components/home/GuestSignMdCta";
 import { ShareManageMdCta } from "@/components/home/ShareManageMdCta";
+import { FlagOnboardingSheet } from "@/components/home/FlagOnboardingSheet";
 
 const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
 
@@ -786,6 +787,8 @@ export function HomeContent({
   // Compact/Full 모드 공통 Sheet들 (MD 승인 축하 + 깃발 CTA)
   const renderHomeSheets = () => (
     <>
+      {/* 깃발 사용법 온보딩 — 비로그인 첫 방문 시 1회 자동 노출 (localStorage) */}
+      <FlagOnboardingSheet autoShow={!user} />
       {/* 리뷰 작성 시트 (첫 접속 시 자동 노출) — 별점·태그·멘트 한 번에 */}
       <Sheet open={!!reviewPrompt} onOpenChange={(open) => { if (!open) resetReviewPrompt(); }}>
         <SheetContent
