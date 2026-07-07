@@ -251,18 +251,31 @@ export function ShotCaptureSheet({
   }
 
   return (
+    <>
+    {/* 카메라는 Sheet 밖 최상위에 렌더 — 카메라 열리면 Sheet(open=false)가 DOM에서 사라져
+        Radix 조상 불투명 레이어가 제거되고 네이티브 프리뷰(toBack)가 깨끗이 보인다. */}
+    <CameraCaptureView
+      open={cameraOpen}
+      onClose={() => setCameraOpen(false)}
+      onCapture={(captured) => {
+        setFile(captured);
+        setPreviewUrl(URL.createObjectURL(captured));
+        setCameraOpen(false);
+      }}
+    />
+
     <Sheet
-      open={open}
+      open={open && !cameraOpen}
       onOpenChange={(v) => {
+        // 카메라 여는 중엔 Sheet가 닫혀도 상위 open 상태를 건드리지 않음
+        if (cameraOpen) return;
         if (!v) resetState();
         onOpenChange(v);
       }}
     >
       <SheetContent
         side="bottom"
-        className={`bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[90vh] flex flex-col ${
-          cameraOpen ? "opacity-0 pointer-events-none" : ""
-        }`}
+        className="bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[90vh] flex flex-col"
       >
         <SheetHeader className="px-4 pt-4 pb-3 border-b border-neutral-800 shrink-0">
           <SheetTitle className="text-white text-[16px] text-left flex items-center gap-2">
@@ -436,16 +449,6 @@ export function ShotCaptureSheet({
           )}
         </div>
 
-        <CameraCaptureView
-          open={cameraOpen}
-          onClose={() => setCameraOpen(false)}
-          onCapture={(captured) => {
-            setFile(captured);
-            setPreviewUrl(URL.createObjectURL(captured));
-            setCameraOpen(false);
-          }}
-        />
-
         {/* 액션 버튼 */}
         <div className="px-4 pt-2 border-t border-neutral-800 shrink-0">
           <button
@@ -492,6 +495,7 @@ export function ShotCaptureSheet({
         }}
       />
     </Sheet>
+    </>
   );
 }
 
