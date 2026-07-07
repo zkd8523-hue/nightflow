@@ -16,7 +16,7 @@ import { ROOM_LABEL, type VerifiableArea } from "@/lib/chat/areas";
 import { fetchNearestClubs, type NearestClub } from "@/lib/clubs/nearestClubs";
 import { getCurrentCoords } from "@/lib/geo/currentCoords";
 import type { ChatShot } from "@/types/database";
-import { CameraCaptureView } from "./CameraCaptureView";
+import { useCameraStore } from "@/stores/useCameraStore";
 
 interface Props {
   open: boolean;
@@ -62,7 +62,7 @@ export function ShotCaptureSheet({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [uploading, setUploading] = useState(false);
-  const [cameraOpen, setCameraOpen] = useState(false);
+  const openCamera = useCameraStore((s) => s.openCamera);
 
   const [selectedClub, setSelectedClub] = useState<{ id: string; name: string } | null>(presetClub);
   const [clubSheetOpen, setClubSheetOpen] = useState(false);
@@ -251,24 +251,9 @@ export function ShotCaptureSheet({
   }
 
   return (
-    <>
-    {/* 카메라는 Sheet 밖 최상위에 렌더 — 카메라 열리면 Sheet(open=false)가 DOM에서 사라져
-        Radix 조상 불투명 레이어가 제거되고 네이티브 프리뷰(toBack)가 깨끗이 보인다. */}
-    <CameraCaptureView
-      open={cameraOpen}
-      onClose={() => setCameraOpen(false)}
-      onCapture={(captured) => {
-        setFile(captured);
-        setPreviewUrl(URL.createObjectURL(captured));
-        setCameraOpen(false);
-      }}
-    />
-
     <Sheet
-      open={open && !cameraOpen}
+      open={open}
       onOpenChange={(v) => {
-        // 카메라 여는 중엔 Sheet가 닫혀도 상위 open 상태를 건드리지 않음
-        if (cameraOpen) return;
         if (!v) resetState();
         onOpenChange(v);
       }}
@@ -378,7 +363,11 @@ export function ShotCaptureSheet({
                 type="button"
                 onClick={() => {
                   if (canUseLiveCamera()) {
-                    setCameraOpen(true);
+                    // 전역 카메라 레이어 열기 — 캡처 결과를 콜백으로 받음
+                    openCamera((captured) => {
+                      setFile(captured);
+                      setPreviewUrl(URL.createObjectURL(captured));
+                    });
                   } else {
                     cameraInputRef.current?.click();
                   }
@@ -495,7 +484,6 @@ export function ShotCaptureSheet({
         }}
       />
     </Sheet>
-    </>
   );
 }
 
