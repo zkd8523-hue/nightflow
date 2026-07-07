@@ -581,4 +581,39 @@ export const EN_TO_ZH_TW: Record<string, string> = {
   // 공통
   "Language": "語言",
   "Clear search": "清除搜尋",
+
+  // 깃발 폼 (PuzzleForm) — /flags/new 페이지 (간체 → 번체 대응)
+  "Area": "地區",
+  "Area TBD": "地區待定",
+  "Group size": "人數",
+  "Total in your group (including you)": "團隊總人數（含本人）",
+  "Max headcount (including you)": "最大人數（含本人）",
+  "Total budget": "總預算",
+  "Message to club": "給夜店的留言",
+  "Note to club": "給夜店的留言",
+  "Visit date": "到店日期",
+  "Select date": "選擇日期",
+  "Up to 30 days ahead": "最多可提前30天",
+  "Up to 14 days ahead": "最多可提前14天",
+  "e.g. 250,000": "例如：250,000",
+  "e.g. 500,000": "例如：500,000",
+  "e.g. 4 people, main table preferred": "例如：4人，希望主桌",
+  "e.g. Respectful crowd only. Here to party.": "例如：只要有素質的客人。來玩的。",
+  "Clear": "清除",
+  " people": "人",
+  "* Most offers *": "* 獲得最多報價 *",
+  "Soon": "即將上線",
+  "Itaewon is coming soon": "梨泰院即將上線",
+
+  // 깃발 등록 성공/실패 토스트
+  "Done! Top clubs will send you offers 🎉": "完成！頂級夜店將發送報價給您 🎉",
+  "Your share is up! Get party members and club offers 🧩": "您的分享已發布！獲取派對成員和夜店報價 🧩",
+  "Posted! Offers close at 8pm. You have 60 min to review 🧩": "已發布！報價於晚上8點截止。您有60分鐘檢視 🧩",
+  "Updated!": "已更新！",
+
+  // 성별 게이트
+  "We need your gender": "我們需要您的性別",
+  "Set gender": "設定性別",
+  "Tell us your gender for matching": "請告訴我們您的性別以便配對",
+  "This can't be changed once set": "設定後無法變更",
 };

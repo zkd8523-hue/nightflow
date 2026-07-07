@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext, useRef } from "react";
 import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { FaqTab } from "./FaqTab";
@@ -286,7 +286,7 @@ function ClubThumb({ club }: { club: ClubItem }) {
   );
 }
 
-function RegionSection({ clubs }: { clubs: ClubItem[] }) {
+function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: React.RefObject<HTMLAnchorElement | null> }) {
   const { lang, tr } = useTr();
   return (
     <div className="pt-5 pb-6 border-b border-neutral-900 space-y-5">
@@ -355,6 +355,7 @@ function RegionSection({ clubs }: { clubs: ClubItem[] }) {
           </Link>
         </div>
         <Link
+          ref={bookCtaRef}
           href={`/flags/new?lang=${lang}`}
           className="block w-full mt-1 py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all"
         >
@@ -368,8 +369,29 @@ function RegionSection({ clubs }: { clubs: ClubItem[] }) {
 // ── Flags 탭 ─────────────────────────────────────────────────────
 function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
   const { lang, tr } = useTr();
+  // Sticky "Book with NightFlow" CTA: 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
+  // 원본이 보이면 자동 숨김 (중복 UI 방지). 스크롤 컨테이너(overflow-y-auto div)를 root로 관찰.
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const bookCtaRef = useRef<HTMLAnchorElement>(null);
+  const [showStickyCta, setShowStickyCta] = useState(false);
+
+  useEffect(() => {
+    const target = bookCtaRef.current;
+    const root = scrollContainerRef.current;
+    if (!target || !root) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // 원본 CTA가 조금이라도 보이면 sticky 숨김. 완전히 밖일 때만 표시.
+        setShowStickyCta(!entry.isIntersecting);
+      },
+      { root, threshold: 0 }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [flags.length]);
+
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
       {/* ① 타겟 후킹 + 설명 (헤더 아래) */}
       <div className="px-5 pt-6 pb-5 text-center space-y-3 border-b border-neutral-900">
         <h1 className="text-[24px] font-black leading-[1.18] tracking-tight">
@@ -448,7 +470,7 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
       </div>
 
       {/* 지역 섹션 (강남/홍대 소개 + 클럽 리스트 + 지역 버튼) */}
-      {clubs.length > 0 && <RegionSection clubs={clubs} />}
+      {clubs.length > 0 && <RegionSection clubs={clubs} bookCtaRef={bookCtaRef} />}
 
       {/* Safety tips */}
       <div className="px-4 pb-6 space-y-3">
@@ -504,6 +526,27 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
         </nav>
         <BusinessInfo lang={lang} />
       </footer>
+
+      {/* Sticky "Book with NightFlow" CTA — 원본 CTA(RegionSection 하단)가 화면 밖일 때만 표시.
+          스크롤 컨테이너 하단에 sticky 배치. IntersectionObserver로 원본 가시성 감지. */}
+      <div
+        aria-hidden={!showStickyCta}
+        className={`sticky bottom-4 px-4 pointer-events-none z-20 transition-all duration-300 ${
+          showStickyCta
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-3"
+        }`}
+      >
+        <Link
+          href={`/flags/new?lang=${lang}`}
+          tabIndex={showStickyCta ? 0 : -1}
+          className={`block w-full py-3.5 rounded-full bg-amber-500 text-black font-black text-[14px] text-center hover:bg-amber-400 active:scale-[0.98] transition-all shadow-2xl shadow-amber-500/30 ${
+            showStickyCta ? "pointer-events-auto" : ""
+          }`}
+        >
+          {tr("Book with NightFlow")}
+        </Link>
+      </div>
     </div>
   );
 }
