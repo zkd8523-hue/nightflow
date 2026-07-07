@@ -260,7 +260,9 @@ export function ShotCaptureSheet({
     >
       <SheetContent
         side="bottom"
-        className="bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[90vh] flex flex-col"
+        className={`bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[90vh] flex flex-col ${
+          cameraOpen ? "opacity-0 pointer-events-none" : ""
+        }`}
       >
         <SheetHeader className="px-4 pt-4 pb-3 border-b border-neutral-800 shrink-0">
           <SheetTitle className="text-white text-[16px] text-left flex items-center gap-2">
