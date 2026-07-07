@@ -280,8 +280,10 @@ export function ShotCaptureSheet({
     )}
 
     <Sheet
-      open={open}
+      open={open && !file}
       onOpenChange={(v) => {
+        // 편집뷰(file 있음)로 잠깐 시트가 닫히는 동안엔 상위 open 상태를 건드리지 않음
+        if (file) return;
         if (!v) resetState();
         onOpenChange(v);
       }}
