@@ -34,6 +34,7 @@ export function NativeCameraView({ open, onClose, onCapture }: Props) {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [dbg, setDbg] = useState("init"); // 진단용 — 화면에 마지막 이벤트 표시
 
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -102,12 +103,16 @@ export function NativeCameraView({ open, onClose, onCapture }: Props) {
   async function doPhoto() {
     if (busy) return;
     setBusy(true);
+    setDbg("photo:start");
     try {
       const file = await captureNativePhoto();
+      setDbg(`photo:ok ${file.size}b`);
       onCapture(file);
     } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setDbg(`photo:ERR ${msg.slice(0, 40)}`);
       console.error("[NativeCameraView] photo error", e);
-      toast.error("사진 촬영 실패");
+      toast.error(`사진 촬영 실패: ${msg}`);
     } finally {
       setBusy(false);
     }
@@ -153,6 +158,7 @@ export function NativeCameraView({ open, onClose, onCapture }: Props) {
   }
 
   function handlePointerDown(e: React.PointerEvent) {
+    setDbg(`down ready=${ready} busy=${busy}`);
     if (!ready || busy) return;
     e.preventDefault();
     try {
@@ -237,7 +243,7 @@ export function NativeCameraView({ open, onClose, onCapture }: Props) {
       {/* 디버그 배지 (진단용 — 확인 후 제거) */}
       <div className="absolute top-16 inset-x-0 text-center pointer-events-none">
         <span className="inline-block px-2 py-1 rounded bg-black/70 text-green-400 text-[11px] font-mono">
-          NATIVE · ready={String(ready)} · rec={String(recording)}
+          NATIVE r={String(ready)} b={String(busy)} · {dbg}
         </span>
       </div>
 
