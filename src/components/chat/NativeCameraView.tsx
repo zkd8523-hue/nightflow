@@ -47,6 +47,7 @@ export function NativeCameraView({ open, onClose, onCapture }: Props) {
     if (!open) return;
     let cancelled = false;
     setReady(false);
+    setDbg("effect:start");
 
     // toBack:true 는 네이티브 프리뷰를 WebView 뒤에 둔다.
     // WebView(html/body)와 상위 배경이 불투명하면 카메라가 가려져 검은 화면이 되므로
@@ -59,20 +60,29 @@ export function NativeCameraView({ open, onClose, onCapture }: Props) {
     body.style.background = "transparent";
     html.classList.add("native-camera-open");
 
-    (async () => {
+    // start Promise를 추적 — cleanup에서 start 완료를 기다린 뒤 stop (순서 꼬임 방지).
+    // start가 진행 중일 때 stop이 불리면 좀비 프리뷰가 남아 capgo가 곧 자동 종료해버린다.
+    const startPromise = (async () => {
       try {
         await startNativePreview(position);
         if (!cancelled) setReady(true);
       } catch (e) {
         console.error("[NativeCameraView] start error", e);
-        toast.error("카메라를 시작할 수 없어요");
-        onClose();
+        if (!cancelled) {
+          toast.error("카메라를 시작할 수 없어요");
+          onClose();
+        }
       }
     })();
+
     return () => {
       cancelled = true;
       clearTimers();
-      stopNativePreview();
+      console.warn("[NativeCameraView] cleanup fired — stopping preview");
+      // start 완료를 기다린 뒤 stop (경쟁 상태 방지)
+      startPromise.finally(() => {
+        stopNativePreview();
+      });
       // 배경 복원
       html.style.background = prevHtmlBg;
       body.style.background = prevBodyBg;

@@ -28,14 +28,16 @@ export async function startNativePreview(
   position: "rear" | "front" = "rear"
 ): Promise<void> {
   const { CameraPreview } = await import("@capgo/camera-preview");
+  // force:true — 이전 세션이 남아있으면 강제 종료 후 깨끗이 시작 (중복 start 경쟁 방지)
+  // width/height 생략 — capgo가 화면 전체로 자동 계산 (직접 픽셀 지정 시 중복 계산 이슈)
   await CameraPreview.start({
     position,
     parent: "cameraPreviewRoot",
     className: "camera-preview-el",
-    toBack: true, // HTML(버튼)을 프리뷰 위에 표시
+    toBack: true,
     disableAudio: false, // 영상 녹화용 오디오 유지
-    width: typeof window !== "undefined" ? window.innerWidth : undefined,
-    height: typeof window !== "undefined" ? window.innerHeight : undefined,
+    // 정의에 없을 수 있는 옵션이라 캐스팅 — Android 네이티브가 force를 읽음
+    ...({ force: true } as Record<string, unknown>),
   });
 }
 
