@@ -43,6 +43,8 @@ PODS:
     - Capacitor
   - CapacitorStatusBar (8.0.2):
     - Capacitor
+  - CapgoCameraPreview (8.9.0):
+    - Capacitor
   - CapgoCapacitorSocialLogin (8.3.22):
     - Alamofire (~> 5.10.2)
     - Capacitor
@@ -113,6 +115,7 @@ DEPENDENCIES:
   - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - "CapacitorSplashScreen (from `../../node_modules/@capacitor/splash-screen`)"
   - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
+  - "CapgoCameraPreview (from `../../node_modules/@capgo/camera-preview`)"
   - "CapgoCapacitorSocialLogin (from `../../node_modules/@capgo/capacitor-social-login`)"
 
 SPEC REPOS:
@@ -165,6 +168,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/splash-screen"
   CapacitorStatusBar:
     :path: "../../node_modules/@capacitor/status-bar"
+  CapgoCameraPreview:
+    :path: "../../node_modules/@capgo/camera-preview"
   CapgoCapacitorSocialLogin:
     :path: "../../node_modules/@capgo/capacitor-social-login"
 
@@ -185,6 +190,7 @@ SPEC CHECKSUMS:
   CapacitorShare: 0c58305114538568059bfc07111f22dcb9cb2a82
   CapacitorSplashScreen: 4b46c72298db552b3c57ce021ef028b6dc7f1fa7
   CapacitorStatusBar: 01d5763b4ed720de5ce2edbc938de6a98f4c8f32
+  CapgoCameraPreview: 0cd5a1af6944219ccf89b18597233e6900e686ad
   CapgoCapacitorSocialLogin: a25bcdc64bb0ae816e1e37f2e28012e1ca52210a
   FBAEMKit: 2a6b529993713c185b02bc36f8c91129bf78dfb0
   FBSDKCoreKit: 65d7f7a7d6fcc3aa6eb6e093ec737a4184fc6049
@@ -204,6 +210,6 @@ SPEC CHECKSUMS:
   KakaoSDKUser: 5b0826033381d314f550dd90fbf70d3612044ad6
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
 
-PODFILE CHECKSUM: f0a7c7ed645df1d8850cdf494182b686a2249cd5
+PODFILE CHECKSUM: 681f997223fc635ec1189eab75f37298860e48a7
 
 COCOAPODS: 1.16.2

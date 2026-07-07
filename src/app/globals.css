@@ -340,3 +340,11 @@
     }
   }
 }
+/* 네이티브 카메라(toBack:true) 프리뷰가 WebView 뒤에 렌더될 때,
+   상위 배경 요소들이 카메라를 가리지 않도록 투명화.
+   NativeCameraView가 열릴 때 html.native-camera-open 을 토글한다. */
+html.native-camera-open,
+html.native-camera-open body,
+html.native-camera-open body > * {
+  background: transparent !important;
+}

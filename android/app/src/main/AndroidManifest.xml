@@ -76,10 +76,12 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- SHOT 캡처(WebView getUserMedia) — 카메라 + 영상 녹음 -->
+    <!-- LIVE 캡처(네이티브 camera-preview + WebView getUserMedia 폴백) — 카메라 + 영상 녹음 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <!-- capgo camera-preview 영상 저장(Android 12 이하). 13+는 scoped storage라 불필요 → maxSdkVersion 제한 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>

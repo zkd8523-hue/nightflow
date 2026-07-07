@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
+import { NativeCameraView } from "./NativeCameraView";
 
 interface Props {
   open: boolean;
@@ -12,16 +13,48 @@ interface Props {
 }
 
 const LONG_PRESS_MS = 250;
-const MAX_RECORDING_MS = 5_000; // 인스타식 짧은 동영상 (5초)
+const MAX_RECORDING_MS = 12_000; // LIVE 최대 12초 (웹 fallback)
 
 /**
- * 인스타식 풀스크린 카메라 캡처
- * - 캡처 버튼 짧은 탭 → 사진 1장 (JPEG)
- * - 캡처 버튼 길게 누름 → 누르는 동안 녹화, 손 떼면 정지 (max 30초)
- * - 전/후면 카메라 전환
- * - getUserMedia 실패 시 안내 + 닫기만 가능 (호출측에서 갤러리 fallback)
+ * 인스타식 풀스크린 카메라 캡처.
+ *
+ * 앱(Capacitor) → NativeCameraView (네이티브 프리뷰, 저조도 화질 우수)
+ * 웹            → 아래 getUserMedia 기반 fallback
+ *
+ * - 탭 → 사진 / 꾹 → 영상 (max 12초)
+ * - 전/후면 전환
  */
 export function CameraCaptureView({ open, onClose, onCapture }: Props) {
+  // 플랫폼 판별 (앱이면 네이티브 카메라로 위임)
+  const [isNative, setIsNative] = useState<boolean | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (mounted) setIsNative(Capacitor.isNativePlatform());
+      } catch {
+        if (mounted) setIsNative(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // 앱이면 네이티브 카메라 뷰 사용
+  if (isNative === true) {
+    return (
+      <NativeCameraView open={open} onClose={onClose} onCapture={onCapture} />
+    );
+  }
+  // 판별 중이거나 웹이면 아래 웹 구현
+  return (
+    <WebCameraCaptureView open={open} onClose={onClose} onCapture={onCapture} />
+  );
+}
+
+function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -78,11 +111,17 @@ export function CameraCaptureView({ open, onClose, onCapture }: Props) {
         if (!navigator.mediaDevices?.getUserMedia) {
           throw new Error("이 브라우저는 카메라 캡처를 지원하지 않아요");
         }
+        // 고해상도 요청 (ideal 1920x1080) — 미지원 기기는 자동으로 가능한 최대치로 다운.
+        const videoConstraints: MediaTrackConstraints = {
+          facingMode: facing,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        };
         // audio:true 우선 시도 → 마이크 없거나 권한 거부 시 video만으로 fallback
         let stream: MediaStream;
         try {
           stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: facing },
+            video: videoConstraints,
             audio: true,
           });
         } catch (audioErr) {
@@ -91,7 +130,7 @@ export function CameraCaptureView({ open, onClose, onCapture }: Props) {
             audioErr
           );
           stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: facing },
+            video: videoConstraints,
             audio: false,
           });
         }
@@ -381,7 +420,7 @@ export function CameraCaptureView({ open, onClose, onCapture }: Props) {
           {recording && (
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500 text-white text-[12px] font-black tabular-nums">
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              REC {(elapsedMs / 1000).toFixed(1)}s / 5s
+              REC {(elapsedMs / 1000).toFixed(1)}s / 12s
             </div>
           )}
           <button
@@ -397,13 +436,20 @@ export function CameraCaptureView({ open, onClose, onCapture }: Props) {
           </button>
         </div>
 
+        {/* 디버그 배지 (진단용 — 확인 후 제거) */}
+        <div className="absolute top-16 inset-x-0 text-center pointer-events-none">
+          <span className="inline-block px-2 py-1 rounded bg-black/70 text-yellow-400 text-[11px] font-mono">
+            WEB fallback{error ? ` · err=${error.slice(0, 30)}` : ""}
+          </span>
+        </div>
+
         {/* 하단 안내 */}
         {!error && (
           <div className="absolute bottom-32 inset-x-0 text-center pointer-events-none">
             <p className="text-white/90 text-[12px] font-bold drop-shadow-lg">
               {recording
                 ? "손을 떼면 녹화가 정지됩니다"
-                : "탭=사진 · 꾹 누르면 동영상 (최대 5초)"}
+                : "탭=사진 · 꾹 누르면 동영상 (최대 12초)"}
             </p>
           </div>
         )}

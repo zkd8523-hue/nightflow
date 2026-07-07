@@ -101,7 +101,28 @@ export function ShotCaptureSheet({
     return () => { cancelled = true; };
   }, [open, area, presetClub]);
 
+  // 앱(Capacitor)이면 네이티브 카메라(camera-preview)를 쓰므로 항상 인앱 카메라 사용.
+  // Capacitor.isNativePlatform()은 동기 호출이지만 dynamic import라 초기값 판별을 effect로.
+  const [isNativeApp, setIsNativeApp] = useState(false);
+  useEffect(() => {
+    let m = true;
+    (async () => {
+      try {
+        const { Capacitor } = await import("@capacitor/core");
+        if (m) setIsNativeApp(Capacitor.isNativePlatform());
+      } catch {
+        /* 웹 */
+      }
+    })();
+    return () => {
+      m = false;
+    };
+  }, []);
+
   function canUseLiveCamera(): boolean {
+    // 앱: 네이티브 카메라 항상 가능
+    if (isNativeApp) return true;
+    // 웹: getUserMedia + HTTPS 필요
     if (typeof window === "undefined") return false;
     if (!window.isSecureContext) return false;
     return !!navigator.mediaDevices?.getUserMedia;
