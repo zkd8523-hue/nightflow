@@ -88,22 +88,16 @@ export function LiveEditView({
           type="text"
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           placeholder="캡션을 추가해보세요..."
           maxLength={200}
+          enterKeyHint="done"
           className="w-full bg-white/10 backdrop-blur border border-white/20 rounded-full px-4 py-3 text-white text-[15px] placeholder:text-white/50 focus:outline-none focus:border-white/40"
         />
 
-        {/* 액션 버튼 */}
+        {/* 액션 버튼 — 게시하기(주요, 좌) + 다시 촬영(우) */}
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={onRetake}
-            disabled={uploading}
-            className="flex items-center justify-center gap-1.5 px-5 py-3 rounded-full bg-white/15 backdrop-blur text-white text-[14px] font-bold active:scale-95 transition-transform disabled:opacity-50"
-          >
-            <RotateCcw className="w-4 h-4" />
-            다시 촬영
-          </button>
           <button
             type="button"
             onClick={() => onPost(caption)}
@@ -118,6 +112,15 @@ export function LiveEditView({
             ) : (
               <>게시하기</>
             )}
+          </button>
+          <button
+            type="button"
+            onClick={onRetake}
+            disabled={uploading}
+            className="flex items-center justify-center gap-1.5 px-5 py-3 rounded-full bg-white/15 backdrop-blur text-white text-[14px] font-bold active:scale-95 transition-transform disabled:opacity-50"
+          >
+            <RotateCcw className="w-4 h-4" />
+            다시 촬영
           </button>
         </div>
       </div>
