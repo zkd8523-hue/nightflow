@@ -221,15 +221,9 @@ export function PuzzleDetailClient({
     // 앱(Capacitor): OS 공유 시트 우선 (WebView에서 navigator.share가 불안정)
     const native = await shareViaNative({ title, text, url });
     if (native.handled) return;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title, text, url });
-      } catch {
-        // 사용자가 취소한 경우 무시
-      }
-      return;
-    }
 
+    // 웹: navigator.share(요약 텍스트 동봉) 대신 링크만 클립보드에 복사.
+    // 붙여넣기 시 OG 카드가 자동 렌더되므로 순수 링크가 더 깔끔함.
     // navigator.clipboard는 보안 컨텍스트(HTTPS/localhost)에서만 존재
     try {
       if (navigator.clipboard?.writeText) {
