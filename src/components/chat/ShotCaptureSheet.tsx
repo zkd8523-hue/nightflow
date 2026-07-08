@@ -538,8 +538,16 @@ function ClubPickerSheet({
               {searching ? "검색 중..." : "주변 클럽 찾는 중..."}
             </div>
           ) : list.length === 0 ? (
-            <div className="p-6 text-center text-neutral-500 text-[13px]">
-              {isSearchMode ? "검색 결과가 없어요" : "주변에 등록된 클럽이 없어요"}
+            <div className="p-6 text-center text-neutral-500 text-[13px] leading-relaxed">
+              {isSearchMode ? (
+                "검색 결과가 없어요"
+              ) : (
+                <>
+                  주변 클럽을 못 찾았어요.
+                  <br />
+                  <span className="text-neutral-400">아래에서 클럽명을 검색해보세요</span>
+                </>
+              )}
             </div>
           ) : (
             <ul className="divide-y divide-neutral-900 px-2 py-2">
@@ -586,7 +594,8 @@ function ClubPickerSheet({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="검색하기"
-              className="flex-1 bg-transparent text-white text-[14px] placeholder:text-neutral-600 focus:outline-none"
+              // text-[16px]: iOS 사파리는 16px 미만 input 포커스 시 자동 확대 → 검색창 밀림. 16px로 차단.
+              className="flex-1 bg-transparent text-white text-[16px] placeholder:text-neutral-600 focus:outline-none"
             />
             {query && (
               <button type="button" onClick={() => setQuery("")} aria-label="지우기">

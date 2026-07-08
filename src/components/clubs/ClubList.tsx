@@ -287,7 +287,9 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
       <div
         className={`${
           view === "map"
-            ? "fixed left-2 right-2 z-30 bg-[#1C1C1E]/90 backdrop-blur-md p-2.5 space-y-2 shadow-lg rounded-2xl"
+            ? // 뷰포트 전체가 아니라 콘텐츠 폭(max-w-3xl)에 맞춰 중앙정렬 —
+              // 넓은 화면(데스크톱 브라우저)에서 검색바가 좌우로 삐져나가는 문제 방지
+              "fixed left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-3xl z-30 bg-[#1C1C1E]/90 backdrop-blur-md p-2.5 space-y-2 shadow-lg rounded-2xl"
             : "bg-[#1C1C1E] p-2.5 space-y-2 shadow-sm rounded-2xl"
         }`}
         style={
@@ -314,7 +316,8 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="클럽명·지역 검색"
-              className="flex-1 bg-transparent border-0 outline-none px-2 text-[13px] font-medium text-white placeholder:text-neutral-500 min-w-0"
+              // text-[16px]: iOS 사파리 16px 미만 input 자동 확대(레이아웃 밀림) 방지
+              className="flex-1 bg-transparent border-0 outline-none px-2 text-[16px] font-medium text-white placeholder:text-neutral-500 min-w-0"
               aria-label="클럽 검색"
             />
             {query && (

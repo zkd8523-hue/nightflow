@@ -25,9 +25,11 @@ export async function getCurrentCoords(): Promise<{
       }
       if (!granted) throw new Error("위치 권한이 없습니다");
       const pos = await Geolocation.getCurrentPosition({
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 30000,
+        // coarse(Wi-Fi/셀) 위치 — 실내·도심에서 GPS 위성 fix보다 훨씬 빠르고 안정적.
+        // 클럽 근접 정렬엔 이 정도 정확도면 충분. (highAccuracy는 실내 타임아웃 잦음)
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 60000,
       });
       return {
         latitude: pos.coords.latitude,
@@ -50,7 +52,7 @@ export async function getCurrentCoords(): Promise<{
             longitude: pos.coords.longitude,
           }),
         (err) => reject(err),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+        { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 }
       );
     }
   );

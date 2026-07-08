@@ -132,6 +132,10 @@ export const metadata: Metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
+  // iOS는 font-size<16px input에 포커스하면 자동 확대(zoom)돼 레이아웃이 밀린다
+  // (검색창이 화면 밖으로 튐). 앱 UX상 핀치줌은 불필요하므로 확대 자체를 차단.
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
 };
 
