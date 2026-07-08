@@ -29,7 +29,7 @@ import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByD
 import { ShareOptionManager } from "@/components/md/ShareOptionManager";
 import { ShareWeekdayPlanBoard } from "@/components/md/ShareWeekdayPlanBoard";
 import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
-import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle } from "lucide-react";
+import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle, Pencil } from "lucide-react";
 import { FeatureGate } from "@/components/common/FeatureGate";
 import { toast } from "sonner";
 
@@ -201,6 +201,24 @@ export function MDDashboard({
             setShareCounts((m) => ({ ...m, [puzzleId]: data.current_count }));
             setShareDeltas((m) => ({ ...m, [puzzleId]: 0 }));
         } else if (data?.error) toast.error(data.error);
+    };
+    // 내 조각 삭제(내리기) — 상세페이지 handleCancelWithReason과 동일한 RPC 재사용
+    const [shareDeleting, setShareDeleting] = useState<string | null>(null);
+    const deleteShare = async (puzzleId: string) => {
+        if (!confirm("이 조각을 내리시겠어요?")) return;
+        setShareDeleting(puzzleId);
+        const { data, error } = await supabase.rpc("cancel_puzzle_with_reason", {
+            p_puzzle_id: puzzleId,
+            p_reasons: ["other"],
+            p_reason_text: "MD 대시보드에서 삭제",
+        });
+        setShareDeleting(null);
+        if (error || !data?.success) {
+            toast.error(data?.error || "삭제에 실패했습니다");
+            return;
+        }
+        setMyShares((prev) => prev.filter((s) => s.id !== puzzleId));
+        toast.success("조각을 내렸어요");
     };
     useEffect(() => { setLocalShareSlots(shareSlots); }, [shareSlots]);
 
@@ -573,9 +591,29 @@ export function MDDashboard({
                                     const cnt = Math.max(1, Math.min(s.target_count, committed + delta));
                                     return (
                                         <div key={s.id} className="bg-neutral-900 rounded-xl px-4 py-3 space-y-2">
-                                            <Link href={`/flags/${s.id}`} className="block">
-                                                <p className="text-[14px] font-bold text-white truncate">{s.notes || `${s.area} 조각`}</p>
-                                            </Link>
+                                            <div className="flex items-center justify-between gap-2">
+                                                <Link href={`/flags/${s.id}`} className="flex-1 min-w-0">
+                                                    <p className="text-[14px] font-bold text-white truncate">{s.notes || `${s.area} 조각`}</p>
+                                                </Link>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                    <Link
+                                                        href={`/md/auctions/${s.id}/edit`}
+                                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+                                                        aria-label="수정"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" />
+                                                    </Link>
+                                                    <button
+                                                        type="button"
+                                                        disabled={shareDeleting === s.id}
+                                                        onClick={() => deleteShare(s.id)}
+                                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-neutral-800 transition-colors disabled:opacity-40"
+                                                        aria-label="삭제"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
                                             {/* 인원 수정 (외부 인원 +/-, 누적 후 적용) — 오른쪽에 현재/목표 인원 */}
                                             <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/60">
                                                 <span className="text-[11px] text-neutral-500 font-bold">인원 수정</span>

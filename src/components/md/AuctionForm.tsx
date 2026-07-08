@@ -183,7 +183,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
     // Share Success Sheet state
     const [showShareSheet, setShowShareSheet] = useState(false);
     const [createdAuctionId, setCreatedAuctionId] = useState<string | null>(null);
-    const [createdShareData, setCreatedShareData] = useState<{ total_seats: number; price_per_seat: number; main_alcohol: string } | null>(null);
+    // MD 직통 조각 신규 등록: "완료" 클릭 시 실제 생성 전에 템플릿 저장 여부부터 확인
+    const [pendingShareSubmitValues, setPendingShareSubmitValues] = useState<FormValues | null>(null);
+    const [templateNameDraft, setTemplateNameDraft] = useState("");
     const initialTotalPrice = (initialData?.price_per_seat && initialData?.total_seats)
         ? initialData.price_per_seat * initialData.total_seats : 0;
     const [totalPrice, setTotalPrice] = useState(initialTotalPrice);
@@ -482,6 +484,13 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         if (isShareMode && !initialData && values.event_date && !isShareEventDateWithinWindow(values.event_date)) {
             toast.error(`방문일은 오늘부터 ${SHARE_MAX_EVENT_DAYS_AHEAD}일 이내로 선택해주세요.`);
             return;
+        }
+        // 조각 신규 등록: 실제 생성 전에 "템플릿으로 저장할까요?" 먼저 확인
+        if (values.listing_type === "share" && !initialData) {
+            setPendingShareSubmitValues(values);
+            setTemplateNameDraft(`${Math.round((values.price_per_seat || 0) / 10000)}만원/${values.main_alcohol || "주류"}/조각${values.total_seats}`);
+            setShowTemplateSavePrompt(true);
+            return; // 프롬프트에서 예/아니오 선택 후 performSubmit 진행
         }
         // 가격 확인 (신규 등록 OR 수정 시 입찰 없으면, share 모드 제외)
         if (!isShareMode && (!initialData || (initialData && initialData.bid_count === 0))) {
@@ -1797,10 +1806,6 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 isOpen={showShareSheet}
                 onOpenChange={(open) => {
                     setShowShareSheet(open);
-                    // 조각 등록 성공 후 시트 닫힐 때 템플릿 저장 프롬프트 표시
-                    if (!open && createdShareData) {
-                        setShowTemplateSavePrompt(true);
-                    }
                 }}
                 auctionId={createdAuctionId}
                 clubName={selectedClub?.name || "클럽"}
@@ -1821,9 +1826,20 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             />
         )}
 
-        {/* 조각 등록 후 템플릿 저장 프롬프트 */}
-        {createdShareData && (
-            <Sheet open={showTemplateSavePrompt} onOpenChange={setShowTemplateSavePrompt}>
+        {/* 조각 신규 등록 전 템플릿 저장 확인 — "완료" 클릭 시 실제 생성 전에 먼저 뜸 */}
+        {pendingShareSubmitValues && (
+            <Sheet
+                open={showTemplateSavePrompt}
+                onOpenChange={(open) => {
+                    // 바깥 클릭/스와이프로 닫아도 등록은 진행 (건너뛰기와 동일)
+                    if (!open && pendingShareSubmitValues) {
+                        const v = pendingShareSubmitValues;
+                        setShowTemplateSavePrompt(false);
+                        setPendingShareSubmitValues(null);
+                        performSubmit(v);
+                    }
+                }}
+            >
                 <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
                     <SheetHeader className="text-left pb-2">
                         <SheetTitle className="text-white text-lg">템플릿으로 저장할까요?</SheetTitle>
@@ -1831,35 +1847,47 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     <p className="text-neutral-400 text-sm mb-4">
                         다음 등록 시 한 번에 불러올 수 있습니다.
                     </p>
-                    <div className="bg-neutral-900 rounded-xl p-3 mb-4">
-                        <p className="text-amber-400 font-bold text-sm">
-                            {`${Math.round((createdShareData.price_per_seat || 0) / 10000)}만원 / ${createdShareData.main_alcohol || "주류 미입력"} / 조각${createdShareData.total_seats}`}
-                        </p>
+                    <div className="mb-4 space-y-1.5">
+                        <p className="text-[11px] text-neutral-500 font-bold">템플릿 이름</p>
+                        <Input
+                            type="text"
+                            value={templateNameDraft}
+                            onChange={(e) => setTemplateNameDraft(e.target.value)}
+                            maxLength={40}
+                            className="bg-neutral-900 border-neutral-800 h-11 text-amber-400 font-bold text-sm focus:ring-amber-500"
+                        />
                     </div>
                     <div className="flex gap-3">
                         <Button
                             variant="outline"
                             className="flex-1 border-neutral-700 text-neutral-400 hover:text-white"
-                            onClick={() => { setShowTemplateSavePrompt(false); setCreatedShareData(null); }}
+                            disabled={templateSaving}
+                            onClick={() => {
+                                const v = pendingShareSubmitValues;
+                                setShowTemplateSavePrompt(false);
+                                setPendingShareSubmitValues(null);
+                                performSubmit(v);
+                            }}
                         >
-                            건너뛰기
+                            아니오
                         </Button>
                         <Button
                             className="flex-1 bg-white text-black hover:bg-neutral-100 font-bold"
                             disabled={templateSaving}
                             onClick={async () => {
+                                const v = pendingShareSubmitValues;
                                 setTemplateSaving(true);
                                 try {
-                                    const templateName = `${Math.round((createdShareData.price_per_seat || 0) / 10000)}만원/${createdShareData.main_alcohol || "주류"}/조각${createdShareData.total_seats}`;
+                                    const templateName = templateNameDraft.trim() || `${Math.round((v.price_per_seat || 0) / 10000)}만원/${v.main_alcohol || "주류"}/조각${v.total_seats}`;
                                     await supabase.from("auction_templates").insert({
                                         md_id: mdId,
                                         name: templateName,
-                                        club_id: watch("club_id"),
-                                        table_type: watch("table_info"),
-                                        total_seats: createdShareData.total_seats,
-                                        price_per_seat: createdShareData.price_per_seat,
-                                        main_alcohol: createdShareData.main_alcohol,
-                                        includes: watch("includes") || [],
+                                        club_id: v.club_id,
+                                        table_type: v.table_info,
+                                        total_seats: v.total_seats,
+                                        price_per_seat: v.price_per_seat,
+                                        main_alcohol: v.main_alcohol,
+                                        includes: v.includes || [],
                                     });
                                     toast.success("템플릿이 저장되었습니다!");
                                 } catch {
@@ -1867,11 +1895,12 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 } finally {
                                     setTemplateSaving(false);
                                     setShowTemplateSavePrompt(false);
-                                    setCreatedShareData(null);
+                                    setPendingShareSubmitValues(null);
+                                    performSubmit(v);
                                 }
                             }}
                         >
-                            {templateSaving ? "저장 중..." : "템플릿 저장"}
+                            {templateSaving ? "저장 중..." : "예, 저장"}
                         </Button>
                     </div>
                 </SheetContent>
@@ -1886,8 +1915,20 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
           onSelect={(template) => {
             if (template.club_id) setValue("club_id", template.club_id);
             if (template.table_type) setValue("table_info", template.table_type);
-            if (template.total_seats) setValue("total_seats", template.total_seats);
-            if (template.price_per_seat) setValue("price_per_seat", template.price_per_seat);
+            // 목표 매출·인원은 로컬 state(totalPrice/targetCount)가 화면을 그리고
+            // RHF 필드(total_seats/price_per_seat)는 그 state에서 파생되는 단방향 구조라,
+            // setValue만으론 화면(목표 매출·인원 스테퍼)이 안 바뀜 → 로컬 state도 함께 갱신.
+            if (template.total_seats) {
+              setTargetCount(template.total_seats);
+              setValue("total_seats", template.total_seats);
+            }
+            if (template.price_per_seat) {
+              const seats = template.total_seats || targetCount;
+              const total = template.price_per_seat * seats;
+              setTotalPrice(total);
+              setTotalPriceInputStr(total.toLocaleString());
+              setValue("price_per_seat", template.price_per_seat);
+            }
             if (template.main_alcohol) setValue("main_alcohol", template.main_alcohol);
             if (template.includes?.length) setValue("includes", template.includes);
             toast.success("템플릿이 적용되었습니다. 날짜/마감 시각을 입력하세요.");

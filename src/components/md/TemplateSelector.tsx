@@ -55,10 +55,12 @@ export function TemplateSelector({ mdId, open, onOpenChange, onSelect }: Templat
   };
 
   const formatTemplateName = (t: AuctionTemplate) => {
+    // 저장 시 지정한 이름이 있으면 그대로 사용, 없을 때만 자동 조합으로 대체
+    if (t.name && t.name.trim()) return t.name;
     const price = t.price_per_seat ? `${Math.round(t.price_per_seat / 10000)}만원` : "";
     const alcohol = t.main_alcohol || "";
     const seats = t.total_seats ? `조각${t.total_seats}` : "";
-    return [price, alcohol, seats].filter(Boolean).join("/") || t.name;
+    return [price, alcohol, seats].filter(Boolean).join("/") || "템플릿";
   };
 
   return (
