@@ -720,10 +720,13 @@ export function HomeContent({
       return [...news, ...olds].slice(0, CAROUSEL_SLOTS);
     }
 
-    // ── 유저/비로그인: NEW 최우선, 각 그룹 내 오퍼 많은 순 → 마감일순 ──
+    // ── 유저/비로그인: NEW 최우선, NEW 그룹은 최근 등록순(가장 최근이 맨 왼쪽) ──
     const news = flagPuzzles
       .filter(isNew)
       .sort((a, b) => {
+        // 가장 최근에 꽂은 깃발이 가장 왼쪽으로 오도록 created_at 내림차순
+        const recency = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        if (recency !== 0) return recency;
         const diff = (puzzleOfferCounts[b.id] ?? 0) - (puzzleOfferCounts[a.id] ?? 0);
         return diff !== 0 ? diff : byEventDate(a, b);
       })
