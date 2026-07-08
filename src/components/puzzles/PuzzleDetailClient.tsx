@@ -584,7 +584,7 @@ export function PuzzleDetailClient({
               <Pencil className="w-4 h-4" />
             </Link>
           )}
-          {!isFull && (
+          {!isFull && !puzzle.host_is_md && (
             <span
               className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
                 puzzle.status === "open"
@@ -851,7 +851,7 @@ export function PuzzleDetailClient({
               제목(notes)을 한마디로 재출력하지 않음 — 중복이라 의미 없음 */}
           {isRecruitingParty && puzzle.host_is_md && puzzle.md_comment && (
             <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl px-5 py-4 space-y-1">
-              <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">MD 한마디</p>
+              <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">파트너의 한마디</p>
               <p className="text-[14px] text-neutral-200 leading-relaxed whitespace-pre-line">{puzzle.md_comment}</p>
             </div>
           )}

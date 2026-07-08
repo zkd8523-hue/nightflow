@@ -1046,6 +1046,7 @@ export interface AuctionTemplate {
   price_per_seat: number | null;
   main_alcohol: string | null;
   includes: string[];
+  md_comment: string | null;
   created_at: string;
   updated_at: string;
   club?: Club;

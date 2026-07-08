@@ -249,7 +249,10 @@ export function PartyChatRoom({
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const readOnly = puzzleStatus === "expired" || puzzleStatus === "cancelled";
+  // 만료(expired)는 채팅을 막지 않음 — 오퍼는 마감돼도 "그날 밤 만나는" 파티는
+  // 이벤트 당일/직후에 계속 대화해야 함(get_party_chats도 최근 expired는 목록 유지).
+  // 방장이 내린 cancelled만 읽기 전용.
+  const readOnly = puzzleStatus === "cancelled";
 
   // 입장/새 메시지 시 읽음 처리
   useEffect(() => {

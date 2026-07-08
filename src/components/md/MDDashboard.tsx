@@ -183,6 +183,7 @@ export function MDDashboard({
                 .eq("leader_id", user.id)
                 .eq("host_is_md", true)
                 .neq("status", "cancelled")
+                .eq("hidden_by_host", false)
                 .order("event_date", { ascending: false });
             if (data) setMyShares(data);
         })();
@@ -204,17 +205,20 @@ export function MDDashboard({
     };
     // 내 조각 삭제(내리기) — 상세페이지 handleCancelWithReason과 동일한 RPC 재사용
     const [shareDeleting, setShareDeleting] = useState<string | null>(null);
-    const deleteShare = async (puzzleId: string) => {
+    const deleteShare = async (puzzleId: string, status: string) => {
         if (!confirm("이 조각을 내리시겠어요?")) return;
         setShareDeleting(puzzleId);
-        const { data, error } = await supabase.rpc("cancel_puzzle_with_reason", {
-            p_puzzle_id: puzzleId,
-            p_reasons: ["other"],
-            p_reason_text: "MD 대시보드에서 삭제",
-        });
+        // open 조각: 정식 취소(참여자 알림 + 오퍼 만료). 종료된 조각(만료/성사 등): 목록에서 숨김만.
+        const { data, error } = status === "open"
+            ? await supabase.rpc("cancel_puzzle_with_reason", {
+                p_puzzle_id: puzzleId,
+                p_reasons: ["other"],
+                p_reason_text: "MD 대시보드에서 삭제",
+              })
+            : await supabase.rpc("md_hide_share", { p_puzzle_id: puzzleId });
         setShareDeleting(null);
         if (error || !data?.success) {
-            toast.error(data?.error || "삭제에 실패했습니다");
+            toast.error((data?.error || "삭제에 실패했습니다").replace("깃발", "조각"));
             return;
         }
         setMyShares((prev) => prev.filter((s) => s.id !== puzzleId));
@@ -606,7 +610,7 @@ export function MDDashboard({
                                                     <button
                                                         type="button"
                                                         disabled={shareDeleting === s.id}
-                                                        onClick={() => deleteShare(s.id)}
+                                                        onClick={() => deleteShare(s.id, s.status)}
                                                         className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-neutral-800 transition-colors disabled:opacity-40"
                                                         aria-label="삭제"
                                                     >

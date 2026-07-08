@@ -1511,7 +1511,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 <section className="space-y-4">
                   <div className="flex items-baseline gap-2 text-white font-bold mb-2">
                     <MessageCircle className="w-4 h-4 text-purple-500 self-center" />
-                    <span>MD 한마디</span>
+                    <span>파트너의 한마디</span>
                     <span className="text-[11px] text-neutral-500 font-normal">
                       {" "}
                       <span className={(watch("md_comment") || "").length >= 200 ? "text-amber-500" : ""}>
@@ -1888,6 +1888,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                         price_per_seat: v.price_per_seat,
                                         main_alcohol: v.main_alcohol,
                                         includes: v.includes || [],
+                                        md_comment: v.md_comment || null,
                                     });
                                     toast.success("템플릿이 저장되었습니다!");
                                 } catch {
@@ -1931,6 +1932,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             }
             if (template.main_alcohol) setValue("main_alcohol", template.main_alcohol);
             if (template.includes?.length) setValue("includes", template.includes);
+            if (template.md_comment) setValue("md_comment", template.md_comment);
             toast.success("템플릿이 적용되었습니다. 날짜/마감 시각을 입력하세요.");
           }}
         />
