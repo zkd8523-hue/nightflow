@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext, useRef } from "react";
 import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
+import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { FaqTab } from "./FaqTab";
 import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map, Check } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -324,8 +325,8 @@ function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: 
         <p className="text-center text-[13px] font-bold text-neutral-300">{tr("Which area do you want?")}</p>
         <div className="grid grid-cols-2 gap-3">
           {REGIONS.map((r) =>
-            r.ko === "이태원" ? (
-              // 이태원: MD 없음 → 준비중(선택 불가). 홈에서도 노출하되 등록 유도 안 함.
+            !isFlagAreaOpen(r.ko) ? (
+              // 닫힌 지역: 준비중(선택 불가). 홈에서도 노출하되 등록 유도 안 함.
               <div
                 key={r.ko}
                 aria-disabled

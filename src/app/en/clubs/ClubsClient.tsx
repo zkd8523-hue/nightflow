@@ -7,6 +7,7 @@ import { DrinkMenuViewer } from "@/components/clubs/DrinkMenuViewer";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
+import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { trackForeignEvent } from "@/lib/analytics/events";
@@ -363,9 +364,8 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   )}
 
                   {/* 예약 CTA — 카드 클릭 유저를 구글로 내보내지 않고 깃발 폼으로 유도.
-                      이태원은 준비중(폼에서 area 선택 불가) → 예약 CTA 대신 "Coming soon" 안내.
-                      Maeve 사례: 이태원 클럽 예약 클릭 → 폼에서 area 프리셀렉트 실패 → 이탈. */}
-                  {club.area === "이태원" ? (
+                      닫힌 지역(OPEN_FLAG_AREAS 미포함)은 폼에서 area 선택 불가 → 예약 CTA 대신 "Coming soon" 안내. */}
+                  {!isFlagAreaOpen(club.area) ? (
                     <div className="mt-2 space-y-2">
                       <div className="flex items-center justify-center gap-1.5 w-full py-3.5 rounded-xl bg-neutral-900 border border-amber-500/30 text-amber-400 font-black text-[15px]">
                         🚀 {t(

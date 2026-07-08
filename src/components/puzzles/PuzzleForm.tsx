@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getLang, makeT, areaLabel } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
-import { MAIN_AREAS } from "@/lib/constants/areas";
+import { MAIN_AREAS, isFlagAreaOpen } from "@/lib/constants/areas";
 import { toast } from "sonner";
 import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -164,7 +164,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         sessionStorage.removeItem("nightflow_book_intent");
         return null;
       }
-      const validAreas = [...MAIN_AREAS.filter((a) => a !== "이태원"), "서울 어디든"];
+      const validAreas = [...MAIN_AREAS.filter((a) => isFlagAreaOpen(a)), "서울 어디든"];
       if (intent.area && validAreas.includes(intent.area)) return intent.area;
       return null;
     } catch {
@@ -172,8 +172,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     }
   })();
 
-  // 이태원은 준비중(선택 불가) → preset으로도 자동선택 안 되게 제외
-  const validPresetArea = presetArea && ([...MAIN_AREAS.filter((a) => a !== "이태원"), "서울 어디든"] as string[]).includes(presetArea) ? presetArea : null;
+  // 준비중(닫힌) 지역은 preset으로도 자동선택 안 되게 제외
+  const validPresetArea = presetArea && ([...MAIN_AREAS.filter((a) => isFlagAreaOpen(a)), "서울 어디든"] as string[]).includes(presetArea) ? presetArea : null;
   const initialArea = puzzle?.area ?? validPresetArea ?? bookIntentArea ?? "";
   // budgetAmount 의미: 퍼즐(모집 ON)=인당가 / 깃발(모집 OFF)=총액
   // edit 모드: puzzle에서 모드에 맞춰 변환 / 신규: draft 또는 0
@@ -868,16 +868,16 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         </div>
         <div>
           <div className="flex flex-wrap items-start gap-2">
-            {/* 강남·홍대 = 선택 가능 / 이태원 = 준비중(MD 없음 → 오퍼 못 받을 가능성 높음) — 한중일 동일 */}
+            {/* OPEN_FLAG_AREAS에 있는 지역만 선택 가능 / 나머지는 준비중 — 한중일 동일 */}
             {MAIN_AREAS.map((a) => {
-              const comingSoon = a === "이태원";
+              const comingSoon = !isFlagAreaOpen(a);
               return (
                 <button
                   key={a}
                   type="button"
                   onClick={() =>
                     comingSoon
-                      ? toast(t("이태원은 준비중이에요", "Itaewon is coming soon"))
+                      ? toast(t(`${aL(a)}은(는) 준비중이에요`, `${aL(a)} is coming soon`))
                       : handleAreaChange(a)
                   }
                   aria-disabled={comingSoon}
