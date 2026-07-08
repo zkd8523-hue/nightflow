@@ -21,6 +21,17 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
 
   useEffect(() => {
     if (!autoShow) return;
+    // 외국인 트랙(?lang=en/ja/zh/zh-tw 또는 /en, /ja, /zh, /zh-tw 하위)은 이 팝업 스킵.
+    // 이유: 팝업 내용이 한국어 100%(원화·한국 클럽 용어·한국어 오퍼 예시).
+    // Maeve(프랑스)/Ahsan(미국) 로그에도 popup_view만 있고 popup_cta는 0 → 보고 즉시 닫음.
+    // 외국인 전용 팝업은 별도 컴포넌트로 향후 제작 예정.
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      const langParam = new URLSearchParams(window.location.search).get("lang");
+      const isForeignPath = path.startsWith("/en") || path.startsWith("/ja") || path.startsWith("/zh");
+      const isForeignLang = !!langParam && langParam !== "ko";
+      if (isForeignPath || isForeignLang) return;
+    }
     try {
       if (localStorage.getItem(FLAG_CTA_SHOWN_KEY) === "1") return;
     } catch {
