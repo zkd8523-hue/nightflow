@@ -23,6 +23,7 @@ import { getPublicIncludes } from "@/lib/utils/liquor";
 import { toast } from "sonner";
 import { HomePuzzleCarousel } from "@/components/home/HomePuzzleCarousel";
 import { HomeShareCarousel } from "@/components/home/HomeShareCarousel";
+import { ShotCarousel } from "@/components/chat/ShotCarousel";
 import { HotdealHomeSection } from "@/components/home/HotdealHomeSection";
 import { ClubBenefitSection } from "@/components/home/ClubBenefitSection";
 import { HotdealMdCta } from "@/components/home/HotdealMdCta";
@@ -501,7 +502,7 @@ export function HomeContent({
   const showShareTab = isMdOrAdminUser || shareCount >= 0;
 
   // MD 로그인 시 깃발 지역 필터 기본값을 본인 활동 지역으로 1회 자동 선택.
-  // (MAIN_AREAS = 강남/홍대/이태원 칩만 제공하므로 그 안에 드는 첫 지역만 적용)
+  // (MAIN_AREAS = 강남/홍대/이태원/대구/부산 칩만 제공하므로 그 안에 드는 첫 지역만 적용)
   const areaDefaultApplied = useRef(false);
   useEffect(() => {
     if (areaDefaultApplied.current) return;
@@ -1085,6 +1086,9 @@ export function HomeContent({
     // steps/tip을 깃발(puzzle) 기준으로 고정한다. (share용 분기 제거)
     const compactSteps = isMdOrAdmin ? PUZZLE_ONBOARDING_STEPS_MD : PUZZLE_ONBOARDING_STEPS;
     const visibleCompactTip = compactTipContent.puzzle;
+    // 팁 슬라이드 index 1 = 매칭오퍼("어떤 오퍼 받을지 궁금해?") — recentMatchedPuzzle 있을 때만
+    const compactSlideCount = recentMatchedPuzzle ? 3 : 2;
+    const isCompactOfferSlide = !!recentMatchedPuzzle && tipRotation % compactSlideCount === 1;
 
     // 섹션 헤더 한 줄: [아이콘 버튼] [첫 날짜] ... [더보기]  (홈은 지역 필터 없음 — 탐색은 더보기에서)
     const renderSectionRow = (opts: {
@@ -1124,25 +1128,35 @@ export function HomeContent({
     return (
       <>
         <div className="flex flex-col">
-          {/* MD 팁박스 — 섹션 헤더 위 */}
-          {isMdOrAdmin && visibleCompactTip && (
-            <div className="bg-neutral-800 border-amber-400/50 rounded-xl px-3 py-2 mb-2 [border-width:0.5px]">
+          {/* ── LIVE — 고정헤더 바로 아래 (핵심: 실시간 클럽 분위기).
+                 LIVE 없으면 ShotCarousel이 null 반환 → 섹션·여백 모두 안 보임 (mb 없음) ── */}
+          <div className="-mx-4">
+            <ShotCarousel
+              showComposeButton={false}
+              currentUserId={user?.id}
+              subtitle="지금 뜨거운 클럽, 실시간 분위기"
+            />
+          </div>
+
+          {/* MD 팁박스 — 홈에서 제거 (상세 "더보기"에는 유지). false로 차단 */}
+          {false && isMdOrAdmin && visibleCompactTip && (
+            <div className="order-1 bg-neutral-800 border-amber-400/50 rounded-xl px-3 py-2 mb-2 [border-width:0.5px]">
               <div className="text-[14px] text-neutral-100 font-black leading-snug break-keep"><ArrowDown className="w-3.5 h-3.5 inline-block mr-1 text-amber-400 relative -top-px animate-bounce" />유저들의 예산이 기다리고 있어요</div>
             </div>
           )}
 
-          {/* 유저 팁박스 + 이용방법 토글 — 섹션 헤더 위 */}
-          {visibleCompactTip && !isMdOrAdmin && (
-            <section className="space-y-2 mb-3">
+          {/* 유저 팁박스 — 홈에서 제거 (상세 "더보기"에는 유지). false로 차단 */}
+          {false && visibleCompactTip && !isMdOrAdmin && (
+            <section className="space-y-2 mb-3 order-1">
               {true && (
                 <div
                   ref={tipBoxRef}
                   data-no-pull-refresh
-                  className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 ${(showTopGuide || showGuide) ? "" : "pr-[88px]"} ${recentMatchedPuzzle ? "pt-3.5 pb-5" : "pt-2.5 pb-2"}`}
+                  className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 ${(showTopGuide || showGuide || isCompactOfferSlide) ? "" : "pr-[88px]"} ${recentMatchedPuzzle ? "pt-3.5 pb-5" : "pt-2.5 pb-2"}`}
                 >
                   {(() => {
                     const compactSlides: React.ReactNode[] = [
-                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">가장 똑똑한 클럽 예약 방법</div>,
+                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">예약금 Zero, 수수료 Zero</div>,
                       ...(recentMatchedPuzzle ? [
                         <button
                           key="offer"
@@ -1150,7 +1164,8 @@ export function HomeContent({
                           onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
                           className="w-full text-[14px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
                         >
-                          어떤 오퍼 받을지 궁금해? 👈
+                          <span className="underline underline-offset-4 decoration-2 decoration-amber-400/70">어떤 오퍼 받을지 궁금해?</span>
+                          <span aria-hidden>👈</span>
                         </button>
                       ] : []),
                       <div key="tip" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">{visibleCompactTip}</div>,
@@ -1210,7 +1225,8 @@ export function HomeContent({
                             }}
                           >
                             {compactSlides.map((slide, i) => (
-                              <div key={i} className="w-full shrink-0">{slide}</div>
+                              // 2번(오퍼 버튼) 기준으로 모든 슬라이드 세로 가운데 정렬 + 동일 최소높이
+                              <div key={i} className="w-full shrink-0 flex items-center min-h-[22px]">{slide}</div>
                             ))}
                           </div>
                         </div>
@@ -1230,7 +1246,7 @@ export function HomeContent({
                       </>
                     );
                   })()}
-                  {!showTopGuide && (
+                  {!showTopGuide && !isCompactOfferSlide && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
@@ -1371,7 +1387,8 @@ export function HomeContent({
             />
           </div>
 
-          {/* ── 조각 섹션 (탭 토글 제거 → 깃발 아래 항상 노출. showShareTab으로 게이팅) ── */}
+          {/* ── 조각 섹션 — order-2로 팁박스 아래 배치 (깃발 → 팁박스 → 조각) ── */}
+          <div className="order-2 flex flex-col">
           {showShareTab && (
             <>
               {/* ── 조각 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
@@ -1399,6 +1416,7 @@ export function HomeContent({
               )}
             </>
           )}
+          </div>
 
           {/* 비로그인 유저 깃발 CTA는 HomePuzzleCarousel 마지막 카드로 통합됨 */}
         </div>
@@ -1465,14 +1483,17 @@ export function HomeContent({
                 puzzle: { ...TAB_PROMISES.puzzle, content: userPuzzleTipContent },
               };
           const visibleSteps = steps;
+          // 상세 팁 슬라이드 index 1 = 매칭오퍼 슬라이드 — 유저 & 비-share 탭 & recentMatchedPuzzle일 때만
+          const detailHasOffer = !isMdOrAdmin && currentTab !== "share" && !!recentMatchedPuzzle;
+          const isDetailOfferSlide = detailHasOffer && tipRotation % 3 === 1;
           const guideCard = (
             <section className="space-y-2 -mx-2 mb-3">
               {/* TIP 박스 — 항시 노출 (매치 깃발 있으면 슬라이드) */}
               {overriddenTabPromises[currentTab]?.content && (
-                <div className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${(currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") ? "pr-[88px]" : ""}`}>
+                <div className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${((currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && !isDetailOfferSlide) ? "pr-[88px]" : ""}`}>
                   {(() => {
                     // compact와 동일한 3장 슬라이드 — 인트로 + (매치 있으면) "오퍼 궁금해?" + 본문
-                    const introText = currentTab === "share" ? "오픈채팅의 시대는 갔다!" : "가장 똑똑한 클럽 예약 방법";
+                    const introText = currentTab === "share" ? "오픈채팅의 시대는 갔다!" : "예약금 Zero, 수수료 Zero";
                     const detailSlides: React.ReactNode[] = [
                       <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">{introText}</div>,
                       ...(!isMdOrAdmin && currentTab !== "share" && recentMatchedPuzzle ? [
@@ -1482,7 +1503,8 @@ export function HomeContent({
                           onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
                           className="w-full text-[14px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
                         >
-                          어떤 오퍼 받을지 궁금해? 👈
+                          <span className="underline underline-offset-4 decoration-2 decoration-amber-400/70">어떤 오퍼 받을지 궁금해?</span>
+                          <span aria-hidden>👈</span>
                         </button>
                       ] : []),
                       <div key="tip" className="text-[14px] text-neutral-100 font-black leading-snug whitespace-pre-line break-keep">
@@ -1550,7 +1572,7 @@ export function HomeContent({
                         </div>
                         {slideCount > 1 && (
                           // 박스 전체 폭 기준 중앙정렬 — pr-[88px](이용방법 버튼 공간)을 음수 마진으로 상쇄
-                          <div className={`mt-0.5 flex items-center justify-center gap-0.5 ${(currentTab === "puzzle" || currentTab === "advance") ? "-mr-[88px]" : ""}`}>
+                          <div className={`mt-0.5 flex items-center justify-center gap-0.5 ${((currentTab === "puzzle" || currentTab === "advance") && !isDetailOfferSlide) ? "-mr-[88px]" : ""}`}>
                             {detailSlides.map((_, i) => (
                               <button
                                 key={i}
@@ -1567,7 +1589,7 @@ export function HomeContent({
                       </>
                     );
                   })()}
-                  {(currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && (
+                  {(currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && !isDetailOfferSlide && (
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
