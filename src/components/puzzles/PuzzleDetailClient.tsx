@@ -589,7 +589,7 @@ export function PuzzleDetailClient({
           )}
         </div>
 
-        <div className="space-y-5 pb-10">
+        <div className={`space-y-5 ${(isRecruitingParty && isOpen && currentUserId && !isMember && !isLeader && !isMd) || (isRecruitingParty && isOpen && !currentUserId) ? "pb-28" : "pb-10"}`}>
           {/* 검토 중 배너 (status = selecting) */}
           {puzzle.status === "selecting" && (
             <SelectingBanner expiresAt={puzzle.expires_at} en={isForeigner} />
@@ -1274,7 +1274,7 @@ export function PuzzleDetailClient({
             )}
 
             {/* 비방장: 테이블타입 공개 + 주류/extras blur 처리 */}
-            {!isLeader && pendingOffers.length > 0 && !isAccepted && (
+            {!isLeader && !isAccepted && (
               <div className="space-y-3 -mt-2">
                 <p className="text-[13px] text-neutral-400 font-medium">
                   {t("오퍼는 작성자만 볼 수 있어요✨", "Offers are visible to the author only✨")}
@@ -1294,6 +1294,11 @@ export function PuzzleDetailClient({
                     )}
                   </p>
                 </details>
+                {pendingOffers.length === 0 && (
+                  <p className="text-[12px] text-neutral-600 text-center py-2">
+                    {t("아직 들어온 오퍼가 없어요", "No offers yet")}
+                  </p>
+                )}
                 {publicOffers.map((offer, idx) => (
                   <div
                     key={offer.id}
@@ -1493,10 +1498,10 @@ export function PuzzleDetailClient({
           </section>
           )}
 
-          {/* 비방장·비멤버·비MD: 자기 깃발 등록 유도 CTA (비로그인·조각 상세는 숨김) */}
-          {currentUserId && !isLeader && !isMember && !isMd && !isRecruitingParty && (
+          {/* 비방장·비멤버·비MD: 홈 캐러셀과 동일한 깃발꽂기 유도 CTA (비로그인 포함, 조각 상세는 숨김) */}
+          {!isLeader && !isMember && !isMd && !isRecruitingParty && (
             <div className="text-center space-y-1">
-              {pendingOffers.length > 0 && !isAccepted && (
+              {currentUserId && pendingOffers.length > 0 && !isAccepted && (
                 <button
                   type="button"
                   onClick={() => setShowMatchedShowcase(true)}
@@ -1505,14 +1510,17 @@ export function PuzzleDetailClient({
                   {t("어떤 오퍼 받았는지 구경하기 👈", "See what offers came in 👈")}
                 </button>
               )}
+              <p className="text-[14.5px] text-neutral-200 font-semibold mb-1.5">
+                {t("최고의 테이블을 잡으세요.", "Land the best table.")}
+              </p>
               <Link
-                href={currentUserId ? `/flags/new${lq}` : `/login?redirect=/flags/new${isForeigner ? "&lang=en" : ""}`}
+                href={currentUserId ? `/flags/new${lq}` : `/login?redirect=${encodeURIComponent(`/flags/new${lq}`)}`}
                 className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
               >
-                {t("⛳ 나도 오퍼받기", "⛳ Get offers too")}
+                {t("⛳ 깃발꽂기", "⛳ Plant a flag")}
               </Link>
               <p className="text-[10px] text-neutral-500">
-                {t("무료", "Free")}
+                {t("모든 서비스 무료", "All services free")}
               </p>
             </div>
           )}
@@ -1523,17 +1531,13 @@ export function PuzzleDetailClient({
             const partyMembers = puzzle.host_is_md
               ? members.filter((m) => m.user_id !== puzzle.leader_id)
               : members;
+            if (partyMembers.length === 0) return null;
             return (
           <section className="space-y-3">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-neutral-400" />
               <h2 className="text-[14px] font-bold text-neutral-300">파티원</h2>
             </div>
-            {partyMembers.length === 0 ? (
-              <p className="text-[13px] text-neutral-500 bg-[#1C1C1E] rounded-xl px-4 py-4 text-center">
-                아직 합류한 파티원이 없어요
-              </p>
-            ) : (
             <div className="space-y-2">
               {partyMembers.map((member) => {
                 const isMe = member.user_id === currentUserId;
@@ -1599,7 +1603,6 @@ export function PuzzleDetailClient({
                 );
               })}
             </div>
-            )}
           </section>
           );
           })()}
@@ -1619,14 +1622,16 @@ export function PuzzleDetailClient({
           )}
 
 
-          {/* 미참여 유저 파티 합류 버튼: 파티원 모집 ON 일 때만 */}
+          {/* 미참여 유저 파티 합류 버튼: 파티원 모집 ON 일 때만 — 스티키 고정 */}
           {!isMember && !isLeader && !isMd && isOpen && currentUserId && isRecruitingParty && (
-            <Button
-              onClick={() => setShowJoin(true)}
-              className="w-full h-13 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
-            >
-              참가하기
-            </Button>
+            <div className="fixed bottom-16 left-0 right-0 z-30 max-w-lg mx-auto px-4 pb-3 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent">
+              <Button
+                onClick={() => setShowJoin(true)}
+                className="w-full h-13 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98] shadow-lg"
+              >
+                참가하기
+              </Button>
+            </div>
           )}
 
           {/* 합류한 파티원(방장 아님): 조각에서 나가기 */}
@@ -1667,13 +1672,15 @@ export function PuzzleDetailClient({
           )}
 
 
-          {/* 로그인 유도: 파티원 모집 ON 일 때만 */}
+          {/* 로그인 유도: 파티원 모집 ON 일 때만 — 스티키 고정 */}
           {!currentUserId && isOpen && isRecruitingParty && (
-            <Link href="/login">
-              <Button className="w-full h-12 bg-white text-black font-black text-[14px] rounded-2xl">
-                로그인하고 조각 참가하기
-              </Button>
-            </Link>
+            <div className="fixed bottom-16 left-0 right-0 z-30 max-w-lg mx-auto px-4 pb-3 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent">
+              <Link href={`/login?redirect=${encodeURIComponent(`/flags/${puzzle.id}`)}`}>
+                <Button className="w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[14px] rounded-2xl shadow-lg">
+                  로그인하고 조각 참가하기
+                </Button>
+              </Link>
+            </div>
           )}
 
           {/* 신고·차단 통합 메뉴 (Apple Guideline 1.2) */}
