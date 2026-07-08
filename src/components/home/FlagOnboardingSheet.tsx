@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { ArrowDown } from "lucide-react";
+import { ArrowDown, Info } from "lucide-react";
 import { trackEvent } from "@/lib/analytics/events";
 
 // 인라인 가이드(showTopGuide/showGuide)와 동일 키 — 한쪽에서 닫으면 양쪽 다 안 뜸
@@ -17,6 +17,7 @@ const FLAG_CTA_SHOWN_KEY = "nightflow_flag_onboarding_v1";
  */
 export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
   const [open, setOpen] = useState(false);
+  const [secretInfoOpen, setSecretInfoOpen] = useState(false);
 
   useEffect(() => {
     if (!autoShow) return;
@@ -41,6 +42,7 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
   };
 
   return (
+    <>
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
@@ -48,13 +50,13 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
       >
         <SheetHeader className="text-left p-0 gap-0 mb-3">
           <SheetTitle className="text-white text-[21px] font-black tracking-tight leading-tight">
-            <span className="text-amber-400">클럽 예약</span>, 나플에서는 이렇게! ⛳
+            <span className="text-amber-400 text-[26px]">클럽 예약</span> 나플에서는 이렇게! ⛳
           </SheetTitle>
         </SheetHeader>
 
         {/* ① 깃발 꽂기 — 실제 PuzzleCard 스타일 */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-white font-bold">1 조건 등록</span> <span className="text-[10.5px] font-normal text-neutral-500">날짜, 인원, 예산</span>
+          <span className="text-[14px] text-white font-bold">1. 조건 등록</span>
         </p>
         <div className="bg-[#1C1C1E] rounded-2xl p-3 relative">
           <div className="flex items-start justify-between gap-2">
@@ -72,7 +74,15 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
 
         {/* ② 시크릿 오퍼 — 실제 RecentMatchShowcaseSheet 스타일 */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-white font-bold">2 제안 받기</span> <span className="text-[10.5px] font-normal text-neutral-500">당신만을 위한 맞춤 패키지</span>
+          <span className="text-[14px] text-white font-bold">2. 시크릿오퍼 받기</span>
+          <button
+            type="button"
+            onClick={() => setSecretInfoOpen(true)}
+            className="inline-flex items-center align-middle ml-1.5 gap-0.5 text-[11.5px] font-bold text-amber-400 underline underline-offset-2 decoration-amber-400/50 hover:text-amber-300"
+          >
+            시크릿오퍼란?
+            <Info className="w-3 h-3" />
+          </button>
         </p>
         <div className="bg-[#1C1C1E] rounded-2xl p-3 space-y-2">
           <div className="flex flex-wrap gap-1.5">
@@ -100,16 +110,16 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
 
         {/* ③ 채팅 상담 — 마음에 드는 오퍼와 바로 대화 */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-white font-bold">3 채팅 상담</span> <span className="text-[10.5px] font-normal text-neutral-500">마음에 드는 오퍼 고르기</span>
+          <span className="text-[14px] text-white font-bold">3. 채팅 상담</span>
         </p>
         <div className="bg-[#1C1C1E] rounded-2xl p-3 space-y-1.5">
           <div className="flex justify-start">
-            <span className="bg-white text-neutral-900 text-[13px] font-bold rounded-2xl rounded-tl-sm px-3 py-1.5 max-w-[82%]">
+            <span className="bg-neutral-300 text-neutral-900 text-[13px] font-bold rounded-2xl rounded-tl-sm px-3 py-1.5 max-w-[82%]">
               예약 가능할까요?
             </span>
           </div>
           <div className="flex justify-end">
-            <span className="bg-white text-neutral-900 text-[13px] font-bold rounded-2xl rounded-tr-sm px-3 py-1.5 max-w-[82%]">
+            <span className="bg-neutral-300 text-neutral-900 text-[13px] font-bold rounded-2xl rounded-tr-sm px-3 py-1.5 max-w-[82%]">
               네! 바로 도와드릴게요 😊
             </span>
           </div>
@@ -123,12 +133,40 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
             markSeen();
             setOpen(false);
           }}
-          className="flex flex-col items-center justify-center w-full h-12 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all leading-tight mt-3.5"
+          className="flex flex-col items-center justify-center w-full h-14 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black rounded-2xl shadow-[0_2px_12px_rgba(245,158,11,0.35)] transition-all leading-tight mt-3.5"
         >
           <span className="font-black text-[15px]">예약 바로가기</span>
           <span className="text-[10px] font-bold text-black/55 mt-0.5">모든 서비스 무료</span>
         </Link>
       </SheetContent>
     </Sheet>
+
+    {/* 시크릿오퍼란? 설명 시트 */}
+    <Sheet open={secretInfoOpen} onOpenChange={setSecretInfoOpen}>
+      <SheetContent
+        side="bottom"
+        className="h-auto bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pt-6 pb-8 gap-0"
+      >
+        <SheetHeader className="text-left p-0 gap-0 mb-4">
+          <SheetTitle className="text-white text-[19px] font-black tracking-tight">
+            💌 시크릿오퍼
+          </SheetTitle>
+        </SheetHeader>
+        <div className="space-y-2.5">
+          {[
+            "오퍼는 본인에게만 공개",
+            "100% 기밀, 맞춤 패키지",
+            "당일 워크인보다 좋은 혜택들 중에서 비교",
+            "나에게 맞는 옵션을 골라보세요!",
+          ].map((point) => (
+            <div key={point} className="flex items-start gap-2 bg-[#1C1C1E] rounded-xl px-3.5 py-2.5">
+              <span className="text-amber-400 font-black text-[13px] mt-0.5">→</span>
+              <span className="text-[13.5px] text-neutral-200 font-medium break-keep">{point}</span>
+            </div>
+          ))}
+        </div>
+      </SheetContent>
+    </Sheet>
+    </>
   );
 }
