@@ -129,13 +129,18 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   );
   const googleReviewsLabel = t("구글 리뷰", "Google reviews", "Googleレビュー", "谷歌评价");
   const searchReviewsLabel = t("구글에서 리뷰 검색", "Search reviews on Google", "Googleでレビュー検索", "在谷歌搜索评价");
-  const bookAtClubLabel = (name: string) =>
-    t(
-      `🚩 ${name} 예약하기`,
-      `🚩 Book ${name} on NightFlow`,
-      `🚩 ${name}をNightFlowで予約`,
-      `🚩 在 NightFlow 预订 ${name}`,
+  // 클럽명 대신 지역명 사용. 이유: 예약 클릭 시 area 프리셀렉트한 깃발 폼으로 이동하고,
+  // MD들이 여러 클럽 오퍼를 보냄. "Book The Mansion" 문구는 유저가 The Mansion 예약이라
+  // 오해 → 실제로는 area 오퍼 → 기대 불일치 이탈.
+  const bookAtAreaLabel = (area: string) => {
+    const areaLocalized = areaI18n(area, lang);
+    return t(
+      `🚩 ${areaLocalized} 예약하기`,
+      `🚩 Book ${areaLocalized} on NightFlow`,
+      `🚩 ${areaLocalized}をNightFlowで予約`,
+      `🚩 在 NightFlow 预订 ${areaLocalized}`,
     );
+  };
   const sortPopularLabel = t("인기순", "Popular", "人気順", "热门");
   const sortRatingLabel = t("평점순", "Top rated", "評価順", "评分");
   const stickyCtaLabel = t(
@@ -413,7 +418,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                       }}
                       className="flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 transition-colors"
                     >
-                      {bookAtClubLabel(club.name)}
+                      {bookAtAreaLabel(club.area)}
                     </Link>
                   )}
 
