@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { DrinkMenuViewer } from "@/components/clubs/DrinkMenuViewer";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
+import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
@@ -338,10 +339,10 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   )}
 
                   {club.entry_fee_detail && (
-                    <p className="text-[13px] text-neutral-400">🎟️ {club.entry_fee_detail}</p>
+                    <p className="text-[13px] text-neutral-400">🎟️ {translateClubMeta(club.entry_fee_detail, lang)}</p>
                   )}
                   {club.operating_hours && (
-                    <p className="text-[13px] text-neutral-400">🕐 {club.operating_hours}</p>
+                    <p className="text-[13px] text-neutral-400">🕐 {translateClubMeta(club.operating_hours, lang)}</p>
                   )}
                   {club.instagram && (
                     <a href={`https://instagram.com/${club.instagram}`} target="_blank" rel="noopener noreferrer"
@@ -377,7 +378,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                       <Link
                         href={`/en/clubs/hongdae?lang=${lang}`}
                         onClick={() => setSelectedClub(null)}
-                        className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-white text-black text-[14px] font-black hover:bg-neutral-200 transition-colors"
+                        className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-amber-500 text-black text-[14px] font-black hover:bg-amber-400 transition-colors"
                       >
                         {t(
                           "→ 홍대·강남 클럽 예약하기",
@@ -416,20 +417,24 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                         }
                         setSelectedClub(null);
                       }}
-                      className="flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 transition-colors"
+                      className="flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
                     >
                       {bookAtAreaLabel(club.area)}
                     </Link>
                   )}
 
-                  <a
-                    href={googleUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-neutral-800 border border-neutral-700 text-[14px] font-bold text-neutral-200 hover:bg-neutral-700/60 transition-colors"
-                  >
-                    🔍 {searchReviewsLabel}
-                  </a>
+                  {/* 별점 있는 클럽은 상단 링크(별점+리뷰수)로 충분 → 하단 버튼 중복 제거.
+                      별점 없는 클럽만 정보 접근용 fallback으로 노출. */}
+                  {club.google_rating == null && (
+                    <a
+                      href={googleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-neutral-800 border border-neutral-700 text-[14px] font-bold text-neutral-200 hover:bg-neutral-700/60 transition-colors"
+                    >
+                      🔍 {searchReviewsLabel}
+                    </a>
+                  )}
                 </div>
               </div>
             );
