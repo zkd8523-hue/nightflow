@@ -114,10 +114,19 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
     return path + (qs ? `?${qs}` : "") + (hash ? `#${hash}` : "");
   };
 
-  const baseRedirect =
+  // 외국인의 회원가입 완료 후 목적지 결정:
+  // - Ahsan(미국)/Maeve(프랑스) 케이스에서 회원가입 후 바로 /flags/new로 튕겨 폼 압도 → 이탈 확인
+  // - 외국인은 홈(/en, /ja, /zh, /zh-tw)으로 복귀 → 3단계 설명·클럽 목록·소셜프루프 먼저 소화
+  // - book_intent(sessionStorage)는 유지되므로 유저가 폼으로 가면 area 프리셀렉트됨
+  // - 한국인은 기존대로 next 파라미터 존중 (홈 온보딩 팝업이 한국어라 폼 진입해도 문제 없음)
+  const validNextParam =
     nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
       ? nextParam
-      : (isForeigner ? "/en" : "/");
+      : null;
+  const foreignHome = lang === "ko" || !lang ? "/en" : `/${lang}`;
+  const baseRedirect = isForeigner
+    ? foreignHome  // 외국인은 next 무시하고 자기 언어 홈으로
+    : (validNextParam || "/");
   const redirectAfterSignup = isForeigner
     ? appendLangIfMissing(baseRedirect, lang)
     : baseRedirect;
