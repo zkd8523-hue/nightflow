@@ -835,6 +835,22 @@ export interface PuzzleOffer {
   leader_chat_started_at: string | null;
   created_at: string;
   updated_at: string;
+  /** 클라이언트 전용(admin): 오퍼 채팅 메타데이터. Migration 417 RPC로 채움(내용 없이 건수/시각/마지막 발신자만). */
+  chat_meta?: OfferChatMeta;
+}
+
+/** Migration 417: admin 모니터링용 오퍼 채팅 메타데이터 (내용 미포함) */
+export interface OfferChatMeta {
+  /** 방장이 보낸 메시지 수 */
+  leader: number;
+  /** MD가 보낸 메시지 수 */
+  md: number;
+  /** MD가 1건이라도 답했는지 */
+  replied: boolean;
+  /** 마지막 메시지 시각 (ISO) */
+  last_at: string | null;
+  /** 마지막으로 보낸 쪽 */
+  last_by: "leader" | "md" | "other" | null;
 }
 
 /** Migration 332: 깃발 오퍼 1:1 채팅 메시지 */
@@ -1205,8 +1221,12 @@ export interface ClubWordCloud {
 // ============================================================================
 // 실시간 채팅 (Migration 284)
 // ============================================================================
-export type ChatRoomCode = 'all' | 'gangnam' | 'hongdae' | 'itaewon' | 'other';
-export type VerifiableArea = Exclude<ChatRoomCode, 'all'>;
+// Migration 421: 광역 채팅방 + 레거시 코드
+export type ChatRoomCode =
+  | 'sudogwon' | 'gyeongsang' | 'jeolla'
+  | 'all' | 'gangnam' | 'hongdae' | 'itaewon' | 'other';
+/** LIVE GPS 인증 지역 (채팅방과 별개) */
+export type VerifiableArea = 'gangnam' | 'hongdae' | 'itaewon';
 
 export type ChatMediaType = 'image' | 'video';
 
@@ -1298,6 +1318,53 @@ export interface ChatMessageReport {
   created_at: string;
 }
 
+/** Migration 415 — 인스타식 텍스트 오버레이 (미디어 위 좌표 기반) */
+export interface TextOverlay {
+  id: string;
+  text: string;
+  /** 미디어 대비 위치 (0~100 %) */
+  xPct: number;
+  yPct: number;
+  /** hex 색상 (#ffffff) */
+  color: string;
+  /** 기준 폰트 대비 배율 (0.5~3.0) */
+  fontScale: number;
+  /** 회전 deg (기본 0) */
+  rotation?: number;
+}
+
+/** Migration 422 — 삽입 이미지 스티커 (드래그+리사이즈) */
+export interface ImageOverlay {
+  id: string;
+  /** 업로드된 이미지 URL (게시 시 확정) */
+  url: string;
+  /** 중심 좌표 % */
+  xPct: number;
+  yPct: number;
+  /** 스테이지 대비 너비 % (10~90) */
+  widthPct: number;
+  /** 회전 deg */
+  rotation?: number;
+}
+
+/** Migration 422 — 설문 옵션 */
+export interface PollOption {
+  id: string;
+  text: string;
+}
+
+/** Migration 422 — 설문 (샷당 1개) */
+export interface ShotPoll {
+  id: string;
+  question: string;
+  options: PollOption[];
+  /** 배치 좌표 % (기본 50/70) */
+  xPct?: number;
+  yPct?: number;
+  /** 핀치 확대/축소 배율 (기본 1) */
+  scale?: number;
+}
+
 /**
  * 와글 LIVE (Migration 413) — 유저의 휘발성 미디어 (12시간)
  * 게시 자유, 클럽 지정 시 스탬프 대상. 노출은 잡담방 + 지역방 + 클럽 페이지
@@ -1315,6 +1382,16 @@ export interface ChatShot {
   height: number | null;
   duration: number | null;
   caption: string | null;
+  /** Migration 415 — 텍스트 오버레이 배열 (재생 시 좌표로 렌더) */
+  text_overlays?: TextOverlay[];
+  /** Migration 422 — 삽입 이미지 스티커 배열 */
+  image_overlays?: ImageOverlay[];
+  /** Migration 422 — 설문 (1개/샷, 없으면 null) */
+  poll?: ShotPoll | null;
+  /** 클라이언트: shot_poll_results 집계 (option_id → 표 수) */
+  poll_counts?: Record<string, number>;
+  /** 클라이언트: 내가 투표한 option_id (없으면 null) */
+  my_poll_vote?: string | null;
   /** Migration 316 — 좋아요 캐시 */
   like_count: number;
   /** Migration 325 — 댓글 캐시 */
@@ -1322,6 +1399,8 @@ export interface ChatShot {
   created_at: string;
   expires_at: string;
   author?: { id: string; display_name: string | null; profile_image: string | null };
+  /** 클럽 정보 (club_id join) — LIVE의 지역/클럽명 표시 + 광역 정렬용 */
+  club?: { id: string; name: string; area: string | null } | null;
   /** 클라이언트 측에서 chat_shot_likes 조회 후 채움 */
   liked_by_me?: boolean;
 }
@@ -1335,5 +1414,33 @@ export interface ChatShotComment {
   is_deleted: boolean;
   created_at: string;
   author?: { id: string; display_name: string | null; profile_image: string | null };
+}
+
+// ── 스탬프 보상 (Migration 418) ──
+export type RewardType = 'product' | 'voucher' | 'raffle';
+export type RedemptionStatus = 'pending' | 'fulfilled' | 'cancelled';
+
+export interface RewardCatalogItem {
+  code: string;
+  name: string;
+  reward_type: RewardType;
+  stamp_cost: number;
+  stock: number | null; // null = 무제한
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface RewardRedemption {
+  id: string;
+  user_id: string;
+  reward_code: string;
+  reward_name: string;
+  reward_type: RewardType;
+  stamp_cost: number;
+  status: RedemptionStatus;
+  admin_note: string | null;
+  fulfilled_by: string | null;
+  fulfilled_at: string | null;
+  created_at: string;
 }
 

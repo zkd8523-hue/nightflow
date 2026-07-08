@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Heart } from "lucide-react";
 import { getPrimaryAlias } from "@/lib/clubs/aliases";
+import { hideTestData } from "@/lib/utils/testData";
 import {
   normalizeDowSlots,
   summarizeSlots,
@@ -114,29 +115,25 @@ export default async function GuestAreaPage({ params }: PageProps) {
 
   const supabase = createAnonClient();
 
-  // 1. 지역의 활성 클럽
-  const { data: clubsRaw } = await supabase
-    .from("clubs")
-    .select("id, name, area, thumbnail_url, seed_favorite_count")
-    .eq("area", area)
-    .is("deleted_at", null)
-    .not("name", "ilike", "%운영자%")
+  // 1. 지역의 활성 클럽 (테스트/가짜 숨김은 is_test 기준 SSOT, 프로덕션에서만)
+  const { data: clubsRaw } = await hideTestData(
+    supabase
+      .from("clubs")
+      .select("id, name, area, thumbnail_url, seed_favorite_count")
+      .eq("area", area)
+      .is("deleted_at", null),
+    ""
+  )
     .order("name")
     .limit(50);
 
-  const HIDDEN = ["prism", "eclipse", "luna", "orion"];
   const areaClubs = ((clubsRaw ?? []) as Array<{
     id: string;
     name: string;
     area: string | null;
     thumbnail_url: string | null;
     seed_favorite_count: number | null;
-  }>).filter((c) => {
-    const lower = c.name.toLowerCase();
-    return !HIDDEN.some(
-      (kw) => lower.startsWith(kw) || lower.includes(`club ${kw}`)
-    );
-  });
+  }>);
 
   // 2. 이번 주 게스트 간판 슬롯 — 클럽×요일 혜택 매트릭스
   const thisWeekISO = getActiveWeekStartISO();

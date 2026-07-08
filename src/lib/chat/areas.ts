@@ -5,20 +5,49 @@
  * - 강남/홍대/이태원 반경 안이면 해당 지역, 아니면 null (지원 지역 외)
  */
 
-export type ChatRoomCode = "all" | "gangnam" | "hongdae" | "itaewon";
-export type VerifiableArea = Exclude<ChatRoomCode, "all">;
+/** 광역 채팅방 코드 (Migration 421) */
+export type ChatRegionCode = "sudogwon" | "gyeongsang" | "jeolla";
+/** 레거시 코드(기존 데이터/LIVE GPS 인증)까지 포함한 전체 room 코드 */
+export type ChatRoomCode = ChatRegionCode | "all" | "gangnam" | "hongdae" | "itaewon";
+/** LIVE GPS 인증 지역 (채팅방과 별개 — 클럽 픽 근접용) */
+export type VerifiableArea = "gangnam" | "hongdae" | "itaewon";
 
 /**
- * 채팅 탭 목록.
- *
- * Migration 413 이후 통합: "서울" 단일 탭 = 기존 all(잡담) 방 재사용.
- * 지역 필터(강남/홍대/이태원)는 LIVE 캐러셀 서브 필터로 이동.
- *
- * gangnam/hongdae/itaewon room 코드는 하위 호환용으로 유지 (기존 데이터).
+ * 채팅 탭 목록 — 전국 광역 3방 (Migration 421).
+ * 인증 없이 누구나 읽기/쓰기. 클럽이 있는 지역을 광역으로 묶음.
+ *   수도권 = 강남·홍대·이태원 / 경상권 = 부산·대구 / 전라권 = 광주
  */
-export const CHAT_ROOMS: { code: ChatRoomCode; label: string }[] = [
-  { code: "all", label: "서울" },
+export const CHAT_ROOMS: { code: ChatRegionCode; label: string }[] = [
+  { code: "sudogwon", label: "수도권" },
+  { code: "gyeongsang", label: "경상권" },
+  { code: "jeolla", label: "전라권" },
 ];
+
+/** 기본 방 (클럽 최다 지역) */
+export const DEFAULT_CHAT_ROOM: ChatRegionCode = "sudogwon";
+
+/** 클럽 area(한글) → 광역 채팅방 매핑. 미매핑 지역은 수도권 폴백. */
+export const AREA_TO_REGION: Record<string, ChatRegionCode> = {
+  강남: "sudogwon",
+  홍대: "sudogwon",
+  이태원: "sudogwon",
+  서울: "sudogwon",
+  경기: "sudogwon",
+  인천: "sudogwon",
+  부산: "gyeongsang",
+  대구: "gyeongsang",
+  울산: "gyeongsang",
+  경북: "gyeongsang",
+  경남: "gyeongsang",
+  광주: "jeolla",
+  전북: "jeolla",
+  전남: "jeolla",
+};
+
+export function areaToRegion(area: string | null | undefined): ChatRegionCode {
+  if (!area) return DEFAULT_CHAT_ROOM;
+  return AREA_TO_REGION[area] ?? DEFAULT_CHAT_ROOM;
+}
 
 export const VERIFIABLE_AREAS: { code: VerifiableArea; label: string; lat: number; lng: number; radiusKm: number }[] = [
   { code: "gangnam", label: "강남", lat: 37.4979, lng: 127.0276, radiusKm: 1.5 },
@@ -26,9 +55,16 @@ export const VERIFIABLE_AREAS: { code: VerifiableArea; label: string; lat: numbe
   { code: "itaewon", label: "이태원", lat: 37.5340, lng: 126.9944, radiusKm: 1.2 },
 ];
 
-export const ROOM_LABEL: Record<ChatRoomCode, string> = Object.fromEntries(
-  CHAT_ROOMS.map((r) => [r.code, r.label])
-) as Record<ChatRoomCode, string>;
+/** 코드 → 라벨 (광역 + 레거시/LIVE 인증 지역 배지용) */
+export const ROOM_LABEL: Record<ChatRoomCode, string> = {
+  sudogwon: "수도권",
+  gyeongsang: "경상권",
+  jeolla: "전라권",
+  all: "전체",
+  gangnam: "강남",
+  hongdae: "홍대",
+  itaewon: "이태원",
+};
 
 /** 두 좌표 간 거리 (km, Haversine) */
 export function distanceKm(
@@ -58,27 +94,6 @@ export function detectArea(lat: number, lng: number): VerifiableArea | null {
     }
   }
   return null;
-}
-
-/**
- * 메시지 공유 시 갈 수 있는 방 목록
- * - 잡담(all) → 지역방 가능 (단 지역 인증돼있을 때)
- * - 지역방 → 잡담만
- * - 지역방 → 다른 지역방 차단
- *
- * @param sourceRoom 원본 메시지가 있던 방
- * @param verifiedAreas 사용자가 현재 인증된 지역들
- */
-export function getShareableRooms(
-  sourceRoom: ChatRoomCode,
-  verifiedAreas: VerifiableArea[]
-): ChatRoomCode[] {
-  if (sourceRoom === "all") {
-    // 잡담에서 → 인증된 지역으로
-    return verifiedAreas;
-  }
-  // 지역방에서 → 잡담만
-  return ["all"];
 }
 
 /** 인증 유효시간: 2시간 */

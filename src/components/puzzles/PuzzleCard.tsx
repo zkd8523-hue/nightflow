@@ -187,14 +187,14 @@ export const PuzzleCard = memo(function PuzzleCard({
 
   // 조각 카드 공유 → 카톡 공유 시트 (상세와 동일)
   const [shareOpen, setShareOpen] = useState(false);
-  const shareBtn = (
+  // 아이콘 전용 공유 (조각 카드 컴팩트 — 지역 라벨 밑)
+  const shareIconBtn = (
     <button
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareOpen(true); }}
       aria-label="공유"
-      className="h-8 px-3 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white flex items-center gap-1.5 shrink-0 transition-colors text-[12px] font-bold active:scale-[0.97]"
+      className="w-7 h-7 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white flex items-center justify-center shrink-0 transition-colors active:scale-[0.97]"
     >
-      <Share2 className="w-4 h-4" />
-      공유
+      <Share2 className="w-3.5 h-3.5" />
     </button>
   );
   const shareSheet = shareOpen ? (
@@ -292,17 +292,21 @@ export const PuzzleCard = memo(function PuzzleCard({
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {isSelecting && (
-            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-neutral-700/60 text-neutral-300 text-[11px] font-bold">
-              검토 중
-            </span>
-          )}
-          {puzzle.area && (
-            <span className="text-[12px] font-bold text-neutral-300 whitespace-nowrap">
-              {puzzle.area}
-            </span>
-          )}
+        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+          <div className="flex items-center gap-1">
+            {isSelecting && (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-neutral-700/60 text-neutral-300 text-[11px] font-bold">
+                검토 중
+              </span>
+            )}
+            {puzzle.area && (
+              <span className="text-[12px] font-bold text-neutral-300 whitespace-nowrap">
+                {puzzle.area}
+              </span>
+            )}
+          </div>
+          {/* 공유 아이콘 — 지역 밑 (조각만) */}
+          {isRecruitingParty && shareIconBtn}
         </div>
       </div>
 
@@ -392,11 +396,7 @@ export const PuzzleCard = memo(function PuzzleCard({
         )}
       </div>
 
-      {/* MD 제안 현황: MD는 CTA 행에 통합, 일반 유저는 문장형 */}
-      {!isMd && offerCount > 0 && isRecruitingParty ? (
-        // 모집 중 깃발은 위쪽에 별도로 표시. 인원 확정 깃발은 자세히 보기 버튼 옆으로 이동.
-        userOfferBadge
-      ) : null}
+      {/* 조각 오퍼 현황은 하단 CTA 행에 자세히와 같은 행으로 통합됨 (깃발과 동일) */}
 
       {/* 취향 태그 */}
       {tags.length > 0 && (
@@ -422,8 +422,6 @@ export const PuzzleCard = memo(function PuzzleCard({
             <span className="text-[12px] text-amber-400 font-bold tabular-nums">{offerCount} offers</span>
           )}
           <div className="ml-auto flex items-center gap-2">
-            {/* 조각은 MD에게도 공유 버튼 노출 (깃발은 제외) */}
-            {isRecruitingParty && shareBtn}
             {isSelecting ? (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
@@ -466,7 +464,6 @@ export const PuzzleCard = memo(function PuzzleCard({
         <div className="flex items-center gap-2">
           <span className="text-[12px] text-neutral-500 font-medium">파티 마감</span>
           <div className="ml-auto flex items-center gap-2">
-            {shareBtn}
             <Button
               onClick={(e) => {
                 e.preventDefault();
@@ -481,31 +478,31 @@ export const PuzzleCard = memo(function PuzzleCard({
           </div>
         </div>
       ) : isLeader ? (
-        <div className="flex justify-end items-center gap-2">
-          {shareBtn}
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">{userOfferBadge}</div>
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-neutral-800 border border-neutral-700 text-neutral-300 pointer-events-none"
+            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-neutral-800 border border-neutral-700 text-neutral-300 pointer-events-none shrink-0"
           >
             내 조각
           </Button>
         </div>
       ) : isMember ? (
-        <div className="flex justify-end items-center gap-2">
-          {shareBtn}
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">{userOfferBadge}</div>
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-green-500/15 border border-green-500/30 text-green-400 pointer-events-none"
+            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-green-500/15 border border-green-500/30 text-green-400 pointer-events-none shrink-0"
           >
             합류 완료
           </Button>
         </div>
       ) : (
-        <div className="flex justify-end items-center gap-2">
-          {shareBtn}
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">{userOfferBadge}</div>
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700"
+            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700 shrink-0"
           >
             자세히
           </Button>

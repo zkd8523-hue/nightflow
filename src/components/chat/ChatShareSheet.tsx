@@ -2,14 +2,12 @@
 
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Send, MapPin, MessagesSquare } from "lucide-react";
+import { Send, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { useAreaVerification } from "@/hooks/useAreaVerification";
 import {
   CHAT_ROOMS,
   ROOM_LABEL,
-  getShareableRooms,
   type ChatRoomCode,
 } from "@/lib/chat/areas";
 import type { ChatMessage } from "@/types/database";
@@ -33,20 +31,12 @@ export function ChatShareSheet({
   currentUserId,
   onShared,
 }: Props) {
-  const { activeAreas } = useAreaVerification();
   const [comment, setComment] = useState("");
   const [sending, setSending] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoomCode | null>(null);
 
-  const verifiedAreas = activeAreas.map((a) => a.area);
-  const shareableCodes: ChatRoomCode[] = source
-    ? getShareableRooms(source.room as ChatRoomCode, verifiedAreas)
-    : [];
-
-  // CHAT_ROOMS 순서대로 필터링 (UI 일관성)
-  const shareableRooms = CHAT_ROOMS.filter((r) =>
-    shareableCodes.includes(r.code)
-  );
+  // Migration 421: 인증 없이 광역 3방 어디로든 공유 (원본 방 제외).
+  const shareableRooms = CHAT_ROOMS.filter((r) => r.code !== source?.room);
 
   async function handleShare() {
     if (!source || !selectedRoom || !currentUserId || sending) return;
@@ -127,11 +117,7 @@ export function ChatShareSheet({
                           : "bg-[#1C1C1E] border-neutral-800 text-neutral-300 hover:border-neutral-600"
                       }`}
                     >
-                      {r.code === "all" ? (
-                        <MessagesSquare className="w-4 h-4" />
-                      ) : (
-                        <MapPin className="w-4 h-4" />
-                      )}
+                      <MapPin className="w-4 h-4" />
                       <span className="font-bold text-[14px]">
                         {r.label}
                       </span>

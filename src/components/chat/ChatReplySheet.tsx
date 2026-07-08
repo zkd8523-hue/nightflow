@@ -46,8 +46,17 @@ export function ChatReplySheet({
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [replyTo, setReplyTo] = useState<string | null>(null); // 답글에 답글 — 대상 닉네임
   const endRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const prevLenRef = useRef(0);
+
+  // 답글에 답글: 같은 스레드 유지 + @멘션 자동 (평면 스레드)
+  function startReplyTo(name: string) {
+    setReplyTo(name);
+    setInput((prev) => (prev.startsWith("@") ? prev : `@${name} ${prev}`));
+    textareaRef.current?.focus();
+  }
 
   useEffect(() => {
     if (replies.length > prevLenRef.current) {
@@ -105,6 +114,7 @@ export function ChatReplySheet({
       return;
     }
     setInput("");
+    setReplyTo(null);
     setSending(false);
     // 부모의 reply_count는 useChatMessages realtime 핸들러가 옵티미스틱 +1 처리하므로
     // ChatRoom의 reload는 호출하지 않음 — 호출 시 메시지 리스트가 "불러오는 중..."으로 깜빡임
@@ -161,16 +171,25 @@ export function ChatReplySheet({
             /* C: 답글 좌측 인덴트로 위계 시각화 */
             <div className="pl-6 divide-y divide-neutral-900">
               {replies.map((m) => (
-                <ChatMessageItem
-                  key={m.id}
-                  message={m}
-                  currentUserId={user?.id}
-                  isLoggedIn={!!user}
-                  reactionSummary={summaries.get(m.id)}
-                  onReact={(emoji) => toggle(m.id, emoji)}
-                  onChange={reload}
-                  hideReplyButton
-                />
+                <div key={m.id}>
+                  <ChatMessageItem
+                    message={m}
+                    currentUserId={user?.id}
+                    isLoggedIn={!!user}
+                    reactionSummary={summaries.get(m.id)}
+                    onReact={(emoji) => toggle(m.id, emoji)}
+                    onChange={reload}
+                    hideReplyButton
+                  />
+                  {/* 답글에 답글 — 같은 스레드에 @멘션으로 */}
+                  <button
+                    type="button"
+                    onClick={() => startReplyTo(m.author?.display_name ?? "익명")}
+                    className="ml-3 mb-2 -mt-1 text-[11px] font-bold text-neutral-500 hover:text-white active:scale-95 transition"
+                  >
+                    답글
+                  </button>
+                </div>
               ))}
               <div ref={endRef} />
             </div>
@@ -187,8 +206,24 @@ export function ChatReplySheet({
               로그인하고 답글 달기
             </button>
           ) : (
-            <div className="flex items-end gap-2">
+            <div className="space-y-1.5">
+              {replyTo && (
+                <div className="flex items-center justify-between px-2 text-[11px] text-neutral-400">
+                  <span>
+                    <span className="text-white font-bold">@{replyTo}</span>님에게 답글
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setReplyTo(null)}
+                    className="text-neutral-500 hover:text-white font-bold"
+                  >
+                    취소
+                  </button>
+                </div>
+              )}
+              <div className="flex items-end gap-2">
               <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => {
@@ -212,6 +247,7 @@ export function ChatReplySheet({
               >
                 <Send className="w-4 h-4" />
               </button>
+              </div>
             </div>
           )}
         </div>

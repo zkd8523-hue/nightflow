@@ -69,3 +69,82 @@ export async function fetchNearestClubs(
     .sort((a, b) => a.distance_km - b.distance_km)
     .slice(0, max);
 }
+
+/**
+ * 지역 인증 없이 GPS 좌표 기준 전체 클럽에서 가까운 N개 (거리순).
+ * LIVE 진입 시 즉시 위치 → 가까운 클럽 추천용. area 필터 없음.
+ */
+export async function fetchNearestClubsAnyArea(
+  userLat: number,
+  userLng: number,
+  max = 10
+): Promise<NearestClub[]> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("id, name, area, latitude, longitude")
+    .eq("is_test", false)
+    .not("latitude", "is", null)
+    .not("longitude", "is", null);
+
+  if (error || !data) {
+    console.error("[nearestClubs] fetch error", error);
+    return [];
+  }
+
+  return data
+    .map((c) => {
+      const lat = c.latitude as number;
+      const lng = c.longitude as number;
+      return {
+        id: c.id,
+        name: c.name,
+        area: c.area,
+        latitude: lat,
+        longitude: lng,
+        distance_km: distanceKm(userLat, userLng, lat, lng),
+      };
+    })
+    .sort((a, b) => a.distance_km - b.distance_km)
+    .slice(0, max);
+}
+
+/**
+ * 이름/별칭으로 클럽 검색 (LIVE 클럽 픽 — 가까운 순 목록에 없을 때 직접 검색).
+ * 좌표가 있으면 거리도 함께 계산해 표시.
+ */
+export async function searchClubsByName(
+  query: string,
+  userLat?: number,
+  userLng?: number,
+  max = 20
+): Promise<NearestClub[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("clubs")
+    .select("id, name, area, latitude, longitude")
+    .eq("is_test", false)
+    .ilike("name", `%${q}%`)
+    .limit(max);
+
+  if (error || !data) {
+    console.error("[searchClubs] fetch error", error);
+    return [];
+  }
+
+  return data.map((c) => {
+    const lat = c.latitude as number | null;
+    const lng = c.longitude as number | null;
+    const hasCoords = lat != null && lng != null && userLat != null && userLng != null;
+    return {
+      id: c.id,
+      name: c.name,
+      area: c.area,
+      latitude: lat ?? 0,
+      longitude: lng ?? 0,
+      distance_km: hasCoords ? distanceKm(userLat!, userLng!, lat!, lng!) : -1,
+    };
+  });
+}

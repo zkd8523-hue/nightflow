@@ -49,7 +49,8 @@ BEGIN
       USING ERRCODE = 'P0001';
   END IF;
 
-  v_author_area := NEW.author_area;
+  -- chat_shots의 작성자 인증 지역 컬럼은 area (author_area 아님 — Migration 419에서 교정)
+  v_author_area := NEW.area;
   IF NOT (
     (v_club_area = '강남'   AND v_author_area = 'gangnam') OR
     (v_club_area = '홍대'   AND v_author_area = 'hongdae') OR

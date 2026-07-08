@@ -1,16 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Ticket, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowLeft, Ticket, Sparkles, TrendingUp, Loader2, Check, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import { useMyStamps } from "@/hooks/useMyStamps";
+import { useRewards, countRaffleEntriesThisMonth } from "@/hooks/useRewards";
 
 /**
- * 스탬프 → 보상 교환 페이지 (Migration 413 my_stamp_status)
- * 1차 출시: 카탈로그 하드코딩. 교환 버튼은 "준비 중" 안내.
- * 실제 카탈로그/교환 RPC는 후속 마이그레이션(414+)에서 도입.
+ * 스탬프 → 보상 교환 페이지 (Migration 413 my_stamp_status + 418 redeem_reward)
+ * 카탈로그 표현은 하드코딩, 비용/재고 검증·발행은 reward_catalog / redeem_reward RPC.
  */
+
+const REDEEM_ERR: Record<string, string> = {
+  INSUFFICIENT_STAMPS: "스탬프가 부족해요",
+  REWARD_SOLD_OUT: "재고가 모두 소진됐어요",
+  REWARD_UNAVAILABLE: "지금은 교환할 수 없는 보상이에요",
+  AUTH_REQUIRED: "로그인이 필요해요",
+};
 
 interface RaffleTier {
   rank: string; // "1등", "2등"
@@ -59,10 +68,13 @@ const REWARDS: RewardItem[] = [
 
 export default function MyStampsPage() {
   const router = useRouter();
-  const { status, loading } = useMyStamps();
-  // 이번 달 추첨 응모 횟수 — 교환 시스템(redemptions) 붙기 전까진 0.
-  // 추후 my_stamp_status 뷰 또는 redemptions 조회로 연동.
-  const raffleEntries = 0;
+  const { status, loading, reload: reloadStamps } = useMyStamps();
+  const { catalog, redemptions, reload: reloadRewards } = useRewards();
+  const [redeeming, setRedeeming] = useState<string | null>(null);
+
+  const raffleEntries = countRaffleEntriesThisMonth(redemptions);
+  // 처리 대기 중인 발행 내역 (최신순, 최대 5개 표시)
+  const pending = redemptions.filter((r) => r.status === "pending");
 
   function handleBack() {
     // 직전 페이지로 복귀 (와글에서 왔으면 와글로). 히스토리 없으면 /profile.
@@ -73,15 +85,48 @@ export default function MyStampsPage() {
     }
   }
 
-  function handleRedeem(r: RewardItem) {
-    if (loading) return;
+  async function handleRedeem(r: RewardItem) {
+    if (loading || redeeming) return;
     if (status.current_count < r.stamp_cost) {
       toast.error(`스탬프가 ${r.stamp_cost - status.current_count}개 부족해요`);
       return;
     }
-    toast.message("교환 시스템 준비 중이에요", {
-      description: "곧 오픈됩니다. 지금은 스탬프를 모아두세요!",
-    });
+    // 재고 확인 (카탈로그 로드된 경우)
+    const cat = catalog.get(r.id);
+    if (cat && cat.stock !== null && cat.stock <= 0) {
+      toast.error("재고가 모두 소진됐어요");
+      return;
+    }
+
+    const verb = r.raffleTiers ? "응모" : "교환";
+    const ok =
+      typeof window === "undefined" ||
+      window.confirm(`스탬프 ${r.stamp_cost}개로 "${r.name}" ${verb}할까요?`);
+    if (!ok) return;
+
+    setRedeeming(r.id);
+    try {
+      const supabase = createClient();
+      const { data, error } = await supabase.rpc("redeem_reward", { p_code: r.id });
+      if (error) {
+        const key = Object.keys(REDEEM_ERR).find((k) => error.message.includes(k));
+        if (error.code === "42883" || error.code === "42P01") {
+          toast.error("교환 시스템 준비 중 (DB 마이그레이션 418 미적용)");
+        } else {
+          toast.error(key ? REDEEM_ERR[key] : `교환 실패: ${error.message}`);
+        }
+        return;
+      }
+      toast.success(`${r.raffleTiers ? "응모 완료!" : "교환 신청 완료!"}`, {
+        description: r.raffleTiers
+          ? "추첨 결과를 기다려주세요"
+          : "확인 후 지급돼요. 내역에서 상태를 확인하세요",
+      });
+      await Promise.all([reloadStamps(), reloadRewards()]);
+      void data;
+    } finally {
+      setRedeeming(null);
+    }
   }
 
   return (
@@ -149,6 +194,9 @@ export default function MyStampsPage() {
         <div className="space-y-2.5">
           {REWARDS.map((r) => {
             const enough = !loading && status.current_count >= r.stamp_cost;
+            const cat = catalog.get(r.id);
+            const soldOut = !!cat && cat.stock !== null && cat.stock <= 0;
+            const isRedeeming = redeeming === r.id;
             return (
               <div
                 key={r.id}
@@ -180,18 +228,23 @@ export default function MyStampsPage() {
                     <button
                       type="button"
                       onClick={() => handleRedeem(r)}
-                      disabled={loading}
-                      className={`px-3.5 py-1.5 rounded-full text-[12px] font-black whitespace-nowrap transition-colors ${
-                        enough
+                      disabled={loading || isRedeeming || soldOut}
+                      className={`px-3.5 py-1.5 rounded-full text-[12px] font-black whitespace-nowrap transition-colors flex items-center gap-1 ${
+                        soldOut
+                          ? "bg-neutral-800 text-neutral-600"
+                          : enough
                           ? "bg-white text-black hover:bg-neutral-200"
                           : "bg-neutral-800 text-neutral-500"
                       }`}
                     >
-                      {r.stamp_cost}장 {r.raffleTiers ? "추첨" : "교환"}
+                      {isRedeeming && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {soldOut
+                        ? "품절"
+                        : `${r.stamp_cost}장 ${r.raffleTiers ? "추첨" : "교환"}`}
                     </button>
-                    {r.stock && (
-                      <span className="text-neutral-500 text-[10px]">{r.stock}</span>
-                    )}
+                    <span className="text-neutral-500 text-[10px]">
+                      {cat && cat.stock !== null ? `재고 ${cat.stock}` : r.stock}
+                    </span>
                   </div>
                 </div>
 
@@ -239,14 +292,75 @@ export default function MyStampsPage() {
         </div>
       </div>
 
+      {/* 교환 내역 */}
+      {redemptions.length > 0 && (
+        <div className="px-4 mt-7">
+          <div className="flex items-center gap-2 mb-3">
+            <Ticket className="w-4 h-4 text-neutral-400" />
+            <h2 className="text-white text-[15px] font-black">교환 내역</h2>
+            {pending.length > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-black">
+                처리 대기 {pending.length}
+              </span>
+            )}
+          </div>
+          <div className="space-y-2">
+            {redemptions.slice(0, 20).map((red) => (
+              <div
+                key={red.id}
+                className="flex items-center justify-between gap-3 rounded-xl border border-neutral-800 bg-[#1C1C1E] px-3.5 py-2.5"
+              >
+                <div className="min-w-0">
+                  <div className="text-white text-[13px] font-bold truncate">
+                    {red.reward_name}
+                  </div>
+                  <div className="text-neutral-500 text-[10.5px] mt-0.5">
+                    {new Date(red.created_at).toLocaleString("ko-KR", {
+                      month: "2-digit",
+                      day: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                    {" · "}스탬프 {red.stamp_cost}개
+                  </div>
+                </div>
+                <StatusBadge status={red.status} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 하단 안내 */}
       <div className="px-4 mt-8 mb-4">
         <p className="text-center text-[11px] text-neutral-600 leading-relaxed">
-          🚧 교환 시스템 준비 중이에요
+          교환 신청 후 확인을 거쳐 지급돼요.
           <br />
-          지금은 스탬프를 모아두세요. 곧 오픈됩니다.
+          추첨은 매월 1회 진행됩니다.
         </p>
       </div>
     </div>
+  );
+}
+
+function StatusBadge({ status }: { status: "pending" | "fulfilled" | "cancelled" }) {
+  if (status === "fulfilled") {
+    return (
+      <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 text-[10.5px] font-black">
+        <Check className="w-3 h-3" /> 지급완료
+      </span>
+    );
+  }
+  if (status === "cancelled") {
+    return (
+      <span className="shrink-0 px-2 py-0.5 rounded-full bg-neutral-700/40 text-neutral-400 text-[10.5px] font-black">
+        취소 (환불)
+      </span>
+    );
+  }
+  return (
+    <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10.5px] font-black">
+      <Clock className="w-3 h-3" /> 처리 대기
+    </span>
   );
 }

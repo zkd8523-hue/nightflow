@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Heart, MapPin } from "lucide-react";
 import { getPrimaryAlias } from "@/lib/clubs/aliases";
+import { hideTestData } from "@/lib/utils/testData";
 import { ClubMap } from "@/components/clubs/ClubMap";
 
 export const revalidate = 60;
@@ -117,17 +118,21 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
   const todayDowKey = getBusinessDowKey();
 
   // 지역의 활성 클럽 + 이번 주 게스트 간판 동시 조회
-  const [{ data: clubsRaw }, { data: guestSignSlots }] = await Promise.all([
+  // 테스트/가짜 클럽 숨김은 is_test 기준(SSOT). 프로덕션에서만 필터.
+  const clubsQuery = hideTestData(
     supabase
       .from("clubs")
       .select(
         "id, name, area, thumbnail_url, latitude, longitude, tags, drink_menu_url, operating_hours, entry_fee_detail, seed_favorite_count"
       )
       .eq("area", area)
-      .is("deleted_at", null)
-      .not("name", "ilike", "%운영자%")
-      .order("name")
-      .limit(100),
+      .is("deleted_at", null),
+    ""
+  )
+    .order("name")
+    .limit(100);
+  const [{ data: clubsRaw }, { data: guestSignSlots }] = await Promise.all([
+    clubsQuery,
     supabase
       .from("weekly_hotdeal_slots")
       .select("club_id, benefits_by_dow")

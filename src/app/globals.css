@@ -340,3 +340,17 @@
     }
   }
 }
+
+/* ── LIVE 영상: WebView/브라우저 기본 재생버튼·컨트롤 오버레이 완전 제거 ── */
+/* 캐러셀 썸네일(정지) + 뷰어 시작 전 프레임에 뜨는 "싸구려 재생버튼" 방지 */
+video::-webkit-media-controls,
+video::-webkit-media-controls-enclosure,
+video::-webkit-media-controls-panel,
+video::-webkit-media-controls-overlay-play-button,
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-play-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  opacity: 0 !important;
+}

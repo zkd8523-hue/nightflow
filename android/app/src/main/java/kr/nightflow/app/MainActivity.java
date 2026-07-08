@@ -41,7 +41,15 @@ public class MainActivity extends BridgeActivity {
         // 서브클래싱 대신 요청 처리만 담당하는 클라이언트로 교체하지 않고,
         // Bridge 의 것을 확장한 형태로 붙인다.
         if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().setWebChromeClient(new WebChromeClient() {
+            WebView wv = getBridge().getWebView();
+
+            // 인라인 영상 자동재생을 제스처 없이 허용.
+            // 기본값(true)이면 <video autoplay muted>가 차단돼 정지 상태가 되고,
+            // Chromium/Samsung WebView가 재생버튼 오버레이/네이티브 컨트롤을 씌운다.
+            // false로 두면 음소거 자동재생이 바로 시작돼 재생버튼이 안 뜬다. (LIVE 뷰어/썸네일)
+            wv.getSettings().setMediaPlaybackRequiresUserGesture(false);
+
+            wv.setWebChromeClient(new WebChromeClient() {
                 @Override
                 public void onPermissionRequest(final PermissionRequest request) {
                     runOnUiThread(() -> handlePermissionRequest(request));

@@ -347,6 +347,13 @@ export function ClubDetailContent({
             )}
           </div>
 
+        {/* 클럽 LIVE (SHOT) — 대표 이미지 바로 아래. 이 클럽의 실시간 분위기가 핵심 */}
+        <ClubShotSection
+          clubId={club.id}
+          clubName={clubName}
+          clubAreaKr={club.area ?? null}
+        />
+
         <FeatureIconRow tags={clubTags} />
 
         {isAdmin && (
@@ -649,13 +656,6 @@ export function ClubDetailContent({
           onOpenChange={setReportSheetOpen}
         />
       )}
-
-      {/* 클럽 LIVE (SHOT) — 정보 아래, 리뷰 위 */}
-      <ClubShotSection
-        clubId={club.id}
-        clubName={clubName}
-        clubAreaKr={club.area ?? null}
-      />
 
       {/* 5자 리뷰 워드클라우드 */}
       <WordCloudSection clubId={club.id} clubName={clubName} />

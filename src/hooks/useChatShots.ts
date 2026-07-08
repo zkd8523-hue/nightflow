@@ -35,8 +35,9 @@ export function useChatShots(
     let q = supabase
       .from("chat_shots")
       .select(
-        `id, area, club_id, author_id, media_type, media_url, width, height, duration, caption, like_count, comment_count, created_at, expires_at,
-         author:public_user_profiles!author_id(id, display_name, profile_image)`
+        `id, area, club_id, author_id, media_type, media_url, width, height, duration, caption, text_overlays, image_overlays, poll, like_count, comment_count, created_at, expires_at,
+         author:public_user_profiles!author_id(id, display_name, profile_image),
+         club:clubs!club_id(id, name, area)`
       )
       .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
@@ -64,6 +65,10 @@ export function useChatShots(
         const authorObj = Array.isArray(rawAuthor)
           ? (rawAuthor[0] as ChatShot["author"])
           : (rawAuthor as ChatShot["author"]);
+        const rawClub = (d as { club?: unknown }).club;
+        const clubObj = Array.isArray(rawClub)
+          ? (rawClub[0] as ChatShot["club"])
+          : (rawClub as ChatShot["club"]);
         return {
           id: d.id,
           area: (d.area ?? null) as VerifiableArea | null,
@@ -75,11 +80,17 @@ export function useChatShots(
           height: d.height,
           duration: d.duration,
           caption: d.caption,
+          text_overlays: (d as { text_overlays?: ChatShot["text_overlays"] }).text_overlays ?? [],
+          image_overlays: (d as { image_overlays?: ChatShot["image_overlays"] }).image_overlays ?? [],
+          poll: (d as { poll?: ChatShot["poll"] }).poll ?? null,
+          poll_counts: {},
+          my_poll_vote: null,
           like_count: (d as { like_count?: number }).like_count ?? 0,
           comment_count: (d as { comment_count?: number }).comment_count ?? 0,
           created_at: d.created_at,
           expires_at: d.expires_at,
           author: authorObj,
+          club: clubObj ?? null,
           liked_by_me: false,
         };
       });
@@ -94,6 +105,36 @@ export function useChatShots(
         const likedSet = new Set((likes ?? []).map((l) => l.shot_id));
         parsed.forEach((s) => {
           s.liked_by_me = likedSet.has(s.id);
+        });
+      }
+
+      // 설문 있는 샷의 투표 집계 + 내 투표
+      const pollShotIds = parsed.filter((s) => s.poll).map((s) => s.id);
+      if (pollShotIds.length > 0) {
+        const { data: results } = await supabase
+          .from("shot_poll_results")
+          .select("shot_id, option_id, votes")
+          .in("shot_id", pollShotIds);
+        const countsByShot = new Map<string, Record<string, number>>();
+        for (const r of results ?? []) {
+          const m = countsByShot.get(r.shot_id) ?? {};
+          m[r.option_id] = r.votes;
+          countsByShot.set(r.shot_id, m);
+        }
+        let myVotes = new Map<string, string>();
+        if (currentUserId) {
+          const { data: votes } = await supabase
+            .from("chat_shot_poll_votes")
+            .select("shot_id, option_id")
+            .eq("user_id", currentUserId)
+            .in("shot_id", pollShotIds);
+          myVotes = new Map((votes ?? []).map((v) => [v.shot_id, v.option_id]));
+        }
+        parsed.forEach((s) => {
+          if (s.poll) {
+            s.poll_counts = countsByShot.get(s.id) ?? {};
+            s.my_poll_vote = myVotes.get(s.id) ?? null;
+          }
         });
       }
 
@@ -134,6 +175,16 @@ export function useChatShots(
             .select("id, display_name, profile_image")
             .eq("id", newShot.author_id)
             .maybeSingle();
+          // 클럽 정보 join (LIVE 지역/클럽명 표시용)
+          let club: ChatShot["club"] = null;
+          if (newShot.club_id) {
+            const { data: c } = await supabase
+              .from("clubs")
+              .select("id, name, area")
+              .eq("id", newShot.club_id)
+              .maybeSingle();
+            club = c ?? null;
+          }
           setShots((prev) => {
             if (prev.some((s) => s.id === newShot.id)) return prev;
             return [
@@ -142,6 +193,9 @@ export function useChatShots(
                 like_count: newShot.like_count ?? 0,
                 comment_count: newShot.comment_count ?? 0,
                 author: author ?? undefined,
+                club,
+                poll_counts: {},
+                my_poll_vote: null,
                 liked_by_me: false,
               },
               ...prev,

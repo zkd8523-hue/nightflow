@@ -35,9 +35,12 @@ export function useChatMessages(room: ChatRoomCode) {
         )
       `
       )
-      .eq("room", room)
       .eq("is_deleted", false)
       .is("parent_id", null);
+    // room='all'(전국 통합)이면 방 필터 없이 전체를 읽는다. 지역방이면 그 방만.
+    if (room !== "all") {
+      query = query.eq("room", room);
+    }
     // 프로덕션 빌드에선 테스트 계정 메시지 제외 (Migration 317)
     if (process.env.NODE_ENV === "production") {
       query = query.eq("is_test", false);
@@ -126,16 +129,21 @@ export function useChatMessages(room: ChatRoomCode) {
   // Realtime 구독
   useEffect(() => {
     const supabase = createClient();
+    // room='all'이면 전 방 INSERT를 구독(전국 통합), 지역방이면 그 방만.
+    const insertFilter =
+      room === "all"
+        ? { event: "INSERT" as const, schema: "public", table: "chat_messages" }
+        : {
+            event: "INSERT" as const,
+            schema: "public",
+            table: "chat_messages",
+            filter: `room=eq.${room}`,
+          };
     const channel = supabase
       .channel(`chat:${room}`)
       .on(
         "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "chat_messages",
-          filter: `room=eq.${room}`,
-        },
+        insertFilter,
         async (payload) => {
           const newMsg = payload.new as {
             id: string;
@@ -225,12 +233,14 @@ export function useChatMessages(room: ChatRoomCode) {
       )
       .on(
         "postgres_changes",
-        {
-          event: "DELETE",
-          schema: "public",
-          table: "chat_messages",
-          filter: `room=eq.${room}`,
-        },
+        room === "all"
+          ? { event: "DELETE" as const, schema: "public", table: "chat_messages" }
+          : {
+              event: "DELETE" as const,
+              schema: "public",
+              table: "chat_messages",
+              filter: `room=eq.${room}`,
+            },
         (payload) => {
           const oldMsg = payload.old as { id: string };
           setMessages((prev) => prev.filter((m) => m.id !== oldMsg.id));

@@ -162,6 +162,13 @@ export async function POST(request: NextRequest) {
 
       if (clubError) {
         logger.error("Club update error:", clubError);
+        // Migration 416: (LOWER(TRIM(name)), area) UNIQUE 위반 → 같은 이름·지역 클럽 이미 존재
+        if (clubError.code === "23505") {
+          return NextResponse.json(
+            { error: "같은 이름·지역의 클럽이 이미 등록되어 있습니다. 클럽명을 확인하거나 관리자에게 문의해주세요." },
+            { status: 409 }
+          );
+        }
         return NextResponse.json(
           { error: `클럽 정보 업데이트에 실패했습니다. (${clubError.code}: ${clubError.message})` },
           { status: 500 }
@@ -190,6 +197,14 @@ export async function POST(request: NextRequest) {
 
       if (clubError || !newClub) {
         logger.error("Club create error:", clubError);
+        // Migration 416: (LOWER(TRIM(name)), area) UNIQUE 위반 → 이미 등록된 클럽.
+        // 중복 클럽을 새로 만들지 않고 안내만 (어드민이 수동 연결). 자동 연결은 어뷰징 방지 위해 제외.
+        if (clubError?.code === "23505") {
+          return NextResponse.json(
+            { error: "이미 등록된 클럽입니다. 같은 이름·지역의 클럽이 이미 있어요. 관리자에게 클럽 연결을 문의해주세요." },
+            { status: 409 }
+          );
+        }
         return NextResponse.json(
           { error: `클럽 등록에 실패했습니다. (${clubError?.code}: ${clubError?.message})` },
           { status: 500 }

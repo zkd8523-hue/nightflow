@@ -181,14 +181,39 @@ export function SecretOfferCard({
             /* 조각: 카드엔 액션 없음(보기 전용). 상담·초대·수락은 단체채팅에서 진행. */
             null
           ) : offer.leader_chat_started_at ? (
-            /* 채팅 진행 중: 회색 "채팅중" 하나만 (즉시수락 숨겨 혼동 방지) */
-            <Link
-              href={`/messages/${offer.id}`}
-              className="flex items-center justify-center gap-1.5 w-full h-11 mt-1 rounded-xl bg-neutral-700 hover:bg-neutral-600 text-neutral-100 font-bold text-[13px]"
-            >
-              <MessageCircle className="w-4 h-4" />
-              {t("상담중", "Chatting")}
-            </Link>
+            isAdmin ? (
+              /* admin 모니터링: MD 답장 여부로 상태 구분 + 상담 건수/마지막 대화(Migration 417) */
+              <Link
+                href={`/messages/${offer.id}`}
+                className={`flex flex-col items-center justify-center gap-0.5 w-full mt-1 rounded-xl py-2 px-3 font-bold text-[13px] ${
+                  offer.chat_meta?.replied
+                    ? "bg-neutral-700 hover:bg-neutral-600 text-neutral-100"
+                    : "bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25"
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  <MessageCircle className="w-4 h-4" />
+                  {offer.chat_meta?.replied ? "대화중" : "MD 답장 기다리는중"}
+                </span>
+                {offer.chat_meta && (
+                  <span className="text-[11px] font-medium text-neutral-400">
+                    방장 {offer.chat_meta.leader} · MD {offer.chat_meta.md}
+                    {offer.chat_meta.last_at && (
+                      <> · 마지막 {offer.chat_meta.last_by === "md" ? "MD" : "방장"} {formatRelativeTime(offer.chat_meta.last_at)}</>
+                    )}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              /* 채팅 진행 중: 회색 "상담중" 하나만 (즉시수락 숨겨 혼동 방지) */
+              <Link
+                href={`/messages/${offer.id}`}
+                className="flex items-center justify-center gap-1.5 w-full h-11 mt-1 rounded-xl bg-neutral-700 hover:bg-neutral-600 text-neutral-100 font-bold text-[13px]"
+              >
+                <MessageCircle className="w-4 h-4" />
+                {t("상담중", "Chatting")}
+              </Link>
+            )
           ) : (
             /* 2분화: 채팅하기(흰색·왼쪽 강조) / 즉시수락(보조). 한 줄 나란히 */
             <div className="flex gap-2 pt-1">

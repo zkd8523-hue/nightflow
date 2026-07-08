@@ -20,7 +20,7 @@ import { PuzzleCancelConfirmSheet } from "./PuzzleCancelConfirmSheet";
 import { SecretOfferCard } from "./SecretOfferCard";
 import { ShareCreatedSheet } from "./ShareCreatedSheet";
 import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
-import type { Puzzle, PuzzleMember, PuzzleOffer, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
+import type { Puzzle, PuzzleMember, PuzzleOffer, OfferChatMeta, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { toEnglishInclude } from "@/lib/utils/liquorEn";
@@ -329,6 +329,15 @@ export function PuzzleDetailClient({
           const md = mdByOfferId.get(o.id);
           return md ? ({ ...o, md } as PuzzleOffer) : o;
         });
+      }
+
+      // 상담 메타데이터(건수/마지막 시각/마지막 발신자)를 admin에게만 표시 (Migration 417 RPC)
+      const { data: metaRes } = await supabase.rpc("admin_get_offer_md_replied", {
+        p_puzzle_id: puzzle.id,
+      });
+      const metaMap = (metaRes as { success?: boolean; replied?: Record<string, OfferChatMeta> } | null)?.replied;
+      if (metaMap) {
+        merged = merged.map((o) => (metaMap[o.id] ? { ...o, chat_meta: metaMap[o.id] } : o));
       }
     }
 

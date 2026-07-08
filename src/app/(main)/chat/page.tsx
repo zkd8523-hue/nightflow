@@ -1,42 +1,51 @@
 "use client";
 
-import { MapPin } from "lucide-react";
+import { useState } from "react";
 import { ChatRoom } from "@/components/chat/ChatRoom";
 import { LiveIntroModal } from "@/components/chat/LiveIntroModal";
-import { useAreaVerification } from "@/hooks/useAreaVerification";
-import { ROOM_LABEL } from "@/lib/chat/areas";
+import { type ChatRegionCode } from "@/lib/chat/areas";
 
 /**
- * 와글 페이지 (Migration 413 이후)
- * - 채팅방: "서울" 단일 통합 (기존 all=잡담 방 재활용)
- * - LIVE 캐러셀 내부에서 지역별 pill 필터 (강남/홍대/이태원)
- * - 인증 배지는 헤더 우측에 유지
+ * 와글 페이지 (Migration 421)
+ * - 초기 런칭: '수도권' 단일방. 라벨로 소속감을 주되, 콘텐츠는 한 방에 밀집시켜
+ *   각 방이 텅 비어 보이는 역효과를 피한다. (거의 모든 클럽·글이 수도권)
+ * - 부산·광주 등 실제 콘텐츠 밀도가 생기면 LAUNCH_REGIONS에 한 줄씩 추가 →
+ *   자동으로 다지역 탭 선택 UI가 된다.
+ * - LIVE 캐러셀은 이미 전국 통합 (Migration 420).
  */
+const LAUNCH_REGIONS: { code: ChatRegionCode; label: string }[] = [
+  { code: "sudogwon", label: "수도권" },
+  { code: "gyeongsang", label: "경상권" },
+  // 밀도 생기면 해제:
+  // { code: "jeolla", label: "전라권" },
+];
+
 export default function ChatPage() {
-  const { activeAreas, refresh: refreshVerifications } = useAreaVerification();
-  const verifiedBadge = activeAreas[0]?.area ?? null;
+  const [room, setRoom] = useState<ChatRegionCode>(LAUNCH_REGIONS[0].code);
 
   return (
     <div className="max-w-lg mx-auto bg-[#0B0A11] pb-24">
       <LiveIntroModal />
 
-      {/* 헤더: 서울 라벨 + 인증 배지 (지역 탭 제거됨) */}
-      {verifiedBadge && (
-        <div className="sticky top-[52px] z-20 bg-[#0B0A11]/95 backdrop-blur-sm border-b border-neutral-800 flex items-center justify-end px-3 py-2">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-500/10 border border-green-500/30 text-green-300 text-[11px] font-bold">
-            <MapPin className="w-3 h-3" />
-            {ROOM_LABEL[verifiedBadge]} 인증됨
-          </span>
-        </div>
-      )}
+      {/* 지역 라벨 — 소속감(수도권). LAUNCH_REGIONS가 늘면 탭 선택 UI로 확장 */}
+      <div className="sticky top-[52px] z-20 bg-[#0B0A11]/95 backdrop-blur-sm border-b border-neutral-800 flex items-center gap-1.5 px-3 py-2">
+        {LAUNCH_REGIONS.map((r) => (
+          <button
+            key={r.code}
+            type="button"
+            onClick={() => setRoom(r.code)}
+            className={`px-3.5 py-1.5 rounded-full text-[13px] font-black transition-colors ${
+              room === r.code
+                ? "bg-white text-black"
+                : "bg-neutral-800 text-neutral-400 hover:text-white"
+            }`}
+          >
+            {r.label}
+          </button>
+        ))}
+      </div>
 
-      <ChatRoom
-        room="all"
-        onAreaVerified={() => {
-          // 서울 통합 방이라 방 전환 필요 없음. 인증만 갱신.
-          refreshVerifications();
-        }}
-      />
+      <ChatRoom room={room} />
     </div>
   );
 }

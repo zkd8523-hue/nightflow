@@ -23,6 +23,7 @@ import type { ChatMessage } from "@/types/database";
 import {
   ROOM_LABEL,
   type ChatRoomCode,
+  type ChatRegionCode,
   type VerifiableArea,
 } from "@/lib/chat/areas";
 import {
@@ -103,25 +104,14 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
     prevLenRef.current = messages.length;
   }, [messages.length]);
 
-  const requiresVerification = room !== "all";
-  const verifiedForRoom = useMemo(() => {
-    if (!requiresVerification) return true;
-    return isVerified(room as VerifiableArea);
-  }, [requiresVerification, room, isVerified]);
+  // Migration 421: 광역 채팅방은 인증 불필요 — 로그인만 하면 누구나 쓰기.
+  const requiresVerification = false;
+  const verifiedForRoom = true;
 
-  // Migration 413 이후: LIVE 캐러셀은 모든 방 통합. area는 정렬 힌트로만 사용.
-  // 현재 방이 지역방이면 그 area 우선, 잡담방이면 인증된 area 중 첫 번째
-  const shotSortArea: VerifiableArea | null = useMemo(() => {
-    if (room !== "all") return room as VerifiableArea;
-    if (activeAreas.length > 0) return activeAreas[0].area;
-    return null;
-  }, [room, activeAreas]);
-  // LIVE 작성 시 사용할 area (인증된 지역이 필요)
+  // LIVE 작성 시 넘길 area — 인증된 지역이 있으면 힌트로 사용 (없으면 null, 전국 허용).
   const shotAuthorArea: VerifiableArea | null = useMemo(() => {
-    if (room !== "all" && verifiedForRoom) return room as VerifiableArea;
-    if (activeAreas.length > 0) return activeAreas[0].area;
-    return null;
-  }, [room, verifiedForRoom, activeAreas]);
+    return activeAreas.length > 0 ? activeAreas[0].area : null;
+  }, [activeAreas]);
 
   async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -520,7 +510,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
     <div className="flex flex-col pb-40">
       {/* 와글 LIVE 통합 캐러셀 (Migration 413 이후 방 필터 X) */}
       <ShotCarousel
-        userArea={shotSortArea}
+        currentRoom={room === "all" ? undefined : (room as ChatRegionCode)}
         showComposeButton={true}
         currentUserId={user?.id}
         currentUserProfile={user ? { profile_image: user.profile_image ?? null, display_name: user.display_name ?? null } : null}

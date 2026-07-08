@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Camera, Check, ChevronRight, Loader2, MapPin, X, Zap } from "lucide-react";
+import { Camera, Check, ChevronRight, Loader2, MapPin, Search, X, Zap } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -12,12 +12,12 @@ import {
 } from "@/components/ui/sheet";
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
-import { ROOM_LABEL, type VerifiableArea } from "@/lib/chat/areas";
-import { fetchNearestClubs, type NearestClub } from "@/lib/clubs/nearestClubs";
+import { type VerifiableArea } from "@/lib/chat/areas";
+import { fetchNearestClubsAnyArea, searchClubsByName, type NearestClub } from "@/lib/clubs/nearestClubs";
 import { getCurrentCoords } from "@/lib/geo/currentCoords";
-import type { ChatShot } from "@/types/database";
+import type { ChatShot, TextOverlay, ImageOverlay, ShotPoll } from "@/types/database";
 import { useCameraStore } from "@/stores/useCameraStore";
-import { LiveEditView } from "./LiveEditView";
+import { LiveEditView, type ImageOverlayDraft } from "./LiveEditView";
 
 interface Props {
   open: boolean;
@@ -69,26 +69,30 @@ export function ShotCaptureSheet({
   const [clubSheetOpen, setClubSheetOpen] = useState(false);
   const [nearestClubs, setNearestClubs] = useState<NearestClub[] | null>(null);
   const [clubsLoading, setClubsLoading] = useState(false);
+  // 검색 시 거리 계산용 유저 좌표
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
 
-  const isVerified = !!area;
-
-  // 시트 초기화 + 인증자면 클럽 픽 시트 자동 오픈 (presetClub 있으면 skip)
+  // LIVE 진입 즉시 클럽 픽 시트 자동 오픈 (presetClub 있으면 skip).
+  // 인증 여부와 무관 — 위치 동의 → 가까운 클럽 리스트업 흐름.
   useEffect(() => {
     if (!open) return;
     setSelectedClub(presetClub);
-    if (!presetClub && isVerified) {
+    if (!presetClub) {
       setClubSheetOpen(true);
     }
-  }, [open, presetClub, isVerified]);
+  }, [open, presetClub]);
 
-  // 인증자면 GPS로 주변 클럽 로드
+  // LIVE 진입 시 GPS로 가까운 클럽 로드 (인증 없이 전체 클럽에서 거리순 10개).
+  // getCurrentCoords가 위치 권한 동의 모달을 띄운다.
   useEffect(() => {
-    if (!open || !area || presetClub) return;
+    if (!open || presetClub) return;
     let cancelled = false;
     setClubsLoading(true);
     getCurrentCoords()
       .then(async (c) => {
-        const clubs = await fetchNearestClubs(area, c.latitude, c.longitude, 5, 1.5);
+        if (cancelled) return;
+        setUserCoords({ lat: c.latitude, lng: c.longitude });
+        const clubs = await fetchNearestClubsAnyArea(c.latitude, c.longitude, 10);
         if (cancelled) return;
         setNearestClubs(clubs);
         setClubsLoading(false);
@@ -100,7 +104,7 @@ export function ShotCaptureSheet({
         setClubsLoading(false);
       });
     return () => { cancelled = true; };
-  }, [open, area, presetClub]);
+  }, [open, presetClub]);
 
   // 앱(Capacitor)이면 네이티브 카메라(camera-preview)를 쓰므로 항상 인앱 카메라 사용.
   // Capacitor.isNativePlatform()은 동기 호출이지만 dynamic import라 초기값 판별을 effect로.
@@ -145,7 +149,24 @@ export function ShotCaptureSheet({
     e.target.value = "";
   }
 
-  async function handlePost(captionArg?: string) {
+  // 카메라 실행 (앱=네이티브 카메라, 웹=파일 input 폴백)
+  function launchCamera() {
+    if (canUseLiveCamera()) {
+      openCamera((captured) => {
+        setFile(captured);
+        setPreviewUrl(URL.createObjectURL(captured));
+      });
+    } else {
+      cameraInputRef.current?.click();
+    }
+  }
+
+  async function handlePost(
+    captionArg?: string,
+    textOverlays?: TextOverlay[],
+    imageOverlayDrafts?: ImageOverlayDraft[],
+    poll?: ShotPoll | null
+  ) {
     if (!file || uploading) return;
     setUploading(true);
 
@@ -155,6 +176,24 @@ export function ShotCaptureSheet({
     if (!media) {
       setUploading(false);
       return;
+    }
+
+    // 이미지 오버레이 업로드 (각 File → 스토리지 URL)
+    const imageOverlays: ImageOverlay[] = [];
+    if (imageOverlayDrafts && imageOverlayDrafts.length > 0) {
+      for (const io of imageOverlayDrafts) {
+        const up = await uploadChatMedia(io.file, userId);
+        if (up) {
+          imageOverlays.push({
+            id: io.id,
+            url: up.url,
+            xPct: io.xPct,
+            yPct: io.yPct,
+            widthPct: io.widthPct,
+            rotation: io.rotation,
+          });
+        }
+      }
     }
 
     // 페이로드 결정:
@@ -169,6 +208,9 @@ export function ShotCaptureSheet({
       height: media.height ?? null,
       duration: media.duration ?? null,
       caption: finalCaption || null,
+      text_overlays: textOverlays && textOverlays.length > 0 ? textOverlays : [],
+      image_overlays: imageOverlays,
+      poll: poll ?? null,
       area: isLive ? area : null,
       club_id: isLive ? selectedClub?.id ?? null : null,
     };
@@ -178,7 +220,7 @@ export function ShotCaptureSheet({
       .from("chat_shots")
       .insert(payload)
       .select(
-        `id, area, author_id, club_id, media_type, media_url, width, height, duration, caption, created_at, expires_at`
+        `id, area, author_id, club_id, media_type, media_url, width, height, duration, caption, text_overlays, image_overlays, poll, created_at, expires_at`
       )
       .single();
 
@@ -282,21 +324,24 @@ export function ShotCaptureSheet({
             setPreviewUrl(URL.createObjectURL(captured));
           });
         }}
-        onPost={(cap) => handlePost(cap)}
+        onPost={(cap, textOv, imgOv, poll) => handlePost(cap, textOv, imgOv, poll)}
       />
     )}
 
     <Sheet
-      open={open && !file}
+      // 클럽 픽 시트가 열려있는 동안엔 메인 시트를 숨긴다 (둘 동시 노출 방지 — 클럽 선택 먼저).
+      open={open && !file && !clubSheetOpen}
       onOpenChange={(v) => {
-        // 편집뷰(file 있음)로 잠깐 시트가 닫히는 동안엔 상위 open 상태를 건드리지 않음
-        if (file) return;
+        // 편집뷰(file 있음) 또는 클럽 픽 중엔 상위 open 상태를 건드리지 않음
+        if (file || clubSheetOpen) return;
         if (!v) resetState();
         onOpenChange(v);
       }}
     >
       <SheetContent
         side="bottom"
+        // 세로 스크롤이 페이지 pull-to-refresh를 발동시키지 않도록 원천차단
+        data-no-pull-refresh="strict"
         className="bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[90vh] flex flex-col"
       >
         <SheetHeader className="px-4 pt-4 pb-3 border-b border-neutral-800 shrink-0">
@@ -311,11 +356,11 @@ export function ShotCaptureSheet({
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {/* 스탬프 안내 배너 */}
-          <div className="rounded-2xl bg-red-500/10 border border-red-500/30 px-3 py-2 flex items-center gap-2">
+          <div className="rounded-2xl bg-neutral-800/40 border border-neutral-700/50 px-3 py-2 flex items-center gap-2">
             <span className="text-[16px]">🎫</span>
-            <div className="text-[12px] text-red-300 leading-tight">
+            <div className="text-[12px] text-neutral-300 leading-tight">
               <span className="font-black">클럽 지정 + 위치 확인</span>
-              <span className="text-red-300/70"> 시 스탬프 1개 지급 (30분/일7개)</span>
+              <span className="text-neutral-500"> 시 스탬프 1개 지급 (30분/일7개)</span>
             </div>
           </div>
 
@@ -323,28 +368,23 @@ export function ShotCaptureSheet({
           <button
             type="button"
             onClick={() => {
-              if (!isVerified) {
-                toast.message("지역 인증 후 클럽을 지정할 수 있어요");
-                onRequestAreaVerify?.();
-                return;
-              }
               if (!presetClub) setClubSheetOpen(true);
             }}
             disabled={!!presetClub}
             className={`w-full flex items-center gap-2 p-3 rounded-2xl border text-left disabled:opacity-80 ${
               selectedClub
-                ? "bg-red-500/10 border-red-500/40"
+                ? "bg-neutral-800/60 border-neutral-600"
                 : "bg-[#1C1C1E] border-neutral-800"
-            } ${!isVerified ? "opacity-60" : ""}`}
+            }`}
           >
-            <MapPin className={`w-4 h-4 shrink-0 ${selectedClub ? "text-red-400" : "text-neutral-500"}`} />
+            <MapPin className={`w-4 h-4 shrink-0 ${selectedClub ? "text-white" : "text-neutral-500"}`} />
             <div className="flex-1 min-w-0">
               {selectedClub ? (
                 <>
                   <div className="text-[13px] font-black text-white truncate">
-                    📍 {selectedClub.name}
+                    {selectedClub.name}
                   </div>
-                  <div className="text-[10px] text-red-300/70">
+                  <div className="text-[10px] text-neutral-500">
                     {presetClub ? "이 클럽에 게시" : "탭해서 변경"}
                   </div>
                 </>
@@ -354,12 +394,12 @@ export function ShotCaptureSheet({
                     클럽 선택하기 <span className="text-neutral-500 text-[11px] font-normal">(선택)</span>
                   </div>
                   <div className="text-[10px] text-neutral-500">
-                    {isVerified ? "GPS로 주변 클럽 추천" : "지역 인증 후 이용 가능"}
+                    가까운 클럽 추천
                   </div>
                 </>
               )}
             </div>
-            {!presetClub && isVerified && (
+            {!presetClub && (
               <ChevronRight className="w-4 h-4 text-neutral-600" />
             )}
           </button>
@@ -368,17 +408,7 @@ export function ShotCaptureSheet({
           <div>
             <button
               type="button"
-              onClick={() => {
-                if (canUseLiveCamera()) {
-                  // 전역 카메라 레이어 열기 — 캡처 결과를 콜백으로 받음
-                  openCamera((captured) => {
-                    setFile(captured);
-                    setPreviewUrl(URL.createObjectURL(captured));
-                  });
-                } else {
-                  cameraInputRef.current?.click();
-                }
-              }}
+              onClick={launchCamera}
               className="w-full flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-neutral-700 bg-[#1C1C1E] text-neutral-300 hover:border-red-500 hover:text-red-400 transition-colors"
             >
               <Camera className="w-10 h-10" />
@@ -400,25 +430,33 @@ export function ShotCaptureSheet({
 
         {/* 게시는 촬영 후 풀스크린 편집(LiveEditView)에서 처리 — 여기 하단 버튼 제거됨 */}
       </SheetContent>
-
-      {/* 클럽 선택 서브 시트 */}
-      <ClubPickerSheet
-        open={clubSheetOpen}
-        onOpenChange={setClubSheetOpen}
-        area={area ?? null}
-        clubs={nearestClubs}
-        loading={clubsLoading}
-        selectedId={selectedClub?.id ?? null}
-        onSelect={(c) => {
-          setSelectedClub(c);
-          setClubSheetOpen(false);
-        }}
-        onSkip={() => {
-          setSelectedClub(null);
-          setClubSheetOpen(false);
-        }}
-      />
     </Sheet>
+
+    {/* 클럽 선택 시트 — 메인 시트와 형제(중첩 X). LIVE 진입 시 이것만 먼저 뜬다. */}
+    <ClubPickerSheet
+      open={clubSheetOpen}
+      onOpenChange={(v) => {
+        // 클럽을 고르지 않고 시트를 닫으면(X/뒤로) 클럽 미지정 게시를 막기 위해
+        // LIVE 전체를 종료. 이미 고른 클럽이 있으면 픽 시트만 닫음(변경 취소).
+        if (!v && !selectedClub) {
+          setClubSheetOpen(false);
+          resetState();
+          onOpenChange(false);
+          return;
+        }
+        setClubSheetOpen(v);
+      }}
+      clubs={nearestClubs}
+      loading={clubsLoading}
+      userCoords={userCoords}
+      selectedId={selectedClub?.id ?? null}
+      onSelect={(c) => {
+        setSelectedClub(c);
+        setClubSheetOpen(false);
+        // 클럽 선택 즉시 카메라 진입 (메인 시트의 촬영 버튼 단계 생략)
+        launchCamera();
+      }}
+    />
     </>
   );
 }
@@ -426,51 +464,86 @@ export function ShotCaptureSheet({
 function ClubPickerSheet({
   open,
   onOpenChange,
-  area,
   clubs,
   loading,
+  userCoords,
   selectedId,
   onSelect,
-  onSkip,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  area: VerifiableArea | null;
   clubs: NearestClub[] | null;
   loading: boolean;
+  userCoords: { lat: number; lng: number } | null;
   selectedId: string | null;
   onSelect: (c: { id: string; name: string }) => void;
-  onSkip: () => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<NearestClub[] | null>(null);
+  const [searching, setSearching] = useState(false);
+
+  // 검색어 디바운스 → searchClubsByName
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) {
+      setSearchResults(null);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      const res = await searchClubsByName(q, userCoords?.lat, userCoords?.lng, 20);
+      if (cancelled) return;
+      setSearchResults(res);
+      setSearching(false);
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [query, userCoords]);
+
+  // 시트 닫히면 검색 초기화
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setSearchResults(null);
+    }
+  }, [open]);
+
+  const list = searchResults ?? clubs ?? [];
+  const isSearchMode = query.trim().length > 0;
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[80vh] flex flex-col"
+        // 시트 열릴 때 검색 input으로 자동 포커스 → 키보드 팝업 → 화면 축소 방지
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        // 리스트 세로 스크롤이 페이지 pull-to-refresh를 발동시키지 않도록 원천차단
+        data-no-pull-refresh="strict"
+        className="bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[85vh] flex flex-col"
       >
-        <SheetHeader className="px-4 pt-4 pb-3 border-b border-neutral-800 shrink-0">
+        <SheetHeader className="px-4 pt-4 pb-3 shrink-0">
           <SheetTitle className="text-white text-[16px] text-left flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-red-400" />
-            지금 있는 클럽 선택
-            {area && (
-              <span className="text-[11px] font-normal text-neutral-500">
-                · {ROOM_LABEL[area]} 인증됨
-              </span>
-            )}
+            <MapPin className="w-4 h-4 text-neutral-400" />
+            클럽 선택
+            <span className="text-[11px] font-normal text-neutral-500">· 가까운 순</span>
           </SheetTitle>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
+
+        <div className="flex-1 overflow-y-auto border-t border-neutral-800">
+          {loading || searching ? (
             <div className="p-6 text-center text-neutral-500 text-[13px]">
-              주변 클럽 찾는 중...
+              {searching ? "검색 중..." : "주변 클럽 찾는 중..."}
             </div>
-          ) : !clubs || clubs.length === 0 ? (
+          ) : list.length === 0 ? (
             <div className="p-6 text-center text-neutral-500 text-[13px]">
-              1.5km 반경에 등록된 클럽이 없어요
+              {isSearchMode ? "검색 결과가 없어요" : "주변에 등록된 클럽이 없어요"}
             </div>
           ) : (
             <ul className="divide-y divide-neutral-900 px-2 py-2">
-              {clubs.map((c) => {
+              {list.map((c) => {
                 const selected = selectedId === c.id;
                 return (
                   <li key={c.id}>
@@ -484,12 +557,18 @@ function ClubPickerSheet({
                           {c.name}
                         </div>
                         <div className="text-[11px] text-neutral-500">
-                          {c.distance_km.toFixed(2)}km 거리
+                          {c.area}
+                          {c.distance_km >= 0 && (
+                            <>
+                              {" · "}
+                              {c.distance_km < 1
+                                ? `${Math.round(c.distance_km * 1000)}m`
+                                : `${c.distance_km.toFixed(1)}km`}
+                            </>
+                          )}
                         </div>
                       </div>
-                      {selected && (
-                        <Check className="w-5 h-5 text-red-400 shrink-0" />
-                      )}
+                      {selected && <Check className="w-5 h-5 text-white shrink-0" />}
                     </button>
                   </li>
                 );
@@ -497,15 +576,24 @@ function ClubPickerSheet({
             </ul>
           )}
         </div>
-        {/* 하단: 지정 안 함 옵션 */}
-        <div className="border-t border-neutral-800 px-4 py-3 shrink-0">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="w-full text-[13px] text-neutral-400 hover:text-white transition-colors py-2"
-          >
-            클럽 지정 안 하고 게시하기 →
-          </button>
+
+        {/* 검색 바 (리스트 아래 — 주변 클럽 우선, 없으면 검색) */}
+        <div className="px-4 py-3 shrink-0 border-t border-neutral-800">
+          <div className="flex items-center gap-2 bg-[#1C1C1E] border border-neutral-800 rounded-xl px-3 py-2.5">
+            <Search className="w-4 h-4 text-neutral-500 shrink-0" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="검색하기"
+              className="flex-1 bg-transparent text-white text-[14px] placeholder:text-neutral-600 focus:outline-none"
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery("")} aria-label="지우기">
+                <X className="w-4 h-4 text-neutral-500" />
+              </button>
+            )}
+          </div>
         </div>
       </SheetContent>
     </Sheet>

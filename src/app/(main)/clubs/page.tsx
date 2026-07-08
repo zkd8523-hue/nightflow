@@ -5,6 +5,7 @@ import { ClubList } from "@/components/clubs/ClubList";
 import { ClubsAdminFab } from "@/components/clubs/ClubsAdminFab";
 import { normalizeDowSlots, summarizeSlots, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
+import { hideTestData } from "@/lib/utils/testData";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 
 export const revalidate = 60;
@@ -37,19 +38,24 @@ export default async function ClubsIndexPage() {
 
   // 신규 컬럼 (tags, drink_menu_url)을 먼저 시도하고, 마이그레이션 미적용 환경에서는
   // 기본 컬럼만 사용. 컬럼 없을 때 PostgREST가 전체 쿼리를 실패시키므로 fallback 필요.
+  // 테스트/가짜 클럽 숨김은 is_test 컬럼 기준(SSOT). 프로덕션에서만 필터 적용.
   let clubsRes: { data: Array<Record<string, unknown>> | null; error: unknown } =
-    await supabase
-      .from("clubs")
-      .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases, seed_favorite_count")
-      .is("deleted_at", null)
-      .not("name", "ilike", "%운영자%");
+    await hideTestData(
+      supabase
+        .from("clubs")
+        .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases, seed_favorite_count")
+        .is("deleted_at", null),
+      ""
+    );
 
   if (clubsRes.error) {
-    clubsRes = await supabase
-      .from("clubs")
-      .select("id, name, area, thumbnail_url, latitude, longitude")
-      .is("deleted_at", null)
-      .not("name", "ilike", "%운영자%");
+    clubsRes = await hideTestData(
+      supabase
+        .from("clubs")
+        .select("id, name, area, thumbnail_url, latitude, longitude")
+        .is("deleted_at", null),
+      ""
+    );
   }
 
   const auctionsRes = await supabase
