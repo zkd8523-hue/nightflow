@@ -1231,7 +1231,7 @@ export function PuzzleDetailClient({
                 return (
                   <span className="text-[12px] text-neutral-400 whitespace-nowrap">
                     {t(
-                      `⏰ 당일 ${timeKo} 오퍼 마감`,
+                      `⏰ 당일 ${timeKo} 마감`,
                       `⏰ Offers close ${timeF} on event day`,
                       `⏰ 当日${timeF} オファー締切`,
                       `⏰ 当天${timeF} 报价截止`,
@@ -1290,9 +1290,6 @@ export function PuzzleDetailClient({
             {/* 비방장: 테이블타입 공개 + 주류/extras blur 처리 */}
             {!isLeader && !isAccepted && (
               <div className="space-y-3 -mt-2">
-                <p className="text-[13px] text-neutral-400 font-medium">
-                  {t("오퍼는 작성자만 볼 수 있어요✨", "Offers are visible to the author only✨")}
-                </p>
                 {/* 시크릿 오퍼 이유 + 소비자 이득 (왜 비공개인지 궁금증 해소) */}
                 <details className="group rounded-xl bg-neutral-900/50 border border-neutral-800 overflow-hidden">
                   <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-amber-400">
@@ -1310,7 +1307,7 @@ export function PuzzleDetailClient({
                 </details>
                 {pendingOffers.length === 0 && (
                   <p className="text-[12px] text-neutral-600 text-center py-2">
-                    {t("아직 들어온 오퍼가 없어요", "No offers yet")}
+                    {t("오퍼를 기다리고 있어요", "No offers yet")}
                   </p>
                 )}
                 {publicOffers.map((offer, idx) => (
@@ -1531,7 +1528,7 @@ export function PuzzleDetailClient({
                 href={currentUserId ? `/flags/new${lq}` : `/login?redirect=${encodeURIComponent(`/flags/new${lq}`)}`}
                 className="flex items-center justify-center w-full h-13 bg-amber-500 hover:bg-amber-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
               >
-                {t("⛳ 깃발꽂기", "⛳ Plant a flag")}
+                {t("⛳ 나도 깃발꽂기", "⛳ Plant a flag")}
               </Link>
               <p className="text-[10px] text-neutral-500">
                 {t("모든 서비스 무료", "All services free")}
