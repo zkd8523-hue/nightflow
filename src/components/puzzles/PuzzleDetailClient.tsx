@@ -1536,6 +1536,24 @@ export function PuzzleDetailClient({
             </div>
           )}
 
+          {/* 비방장·비멤버·비MD: 홈 조각 캐러셀 끝 카드와 동일한 조각 올리기 유도 CTA (비로그인 포함) */}
+          {!isLeader && !isMember && !isMd && isRecruitingParty && (
+            <div className="text-center space-y-1">
+              <p className="text-[14.5px] text-neutral-200 font-semibold mb-1.5">
+                {t("파티원과 함께 놀아요!", "Play with a crew.")}
+              </p>
+              <Link
+                href={currentUserId ? "/shares/new" : "/login?redirect=/shares/new"}
+                className="flex items-center justify-center w-full h-13 bg-green-500 hover:bg-green-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
+              >
+                {t("🧩 조각 올리기", "🧩 Post a party")}
+              </Link>
+              <p className="text-[10px] text-neutral-500">
+                {t("모든 서비스 무료", "All services free")}
+              </p>
+            </div>
+          )}
+
           {/* 참여자 목록: 파티원 모집 중일 때만.
               MD 직통 조각은 대표자(MD)가 주최자이지 파티원이 아니므로 목록에서 제외 → 실제 합류 유저만 노출 */}
           {isRecruitingParty && (() => {

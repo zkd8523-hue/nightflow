@@ -69,8 +69,8 @@ export function PuzzlePiece({
   /** Migration 184: 슬롯 성별. 'female'은 분홍, 그 외는 초록 */
   gender?: 'male' | 'female' | null;
 }) {
-  const size = small ? "w-8 h-8" : "w-[33px] h-[33px]";
-  const iconSize = small ? "w-4 h-4" : "w-4 h-4";
+  const size = small ? "w-8 h-8" : "w-9 h-9";
+  const iconSize = small ? "w-4 h-4" : "w-5 h-5";
   const isFemale = gender === 'female';
   const isNeutral = gender == null;
 
@@ -309,8 +309,8 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
       </div>
 
-      {/* 예산 및 인원 정보 그룹 — 카드 하단에 고정 */}
-      <div className="flex flex-col gap-1.5 mt-auto">
+      {/* 예산 및 인원 정보 그룹 — 닉네임 바로 아래 고정 간격 (mt-auto 제거: 카드 높이 따라 간격 벌어지던 문제) */}
+      <div className="flex flex-col gap-1.5 mt-2">
         {isRecruitingParty ? (
           <>
             {/* 파티원 모집 중: 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음) */}
@@ -329,7 +329,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                   퍼즐 완성! 🎉
                 </span>
               )}
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-1">
                 {buildPuzzleSlotLayout({ ...puzzle, current_count: canAdjustExternal ? displayCount : puzzle.current_count }).map((slot, i) => (
                   <PuzzlePiece
                     key={i}
