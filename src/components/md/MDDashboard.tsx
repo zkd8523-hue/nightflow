@@ -866,7 +866,7 @@ export function MDDashboard({
                         <SheetTitle className="text-white font-black text-lg">내 클럽 목록</SheetTitle>
                     </SheetHeader>
                     <div className="space-y-2 overflow-y-auto pb-6">
-                        {clubs.filter(c => c.status === "approved").map((club) => {
+                        {clubs.map((club) => {
                             const isDefault = defaultClubId === club.id;
                             return (
                                 <button

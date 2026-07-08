@@ -23,6 +23,7 @@ import {
     Search,
     X,
     GitMerge,
+    Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
@@ -375,8 +376,8 @@ function PendingMDCard({
     const [rejectReason, setRejectReason] = useState("");
     const [showMerge, setShowMerge] = useState(false);
     const [clubSearch, setClubSearch] = useState("");
-    const [clubResults, setClubResults] = useState<{ id: string; name: string; area: string }[]>([]);
-    const [selectedMergeClub, setSelectedMergeClub] = useState<{ id: string; name: string } | null>(null);
+    const [clubResults, setClubResults] = useState<{ id: string; name: string; area: string; partnerCount: number }[]>([]);
+    const [selectedLinkClubs, setSelectedLinkClubs] = useState<{ id: string; name: string; area: string }[]>([]);
     const clubName = user.default_club?.name || user.verification_club_name;
 
     const searchClubs = async (q: string) => {
@@ -385,12 +386,19 @@ function PendingMDCard({
         const supabase = createClient();
         const { data } = await supabase
             .from("clubs")
-            .select("id, name, area")
+            .select("id, name, area, club_partners(count)")
             .ilike("name", `%${q}%`)
             .is("deleted_at", null)
             .neq("id", user.default_club_id ?? "")
             .limit(8);
-        setClubResults(data ?? []);
+        setClubResults(
+            (data ?? []).map((c: { id: string; name: string; area: string; club_partners?: { count: number }[] }) => ({
+                id: c.id,
+                name: c.name,
+                area: c.area,
+                partnerCount: c.club_partners?.[0]?.count ?? 0,
+            }))
+        );
     };
 
     const handleApprove = async () => {
@@ -399,7 +407,7 @@ function PendingMDCard({
             const res = await fetch(`/api/admin/mds/${user.id}/approve`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(selectedMergeClub ? { merge_club_id: selectedMergeClub.id } : {}),
+                body: JSON.stringify(selectedLinkClubs.length > 0 ? { link_club_ids: selectedLinkClubs.map(c => c.id) } : {}),
             });
             const result = await res.json();
             if (!res.ok) throw new Error(result.error);
@@ -452,6 +460,11 @@ function PendingMDCard({
                                     <Building2 className="w-3.5 h-3.5" /> {clubName}
                                 </div>
                             )}
+                            {(user.additional_club_names?.length ?? 0) > 0 && (
+                                <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-bold" title="신청자가 입력한 추가 클럽 (참고용)">
+                                    <Building2 className="w-3.5 h-3.5" /> +{user.additional_club_names!.join(", ")}
+                                </div>
+                            )}
                             {user.instagram && (
                                 <a
                                     href={`https://instagram.com/${user.instagram}`}
@@ -483,70 +496,73 @@ function PendingMDCard({
                     </div>
                 </div>
 
-                {/* 클럽 병합 패널 */}
-                {clubName && (
-                    <div className="border-t border-neutral-800/30 pt-3 space-y-2">
-                        {!showMerge && !selectedMergeClub && (
-                            <button
-                                onClick={() => setShowMerge(true)}
-                                className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-amber-400 transition-colors font-bold"
-                            >
-                                <GitMerge className="w-3.5 h-3.5" /> 기존 클럽에 병합
-                            </button>
-                        )}
-                        {showMerge && !selectedMergeClub && (
-                            <div className="space-y-2">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
-                                    <input
-                                        type="text"
-                                        value={clubSearch}
-                                        onChange={(e) => searchClubs(e.target.value)}
-                                        placeholder="클럽명 검색..."
-                                        className="w-full bg-neutral-900 border border-neutral-700 rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
-                                        autoFocus
-                                    />
-                                </div>
-                                {clubResults.length > 0 && (
-                                    <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
-                                        {clubResults.map((c) => (
-                                            <button
-                                                key={c.id}
-                                                onClick={() => { setSelectedMergeClub(c); setShowMerge(false); setClubResults([]); }}
-                                                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-neutral-800 transition-colors text-left"
-                                            >
-                                                <span className="text-sm text-white font-bold">{c.name}</span>
+                {/* 기존 클럽 다중 연결 패널 (여러 클럽 운영 MD) */}
+                <div className="border-t border-neutral-800/30 pt-3 space-y-2">
+                    {!showMerge && (
+                        <button
+                            onClick={() => setShowMerge(true)}
+                            className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-amber-400 transition-colors font-bold"
+                        >
+                            <GitMerge className="w-3.5 h-3.5" /> 기존 클럽 연결{selectedLinkClubs.length > 0 ? ` (${selectedLinkClubs.length})` : ""}
+                        </button>
+                    )}
+                    {showMerge && (
+                        <div className="space-y-2">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                                <input
+                                    type="text"
+                                    value={clubSearch}
+                                    onChange={(e) => searchClubs(e.target.value)}
+                                    placeholder="연결할 클럽명 검색..."
+                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                                    autoFocus
+                                />
+                            </div>
+                            {clubResults.filter(c => !selectedLinkClubs.some(s => s.id === c.id)).length > 0 && (
+                                <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+                                    {clubResults.filter(c => !selectedLinkClubs.some(s => s.id === c.id)).map((c) => (
+                                        <button
+                                            key={c.id}
+                                            onClick={() => setSelectedLinkClubs(prev => [...prev, { id: c.id, name: c.name, area: c.area }])}
+                                            className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-neutral-800 transition-colors text-left"
+                                        >
+                                            <span className="text-sm text-white font-bold truncate">{c.name}</span>
+                                            <span className="flex items-center gap-2 shrink-0">
+                                                <span className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                                    <Users className="w-3 h-3" /> 파트너 {c.partnerCount}
+                                                </span>
                                                 <span className="text-xs text-neutral-500">{c.area}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                                <button
-                                    onClick={() => { setShowMerge(false); setClubSearch(""); setClubResults([]); }}
-                                    className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors"
-                                >
-                                    취소
-                                </button>
-                            </div>
-                        )}
-                        {selectedMergeClub && (
-                            <div className="space-y-1.5">
-                                <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2">
-                                    <GitMerge className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                                    <span className="text-xs text-amber-300 font-bold flex-1">
-                                        <span className="text-neutral-400">{clubName}</span> → {selectedMergeClub.name}
-                                    </span>
-                                    <button onClick={() => { setSelectedMergeClub(null); }} className="text-neutral-600 hover:text-neutral-400 transition-colors">
-                                        <X className="w-3.5 h-3.5" />
-                                    </button>
+                                            </span>
+                                        </button>
+                                    ))}
                                 </div>
-                                <p className="text-[11px] text-neutral-500 px-1 leading-relaxed">
-                                    신청자 클럽 이름만 &quot;{selectedMergeClub.name}&quot;으로 통일됩니다. 신청자는 본인 명의로 클럽을 보유합니다.
-                                </p>
-                            </div>
-                        )}
-                    </div>
-                )}
+                            )}
+                            <button
+                                onClick={() => { setShowMerge(false); setClubSearch(""); setClubResults([]); }}
+                                className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors"
+                            >
+                                닫기
+                            </button>
+                        </div>
+                    )}
+                    {selectedLinkClubs.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                            {selectedLinkClubs.map((c) => (
+                                <span key={c.id} className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full pl-2.5 pr-1.5 py-1">
+                                    <span className="text-[11px] text-amber-300 font-bold">{c.name}</span>
+                                    <button
+                                        onClick={() => setSelectedLinkClubs(prev => prev.filter(s => s.id !== c.id))}
+                                        className="text-amber-500/60 hover:text-amber-300 transition-colors"
+                                        aria-label="연결 해제"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </span>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 {/* 승인/반려 */}
                 <div className="border-t border-neutral-800/30 pt-4 space-y-2">
@@ -583,12 +599,12 @@ function PendingMDCard({
                                 onClick={handleApprove}
                                 disabled={loading}
                                 className={`flex-1 py-3 text-white font-black text-[14px] rounded-xl transition-colors disabled:opacity-40 ${
-                                    selectedMergeClub
+                                    selectedLinkClubs.length > 0
                                         ? "bg-amber-500 hover:bg-amber-600"
                                         : "bg-green-600 hover:bg-green-700"
                                 }`}
                             >
-                                {loading ? "처리 중..." : selectedMergeClub ? `${selectedMergeClub.name}에 병합하여 승인` : "승인하기"}
+                                {loading ? "처리 중..." : selectedLinkClubs.length > 0 ? `클럽 ${selectedLinkClubs.length}개 연결하여 승인` : "승인하기"}
                             </button>
                             <button
                                 onClick={() => setShowRejectInput(true)}

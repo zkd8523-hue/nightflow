@@ -49,10 +49,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       display_name, area, phone: rawPhone, instagram, kakao_open_chat_url, business_card_url,
-      club_name, club_address, club_address_detail, club_postal_code,
-      club_latitude, club_longitude, club_phone, club_thumbnail_url,
+      club_name, club_thumbnail_url,
       floor_plan_url,
     } = body;
+    // 추가 소속 클럽 (이름만 — 주소/좌표는 admin이 나중에 등록). 최대 4개.
+    const extraClubNames: string[] = Array.isArray(body.extra_club_names) ? body.extra_club_names : [];
 
     // phone 정규화 (하이픈 제거 등). phone_verifications과 users.phone 모두 normalized 형태로 일관 저장.
     if (!isValidKoreanPhone(rawPhone ?? "")) {
@@ -66,9 +67,8 @@ export async function POST(request: NextRequest) {
     // clubs.area는 TEXT 단일값 — 대표 지역(첫 번째) 사용
     const primaryArea: string = Array.isArray(area) ? area[0] : area;
 
-    // 4. 필수 필드 검증
-    if (!display_name || !area || !Array.isArray(area) || area.length === 0 || !instagram || !phone || !club_name || !club_address ||
-        !club_latitude || !club_longitude) {
+    // 4. 필수 필드 검증 (주소·좌표는 등록폼에서 제거 — 클럽명만 필수, 상세는 admin이 등록)
+    if (!display_name || !area || !Array.isArray(area) || area.length === 0 || !instagram || !phone || !club_name) {
       return NextResponse.json(
         { error: "필수 항목을 모두 입력해주세요." },
         { status: 400 }
@@ -140,19 +140,14 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // pending 또는 rejected → 정보 업데이트 후 즉시 approved
+      // pending 또는 rejected → 클럽명/지역만 업데이트 후 즉시 approved.
+      // (주소·좌표는 등록폼에서 제거됨 — admin이 /admin/clubs에서 등록하므로 기존 값 보존)
       const { error: clubError } = await supabaseAdmin
         .from("clubs")
         .update({
           name: club_name,
           area: primaryArea,
-          address: club_address,
-          address_detail: club_address_detail || null,
-          postal_code: club_postal_code || null,
-          latitude: club_latitude,
-          longitude: club_longitude,
-          phone: club_phone || null,
-          thumbnail_url: club_thumbnail_url || null,
+          ...(club_thumbnail_url ? { thumbnail_url: club_thumbnail_url } : {}),
           status: "approved",
           rejected_at: null,
           rejected_reason: null,
@@ -183,12 +178,6 @@ export async function POST(request: NextRequest) {
         .insert({
           name: club_name,
           area: primaryArea,
-          address: club_address,
-          address_detail: club_address_detail || null,
-          postal_code: club_postal_code || null,
-          latitude: club_latitude,
-          longitude: club_longitude,
-          phone: club_phone || null,
           thumbnail_url: club_thumbnail_url || null,
           status: "approved",
         })
@@ -227,6 +216,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // 5.5 추가 소속 클럽 이름 — 클럽을 생성하지 않고 admin 확인용 메모로만 저장.
+    //     (껍데기 클럽 자동 생성 방지 — 실제 클럽 연결은 admin이 승인 화면에서 수동 처리)
+    const seenNames = new Set<string>([club_name.trim().toLowerCase()]);
+    const additionalClubNames = extraClubNames
+      .slice(0, 4)
+      .map((n) => String(n || "").trim())
+      .filter((n) => {
+        if (!n || n.length < 2 || seenNames.has(n.toLowerCase())) return false;
+        seenNames.add(n.toLowerCase());
+        return true;
+      });
+
     // 6. 유저 업데이트 (md_status = pending)
     const { error: userError } = await supabaseAdmin
       .from("users")
@@ -237,6 +238,7 @@ export async function POST(request: NextRequest) {
         instagram: cleanInstagram,
         ...(cleanKakaoUrl ? { kakao_open_chat_url: cleanKakaoUrl } : {}),
         verification_club_name: club_name,
+        additional_club_names: additionalClubNames,
         md_unique_slug: generatedSlug,
         md_status: "pending",
         role: "user",

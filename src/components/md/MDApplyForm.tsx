@@ -12,16 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowRight, Building2, Smartphone, MapPin, Map, MessageCircle, Instagram, Phone } from "lucide-react";
+import { ArrowRight, Building2, Smartphone, MapPin, MessageCircle, Instagram, Phone, Plus, X } from "lucide-react";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 // 휴대폰 본인인증은 로그인/가입 단계에서 이미 완료되므로 MD 신청에서는 생략
 // Phone은 연락 수단 토글에서 사용
 import type { User, ContactMethodType } from "@/types/database";
-import dynamic from "next/dynamic";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-
-const AddressSearchModal = dynamic(() => import("./AddressSearchModal").then(m => ({ default: m.AddressSearchModal })), { ssr: false });
 
 const formSchema = z.object({
     display_name: z.string().min(2, "닉네임을 입력해주세요").max(16, "닉네임은 최대 16자"),
@@ -39,11 +36,6 @@ const formSchema = z.object({
         .optional(),
     area: z.array(z.string()).min(1, "활동 지역을 선택해주세요"),
     club_name: z.string().min(2, "클럽명을 입력해주세요"),
-    club_address: z.string().min(5, "클럽 주소를 검색해주세요"),
-    club_address_detail: z.string().optional().default(""),
-    club_postal_code: z.string().optional().default(""),
-    club_latitude: z.number({ error: "주소 검색으로 위치를 설정해주세요" }),
-    club_longitude: z.number({ error: "주소 검색으로 위치를 설정해주세요" }),
     club_info_consent: z.literal(true, { message: "클럽 정보 사용 동의가 필요합니다" }),
 });
 
@@ -52,8 +44,9 @@ type FormValues = z.infer<typeof formSchema>;
 export function MDApplyForm({ initialUser }: { initialUser: User }) {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
-    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
     const [preferredMethods, setPreferredMethods] = useState<ContactMethodType[]>([]);
+    // 추가 소속 클럽 (이름만 — 주소 등 상세는 관리자가 등록). 최대 4개.
+    const [extraClubs, setExtraClubs] = useState<string[]>([]);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema) as unknown as Parameters<typeof useForm<FormValues>>[0]["resolver"],
@@ -64,11 +57,6 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
             instagram: initialUser.instagram || "",
             area: [],
             club_name: initialUser.verification_club_name || "",
-            club_address: "",
-            club_address_detail: "",
-            club_postal_code: "",
-            club_latitude: null,
-            club_longitude: null,
             club_info_consent: false as unknown as true,
         },
     });
@@ -79,16 +67,16 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
     );
 
     async function onSubmit(values: FormValues) {
-        if (!values.club_latitude || !values.club_longitude) {
-            toast.error("클럽 주소를 검색하여 정확한 위치를 설정해주세요.");
-            return;
-        }
         setLoading(true);
         try {
             const res = await fetch("/api/md/apply", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...values, preferred_contact_methods: preferredMethods }),
+                body: JSON.stringify({
+                    ...values,
+                    extra_club_names: extraClubs.map(s => s.trim()).filter(Boolean),
+                    preferred_contact_methods: preferredMethods,
+                }),
             });
             const result = await res.json();
             if (!res.ok) {
@@ -108,9 +96,6 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
     const [showOtherCities, setShowOtherCities] = useState(false);
     const selectedAreas = form.watch("area");
     const hasOtherCity = selectedAreas.some(a => (OTHER_CITIES as readonly string[]).includes(a));
-
-    const currentClubAddress = form.watch("club_address");
-    const hasClubCoordinates = form.watch("club_latitude") != null && form.watch("club_longitude") != null;
 
     return (
         <>
@@ -309,12 +294,15 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                     {/* 3. 소속 클럽 */}
                     <div className="space-y-4">
-                        <h3 className="text-white font-bold flex items-center gap-2">
-                            <Building2 className="w-4 h-4 text-neutral-500" />
-                            소속 클럽
-                        </h3>
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-white font-bold flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-neutral-500" />
+                                소속 클럽
+                            </h3>
+                            <span className="text-neutral-500 text-[10px]">여러 개 등록 가능</span>
+                        </div>
 
-                        {/* 클럽명 */}
+                        {/* 대표 클럽명 */}
                         <div className="space-y-2">
                             <Label className="text-neutral-500 text-xs font-bold uppercase">클럽명 *</Label>
                             <Input
@@ -327,49 +315,38 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                             )}
                         </div>
 
-                        {/* 주소 검색 */}
-                        <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-4 space-y-3">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">클럽 위치 *</Label>
-                            {currentClubAddress ? (
-                                <div className="space-y-3">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex-1 min-w-0 space-y-2">
-                                            <p className="text-white text-sm font-bold break-words">{currentClubAddress}</p>
-                                            {hasClubCoordinates && (
-                                                <div className="flex items-center gap-1.5">
-                                                    <Map className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                                                    <span className="text-green-400 text-xs font-bold">위치 확인됨</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsAddressModalOpen(true)}
-                                            className="text-green-500 text-xs font-bold hover:text-green-400 transition-colors flex-shrink-0 pt-0.5"
-                                        >
-                                            변경
-                                        </button>
-                                    </div>
-                                    <Input
-                                        {...form.register("club_address_detail")}
-                                        placeholder="동, 층, 호수 등 (예: B2층)"
-                                        className="bg-neutral-950 border-neutral-800 h-11 text-white placeholder-neutral-600 rounded-lg text-sm"
-                                    />
-                                </div>
-                            ) : (
+                        {/* 추가 클럽 (이름만) */}
+                        {extraClubs.map((name, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                                <Input
+                                    value={name}
+                                    onChange={(e) => setExtraClubs(prev => prev.map((v, i) => i === idx ? e.target.value : v))}
+                                    placeholder={`추가 클럽 ${idx + 1}`}
+                                    className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white flex-1"
+                                />
                                 <button
                                     type="button"
-                                    onClick={() => setIsAddressModalOpen(true)}
-                                    className="w-full h-12 rounded-xl bg-green-500 text-black font-bold text-sm hover:bg-green-400 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                                    onClick={() => setExtraClubs(prev => prev.filter((_, i) => i !== idx))}
+                                    className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-red-400 hover:border-red-500/30 transition-colors flex items-center justify-center shrink-0"
+                                    aria-label="클럽 삭제"
                                 >
-                                    <MapPin className="w-4 h-4" />
-                                    주소 검색하기
+                                    <X className="w-4 h-4" />
                                 </button>
-                            )}
-                            {form.formState.errors.club_address && (
-                                <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.club_address?.message?.toString()}</p>
-                            )}
-                        </div>
+                            </div>
+                        ))}
+
+                        {extraClubs.length < 4 && (
+                            <button
+                                type="button"
+                                onClick={() => setExtraClubs(prev => [...prev, ""])}
+                                className="w-full h-11 rounded-xl border border-dashed border-neutral-700 text-neutral-400 font-bold text-sm hover:border-neutral-500 hover:text-white transition-colors flex items-center justify-center gap-2"
+                            >
+                                <Plus className="w-4 h-4" /> 클럽 추가
+                            </button>
+                        )}
+                        <p className="text-neutral-600 text-[10px] leading-relaxed">
+                            여러 클럽을 운영하면 클럽명을 추가하세요. 주소 등 상세 정보는 관리자가 등록합니다.
+                        </p>
                     </div>
 
                 </div>
@@ -413,18 +390,6 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                     )}
                 </Button>
             </form>
-
-
-            <AddressSearchModal
-                isOpen={isAddressModalOpen}
-                onClose={() => setIsAddressModalOpen(false)}
-                onSelectAddress={(result) => {
-                    form.setValue("club_address", result.address);
-                    form.setValue("club_postal_code", result.postalCode);
-                    form.setValue("club_latitude", result.latitude);
-                    form.setValue("club_longitude", result.longitude);
-                }}
-            />
 
             <ConfirmDialog
                 isOpen={showConfirm}

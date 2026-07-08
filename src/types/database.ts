@@ -131,6 +131,7 @@ export interface User {
   area: string[] | null;
   default_club_id: string | null;
   verification_club_name: string | null;
+  additional_club_names: string[] | null;
   floor_plan_url: string | null;
   instagram: string | null;
   instagram_verify_code: string | null;

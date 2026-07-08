@@ -15,6 +15,8 @@ export async function POST(
     // body에 merge_club_id가 있으면 기존 클럽에 병합하여 승인
     const body = await req.json().catch(() => ({}));
     const merge_club_id: string | undefined = body.merge_club_id || undefined;
+    // link_club_ids: MD가 여러 클럽 운영 시 기존 클럽들에 파트너로 연결
+    const link_club_ids: string[] = Array.isArray(body.link_club_ids) ? body.link_club_ids.filter(Boolean) : [];
 
     // 1. Admin 권한 확인
     const supabase = await createClient();
@@ -77,6 +79,18 @@ export async function POST(
       .eq("id", mdId);
 
     if (error) throw error;
+
+    // 3-1. 기존 클럽 다중 연결 (MD가 여러 클럽 운영) — club_partners partner로 upsert.
+    //      연결 실패는 승인 자체를 막지 않고 로깅만.
+    if (link_club_ids.length > 0) {
+      const { error: linkErr } = await supabaseAdmin
+        .from("club_partners")
+        .upsert(
+          link_club_ids.map((cid) => ({ club_id: cid, md_id: mdId, role: "partner" as const })),
+          { onConflict: "club_id,md_id", ignoreDuplicates: true }
+        );
+      if (linkErr) logger.error("[Admin approve] 클럽 다중 연결 실패:", linkErr);
+    }
 
     // 4. 승인 알림톡 발송
     if (md.phone) {
