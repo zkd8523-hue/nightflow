@@ -8,7 +8,6 @@ import { createClient } from "@/lib/supabase/client";
 import { ShareCreatedSheet } from "./ShareCreatedSheet";
 import { Button } from "@/components/ui/button";
 import type { Puzzle, GenderPref, AgePref, VibePref, MusicPref } from "@/types/database";
-import { trackEvent } from "@/lib/analytics/events";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
@@ -70,8 +69,8 @@ export function PuzzlePiece({
   /** Migration 184: 슬롯 성별. 'female'은 분홍, 그 외는 초록 */
   gender?: 'male' | 'female' | null;
 }) {
-  const size = small ? "w-8 h-8" : "w-10 h-10";
-  const iconSize = small ? "w-4 h-4" : "w-5 h-5";
+  const size = small ? "w-8 h-8" : "w-[33px] h-[33px]";
+  const iconSize = small ? "w-4 h-4" : "w-4 h-4";
   const isFemale = gender === 'female';
   const isNeutral = gender == null;
 
@@ -463,19 +462,12 @@ export const PuzzleCard = memo(function PuzzleCard({
       ) : isFull ? (
         <div className="flex items-center gap-2">
           <span className="text-[12px] text-neutral-500 font-medium">파티 마감</span>
-          <div className="ml-auto flex items-center gap-2">
-            <Button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                trackEvent("puzzle_cta_click", { source: "card" });
-                router.push("/shares/new");
-              }}
-              className="h-8 px-4 rounded-full font-black text-[12px] transition-all active:scale-[0.97] bg-white hover:bg-neutral-200 text-black shrink-0"
-            >
-              모집하기
-            </Button>
-          </div>
+          <Button
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
+            className="ml-auto h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700 shrink-0"
+          >
+            자세히
+          </Button>
         </div>
       ) : isLeader ? (
         <div className="flex items-center gap-2">
