@@ -178,6 +178,20 @@ export function PuzzleDetailClient({
     dayjs.locale(isForeigner ? "en" : "ko");
   }, [isForeigner]);
 
+  // 조각 상세 진입 트래킹 — 공유 링크는 ?t=<ms> 캐시버스터가 붙어서 옴 (ShareCreatedSheet).
+  // from_share_link=true 이벤트 수 = MD/유저 공유가 실제로 열람된 횟수.
+  // referrer/utm은 events.ts에서 자동 부착.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get("t");
+    trackEvent("puzzle_detail_view", {
+      puzzle_id: puzzle.id,
+      host_is_md: puzzle.host_is_md,
+      area: puzzle.area,
+      from_share_link: !!t,
+      share_bust: t,
+    });
+  }, [puzzle.id, puzzle.host_is_md, puzzle.area]);
+
   useEffect(() => {
     if (searchParams.get("edit_blocked") === "offers") {
       toast.error(t(isRecruitingParty ? "MD 제안이 들어온 조각은 수정할 수 없어요" : "MD 제안이 들어온 깃발은 수정할 수 없어요", "Requests with offers can't be edited"));
