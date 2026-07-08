@@ -45,19 +45,24 @@ function pickForeignRoute(acceptLanguage: string | null): string | null {
 
 // 봇 UA 목록. 검색엔진은 항상 canonical(/, /en 등) 그대로 크롤해야 함.
 // 리디렉트하면 SEO 색인 왜곡. hreflang은 서버 응답으로만 판단해야 함.
-const BOT_UA_REGEX = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex|sogou|exabot|facebot|ia_archiver|naverbot|yeti|twitterbot|facebookexternalhit|whatsapp|telegrambot|linkedinbot|discordbot|slackbot/i;
+// 링크 미리보기 스크래퍼(kakaotalk-scrap 등)도 포함 — 프리뷰가 잘못된 언어로 뜨는 것 방지.
+const BOT_UA_REGEX = /googlebot|bingbot|slurp|duckduckbot|baiduspider|yandex|sogou|exabot|facebot|ia_archiver|naverbot|yeti|twitterbot|facebookexternalhit|whatsapp|telegrambot|linkedinbot|discordbot|slackbot|kakaotalk-scrap|kakao|naver\(inapp/i;
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // 루트 페이지 접근 시 Accept-Language 기반 자동 리디렉트 (봇 제외)
   // 이미 리디렉트된 세션은 nf_lang_redirected 쿠키로 스킵 (사용자 수동 복귀 존중)
+  // UTM 파라미터가 있으면 = 특정 채널 유입(블로그·광고 등) → 링크 원본 유지 (네이버 프리뷰 크롤러가 en으로 잘못 크롤하는 버그 방지)
   if (pathname === "/") {
     const ua = request.headers.get("user-agent") || "";
     const isBot = BOT_UA_REGEX.test(ua);
+    const hasUtm = request.nextUrl.searchParams.has("utm_source")
+      || request.nextUrl.searchParams.has("utm_medium")
+      || request.nextUrl.searchParams.has("utm_campaign");
     const alreadyRedirected = request.cookies.get("nf_lang_redirected")?.value === "1";
     const acceptLang = request.headers.get("accept-language");
-    const target = !isBot && !alreadyRedirected ? pickForeignRoute(acceptLang) : null;
+    const target = !isBot && !hasUtm && !alreadyRedirected ? pickForeignRoute(acceptLang) : null;
 
     if (target) {
       const url = request.nextUrl.clone();
