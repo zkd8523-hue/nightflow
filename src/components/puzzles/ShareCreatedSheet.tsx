@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Link2, X } from "lucide-react";
 import { useKakaoShare } from "@/hooks/useKakaoShare";
 import { shareViaNative } from "@/lib/native/nativeShare";
+import { trackEvent } from "@/lib/analytics/events";
 
 const AREA_LABEL: Record<string, string> = {
   gangnam: "강남",
@@ -52,6 +53,16 @@ export function ShareCreatedSheet({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // 시트 노출 이벤트 (등록 직후=created / 재공유=share)
+  useEffect(() => {
+    trackEvent("puzzle_share_sheet_view", {
+      puzzle_id: puzzleId,
+      mode,
+      host_is_md: hostIsMd,
+      area,
+    });
+  }, [puzzleId, mode, hostIsMd, area]);
+
   // "서울 어디든" 같은 광역 표기는 공유 멘트에서 "서울"로 축약
   const rawArea = AREA_LABEL[area] ?? area;
   const areaLabel = /어디든/.test(rawArea) ? "서울" : rawArea;
@@ -64,13 +75,27 @@ export function ShareCreatedSheet({
   const imageUrl = useClub && clubThumbnail ? clubThumbnail : `${origin}/og-jogak-card.jpg`;
 
   async function handleKakao() {
+    trackEvent("puzzle_share_kakao_click", {
+      puzzle_id: puzzleId,
+      mode,
+      host_is_md: hostIsMd,
+      area,
+    });
     // MD 직통: "{지역} {클럽이름}" / 유저 조각: "{지역} 테이블"
     const title = `${areaLabel}${useClub ? ` ${clubName}` : " 테이블"} 같이 갈래?`;
     const text = `1인 ${perPerson.toLocaleString()}₩ · 파티원 찾는 중 🔥`;
 
     // 앱(Capacitor 네이티브): Kakao JS SDK sendDefault가 WebView에서 먹통 → OS 공유 시트 사용
     const native = await shareViaNative({ title, text, url: shareUrl });
-    if (native.handled) return;
+    if (native.handled) {
+      trackEvent("puzzle_share_kakao_result", {
+        puzzle_id: puzzleId,
+        mode,
+        host_is_md: hostIsMd,
+        method: "native_share",
+      });
+      return;
+    }
 
     // isAvailable(React state)가 늦게 갱신되는 레이스 방지 — shareToKakao가
     // window.Kakao.isInitialized()를 직접 확인하므로 상태 게이트 없이 바로 시도.
@@ -90,6 +115,12 @@ export function ShareCreatedSheet({
       if (typeof navigator !== "undefined" && navigator.share) {
         try {
           await navigator.share({ title, text, url: shareUrl });
+          trackEvent("puzzle_share_kakao_result", {
+            puzzle_id: puzzleId,
+            mode,
+            host_is_md: hostIsMd,
+            method: "web_share_fallback",
+          });
           return; // 공유 성공/취소 모두 종료
         } catch (e) {
           // 사용자가 취소한 경우(AbortError)는 조용히 종료, 그 외(미지원 등)는 복사 폴백
@@ -98,11 +129,30 @@ export function ShareCreatedSheet({
       }
       // 공유 API 없음/실패 → 링크 복사로 확실히 피드백 (무반응 방지)
       await copyLink();
+      trackEvent("puzzle_share_kakao_result", {
+        puzzle_id: puzzleId,
+        mode,
+        host_is_md: hostIsMd,
+        method: "copy_fallback",
+      });
       toast.success("링크가 복사됐어요. 붙여넣어 공유하세요!");
+    } else {
+      trackEvent("puzzle_share_kakao_result", {
+        puzzle_id: puzzleId,
+        mode,
+        host_is_md: hostIsMd,
+        method: "kakao_sdk",
+      });
     }
   }
 
   async function copyLink() {
+    trackEvent("puzzle_share_copy_click", {
+      puzzle_id: puzzleId,
+      mode,
+      host_is_md: hostIsMd,
+      area,
+    });
     setCopying(true);
     try {
       if (navigator.clipboard?.writeText) {
@@ -119,7 +169,16 @@ export function ShareCreatedSheet({
     router.push(`/flags/${puzzleId}`);
   }
   // 등록 직후엔 닫으면 상세로, 공유 버튼에서 열었으면 그냥 닫기
-  const dismiss = mode === "created" ? goDetail : onClose;
+  const rawDismiss = mode === "created" ? goDetail : onClose;
+  const dismiss = () => {
+    trackEvent("puzzle_share_dismiss", {
+      puzzle_id: puzzleId,
+      mode,
+      host_is_md: hostIsMd,
+      area,
+    });
+    rawDismiss();
+  };
 
   if (!mounted) return null;
 
