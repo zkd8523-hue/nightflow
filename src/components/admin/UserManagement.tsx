@@ -517,6 +517,16 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                             )}
                           </p>
                         )}
+                        {/* 마케팅/광고 수신 동의 — 이메일·SMS 발송 가부 판단용 */}
+                        {user.country_code && (
+                          <p className="text-[11px] mt-0.5 font-bold">
+                            {user.alimtalk_consent ? (
+                              <span className="text-green-400">📢 수신동의</span>
+                            ) : (
+                              <span className="text-red-400">🚫 수신거부</span>
+                            )}
+                          </p>
+                        )}
                         {(() => {
                           const age = getAge(user.birthday);
                           return (

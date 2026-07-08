@@ -629,7 +629,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               {[
                 { state: agreeTerms, set: setAgreeTerms, label: tt("서비스 이용약관 동의", "Terms of Service"), required: true, href: isForeigner ? `/terms?lang=${lang}` : "/terms" },
                 { state: agreePrivacy, set: setAgreePrivacy, label: tt("개인정보 처리방침 동의", "Privacy Policy"), required: true, href: isForeigner ? `/privacy?lang=${lang}` : "/privacy" },
-                { state: agreeMarketing, set: setAgreeMarketing, label: tt("마케팅 정보 수신 동의 (알림톡·SMS·앱 푸시)", "Marketing notifications"), required: false, href: isForeigner ? `/marketing-consent?lang=${lang}` : "/marketing-consent" },
+                { state: agreeMarketing, set: setAgreeMarketing, label: tt("마케팅 정보 수신 동의 (이메일·알림톡·SMS·앱 푸시)", "Marketing notifications (Email, SMS, push)"), required: false, href: isForeigner ? `/marketing-consent?lang=${lang}` : "/marketing-consent" },
               ].map(({ state, set, label, required, href }) => (
                 <div key={label} className="flex items-center gap-3 px-3 py-3">
                   <button
