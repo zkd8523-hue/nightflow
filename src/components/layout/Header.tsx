@@ -340,7 +340,9 @@ export function Header({
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetContent
                 side="right"
+                data-no-pull-refresh="strict"
                 className="w-[280px] bg-[#0A0A0A] border-neutral-800 p-0 flex flex-col h-full"
+                style={{ paddingTop: 'env(safe-area-inset-top)' }}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
