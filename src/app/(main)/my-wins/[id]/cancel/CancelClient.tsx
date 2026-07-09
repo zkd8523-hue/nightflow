@@ -43,7 +43,7 @@ function getCancelReasons(isInstant: boolean) {
   return [
     { key: "schedule_change", label: "일정이 변경됐어요" },
     { key: "too_expensive", label: "가격이 부담돼요" },
-    { key: "md_no_response", label: "MD가 연락을 안 받아요" },
+    { key: "md_no_response", label: "파트너가 연락을 안 받아요" },
     { key: "wrong_bid", label: isInstant ? "실수로 예약했어요" : "실수로 입찰했어요" },
     { key: "other_club", label: "다른 곳으로 변경했어요" },
     { key: "other", label: "기타" },

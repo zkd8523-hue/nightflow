@@ -119,7 +119,7 @@ export function MarketingConsentTable({ users }: { users: UserRow[] }) {
 
           {([
             ["user_only", "유저만"],
-            ["md_only", "MD만"],
+            ["md_only", "파트너만"],
             ["all", "전체"],
           ] as ["all" | "user_only" | "md_only", string][]).map(([key, label]) => (
             <button
@@ -181,7 +181,7 @@ export function MarketingConsentTable({ users }: { users: UserRow[] }) {
                 <tr key={u.id} className="hover:bg-neutral-900/50">
                   <td className="px-4 py-3 font-medium text-white">
                     {u.display_name || <span className="text-neutral-600">-</span>}
-                    {u.role === "md" && <span className="ml-2 text-[10px] text-amber-400 font-bold">MD</span>}
+                    {u.role === "md" && <span className="ml-2 text-[10px] text-amber-400 font-bold">파트너</span>}
                   </td>
                   <td className="px-4 py-3 font-mono text-neutral-300">{formatPhone(u.phone)}</td>
                   <td className="px-4 py-3">

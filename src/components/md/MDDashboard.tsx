@@ -1232,7 +1232,7 @@ function EmptyState({ label, description }: { label: string, description?: React
             <p className="text-neutral-500 font-medium text-sm">{label}</p>
             <p className="text-neutral-600 text-xs px-10 leading-relaxed">
                 {description || (
-                    <>번거로운 홍보 없이 등록만으로 수많은 유저들에게<br/>MD님의 상품을 알려보세요</>
+                    <>번거로운 홍보 없이 등록만으로 수많은 유저들에게<br/>파트너님의 상품을 알려보세요</>
                 )}
             </p>
             <Link href="/md/auctions/new">

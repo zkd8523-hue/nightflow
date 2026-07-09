@@ -89,7 +89,7 @@ export function AbuseInvestigationTable({ rows }: Props) {
         <div>유저</div>
         <div className="text-right">게시</div>
         <div className="text-right">수락</div>
-        <div>수락한 MD</div>
+        <div>수락한 파트너</div>
         <div />
       </div>
 

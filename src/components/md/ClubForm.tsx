@@ -323,7 +323,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
             <span>내 대표이미지</span>
           </div>
           <p className="text-[11px] text-neutral-500 -mt-1 leading-relaxed">
-            같은 클럽이라도 MD마다 자유롭게 설정할 수 있어요. 경매·조각 등록 시 기본 이미지로 사용됩니다.
+            같은 클럽이라도 파트너마다 자유롭게 설정할 수 있어요. 경매·조각 등록 시 기본 이미지로 사용됩니다.
           </p>
 
           <input
@@ -365,7 +365,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={thumbnailPreview}
-                  alt="MD 대표이미지"
+                  alt="파트너 대표이미지"
                   className="w-full h-48 object-cover"
                 />
               </div>

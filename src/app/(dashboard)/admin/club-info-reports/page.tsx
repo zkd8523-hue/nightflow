@@ -100,7 +100,7 @@ export default async function AdminClubInfoReportsPage() {
           )}
         </div>
         <p className="text-[12px] text-neutral-500 mb-5">
-          유저/MD가 신고한 클럽 정보 오류. 검토 후 클럽 정보를 직접 수정하고 처리 상태를 갱신하세요.
+          유저/파트너가 신고한 클럽 정보 오류. 검토 후 클럽 정보를 직접 수정하고 처리 상태를 갱신하세요.
         </p>
 
         <ClubInfoReportsList rows={rows} />

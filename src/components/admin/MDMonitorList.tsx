@@ -92,7 +92,7 @@ export function MDMonitorList({ mds, clubsMap, defaultClubMap }: Props) {
           <div className="text-center py-12 text-neutral-500">
             {search
               ? "검색 결과가 없습니다"
-              : "활동 중인 MD가 없습니다"}
+              : "활동 중인 파트너가 없습니다"}
           </div>
         )}
       </div>

@@ -100,7 +100,7 @@ export function AdminWithdrawOfferButton({ offerId, variant = "compact", onWithd
 
           <div className="space-y-3 py-1">
             <p className="text-[13px] text-neutral-400">
-              MD에게 알림이 발송되고 슬롯이 회복됩니다.
+              파트너에게 알림이 발송되고 슬롯이 회복됩니다.
             </p>
 
             <div className="space-y-2">
@@ -157,7 +157,7 @@ export function AdminWithdrawOfferButton({ offerId, variant = "compact", onWithd
                   <textarea
                     value={customReason}
                     onChange={(e) => setCustomReason(e.target.value)}
-                    placeholder="MD에게 전달할 사유를 입력해주세요"
+                    placeholder="파트너에게 전달할 사유를 입력해주세요"
                     rows={3}
                     maxLength={300}
                     autoFocus

@@ -252,7 +252,7 @@ function AuctionReportsView({
                   </Link>
                   <div className="flex items-center gap-2 text-[12px] text-neutral-500">
                     <span>클럽: {auction?.club?.name || "-"}</span>
-                    <span>MD: {auction?.md?.name || "-"}</span>
+                    <span>파트너: {auction?.md?.name || "-"}</span>
                   </div>
                 </div>
 

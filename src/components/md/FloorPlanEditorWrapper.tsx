@@ -31,7 +31,7 @@ export function FloorPlanEditorWrapper({
             플로어맵이 있는 경매는 입찰률이 더 높아요!
           </p>
           <p className="text-[11px] text-neutral-600 text-center">
-            승인 후 MD 대시보드에서 언제든 등록할 수 있습니다.
+            승인 후 파트너 대시보드에서 언제든 등록할 수 있습니다.
           </p>
           <button
             type="button"

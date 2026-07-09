@@ -78,7 +78,7 @@ export function ReportMDButton({
         setShowSheet(false);
         onDeadlineExtended?.(data.extendedDeadline);
         toast.success("신고가 접수되었습니다", {
-          description: `연락 타이머가 ${data.extensionMinutes}분 연장되었습니다. MD에게 알림이 전송되었습니다.`,
+          description: `연락 타이머가 ${data.extensionMinutes}분 연장되었습니다. 파트너에게 알림이 전송되었습니다.`,
           duration: 8000,
         });
       } else if (res.status === 409) {
@@ -99,7 +99,7 @@ export function ReportMDButton({
     ? "접수 완료"
     : !cooldownPassed
       ? "준비 중..."
-      : "MD 미응답";
+      : "파트너 미응답";
 
   return (
     <>
@@ -121,7 +121,7 @@ export function ReportMDButton({
         >
           <SheetHeader className="text-left">
             <SheetTitle className="text-white font-black text-xl">
-              MD가 답하지 않나요?
+              파트너가 답하지 않나요?
             </SheetTitle>
             <SheetDescription className="text-neutral-400">
               연락을 시도했지만 응답이 없으면 알려주세요.
@@ -145,7 +145,7 @@ export function ReportMDButton({
                 <li className="flex items-start gap-2">
                   <MessageCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
                   <span>
-                    MD에게{" "}
+                    파트너에게{" "}
                     <span className="text-amber-400 font-bold">긴급 알림</span>
                     이 전송됩니다
                   </span>

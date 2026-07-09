@@ -32,7 +32,7 @@ export function SharePreviewSheet({ open, onOpenChange }: Props) {
             <p className="text-[12px] text-amber-400 font-black tracking-wider">PREVIEW</p>
             <h2 className="text-[22px] font-black text-white tracking-tight">
               내 조각이 이렇게 채워져요
-              <span className="text-[13px] font-bold text-neutral-400 ml-1.5">(1클럽 1MD · 선착순)</span>
+              <span className="text-[13px] font-bold text-neutral-400 ml-1.5">(1클럽 1파트너 · 선착순)</span>
             </h2>
             <p className="text-[13px] text-neutral-400 leading-snug">
               유저가 홈에서 자리를 보고
@@ -116,7 +116,7 @@ export function SharePreviewSheet({ open, onOpenChange }: Props) {
           </Link>
 
           <p className="text-[11px] text-neutral-600 text-center">
-            매주 월 18:00 새 자리 오픈 · 1MD 1클럽 1주
+            매주 월 18:00 새 자리 오픈 · 1파트너 1클럽 1주
           </p>
         </div>
       </SheetContent>

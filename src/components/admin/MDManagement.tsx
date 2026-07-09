@@ -105,7 +105,7 @@ export function MDManagement({
                         <MDApplicationCard key={u.id} user={u} isSimple onPreviewImage={setPreviewImage} />
                     ))
                 ) : (
-                    <EmptyAdminState label="활동 중인 MD가 없습니다." />
+                    <EmptyAdminState label="활동 중인 파트너가 없습니다." />
                 )}
             </div>
         </div>
@@ -318,7 +318,7 @@ function MDApplicationCard({
                                 </div>
                             )}
                             <div className="space-y-2 pt-3 border-t border-neutral-800/40">
-                                <p className="text-[10px] text-neutral-600 font-bold">MD 명의 플로어맵</p>
+                                <p className="text-[10px] text-neutral-600 font-bold">파트너 명의 플로어맵</p>
                                 <ImagePreview
                                     url={user.floor_plan_url}
                                     label="플로어맵"

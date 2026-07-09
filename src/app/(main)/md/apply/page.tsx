@@ -51,7 +51,7 @@ export default async function MDApplyPage() {
                         </div>
                     )}
                     <div className="space-y-4">
-                        <Badge className="bg-white/10 text-white/60 font-medium px-3 py-1 border border-white/10">MD · 파트너 등록</Badge>
+                        <Badge className="bg-white/10 text-white/60 font-medium px-3 py-1 border border-white/10">파트너 등록</Badge>
                         <h1 className="font-bold text-white tracking-tight leading-snug">
                             <span className="block text-2xl md:text-3xl">마케팅부터 고객관리까지</span>
                             <span className="block text-3xl md:text-4xl">오늘부턴 나플 하나로 끝!</span>

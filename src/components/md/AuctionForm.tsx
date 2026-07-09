@@ -1440,7 +1440,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         return null;
                       })()}
                       {useGenderSlot && (
-                        <p className="text-[11px] text-neutral-500">성비는 목표값이에요. 초과 인원도 MD 재량으로 승인할 수 있어요.<br />(ex: 세팅값 남자3·여자1. 현재 남자3·여자0 일때, 남자가 신청시 승인 가능. 최종 남자4·여자0)</p>
+                        <p className="text-[11px] text-neutral-500">성비는 목표값이에요. 초과 인원도 파트너 재량으로 승인할 수 있어요.<br />(ex: 세팅값 남자3·여자1. 현재 남자3·여자0 일때, 남자가 신청시 승인 가능. 최종 남자4·여자0)</p>
                       )}
                       {errors.total_seats && <p className="text-red-500 text-[11px]">{errors.total_seats.message?.toString()}</p>}
                     </div>

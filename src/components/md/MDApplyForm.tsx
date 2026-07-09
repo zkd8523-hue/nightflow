@@ -82,7 +82,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
             if (!res.ok) {
                 throw new Error(result.error || "신청 중 오류가 발생했습니다.");
             }
-            toast.success("MD · 파트너 신청이 완료되었습니다!");
+            toast.success("파트너 신청이 완료되었습니다!");
             setSubmitted(true);
             router.replace('/md/apply');
         } catch (error: unknown) {
@@ -154,7 +154,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                     className="bg-neutral-900 border-neutral-800 text-white h-12 pl-8 font-mono focus:ring-white"
                                 />
                             </div>
-                            <p className="text-neutral-600 text-[10px]">MD 브랜딩 채널로 사용됩니다 (필수)</p>
+                            <p className="text-neutral-600 text-[10px]">파트너 브랜딩 채널로 사용됩니다 (필수)</p>
                             {form.formState.errors.instagram && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.instagram?.message?.toString()}</p>
                             )}

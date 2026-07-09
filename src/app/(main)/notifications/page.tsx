@@ -42,7 +42,7 @@ type FilterTab = "all" | "auction" | "md";
 const FILTER_TABS: { key: FilterTab; label: string }[] = [
   { key: "all", label: "전체" },
   { key: "auction", label: "경매" },
-  { key: "md", label: "MD" },
+  { key: "md", label: "파트너" },
 ];
 
 const AUCTION_TYPES: InAppNotificationType[] = [

@@ -142,7 +142,7 @@ export default function AdminPuzzleNoshowReportsPage() {
         </div>
 
         <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 mb-5 text-[12px] text-amber-300 leading-relaxed">
-          MD가 오퍼 수락 후 방장과 연락이 닿지 않았다고 표시한 건입니다. 인용 시 방장에게 스트라이크가 적용되며,
+          파트너가 오퍼 수락 후 방장과 연락이 닿지 않았다고 표시한 건입니다. 인용 시 방장에게 스트라이크가 적용되며,
           방장은 <Link href="/admin/appeals" className="underline">이의제기 페이지</Link>에서 다툴 수 있어요.
         </div>
 
@@ -159,7 +159,7 @@ export default function AdminPuzzleNoshowReportsPage() {
                 : "날짜 미정";
               const markedAt = dayjs(r.visit_marked_at).format("M/D HH:mm");
               const leaderName = r.leader_display_name || r.leader_name || "방장";
-              const mdName = r.md_display_name || r.md_name || "MD";
+              const mdName = r.md_display_name || r.md_name || "파트너";
               const leaderStrikes = r.leader_strike_count ?? 0;
               return (
                 <div key={r.id} className="bg-[#1C1C1E] rounded-2xl p-4 border border-red-500/20 space-y-3">

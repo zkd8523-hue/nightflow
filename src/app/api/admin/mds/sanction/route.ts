@@ -61,34 +61,34 @@ export async function POST(req: Request) {
       .single();
 
     if (mdError || !mdUser) {
-      return NextResponse.json({ error: "MD를 찾을 수 없습니다" }, { status: 404 });
+      return NextResponse.json({ error: "파트너를 찾을 수 없습니다" }, { status: 404 });
     }
 
     // 4. 액션별 상태 검증
     if (action === "warning" && mdUser.md_status !== "approved" && mdUser.md_status !== "suspended") {
       return NextResponse.json(
-        { error: "경고는 활동 중이거나 정지된 MD에게만 가능합니다" },
+        { error: "경고는 활동 중이거나 정지된 파트너에게만 가능합니다" },
         { status: 400 }
       );
     }
 
     if (action === "suspend" && mdUser.md_status !== "approved") {
       return NextResponse.json(
-        { error: "정지는 활동 중인 MD에게만 가능합니다" },
+        { error: "정지는 활동 중인 파트너에게만 가능합니다" },
         { status: 400 }
       );
     }
 
     if (action === "unsuspend" && mdUser.md_status !== "suspended") {
       return NextResponse.json(
-        { error: "정지 해제는 정지 상태인 MD에게만 가능합니다" },
+        { error: "정지 해제는 정지 상태인 파트너에게만 가능합니다" },
         { status: 400 }
       );
     }
 
     if (action === "revoke" && mdUser.md_status !== "approved" && mdUser.md_status !== "suspended") {
       return NextResponse.json(
-        { error: "자격 박탈은 활동 중이거나 정지된 MD에게만 가능합니다" },
+        { error: "자격 박탈은 활동 중이거나 정지된 파트너에게만 가능합니다" },
         { status: 400 }
       );
     }

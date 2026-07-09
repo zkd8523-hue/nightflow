@@ -13,7 +13,7 @@ export const REVIEW_TAGS: ReviewTagOption[] = [
   { key: "music", label: "음악이 좋아요", emoji: "🎵" },
   { key: "vibe", label: "분위기가 좋아요", emoji: "✨" },
   { key: "seat", label: "자리가 좋아요", emoji: "🛋" },
-  { key: "md_friendly", label: "MD가 친절해요", emoji: "💁" },
+  { key: "md_friendly", label: "파트너가 친절해요", emoji: "💁" },
   { key: "dj", label: "DJ가 좋아요", emoji: "🎧" },
   { key: "crowded", label: "사람이 많아요", emoji: "👥" },
   { key: "dancing", label: "춤추기 좋아요", emoji: "💃" },

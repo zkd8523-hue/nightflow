@@ -157,7 +157,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
   const handleClaim = async (clubId: string, clubName: string) => {
     const ok = window.confirm(
       `${clubName}의 이번 주 조각 자리를 선점할까요?\n\n` +
-        `· 이 자리를 가진 MD만 이 클럽 조각을 올릴 수 있어요 (선착순 1MD 1클럽)\n` +
+        `· 이 자리를 가진 파트너만 이 클럽 조각을 올릴 수 있어요 (선착순 1파트너 1클럽)\n` +
         `· 매주 월요일 오후 6시에 초기화돼요`
     );
     if (!ok) return;
@@ -364,7 +364,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
               <div className="flex items-start gap-2.5">
                 <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
                 <div className="flex-1">
-                  <p className="text-[12.5px] text-white font-bold leading-snug">자리를 가진 MD만 조각 등록</p>
+                  <p className="text-[12.5px] text-white font-bold leading-snug">자리를 가진 파트너만 조각 등록</p>
                   <p className="text-[11px] text-neutral-500 leading-snug">이번 주 자리를 차지해야 그 클럽 조각을 올릴 수 있어요</p>
                 </div>
               </div>

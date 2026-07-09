@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       .single();
     if (!me || (me.role !== "md" && me.role !== "admin")) {
       return NextResponse.json(
-        { error: "MD 계정만 충전할 수 있습니다." },
+        { error: "파트너 계정만 충전할 수 있습니다." },
         { status: 403 }
       );
     }

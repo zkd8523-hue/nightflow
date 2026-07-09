@@ -34,7 +34,7 @@ export async function POST(
       .single();
 
     if (!md || md.md_status !== "pending") {
-      return NextResponse.json({ error: "pending 상태의 MD만 거절할 수 있습니다." }, { status: 400 });
+      return NextResponse.json({ error: "pending 상태의 파트너만 거절할 수 있습니다." }, { status: 400 });
     }
 
     const { error } = await supabaseAdmin

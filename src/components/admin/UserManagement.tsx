@@ -402,7 +402,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
             <SelectItem value="warning">경고 대상</SelectItem>
             <SelectItem value="suspended">정지 중</SelectItem>
             <SelectItem value="blocked">차단됨</SelectItem>
-            <SelectItem value="md">MD만</SelectItem>
+            <SelectItem value="md">파트너만</SelectItem>
           </SelectContent>
         </Select>
         <Select value={genderFilter} onValueChange={(v) => setGenderFilter(v as typeof genderFilter)}>
@@ -488,7 +488,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                             <p className="text-sm font-bold text-white flex items-center gap-1.5 flex-wrap">
                               {user.display_name || user.name}
                               {user.role === "md" && (
-                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">MD</span>
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">파트너</span>
                               )}
                               {(user.strike_count || 0) > 0 && (
                                 <span
@@ -925,7 +925,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                       {/* MD 후기 (placeholder) */}
                       <div className="border-t border-purple-500/10 pt-2 flex items-center gap-2 text-xs text-neutral-500">
                         <Star className="w-3.5 h-3.5" />
-                        <span>MD 후기: <span className="text-neutral-600">추후 개발 예정</span></span>
+                        <span>파트너 후기: <span className="text-neutral-600">추후 개발 예정</span></span>
                       </div>
                     </div>
 
@@ -963,7 +963,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                       {/* MD 후기 (placeholder) */}
                       <div className="border-t border-amber-500/10 pt-2 flex items-center gap-2 text-xs text-neutral-500">
                         <Star className="w-3.5 h-3.5" />
-                        <span>MD 후기: <span className="text-neutral-600">추후 개발 예정</span></span>
+                        <span>파트너 후기: <span className="text-neutral-600">추후 개발 예정</span></span>
                       </div>
                     </div>
                   </div>
@@ -1026,7 +1026,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
               </p>
               {deleteConfirm.role === "md" && (
                 <p className="text-amber-400 text-xs">
-                  이 유저는 MD입니다. MD 명의 클럽과 경매 내역도 모두 삭제됩니다.
+                  이 유저는 파트너입니다. 파트너 명의 클럽과 경매 내역도 모두 삭제됩니다.
                 </p>
               )}
             </div>

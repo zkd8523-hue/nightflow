@@ -79,7 +79,7 @@ function MdCombobox({
         className="w-full flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-1.5 text-sm text-left disabled:opacity-50"
       >
         <span className={`flex-1 min-w-0 truncate ${selected ? "text-white" : "text-neutral-500"}`}>
-          {selected ? `${selected.name}${selected.instagram ? ` (@${selected.instagram})` : ""}` : "MD 검색"}
+          {selected ? `${selected.name}${selected.instagram ? ` (@${selected.instagram})` : ""}` : "파트너 검색"}
         </span>
         <ChevronDown className="w-4 h-4 text-neutral-500 shrink-0" />
       </button>
@@ -168,7 +168,7 @@ export function AdminShareSlotManager({ clubs, slotByClub, selectedWeek, weekOpt
   const assign = async (clubId: string) => {
     const mdId = picked[clubId];
     if (!mdId) {
-      toast.error("배정할 MD를 먼저 선택하세요");
+      toast.error("배정할 파트너를 먼저 선택하세요");
       return;
     }
     setBusy(clubId);
@@ -268,7 +268,7 @@ export function AdminShareSlotManager({ clubs, slotByClub, selectedWeek, weekOpt
                       </>
                     ) : club.partners.length === 0 ? (
                       // 빈 슬롯 + 파트너 MD 없음
-                      <span className="text-neutral-600 text-sm italic">파트너 MD 없음 (클럽 관리에서 연결)</span>
+                      <span className="text-neutral-600 text-sm italic">파트너 없음 (클럽 관리에서 연결)</span>
                     ) : (
                       // 빈 슬롯 + 배정 가능
                       <>
@@ -300,9 +300,9 @@ export function AdminShareSlotManager({ clubs, slotByClub, selectedWeek, weekOpt
 
       <p className="text-neutral-600 text-[12px] leading-relaxed">
         · 빈 자리에만 배정할 수 있어요. 이미 차지된 자리는 먼저 <b>해제</b>한 뒤 다시 배정하세요.<br />
-        · 배정된 MD는 그 주에 다른 클럽 조각 자리를 가질 수 없어요 (주당 1자리).<br />
-        · 빈 자리를 그대로 두면 월요일 오후 6시 오픈 후 MD가 선착순으로 차지할 수 있어요.<br />
-        · 조각 자리는 게스트 간판과 별개예요 — 한 클럽에서 게스트 간판 MD와 조각 MD가 서로 달라도 돼요.
+        · 배정된 파트너는 그 주에 다른 클럽 조각 자리를 가질 수 없어요 (주당 1자리).<br />
+        · 빈 자리를 그대로 두면 월요일 오후 6시 오픈 후 파트너가 선착순으로 차지할 수 있어요.<br />
+        · 조각 자리는 게스트 간판과 별개예요 — 한 클럽에서 게스트 간판 파트너와 조각 파트너가 서로 달라도 돼요.
       </p>
     </div>
   );

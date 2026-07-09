@@ -560,7 +560,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           {/* MD 코멘트 */}
           <div className="space-y-2">
             <p className="text-[11px] font-bold text-neutral-500 tracking-wide">
-              MD 코멘트 <span className="font-normal">{puzzle.is_recruiting_party ? "(필수)" : "(선택)"}</span>
+              파트너 코멘트 <span className="font-normal">{puzzle.is_recruiting_party ? "(필수)" : "(선택)"}</span>
             </p>
             <textarea
               value={comment}

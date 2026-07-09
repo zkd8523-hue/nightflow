@@ -331,7 +331,7 @@ export function MessagesListClient() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className="text-[14px] font-bold text-white truncate">
-                              {c.counterpart_name ?? (c.my_role === "leader" ? "MD" : "방장")}
+                              {c.counterpart_name ?? (c.my_role === "leader" ? "파트너" : "방장")}
                             </p>
                             {isClosed && (
                               <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-500 font-bold">종료</span>

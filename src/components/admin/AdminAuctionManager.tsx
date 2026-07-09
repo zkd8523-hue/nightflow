@@ -143,7 +143,7 @@ function AuctionTable({
           </div>
 
           <div className="grid grid-cols-12 px-6 py-2 text-[10px] text-neutral-500 font-black uppercase tracking-widest border-b border-neutral-800">
-            <div className="col-span-4">Auction / MD</div>
+            <div className="col-span-4">Auction / Partner</div>
             <div className="col-span-2 text-center">Status</div>
             <div className="col-span-2 text-right">Price / Bids</div>
             <div className="col-span-2 text-right">Date</div>
@@ -171,7 +171,7 @@ function AuctionTable({
                     <div>
                       <p className="text-white font-bold">{a.club?.name || "-"}</p>
                       <p className="text-[12px] text-neutral-500 font-medium">
-                        MD: {a.md?.name || "-"}
+                        파트너: {a.md?.name || "-"}
                       </p>
                     </div>
                   </div>
@@ -361,7 +361,7 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
           <Input
-            placeholder="클럽명, MD명, 경매 제목 검색..."
+            placeholder="클럽명, 파트너명, 경매 제목 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-[#1C1C1E] border-neutral-800 text-white"
@@ -446,7 +446,7 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
                   <span className="font-bold text-white">{cancelTarget.club?.name}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">MD</span>
+                  <span className="text-neutral-500 text-sm font-bold">파트너</span>
                   <span className="font-bold text-white">{cancelTarget.md?.name}</span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -520,7 +520,7 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
                   <span className="font-bold text-white">{deleteTarget.club?.name || "-"}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">MD</span>
+                  <span className="text-neutral-500 text-sm font-bold">파트너</span>
                   <span className="font-bold text-white">{deleteTarget.md?.name || "-"}</span>
                 </div>
                 <div className="flex justify-between items-center">

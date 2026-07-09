@@ -50,7 +50,7 @@ const ERROR_MESSAGES: Record<ShareClaimError, string> = {
   NOT_OPEN: "현재 참여할 수 없는 매물입니다.",
   EXPIRED: "모집 마감 시간이 지났습니다.",
   FULL: "이미 마감된 매물입니다.",
-  MD_CHAT_UNAVAILABLE: "MD의 오픈채팅 정보를 불러올 수 없습니다. MD에게 문의해주세요.",
+  MD_CHAT_UNAVAILABLE: "파트너의 오픈채팅 정보를 불러올 수 없습니다. 파트너에게 문의해주세요.",
   ALREADY_CLAIMED: "이미 참여 중인 매물입니다.",
   KICKED_BY_MD: "이 매물에는 재참여할 수 없습니다.",
   MAX_CANCELLATIONS: "취소 횟수 한도를 초과했습니다.",
@@ -302,7 +302,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
 
         {/* 성비 안내 */}
         {hasGenderSlot && (
-          <p className="text-[11px] text-neutral-500">성비 목표 외 인원도 MD 승인 시 참여 가능해요.</p>
+          <p className="text-[11px] text-neutral-500">성비 목표 외 인원도 파트너 승인 시 참여 가능해요.</p>
         )}
 
         {/* 인당 가격 */}
@@ -389,7 +389,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
         )}
 
         <p className="text-xs text-neutral-600 text-center">
-          결제 없이 오픈채팅에서 MD가 안내합니다
+          결제 없이 오픈채팅에서 파트너가 안내합니다
         </p>
       </div>
 
@@ -401,8 +401,8 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
           </SheetHeader>
           <div className="space-y-4">
             <p className="text-neutral-400 text-sm leading-relaxed">
-              MD의 오픈채팅방에 참여해서 최종 안내를 받으세요.
-              현장에서 인당 {formatNumber(auction.price_per_seat ?? 0)}원을 MD에게 직접 전달합니다.
+              파트너의 오픈채팅방에 참여해서 최종 안내를 받으세요.
+              현장에서 인당 {formatNumber(auction.price_per_seat ?? 0)}원을 파트너에게 직접 전달합니다.
               {partySize > 1 && (
                 <>
                   {" "}일행 포함 <span className="text-white font-bold">{partySize}명</span>으로 신청했어요.
@@ -419,7 +419,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
             </Button>
             {!kakaoUrl && (
               <p className="text-xs text-red-400 text-center">
-                MD의 오픈채팅 정보를 불러올 수 없습니다. MD에게 직접 문의해주세요.
+                파트너의 오픈채팅 정보를 불러올 수 없습니다. 파트너에게 직접 문의해주세요.
               </p>
             )}
           </div>

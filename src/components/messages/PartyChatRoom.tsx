@@ -169,7 +169,7 @@ export function PartyChatRoom({
       setInvitingId(null);
       return;
     }
-    toast.success("MD를 단체채팅에 초대했어요");
+    toast.success("파트너를 단체채팅에 초대했어요");
     reloadOffers();
     setInvitingId(null);
   }
@@ -177,7 +177,7 @@ export function PartyChatRoom({
   async function handleReleaseMd() {
     if (releasing) return;
     if (typeof window !== "undefined" &&
-        !window.confirm("상담 중인 MD를 내보낼까요?\n다른 MD를 초대하려면 먼저 내보내야 해요.")) return;
+        !window.confirm("상담 중인 파트너를 내보낼까요?\n다른 파트너를 초대하려면 먼저 내보내야 해요.")) return;
     setReleasing(true);
     const { data, error } = await createClient().rpc("release_party_md", {
       p_puzzle_id: puzzleId,
@@ -187,7 +187,7 @@ export function PartyChatRoom({
       setReleasing(false);
       return;
     }
-    toast.success("MD 상담을 종료했어요");
+    toast.success("파트너 상담을 종료했어요");
     reloadOffers();
     setReleasing(false);
   }
@@ -584,7 +584,7 @@ export function PartyChatRoom({
                           </button>
                         ) : someInvited ? (
                           <span className="ml-auto text-[12px] text-neutral-600 px-2 py-1">
-                            다른 MD 상담 중
+                            다른 파트너 상담 중
                           </span>
                         ) : (
                           <button
@@ -962,7 +962,7 @@ export function PartyChatRoom({
                     </span>
                   ) : p.is_md ? (
                     <span className="shrink-0 mr-2 text-[11px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-bold">
-                      MD
+                      파트너
                     </span>
                   ) : canKick ? (
                     <button

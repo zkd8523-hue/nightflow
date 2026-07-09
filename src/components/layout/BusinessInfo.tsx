@@ -32,7 +32,7 @@ export function BusinessInfo({ className = "", lang = "ko" }: { className?: stri
       </p>
       <p className="text-neutral-700 mt-2">
         {t(
-          "매드다윗은 통신판매중개자로서, 클럽 테이블 예약에 관한 의무와 책임은 MD(판매자)에게 있습니다.",
+          "매드다윗은 통신판매중개자로서, 클럽 테이블 예약에 관한 의무와 책임은 파트너(판매자)에게 있습니다.",
           "MadDawid is an online sales intermediary; obligations and liability for club table bookings rest with the MD (seller).",
           "MadDawidは通信販売仲介者であり、クラブテーブル予約に関する義務と責任はMD（販売者）にあります。",
           "MadDawid为电子商务中介，俱乐部桌位预订的义务与责任由MD（卖家）承担。",

@@ -79,7 +79,7 @@ function MdCombobox({
         className="w-full flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-lg px-3 py-1.5 text-sm text-left disabled:opacity-50"
       >
         <span className={`flex-1 min-w-0 truncate ${selected ? "text-white" : "text-neutral-500"}`}>
-          {selected ? `${selected.name}${selected.instagram ? ` (@${selected.instagram})` : ""}` : "MD 검색"}
+          {selected ? `${selected.name}${selected.instagram ? ` (@${selected.instagram})` : ""}` : "파트너 검색"}
         </span>
         <ChevronDown className="w-4 h-4 text-neutral-500 shrink-0" />
       </button>
@@ -168,7 +168,7 @@ export function AdminHotdealSlotManager({ clubs, slotByClub, selectedWeek, weekO
   const assign = async (clubId: string) => {
     const mdId = picked[clubId];
     if (!mdId) {
-      toast.error("배정할 MD를 먼저 선택하세요");
+      toast.error("배정할 파트너를 먼저 선택하세요");
       return;
     }
     setBusy(clubId);
@@ -268,7 +268,7 @@ export function AdminHotdealSlotManager({ clubs, slotByClub, selectedWeek, weekO
                       </>
                     ) : club.partners.length === 0 ? (
                       // 빈 슬롯 + 파트너 MD 없음
-                      <span className="text-neutral-600 text-sm italic">파트너 MD 없음 (클럽 관리에서 연결)</span>
+                      <span className="text-neutral-600 text-sm italic">파트너 없음 (클럽 관리에서 연결)</span>
                     ) : (
                       // 빈 슬롯 + 배정 가능
                       <>
@@ -300,8 +300,8 @@ export function AdminHotdealSlotManager({ clubs, slotByClub, selectedWeek, weekO
 
       <p className="text-neutral-600 text-[12px] leading-relaxed">
         · 빈 슬롯에만 배정할 수 있어요. 이미 차지된 슬롯은 먼저 <b>해제</b>한 뒤 다시 배정하세요.<br />
-        · 배정된 MD는 그 주에 다른 클럽 슬롯을 가질 수 없어요 (주당 1슬롯).<br />
-        · 빈 슬롯을 그대로 두면 월요일 오후 6시 오픈 후 MD가 선착순으로 차지할 수 있어요.
+        · 배정된 파트너는 그 주에 다른 클럽 슬롯을 가질 수 없어요 (주당 1슬롯).<br />
+        · 빈 슬롯을 그대로 두면 월요일 오후 6시 오픈 후 파트너가 선착순으로 차지할 수 있어요.
       </p>
     </div>
   );

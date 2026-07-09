@@ -270,7 +270,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
           )}
           <div className="flex items-center justify-center gap-1.5 text-[12px] text-green-400 font-semibold">
             <ShieldCheck className="w-3.5 h-3.5" />
-            결제 없이 입찰 · 낙찰되면 MD가 안내해요
+            결제 없이 입찰 · 낙찰되면 파트너가 안내해요
           </div>
         </div>
 
@@ -307,7 +307,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               <div className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4 text-neutral-400 shrink-0" />
                 <p className="text-[12px] text-neutral-400 font-medium">
-                  낙찰되면 <span className="text-white font-bold">안내 문자</span>가 가요 · MD에게 연락하면 끝!
+                  낙찰되면 <span className="text-white font-bold">안내 문자</span>가 가요 · 파트너에게 연락하면 끝!
                 </p>
               </div>
             </div>
@@ -358,7 +358,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               </Button>
             </div>
             <p className="text-center text-[12px] text-neutral-500 font-medium mt-3">
-              🛡 결제 없이 입찰 · 낙찰 시 MD가 안내
+              🛡 결제 없이 입찰 · 낙찰 시 파트너가 안내
             </p>
           </div>
         </SheetContent>

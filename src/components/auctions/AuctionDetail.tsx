@@ -489,7 +489,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             <p className="text-[17px] text-white font-extrabold leading-tight tracking-tight">{formatEventDate(displayAuction.event_date)}</p>
             {(displayAuction.md_comment || displayAuction.md_message) && (
               <div className="space-y-0.5">
-                <span className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">MD의 한마디</span>
+                <span className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">파트너의 한마디</span>
                 {displayAuction.md_comment && (
                   <p className="text-[15px] text-white font-bold leading-snug">
                     {displayAuction.md_comment}
@@ -508,7 +508,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
         {/* MD 메시지 (제목 + 한마디) — 조각이 아닌 경우 */}
         {!isShare && (displayAuction.md_comment || displayAuction.md_message) && (
           <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-2">
-            <span className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">MD의 한마디</span>
+            <span className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">파트너의 한마디</span>
             {displayAuction.md_comment && (
               <p className="text-[15px] text-white font-bold leading-snug">
                 {displayAuction.md_comment}
@@ -663,12 +663,12 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 <div className="relative">
                   <div className="relative w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
                     <span className="absolute inset-0 flex items-center justify-center font-black text-neutral-500">
-                      {md?.display_name?.substring(0, 1) || md?.name?.substring(0, 1) || "MD"}
+                      {md?.display_name?.substring(0, 1) || md?.name?.substring(0, 1) || "파"}
                     </span>
                     {md?.profile_image && (
                       <img
                         src={normalizeProfileImage(md.profile_image)!}
-                        alt={md.display_name || md.name || "MD"}
+                        alt={md.display_name || md.name || "파트너"}
                         className="relative w-full h-full object-cover"
                         onError={(e) => { e.currentTarget.style.display = "none"; }}
                       />
@@ -793,7 +793,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
             contentType="auction"
             contentId={displayAuction.id}
             targetUserId={md.id}
-            targetDisplayName={md.display_name || md.name || "MD"}
+            targetDisplayName={md.display_name || md.name || "파트너"}
           />
         )}
 
@@ -814,8 +814,8 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
                 <PartyPopper className="w-5 h-5 text-amber-400" />
                 <span className="text-white font-bold text-sm">
                   {md?.display_name || md?.name
-                    ? `${md.display_name || md.name} MD에게 연락하세요`
-                    : "MD에게 연락하세요"}
+                    ? `${md.display_name || md.name} 파트너에게 연락하세요`
+                    : "파트너에게 연락하세요"}
                 </span>
               </div>
 
@@ -907,7 +907,7 @@ export function AuctionDetail({ auction, initialBids, mdConfirmedCount = 0 }: Au
               </SheetTitle>
               <p className="text-neutral-500 text-[13px] text-center mt-1">
                 {isAdminDeletingForeign
-                  ? `다른 MD의 경매입니다${(displayAuction.bid_count ?? 0) > 0 ? ` · 입찰 ${displayAuction.bid_count}건도 함께 삭제됩니다` : ""}.`
+                  ? `다른 파트너의 경매입니다${(displayAuction.bid_count ?? 0) > 0 ? ` · 입찰 ${displayAuction.bid_count}건도 함께 삭제됩니다` : ""}.`
                   : "삭제 후 복구할 수 없습니다."}
               </p>
             </SheetHeader>

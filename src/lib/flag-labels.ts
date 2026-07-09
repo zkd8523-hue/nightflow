@@ -7,7 +7,7 @@ export const FLAG_LABELS = {
   verb_join: "파티원 합류하기",
   party: "파티원",
   party_toggle: "파티원도 모으기",
-  empty_hint: "퍼즐을 올리면 MD 시크릿오퍼가 쏟아져요",
+  empty_hint: "퍼즐을 올리면 파트너 시크릿오퍼가 쏟아져요",
   list_section: "올라와 있는 퍼즐",
   detail_title: "퍼즐 상세",
   cancel: "퍼즐 내리기",
@@ -15,5 +15,5 @@ export const FLAG_LABELS = {
   party_recruiting: "파티원 모집 중",
   // 깃발(flag) 상태용 라벨 — 인원 확정 퍼즐 카드에 표시
   flag_badge: "🚩 깃발",
-  flag_hint: "인원 확정 · MD 오퍼 대기 중",
+  flag_hint: "인원 확정 · 파트너 오퍼 대기 중",
 } as const;

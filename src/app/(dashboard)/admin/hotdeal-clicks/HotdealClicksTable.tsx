@@ -56,7 +56,7 @@ export function HotdealClicksTable({ rows, clickersBySlot, anonBySlot }: Props) 
           <tr>
             <th className="text-left px-4 py-3 font-bold">클럽</th>
             <th className="text-left px-4 py-3 font-bold">지역</th>
-            <th className="text-left px-4 py-3 font-bold">담당 MD</th>
+            <th className="text-left px-4 py-3 font-bold">담당 파트너</th>
             <th className="text-right px-4 py-3 font-bold">인스타</th>
             <th className="text-right px-4 py-3 font-bold">오픈채팅</th>
             <th className="text-right px-4 py-3 font-bold">문의 복사</th>

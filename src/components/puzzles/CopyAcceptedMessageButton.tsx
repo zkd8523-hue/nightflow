@@ -33,7 +33,7 @@ export function CopyAcceptedMessageButton({ puzzle, offer, lang = "ko" }: Props)
     try {
       await navigator.clipboard.writeText(msg);
       setCopied(true);
-      toast.success(t("메시지가 복사됐어요. MD에게 붙여넣으세요!", "Message copied — paste it to the club host!"));
+      toast.success(t("메시지가 복사됐어요. 파트너에게 붙여넣으세요!", "Message copied — paste it to the club host!"));
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error(t("복사에 실패했습니다", "Failed to copy"));

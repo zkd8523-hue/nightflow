@@ -383,7 +383,7 @@ export function HotdealSlotBoard({
     const weekLabel = formatWeekRange(selectedWeek);
     const ok = window.confirm(
       `${clubName}의 ${weekLabel} 게스트 간판 홍보권을 차지할까요?\n\n` +
-        `· 한 주를 통째로 점유 (선착순 1MD 1클럽)\n` +
+        `· 한 주를 통째로 점유 (선착순 1파트너 1클럽)\n` +
         `· 차지 후 요일별 혜택을 입력하면 홈 '오늘 어디갈래?' 에 노출돼요\n` +
         `· 언제든 '해제'로 반납할 수 있어요`
     );

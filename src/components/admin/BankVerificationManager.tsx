@@ -160,7 +160,7 @@ export function BankVerificationManager({
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-800">
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">MD</th>
+                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">파트너</th>
                                     <th className="text-left p-4 text-sm font-bold text-neutral-400">예금주</th>
                                     <th className="text-left p-4 text-sm font-bold text-neutral-400">은행</th>
                                     <th className="text-left p-4 text-sm font-bold text-neutral-400">계좌번호</th>
@@ -224,7 +224,7 @@ export function BankVerificationManager({
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-800">
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">MD</th>
+                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">파트너</th>
                                     <th className="text-left p-4 text-sm font-bold text-neutral-400">은행 정보</th>
                                     <th className="text-center p-4 text-sm font-bold text-neutral-400">상태</th>
                                     <th className="text-left p-4 text-sm font-bold text-neutral-400">처리자</th>
@@ -281,7 +281,7 @@ export function BankVerificationManager({
                         <div className="space-y-4 mt-6">
                             <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-neutral-500 text-sm font-bold">MD</span>
+                                    <span className="text-neutral-500 text-sm font-bold">파트너</span>
                                     <span className="font-bold text-white">{selectedVerification.md?.name}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
@@ -304,7 +304,7 @@ export function BankVerificationManager({
                                 <div className="text-[13px] text-amber-400 font-medium leading-relaxed">
                                     <p className="font-bold mb-1">검증 시 확인 사항:</p>
                                     <ul className="list-disc list-inside space-y-0.5">
-                                        <li>예금주명이 MD 본인 이름과 일치하는지 확인</li>
+                                        <li>예금주명이 파트너 본인 이름과 일치하는지 확인</li>
                                         <li>계좌번호 형식이 올바른지 확인</li>
                                         <li>실제 계좌 존재 여부 확인 (가능 시)</li>
                                     </ul>

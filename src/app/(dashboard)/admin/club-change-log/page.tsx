@@ -79,7 +79,7 @@ export default async function AdminClubChangeLogPage() {
           <h1 className="text-2xl font-black text-white tracking-tight">클럽 변경 이력</h1>
         </div>
         <p className="text-[12px] text-neutral-500 mb-5">
-          파트너 MD와 admin이 변경한 태그·영업시간 이력. 필요 시 롤백 가능.
+          파트너와 admin이 변경한 태그·영업시간 이력. 필요 시 롤백 가능.
         </p>
 
         <ClubChangeLogList rows={rows} />

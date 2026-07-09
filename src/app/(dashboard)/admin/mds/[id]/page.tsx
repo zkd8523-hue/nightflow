@@ -47,7 +47,7 @@ export default async function MDDetailPage({
     return (
       <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
         <div className="text-center">
-          <p className="text-neutral-400 mb-4">MD를 찾을 수 없습니다</p>
+          <p className="text-neutral-400 mb-4">파트너를 찾을 수 없습니다</p>
           <Link href="/admin/mds" className="text-white underline">
             목록으로 돌아가기
           </Link>
@@ -194,7 +194,7 @@ export default async function MDDetailPage({
             </Link>
             <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-widest text-[11px]">
               <ShieldAlert className="w-3.5 h-3.5" />
-              MD Detail
+              Partner Detail
             </div>
           </div>
 
@@ -204,7 +204,7 @@ export default async function MDDetailPage({
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-black">{mdName} MD</h1>
+                <h1 className="text-2xl font-black">{mdName} 파트너</h1>
                 {status && <MDHealthBadge status={status} size="md" />}
                 {mdUser.md_status === "suspended" && (
                   <span className="text-[10px] font-black text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full">

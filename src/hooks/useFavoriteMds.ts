@@ -60,7 +60,7 @@ export function useFavoriteMds(userId: string | undefined) {
             .eq("md_id", mdId);
 
           setFavoriteMds((prev) => prev.filter((f) => f.md_id !== mdId));
-          toast.success("MD 찜이 해제되었습니다");
+          toast.success("파트너 찜이 해제되었습니다");
         } else {
           const { data, error } = await supabase
             .from("user_favorite_mds")
@@ -70,14 +70,14 @@ export function useFavoriteMds(userId: string | undefined) {
 
           if (error) {
             if (error.code === "23505") {
-              toast.info("이미 찜한 MD입니다");
+              toast.info("이미 찜한 파트너입니다");
               return;
             }
             throw error;
           }
 
           setFavoriteMds((prev) => [data as UserFavoriteMd, ...prev]);
-          toast.success("MD를 찜했습니다");
+          toast.success("파트너를 찜했습니다");
         }
       } catch (error: unknown) {
         logError(error, "toggleFavoriteMd");

@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       .single();
     if (!userRow || (userRow.role !== "md" && userRow.role !== "admin"))
       return NextResponse.json(
-        { error: "MD 권한이 필요합니다." },
+        { error: "파트너 권한이 필요합니다." },
         { status: 403 }
       );
 

@@ -193,13 +193,13 @@ export function SecretOfferCard({
               >
                 <span className="flex items-center gap-1.5">
                   <MessageCircle className="w-4 h-4" />
-                  {offer.chat_meta?.replied ? "대화중" : "MD 답장 기다리는중"}
+                  {offer.chat_meta?.replied ? "대화중" : "파트너 답장 기다리는중"}
                 </span>
                 {offer.chat_meta && (
                   <span className="text-[11px] font-medium text-neutral-400">
-                    방장 {offer.chat_meta.leader} · MD {offer.chat_meta.md}
+                    방장 {offer.chat_meta.leader} · 파트너 {offer.chat_meta.md}
                     {offer.chat_meta.last_at && (
-                      <> · 마지막 {offer.chat_meta.last_by === "md" ? "MD" : "방장"} {formatRelativeTime(offer.chat_meta.last_at)}</>
+                      <> · 마지막 {offer.chat_meta.last_by === "md" ? "파트너" : "방장"} {formatRelativeTime(offer.chat_meta.last_at)}</>
                     )}
                   </span>
                 )}
@@ -240,7 +240,7 @@ export function SecretOfferCard({
 
       {isAdmin && offer.md && (
         <div className="pt-2 mt-1 border-t border-red-500/20 bg-red-500/5 -mx-4 px-4 pb-1 space-y-1">
-          <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — MD 식별 정보</p>
+          <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — 파트너 식별 정보</p>
           <div className="flex items-center gap-3 text-[12px] text-neutral-300 flex-wrap">
             <span className="inline-flex items-center gap-1">
               <User className="w-3 h-3 text-neutral-500" />

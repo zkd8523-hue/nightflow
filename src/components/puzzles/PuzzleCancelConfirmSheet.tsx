@@ -71,7 +71,7 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
           <div className="space-y-1 text-center">
             <p className="text-[20px] font-black text-white">정말 {kind}을 내리시겠어요?</p>
             <p className="text-[13px] text-neutral-400">
-              제안한 MD들에게 알림이 발송됩니다
+              제안한 파트너들에게 알림이 발송됩니다
             </p>
           </div>
 

@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${headName} - 클럽 테이블 가격·예약`,
-    description: `${headName}${descAliases} 테이블을 정가보다 저렴하게 예약. 잔여 테이블 실시간 가격 비교, MD 직거래로 수수료 없음. 나플에서 입찰하세요.`,
+    description: `${headName}${descAliases} 테이블을 정가보다 저렴하게 예약. 잔여 테이블 실시간 가격 비교, 파트너 직거래로 수수료 없음. 나플에서 입찰하세요.`,
     keywords: [
       club.name,
       ...aliases,
@@ -406,7 +406,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
             ))}
           </ul>
           <p>
-            {ssrAreaPrefix}클럽 게스트 입장은 클럽 MD가 운영하는 게스트
+            {ssrAreaPrefix}클럽 게스트 입장은 클럽 파트너가 운영하는 게스트
             명단에 등록되어 무료입장 또는 할인 입장이 가능한 방식입니다.
             {ssrHead}에서 가능한 무료입장·게스트 혜택을 매주 갱신합니다.
           </p>

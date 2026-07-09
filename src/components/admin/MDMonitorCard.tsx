@@ -78,7 +78,7 @@ export function MDMonitorCard({ md, clubs = [], defaultClubId = null }: Props) {
       setRevokeError("박탈 사유를 입력해주세요");
       return;
     }
-    if (!confirm(`${md.name} MD의 권한을 박탈하시겠습니까?\n이 작업은 즉시 적용됩니다.`)) return;
+    if (!confirm(`${md.name} 파트너의 권한을 박탈하시겠습니까?\n이 작업은 즉시 적용됩니다.`)) return;
 
     setRevokeLoading(true);
     setRevokeError(null);
@@ -118,7 +118,7 @@ export function MDMonitorCard({ md, clubs = [], defaultClubId = null }: Props) {
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-white">{md.name} MD</span>
+                <span className="font-bold text-white">{md.name} 파트너</span>
                 {md.md_status === "suspended" && (
                   <span className="text-[10px] font-black text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full">
                     SUSPENDED
@@ -322,13 +322,13 @@ export function MDMonitorCard({ md, clubs = [], defaultClubId = null }: Props) {
                   className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 font-bold transition-colors"
                 >
                   <ShieldOff className="w-3.5 h-3.5" />
-                  MD 권한 박탈
+                  파트너 권한 박탈
                 </button>
               ) : (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5 text-xs text-red-400 font-bold">
                     <ShieldOff className="w-3.5 h-3.5" />
-                    MD 권한 박탈
+                    파트너 권한 박탈
                   </div>
                   <textarea
                     value={revokeReason}

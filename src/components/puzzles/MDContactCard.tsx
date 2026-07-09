@@ -93,7 +93,7 @@ export function MDContactCard({ md, onContactClick, lang = "ko" }: MDContactCard
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-bold text-neutral-500 uppercase">{t("카카오 오픈채팅", "KakaoTalk open chat")}</p>
-              <p className="text-[14px] font-bold text-white truncate">{t("MD 채팅방 입장", "Join chat")}</p>
+              <p className="text-[14px] font-bold text-white truncate">{t("파트너 채팅방 입장", "Join chat")}</p>
             </div>
           </div>
           <div className="flex items-center gap-1 text-[12px] font-bold text-white flex-shrink-0">

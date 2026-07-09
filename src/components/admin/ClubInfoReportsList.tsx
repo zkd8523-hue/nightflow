@@ -143,7 +143,7 @@ export function ClubInfoReportsList({ rows }: Props) {
                     <span className="font-medium">
                       {row.reporter_name}
                       {row.reporter_role === "md" && (
-                        <span className="ml-1 text-[10px] text-amber-300 font-bold">MD</span>
+                        <span className="ml-1 text-[10px] text-amber-300 font-bold">파트너</span>
                       )}
                       {row.reporter_role === "admin" && (
                         <span className="ml-1 text-[10px] text-purple-300 font-bold">ADMIN</span>

@@ -34,11 +34,11 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
                         {isRevoked ? "\uD83D\uDEAB" : "\u23F8\uFE0F"}
                     </p>
                     <h1 className="text-xl font-bold text-white">
-                        {isRevoked ? "MD 자격 박탈" : "활동 정지 중"}
+                        {isRevoked ? "파트너 자격 박탈" : "활동 정지 중"}
                     </h1>
                     <p className="text-neutral-400 text-sm">
                         {isRevoked
-                            ? "MD 자격이 박탈되었습니다. 문의사항은 관리자에게 연락해주세요."
+                            ? "파트너 자격이 박탈되었습니다. 문의사항은 관리자에게 연락해주세요."
                             : "운영 정책 위반으로 활동이 일시 정지되었습니다."}
                     </p>
                     <Link href={isRevoked ? "/" : "/md/dashboard"} className="inline-block mt-4 px-6 py-3 bg-white text-black font-bold rounded-xl">

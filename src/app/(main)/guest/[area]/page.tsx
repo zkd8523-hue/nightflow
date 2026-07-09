@@ -224,7 +224,7 @@ export default async function GuestAreaPage({ params }: PageProps) {
       <div className="sr-only">
         <h2>{area} 클럽 게스트 입장이란?</h2>
         <p>
-          {area} 클럽 게스트 입장은 클럽 MD가 운영하는 게스트 명단에 등록되어
+          {area} 클럽 게스트 입장은 클럽 파트너가 운영하는 게스트 명단에 등록되어
           무료입장 또는 할인 입장이 가능한 방식입니다. {area} 클럽 게스트
           간판은 매주 갱신되며 요일별로 무료입장 혜택, 프리드링크, 여성 무료
           등 다양한 옵션이 제공됩니다.

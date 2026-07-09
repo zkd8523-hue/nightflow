@@ -139,7 +139,7 @@ export default function DeleteAccountPage() {
                 {isMD && (
                   <div className="flex justify-between text-sm">
                     <span className="text-neutral-500 font-medium">역할</span>
-                    <span className="text-amber-400 font-bold">MD</span>
+                    <span className="text-amber-400 font-bold">파트너</span>
                   </div>
                 )}
               </div>
@@ -196,7 +196,7 @@ export default function DeleteAccountPage() {
                 <div className="flex items-center gap-2">
                   <ShieldAlert className="w-4 h-4 text-amber-400" />
                   <h3 className="text-sm font-black text-amber-400">
-                    MD 계정 안내
+                    파트너 계정 안내
                   </h3>
                 </div>
                 <ul className="space-y-1.5">

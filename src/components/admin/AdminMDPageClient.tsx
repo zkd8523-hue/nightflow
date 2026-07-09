@@ -64,7 +64,7 @@ export function AdminMDPageClient({ initialUsers, healthScores }: AdminMDPageCli
                                 Admin Operations
                             </div>
                         </div>
-                        <h1 className="text-4xl font-black tracking-tighter">MD · 파트너 관리</h1>
+                        <h1 className="text-4xl font-black tracking-tighter">파트너 관리</h1>
                         <p className="text-neutral-500 font-medium">파트너 심사 및 운영 품질 모니터링</p>
                     </div>
 

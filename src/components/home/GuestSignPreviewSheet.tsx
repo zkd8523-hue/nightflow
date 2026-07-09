@@ -39,7 +39,7 @@ export function GuestSignPreviewSheet({ open, onOpenChange }: Props) {
             <p className="text-[12px] text-amber-400 font-black tracking-wider">PREVIEW</p>
             <h2 className="text-[22px] font-black text-white tracking-tight">
               내 게스트 광고판이 됩니다
-              <span className="text-[13px] font-bold text-neutral-400 ml-1.5">(1클럽 1MD · 선착순)</span>
+              <span className="text-[13px] font-bold text-neutral-400 ml-1.5">(1클럽 1파트너 · 선착순)</span>
             </h2>
             <p className="text-[13px] text-neutral-400 leading-snug">
               유저가 홈에서 내 클럽을 발견하고
@@ -107,7 +107,7 @@ export function GuestSignPreviewSheet({ open, onOpenChange }: Props) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-bold text-[13px] truncate">NightFlow.kr</p>
-                  <p className="text-neutral-500 text-[11px]">담당 MD</p>
+                  <p className="text-neutral-500 text-[11px]">담당 파트너</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 pt-1">
@@ -150,7 +150,7 @@ export function GuestSignPreviewSheet({ open, onOpenChange }: Props) {
           </Link>
 
           <p className="text-[11px] text-neutral-600 text-center">
-            매주 월 18:00 새 간판 오픈 · 1MD 1클럽 1주 · 무료
+            매주 월 18:00 새 간판 오픈 · 1파트너 1클럽 1주 · 무료
           </p>
         </div>
       </SheetContent>

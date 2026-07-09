@@ -55,7 +55,7 @@ export default async function AdminClubMarkersPage({ params }: Props) {
                     <div>
                         <h3 className="text-white font-bold text-lg">플로어맵 이미지가 필요합니다</h3>
                         <p className="text-neutral-500 text-sm mt-2">
-                            먼저 MD가 클럽 설정에서 플로어맵 이미지를 업로드해야 합니다.<br />
+                            먼저 파트너가 클럽 설정에서 플로어맵 이미지를 업로드해야 합니다.<br />
                             그 후 이 페이지에서 테이블 마커를 배치할 수 있습니다.
                         </p>
                     </div>

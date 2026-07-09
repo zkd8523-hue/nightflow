@@ -55,7 +55,7 @@ export function FallbackOfferCard({ auction, onAccepted, onDeclined }: FallbackO
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "수락에 실패했습니다.");
-      toast.success("차순위 낙찰을 수락했습니다! MD에게 연락하세요.");
+      toast.success("차순위 낙찰을 수락했습니다! 파트너에게 연락하세요.");
       onAccepted();
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "수락에 실패했습니다.");
@@ -152,7 +152,7 @@ export function FallbackOfferCard({ auction, onAccepted, onDeclined }: FallbackO
 
         {/* 안내 */}
         <p className="text-[11px] text-neutral-500 leading-relaxed text-center">
-          수락 시 MD 연락 타이머가 시작됩니다.{"\n"}
+          수락 시 파트너 연락 타이머가 시작됩니다.{"\n"}
           거절하거나 시간이 지나도 <span className="text-white font-bold">패널티 없습니다.</span>
         </p>
 

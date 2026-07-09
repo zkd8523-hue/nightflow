@@ -18,7 +18,7 @@ const USER_CATEGORIES: { key: PushCategory; label: string; desc: string }[] = [
   {
     key: "notify_offer_arrived",
     label: "오퍼 도착",
-    desc: "내가 꽂은 깃발에 MD가 오퍼를 보냈을 때",
+    desc: "내가 꽂은 깃발에 파트너가 오퍼를 보냈을 때",
   },
   {
     key: "notify_marketing",

@@ -145,7 +145,7 @@ export function HomePuzzleCarousel({
         <div className="space-y-1">
           <p className="text-[15px] text-white font-bold">{shareMode ? "파티원과 함께 놀아요!" : "아직 등록된 깃발이 없어요"}</p>
           <p className="text-[12px] text-neutral-500">
-            {shareMode ? "조각이 모이면 클럽에서 테이블을 제안해요" : "예산·인원·날짜만 정하면 MD들이 시크릿오퍼를 보내요"}
+            {shareMode ? "조각이 모이면 클럽에서 테이블을 제안해요" : "예산·인원·날짜만 정하면 파트너들이 시크릿오퍼를 보내요"}
           </p>
         </div>
         {/* 조각 등록은 유저 전용 — MD/Admin에겐 CTA 숨김 */}

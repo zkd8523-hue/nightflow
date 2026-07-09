@@ -121,7 +121,7 @@ export function HotdealPreviewSheet({ open, onOpenChange }: Props) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-bold text-[13px] truncate">NightFlow.kr</p>
-                  <p className="text-neutral-500 text-[11px]">담당 MD</p>
+                  <p className="text-neutral-500 text-[11px]">담당 파트너</p>
                 </div>
               </div>
               <div className="bg-neutral-900/60 rounded-lg px-3 py-2 space-y-1">

@@ -331,7 +331,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
               <h3 className="text-white font-bold">
                 {club.name}
                 <span className="text-neutral-500 text-xs ml-2">{club.area}</span>
-                <span className="text-neutral-500 text-xs ml-2 font-normal">· MD {clubMdLists[club.id]?.length ?? 0}명</span>
+                <span className="text-neutral-500 text-xs ml-2 font-normal">· 파트너 {clubMdLists[club.id]?.length ?? 0}명</span>
               </h3>
               <p className="text-xs text-neutral-500 mt-1">{club.address}</p>
               {isDeleted && (
@@ -405,7 +405,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
               className="mt-3 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-bold"
             >
               {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-              MD 상세 정보 {isExpanded ? "접기" : "보기"}
+              파트너 상세 정보 {isExpanded ? "접기" : "보기"}
             </button>
           )}
 
@@ -424,7 +424,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                       {primaryMd?.profile_image && (
                         <img
                           src={normalizeProfileImage(primaryMd?.profile_image)!}
-                          alt={primaryMd?.name || "MD"}
+                          alt={primaryMd?.name || "파트너"}
                           className="relative w-full h-full object-cover"
                           onError={(e) => { e.currentTarget.style.display = "none"; }}
                         />
@@ -510,7 +510,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-6 text-center">
-                      <div className="text-neutral-600 text-sm font-bold">신규 MD</div>
+                      <div className="text-neutral-600 text-sm font-bold">신규 파트너</div>
                       <div className="text-neutral-700 text-xs mt-1">경매 실적 없음</div>
                     </div>
                   )}
@@ -518,7 +518,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
               </div>
               {primaryMdId && (
                 <Link href={`/admin/mds/${primaryMdId}`} className="mt-3 flex items-center gap-1.5 text-xs font-bold text-neutral-400 hover:text-white transition-colors">
-                  MD 상세 보기 <ArrowRight className="w-3.5 h-3.5" />
+                  파트너 상세 보기 <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               )}
             </div>
@@ -533,8 +533,8 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
       <div className="flex items-center justify-end gap-1.5">
         {([
           { v: "newest" as SortMode, label: "최신순" },
-          { v: "md_desc" as SortMode, label: "MD 많은순" },
-          { v: "md_asc" as SortMode, label: "MD 적은순" },
+          { v: "md_desc" as SortMode, label: "파트너 많은순" },
+          { v: "md_asc" as SortMode, label: "파트너 적은순" },
         ]).map((opt) => (
           <button
             key={opt.v}

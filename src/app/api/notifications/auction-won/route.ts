@@ -90,7 +90,7 @@ export async function POST(req: Request) {
         user_id: auction.winner_id,
         type: "auction_won",
         title: "낙찰을 축하합니다!",
-        message: `${clubName} ${tableInfo}을 ${price}원에 낙찰받았습니다. MD에게 연락하세요!`,
+        message: `${clubName} ${tableInfo}을 ${price}원에 낙찰받았습니다. 파트너에게 연락하세요!`,
         action_url: `/auctions/${auctionId}`,
       });
     } catch (inAppErr) {

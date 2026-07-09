@@ -260,7 +260,7 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
         {/* MD의 한마디 */}
         {h.description && (
           <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl px-4 py-3 space-y-1">
-            <p className="text-[11px] text-neutral-500 font-bold">MD의 한마디</p>
+            <p className="text-[11px] text-neutral-500 font-bold">파트너의 한마디</p>
             <p className="text-[13px] text-white leading-relaxed whitespace-pre-line">
               {h.description}
             </p>
@@ -270,7 +270,7 @@ export function HotdealDetail({ hotdeal: h }: { hotdeal: HotdealWithJoins }) {
         {/* 담당 파트너 */}
         {h.md && (
           <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3">
-            <p className="text-[11px] text-neutral-500 font-bold">담당 MD</p>
+            <p className="text-[11px] text-neutral-500 font-bold">담당 파트너</p>
             <div className="flex items-center gap-3">
               {h.md.profile_image ? (
                 <div className="relative w-11 h-11 rounded-full overflow-hidden bg-neutral-800 shrink-0">

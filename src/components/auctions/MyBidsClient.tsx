@@ -116,7 +116,7 @@ function getWonStatusConfig(status: string, isInstant = false) {
   switch (status) {
     case "won":
       return {
-        label: isInstant ? "예약 가능! MD에게 연락하세요" : "매칭 성공! MD에게 연락하세요",
+        label: isInstant ? "예약 가능! 파트너에게 연락하세요" : "매칭 성공! 파트너에게 연락하세요",
         className:
           "bg-amber-500/10 text-amber-500 border-amber-500/20 animate-pulse",
         icon: Phone,
@@ -703,7 +703,7 @@ function WonAuctionCard({
             </span>
           </div>
           <p className="text-[11px] text-neutral-600 font-medium text-right mt-1">
-            * 결제 방식은 MD 안내에 따라 진행
+            * 결제 방식은 파트너 안내에 따라 진행
           </p>
         </div>
 
@@ -859,14 +859,14 @@ function MyPuzzleCard({ puzzle, userId }: { puzzle: PuzzleWithAcceptedOffer; use
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={normalizeProfileImage(acceptedMd.profile_image)!}
-                alt={acceptedMd.display_name || "MD"}
+                alt={acceptedMd.display_name || "파트너"}
                 className="relative w-full h-full object-cover"
                 onError={(e) => { e.currentTarget.style.display = "none"; }}
               />
             )}
           </div>
           <div>
-            <p className="text-white font-bold text-[13px]">{acceptedMd.display_name || "MD"}</p>
+            <p className="text-white font-bold text-[13px]">{acceptedMd.display_name || "파트너"}</p>
             <p className="text-[10px] text-neutral-500">NightFlow 인증 파트너</p>
           </div>
         </div>

@@ -180,7 +180,7 @@ export default async function AdminAbusePage() {
             <p className="text-[18px] font-black text-red-400 mt-0.5">{zeroAccept}명</p>
           </div>
           <div className="bg-[#1C1C1E] border border-neutral-800 rounded-xl px-4 py-3">
-            <p className="text-[11px] text-neutral-500 font-bold">동일 MD ×2+</p>
+            <p className="text-[11px] text-neutral-500 font-bold">동일 파트너 ×2+</p>
             <p className="text-[18px] font-black text-red-400 mt-0.5">{repeatedMd}명</p>
           </div>
         </div>

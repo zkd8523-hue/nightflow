@@ -100,7 +100,7 @@ export function AdminCancelPuzzleButton({ puzzleId }: { puzzleId: string }) {
             </div>
             <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
               <p className="text-[12px] text-red-400">
-                취소 후 되돌릴 수 없습니다. MD 오퍼 슬롯이 회복됩니다.
+                취소 후 되돌릴 수 없습니다. 파트너 오퍼 슬롯이 회복됩니다.
               </p>
             </div>
           </div>

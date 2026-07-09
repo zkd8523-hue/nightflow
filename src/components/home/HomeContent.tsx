@@ -41,14 +41,14 @@ const ONBOARDING_STEPS = [
     color: "bg-amber-500/10",
   },
   {
-    title: "2. MD 연락",
-    desc: "예약하기 버튼을 눌러 담당 MD에게 연락하세요.",
+    title: "2. 파트너 연락",
+    desc: "예약하기 버튼을 눌러 담당 파트너에게 연락하세요.",
     icon: <span className="text-[20px]">💬</span>,
     color: "bg-emerald-500/10",
   },
   {
     title: "3. 예약 확정",
-    desc: "MD의 안내에 따라 예약하면 끝!",
+    desc: "파트너의 안내에 따라 예약하면 끝!",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },
@@ -69,7 +69,7 @@ const EARLYBIRD_ONBOARDING_STEPS = [
   },
   {
     title: "3. 낙찰 & 예약",
-    desc: "1등으로 낙찰되면, MD에게 연락해 예약을 확정받아요.",
+    desc: "1등으로 낙찰되면, 파트너에게 연락해 예약을 확정받아요.",
     icon: <CheckCircle2 className="w-5 h-5 text-blue-500" />,
     color: "bg-blue-500/10",
   },
@@ -101,7 +101,7 @@ const SECRET_OFFER_INTRO_USER = {
   title: "시크릿오퍼",
   points: [
     "오퍼는 방장에게만 공개돼요",
-    "MD끼리도 서로 내용을 못 봐요",
+    "파트너끼리도 서로 내용을 못 봐요",
     "오직 클럽명 + 조건으로 승부",
   ],
   highlights: [
@@ -163,7 +163,7 @@ const PUZZLE_ONBOARDING_STEPS_MD = [
   },
   {
     title: "2. 시크릿오퍼 제안",
-    desc: "🔒 다른 MD는 못 봐요 (가격 눈치 X)\n🤫 인스타·연락처 비공개\n👁 방장 한 명만 봐요\n⚔️ 오직 클럽명 + 조건으로 승부!",
+    desc: "🔒 다른 파트너는 못 봐요 (가격 눈치 X)\n🤫 인스타·연락처 비공개\n👁 방장 한 명만 봐요\n⚔️ 오직 클럽명 + 조건으로 승부!",
     icon: <span className="text-[20px]">✉️</span>,
     color: "bg-emerald-500/10",
   },
@@ -204,7 +204,7 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
       <>
         퍼즐이 다 모이면 <span className="text-amber-400">깃발</span>로 승격!
         <br />
-        깃발에는 MD들이 시크릿오퍼
+        깃발에는 파트너들이 시크릿오퍼
         <br />
         <span className="text-emerald-400">가격·패키지 비교하고 골라요.</span>
       </>
@@ -229,7 +229,7 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
         <div className="text-[15.5px]">최소 수익을 미리 확정하고, 최고가를 발견해봐요! 🎯</div>
       </>
     ),
-    note: "💰 수수료 0% · MD 직접 수령",
+    note: "💰 수수료 0% · 파트너 직접 수령",
   },
   puzzle: {
     // content는 HomeContent 내부에서 JSX로 재정의 (시크릿오퍼란? 버튼 포함)
@@ -807,7 +807,7 @@ export function HomeContent({
                 : "지난번 매치 어떠셨어요?"}
             </SheetTitle>
             <SheetDescription className="text-neutral-400 text-[13px] font-medium mt-1.5 leading-relaxed">
-              리뷰를 남겨주시면 MD에게 큰 도움이 돼요
+              리뷰를 남겨주시면 파트너에게 큰 도움이 돼요
             </SheetDescription>
           </SheetHeader>
 

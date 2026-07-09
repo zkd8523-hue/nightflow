@@ -92,9 +92,9 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, l
                 {isForeigner ? (
                   <>Accepting reveals the <strong className="text-white">club host&apos;s name and contact</strong>.</>
                 ) : offerChatOn ? (
-                  <>채팅으로 먼저 상담해볼 수도 있어요.<br />수락하면 <strong className="text-white">MD의 연락처</strong>를 안내해드려요.</>
+                  <>채팅으로 먼저 상담해볼 수도 있어요.<br />수락하면 <strong className="text-white">파트너의 연락처</strong>를 안내해드려요.</>
                 ) : (
-                  <>수락하면 <strong className="text-white">MD의 닉네임과 연락처</strong>가 공개됩니다.</>
+                  <>수락하면 <strong className="text-white">파트너의 닉네임과 연락처</strong>가 공개됩니다.</>
                 )}
               </SheetDescription>
             </div>
@@ -127,7 +127,7 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, l
             {/* MD 연락 수단 카드 — 수락 직후 공개 */}
             <div className="space-y-2.5">
               <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide">
-                {isForeigner ? `${md.display_name} — contact` : `${md.display_name} MD 연락 수단`}
+                {isForeigner ? `${md.display_name} — contact` : `${md.display_name} 파트너 연락 수단`}
               </p>
               <MDContactCard md={md} lang={lang} />
             </div>

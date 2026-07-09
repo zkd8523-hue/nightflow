@@ -197,7 +197,7 @@ export function LeaderInfoSheet({ open, onOpenChange, leader, title = "방장 �
                             </span>
                         </div>
                         <p className="text-[11px] text-neutral-600 mt-2 leading-relaxed">
-                            깃발 거래완료 + 경매 거래확정 합산. MD가 거래완료를 마킹해야 누적됩니다.
+                            깃발 거래완료 + 경매 거래확정 합산. 파트너가 거래완료를 마킹해야 누적됩니다.
                         </p>
                     </div>
 
@@ -205,14 +205,14 @@ export function LeaderInfoSheet({ open, onOpenChange, leader, title = "방장 �
                     <div>
                         <div className="flex items-center gap-1.5 mb-2 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
                             <Store className="w-3.5 h-3.5" />
-                            MD 평가
+                            파트너 평가
                         </div>
                         <div className="bg-neutral-900/30 border border-dashed border-neutral-800 rounded-2xl py-6 text-center px-4">
                             <p className="text-[12px] text-neutral-500 font-bold">
                                 받은 평가가 아직 없어요
                             </p>
                             <p className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
-                                거래가 쌓이면 MD가 남긴 평가가 표시됩니다
+                                거래가 쌓이면 파트너가 남긴 평가가 표시됩니다
                             </p>
                         </div>
                     </div>

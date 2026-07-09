@@ -44,7 +44,7 @@ export default async function BankVerificationsPage() {
             <div className="max-w-7xl mx-auto px-4 py-8">
                 <div className="mb-8">
                     <h1 className="text-3xl font-black text-white mb-2">계좌 검증 관리</h1>
-                    <p className="text-neutral-500">MD 정산 계좌 실명 확인 및 승인/거부</p>
+                    <p className="text-neutral-500">파트너 정산 계좌 실명 확인 및 승인/거부</p>
                 </div>
 
                 <BankVerificationManager

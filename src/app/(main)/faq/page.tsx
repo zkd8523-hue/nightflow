@@ -13,7 +13,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "나플 FAQ - 자주 묻는 질문 (나이트플로우)",
   description:
-    "나플 이용 가이드. 나플이 뭔지, 클럽 게스트·무료입장이 뭔지, 입찰 방법, 낙찰 후 MD 연락 절차, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
+    "나플 이용 가이드. 나플이 뭔지, 클럽 게스트·무료입장이 뭔지, 입찰 방법, 낙찰 후 파트너 연락 절차, 노쇼 정책, 본인인증 등 자주 묻는 질문을 한 곳에서 확인하세요.",
   alternates: { canonical: "https://nightflow.kr/faq" },
 };
 
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 const FAQ_ITEMS: { q: string; a: string }[] = [
   {
     q: "나플이 뭔가요?",
-    a: "나플은 나이트플로우(NightFlow)의 줄임말입니다. 강남·홍대 클럽 MD가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.",
+    a: "나플은 나이트플로우(NightFlow)의 줄임말입니다. 강남·홍대 클럽 파트너가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.",
   },
   {
     q: "퍼즐(클럽 조각)이 뭔가요?",
@@ -30,19 +30,19 @@ const FAQ_ITEMS: { q: string; a: string }[] = [
   },
   {
     q: "클럽 게스트 / 무료입장이 뭔가요?",
-    a: "클럽 게스트는 클럽 MD가 운영하는 게스트 명단에 등록되어 무료입장 또는 할인 입장이 가능한 방식입니다. 나플의 게스트 간판은 매주 월요일 오후 6시에 갱신되며, 클럽×요일별로 무료입장·여성 무료·프리드링크 등 혜택이 다르게 적용됩니다.",
+    a: "클럽 게스트는 클럽 파트너가 운영하는 게스트 명단에 등록되어 무료입장 또는 할인 입장이 가능한 방식입니다. 나플의 게스트 간판은 매주 월요일 오후 6시에 갱신되며, 클럽×요일별로 무료입장·여성 무료·프리드링크 등 혜택이 다르게 적용됩니다.",
   },
   {
     q: "게스트 명단은 어떻게 등록하나요?",
-    a: "원하는 클럽의 게스트 간판을 운영하는 MD에게 직접 연락하면 게스트 명단에 올려줍니다. 나플 클럽 상세 페이지에서 이번 주 게스트 간판 MD를 확인하고 인스타그램 DM 또는 카카오톡 오픈채팅으로 연락하세요.",
+    a: "원하는 클럽의 게스트 간판을 운영하는 파트너에게 직접 연락하면 게스트 명단에 올려줍니다. 나플 클럽 상세 페이지에서 이번 주 게스트 간판 파트너를 확인하고 인스타그램 DM 또는 카카오톡 오픈채팅으로 연락하세요.",
   },
   {
     q: "클럽 부킹이 뭔가요?",
-    a: "클럽 부킹은 전통적인 한국 클럽 문화로 MD가 테이블에 합석할 사람을 안내해주는 방식을 말합니다. 나플에서는 부킹 대신 테이블 경매·조각(합석)·게스트 간판 등 더 투명한 방식으로 같은 목적(테이블·일행 매칭)을 해결합니다.",
+    a: "클럽 부킹은 전통적인 한국 클럽 문화로 파트너가 테이블에 합석할 사람을 안내해주는 방식을 말합니다. 나플에서는 부킹 대신 테이블 경매·조각(합석)·게스트 간판 등 더 투명한 방식으로 같은 목적(테이블·일행 매칭)을 해결합니다.",
   },
   {
     q: "여성무료는 어떻게 받나요?",
-    a: "여성무료는 클럽이 특정 요일/시간대에 여성 게스트에게 무료입장을 제공하는 혜택입니다. 나플의 게스트 간판에서 해당 클럽이 여성 무료를 운영하는 요일을 확인하고, 표시된 MD에게 인스타 DM 또는 카카오톡 오픈채팅으로 게스트 명단 등록을 요청하면 됩니다.",
+    a: "여성무료는 클럽이 특정 요일/시간대에 여성 게스트에게 무료입장을 제공하는 혜택입니다. 나플의 게스트 간판에서 해당 클럽이 여성 무료를 운영하는 요일을 확인하고, 표시된 파트너에게 인스타 DM 또는 카카오톡 오픈채팅으로 게스트 명단 등록을 요청하면 됩니다.",
   },
 ];
 
@@ -98,7 +98,7 @@ export default function FAQPage() {
                                     <strong className="text-white">나플</strong>은 <strong className="text-white">나이트플로우(NightFlow)</strong>의 줄임말입니다.
                                 </p>
                                 <p className="mt-2">
-                                    강남·홍대 클럽 MD가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.
+                                    강남·홍대 클럽 파트너가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.
                                     "나플에서 잡는다"처럼 편하게 부르시면 됩니다.
                                 </p>
                             </AccordionContent>
@@ -128,7 +128,7 @@ export default function FAQPage() {
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
                                 <p>
-                                    <strong className="text-white">클럽 게스트</strong>는 클럽 MD가 운영하는 게스트 명단에
+                                    <strong className="text-white">클럽 게스트</strong>는 클럽 파트너가 운영하는 게스트 명단에
                                     등록되어 <strong className="text-white">무료입장</strong> 또는 할인 입장이 가능한
                                     방식입니다.
                                 </p>
@@ -151,12 +151,12 @@ export default function FAQPage() {
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
                                 <p>
-                                    원하는 클럽의 게스트 간판을 운영하는 MD에게 직접 연락하면
+                                    원하는 클럽의 게스트 간판을 운영하는 파트너에게 직접 연락하면
                                     게스트 명단에 올려줍니다.
                                 </p>
                                 <p className="mt-2">
                                     나플에서 클럽 상세 페이지에 들어가면 이번 주
-                                    게스트 간판 MD가 표시되며, 인스타그램 DM 또는 카카오톡
+                                    게스트 간판 파트너가 표시되며, 인스타그램 DM 또는 카카오톡
                                     오픈채팅으로 직접 연락해 무료입장·게스트 입장 정보를 받을 수
                                     있습니다.
                                 </p>
@@ -170,7 +170,7 @@ export default function FAQPage() {
                             <AccordionContent className="text-neutral-400 leading-relaxed">
                                 <p>
                                     <strong className="text-white">클럽 부킹</strong>은 전통적인 한국 클럽 문화로
-                                    MD가 테이블에 합석할 사람을 안내해주는 방식을 말합니다.
+                                    파트너가 테이블에 합석할 사람을 안내해주는 방식을 말합니다.
                                 </p>
                                 <p className="mt-2">
                                     나플에서는 부킹 대신 <strong className="text-white">테이블 경매</strong>,{" "}
@@ -192,7 +192,7 @@ export default function FAQPage() {
                                 </p>
                                 <p className="mt-2">
                                     나플의 <strong className="text-white">게스트 간판</strong>에서 해당 클럽이
-                                    여성 무료를 운영하는 요일을 확인하고, 표시된 MD에게 인스타 DM
+                                    여성 무료를 운영하는 요일을 확인하고, 표시된 파트너에게 인스타 DM
                                     또는 카카오톡 오픈채팅으로 게스트 명단 등록을 요청하면 됩니다.
                                 </p>
                             </AccordionContent>
@@ -204,8 +204,8 @@ export default function FAQPage() {
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
                                 <p>1. 예약된 날짜와 시간에 클럽에 방문합니다.</p>
-                                <p>2. 입구에서 MD 또는 직원에게 <span className="text-green-500 font-bold">예약자 이름과 전화번호</span>를 알려주세요.</p>
-                                <p>3. MD가 예약을 확인하고 테이블로 안내합니다.</p>
+                                <p>2. 입구에서 파트너 또는 직원에게 <span className="text-green-500 font-bold">예약자 이름과 전화번호</span>를 알려주세요.</p>
+                                <p>3. 파트너가 예약을 확인하고 테이블로 안내합니다.</p>
                                 <p>4. 포함된 서비스(주류, 안주 등)를 확인하세요.</p>
                                 <p className="mt-3 text-amber-500">💡 추가 주문은 현장에서 별도 결제됩니다.</p>
                             </AccordionContent>
@@ -219,20 +219,20 @@ export default function FAQPage() {
                         <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
                             <Store className="w-5 h-5 text-green-500" />
                         </div>
-                        <h2 className="text-xl font-black text-white">MD (마케팅 담당자)</h2>
+                        <h2 className="text-xl font-black text-white">파트너 (마케팅 담당자)</h2>
                     </div>
 
                     <Accordion type="single" collapsible className="space-y-3">
                         <AccordionItem value="md-1" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
                             <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                MD가 되려면 어떻게 해야 하나요?
+                                파트너가 되려면 어떻게 해야 하나요?
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>1. 카카오톡으로 회원가입 시 "MD로 가입하기"를 선택합니다.</p>
+                                <p>1. 카카오톡으로 회원가입 시 "파트너로 가입하기"를 선택합니다.</p>
                                 <p>2. 소속 클럽, 활동 지역, 은행 계좌 정보를 입력합니다.</p>
                                 <p>3. 관리자 승인 대기 (영업일 기준 1-2일 소요)</p>
                                 <p>4. 승인 완료 시 카카오톡 알림톡으로 안내됩니다.</p>
-                                <p className="mt-3 text-green-500 font-bold">💡 클럽과 정식 계약이 체결된 MD만 승인됩니다.</p>
+                                <p className="mt-3 text-green-500 font-bold">💡 클럽과 정식 계약이 체결된 파트너만 승인됩니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -241,7 +241,7 @@ export default function FAQPage() {
                                 조각은 어떻게 등록하나요?
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>1. MD 대시보드 → "조각 등록하기" 클릭</p>
+                                <p>1. 파트너 대시보드 → "조각 등록하기" 클릭</p>
                                 <p>2. 클럽, 테이블 타입, 인원, 포함 서비스, 이벤트 날짜를 입력합니다.</p>
                                 <p>3. 인당 가격을 설정합니다.</p>
                                 <p>4. 방문일과 마감 시각을 설정합니다.</p>
@@ -260,9 +260,9 @@ export default function FAQPage() {
 
                                 <p className="mt-3 text-neutral-400">예시: 낙찰가 20만원인 경우</p>
                                 <p>• 플랫폼 수수료: 0원 (0%)</p>
-                                <p>• MD 정산 금액: 200,000원 (전액)</p>
+                                <p>• 파트너 정산 금액: 200,000원 (전액)</p>
 
-                                <p className="mt-3 text-green-500">베타 기간 동안 MD 수수료가 무료입니다!</p>
+                                <p className="mt-3 text-green-500">베타 기간 동안 파트너 수수료가 무료입니다!</p>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -271,13 +271,13 @@ export default function FAQPage() {
                                 정산은 언제 되나요?
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>NightFlow는 결제를 중개하지 않으므로 별도 정산 과정이 없습니다. 낙찰자가 MD에게 직접 결제합니다.</p>
+                                <p>NightFlow는 결제를 중개하지 않으므로 별도 정산 과정이 없습니다. 낙찰자가 파트너에게 직접 결제합니다.</p>
 
                                 <p className="mt-3 font-bold text-white">매출 확인:</p>
-                                <p>• MD 대시보드에서 낙찰 내역을 실시간으로 확인할 수 있습니다.</p>
-                                <p>• 낙찰자가 MD에게 연락 → 현장 방문 확인 순으로 거래가 완료됩니다.</p>
+                                <p>• 파트너 대시보드에서 낙찰 내역을 실시간으로 확인할 수 있습니다.</p>
+                                <p>• 낙찰자가 파트너에게 연락 → 현장 방문 확인 순으로 거래가 완료됩니다.</p>
 
-                                <p className="mt-3 text-amber-500">💡 MD 대시보드 → 매출/정산에서 거래 현황을 확인할 수 있습니다.</p>
+                                <p className="mt-3 text-amber-500">💡 파트너 대시보드 → 매출/정산에서 거래 현황을 확인할 수 있습니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -286,7 +286,7 @@ export default function FAQPage() {
                                 VIP 고객 관리는 어떻게 하나요?
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>1. MD 대시보드 → "VIP 고객" 메뉴 접근</p>
+                                <p>1. 파트너 대시보드 → "VIP 고객" 메뉴 접근</p>
                                 <p>2. 경매 상세 페이지에서 입찰자를 클릭하면 신뢰도 프로필이 표시됩니다.</p>
                                 <p>3. "VIP 등록" 버튼을 누르고 메모를 추가합니다.</p>
                                 <p>4. VIP 고객은 입찰 목록에 ⭐ 배지로 표시됩니다.</p>
@@ -375,14 +375,14 @@ export default function FAQPage() {
                     <Accordion type="single" collapsible className="space-y-3">
                         <AccordionItem value="dispute-1" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
                             <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                MD가 연락을 받지 않아요
+                                파트너가 연락을 받지 않아요
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>낙찰 후 MD가 응답하지 않는 경우:</p>
-                                <p className="mt-2">1. 경매 상세 페이지 하단의 <span className="text-red-400 font-bold">"MD가 답하지 않아요"</span> 버튼을 눌러주세요.</p>
-                                <p>2. 신고 접수 시 연락 타이머가 <span className="text-green-400 font-bold">15분 연장</span>되고, MD에게 긴급 알림이 전송됩니다.</p>
+                                <p>낙찰 후 파트너가 응답하지 않는 경우:</p>
+                                <p className="mt-2">1. 경매 상세 페이지 하단의 <span className="text-red-400 font-bold">"파트너가 답하지 않아요"</span> 버튼을 눌러주세요.</p>
+                                <p>2. 신고 접수 시 연락 타이머가 <span className="text-green-400 font-bold">15분 연장</span>되고, 파트너에게 긴급 알림이 전송됩니다.</p>
                                 <p>3. 연장된 시간 내에도 연락이 되지 않으면 낙찰이 자동 취소되며, <span className="text-amber-400 font-bold">귀하에게는 패널티가 부과되지 않습니다.</span></p>
-                                <p className="mt-2 text-neutral-500">해당 MD에게는 운영팀에서 별도 조치합니다.</p>
+                                <p className="mt-2 text-neutral-500">해당 파트너에게는 운영팀에서 별도 조치합니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -392,12 +392,12 @@ export default function FAQPage() {
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
                                 <p>경매에 표시된 내용과 현장 서비스가 다른 경우:</p>
-                                <p className="mt-2">1. <span className="text-white font-bold">현장에서 먼저 MD에게 직접 확인</span>해주세요. 대부분의 경우 즉시 해결됩니다.</p>
+                                <p className="mt-2">1. <span className="text-white font-bold">현장에서 먼저 파트너에게 직접 확인</span>해주세요. 대부분의 경우 즉시 해결됩니다.</p>
                                 <p>2. 해결되지 않으면 고객센터로 연락해주세요.</p>
                                 <p className="pl-4 mt-1 text-sm">- 이메일: <span className="text-blue-400">maddawids@gmail.com</span></p>
                                 <p className="pl-4 text-sm">- 전화: <span className="text-blue-400">070-5236-4647</span></p>
-                                <p className="mt-2">3. 운영팀이 MD와 사실 확인 후 <span className="text-green-400 font-bold">24시간 내</span> 조치 결과를 안내드립니다.</p>
-                                <p className="mt-2 text-amber-500 font-bold">신고 내역은 해당 MD의 신뢰도 평가에 반영됩니다.</p>
+                                <p className="mt-2">3. 운영팀이 파트너와 사실 확인 후 <span className="text-green-400 font-bold">24시간 내</span> 조치 결과를 안내드립니다.</p>
+                                <p className="mt-2 text-amber-500 font-bold">신고 내역은 해당 파트너의 신뢰도 평가에 반영됩니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
@@ -406,10 +406,10 @@ export default function FAQPage() {
                                 금액 관련 분쟁이 발생했어요
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>NightFlow는 결제를 중개하지 않으므로, 금액 관련 분쟁은 MD와 직접 해결이 원칙입니다.</p>
+                                <p>NightFlow는 결제를 중개하지 않으므로, 금액 관련 분쟁은 파트너와 직접 해결이 원칙입니다.</p>
                                 <p className="mt-2 text-white font-bold">그러나 다음 경우 운영팀이 개입합니다:</p>
                                 <p className="pl-4 mt-1">- 경매 표시 금액과 현장 요구 금액이 다른 경우</p>
-                                <p className="pl-4">- MD가 추가 비용을 부당하게 요구하는 경우</p>
+                                <p className="pl-4">- 파트너가 추가 비용을 부당하게 요구하는 경우</p>
                                 <p className="pl-4">- 서비스 미제공 등 명백한 피해가 발생한 경우</p>
                                 <p className="mt-3">고객센터로 <span className="text-white font-bold">상황 설명 + 증빙(채팅 캡처 등)</span>을 보내주시면 확인 후 조치합니다.</p>
                             </AccordionContent>
@@ -417,10 +417,10 @@ export default function FAQPage() {
 
                         <AccordionItem value="dispute-4" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
                             <AccordionTrigger className="text-white font-bold hover:no-underline">
-                                부적절한 MD를 신고하고 싶어요
+                                부적절한 파트너를 신고하고 싶어요
                             </AccordionTrigger>
                             <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p>다음과 같은 경우 MD를 신고할 수 있습니다:</p>
+                                <p>다음과 같은 경우 파트너를 신고할 수 있습니다:</p>
                                 <p className="pl-4 mt-2">- 반복적 미응답 또는 무단 취소</p>
                                 <p className="pl-4">- 허위 조각 등록 (존재하지 않는 테이블 등)</p>
                                 <p className="pl-4">- 불친절하거나 부적절한 언행</p>

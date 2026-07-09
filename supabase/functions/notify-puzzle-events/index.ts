@@ -340,7 +340,7 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
       type: "puzzle_offer_deadline",
       title: hasOffers ? "오퍼 마감 · 검토 시작" : "오퍼 마감 · 결과 안내",
       message: hasOffers
-        ? `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발의 MD 오퍼가 마감됐어요. 오후 9시까지 선택해주세요.`
+        ? `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발의 파트너 오퍼가 마감됐어요. 오후 9시까지 선택해주세요.`
         : `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발이 들어온 오퍼 없이 마감됐어요. 다음에 다시 깃발을 꽂아보세요.`,
       action_url: `/flags/${puzzle.id}`,
     });

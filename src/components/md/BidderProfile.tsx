@@ -182,7 +182,7 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                     {/* MD Note */}
                     {isVip && (
                         <div className="space-y-2">
-                            <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">MD 메모</p>
+                            <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">파트너 메모</p>
                             <textarea
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}

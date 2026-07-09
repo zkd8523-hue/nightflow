@@ -170,7 +170,7 @@ export default function ReviewPage() {
         <Card className="bg-[#1C1C1E] border-neutral-800 p-6 space-y-8">
           {/* Star Rating */}
           <div className="text-center space-y-4">
-            <p className="text-neutral-400 text-sm font-bold">MD 서비스를 평가해주세요</p>
+            <p className="text-neutral-400 text-sm font-bold">파트너 서비스를 평가해주세요</p>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((s) => (
                 <button
@@ -205,7 +205,7 @@ export default function ReviewPage() {
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              placeholder="자리 좋았어요, MD 친절했어요..."
+              placeholder="자리 좋았어요, 파트너 친절했어요..."
               maxLength={200}
               rows={3}
               className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-white text-sm placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-600"

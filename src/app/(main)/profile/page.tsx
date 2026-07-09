@@ -164,7 +164,7 @@ export default function ProfilePage() {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "저장에 실패했습니다");
-      toast.success("MD 정보가 저장되었습니다");
+      toast.success("파트너 정보가 저장되었습니다");
       setIsEditingBusiness(false);
       refetch();
     } catch (e: unknown) {
@@ -212,7 +212,7 @@ export default function ProfilePage() {
         {(user.role === "md" || user.role === "admin") && (
           <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[15px] font-bold text-white">MD 정보</h2>
+              <h2 className="text-[15px] font-bold text-white">파트너 정보</h2>
               {!isEditingBusiness ? (
                 <button
                   onClick={handleEditBusiness}

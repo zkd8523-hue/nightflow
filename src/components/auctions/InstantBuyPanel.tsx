@@ -153,7 +153,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
             className="w-full h-12 text-base font-black rounded-xl transition-all active:scale-[0.98] bg-green-600 hover:bg-green-500 text-white"
             onClick={handleShowContact}
           >
-            MD 연락처 보기
+            파트너 연락처 보기
           </Button>
         ) : (
           <Button
@@ -165,7 +165,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
             onClick={() => setShowConfirm(true)}
             disabled={!isActive || loading}
           >
-            {isActive ? "MD 연락처 확인하기" : "판매 종료"}
+            {isActive ? "파트너 연락처 확인하기" : "판매 종료"}
           </Button>
         )}
 
@@ -174,7 +174,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
           <div className="flex items-center justify-center gap-1.5 -mt-5">
             <ShieldCheck className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
             <p className="text-[11px] text-neutral-500 font-medium tracking-tight">
-              결제는 MD와 직접 진행합니다
+              결제는 파트너와 직접 진행합니다
             </p>
           </div>
         )}
@@ -185,7 +185,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
         <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl">
           <SheetHeader className="text-left">
             <SheetTitle className="text-white font-black text-xl">
-              MD 연락처 확인
+              파트너 연락처 확인
             </SheetTitle>
             <SheetDescription className="text-neutral-400">
               테이블을 자세히 안내받고 일정을 편하게 조율해 보세요.
@@ -207,7 +207,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
               <div className="flex items-start gap-2 pt-1">
                 <ShieldCheck className="w-4 h-4 text-neutral-400 mt-0.5" />
                 <p className="text-[11px] text-neutral-400 leading-relaxed font-medium">
-                  계속하기를 누르면 MD 연락처가 표시됩니다.
+                  계속하기를 누르면 파트너 연락처가 표시됩니다.
                 </p>
               </div>
             </div>
@@ -237,10 +237,10 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
         <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl">
           <SheetHeader className="text-left">
             <SheetTitle className="text-white font-black text-xl">
-              {mdContact?.name ? `${mdContact.name} MD 연락처` : "MD 연락처"}
+              {mdContact?.name ? `${mdContact.name} 파트너 연락처` : "파트너 연락처"}
             </SheetTitle>
             <SheetDescription className="text-neutral-400">
-              MD에게 직접 연락하여 방문을 확정하세요
+              파트너에게 직접 연락하여 방문을 확정하세요
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-3 pb-8">
@@ -290,7 +290,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
             <div className="flex items-center justify-center gap-1.5 pt-2">
               <ShieldCheck className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
               <p className="text-[11px] text-neutral-500 font-medium">
-                결제는 MD와 직접 진행합니다
+                결제는 파트너와 직접 진행합니다
               </p>
             </div>
           </div>

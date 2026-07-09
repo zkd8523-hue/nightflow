@@ -698,9 +698,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
       toast.success(
         shareMode
-          ? t("조각이 올라갔어요! 파티원과 MD 제안을 받아보세요 🧩", "Your share is up! Get party members and club offers 🧩")
+          ? t("조각이 올라갔어요! 파티원과 파트너 제안을 받아보세요 🧩", "Your share is up! Get party members and club offers 🧩")
           : effectiveIsRecruiting
-          ? t("퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·MD 모집, 이후 60분간 검토할 수 있어요 🧩", "Posted! Offers close at 8pm. You have 60 min to review 🧩")
+          ? t("퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·파트너 모집, 이후 60분간 검토할 수 있어요 🧩", "Posted! Offers close at 8pm. You have 60 min to review 🧩")
           : t("깃발이 올라갔어요! 🚩", "Done! Top clubs will send you offers 🎉")
       );
       clearDraft();
@@ -1101,7 +1101,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             <CurrencyHint amount={isRecruitingParty ? totalBudget : budgetAmount} convertLabel="Convert" />
           )}
           <p className="font-medium -my-2">
-            <span className="text-[14px] text-amber-500/80">{t("MD가 예산에 맞춰 서비스를 구성해요", "Club offers match your budget")}</span>
+            <span className="text-[14px] text-amber-500/80">{t("파트너가 예산에 맞춰 서비스를 구성해요", "Club offers match your budget")}</span>
             {!isRecruitingParty && (
               <>
                 <span className="text-[12px] text-neutral-400"> {t("(최소 금액 50만원)", "(minimum ₩500,000)")}</span>
@@ -1240,10 +1240,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       <section className="space-y-4">
         <div className="flex items-baseline gap-2 text-white font-bold mb-2">
           <MessageCircle className="w-4 h-4 text-purple-500 self-center" />
-          <span>{isRecruitingParty ? (shareMode ? t("조각 소개", "About your group") : t("퍼즐 소개", "About your group")) : t("MD에게 한마디", "Message to club")}</span>
+          <span>{isRecruitingParty ? (shareMode ? t("조각 소개", "About your group") : t("퍼즐 소개", "About your group")) : t("파트너에게 한마디", "Message to club")}</span>
           {isRecruitingParty && (
             <span className="text-[11px] text-neutral-500 font-normal">
-              {t("참여자와 MD가 가장 먼저 읽어요", "First thing clubs see")}
+              {t("참여자와 파트너가 가장 먼저 읽어요", "First thing clubs see")}
             </span>
           )}
           <span className={`ml-auto text-[11px] font-normal ${notes.length >= 60 ? "text-amber-500" : "text-neutral-500"}`}>
@@ -1382,9 +1382,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         title={isEditMode
           ? t("수정할까요?", "Save changes?")
           : (shareMode
-            ? t("조각을 올리면 파티원·MD 제안이 바로 시작돼요", "Post your share — party members and club offers start right away")
+            ? t("조각을 올리면 파티원·파트너 제안이 바로 시작돼요", "Post your share — party members and club offers start right away")
             : (isRecruitingParty
-              ? t("퍼즐이 완성되면 MD가 오퍼를 보내와요", "Clubs will send offers once your group is complete")
+              ? t("퍼즐이 완성되면 파트너가 오퍼를 보내와요", "Clubs will send offers once your group is complete")
               : t("마음에 드는 오퍼만 고르면 끝!", "Just pick the offer you like!")))}
         description={isEditMode
           ? t("변경된 내용으로 갱신됩니다.", "Your request will be updated.")

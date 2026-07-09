@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       auction.current_bid || auction.start_price
     );
     title = `${head} 클럽 테이블 경매 - 현재가 ₩${currentPrice}`;
-    description = `${head} 클럽 테이블 ${auction.title}. 현재가 ₩${currentPrice}, 입찰 ${auction.bid_count}회. MD 직거래로 정가보다 저렴하게 예약하세요.`;
+    description = `${head} 클럽 테이블 ${auction.title}. 현재가 ₩${currentPrice}, 입찰 ${auction.bid_count}회. 파트너 직거래로 정가보다 저렴하게 예약하세요.`;
   }
 
   return {

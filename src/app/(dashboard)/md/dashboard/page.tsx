@@ -67,7 +67,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     if (testMode && !userData) {
         userData = {
             id: userId,
-            name: "테스트MD",
+            name: "테스트파트너",
             role: "md",
             md_unique_slug: "test-md-1234",
         } as User;
@@ -77,7 +77,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
         return (
             <div className="p-20 text-white bg-[#0A0A0A] min-h-screen text-center">
                 <h2 className="text-xl font-bold mb-4">로그인이 필요하거나 권한이 없습니다.</h2>
-                <p className="text-neutral-500">MD 계정으로 로그인해주세요.</p>
+                <p className="text-neutral-500">파트너 계정으로 로그인해주세요.</p>
             </div>
         );
     }

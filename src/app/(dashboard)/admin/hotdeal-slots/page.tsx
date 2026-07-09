@@ -151,7 +151,7 @@ export default async function AdminHotdealSlotsPage({
           </div>
           <h1 className="text-4xl font-black tracking-tighter">게스트 간판 배정</h1>
           <p className="text-neutral-500 font-medium">
-            클럽별 담당 MD를 미리 배정해요. 빈 슬롯은 그대로 두면 MD가 선착순으로 차지할 수 있어요.
+            클럽별 담당 파트너를 미리 배정해요. 빈 슬롯은 그대로 두면 파트너가 선착순으로 차지할 수 있어요.
           </p>
         </header>
 

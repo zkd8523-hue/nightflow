@@ -18,7 +18,7 @@ export async function generateMetadata({
   if (lang === "ko") {
     return {
       title: "깃발 꽂기",
-      description: "날짜·지역·예산 정하면 강남·홍대 클럽 MD들이 시크릿오퍼를 보내요.",
+      description: "날짜·지역·예산 정하면 강남·홍대 클럽 파트너들이 시크릿오퍼를 보내요.",
       alternates: { canonical: "https://nightflow.kr/flags/new" },
       openGraph: {
         title: "깃발 꽂기 — 시크릿오퍼 받기",

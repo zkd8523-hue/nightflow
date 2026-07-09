@@ -490,7 +490,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 <div className="space-y-2">
                   <p className="text-[15px] font-bold text-neutral-300">오늘특가가 곧 올라옵니다</p>
                   <p className="text-[12px] text-neutral-500 leading-relaxed">
-                    MD가 오늘 특가를 올리면
+                    파트너가 오늘 특가를 올리면
                     <br />
                     빠르게 잡을 수 있어요.
                   </p>

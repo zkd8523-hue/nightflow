@@ -78,7 +78,7 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "병합 실패");
-      toast.success(`${source.name} → ${target.name} 병합 완료 (경매 ${result.merged_auctions}건, MD ${result.merged_mds}명)`);
+      toast.success(`${source.name} → ${target.name} 병합 완료 (경매 ${result.merged_auctions}건, 파트너 ${result.merged_mds}명)`);
       onMerged(source.id);
       onClose();
     } catch (e: unknown) {
@@ -108,7 +108,7 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
               </p>
               {preview && (
                 <p className="text-xs text-neutral-500 mt-2">
-                  경매 <span className="text-amber-400 font-bold">{preview.auction_count}건</span>, MD <span className="text-amber-400 font-bold">{preview.md_count}명</span>이 대표 클럽으로 이전됩니다
+                  경매 <span className="text-amber-400 font-bold">{preview.auction_count}건</span>, 파트너 <span className="text-amber-400 font-bold">{preview.md_count}명</span>이 대표 클럽으로 이전됩니다
                 </p>
               )}
             </div>
@@ -138,7 +138,7 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
                       >
                         <span className="text-sm text-white font-bold">
                           {c.name}
-                          <span className="text-xs text-neutral-500 font-normal ml-1.5">(MD {c.md_count}명)</span>
+                          <span className="text-xs text-neutral-500 font-normal ml-1.5">(파트너 {c.md_count}명)</span>
                         </span>
                         <span className="text-xs text-neutral-500">{c.area}</span>
                       </button>
@@ -165,7 +165,7 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
               <div className="flex gap-2 bg-red-500/5 border border-red-500/20 rounded-xl p-3">
                 <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
                 <p className="text-xs text-red-300 leading-relaxed">
-                  병합 후 source 클럽은 삭제됩니다. 복구는 가능하지만 이전된 경매·MD는 자동 복구되지 않습니다. 신중히 확인하세요.
+                  병합 후 source 클럽은 삭제됩니다. 복구는 가능하지만 이전된 경매·파트너는 자동 복구되지 않습니다. 신중히 확인하세요.
                 </p>
               </div>
             )}

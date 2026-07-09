@@ -44,7 +44,7 @@ export function ReportActions({ reportId, status }: ReportActionsProps) {
 
       toast.success(
         action === "approved"
-          ? "신고 승인: 경매가 취소되고 MD 경고가 누적되었습니다."
+          ? "신고 승인: 경매가 취소되고 파트너 경고가 누적되었습니다."
           : "신고가 기각되었습니다."
       );
       router.refresh();

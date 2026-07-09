@@ -88,7 +88,7 @@ export function Footer() {
               href="/md/apply"
               className="inline-block rounded-full border border-amber-500 px-5 py-2 text-sm font-semibold text-amber-400 hover:bg-amber-500 hover:text-black transition-colors"
             >
-              MD · 파트너 모집 →
+              파트너 모집 →
             </Link>
           )}
           {showAppCta && (

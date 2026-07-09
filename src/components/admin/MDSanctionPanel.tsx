@@ -152,7 +152,7 @@ export function MDSanctionPanel({
           <ShieldOff className="w-5 h-5 text-neutral-500 shrink-0" />
           <div>
             <p className="text-sm font-bold text-neutral-400">자격 박탈됨</p>
-            <p className="text-xs text-neutral-500">MD 자격이 영구적으로 박탈되었습니다. 일반 유저로 전환되었습니다.</p>
+            <p className="text-xs text-neutral-500">파트너 자격이 영구적으로 박탈되었습니다. 일반 유저로 전환되었습니다.</p>
           </div>
         </div>
       )}
@@ -254,11 +254,11 @@ export function MDSanctionPanel({
               {dialogAction && ACTION_LABELS[dialogAction]}
             </DialogTitle>
             <DialogDescription className="text-neutral-400">
-              <span className="text-white font-bold">{mdName}</span> MD에게{" "}
+              <span className="text-white font-bold">{mdName}</span> 파트너에게{" "}
               {dialogAction === "warning" && "경고를 발송합니다."}
               {dialogAction === "suspend" && "활동 정지를 적용합니다. 진행중인 경매가 취소됩니다."}
               {dialogAction === "unsuspend" && "활동 정지를 해제합니다."}
-              {dialogAction === "revoke" && "MD 자격을 영구 박탈합니다. 이 작업은 되돌릴 수 없습니다."}
+              {dialogAction === "revoke" && "파트너 자격을 영구 박탈합니다. 이 작업은 되돌릴 수 없습니다."}
             </DialogDescription>
           </DialogHeader>
 
@@ -289,7 +289,7 @@ export function MDSanctionPanel({
             <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
               <p className="text-xs text-red-400 leading-relaxed">
-                자격 박탈 시 MD 역할이 일반 유저로 변경되며, 진행중인 모든 경매가 취소됩니다.
+                자격 박탈 시 파트너 역할이 일반 유저로 변경되며, 진행중인 모든 경매가 취소됩니다.
                 이 작업은 되돌릴 수 없습니다.
               </p>
             </div>

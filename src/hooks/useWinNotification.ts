@@ -87,7 +87,7 @@ export function useWinNotification() {
           }
 
           toast.success(`🎉 ${clubName} 테이블에 낙찰되셨습니다!`, {
-            description: "MD에게 연락하여 예약을 확정해주세요.",
+            description: "파트너에게 연락하여 예약을 확정해주세요.",
             duration: 15000,
             position: "top-center",
             action: {

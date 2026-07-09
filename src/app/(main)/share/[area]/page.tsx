@@ -208,7 +208,7 @@ export default async function ShareAreaPage({ params }: PageProps) {
         <h2>{area} 조각이란?</h2>
         <p>
           {area} 조각은 {area} 클럽에 같이 갈 일행을 모집하거나 합류하는
-          방식입니다. {area} 클럽 MD가 인당 가격으로 조각 매물을 올리면 회원이
+          방식입니다. {area} 클럽 파트너가 인당 가격으로 조각 매물을 올리면 회원이
           한 자리씩 합류해서 같이 입장합니다. 클럽 조각·합석으로 부르기도
           합니다.
         </p>

@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
 
     if (!isApprovedMD && !isAdmin) {
       return NextResponse.json(
-        { error: "경매 등록 권한이 없습니다. MD 승인이 필요합니다." },
+        { error: "경매 등록 권한이 없습니다. 파트너 승인이 필요합니다." },
         { status: 403 }
       );
     }

@@ -112,7 +112,7 @@ export default async function MatchPage({ params }: MatchPageProps) {
               <Shield className="w-4 h-4 text-neutral-500" />
               <div>
                 <p className="text-[9px] text-neutral-500 font-bold uppercase">결제</p>
-                <p className="text-sm font-bold text-neutral-400">현장에서 MD에게 직접 결제</p>
+                <p className="text-sm font-bold text-neutral-400">현장에서 파트너에게 직접 결제</p>
               </div>
             </div>
 

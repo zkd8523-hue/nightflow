@@ -12,7 +12,7 @@ export function AdminPuzzleRefundButton({ puzzleId }: { puzzleId: string }) {
   const supabase = createClient();
 
   const handleRefund = async () => {
-    if (!confirm(`깃발 ${puzzleId.slice(0, 8)}의 모든 MD 열람 크레딧을 환불하고 깃발을 취소 처리하겠습니까?\n대표자 계정도 차단됩니다.`)) return;
+    if (!confirm(`깃발 ${puzzleId.slice(0, 8)}의 모든 파트너 열람 크레딧을 환불하고 깃발을 취소 처리하겠습니까?\n대표자 계정도 차단됩니다.`)) return;
 
     setLoading(true);
     try {
@@ -27,7 +27,7 @@ export function AdminPuzzleRefundButton({ puzzleId }: { puzzleId: string }) {
         return;
       }
 
-      toast.success(`환불 완료: ${data.refunded_count}명의 MD에게 크레딧 환불`);
+      toast.success(`환불 완료: ${data.refunded_count}명의 파트너에게 크레딧 환불`);
       router.refresh();
     } catch {
       toast.error("환불 처리 중 오류가 발생했습니다");
@@ -42,7 +42,7 @@ export function AdminPuzzleRefundButton({ puzzleId }: { puzzleId: string }) {
       disabled={loading}
       className="w-full h-10 bg-red-500 hover:bg-red-400 text-white font-bold text-[13px] rounded-xl"
     >
-      {loading ? "처리 중..." : "환불 처리 (MD 크레딧 환불 + 깃발 취소 + 대표자 차단)"}
+      {loading ? "처리 중..." : "환불 처리 (파트너 크레딧 환불 + 깃발 취소 + 대표자 차단)"}
     </Button>
   );
 }

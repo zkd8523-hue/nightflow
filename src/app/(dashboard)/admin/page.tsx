@@ -222,7 +222,7 @@ export default async function AdminDashboardPage() {
       href: "/admin/users",
     },
     {
-      label: "MD 관리",
+      label: "파트너 관리",
       value: `${totalMDs || 0}명`,
       icon: Store,
       color: "text-green-500",
@@ -417,7 +417,7 @@ export default async function AdminDashboardPage() {
                 <tr className="border-b border-neutral-800">
                   <th className="text-left px-5 py-3 text-neutral-500 font-bold">지역</th>
                   <th className="text-right px-4 py-3 text-neutral-500 font-bold">클럽</th>
-                  <th className="text-right px-4 py-3 text-neutral-500 font-bold">MD</th>
+                  <th className="text-right px-4 py-3 text-neutral-500 font-bold">파트너</th>
                   <th className="text-right px-4 py-3 text-neutral-500 font-bold">경매</th>
                   <th className="text-right px-5 py-3 text-neutral-500 font-bold">평균 입찰</th>
                   <th className="text-right px-5 py-3 text-neutral-500 font-bold">평균 관심</th>

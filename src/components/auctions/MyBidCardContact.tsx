@@ -75,7 +75,7 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
             </div>
           </div>
           <div>
-            <span className="text-white font-bold text-sm">{md?.name || "담당 MD"}</span>
+            <span className="text-white font-bold text-sm">{md?.name || "담당 파트너"}</span>
             {md?.instagram && (
               <a href={`https://instagram.com/${md.instagram}`} target="_blank" rel="noopener noreferrer" className="block text-neutral-500 text-[11px] font-medium hover:text-neutral-300 transition-colors">@{md.instagram}</a>
             )}
