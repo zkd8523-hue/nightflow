@@ -304,7 +304,7 @@ export function Header({
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5 text-black" />
-                  <span className="text-[12px] font-black text-black whitespace-nowrap">MD 대시보드</span>
+                  <span className="text-[12px] font-black text-black whitespace-nowrap">파트너 대시보드</span>
                 </Link>
               )}
               {!compact && user.md_status === "pending" && (
@@ -365,7 +365,7 @@ export function Header({
                       </SheetTitle>
                       {(user.role === "md" || user.role === "admin") ? (
                         <p className="text-[12px] text-neutral-500">
-                          {user.role === "md" ? "MD · 파트너" : "관리자"}
+                          {user.role === "md" ? "파트너" : "관리자"}
                         </p>
                       ) : (
                         <p className="text-[12px] text-neutral-500">프로필 보기</p>
@@ -488,7 +488,7 @@ export function Header({
                           className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                         >
                           <User className="w-5 h-5 text-amber-500" />
-                          <span className="text-[15px] font-bold">MD 승인</span>
+                          <span className="text-[15px] font-bold">파트너 승인</span>
                           {pendingMDCount > 0 && (
                             <span className="ml-auto bg-red-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
                               {pendingMDCount}
@@ -513,7 +513,7 @@ export function Header({
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                       >
                         <LayoutDashboard className="w-5 h-5 text-blue-500" />
-                        <span className="text-[15px] font-bold">MD 대시보드</span>
+                        <span className="text-[15px] font-bold">파트너 대시보드</span>
                       </Link>
                     )}
 
@@ -522,7 +522,7 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
-                      <Heart className="w-5 h-5 text-neutral-500" />
+                      <Heart className="w-5 h-5 text-rose-500" />
                       <span className="text-[15px] font-bold">찜 목록</span>
                     </Link>
 
@@ -531,7 +531,7 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
-                      <HelpCircle className="w-5 h-5 text-neutral-500" />
+                      <HelpCircle className="w-5 h-5 text-sky-500" />
                       <span className="text-[15px] font-bold">자주 묻는 질문</span>
                     </Link>
 
@@ -540,7 +540,7 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
-                      <Headset className="w-5 h-5 text-neutral-500" />
+                      <Headset className="w-5 h-5 text-green-500" />
                       <span className="text-[15px] font-bold">고객 문의</span>
                       {supportUnread && (
                         <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
@@ -552,7 +552,7 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
-                      <Settings className="w-5 h-5 text-neutral-500" />
+                      <Settings className="w-5 h-5 text-amber-500" />
                       <span className="text-[15px] font-bold">설정</span>
                     </Link>
 
@@ -577,7 +577,7 @@ export function Header({
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
                     >
                       <Star className="w-5 h-5 text-amber-500" />
-                      <span className="text-[15px] font-bold">MD · 파트너 신청</span>
+                      <span className="text-[15px] font-bold">파트너 신청</span>
                     </Link>
                   </div>
                 )}
