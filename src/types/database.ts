@@ -1069,6 +1069,18 @@ export interface AuctionTemplate {
   club?: Club;
 }
 
+// MD 오퍼 세트/프리셋 (Migration 437) — 깃발 오퍼 구성 원클릭 채움
+export interface MdOfferPreset {
+  id: string;
+  md_id: string;
+  name: string;
+  club_id: string | null;
+  includes: string[];
+  comment: string | null;
+  created_at: string;
+  club?: Pick<Club, "name" | "area"> | null;
+}
+
 // 핫딜 템플릿 (Migration 242)
 export interface HotdealTemplate {
   id: string;

@@ -12,10 +12,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { Check, ChevronDown, X, Lock, ArrowRight, Music } from "lucide-react";
-import type { Puzzle, Club, PuzzleOffer } from "@/types/database";
+import { Check, ChevronDown, X, Lock, ArrowRight, Music, Bookmark } from "lucide-react";
+import type { Puzzle, Club, PuzzleOffer, MdOfferPreset } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { LiquorSelector } from "@/components/md/LiquorSelector";
+import { OfferPresetSheet } from "@/components/puzzles/OfferPresetSheet";
 import { EXTRAS_OPTIONS, LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
 import { detectContactInfo, describeContactDetection } from "@/lib/utils/contact-detector";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
@@ -44,6 +45,16 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   const [selectedClubId, setSelectedClubId] = useState<string>("");
   const [selectedIncludes, setSelectedIncludes] = useState<string[]>([]);
   const [comment, setComment] = useState("");
+  const [presetOpen, setPresetOpen] = useState(false);
+  // 제안서 보내기 직전 "템플릿으로 저장할까요?" 프롬프트 (레퍼런스: AuctionForm 조각 등록)
+  const [showSavePrompt, setShowSavePrompt] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  // 방금 불러왔거나 이미 물어본 구성 키 → 같은 구성 재제출 시 프롬프트 스킵
+  const [lastLoadedKey, setLastLoadedKey] = useState<string | null>(null);
+  // 저장 프롬프트에서 참고용으로 보여줄 기존 템플릿 목록 (중복 저장/한도 인지)
+  const [existingPresets, setExistingPresets] = useState<{ id: string; name: string }[]>([]);
+  const [showPresetList, setShowPresetList] = useState(false); // 목록 드롭다운 접힘/펼침
   const [customExtra, setCustomExtra] = useState<string>("");
   const [showCustomExtraInput, setShowCustomExtraInput] = useState(false);
   // 자주 쓰는 코멘트 프리셋 (계정 단위 DB 저장, 최대 5개) — Migration 347
@@ -200,6 +211,21 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     );
   };
 
+  // 저장된 템플릿 적용 → 폼 채우기 (가격은 예산 고정이라 대상 아님)
+  const applyPreset = (preset: MdOfferPreset) => {
+    // 템플릿에 담긴 클럽이 현재 내 클럽 목록에 있을 때만 선택 (삭제/권한변경 방어)
+    if (preset.club_id && myClubs.some((c) => c.id === preset.club_id)) {
+      setSelectedClubId(preset.club_id);
+    }
+    const nextIncludes = preset.includes || [];
+    const nextComment = preset.comment || "";
+    setSelectedIncludes(nextIncludes);
+    setComment(nextComment);
+    // 불러온 그대로 제출하면 저장 프롬프트 스킵 (이미 저장돼 있으므로)
+    setLastLoadedKey(JSON.stringify({ i: nextIncludes, c: nextComment.trim() }));
+    toast.success(`'${preset.name}' 템플릿을 불러왔어요`);
+  };
+
   const liquorItems = selectedIncludes.filter((item) =>
     LIQUOR_KEYWORDS.some((kw) => item.includes(kw))
   );
@@ -237,6 +263,20 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       return;
     }
 
+    // 깃발 신규 오퍼: 제출 직전 "템플릿으로 저장할까요?" 확인 (레퍼런스: 조각 등록 플로우)
+    // 방금 템플릿에서 불러온 그대로거나 이미 물어본 구성이면 다시 묻지 않음.
+    const key = JSON.stringify({ i: selectedIncludes, c: comment.trim() });
+    if (!editingOffer && !puzzle.is_recruiting_party && selectedIncludes.length > 0 && key !== lastLoadedKey) {
+      setTemplateName(""); // 프롬프트는 항상 빈 칸으로 (플레이스홀더 예시만 노출)
+      setShowSavePrompt(true);
+      return;
+    }
+    await performSubmit();
+  };
+
+  const performSubmit = async () => {
+    // 같은 구성 재제출 시 프롬프트 재노출/중복 저장 방지
+    setLastLoadedKey(JSON.stringify({ i: selectedIncludes, c: comment.trim() }));
     setLoading(true);
     try {
       const { data, error } = editingOffer
@@ -279,14 +319,6 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr + "T00:00:00");
-    const m = d.getMonth() + 1;
-    const day = d.getDate();
-    const days = ["일", "월", "화", "수", "목", "금", "토"];
-    return `${m}/${day} ${days[d.getDay()]}`;
-  };
-
   const isDirty = selectedIncludes.length > 0 || comment.trim().length > 0;
 
   const confirmClose = () => {
@@ -309,7 +341,22 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [open, isDirty]);
 
+  // 저장 프롬프트가 열릴 때 기존 템플릿 목록 조회 (RLS로 본인 것만)
+  useEffect(() => {
+    if (!showSavePrompt) return;
+    setShowPresetList(false); // 프롬프트 열릴 때 목록은 접힌 상태로 시작
+    (async () => {
+      const { data } = await supabase
+        .from("md_offer_presets")
+        .select("id, name")
+        .order("created_at", { ascending: false });
+      setExistingPresets((data ?? []) as { id: string; name: string }[]);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showSavePrompt]);
+
   return (
+    <>
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCloseAttempt(); }}>
       <SheetContent
         side="bottom"
@@ -322,35 +369,17 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             <SheetTitle className="text-white text-[17px] font-black text-left">
               {editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼"}{puzzle.is_recruiting_party ? " 🧩" : ""}
             </SheetTitle>
-            <span className="flex items-center gap-1 text-[10px] text-neutral-400 font-bold flex-shrink-0">
+            <span className="flex items-center gap-1 text-[10px] text-amber-400 font-bold flex-shrink-0">
               <Lock className="w-3 h-3" />
               방장에게만 공개돼요
             </span>
           </div>
-          {!puzzle.is_recruiting_party && (
-            <p className="text-[14px] text-amber-400 font-bold leading-snug mt-0.5 text-left">
-              오직 클럽명과 조건만으로 깃발을 따보세요!
-            </p>
+          {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-bold w-fit">
+              <Music className="w-3 h-3" />
+              {puzzle.music_preference === "hiphop" ? "힙합" : "EDM"} 선호
+            </span>
           )}
-          <div className="text-left space-y-0">
-            {/* 조각은 인원·가격이 실시간 변동 → 헤더에서 날짜/예산 요약 제거 */}
-            {!puzzle.is_recruiting_party && (
-              <p className="text-[13px] text-neutral-400">
-                {formatDate(puzzle.event_date)} {puzzle.area}
-              </p>
-            )}
-            {!puzzle.is_recruiting_party && (
-              <p className="text-[14px] text-neutral-300 font-bold">
-                {baseBudget.toLocaleString()}원 <span className="text-[13px] text-neutral-500 font-normal ml-1">· {puzzle.target_count}명</span>
-              </p>
-            )}
-            {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
-              <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-bold">
-                <Music className="w-3 h-3" />
-                {puzzle.music_preference === "hiphop" ? "힙합" : "EDM"} 선호
-              </span>
-            )}
-          </div>
         </SheetHeader>
 
         {/* 슬롯 & 크레딧 상태 */}
@@ -407,6 +436,18 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         </div>
 
         <div className="space-y-6">
+          {/* 템플릿 불러오기 (깃발 전용 — 저장은 제안서 보내기 직후 프롬프트에서) */}
+          {!puzzle.is_recruiting_party && (
+            <button
+              type="button"
+              onClick={() => setPresetOpen(true)}
+              className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-neutral-200 border border-neutral-400 text-[13px] font-bold text-neutral-900 hover:bg-neutral-300 transition-all"
+            >
+              <Bookmark className="w-4 h-4 text-neutral-900" />
+              템플릿 불러오기
+            </button>
+          )}
+
           {/* 클럽 선택 */}
           <div className="space-y-2">
             <p className="text-[11px] font-bold text-neutral-500 tracking-wide">클럽 선택</p>
@@ -648,5 +689,111 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         </div>
       </SheetContent>
     </Sheet>
+
+    {/* 템플릿 불러오기 (불러오기 전용) */}
+    <OfferPresetSheet
+      open={presetOpen}
+      onOpenChange={setPresetOpen}
+      onApply={applyPreset}
+    />
+
+    {/* 제안서 보내기 직전 "템플릿으로 저장할까요?" — 예/아니오 모두 실제 전송으로 이어짐 */}
+    <Sheet
+      open={showSavePrompt}
+      onOpenChange={(o) => {
+        // 바깥 클릭/스와이프로 닫아도 전송은 진행 (아니오와 동일)
+        if (!o) {
+          setShowSavePrompt(false);
+          performSubmit();
+        }
+      }}
+    >
+      <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
+        <SheetHeader className="text-left pb-2 p-0">
+          <SheetTitle className="text-white text-[17px] font-black">이 구성을 템플릿으로 저장할까요?</SheetTitle>
+        </SheetHeader>
+        <p className="text-neutral-400 text-[13px] mb-4">다음 제안 때 한 번에 불러올 수 있어요.</p>
+
+        {/* 이미 저장된 템플릿 (참고용, 접이식) — 중복 저장/한도 인지 */}
+        {existingPresets.length > 0 && (
+          <div className="mb-4">
+            <button
+              type="button"
+              onClick={() => setShowPresetList((v) => !v)}
+              className="w-full flex items-center justify-between px-1 py-0.5"
+            >
+              <p className="text-[11px] text-neutral-500 font-bold tracking-wide">
+                내 템플릿 <span className={existingPresets.length >= 10 ? "text-red-400" : "text-neutral-600"}>{existingPresets.length}/10</span>
+              </p>
+              <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${showPresetList ? "rotate-180" : ""}`} />
+            </button>
+            {showPresetList && (
+              <div className="mt-1.5 max-h-32 overflow-y-auto rounded-xl border border-neutral-800 divide-y divide-neutral-800/60">
+                {existingPresets.map((p) => (
+                  <div key={p.id} className="px-3 py-2 text-[12px] text-neutral-400 truncate">
+                    {p.name}
+                  </div>
+                ))}
+              </div>
+            )}
+            {existingPresets.length >= 10 && (
+              <p className="text-[11px] text-red-400 mt-1.5">가득 찼어요. 저장하려면 목록에서 하나 지워주세요.</p>
+            )}
+          </div>
+        )}
+
+        <div className="mb-4 space-y-1.5">
+          <p className="text-[11px] text-neutral-500 font-bold tracking-wide">새 템플릿</p>
+          <Input
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            placeholder="예: 평일 50만원 / 주말 100만원"
+            maxLength={30}
+            className="bg-neutral-900 border-neutral-800 h-11 text-amber-400 font-bold text-[14px]"
+          />
+        </div>
+
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1 border-neutral-700 text-neutral-400 hover:text-white"
+            disabled={savingTemplate}
+            onClick={() => {
+              setShowSavePrompt(false);
+              performSubmit();
+            }}
+          >
+            아니오
+          </Button>
+          <Button
+            className="flex-1 bg-white text-black hover:bg-neutral-100 font-black"
+            disabled={savingTemplate}
+            onClick={async () => {
+              setSavingTemplate(true);
+              const name = templateName.trim() || selectedIncludes[0] || "내 템플릿";
+              // 코멘트·구성은 handleSubmit에서 이미 식별정보 검증 통과 → 그대로 저장
+              const { error } = await supabase.from("md_offer_presets").insert({
+                name,
+                club_id: selectedClubId || null,
+                includes: selectedIncludes,
+                comment: comment.trim() || null,
+              });
+              setSavingTemplate(false);
+              setShowSavePrompt(false);
+              if (error) {
+                // 최대 10개 초과 등은 알리되, 전송은 계속 진행
+                toast.error(error.message?.includes("최대") ? error.message : "템플릿 저장에 실패했어요");
+              } else {
+                toast.success("템플릿으로 저장했어요");
+              }
+              performSubmit();
+            }}
+          >
+            {savingTemplate ? "저장 중..." : "예, 저장"}
+          </Button>
+        </div>
+      </SheetContent>
+    </Sheet>
+    </>
   );
 }
