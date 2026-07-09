@@ -42,7 +42,7 @@ export async function POST(
       .single();
 
     if (!md || md.md_status !== "pending") {
-      return NextResponse.json({ error: "pending 상태의 MD만 승인할 수 있습니다." }, { status: 400 });
+      return NextResponse.json({ error: "pending 상태의 파트너만 승인할 수 있습니다." }, { status: 400 });
     }
 
     // 2-1. 클럽 병합 처리 (merge_club_id 있을 때)
@@ -80,7 +80,8 @@ export async function POST(
 
     if (error) throw error;
 
-    // 3-1. 기존 클럽 다중 연결 (MD가 여러 클럽 운영) — club_partners partner로 upsert.
+    // 3-1. 기존 클럽 연결 (신청 시 클럽을 생성하지 않으므로, 승인 때 실제 클럽에 연결).
+    //      club_partners partner로 upsert + 첫 클럽을 기본 클럽으로 지정.
     //      연결 실패는 승인 자체를 막지 않고 로깅만.
     if (link_club_ids.length > 0) {
       const { error: linkErr } = await supabaseAdmin
@@ -89,7 +90,14 @@ export async function POST(
           link_club_ids.map((cid) => ({ club_id: cid, md_id: mdId, role: "partner" as const })),
           { onConflict: "club_id,md_id", ignoreDuplicates: true }
         );
-      if (linkErr) logger.error("[Admin approve] 클럽 다중 연결 실패:", linkErr);
+      if (linkErr) logger.error("[Admin approve] 클럽 연결 실패:", linkErr);
+
+      // 첫 연결 클럽을 기본 클럽으로 지정 (신청 시 default_club_id = null).
+      const { error: defErr } = await supabaseAdmin
+        .from("users")
+        .update({ default_club_id: link_club_ids[0] })
+        .eq("id", mdId);
+      if (defErr) logger.error("[Admin approve] 기본 클럽 지정 실패:", defErr);
     }
 
     // 4. 승인 알림톡 발송

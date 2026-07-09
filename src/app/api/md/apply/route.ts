@@ -49,10 +49,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       display_name, area, phone: rawPhone, instagram, kakao_open_chat_url, business_card_url,
-      club_name, club_thumbnail_url,
+      club_name,
       floor_plan_url,
     } = body;
-    // 추가 소속 클럽 (이름만 — 주소/좌표는 admin이 나중에 등록). 최대 4개.
+    // 소속 클럽 이름 (대표 + 추가) — 신청 시 클럽을 생성하지 않고 메모로만 저장.
+    // 실제 클럽 연결은 admin이 승인 화면에서 기존 클럽에 연결(club_partners).
     const extraClubNames: string[] = Array.isArray(body.extra_club_names) ? body.extra_club_names : [];
 
     // phone 정규화 (하이픈 제거 등). phone_verifications과 users.phone 모두 normalized 형태로 일관 저장.
@@ -63,9 +64,6 @@ export async function POST(request: NextRequest) {
       );
     }
     const phone = normalizePhone(rawPhone);
-
-    // clubs.area는 TEXT 단일값 — 대표 지역(첫 번째) 사용
-    const primaryArea: string = Array.isArray(area) ? area[0] : area;
 
     // 4. 필수 필드 검증 (주소·좌표는 등록폼에서 제거 — 클럽명만 필수, 상세는 admin이 등록)
     if (!display_name || !area || !Array.isArray(area) || area.length === 0 || !instagram || !phone || !club_name) {
@@ -115,109 +113,9 @@ export async function POST(request: NextRequest) {
       generatedSlug = `${baseSlug}-${attempt}`;
     }
 
-    // 5. 기존 클럽 확인 (상태별 분기 처리)
-    //    soft-deleted 클럽은 제외 — 삭제된 클럽이 있으면 새로 생성.
-    //    Migration 177: club_partners(N:N) 기반으로 본인이 소속된 클럽 중 가장 최신을 선택.
-    //    (다중 partner 케이스에서 maybeSingle 다중 매치 에러 방지)
-    const { data: existingClubs } = await supabaseAdmin
-      .from("clubs")
-      .select("id, status, club_partners!inner(md_id)")
-      .eq("club_partners.md_id", user.id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    const existingClub = existingClubs?.[0] ?? null;
-
-    let clubId: string;
-
-    if (existingClub) {
-      // ✅ approved 클럽 덮어쓰기 방지
-      if (existingClub.status === "approved") {
-        return NextResponse.json(
-          { error: "승인된 클럽은 수정할 수 없습니다. 추가 클럽 신청은 관리자에게 문의하세요." },
-          { status: 403 }
-        );
-      }
-
-      // pending 또는 rejected → 클럽명/지역만 업데이트 후 즉시 approved.
-      // (주소·좌표는 등록폼에서 제거됨 — admin이 /admin/clubs에서 등록하므로 기존 값 보존)
-      const { error: clubError } = await supabaseAdmin
-        .from("clubs")
-        .update({
-          name: club_name,
-          area: primaryArea,
-          ...(club_thumbnail_url ? { thumbnail_url: club_thumbnail_url } : {}),
-          status: "approved",
-          rejected_at: null,
-          rejected_reason: null,
-          rejected_by: null,
-        })
-        .eq("id", existingClub.id);
-
-      if (clubError) {
-        logger.error("Club update error:", clubError);
-        // Migration 416: (LOWER(TRIM(name)), area) UNIQUE 위반 → 같은 이름·지역 클럽 이미 존재
-        if (clubError.code === "23505") {
-          return NextResponse.json(
-            { error: "같은 이름·지역의 클럽이 이미 등록되어 있습니다. 클럽명을 확인하거나 관리자에게 문의해주세요." },
-            { status: 409 }
-          );
-        }
-        return NextResponse.json(
-          { error: `클럽 정보 업데이트에 실패했습니다. (${clubError.code}: ${clubError.message})` },
-          { status: 500 }
-        );
-      }
-      clubId = existingClub.id;
-    } else {
-      // 새 클럽 생성.
-      //   Phase 4(Migration 182): clubs.md_id 제거 — 코드가 직접 club_partners INSERT.
-      const { data: newClub, error: clubError } = await supabaseAdmin
-        .from("clubs")
-        .insert({
-          name: club_name,
-          area: primaryArea,
-          thumbnail_url: club_thumbnail_url || null,
-          status: "approved",
-        })
-        .select("id")
-        .single();
-
-      if (clubError || !newClub) {
-        logger.error("Club create error:", clubError);
-        // Migration 416: (LOWER(TRIM(name)), area) UNIQUE 위반 → 이미 등록된 클럽.
-        // 중복 클럽을 새로 만들지 않고 안내만 (어드민이 수동 연결). 자동 연결은 어뷰징 방지 위해 제외.
-        if (clubError?.code === "23505") {
-          return NextResponse.json(
-            { error: "이미 등록된 클럽입니다. 같은 이름·지역의 클럽이 이미 있어요. 관리자에게 클럽 연결을 문의해주세요." },
-            { status: 409 }
-          );
-        }
-        return NextResponse.json(
-          { error: `클럽 등록에 실패했습니다. (${clubError?.code}: ${clubError?.message})` },
-          { status: 500 }
-        );
-      }
-      clubId = newClub.id;
-
-      // club_partners (owner) 명시 등록.
-      const { error: partnerError } = await supabaseAdmin
-        .from("club_partners")
-        .insert({ club_id: clubId, md_id: user.id, role: "owner" });
-      if (partnerError) {
-        logger.error("club_partners insert error:", partnerError);
-        // 롤백: 방금 생성한 클럽 삭제
-        await supabaseAdmin.from("clubs").delete().eq("id", clubId);
-        return NextResponse.json(
-          { error: `클럽 파트너 등록에 실패했습니다. (${partnerError.code}: ${partnerError.message})` },
-          { status: 500 }
-        );
-      }
-    }
-
-    // 5.5 추가 소속 클럽 이름 — 클럽을 생성하지 않고 admin 확인용 메모로만 저장.
-    //     (껍데기 클럽 자동 생성 방지 — 실제 클럽 연결은 admin이 승인 화면에서 수동 처리)
+    // 5. 클럽은 신청 시 생성하지 않음 — 타이핑한 이름은 메모(verification_club_name + additional_club_names)로만 저장.
+    //    실제 클럽 연결(club_partners) + default_club_id 설정은 admin이 승인 화면에서 기존 클럽에 연결할 때 수행.
+    //    → 껍데기/중복 클럽이 DB에 안 생김. 승인 전까지 default_club_id는 null.
     const seenNames = new Set<string>([club_name.trim().toLowerCase()]);
     const additionalClubNames = extraClubNames
       .slice(0, 4)
@@ -242,7 +140,6 @@ export async function POST(request: NextRequest) {
         md_unique_slug: generatedSlug,
         md_status: "pending",
         role: "user",
-        default_club_id: clubId,
         ...(floor_plan_url ? { floor_plan_url } : {}),
         ...(business_card_url ? { business_card_url } : {}),
       })
@@ -251,12 +148,7 @@ export async function POST(request: NextRequest) {
     if (userError) {
       logger.error("User update error:", userError);
 
-      // 롤백: 새로 생성한 클럽이면 삭제
-      if (!existingClub) {
-        await supabaseAdmin.from("clubs").delete().eq("id", clubId);
-      }
-
-      // 에러 코드별 메시지
+      // 에러 코드별 메시지 (클럽을 생성하지 않으므로 롤백 대상 없음)
       if (userError.code === "23505") {
         // phone unique 충돌 (idx_users_unique_phone) vs slug 중복 분기
         const detail = `${userError.message} ${userError.details ?? ""}`.toLowerCase();
@@ -296,7 +188,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ success: true, clubId });
+    return NextResponse.json({ success: true });
   } catch (error) {
     logger.error("MD apply API error:", error);
     return NextResponse.json(
