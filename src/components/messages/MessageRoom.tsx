@@ -120,13 +120,12 @@ export function MessageRoom({
   const [profileOpen, setProfileOpen] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(offerStatus === "accepted");
-  const [leaderActiveChats, setLeaderActiveChats] = useState(0);
 
   // 방장 전용: 채팅 중에 이 오퍼 수락
   async function handleAcceptOffer() {
     if (accepting || accepted) return;
     const ok = window.confirm(
-      "이 오퍼를 수락하시겠어요?\n수락하면 MD 연락처가 안내되고, 다른 오퍼와의 대화는 종료됩니다."
+      "이 오퍼를 수락하시겠어요?\n수락하면 파트너 연락처가 안내되고, 다른 오퍼와의 대화는 종료됩니다."
     );
     if (!ok) return;
     setAccepting(true);
@@ -139,7 +138,7 @@ export function MessageRoom({
     }
     setAccepted(true);
     setAccepting(false);
-    toast.success("수락 완료! MD와 예약을 확정하세요.");
+    toast.success("수락 완료! 파트너와 예약을 확정하세요.");
   }
 
   async function handleDeleteChat() {
@@ -149,20 +148,6 @@ export function MessageRoom({
       toast.error(data?.error || "삭제에 실패했습니다");
       return;
     }
-    router.push("/messages");
-  }
-
-  // 방장 전용: 이 상담 종료(미선택) → 슬롯 회복 → 다른 오퍼와 대화 가능
-  async function handleEndChat() {
-    if (typeof window !== "undefined" &&
-        !window.confirm("이 상담을 종료할까요?\n슬롯이 비어 다른 오퍼와 대화할 수 있어요.\n(이 MD는 미선택 처리됩니다)")) return;
-    const supabase = createClient();
-    const { data, error } = await supabase.rpc("reject_offer", { p_offer_id: offerId });
-    if (error || !data?.success) {
-      toast.error(data?.error || "종료에 실패했어요");
-      return;
-    }
-    toast.success("상담을 종료했어요. 다른 오퍼와 대화할 수 있어요.");
     router.push("/messages");
   }
 
@@ -233,18 +218,6 @@ export function MessageRoom({
     })();
   }, [offerId, loading, messages.length]);
 
-  // 방장: 이 깃발의 활성 상담 수 (슬롯이 꽉 찼는지 — "상담 종료" 노출 판단)
-  useEffect(() => {
-    if (myRole !== "leader") return;
-    createClient()
-      .from("puzzle_offers")
-      .select("id", { count: "exact", head: true })
-      .eq("puzzle_id", puzzleId)
-      .not("leader_chat_started_at", "is", null)
-      .in("status", ["pending", "accepted"])
-      .then(({ count }) => setLeaderActiveChats(count ?? 0));
-  }, [myRole, puzzleId, messages.length]);
-
   // 스크롤 맨 아래로
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -312,25 +285,27 @@ export function MessageRoom({
       if (!ok) return;
     }
 
-    // 방장 첫 메시지 → 깃발당 최대 3개 슬롯 안내/확인
+    // 방장 첫 메시지 → 한 깃발 총 5팀 캡 (기본 3팀 앵커, 종료 포함·swap 없음)
     if (myRole === "leader" && !iHaveSent) {
       const sb = createClient();
       const { count } = await sb
         .from("puzzle_offers")
         .select("id", { count: "exact", head: true })
         .eq("puzzle_id", puzzleId)
-        .not("leader_chat_started_at", "is", null)
-        .in("status", ["pending", "accepted"]);
-      const n = (count ?? 0) + 1;
-      if (n > 3) {
-        toast.error("최대 3팀까지만 대화할 수 있어요. 기존 대화를 정리해 주세요");
+        .not("leader_chat_started_at", "is", null);
+      const n = (count ?? 0) + 1; // 이번이 n번째 대화
+      const label = puzzleInfo.isRecruitingParty ? "조각" : "깃발";
+      if (n > 5) {
+        toast.error("한 깃발에서는 최대 5팀과 대화할 수 있어요.");
         return;
       }
-      if (
-        typeof window !== "undefined" &&
-        !window.confirm(`이 ${puzzleInfo.isRecruitingParty ? "조각" : "깃발"}에서 ${n}/3번째 대화예요.\n대화를 시작할까요?`)
-      )
-        return;
+      const confirmMsg =
+        n <= 3
+          ? `이 ${label}에서 ${n}/3번째 대화예요.\n대화를 시작할까요?`
+          : n === 4
+            ? "기본은 3팀이에요. 신중히 고르셨나요?\n원하시면 최대 5팀까지 대화할 수 있어요.\n계속할까요?"
+            : "마지막 5번째 팀이에요. 이후로는 더 대화할 수 없어요.\n시작할까요?";
+      if (typeof window !== "undefined" && !window.confirm(confirmMsg)) return;
     }
 
     setSending(true);
@@ -402,9 +377,9 @@ export function MessageRoom({
             </div>
             <div className="min-w-0">
               <p className="text-[14px] font-bold text-white truncate">
-                {counterpart.display_name ?? (isMd ? "방장" : "MD")}
+                {counterpart.display_name ?? (isMd ? "방장" : "파트너")}
               </p>
-              <p className="text-[11px] text-neutral-500 truncate">{isMd ? "방장" : "MD"}</p>
+              <p className="text-[11px] text-neutral-500 truncate">{isMd ? "방장" : "파트너"}</p>
             </div>
           </button>
         </header>
@@ -440,24 +415,14 @@ export function MessageRoom({
               ✓ 매칭 완료 · 예약을 확정하세요
             </div>
           ) : puzzleStatus === "open" || puzzleStatus === "selecting" ? (
-            <>
-              <button
-                onClick={handleAcceptOffer}
-                disabled={accepting}
-                className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white/95 hover:bg-white text-black font-black text-[13px] border-t border-neutral-800/70 disabled:opacity-50"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                {accepting ? "수락 중…" : "이 오퍼 수락하기"}
-              </button>
-              {iHaveSent && leaderActiveChats >= 3 && (
-                <button
-                  onClick={handleEndChat}
-                  className="w-full py-1.5 text-[11px] text-neutral-600 hover:text-red-400 border-t border-neutral-800/50 transition-colors"
-                >
-                  상담 종료 · 다른 오퍼와 대화하려면
-                </button>
-              )}
-            </>
+            <button
+              onClick={handleAcceptOffer}
+              disabled={accepting}
+              className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white/95 hover:bg-white text-black font-black text-[13px] border-t border-neutral-800/70 disabled:opacity-50"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {accepting ? "수락 중…" : "이 오퍼 수락하기"}
+            </button>
           ) : null)}
       </div>
 
@@ -698,7 +663,7 @@ export function MessageRoom({
       <LeaderInfoSheet
         open={profileOpen}
         onOpenChange={setProfileOpen}
-        title={isMd ? "방장 정보" : "MD 정보"}
+        title={isMd ? "방장 정보" : "파트너 정보"}
         leader={{
           display_name: counterpart.display_name,
           profile_image: counterpart.profile_image,
