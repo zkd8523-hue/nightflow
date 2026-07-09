@@ -403,7 +403,7 @@ export function PublicProfileView({
         {(hasPinnedClubs || isMe) && (
           <div className="mt-5">
             <div className="text-[13px] font-bold text-neutral-400 mb-2">
-              좋아하는 클럽
+              선호 클럽
             </div>
             {hasPinnedClubs ? (
               <div className="grid grid-cols-3 gap-2">
@@ -444,7 +444,7 @@ export function PublicProfileView({
                 onClick={() => setEditSection("club")}
                 className="text-[13px] text-neutral-500 hover:text-neutral-300"
               >
-                좋아하는 클럽을 추가해보세요
+                선호 클럽을 추가해보세요
               </button>
             )}
           </div>

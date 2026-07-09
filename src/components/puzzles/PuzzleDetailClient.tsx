@@ -222,6 +222,8 @@ export function PuzzleDetailClient({
   // 조각 카톡 공유 시트 (?created=share 자동 오픈 / 공유 버튼 수동 오픈)
   const [showShareCreated, setShowShareCreated] = useState(searchParams.get("created") === "share");
   const [shareCreatedMode, setShareCreatedMode] = useState<"created" | "share">("created");
+  // 깃발 등록 직후 안내 팝업 (?created=flag)
+  const [showCreatedInfo, setShowCreatedInfo] = useState(searchParams.get("created") === "flag");
   const recentMatchedPuzzle = useRecentMatchedPuzzle();
 
   const handleShare = useCallback(async () => {
@@ -1808,6 +1810,37 @@ export function PuzzleDetailClient({
           clubThumbnail={puzzle.club?.thumbnail_url}
           onClose={() => setShowShareCreated(false)}
         />
+      )}
+
+      {/* 깃발 등록 직후 안내 팝업 (?created=flag) */}
+      {showCreatedInfo && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+          onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl bg-[#1C1C1E] border border-neutral-800 p-6 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-14 h-14 mx-auto rounded-full bg-amber-500/15 flex items-center justify-center mb-4 text-3xl">
+              🚩
+            </div>
+            <h3 className="text-white font-black text-lg mb-2">
+              {isForeigner ? "Your flag is up!" : "깃발이 올라갔어요!"}
+            </h3>
+            <p className="text-neutral-400 text-[13px] leading-relaxed mb-6">
+              {isForeigner
+                ? "Offers close at 8pm today. You have 60 more minutes to review."
+                : "오퍼는 당일 8시 마감. 이후 60분간 더 검토할 수 있어요."}
+            </p>
+            <Button
+              onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}
+              className="w-full h-12 rounded-xl bg-white hover:bg-neutral-200 text-black font-black text-[15px]"
+            >
+              {isForeigner ? "Got it" : "확인"}
+            </Button>
+          </div>
+        </div>
       )}
 
     </div>

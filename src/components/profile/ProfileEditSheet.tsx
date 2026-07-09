@@ -38,7 +38,7 @@ const SECTION_TITLES: Record<ProfileEditSection, string> = {
   bio: "자기소개 편집",
   music: "좋아하는 음악",
   area: "주로 가는 지역",
-  club: "좋아하는 클럽",
+  club: "선호 클럽",
 };
 
 interface Props {
@@ -246,7 +246,7 @@ export function ProfileEditSheet({
         return prev;
       }
       if (prev.length >= MAX_FAVORITE_CLUBS) {
-        toast.error(`좋아하는 클럽은 최대 ${MAX_FAVORITE_CLUBS}개까지 등록할 수 있습니다`);
+        toast.error(`선호 클럽은 최대 ${MAX_FAVORITE_CLUBS}개까지 등록할 수 있습니다`);
         return prev;
       }
       return [...prev, club];
@@ -337,7 +337,7 @@ export function ProfileEditSheet({
 
       if (delErr) {
         setSaving(false);
-        toast.error("좋아하는 클럽 저장에 실패했습니다");
+        toast.error("선호 클럽 저장에 실패했습니다");
         console.error(delErr);
         return;
       }
@@ -353,7 +353,7 @@ export function ProfileEditSheet({
           .insert(rows);
         if (insErr) {
           setSaving(false);
-          toast.error("좋아하는 클럽 저장에 실패했습니다");
+          toast.error("선호 클럽 저장에 실패했습니다");
           console.error(insErr);
           return;
         }
@@ -568,7 +568,7 @@ export function ProfileEditSheet({
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="text-[13px] font-bold text-neutral-400">
-                좋아하는 클럽
+                선호 클럽
               </label>
               <span className="text-[12px] text-neutral-500">
                 {favClubs.length} / {MAX_FAVORITE_CLUBS}

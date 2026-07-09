@@ -14,7 +14,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
-import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle as PuzzleType } from "@/types/database";
+import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle as PuzzleType, PreferredClubItem } from "@/types/database";
+import { PreferredClubsPicker } from "@/components/clubs/PreferredClubsPicker";
+import { loadPreferredClubs, savePreferredClubs } from "@/lib/clubs/preferredClubs";
 import { trackEvent } from "@/lib/analytics/events";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
@@ -308,9 +310,27 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
   const [tripStatus, setTripStatus] = useState<null | "qualified" | "planning">(null);
   const [submitting, setSubmitting] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  const [showClubsSheet, setShowClubsSheet] = useState(false);
   // 당일 18시 이후 등록 시도 시 안내 다이얼로그
   const [showLateTodayDialog, setShowLateTodayDialog] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
+
+  // 선호 클럽 (신규 등록 시에만). 이미 취향을 등록한 유저면 다시 안 물어봄(한 번만).
+  const [preferredClubs, setPreferredClubs] = useState<PreferredClubItem[]>([]);
+  const [alreadyHasTaste, setAlreadyHasTaste] = useState(false);
+  useEffect(() => {
+    if (isEditMode) return;
+    let alive = true;
+    loadPreferredClubs(userId).then((items) => {
+      if (!alive) return;
+      setPreferredClubs(items);
+      setAlreadyHasTaste(items.length > 0);
+    });
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
   // 퍼즐 소개: 비어 있으면 자동 채움. 사용자가 수동 입력 시 자동 채움 중단.
   // draft에는 저장하지 않으므로 신규 진입 시에는 항상 false에서 시작.
   const [notesEverEdited, setNotesEverEdited] = useState(!!puzzle?.notes);
@@ -689,6 +709,13 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           if (memberError) console.error("puzzle_members insert error:", memberError);
         });
 
+      // 선호 클럽 저장 (fire-and-forget) — 실제 클럽은 프로필, 미등록은 영업 리드로
+      if (preferredClubs.length > 0) {
+        savePreferredClubs(userId, preferredClubs).then(({ error }) => {
+          if (error) console.error("preferred clubs save error:", error);
+        });
+      }
+
       trackEvent('puzzle_created', {
         puzzle_id: created.id,
         area,
@@ -696,13 +723,12 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         target_count: effectiveTargetCount,
       });
 
-      toast.success(
-        shareMode
-          ? t("조각이 올라갔어요! 파티원과 파트너 제안을 받아보세요 🧩", "Your share is up! Get party members and club offers 🧩")
-          : effectiveIsRecruiting
-          ? t("퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·파트너 모집, 이후 60분간 검토할 수 있어요 🧩", "Posted! Offers close at 8pm. You have 60 min to review 🧩")
-          : t("깃발이 올라갔어요! 🚩", "Done! Top clubs will send you offers 🎉")
-      );
+      // 깃발(모달로 안내되는 케이스)은 토스트 생략 — 상세에서 팝업으로 안내(중복 방지)
+      if (shareMode) {
+        toast.success(t("조각이 올라갔어요! 파티원과 파트너 제안을 받아보세요 🧩", "Your share is up! Get party members and club offers 🧩"));
+      } else if (effectiveIsRecruiting) {
+        toast.success(t("퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·파트너 모집, 이후 60분간 검토할 수 있어요 🧩", "Posted! Offers close at 8pm. You have 60 min to review 🧩"));
+      }
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
       navigating = true;
@@ -712,7 +738,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       // 조각은 등록 직후 카톡 공유 시트 노출(파티원 모집 동선)
       const createdQuery = shareMode
         ? (isForeigner ? "?created=share&lang=en" : "?created=share")
-        : (isForeigner ? "?lang=en" : "");
+        : (!effectiveIsRecruiting
+            ? (isForeigner ? "?created=flag&lang=en" : "?created=flag")
+            : (isForeigner ? "?lang=en" : ""));
       router.push(`/flags/${created.id}${createdQuery}`);
     } catch (err) {
       console.error("puzzle submit error:", err);
@@ -1349,6 +1377,15 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
               setShowLateTodayDialog(true);
               return;
             }
+            // 신규 등록: 취향 미등록 유저에게만 선호 클럽 시트(한 번만). 이미 등록했으면 바로 등록.
+            if (!isEditMode) {
+              if (alreadyHasTaste) {
+                handleSubmit();
+              } else {
+                setShowClubsSheet(true);
+              }
+              return;
+            }
             setShowSubmitConfirm(true);
           }}
           disabled={submitting || (isEditMode && !isDirty) || (isRecruitingParty && !myGender && !shareMode)}
@@ -1370,6 +1407,54 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           </p>
         )}
       </div>
+
+      {/* 선호 클럽 (옵트인) — 제출 시 별도 시트, 넘어가기 가능 */}
+      <Sheet open={showClubsSheet} onOpenChange={setShowClubsSheet}>
+        <SheetContent
+          side="bottom"
+          className="h-auto max-h-[85vh] max-w-lg mx-auto gap-2 overflow-y-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-10 outline-none"
+        >
+          <SheetHeader className="text-left space-y-1.5 p-0">
+            <SheetTitle className="text-white font-black text-[21px] leading-snug tracking-tight flex items-baseline gap-1.5">
+              <span aria-hidden className="text-lg">🕺</span>
+              <span>{t("당신의 취향을 알려주세요!", "Tell us your taste!")}</span>
+              <span className="text-[11px] font-bold text-neutral-500 tracking-normal">{t("최대 3개", "up to 3")}</span>
+            </SheetTitle>
+            <SheetDescription className="text-[12.5px] text-neutral-500 font-medium leading-relaxed">
+              {t("프로필에 표시되고, 오퍼에 반영될 수 있어요.",
+                 "Shown on your profile and factored into offers.")}
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="mt-1">
+            <PreferredClubsPicker value={preferredClubs} onChange={setPreferredClubs} max={3} />
+          </div>
+
+          <div className="flex flex-col gap-2 mt-8">
+            <Button
+              onClick={() => {
+                setShowClubsSheet(false);
+                handleSubmit();
+              }}
+              disabled={preferredClubs.length === 0}
+              className="h-14 rounded-2xl font-black text-lg shadow-lg flex items-center justify-center bg-white hover:bg-neutral-200 text-black disabled:bg-neutral-800 disabled:text-neutral-500 disabled:shadow-none disabled:cursor-not-allowed disabled:opacity-100"
+            >
+              {t("선택 완료", "Done")}
+            </Button>
+            <button
+              onClick={() => {
+                setPreferredClubs([]);
+                setShowClubsSheet(false);
+                handleSubmit();
+              }}
+              className="mx-auto px-5 h-9 rounded-full border border-neutral-700 text-white text-[13px] font-bold hover:bg-neutral-800 transition-colors flex items-center gap-1.5"
+            >
+              {t("넘어가기", "Skip")}
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <ConfirmDialog
         isOpen={showSubmitConfirm}

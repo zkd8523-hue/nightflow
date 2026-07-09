@@ -617,6 +617,23 @@ export interface UserPinnedClub {
   club?: Pick<Club, "id" | "name" | "area" | "thumbnail_url">;
 }
 
+/** 선호 클럽 피커에서 다루는 클럽 최소 정보 */
+export interface ClubLite {
+  id: string;
+  name: string;
+  area: string;
+  thumbnail_url: string | null;
+}
+
+/**
+ * 선호 클럽 피커의 선택 항목.
+ *  - kind "club": DB에 있는 실제 클럽 → user_pinned_clubs 저장(프로필 표시)
+ *  - kind "wish": DB에 없는 자유입력 → club_requests 저장(영업 리드, Migration 212)
+ */
+export type PreferredClubItem =
+  | { kind: "club"; club: ClubLite }
+  | { kind: "wish"; name: string; area: string | null };
+
 export interface Bid {
   id: string;
   auction_id: string;
