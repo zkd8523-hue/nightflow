@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, MessageCircle, SmilePlus } from "lucide-react";
+import { CornerDownRight, MapPin, MessageCircle, SmilePlus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { ROOM_LABEL } from "@/lib/chat/areas";
@@ -17,6 +17,7 @@ import type {
   ChatReactionEmoji,
   ChatReactionSummary,
 } from "@/types/database";
+import type { ReplyPreview } from "@/hooks/useChatReplyPreviews";
 
 function timeShort(dateStr: string): string {
   const d = new Date(dateStr);
@@ -37,6 +38,8 @@ interface Props {
   currentUserId?: string;
   isLoggedIn: boolean;
   reactionSummary?: ChatReactionSummary;
+  /** 피드 인라인 답글 미리보기 — 부모의 최근 답글 1~2개 + 총 개수 (카톡식) */
+  replyPreview?: ReplyPreview;
   onReact?: (emoji: ChatReactionEmoji) => void;
   onOpenReplies?: (message: ChatMessage) => void;
   onChange?: () => void;
@@ -53,6 +56,7 @@ export function ChatMessageItem({
   currentUserId,
   isLoggedIn,
   reactionSummary,
+  replyPreview,
   onReact,
   onOpenReplies,
   onChange,
@@ -314,6 +318,18 @@ export function ChatMessageItem({
               >
                 <SmilePlus className="w-3.5 h-3.5" />
               </button>
+              {/* 본인 글 삭제 (웹 hover — 모바일은 길게 누르기) */}
+              {isMine && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-full text-neutral-500 hover:text-red-400 hover:bg-neutral-900 transition-colors"
+                  aria-label="삭제"
+                  title="삭제"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -348,20 +364,33 @@ export function ChatMessageItem({
                 );
               })}
 
-              {!hideReplyButton && hasReplyCount && (
-                <button
-                  type="button"
-                  onClick={() => onOpenReplies?.(message)}
-                  className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
-                  aria-label="답글 보기"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span className="font-bold">
-                    답글 {message.reply_count}
-                  </span>
-                </button>
-              )}
+              {!hideReplyButton &&
+                hasReplyCount &&
+                !(replyPreview && replyPreview.preview.length > 0) && (
+                  <button
+                    type="button"
+                    onClick={() => onOpenReplies?.(message)}
+                    className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
+                    aria-label="답글 보기"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5" />
+                    <span className="font-bold">답글 {message.reply_count}</span>
+                  </button>
+                )}
             </div>
+          )}
+
+          {/* 답글 배지 (카톡식 ↳ 댓글 N) — 누르면 답글 스레드 열림 */}
+          {!hideReplyButton && replyPreview && replyPreview.total > 0 && (
+            <button
+              type="button"
+              onClick={() => onOpenReplies?.(message)}
+              className="mt-1.5 inline-flex items-center gap-1 pl-1.5 pr-2.5 py-1 rounded-full bg-neutral-800/90 text-neutral-300 text-[11px] font-bold hover:bg-neutral-700 transition-colors"
+              aria-label="답글 보기"
+            >
+              <CornerDownRight className="w-3 h-3 text-neutral-500" />
+              답글 {replyPreview.total}
+            </button>
           )}
         </div>
       </div>

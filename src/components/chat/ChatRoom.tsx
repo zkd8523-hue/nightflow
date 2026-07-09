@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useChatMessages } from "@/hooks/useChatMessages";
 import { useAreaVerification } from "@/hooks/useAreaVerification";
 import { useChatReactions } from "@/hooks/useChatReactions";
+import { useChatReplyPreviews } from "@/hooks/useChatReplyPreviews";
 import { ChatMessageItem } from "./ChatMessageItem";
 import { AreaVerifySheet } from "./AreaVerifySheet";
 import { ChatReplySheet } from "./ChatReplySheet";
@@ -83,6 +84,64 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
   const { summaries: reactionSummaries, toggle: toggleReaction } =
     useChatReactions(messageIds, user?.id);
+
+  // 답글 미리보기 — 피드에 인라인 노출 (카톡식).
+  // ⚠️ reply_count 트리거가 신뢰 불가라, 최상위 메시지 '전부'를 넘겨 실제 답글을 직접 조회.
+  const replyParentIds = useMemo(
+    () => messages.filter((m) => !m.parent_id).map((m) => m.id),
+    [messages]
+  );
+  // 새 답글이 오면 옵티미스틱 reply_count 합이 바뀌어 재조회 트리거 (+ 메시지 수 변화)
+  const replyVersion = useMemo(
+    () => messages.length + messages.reduce((s, m) => s + (m.reply_count || 0), 0),
+    [messages]
+  );
+  const replyPreviews = useChatReplyPreviews(replyParentIds, replyVersion);
+
+  // 알림에서 /chat?reply=<parentId>로 진입 시 해당 답글 스레드 자동 오픈
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const rid = new URLSearchParams(window.location.search).get("reply");
+    if (!rid) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("chat_messages")
+        .select(
+          `id, room, author_id, parent_id, reply_count, content, media, author_area, club_tags, is_deleted, created_at,
+           author:public_user_profiles!chat_messages_author_id_fkey(id, display_name, profile_image)`
+        )
+        .eq("id", rid)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      const rawAuthor = (data as { author?: unknown }).author;
+      const authorObj = Array.isArray(rawAuthor)
+        ? (rawAuthor[0] as ChatMessage["author"])
+        : (rawAuthor as ChatMessage["author"]);
+      setReplyTarget({
+        id: data.id,
+        room: data.room as ChatMessage["room"],
+        author_id: data.author_id,
+        parent_id: (data as { parent_id?: string | null }).parent_id ?? null,
+        reply_count: (data as { reply_count?: number }).reply_count ?? 0,
+        content: data.content,
+        media: ((data as { media?: ChatMessage["media"] }).media ?? []) as ChatMessage["media"],
+        author_area: (data as { author_area?: ChatMessage["author_area"] }).author_area ?? null,
+        club_tags: ((data as { club_tags?: string[] }).club_tags ?? []) as string[],
+        is_deleted: data.is_deleted,
+        created_at: data.created_at,
+        author: authorObj,
+        quoted_message_id: null,
+        quoted_message: null,
+      });
+      // URL에서 reply 파라미터 제거 (뒤로가기/재마운트 시 재오픈 방지)
+      window.history.replaceState(window.history.state, "", "/chat");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 방 전환 시 prevLen 리셋 (이전 방의 카운트와 혼동 방지)
   useEffect(() => {
@@ -608,6 +667,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
                   currentUserId={user?.id}
                   isLoggedIn={!!user}
                   reactionSummary={reactionSummaries.get(m.id)}
+                  replyPreview={replyPreviews.get(m.id)}
                   onReact={(emoji) => toggleReaction(m.id, emoji)}
                   onOpenReplies={(target) => setReplyTarget(target)}
                   onChange={reload}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Camera, Check, ChevronRight, Loader2, MapPin, Search, X, Zap } from "lucide-react";
 import { toast } from "sonner";
@@ -69,8 +69,32 @@ export function ShotCaptureSheet({
   const [clubSheetOpen, setClubSheetOpen] = useState(false);
   const [nearestClubs, setNearestClubs] = useState<NearestClub[] | null>(null);
   const [clubsLoading, setClubsLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
   // 검색 시 거리 계산용 유저 좌표
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  // 위치 → 가까운 클럽 로드. 실패하면 geoError로 원인 표시(+재시도 버튼에서 재호출).
+  const loadNearby = useCallback(async () => {
+    setClubsLoading(true);
+    setGeoError(null);
+    try {
+      const c = await getCurrentCoords();
+      setUserCoords({ lat: c.latitude, lng: c.longitude });
+      const clubs = await fetchNearestClubsAnyArea(c.latitude, c.longitude, 10);
+      setNearestClubs(clubs);
+    } catch (err) {
+      console.warn("[ShotCaptureSheet] geo error", err);
+      setNearestClubs([]);
+      const msg = err instanceof Error ? err.message : String(err);
+      setGeoError(
+        /denied|permission|권한|kCLError|denied/i.test(msg)
+          ? "위치 권한이 꺼져 있어요. 설정에서 허용해주세요"
+          : "위치를 가져오지 못했어요"
+      );
+    } finally {
+      setClubsLoading(false);
+    }
+  }, []);
 
   // LIVE 진입 즉시 클럽 픽 시트 자동 오픈 (presetClub 있으면 skip).
   // 인증 여부와 무관 — 위치 동의 → 가까운 클럽 리스트업 흐름.
@@ -86,25 +110,8 @@ export function ShotCaptureSheet({
   // getCurrentCoords가 위치 권한 동의 모달을 띄운다.
   useEffect(() => {
     if (!open || presetClub) return;
-    let cancelled = false;
-    setClubsLoading(true);
-    getCurrentCoords()
-      .then(async (c) => {
-        if (cancelled) return;
-        setUserCoords({ lat: c.latitude, lng: c.longitude });
-        const clubs = await fetchNearestClubsAnyArea(c.latitude, c.longitude, 10);
-        if (cancelled) return;
-        setNearestClubs(clubs);
-        setClubsLoading(false);
-      })
-      .catch((err) => {
-        console.warn("[ShotCaptureSheet] geo error", err);
-        if (cancelled) return;
-        setNearestClubs([]);
-        setClubsLoading(false);
-      });
-    return () => { cancelled = true; };
-  }, [open, presetClub]);
+    loadNearby();
+  }, [open, presetClub, loadNearby]);
 
   // 앱(Capacitor)이면 네이티브 카메라(camera-preview)를 쓰므로 항상 인앱 카메라 사용.
   // Capacitor.isNativePlatform()은 동기 호출이지만 dynamic import라 초기값 판별을 effect로.
@@ -448,6 +455,8 @@ export function ShotCaptureSheet({
       }}
       clubs={nearestClubs}
       loading={clubsLoading}
+      geoError={geoError}
+      onRetryLocation={loadNearby}
       userCoords={userCoords}
       selectedId={selectedClub?.id ?? null}
       onSelect={(c) => {
@@ -466,6 +475,8 @@ function ClubPickerSheet({
   onOpenChange,
   clubs,
   loading,
+  geoError,
+  onRetryLocation,
   userCoords,
   selectedId,
   onSelect,
@@ -474,6 +485,8 @@ function ClubPickerSheet({
   onOpenChange: (v: boolean) => void;
   clubs: NearestClub[] | null;
   loading: boolean;
+  geoError?: string | null;
+  onRetryLocation?: () => void;
   userCoords: { lat: number; lng: number } | null;
   selectedId: string | null;
   onSelect: (c: { id: string; name: string }) => void;
@@ -541,6 +554,25 @@ function ClubPickerSheet({
             <div className="p-6 text-center text-neutral-500 text-[13px] leading-relaxed">
               {isSearchMode ? (
                 "검색 결과가 없어요"
+              ) : geoError ? (
+                <>
+                  <span className="text-amber-400">{geoError}</span>
+                  <br />
+                  {onRetryLocation && (
+                    <button
+                      type="button"
+                      onClick={onRetryLocation}
+                      className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-[13px] font-black active:scale-95 transition"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      위치 다시 시도
+                    </button>
+                  )}
+                  <br />
+                  <span className="mt-2 inline-block text-neutral-500">
+                    또는 아래에서 클럽명을 검색하세요
+                  </span>
+                </>
               ) : (
                 <>
                   주변 클럽을 못 찾았어요.
