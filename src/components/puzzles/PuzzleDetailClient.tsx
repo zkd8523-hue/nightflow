@@ -194,7 +194,7 @@ export function PuzzleDetailClient({
 
   useEffect(() => {
     if (searchParams.get("edit_blocked") === "offers") {
-      toast.error(t(isRecruitingParty ? "MD 제안이 들어온 조각은 수정할 수 없어요" : "MD 제안이 들어온 깃발은 수정할 수 없어요", "Requests with offers can't be edited"));
+      toast.error(t(isRecruitingParty ? "파트너 제안이 들어온 조각은 수정할 수 없어요" : "파트너 제안이 들어온 깃발은 수정할 수 없어요", "Requests with offers can't be edited"));
       router.replace(`/flags/${puzzle.id}`);
     }
   }, [searchParams, router, puzzle.id]);
@@ -286,8 +286,14 @@ export function PuzzleDetailClient({
     ? null
     : puzzle.age_pref.map((a) => AGE_LABEL[a]).filter(Boolean).join("·") || null;
   const vibeTag = VIBE_LABEL[puzzle.vibe_pref];
+  const musicTag =
+    puzzle.music_preference === "hiphop"
+      ? t("힙합 선호", "Hip-hop")
+      : puzzle.music_preference === "edm"
+        ? t("EDM 선호", "EDM")
+        : null;
   const tags = puzzle.is_recruiting_party
-    ? ([genderTag, ageTag, vibeTag].filter(Boolean) as string[])
+    ? ([genderTag, ageTag, vibeTag, musicTag].filter(Boolean) as string[])
     : [];
 
   const loadOffers = useCallback(async () => {
@@ -462,7 +468,7 @@ export function PuzzleDetailClient({
   const handleAcceptOffer = (offerId: string) => {
     const offer = offers.find((o) => o.id === offerId);
     if (!offer || !offer.md) {
-      toast.error("MD 정보를 불러오지 못했습니다");
+      toast.error("파트너 정보를 불러오지 못했습니다");
       return;
     }
     setAcceptingMd(offer.md);
@@ -702,7 +708,7 @@ export function PuzzleDetailClient({
                   {puzzle.leader && (
                     <button
                       type="button"
-                      onClick={() => setShowLeaderInfo(true)}
+                      onClick={() => puzzle.leader_id && router.push(`/u/${puzzle.leader_id}`)}
                       className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2.5 py-1 transition-colors"
                     >
                       {puzzle.leader.profile_image ? (
@@ -738,7 +744,7 @@ export function PuzzleDetailClient({
                     {puzzle.leader && !puzzle.host_is_md && (
                       <button
                         type="button"
-                        onClick={() => setShowLeaderInfo(true)}
+                        onClick={() => puzzle.leader_id && router.push(`/u/${puzzle.leader_id}`)}
                         className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2.5 py-1 transition-colors"
                       >
                         {puzzle.leader.profile_image ? (
@@ -979,7 +985,7 @@ export function PuzzleDetailClient({
                           {md.profile_image && (
                             <img
                               src={normalizeProfileImage(md.profile_image)!}
-                              alt={md.display_name || "MD"}
+                              alt={md.display_name || "파트너"}
                               decoding="async"
                               className="relative w-full h-full object-cover"
                               onError={(e) => { e.currentTarget.style.display = "none"; }}
@@ -1058,16 +1064,16 @@ export function PuzzleDetailClient({
                 {isLeader
                   ? puzzle.kakao_open_chat_url
                     ? t(
-                        "MD가 회원님이 등록한 오픈채팅으로 입장합니다. 선입금/테이블 배정은 MD와 직접 협의하세요.",
+                        "파트너가 회원님이 등록한 오픈채팅으로 입장합니다. 선입금/테이블 배정은 파트너와 직접 협의하세요.",
                         "The club host will join your open chat. Arrange any deposit and table directly with them."
                       )
                     : t(
-                        "위 연락 수단 중 편한 것으로 MD에게 직접 연락해주세요. 선입금/테이블 배정은 MD와 직접 협의하세요.",
+                        "위 연락 수단 중 편한 것으로 파트너에게 직접 연락해주세요. 선입금/테이블 배정은 파트너와 직접 협의하세요.",
                         "Contact the club host directly via one of the methods above. Arrange any deposit and table directly with them."
                       )
                   : isForeigner
                     ? `${offers.filter(o => o.status !== 'expired').length} clubs competed — matched`
-                    : `MD ${offers.filter(o => o.status !== 'expired').length}명이 경쟁, 성사됨`}
+                    : `파트너 ${offers.filter(o => o.status !== 'expired').length}명이 경쟁, 성사됨`}
               </p>
 
             </section>
@@ -1160,7 +1166,7 @@ export function PuzzleDetailClient({
             <section className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 flex items-center justify-between">
               <div>
                 <p className="text-[12px] font-bold text-red-400">관리자 도구</p>
-                <p className="text-[10px] text-neutral-500">깃발 강제 종료 (참여자 알림 + MD 슬롯 회복)</p>
+                <p className="text-[10px] text-neutral-500">깃발 강제 종료 (참여자 알림 + 파트너 슬롯 회복)</p>
               </div>
               <AdminCancelPuzzleButton puzzleId={puzzle.id} />
             </section>
@@ -1183,7 +1189,7 @@ export function PuzzleDetailClient({
                       <span className="text-[12px] px-2.5 py-1 rounded-full bg-neutral-700 text-neutral-300 font-bold">상담중</span>
                     </div>
                     <div className="pt-2 mt-1 border-t border-red-500/20 bg-red-500/5 -mx-4 -mb-4 px-4 pb-4 space-y-1">
-                      <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — MD 식별 정보</p>
+                      <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — 파트너 식별 정보</p>
                       <div className="flex items-center gap-3 text-[12px] text-neutral-300 flex-wrap">
                         <span className="inline-flex items-center gap-1">
                           <User className="w-3 h-3 text-neutral-500" />
@@ -1206,7 +1212,7 @@ export function PuzzleDetailClient({
                     </div>
                   </>
                 ) : (
-                  <p className="text-[13px] text-neutral-500">아직 초대된 MD가 없어요</p>
+                  <p className="text-[13px] text-neutral-500">아직 초대된 파트너가 없어요</p>
                 )}
               </div>
             </section>
@@ -1253,7 +1259,7 @@ export function PuzzleDetailClient({
                 <FeatureGate flag="offer_chat">
                   <p className="text-[12px] text-neutral-400 bg-neutral-900/60 border border-neutral-800 rounded-xl px-3 py-2.5">
                     {isRecruitingParty
-                      ? "💬 채팅에서 파티원과 상의한 뒤, 마음에 드는 MD에게 예약하세요"
+                      ? "💬 채팅에서 파티원과 상의한 뒤, 마음에 드는 파트너에게 예약하세요"
                       : "💬 마음에 드는 오퍼와 채팅으로 상담해보세요 · 깃발당 최대 3개"}
                   </p>
                 </FeatureGate>
@@ -1536,8 +1542,9 @@ export function PuzzleDetailClient({
             </div>
           )}
 
-          {/* 비방장·비멤버·비MD: 홈 조각 캐러셀 끝 카드와 동일한 조각 올리기 유도 CTA (비로그인 포함) */}
-          {!isLeader && !isMember && !isMd && isRecruitingParty && (
+          {/* 비방장·비멤버·비MD: 홈 조각 캐러셀 끝 카드와 동일한 조각 올리기 유도 CTA (비로그인 포함)
+              단, '참가하기'(로그인+진행중) 버튼이 뜰 땐 중복 노출 방지 위해 숨김 */}
+          {!isLeader && !isMember && !isMd && isRecruitingParty && !(isOpen && currentUserId) && (
             <div className="text-center space-y-1">
               <p className="text-[14.5px] text-neutral-200 font-semibold mb-1.5">
                 {t("파티원과 함께 놀아요!", "Play with a crew.")}
@@ -1577,10 +1584,10 @@ export function PuzzleDetailClient({
                     className="flex items-center justify-between bg-[#1C1C1E] rounded-xl px-4 py-3"
                   >
                     <div className="flex items-center gap-3">
-                      {isMe && member.user?.profile_image ? (
+                      {member.user?.profile_image ? (
                         <img
                           src={member.user.profile_image}
-                          alt="나"
+                          alt={member.user.display_name || member.user.name || "파티원"}
                           decoding="async"
                           className="w-9 h-9 rounded-full object-cover"
                         />
