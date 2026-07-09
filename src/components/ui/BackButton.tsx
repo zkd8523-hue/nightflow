@@ -12,11 +12,17 @@ export function BackButton({ fallbackHref = "/" }: BackButtonProps) {
   const router = useRouter();
 
   const handleBack = () => {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
-    } else {
-      router.push(fallbackHref);
+    // history.length는 새 탭에서도 최소 2 (about:blank + 현재). 외부(구글 검색결과 등)에서
+    // 바로 진입한 경우 router.back()이 우리 사이트 밖으로 튕겨나가는 문제 발생 → referrer로 판정.
+    if (typeof window !== "undefined") {
+      const ref = document.referrer;
+      const sameOrigin = ref && ref.startsWith(window.location.origin);
+      if (sameOrigin && window.history.length > 1) {
+        router.back();
+        return;
+      }
     }
+    router.push(fallbackHref);
   };
 
   return (
