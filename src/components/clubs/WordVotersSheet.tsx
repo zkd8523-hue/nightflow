@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   Sheet,
@@ -26,6 +26,14 @@ interface Props {
   authorIds: string[];
   /** 현재 로그인 유저 (본인 표시용) */
   myId?: string | null;
+  /** 이 단어 좋아요 수 */
+  likeCount?: number;
+  /** 내가 좋아요 눌렀는지 */
+  liked?: boolean;
+  /** 좋아요 처리 중(연타 방지) */
+  likeSaving?: boolean;
+  /** 좋아요 토글 (비로그인이면 상위에서 로그인 유도) */
+  onToggleLike?: () => void;
 }
 
 /**
@@ -38,6 +46,10 @@ export function WordVotersSheet({
   label,
   authorIds,
   myId,
+  likeCount = 0,
+  liked = false,
+  likeSaving = false,
+  onToggleLike,
 }: Props) {
   const router = useRouter();
   const [voters, setVoters] = useState<Voter[]>([]);
@@ -100,6 +112,26 @@ export function WordVotersSheet({
           <p className="text-[13px] text-neutral-500 text-center">
             {authorIds.length}명이 이 단어를 남겼어요
           </p>
+          {onToggleLike && (
+            <div className="mt-3 flex justify-center">
+              <button
+                onClick={onToggleLike}
+                disabled={likeSaving}
+                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[14px] font-bold transition-colors active:scale-95 disabled:opacity-60 ${
+                  liked
+                    ? "bg-pink-500/15 text-pink-400"
+                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                }`}
+                aria-pressed={liked}
+              >
+                <Heart
+                  className={`h-4 w-4 ${liked ? "fill-pink-400" : ""}`}
+                  strokeWidth={2.5}
+                />
+                좋아요{likeCount > 0 ? ` ${likeCount}` : ""}
+              </button>
+            </div>
+          )}
         </SheetHeader>
 
         <div className="overflow-y-auto px-3 pb-6 pt-1">

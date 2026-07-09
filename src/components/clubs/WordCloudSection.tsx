@@ -40,6 +40,9 @@ export function WordCloudSection({ clubId }: Props) {
   const [rows, setRows] = useState<{ author_id: string; words: string[] }[]>(
     []
   );
+  const [likeCounts, setLikeCounts] = useState<Map<string, number>>(new Map());
+  const [myLikes, setMyLikes] = useState<Set<string>>(new Set());
+  const [likeSaving, setLikeSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [myWords, setMyWords] = useState<string[]>([]);
   const [current, setCurrent] = useState("");
@@ -55,22 +58,51 @@ export function WordCloudSection({ clubId }: Props) {
   const fetchData = useCallback(async () => {
     const supabase = createClient();
     setLoading(true);
-    const { data, error } = await supabase
-      .from("club_word_clouds")
-      .select("author_id, words")
-      .eq("club_id", clubId);
 
-    if (error) {
-      console.error("[WordCloudSection] fetch error", error);
+    const [wordsRes, likesRes] = await Promise.all([
+      supabase
+        .from("club_word_clouds")
+        .select("author_id, words")
+        .eq("club_id", clubId),
+      supabase
+        .from("club_word_cloud_likes")
+        .select("normalized_word, user_id")
+        .eq("club_id", clubId),
+    ]);
+
+    if (wordsRes.error) {
+      console.error("[WordCloudSection] fetch error", wordsRes.error);
       setRows([]);
       setLoading(false);
       return;
     }
-    const fetched = (data ?? []) as { author_id: string; words: string[] }[];
+    const fetched = (wordsRes.data ?? []) as {
+      author_id: string;
+      words: string[];
+    }[];
     setRows(fetched);
     // 내 row 반영
     const mine = user ? fetched.find((r) => r.author_id === user.id) : null;
     setMyWords(mine?.words ?? []);
+
+    // 좋아요 집계 (테이블 미적용 등 에러 시 조용히 빈 상태로 degrade)
+    if (likesRes.error) {
+      console.warn("[WordCloudSection] likes fetch skipped", likesRes.error);
+      setLikeCounts(new Map());
+      setMyLikes(new Set());
+    } else {
+      const counts = new Map<string, number>();
+      const mineLikes = new Set<string>();
+      for (const r of (likesRes.data ?? []) as {
+        normalized_word: string;
+        user_id: string;
+      }[]) {
+        counts.set(r.normalized_word, (counts.get(r.normalized_word) ?? 0) + 1);
+        if (user && r.user_id === user.id) mineLikes.add(r.normalized_word);
+      }
+      setLikeCounts(counts);
+      setMyLikes(mineLikes);
+    }
     setLoading(false);
   }, [clubId, user]);
 
@@ -111,20 +143,26 @@ export function WordCloudSection({ clubId }: Props) {
   useEffect(() => {
     setMounted(true);
     setHintIdx(Math.floor(Math.random() * PLACEHOLDER_HINTS.length));
-    const t = setInterval(() => setShuffleTick((n) => n + 1), 10000);
-    return () => clearInterval(t);
   }, []);
   const hint = PLACEHOLDER_HINTS[hintIdx];
 
+  // 3개 이상일 때만 10초마다 셔플 (1~2개는 움직일 게 없어 새로고침처럼 보임)
+  const canShuffle = entries.length >= 3;
+  useEffect(() => {
+    if (!canShuffle) return;
+    const t = setInterval(() => setShuffleTick((n) => n + 1), 10000);
+    return () => clearInterval(t);
+  }, [canShuffle]);
+
   const shuffledEntries = useMemo(
-    () => (mounted ? shuffle(entries) : entries),
+    () => (mounted && canShuffle ? shuffle(entries) : entries),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [entries, mounted, shuffleTick]
+    [entries, mounted, canShuffle, shuffleTick]
   );
 
-  // ── 크기/밝기: 빈도 절대값 로그 스케일 ──
+  // ── 크기/밝기: 빈도 절대값 로그 스케일 (곡선 완만) ──
   const fontSize = (c: number) =>
-    Math.round(Math.min(40, 15 + Math.log2(Math.max(c, 1)) * 7));
+    Math.round(Math.min(40, 15 + Math.log2(Math.max(c, 1)) * 5));
 
   // ── FLIP: 자리 바꿀 때 슁슁 미끄러짐 ──
   const wordRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
@@ -178,6 +216,76 @@ export function WordCloudSection({ clubId }: Props) {
     if (saving) return;
     const nextWords = myWords.filter((_, i) => i !== idx);
     await saveWords(nextWords, null);
+  }
+
+  // ── 단어 좋아요 토글 (클럽 × 정규화 단어 단위, 낙관적 업데이트) ──
+  async function toggleLike(normalized: string) {
+    if (!user) {
+      router.push(`/login?redirect=/clubs/${clubId}`);
+      return;
+    }
+    if (!normalized || likeSaving) return;
+    const wasLiked = myLikes.has(normalized);
+    const delta = wasLiked ? -1 : 1;
+
+    // 낙관적 반영
+    setMyLikes((prev) => {
+      const n = new Set(prev);
+      if (wasLiked) n.delete(normalized);
+      else n.add(normalized);
+      return n;
+    });
+    setLikeCounts((prev) => {
+      const n = new Map(prev);
+      n.set(normalized, Math.max(0, (n.get(normalized) ?? 0) + delta));
+      return n;
+    });
+
+    setLikeSaving(true);
+    const supabase = createClient();
+    try {
+      if (wasLiked) {
+        const { error } = await supabase
+          .from("club_word_cloud_likes")
+          .delete()
+          .eq("club_id", clubId)
+          .eq("normalized_word", normalized)
+          .eq("user_id", user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("club_word_cloud_likes")
+          .insert({
+            club_id: clubId,
+            normalized_word: normalized,
+            user_id: user.id,
+          });
+        // 23505 = 이미 좋아요됨(중복) → 무시
+        if (error && error.code !== "23505") throw error;
+      }
+    } catch (e) {
+      // 롤백
+      setMyLikes((prev) => {
+        const n = new Set(prev);
+        if (wasLiked) n.add(normalized);
+        else n.delete(normalized);
+        return n;
+      });
+      setLikeCounts((prev) => {
+        const n = new Map(prev);
+        n.set(normalized, Math.max(0, (n.get(normalized) ?? 0) - delta));
+        return n;
+      });
+      const err = e as { code?: string };
+      if (err.code === "42P01") {
+        toast.error("아직 준비 중인 기능이에요 (DB 미적용)");
+      } else {
+        console.error("[WordCloudSection] like error", e);
+        toast.error("좋아요 처리에 실패했어요");
+      }
+    } finally {
+      setLikeSaving(false);
+    }
   }
 
   // 신규/수정/삭제 모두 upsert 또는 delete로 처리
@@ -326,10 +434,12 @@ export function WordCloudSection({ clubId }: Props) {
           </div>
         ) : (
           shuffledEntries.map((e) => {
-            const c = e.count;
+            const likeCount = likeCounts.get(e.normalized) ?? 0;
+            // 크기 점수 = 남긴 사람 수 + 좋아요×0.5 (좋아요 2개 = 1명분, 과증폭 방지)
+            const c = e.count + likeCount * 0.5;
             const isJust = justAdded === e.normalized;
 
-            // 본인/남 구분 없이 빈도 기준으로만 (모두 동일하게 보임)
+            // 점수 기준으로 색/굵기 (모두 동일하게 보임)
             const color =
               c >= 5
                 ? "text-white"
@@ -338,7 +448,7 @@ export function WordCloudSection({ clubId }: Props) {
                   : "text-neutral-300";
             const weight = c >= 5 ? "font-black" : c >= 2 ? "font-bold" : "font-bold";
 
-            // 글로우: 1명부터 켜짐, 빈도 클수록 강하게
+            // 글로우: 1점부터 켜짐, 점수 클수록 강하게
             const glowStrength = Math.min(20, 8 + Math.log2(Math.max(c, 1)) * 5);
             const glowAlpha = Math.min(0.85, 0.4 + Math.log2(Math.max(c, 1)) * 0.18);
             const glow = `0 0 ${Math.round(glowStrength)}px rgba(236,72,153,${glowAlpha.toFixed(2)})`;
@@ -352,11 +462,19 @@ export function WordCloudSection({ clubId }: Props) {
                   if (el && !isJust) wordRefs.current.set(e.normalized, el);
                   else wordRefs.current.delete(e.normalized);
                 }}
-                className={`${color} ${weight} leading-none inline-block will-change-transform cursor-pointer transition-transform hover:scale-110 active:scale-95 ${isJust ? "wc-word-pop" : ""}`}
+                className={`${color} ${weight} leading-none inline-flex flex-col items-center will-change-transform cursor-pointer transition-transform hover:scale-110 active:scale-95 ${isJust ? "wc-word-pop" : ""}`}
                 style={{ fontSize: fontSize(c), textShadow: glow }}
-                title={`${c}명 · 눌러서 누가 남겼는지 보기`}
+                title={`${e.count}명 남김${likeCount > 0 ? ` · 좋아요 ${likeCount}` : ""} · 눌러서 보기`}
               >
-                {e.label}
+                <span>{e.label}</span>
+                {likeCount > 0 && (
+                  <span
+                    className="mt-0.5 font-bold text-pink-400"
+                    style={{ fontSize: 11, textShadow: "none" }}
+                  >
+                    ♥{likeCount}
+                  </span>
+                )}
               </button>
             );
           })
@@ -421,6 +539,14 @@ export function WordCloudSection({ clubId }: Props) {
         label={selectedEntry?.label ?? null}
         authorIds={selectedAuthorIds}
         myId={user?.id ?? null}
+        likeCount={
+          selectedEntry ? (likeCounts.get(selectedEntry.normalized) ?? 0) : 0
+        }
+        liked={selectedEntry ? myLikes.has(selectedEntry.normalized) : false}
+        likeSaving={likeSaving}
+        onToggleLike={() =>
+          selectedEntry && toggleLike(selectedEntry.normalized)
+        }
       />
     </section>
   );

@@ -1100,6 +1100,8 @@ export function HomeContent({
       detailTab: "puzzle" | "share";
       /** 배지 옆에 표시할 첫 카드 날짜 "6/23(화)" — 없으면 생략 */
       dateLabel?: string | null;
+      /** 전체 개수 — "X개 더보기"로 표시 (0/미지정이면 "더보기") */
+      count?: number;
     }) => (
       <div className="flex items-center gap-2 -mx-4 px-4 mb-2">
         <Link
@@ -1118,10 +1120,10 @@ export function HomeContent({
         )}
         <Link
           href={detailHref(opts.detailTab)}
-          aria-label="더보기"
+          aria-label={opts.count && opts.count > 0 ? `${opts.count}개 더보기` : "더보기"}
           className="ml-auto -my-1.5 -mr-2 shrink-0 self-center text-[12px] text-neutral-400 hover:text-white active:text-white font-bold inline-flex items-center gap-0.5 px-2 py-2.5 rounded-lg active:bg-white/5 transition-colors"
         >
-          더보기
+          {opts.count && opts.count > 0 ? `${opts.count}개 더보기` : "더보기"}
           <ChevronRight className="w-3.5 h-3.5" />
         </Link>
       </div>
@@ -1325,7 +1327,7 @@ export function HomeContent({
           )}
 
           {/* ── 깃발 섹션 헤더 한 줄: 버튼 + 날짜 + 더보기 ── */}
-          {renderSectionRow({ icon: "🚩", label: "깃발", detailTab: "puzzle", dateLabel: puzzleHeaderDate })}
+          {renderSectionRow({ icon: "🚩", label: "깃발", detailTab: "puzzle", dateLabel: puzzleHeaderDate, count: flagPuzzles.length })}
 
           {/* 첫 진입 인라인 가이드 — 깃발 캐러셀 위 (한번 닫으면 영구 숨김) */}
           {showTopGuide && (
@@ -1395,7 +1397,7 @@ export function HomeContent({
           {showShareTab && (
             <>
               {/* ── 조각 섹션 헤더 한 줄: 버튼 + 지역칩 + 더보기 ── */}
-              {renderSectionRow({ icon: "🧩", label: "조각", detailTab: "share", dateLabel: shareHeaderDate })}
+              {renderSectionRow({ icon: "🧩", label: "조각", detailTab: "share", dateLabel: shareHeaderDate, count: sharePuzzles.length })}
 
               {/* 유저 조각(파티원 모집) 캐러셀 — HomePuzzleCarousel 재사용(shareMode) */}
               <div className="mb-2">
