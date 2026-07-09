@@ -481,7 +481,7 @@ export function ClubDetailContent({
                   {guestSignSlot.md.profile_image ? (
                     <Image
                       src={guestSignSlot.md.profile_image}
-                      alt={guestSignSlot.md.display_name ?? "MD"}
+                      alt={guestSignSlot.md.display_name ?? "파트너"}
                       fill
                       sizes="40px"
                       className="object-cover"
@@ -494,9 +494,9 @@ export function ClubDetailContent({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-white font-bold text-[13px] truncate">
-                    {guestSignSlot.md.display_name ?? "담당 MD"}
+                    {guestSignSlot.md.display_name ?? "담당 파트너"}
                   </p>
-                  <p className="text-neutral-500 text-[11px]">담당 MD</p>
+                  <p className="text-neutral-500 text-[11px]">담당 파트너</p>
                 </div>
               </div>
               <div className={`grid gap-2 pt-1 ${guestSignSlot.md.kakao_open_chat_url ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -621,7 +621,7 @@ export function ClubDetailContent({
               className="mt-3 inline-flex items-center justify-center gap-1.5 w-full h-10 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-300 hover:bg-amber-500/20 active:scale-95 transition text-[13px] font-bold"
             >
               <Pencil className="w-3.5 h-3.5" />
-              클럽 정보 수정하기 (해당 클럽 MD 전용)
+              클럽 정보 수정하기 (해당 클럽 파트너 전용)
             </button>
           )}
 
@@ -670,6 +670,31 @@ export function ClubDetailContent({
           hideShareEmptyState
           initialTab="share"
         />
+      )}
+
+      {/* Admin 전용: 클럽 DB 삭제 — 리뷰/조각보다 아래(제일 하단) */}
+      {isAdmin && (
+        <div className="px-4 pt-2 pb-4">
+          <button
+            type="button"
+            onClick={async () => {
+              if (!confirm(`"${clubName}" 클럽을 삭제할까요?\n(목록/지도에서 사라지며, /admin/clubs에서 복구 가능)`)) return;
+              const { error } = await supabase
+                .from("clubs")
+                .update({ deleted_at: new Date().toISOString(), deleted_by: user?.id ?? null })
+                .eq("id", club.id);
+              if (error) {
+                toast.error("삭제 실패: " + error.message);
+                return;
+              }
+              toast.success("클럽을 삭제했어요");
+              router.push("/clubs");
+            }}
+            className="w-full h-10 rounded-lg border border-red-500/40 bg-red-500/10 text-red-400 text-[13px] font-bold hover:bg-red-500/20 active:scale-95 transition"
+          >
+            🗑 클럽 삭제 (admin)
+          </button>
+        </div>
       )}
 
       {/* 풀스크린 지도 모달 — 네이버 패턴 */}

@@ -27,7 +27,7 @@ serve(async (req: Request) => {
 
     const { data: expiredPuzzles, error: fetchError } = await supabase
       .from("puzzles")
-      .select("id, leader_id, area, event_date, accepted_offer_id")
+      .select("id, leader_id, area, event_date, accepted_offer_id, is_recruiting_party")
       .in("status", ["open", "selecting"])
       .lt("expires_at", new Date().toISOString());
 
@@ -73,20 +73,23 @@ serve(async (req: Request) => {
       area: string;
       event_date: string;
       accepted_offer_id: string | null;
+      is_recruiting_party: boolean | null;
     }>;
 
     const formatLabel = (p: { area: string; event_date: string }) => {
       const [, m, d] = p.event_date.split("-").map(Number);
       return `${p.area} ${m}/${d}`;
     };
+    // 조각(파티원 모집) / 깃발 구분 라벨
+    const kindOf = (p: { is_recruiting_party: boolean | null }) => (p.is_recruiting_party ? "조각" : "깃발");
 
     // 방장에게 in-app 알림
     const notifRows = typedExpired.map((p) => ({
       user_id: p.leader_id,
       type: "puzzle_expired",
-      title: "깃발 만료",
-      message: `${formatLabel(p)} 깃발의 시간이 끝났어요.`,
-      action_url: "/bids?tab=puzzle",
+      title: `${kindOf(p)} 만료`,
+      message: `${formatLabel(p)} ${kindOf(p)}의 시간이 끝났어요.`,
+      action_url: `/flags/${p.id}`,
     }));
     if (notifRows.length > 0) {
       const { error: notifErr } = await supabase.from("in_app_notifications").insert(notifRows);
@@ -114,21 +117,22 @@ serve(async (req: Request) => {
 
       for (const p of typedExpired) {
         const label = formatLabel(p);
+        const kind = kindOf(p);
         for (const adminId of adminIds) {
           adminRows.push({
             user_id: adminId,
             type: "admin_puzzle_expired",
-            title: "[관리자] 깃발 만료",
-            message: `깃발이 만료되었습니다 — ${label}`,
-            action_url: "/admin/puzzles",
+            title: `[관리자] ${kind} 만료`,
+            message: `${kind}이 만료되었습니다 — ${label}`,
+            action_url: `/flags/${p.id}`,
           });
           if (p.accepted_offer_id) {
             adminRows.push({
               user_id: adminId,
               type: "admin_match_expired",
               title: "[관리자] 매치 만료",
-              message: `수락된 매치가 깃발 만료로 종료되었습니다 — ${label}`,
-              action_url: "/admin/puzzles",
+              message: `수락된 매치가 ${kind} 만료로 종료되었습니다 — ${label}`,
+              action_url: `/flags/${p.id}`,
             });
           }
         }

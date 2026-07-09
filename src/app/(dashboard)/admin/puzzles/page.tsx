@@ -2,6 +2,7 @@ import { Fragment } from "react";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { ProgressiveList } from "@/components/admin/ProgressiveList";
 import { AdminPuzzleRefundButton } from "@/components/admin/AdminPuzzleRefundButton";
 import { AdminPuzzleOffersDropdown } from "@/components/admin/AdminPuzzleOffersDropdown";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
@@ -20,10 +21,22 @@ interface PageProps {
   searchParams: Promise<{
     tab?: string; area?: string; status?: string; sort?: string; kind?: string;
     from?: string; to?: string; trigger?: string; category?: string; page?: string;
+    chat?: string;
   }>;
 }
 
-type SortKey = "event" | "created";
+type SortKey = "event" | "created" | "cancelled";
+
+// 상대 시간 ("5일 전", "3시간 전")
+function relTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "방금";
+  if (m < 60) return `${m}분 전`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}시간 전`;
+  return `${Math.floor(h / 24)}일 전`;
+}
 
 const STATUS_FILTER_LABEL: Record<string, string> = {
   open: "제안 받는중",
@@ -58,8 +71,11 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
   const {
     tab = "list", area: areaFilter, status: statusFilter, sort: sortParam, kind: kindFilter,
     from: fromParam, to: toParam, trigger: triggerParam, category: categoryParam, page: pageParam,
+    chat: chatParam,
   } = await searchParams;
-  const sortKey: SortKey = sortParam === "created" ? "created" : "event";
+  // 제안받는중(open) 하위 대화 필터: 'waiting'(파트너 답장 대기) | 'active'(대화중)
+  const chatFilter = chatParam === "waiting" ? "waiting" : chatParam === "active" ? "active" : null;
+  const sortKey: SortKey = sortParam === "created" ? "created" : sortParam === "cancelled" ? "cancelled" : "event";
   const kindLabel = kindFilter === "share" ? "조각" : kindFilter === "flag" ? "깃발" : "게시물";
 
   // 미들웨어가 auth + role 체크를 완료하고 헤더로 전달
@@ -81,12 +97,17 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
     return `${m}/${day}(${days[d.getDay()]})`;
   };
 
-  // 전체 깃발 탭 데이터 (sort 분기: 영업일순 vs 등록순)
+  // 전체 깃발 탭 데이터 (sort 분기: 영업일순 vs 등록순) — list 탭일 때만 로드
+  const isListTab = tab === "list";
   const baseQuery = supabase
     .from("puzzles")
-    .select("id, area, event_date, status, target_count, current_count, notes, created_at, leader_id, is_recruiting_party");
-  const { data: allPuzzles } = sortKey === "created"
+    .select("id, area, event_date, status, target_count, current_count, notes, created_at, cancelled_at, leader_id, is_recruiting_party");
+  const { data: allPuzzles } = !isListTab
+    ? { data: null }
+    : sortKey === "created"
     ? await baseQuery.order("created_at", { ascending: false })
+    : sortKey === "cancelled"
+    ? await baseQuery.order("cancelled_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false })
     : await baseQuery.order("event_date", { ascending: false }).order("created_at", { ascending: false });
 
   // 게시자(leader) 정보 별도 조회 후 매핑 (admin RLS — Migration 109)
@@ -103,11 +124,13 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
     for (const l of leadersData || []) leaderMap.set(l.id, l);
   }
 
-  const { data: allOffers } = await supabase
+  const { data: allOffers } = !isListTab
+    ? { data: null }
+    : await supabase
     .from("puzzle_offers")
     .select(`
       id, puzzle_id, status, table_type, proposed_price, includes, comment, created_at,
-      visit_result, visit_marked_at, strike_applied_at,
+      visit_result, visit_marked_at, strike_applied_at, leader_chat_started_at, md_id,
       club:clubs(name, area),
       md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, md_deal_count, instagram, kakao_open_chat_url, phone)
     `)
@@ -119,6 +142,36 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
     acc[offer.puzzle_id].push(offer);
     return acc;
   }, {});
+
+  // 대화 시작된(leader_chat_started_at) 오퍼들의 메시지 집계 → 오퍼별 chat_meta
+  // { leader: 방장 메시지수, md: 파트너 메시지수, last_by, last_at, replied: MD가 1건이라도 보냈나 }
+  type ChatMeta = { leader: number; md: number; last_by: "leader" | "md" | null; last_at: string | null; replied: boolean };
+  const chatMetaByOffer: Record<string, ChatMeta> = {};
+  const chatOfferIds = (allOffers || []).filter((o) => o.leader_chat_started_at).map((o) => o.id);
+  if (chatOfferIds.length > 0) {
+    const mdIdByOffer: Record<string, string> = {};
+    for (const o of allOffers || []) if (o.leader_chat_started_at) mdIdByOffer[o.id] = o.md_id;
+    const { data: msgs } = await supabase
+      .from("puzzle_offer_messages")
+      .select("offer_id, sender_id, created_at")
+      .in("offer_id", chatOfferIds)
+      .order("created_at", { ascending: true });
+    for (const m of msgs || []) {
+      const meta = chatMetaByOffer[m.offer_id] ?? { leader: 0, md: 0, last_by: null, last_at: null, replied: false };
+      const isMd = m.sender_id === mdIdByOffer[m.offer_id];
+      if (isMd) { meta.md += 1; meta.replied = true; } else { meta.leader += 1; }
+      meta.last_by = isMd ? "md" : "leader";
+      meta.last_at = m.created_at;
+      chatMetaByOffer[m.offer_id] = meta;
+    }
+  }
+  // 깃발별 대화 상태: 채팅 시작된 오퍼 중 replied 하나라도 있으면 'active', 있는데 전부 미답장이면 'waiting', 없으면 null
+  const chatStatusByPuzzle: Record<string, "active" | "waiting" | null> = {};
+  for (const [pid, offers] of Object.entries(offersByPuzzle)) {
+    const started = offers.filter((o) => o.leader_chat_started_at);
+    if (started.length === 0) { chatStatusByPuzzle[pid] = null; continue; }
+    chatStatusByPuzzle[pid] = started.some((o) => chatMetaByOffer[o.id]?.replied) ? "active" : "waiting";
+  }
 
   // 깃발/조각 서브필터 (kind: flag | share | 없음=전체)
   const flagCountAll = (allPuzzles || []).filter((p) => !p.is_recruiting_party).length;
@@ -149,20 +202,27 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
   }, {});
 
   // 지역 + 상태 필터 적용
-  const filteredPuzzles = statusFilter
+  const statusFilteredPuzzles = statusFilter
     ? puzzlesAfterArea.filter((p) => p.status === statusFilter)
     : puzzlesAfterArea;
+  // 제안받는중(open) 하위 대화 필터 적용
+  const filteredPuzzles =
+    statusFilter === "open" && chatFilter
+      ? statusFilteredPuzzles.filter((p) => chatStatusByPuzzle[p.id] === chatFilter)
+      : statusFilteredPuzzles;
 
-  // 최신 제안 탭 데이터 (puzzles join 제거 — RLS 충돌 회피, 별도 조회 후 매핑)
-  const { data: recentOffersRaw, error: recentOffersError } = await supabase
-    .from("puzzle_offers")
-    .select(`
-      id, puzzle_id, status, table_type, proposed_price, includes, comment, created_at,
-      club:clubs(name, area),
-      md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, instagram)
-    `)
-    .order("created_at", { ascending: false })
-    .limit(50);
+  // 최신 제안 탭 데이터 — 해당 탭일 때만 로드 (list 탭에서 불필요한 조회 방지)
+  const { data: recentOffersRaw, error: recentOffersError } = tab === "recent"
+    ? await supabase
+        .from("puzzle_offers")
+        .select(`
+          id, puzzle_id, status, table_type, proposed_price, includes, comment, created_at,
+          club:clubs(name, area),
+          md:public_user_profiles!puzzle_offers_md_id_fkey(id, display_name, instagram)
+        `)
+        .order("created_at", { ascending: false })
+        .limit(50)
+    : { data: null, error: null };
 
   if (recentOffersError) {
     console.error("[admin/puzzles] recentOffers error:", recentOffersError);
@@ -201,11 +261,13 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
     expired: "bg-neutral-700 text-neutral-400",
   };
 
-  // 신고 탭 데이터
-  const { data: reports } = await supabase
-    .from("puzzle_reports")
-    .select("id, reason, created_at, puzzle_id, reporter_md_id")
-    .order("created_at", { ascending: false });
+  // 신고 탭 데이터 — 해당 탭일 때만 로드
+  const { data: reports } = tab === "reports"
+    ? await supabase
+        .from("puzzle_reports")
+        .select("id, reason, created_at, puzzle_id, reporter_md_id")
+        .order("created_at", { ascending: false })
+    : { data: null };
 
   const puzzleIds = [...new Set((reports || []).map((r) => r.puzzle_id))];
   const puzzleMap = new Map<string, { id: string; area: string; event_date: string; status: string }>();
@@ -289,17 +351,19 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
 
         {/* 전체 깃발 탭 */}
         {tab === "list" && (() => {
-          const buildHref = (overrides: { area?: string | null; status?: string | null; sort?: SortKey | null; kind?: string | null }) => {
+          const buildHref = (overrides: { area?: string | null; status?: string | null; sort?: SortKey | null; kind?: string | null; chat?: string | null }) => {
             const params = new URLSearchParams();
             params.set("tab", "list");
             const nextArea = overrides.area === undefined ? areaFilter : overrides.area;
             const nextStatus = overrides.status === undefined ? statusFilter : overrides.status;
             const nextSort = overrides.sort === undefined ? sortKey : overrides.sort;
             const nextKind = overrides.kind === undefined ? kindFilter : overrides.kind;
+            const nextChat = overrides.chat === undefined ? chatFilter : overrides.chat;
             if (nextKind) params.set("kind", nextKind);
             if (nextArea) params.set("area", nextArea);
             if (nextStatus) params.set("status", nextStatus);
             if (nextSort && nextSort !== "event") params.set("sort", nextSort);
+            if (nextChat && nextStatus === "open") params.set("chat", nextChat);
             return `?${params.toString()}`;
           };
           return (
@@ -428,7 +492,44 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                   return acc;
                 }, {});
                 let lastDate: string | null = null;
-                return filteredPuzzles.map((puzzle) => {
+                return (
+                <>
+                {/* 취소 필터일 때: 최근 취소순 정렬 토글 (날짜 헤더 위) */}
+                {statusFilter === "cancelled" && (
+                  <Link href={buildHref({ sort: sortKey === "cancelled" ? "event" : "cancelled" })} className="block">
+                    <div className={`flex items-center justify-center gap-1.5 w-full py-2 mb-1 rounded-lg text-[12px] font-bold transition-all ${
+                      sortKey === "cancelled"
+                        ? "bg-amber-500 text-black"
+                        : "bg-neutral-800 text-neutral-300 border border-neutral-700"
+                    }`}>
+                      🕐 {sortKey === "cancelled" ? "최근 취소순 (적용중)" : "최근에 취소된 순 정렬"}
+                    </div>
+                  </Link>
+                )}
+                {/* 제안받는중(open)일 때: 답장대기중 / 대화중 하위 필터 */}
+                {statusFilter === "open" && (() => {
+                  const waitCnt = statusFilteredPuzzles.filter((p) => chatStatusByPuzzle[p.id] === "waiting").length;
+                  const activeCnt = statusFilteredPuzzles.filter((p) => chatStatusByPuzzle[p.id] === "active").length;
+                  return (
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Link href={buildHref({ chat: chatFilter === "waiting" ? null : "waiting" })} className="flex-1">
+                        <div className={`flex items-center justify-center gap-1 py-2 rounded-lg text-[12px] font-bold transition-all ${
+                          chatFilter === "waiting" ? "bg-amber-500 text-black" : "bg-neutral-800 text-neutral-300 border border-neutral-700"
+                        }`}>
+                          💬 답장대기중 {waitCnt}
+                        </div>
+                      </Link>
+                      <Link href={buildHref({ chat: chatFilter === "active" ? null : "active" })} className="flex-1">
+                        <div className={`flex items-center justify-center gap-1 py-2 rounded-lg text-[12px] font-bold transition-all ${
+                          chatFilter === "active" ? "bg-green-500 text-black" : "bg-neutral-800 text-neutral-300 border border-neutral-700"
+                        }`}>
+                          🗨️ 대화중 {activeCnt}
+                        </div>
+                      </Link>
+                    </div>
+                  );
+                })()}
+                <ProgressiveList initial={7} items={filteredPuzzles.map((puzzle) => {
                   const offers = offersByPuzzle[puzzle.id] || [];
                   const leader = puzzle.leader_id ? leaderMap.get(puzzle.leader_id) : null;
                   const leaderName = leader?.display_name || leader?.name || "-";
@@ -500,7 +601,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                               <p className="text-[12px] text-amber-300">
                                 <span className="font-bold">✅ 선택:</span>{" "}
                                 <span className="font-black text-white">
-                                  {acceptedMd?.display_name || "MD"}
+                                  {acceptedMd?.display_name || "파트너"}
                                 </span>
                                 <span className="text-amber-200/70 mx-1">·</span>
                                 <span className="font-black text-green-300">
@@ -523,6 +624,29 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                             </p>
                           </div>
                         ) : null}
+
+                        {/* 대화 상태 요약 (대화 시작된 오퍼별) — 오퍼 채팅방으로 이동 */}
+                        {offers.filter((o) => o.leader_chat_started_at).map((o) => {
+                          const cm = chatMetaByOffer[o.id];
+                          const active = cm?.replied;
+                          return (
+                            <Link key={o.id} href={`/flags/${puzzle.id}`}
+                              className={`flex flex-col gap-0.5 rounded-lg px-3 py-2 mt-1 ${
+                                active ? "bg-neutral-800 hover:bg-neutral-700" : "bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20"
+                              }`}>
+                              <span className={`text-[12px] font-bold ${active ? "text-neutral-100" : "text-amber-300"}`}>
+                                🗨️ {active ? "대화중" : "파트너 답장 기다리는중"}
+                                {(o.md as { display_name?: string } | null)?.display_name ? ` · ${(o.md as { display_name?: string }).display_name}` : ""}
+                              </span>
+                              {cm && (
+                                <span className="text-[11px] text-neutral-400">
+                                  방장 {cm.leader} · 파트너 {cm.md}
+                                  {cm.last_at && <> · 마지막 {cm.last_by === "md" ? "파트너" : "방장"} {relTime(cm.last_at)}</>}
+                                </span>
+                              )}
+                            </Link>
+                          );
+                        })}
 
                         {/* 게시자 정보 (admin 전용 — 이름 클릭 시 유저 상세) */}
                         <div className="border-t border-neutral-800 pt-3 space-y-1">
@@ -582,7 +706,9 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                       </Card>
                     </Fragment>
                   );
-                });
+                })} />
+                </>
+                );
               })()
             )}
           </div>
@@ -612,7 +738,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                           {club?.name || "클럽 미정"} · {offer.table_type} · {offer.proposed_price.toLocaleString()}원
                         </p>
                         <p className="text-[11px] text-neutral-500">
-                          MD: {md?.display_name || "-"}
+                          파트너: {md?.display_name || "-"}
                           {md?.instagram ? ` · @${md.instagram}` : ""}
                         </p>
                         <p className="text-[11px] text-neutral-700">
