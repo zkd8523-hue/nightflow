@@ -151,6 +151,14 @@ const OFFER_STATUS_LABEL_EN: Record<string, string> = {
   expired: "Not selected",
 };
 
+// 목적격 조사 을/를 (한글 받침 기준, 영문·숫자 등은 '를')
+function objParticle(name: string): string {
+  const last = name.trim().slice(-1);
+  const code = last.charCodeAt(0);
+  if (code >= 0xac00 && code <= 0xd7a3) return (code - 0xac00) % 28 === 0 ? "를" : "을";
+  return "를";
+}
+
 export function PuzzleDetailClient({
   puzzle,
   members,
@@ -222,8 +230,24 @@ export function PuzzleDetailClient({
   // 조각 카톡 공유 시트 (?created=share 자동 오픈 / 공유 버튼 수동 오픈)
   const [showShareCreated, setShowShareCreated] = useState(searchParams.get("created") === "share");
   const [shareCreatedMode, setShareCreatedMode] = useState<"created" | "share">("created");
-  // 깃발 등록 직후 안내 팝업 (?created=flag)
-  const [showCreatedInfo, setShowCreatedInfo] = useState(searchParams.get("created") === "flag");
+  // 깃발 등록 직후 5자 리뷰 유도 팝업 — 최애 클럽 지정자에게만(rc/rn 파라미터), 깃발당 최초 1회.
+  const [showCreatedInfo, setShowCreatedInfo] = useState(false);
+  const [reviewClub, setReviewClub] = useState<{ id: string; name: string } | null>(null);
+  useEffect(() => {
+    if (searchParams.get("created") !== "flag") return;
+    const rc = searchParams.get("rc");
+    const rn = searchParams.get("rn");
+    if (!rc || !rn) return; // 최애 클럽 미지정 → 팝업 안 띄움
+    const key = `flag_created_popup_${puzzle.id}`;
+    try {
+      if (localStorage.getItem(key)) return; // 이미 본 깃발
+      localStorage.setItem(key, "1");
+    } catch {
+      /* noop */
+    }
+    setReviewClub({ id: rc, name: rn });
+    setShowCreatedInfo(true);
+  }, [searchParams, puzzle.id]);
   const recentMatchedPuzzle = useRecentMatchedPuzzle();
 
   const handleShare = useCallback(async () => {
@@ -1819,26 +1843,47 @@ export function PuzzleDetailClient({
           onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}
         >
           <div
-            className="w-full max-w-sm rounded-3xl bg-[#1C1C1E] border border-neutral-800 p-6 text-center"
+            className={`relative w-full max-w-sm rounded-3xl bg-[#1C1C1E] border border-neutral-800 p-6 text-center ${
+              reviewClub && !isForeigner ? "pb-14" : ""
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-14 h-14 mx-auto rounded-full bg-amber-500/15 flex items-center justify-center mb-4 text-3xl">
-              🚩
-            </div>
-            <h3 className="text-white font-black text-lg mb-2">
-              {isForeigner ? "Your flag is up!" : "깃발이 올라갔어요!"}
+            <h3 className="text-white font-black text-xl mb-2">
+              {isForeigner ? "Your flag is up! 🎉" : "깃발 등록 완료! 🎉"}
             </h3>
-            <p className="text-neutral-400 text-[13px] leading-relaxed mb-6">
+            <p className="text-neutral-400 text-[13px] leading-relaxed">
               {isForeigner
                 ? "Offers close at 8pm today. You have 60 more minutes to review."
-                : "오퍼는 당일 8시 마감. 이후 60분간 더 검토할 수 있어요."}
+                : "오퍼는 당일 8시 마감되고, 60분간 더 검토할 수 있어요."}
             </p>
-            <Button
-              onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}
-              className="w-full h-12 rounded-xl bg-white hover:bg-neutral-200 text-black font-black text-[15px]"
-            >
-              {isForeigner ? "Got it" : "확인"}
-            </Button>
+            {reviewClub && !isForeigner ? (
+              <div className="mt-6 pt-5 border-t border-neutral-800">
+                <p className="text-[15px] text-white font-bold leading-snug mb-4">
+                  <span className="text-amber-300">{reviewClub.name}</span>
+                  {objParticle(reviewClub.name)} 5자로 표현해보세요!
+                </p>
+                <Link
+                  href={`/clubs/${reviewClub.id}${lq}`}
+                  onClick={() => setShowCreatedInfo(false)}
+                  className="flex items-center justify-center gap-1.5 w-full h-12 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20"
+                >
+                  ⭐ 리뷰 구경하기
+                </Link>
+                <button
+                  onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}
+                  className="absolute bottom-5 right-6 text-[13px] text-neutral-500 font-medium hover:text-neutral-300"
+                >
+                  다음에
+                </button>
+              </div>
+            ) : (
+              <Button
+                onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}
+                className="w-full h-12 rounded-xl font-black text-[15px] bg-white hover:bg-neutral-200 text-black mt-6"
+              >
+                {isForeigner ? "Got it" : "확인"}
+              </Button>
+            )}
           </div>
         </div>
       )}

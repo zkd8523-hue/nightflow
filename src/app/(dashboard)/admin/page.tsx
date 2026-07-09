@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
+import { AdminDashboardGrid } from "@/components/admin/AdminDashboardGrid";
 import {
   Users,
   TrendingUp,
@@ -441,27 +442,22 @@ export default async function AdminDashboardPage() {
           </div>
         </details>
 
-        {/* 통계 카드 */}
-        <div className="grid grid-cols-3 gap-4">
-          {stats.map((stat) => (
-            <Link key={stat.label} href={stat.href}>
-              <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 hover:bg-neutral-900/50 transition-all group cursor-pointer">
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`${stat.bgColor} p-2 rounded-xl group-hover:scale-110 transition-transform`}>
-                    <stat.icon className={`w-5 h-5 ${stat.color}`} />
-                  </div>
-                  {stat.badge && (
-                    <span className="text-xs px-2 py-1 bg-amber-500/20 text-amber-500 rounded-full font-bold">
-                      {stat.badge}
-                    </span>
-                  )}
-                </div>
-                <p className="text-neutral-500 text-sm font-bold mb-1">{stat.label}</p>
-                <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
+        {/* 통계 카드 — 꾹눌러 순서변경 + 숨기기 (클라이언트, localStorage 저장) */}
+        <AdminDashboardGrid
+          stats={stats.map((s) => {
+            const icon = s.icon as { displayName?: string; name?: string };
+            return {
+              id: s.label,
+              label: s.label,
+              value: s.value,
+              iconName: icon.displayName ?? icon.name ?? "Sparkles",
+              color: s.color,
+              bgColor: s.bgColor,
+              badge: (s as { badge?: string | null }).badge ?? null,
+              href: s.href,
+            };
+          })}
+        />
       </div>
     </div>
   );

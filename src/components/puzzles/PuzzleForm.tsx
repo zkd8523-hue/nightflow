@@ -723,11 +723,19 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         target_count: effectiveTargetCount,
       });
 
-      // 깃발(모달로 안내되는 케이스)은 토스트 생략 — 상세에서 팝업으로 안내(중복 방지)
+      // 최애 클럽(실제 클럽) 지정자 = 상세에서 5자 리뷰 유도 모달로 안내 → 토스트 생략(중복 방지).
+      // 그 외 깃발은 기존처럼 토스트로 확인.
+      const topClub = preferredClubs.find(
+        (i): i is Extract<PreferredClubItem, { kind: "club" }> => i.kind === "club",
+      )?.club;
+      const showReviewModal = !shareMode && !effectiveIsRecruiting && !isForeigner && !!topClub;
+
       if (shareMode) {
         toast.success(t("조각이 올라갔어요! 파티원과 파트너 제안을 받아보세요 🧩", "Your share is up! Get party members and club offers 🧩"));
       } else if (effectiveIsRecruiting) {
         toast.success(t("퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·파트너 모집, 이후 60분간 검토할 수 있어요 🧩", "Posted! Offers close at 8pm. You have 60 min to review 🧩"));
+      } else if (!showReviewModal) {
+        toast.success(t("깃발이 올라갔어요! 🚩", "Done! Top clubs will send you offers 🎉"));
       }
       clearDraft();
       setSubmitted(true); // 이탈 가드 해제
@@ -738,9 +746,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       // 조각은 등록 직후 카톡 공유 시트 노출(파티원 모집 동선)
       const createdQuery = shareMode
         ? (isForeigner ? "?created=share&lang=en" : "?created=share")
-        : (!effectiveIsRecruiting
-            ? (isForeigner ? "?created=flag&lang=en" : "?created=flag")
-            : (isForeigner ? "?lang=en" : ""));
+        : showReviewModal && topClub
+          ? `?created=flag&rc=${topClub.id}&rn=${encodeURIComponent(topClub.name)}`
+          : (isForeigner ? "?lang=en" : "");
       router.push(`/flags/${created.id}${createdQuery}`);
     } catch (err) {
       console.error("puzzle submit error:", err);
