@@ -106,7 +106,7 @@ export default async function PuzzleNewPage({
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-20">
-      <div className="max-w-lg mx-auto p-6">
+      <div className="max-w-lg mx-auto px-4 py-6">
         {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공 */}
         {isForeigner && (
           <Link
@@ -119,25 +119,27 @@ export default async function PuzzleNewPage({
           </Link>
         )}
 
-        {/* 헤더 */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-black text-white tracking-tight">
-            {t(
-              "🚩 깃발",
-              "Tell us your night",
-              "あなたの夜を教えて",
-              "告诉我们您的夜晚"
-            )}
-          </h1>
-          <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">
-            {t(
-              "예산만 정하면 클럽에서 시크릿오퍼를 제안해요",
-              "Set your budget — Seoul's clubs send you private VIP offers",
-              "予算を設定 — ソウルのクラブからプライベートVIPオファーが届きます",
-              "设置预算 — 首尔的夜店为您发送专属 VIP 报价"
-            )}
-          </p>
-        </div>
+        {/* 외국인만 헤더 유지(자체 chrome이라 타이틀 필요). 한국인은 게이트/폼이 헤더 역할 */}
+        {isForeigner && (
+          <div className="mb-8">
+            <h1 className="text-2xl font-black text-white tracking-tight">
+              {t(
+                "🚩 깃발",
+                "Tell us your night",
+                "あなたの夜を教えて",
+                "告诉我们您的夜晚"
+              )}
+            </h1>
+            <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">
+              {t(
+                "예산만 정하면 클럽에서 시크릿오퍼를 제안해요",
+                "Set your budget — Seoul's clubs send you private VIP offers",
+                "予算を設定 — ソウルのクラブからプライベートVIPオファーが届きます",
+                "设置预算 — 首尔的夜店为您发送专属 VIP 报价"
+              )}
+            </p>
+          </div>
+        )}
 
         <PuzzleForm userId={user.id} />
       </div>

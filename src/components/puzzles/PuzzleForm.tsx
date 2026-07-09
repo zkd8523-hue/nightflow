@@ -6,7 +6,7 @@ import { getLang, makeT, areaLabel } from "@/lib/i18n";
 import { createClient } from "@/lib/supabase/client";
 import { MAIN_AREAS, isFlagAreaOpen } from "@/lib/constants/areas";
 import { toast } from "sonner";
-import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X } from "lucide-react";
+import { Minus, Plus, MessageCircle, Calendar, MapPin, Coins, Users, Sparkles, ArrowRight, Flag, Check, Puzzle, HelpCircle, X, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DateTimeSheet } from "@/components/ui/datetime-sheet";
@@ -760,45 +760,103 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     }
   };
 
-  // ── 외국인 여행상태 게이트 (신규 등록만) ──────────────────────────
+  // ── 여행상태/일정 확정 게이트 (신규 등록만) ──────────────────────────
   // 계획중인 사람은 깃발 마켓을 오염시키므로(실제 방문 불확실, MD 오퍼 낭비)
-  // 차단하고 홈으로 회유. 확정/여행중만 깃발 폼 노출.
-  const showTripGate = isForeigner && !isEditMode;
+  // 차단하고 홈으로 회유. 확정된 유저만 깃발 폼 노출.
+  // 외국인: 모든 신규 등록 / 한국인: 깃발(shareMode=false) 신규 등록만
+  const showTripGate = !isEditMode && (isForeigner || !shareMode);
 
   if (showTripGate && tripStatus === null) {
+    if (isForeigner) {
+      return (
+        <div className="space-y-6 pb-12">
+          <div className="bg-[#1C1C1E] rounded-3xl p-6 space-y-5">
+            <div className="space-y-1.5">
+              <h2 className="text-[20px] font-black text-white leading-snug tracking-tight">
+                Is your Korea trip confirmed,<br />or are you already in Korea?
+              </h2>
+              <p className="text-[13px] text-neutral-500 leading-relaxed">
+                Seoul clubs send real offers — only for confirmed visitors.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setTripStatus("qualified")}
+                className="w-full h-14 rounded-2xl bg-white text-black font-black text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-200 active:scale-[0.99] transition-all"
+              >
+                ✅ Yes — booked or already in Korea
+              </button>
+              <button
+                type="button"
+                onClick={() => setTripStatus("planning")}
+                className="w-full h-14 rounded-2xl bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-700/60 active:scale-[0.99] transition-all"
+              >
+                🗓️ Not yet, just planning
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // 한국어: 깃발/조각 선택 화면(start/page)과 동일한 좌우 2카드 레이아웃 재활용.
+    // 방금 누른 "깃발 꽂기"(앰버·하단) 자리에 "네, 확정됐어요"(앰버·하단)가 이어져 버튼이 안 튐.
     return (
-      <div className="space-y-6 pb-12">
-        <div className="bg-[#1C1C1E] rounded-3xl p-6 space-y-5">
-          <div className="space-y-1.5">
-            <h2 className="text-[20px] font-black text-white leading-snug tracking-tight">
-              Is your Korea trip confirmed,<br />or are you already in Korea?
-            </h2>
-            <p className="text-[13px] text-neutral-500 leading-relaxed">
-              Seoul clubs send real offers — only for confirmed visitors.
+      <div className="pb-12">
+        {/* 뒤로 + 헤더 + 여백: start/page(깃발·조각 선택)와 픽셀 단위로 동일 */}
+        <button
+          type="button"
+          onClick={() => router.push("/start")}
+          aria-label="뒤로"
+          className="inline-flex items-center gap-1 -ml-1 mb-6 px-2 py-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+          <span className="text-[14px] font-bold">뒤로</span>
+        </button>
+        <div className="mb-6">
+          <h1 className="text-2xl font-black text-white tracking-tight break-keep">
+            일정이 확정됐나요?
+          </h1>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {/* 아직 고민 중 — 왼쪽(회색). 회유 멘트를 카드 안에 노출, 누르면 홈으로 */}
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="flex flex-col text-left rounded-3xl border border-neutral-700 bg-neutral-800/40 p-5 active:scale-[0.98] transition-transform"
+          >
+            <span className="text-[34px] leading-none">🤔</span>
+            <p className="text-[18px] font-black text-white mt-3">아직 고민 중</p>
+            <p className="text-[12.5px] text-neutral-400 mt-1.5 leading-relaxed break-keep flex-1">
+              오퍼는 2~3일 전에 받아도 충분해요. 일정이 확정되면 그때 깃발을 꽂아주세요 🎉
             </p>
-          </div>
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setTripStatus("qualified")}
-              className="w-full h-14 rounded-2xl bg-white text-black font-black text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-200 active:scale-[0.99] transition-all"
-            >
-              ✅ Yes — booked or already in Korea
-            </button>
-            <button
-              type="button"
-              onClick={() => setTripStatus("planning")}
-              className="w-full h-14 rounded-2xl bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-700/60 active:scale-[0.99] transition-all"
-            >
-              🗓️ Not yet, just planning
-            </button>
-          </div>
+            <span className="mt-4 inline-flex items-center justify-center h-10 rounded-xl bg-neutral-700 text-neutral-200 text-[13px] font-black">
+              다음에 올게요
+            </span>
+          </button>
+
+          {/* 네, 확정됐어요 — 오른쪽(앰버) → 폼 진입 */}
+          <button
+            type="button"
+            onClick={() => setTripStatus("qualified")}
+            className="flex flex-col text-left rounded-3xl border border-amber-500/50 bg-amber-500/[0.06] p-5 active:scale-[0.98] transition-transform"
+          >
+            <span className="text-[34px] leading-none">✅</span>
+            <p className="text-[18px] font-black text-white mt-3">네,<br />확정됐어요</p>
+            <p className="text-[12.5px] text-neutral-400 mt-1.5 leading-relaxed break-keep flex-1">
+              날짜·인원·예산 정해졌어요.
+            </p>
+            <span className="mt-4 inline-flex items-center justify-center h-10 rounded-xl bg-amber-500 text-black text-[13px] font-black">
+              계속하기
+            </span>
+          </button>
         </div>
       </div>
     );
   }
 
-  if (showTripGate && tripStatus === "planning") {
+  // 외국인만 별도 회유 화면. 한국어는 "아직 고민 중" 카드에서 바로 홈으로 이동(위 카드 onClick).
+  if (showTripGate && isForeigner && tripStatus === "planning") {
     return (
       <div className="space-y-6 pb-12">
         <div className="bg-[#1C1C1E] rounded-3xl p-7 space-y-5 text-center">
