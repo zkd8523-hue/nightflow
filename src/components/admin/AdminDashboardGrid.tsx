@@ -203,7 +203,7 @@ function SortableCard({ stat, edit, draggingRef, onDelete }: { stat: DashboardSt
       style={style}
       {...attributes}
       {...listeners}
-      className={`touch-none ${edit ? "cursor-grab active:cursor-grabbing select-none" : ""}`}
+      className={edit ? "touch-none cursor-grab active:cursor-grabbing select-none" : ""}
     >
       <Link
         href={stat.href}
