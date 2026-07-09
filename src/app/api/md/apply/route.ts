@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
       display_name, area, phone: rawPhone, instagram, kakao_open_chat_url, business_card_url,
       club_name,
       floor_plan_url,
+      preferred_contact_methods,
     } = body;
     // 소속 클럽 이름 (대표 + 추가) — 신청 시 클럽을 생성하지 않고 메모로만 저장.
     // 실제 클럽 연결은 admin이 승인 화면에서 기존 클럽에 연결(club_partners).
@@ -69,6 +70,12 @@ export async function POST(request: NextRequest) {
     if (!display_name || !area || !Array.isArray(area) || area.length === 0 || !instagram || !phone || !club_name) {
       return NextResponse.json(
         { error: "필수 항목을 모두 입력해주세요." },
+        { status: 400 }
+      );
+    }
+    if (!Array.isArray(preferred_contact_methods) || preferred_contact_methods.length === 0) {
+      return NextResponse.json(
+        { error: "고객에게 표시할 연락 수단을 최소 1개 선택해주세요." },
         { status: 400 }
       );
     }
@@ -135,6 +142,7 @@ export async function POST(request: NextRequest) {
         phone,
         instagram: cleanInstagram,
         ...(cleanKakaoUrl ? { kakao_open_chat_url: cleanKakaoUrl } : {}),
+        preferred_contact_methods,
         verification_club_name: club_name,
         additional_club_names: additionalClubNames,
         md_unique_slug: generatedSlug,

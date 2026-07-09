@@ -70,9 +70,12 @@ export default async function OfferChatPage({ params }: PageProps) {
   const counterpartId = isLeader ? offer.md_id : puzzle.leader_id;
 
   const [{ data: meProfile }, { data: cpProfile }] = await Promise.all([
+    // 본인 프로필은 public_user_profiles 뷰(role='md'만 연락처 노출) 대신 users 테이블에서
+    // 직접 조회 — RLS "본인 행은 전체 조회 가능" 정책으로 role 마스킹 없이 연락처를 가져옴.
+    // (연락처 첨부 기능이 role='md'가 아닌 계정에서도 본인이 등록한 값이면 동작해야 함)
     supabase
-      .from("public_user_profiles")
-      .select("id, display_name, profile_image")
+      .from("users")
+      .select("id, display_name, profile_image, instagram, phone, kakao_open_chat_url, preferred_contact_methods")
       .eq("id", user.id)
       .maybeSingle(),
     supabase
@@ -82,15 +85,17 @@ export default async function OfferChatPage({ params }: PageProps) {
       .maybeSingle(),
   ]);
 
-  // 오퍼가 제안한 클럽명 (오퍼 요약 바에 표시)
+  // 오퍼가 제안한 클럽명·주소 (오퍼 요약 바 표시 + "주소 보내기" 카드용)
   let clubName: string | null = null;
+  let clubAddress: string | null = null;
   if (offer.club_id) {
     const { data: club } = await supabase
       .from("clubs")
-      .select("name")
+      .select("name, address")
       .eq("id", offer.club_id)
       .maybeSingle();
     clubName = club?.name ?? null;
+    clubAddress = club?.address ?? null;
   }
 
   // 깃발 정보 (날짜·인원·금액)
@@ -135,6 +140,7 @@ export default async function OfferChatPage({ params }: PageProps) {
       }}
       offerSummary={{
         clubName,
+        clubAddress,
         tableType: offer.table_type as string,
         price: offer.proposed_price as number,
         includes: (offer.includes as string[]) ?? [],

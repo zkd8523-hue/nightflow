@@ -4,15 +4,15 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle2, ChevronRight, ImageIcon, Pencil, Send, Trash2, X } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronRight, ImageIcon, Instagram, MessageCircle, Phone, Pencil, IdCard, MapPin, Send, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
 import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { ChatContentText } from "@/components/chat/ChatContentText";
-import { LeaderInfoSheet } from "@/components/puzzles/LeaderInfoSheet";
+import { ContactCardMessage, isContactCardContent, encodeContactCard, type ContactCardMethod } from "@/components/messages/ContactCardMessage";
 import { useOfferMessages } from "@/hooks/useOfferMessages";
-import type { ChatMediaItem, OfferMessage } from "@/types/database";
+import type { ChatMediaItem, ContactMethodType, OfferMessage } from "@/types/database";
 
 const MAX_LEN = 500;
 
@@ -22,10 +22,16 @@ interface Profile {
   profile_image: string | null;
   deal_count_total?: number | null;
   deal_amount_total?: number | null;
+  // MD 본인 연락처 — "연락처 첨부" 기능에서 본인이 채운 채널만 첨부 가능
+  instagram?: string | null;
+  phone?: string | null;
+  kakao_open_chat_url?: string | null;
+  preferred_contact_methods?: ContactMethodType[] | null;
 }
 
 interface OfferSummary {
   clubName: string | null;
+  clubAddress?: string | null;
   tableType: string;
   price: number;
   includes: string[];
@@ -117,7 +123,6 @@ export function MessageRoom({
   const [editingId, setEditingId] = useState<string | null>(null);
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(offerStatus === "accepted");
 
@@ -205,6 +210,39 @@ export function MessageRoom({
   // 수락 전(pending)에만 "방장 먼저" 차단 + 15크레딧 경고. 수락 후엔 우선순위·과금 없음.
   const mdBlocked = isMd && !leaderHasMessaged && !accepted;
   const mdFirstReply = isMd && !mdHasReplied && leaderHasMessaged && !accepted;
+  // 상대(파트너/방장)가 1회 이상 답장했는지. 방장 화면에서 이게 true여야 수락 버튼 노출
+  // (파트너 응답 전 블라인드 수락 방지 + 마찰 완화). leaderHasMessaged와 동일 값(상대 발신 여부).
+  const counterpartReplied = leaderHasMessaged;
+
+  // "연락처 첨부" — MD가 본인이 등록한 채널(preferred_contact_methods 필터 적용) 중 골라 채팅에 탭 가능한 카드로 전송
+  const [contactPickerOpen, setContactPickerOpen] = useState(false);
+  const availableContactMethods = (() => {
+    if (!isMd) return [];
+    const methods = me.preferred_contact_methods;
+    const showAll = !methods || methods.length === 0;
+    const list: { method: ContactCardMethod; label: string; value: string }[] = [];
+    if ((showAll || methods!.includes("dm")) && me.instagram) {
+      list.push({ method: "dm", label: "인스타그램 DM", value: me.instagram.replace(/^@/, "") });
+    }
+    if ((showAll || methods!.includes("kakao")) && me.kakao_open_chat_url) {
+      list.push({ method: "kakao", label: "카카오 오픈채팅", value: me.kakao_open_chat_url });
+    }
+    if ((showAll || methods!.includes("phone")) && me.phone) {
+      list.push({ method: "phone", label: "전화", value: me.phone });
+    }
+    return list;
+  })();
+
+  function sendContactCard(method: ContactCardMethod, value: string) {
+    setContactPickerOpen(false);
+    handleSend(encodeContactCard(method, value));
+  }
+
+  // 방장 진입 게이트: 대화 안 시작한 방장이 채팅방에 들어오면 "대화하시겠어요?" 시트 → 확인 시 자동 인사.
+  // 3한도 안내는 상단 배너가 이미 하므로 반복하지 않고, 상한(5팀) 근접/초과 시에만 경고/차단.
+  const [gate, setGate] = useState<null | { n: number; blocked: boolean }>(null);
+  const [gateSending, setGateSending] = useState(false);
+  const gateCheckedRef = useRef(false);
 
   // 입장/메시지 변화 시 읽음 처리
   useEffect(() => {
@@ -234,7 +272,7 @@ export function MessageRoom({
     if (uploaded.length) setMedia((prev) => [...prev, ...uploaded].slice(0, 4));
   }
 
-  const handleSend = useCallback(async (textOverride?: string) => {
+  const handleSend = useCallback(async (textOverride?: string, skipLeaderGate?: boolean) => {
     const isPreset = typeof textOverride === "string";
     const trimmed = (isPreset ? textOverride : input).trim();
     const useMedia = isPreset ? [] : media;
@@ -286,7 +324,8 @@ export function MessageRoom({
     }
 
     // 방장 첫 메시지 → 한 깃발 총 5팀 캡 (기본 3팀 앵커, 종료 포함·swap 없음)
-    if (myRole === "leader" && !iHaveSent) {
+    // 진입 게이트에서 자동 인사로 보낼 땐 skipLeaderGate=true (게이트가 이미 확인/차단 처리).
+    if (myRole === "leader" && !iHaveSent && !skipLeaderGate) {
       const sb = createClient();
       const { count } = await sb
         .from("puzzle_offers")
@@ -350,6 +389,30 @@ export function MessageRoom({
     setSending(false);
   }, [input, media, sending, readOnly, mdBlocked, mdFirstReply, myRole, iHaveSent, puzzleId, offerId, me, addLocalMessage, editingId, updateLocalMessage]);
 
+  // 진입 게이트 오픈: 방장이 아직 대화 안 건 채팅방에 들어오면 자동 표시(1회).
+  useEffect(() => {
+    if (gateCheckedRef.current || loading || readOnly) return;
+    if (myRole !== "leader" || iHaveSent) return;
+    gateCheckedRef.current = true;
+    (async () => {
+      const { count } = await createClient()
+        .from("puzzle_offers")
+        .select("id", { count: "exact", head: true })
+        .eq("puzzle_id", puzzleId)
+        .not("leader_chat_started_at", "is", null);
+      const n = (count ?? 0) + 1; // 이번이 n번째 대화
+      setGate({ n, blocked: n > 5 });
+    })();
+  }, [loading, readOnly, myRole, iHaveSent, puzzleId]);
+
+  // 게이트 확인 → 자동으로 "안녕하세요!" 발송 (인라인 확인은 우회)
+  const confirmGate = useCallback(async () => {
+    setGateSending(true);
+    await handleSend("안녕하세요!", true);
+    setGateSending(false);
+    setGate(null);
+  }, [handleSend]);
+
   // 삭제된 메시지는 흔적 없이 숨김 (인스타 언센드식)
   const shownMessages = messages.filter((m) => !m.is_deleted);
 
@@ -361,9 +424,9 @@ export function MessageRoom({
           <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-neutral-300">
             <ArrowLeft className="w-5 h-5" />
           </button>
-          {/* 상대 프로필 탭 → 정보 모달 (깃발 상세와 동일) */}
+          {/* 상대 프로필 탭 → 공개 프로필 페이지로 이동 */}
           <button
-            onClick={() => setProfileOpen(true)}
+            onClick={() => router.push(`/u/${counterpart.id}`)}
             className="flex items-center gap-3 min-w-0 flex-1 text-left"
           >
             <div className="relative w-8 h-8 rounded-full overflow-hidden bg-neutral-800 shrink-0">
@@ -408,22 +471,21 @@ export function MessageRoom({
           </div>
           <ChevronRight className="w-4 h-4 text-neutral-500 shrink-0" />
         </Link>
-        {/* 방장 전용: 채팅 → 상담 → 수락 동선 완결 */}
-        {myRole === "leader" &&
-          (accepted ? (
-            <div className="px-4 py-2 border-t border-neutral-800/70 text-center text-[11px] text-neutral-500">
-              ✓ 매칭 완료 · 예약을 확정하세요
-            </div>
-          ) : puzzleStatus === "open" || puzzleStatus === "selecting" ? (
-            <button
-              onClick={handleAcceptOffer}
-              disabled={accepting}
-              className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white/95 hover:bg-white text-black font-black text-[13px] border-t border-neutral-800/70 disabled:opacity-50"
-            >
-              <CheckCircle2 className="w-4 h-4" />
-              {accepting ? "수락 중…" : "이 오퍼 수락하기"}
-            </button>
-          ) : null)}
+        {/* 매칭 완료 배너: 양쪽 모두 노출. 수락 버튼은 방장 전용(수락 주체) */}
+        {accepted ? (
+          <div className="px-4 py-2 border-t border-neutral-800/70 text-center text-[11px] text-neutral-500">
+            ✓ 매칭 완료 · 예약을 확정하세요
+          </div>
+        ) : myRole === "leader" && (puzzleStatus === "open" || puzzleStatus === "selecting") && counterpartReplied ? (
+          <button
+            onClick={handleAcceptOffer}
+            disabled={accepting}
+            className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white/95 hover:bg-white text-black font-black text-[13px] border-t border-neutral-800/70 disabled:opacity-50"
+          >
+            <CheckCircle2 className="w-4 h-4" />
+            {accepting ? "수락 중…" : "이 오퍼 수락하기"}
+          </button>
+        ) : null}
       </div>
 
       {/* 메시지 리스트 */}
@@ -452,6 +514,7 @@ export function MessageRoom({
               !isSameMinute(new Date(next.created_at), d);
             const unreadByOther =
               mine && (!counterpartReadAt || new Date(counterpartReadAt) < d);
+            const isContactCard = !!m.content && isContactCardContent(m.content);
             return (
               <Fragment key={m.id}>
                 {showDate && (
@@ -477,19 +540,25 @@ export function MessageRoom({
                       onPointerDown={() => startPress(m)}
                       onPointerUp={cancelPress}
                       onPointerLeave={cancelPress}
-                      className={`px-3 py-2 rounded-2xl select-none ${
-                        mine
-                          ? "bg-white text-black rounded-br-md"
-                          : "bg-[#1C1C1E] text-white rounded-bl-md"
-                      }`}
+                      className={
+                        isContactCard
+                          ? "select-none"
+                          : `px-3 py-2 rounded-2xl select-none ${
+                              mine
+                                ? "bg-white text-black rounded-br-md"
+                                : "bg-[#1C1C1E] text-white rounded-bl-md"
+                            }`
+                      }
                     >
-                      {m.content && (
+                      {isContactCard ? (
+                        <ContactCardMessage content={m.content} />
+                      ) : m.content ? (
                         <ChatContentText
                           content={m.content}
                           clubTags={[]}
                           className="text-[14px] leading-snug whitespace-pre-wrap break-words"
                         />
-                      )}
+                      ) : null}
                       {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                     </div>
                     {/* 카톡식: "1"(안읽음) + 시간 — 보낸 메시지 안쪽 */}
@@ -535,6 +604,33 @@ export function MessageRoom({
         </div>
       ) : (
         <div className="sticky bottom-0 bg-[#0A0A0A] border-t border-neutral-800" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+          {/* 연락처/주소 보내기 — MD 전용, 항상 노출 */}
+          {isMd && (availableContactMethods.length > 0 || offerSummary.clubName) && (
+            <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
+              {availableContactMethods.length > 0 && (
+                <button
+                  onClick={() => setContactPickerOpen(true)}
+                  className="shrink-0 flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-[13px] font-bold text-neutral-200 whitespace-nowrap active:bg-neutral-800"
+                >
+                  <IdCard className="w-3.5 h-3.5" />
+                  연락처 보내기
+                </button>
+              )}
+              {offerSummary.clubName && (
+                <button
+                  onClick={() =>
+                    handleSend(
+                      encodeContactCard("address", `${offerSummary.clubName}||${offerSummary.clubAddress ?? ""}`)
+                    )
+                  }
+                  className="shrink-0 flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-[13px] font-bold text-neutral-200 whitespace-nowrap active:bg-neutral-800"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  주소 보내기
+                </button>
+              )}
+            </div>
+          )}
           {/* 빠른 답장 프리셋 (당근 스타일) — 내가 한 번 보내면 사라짐 */}
           {!iHaveSent && (
             <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
@@ -620,6 +716,44 @@ export function MessageRoom({
         </div>
       )}
 
+      {/* 연락처 첨부 선택 시트 — MD가 등록한 채널 중 골라 탭 가능한 카드로 전송 */}
+      {contactPickerOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
+          onClick={() => setContactPickerOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg p-3 space-y-2"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
+              {availableContactMethods.map(({ method, label, value }, i) => {
+                const Icon = method === "dm" ? Instagram : method === "kakao" ? MessageCircle : Phone;
+                return (
+                  <button
+                    key={method}
+                    onClick={() => sendContactCard(method, value)}
+                    className={`w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-white hover:bg-neutral-800/40 ${
+                      i < availableContactMethods.length - 1 ? "border-b border-neutral-800/60" : ""
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 text-neutral-400" />
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => setContactPickerOpen(false)}
+              className="w-full bg-[#1C1C1E] rounded-2xl px-5 py-4 text-[15px] font-black text-white hover:bg-neutral-800/40"
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 본인 메시지 수정/삭제 액션 시트 */}
       {menuMsg && (
         <div
@@ -659,18 +793,70 @@ export function MessageRoom({
         </div>
       )}
 
-      {/* 상대 정보 모달 (깃발 상세의 LeaderInfoSheet 재사용) */}
-      <LeaderInfoSheet
-        open={profileOpen}
-        onOpenChange={setProfileOpen}
-        title={isMd ? "방장 정보" : "파트너 정보"}
-        leader={{
-          display_name: counterpart.display_name,
-          profile_image: counterpart.profile_image,
-          deal_count_total: counterpart.deal_count_total ?? 0,
-          deal_amount_total: counterpart.deal_amount_total ?? 0,
-        }}
-      />
+
+      {/* 방장 진입 게이트 — "대화하시겠어요?" → 확인 시 자동 "안녕하세요!". 취소/차단은 뒤로 */}
+      {gate && (() => {
+        const { n, blocked } = gate;
+        const title = blocked
+          ? "더 이상 대화할 수 없어요"
+          : n <= 3
+            ? "대화하시겠어요?"
+            : n === 4
+              ? "이미 여러 곳과 상담 중이에요"
+              : "마지막 한 팀이에요";
+        const body = blocked
+          ? "이 깃발에서는 최대 5팀과 대화할 수 있어요."
+          : n <= 3
+            ? "확인하면 '안녕하세요!'로 대화가 시작돼요."
+            : n === 4
+              ? "기본 3팀을 넘었어요. 최대 5팀까지 가능해요. 계속할까요?"
+              : "이 팀 이후로는 더 대화할 수 없어요. 시작할까요?";
+        const cta = n === 5 ? "시작하기" : "계속하기";
+        return (
+          <div className="fixed inset-0 z-[60] flex items-end justify-center">
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => { if (!gateSending) router.back(); }}
+            />
+            <div className="relative w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 pb-8 space-y-5 animate-in slide-in-from-bottom-4 duration-200"
+              style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)" }}>
+              <div className="space-y-2 text-center">
+                <div className="text-[36px]">💬</div>
+                <h2 className="text-[19px] font-black text-white tracking-tight break-keep">{title}</h2>
+                <p className="text-[14px] text-neutral-400 leading-relaxed break-keep">{body}</p>
+              </div>
+              {blocked ? (
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  className="w-full h-13 py-3.5 rounded-2xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 active:scale-[0.99] transition-all"
+                >
+                  뒤로
+                </button>
+              ) : (
+                <div className="space-y-2.5">
+                  <button
+                    type="button"
+                    onClick={confirmGate}
+                    disabled={gateSending}
+                    className="w-full h-13 py-3.5 rounded-2xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 active:scale-[0.99] transition-all disabled:opacity-60"
+                  >
+                    {gateSending ? "시작하는 중…" : cta}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { if (!gateSending) router.back(); }}
+                    disabled={gateSending}
+                    className="w-full h-12 py-3 rounded-2xl bg-neutral-800 text-neutral-300 font-bold text-[14px] hover:bg-neutral-700/60 active:scale-[0.99] transition-all disabled:opacity-60"
+                  >
+                    취소
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

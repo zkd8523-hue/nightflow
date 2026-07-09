@@ -106,14 +106,18 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // preferred_contact_methods 검증 (선택)
+    // preferred_contact_methods 검증 (최소 1개 필수 — 고객에게 표시할 연락 수단 미선택 방지)
     const validMethods = ["dm", "kakao", "phone"];
-    let cleanPreferred: string[] | null = null;
-    if (Array.isArray(preferred_contact_methods) && preferred_contact_methods.length > 0) {
-      cleanPreferred = preferred_contact_methods.filter((m: unknown) =>
-        typeof m === "string" && validMethods.includes(m)
+    const cleanPreferred: string[] = Array.isArray(preferred_contact_methods)
+      ? preferred_contact_methods.filter((m: unknown) =>
+          typeof m === "string" && validMethods.includes(m)
+        )
+      : [];
+    if (cleanPreferred.length === 0) {
+      return NextResponse.json(
+        { error: "고객에게 표시할 연락 수단을 최소 1개 선택해주세요." },
+        { status: 400 }
       );
-      if (cleanPreferred.length === 0) cleanPreferred = null;
     }
 
     // 5. 업데이트

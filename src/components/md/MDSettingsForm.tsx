@@ -60,6 +60,10 @@ export function MDSettingsForm({ user }: { user: User }) {
   const isDirty = form.formState.isDirty || methodsDirty;
 
   async function onSubmit(values: FormValues) {
+    if (preferredMethods.length === 0) {
+      toast.error("고객에게 표시할 연락 수단을 최소 1개 선택해주세요");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/md/profile", {
@@ -67,7 +71,7 @@ export function MDSettingsForm({ user }: { user: User }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...values,
-          preferred_contact_methods: preferredMethods.length > 0 ? preferredMethods : null,
+          preferred_contact_methods: preferredMethods,
         }),
       });
       const result = await res.json();
@@ -186,7 +190,7 @@ export function MDSettingsForm({ user }: { user: User }) {
           {/* 선호 연락 수단 */}
           <div className="space-y-3">
             <Label className="text-neutral-500 text-xs font-bold uppercase">
-              고객에게 표시할 연락 수단
+              고객에게 표시할 연락 수단 (필수, 최소 1개)
             </Label>
             <div className="flex flex-wrap gap-2">
               {CONTACT_METHOD_OPTIONS.map(({ value, label, icon: Icon }) => {
@@ -222,7 +226,7 @@ export function MDSettingsForm({ user }: { user: User }) {
             </div>
             <p className="text-neutral-600 text-[10px]">
               {preferredMethods.length === 0
-                ? "미선택 시 모든 연락 수단이 표시됩니다"
+                ? "최소 1개는 선택해야 저장할 수 있어요"
                 : "선택한 수단만 고객에게 표시됩니다"}
             </p>
           </div>
