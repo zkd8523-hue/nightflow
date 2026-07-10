@@ -230,7 +230,7 @@ export function PuzzleDetailClient({
   // 조각 카톡 공유 시트 (?created=share 자동 오픈 / 공유 버튼 수동 오픈)
   const [showShareCreated, setShowShareCreated] = useState(searchParams.get("created") === "share");
   const [shareCreatedMode, setShareCreatedMode] = useState<"created" | "share">("created");
-  // 깃발 등록 직후 5자 리뷰 유도 팝업 — 최애 클럽 지정자에게만(rc/rn 파라미터), 깃발당 최초 1회.
+  // 깃발 등록 직후 5자 리뷰 유도 팝업 — 최애 클럽 지정자에게만(rc/rn 파라미터), 기기당 최초 1회.
   const [showCreatedInfo, setShowCreatedInfo] = useState(false);
   const [reviewClub, setReviewClub] = useState<{ id: string; name: string } | null>(null);
   useEffect(() => {
@@ -238,9 +238,9 @@ export function PuzzleDetailClient({
     const rc = searchParams.get("rc");
     const rn = searchParams.get("rn");
     if (!rc || !rn) return; // 최애 클럽 미지정 → 팝업 안 띄움
-    const key = `flag_created_popup_${puzzle.id}`;
+    const key = `flag_created_review_popup_seen`; // 깃발 ID 무관, 전 기기 최초 1회
     try {
-      if (localStorage.getItem(key)) return; // 이미 본 깃발
+      if (localStorage.getItem(key)) return; // 이미 본 적 있음
       localStorage.setItem(key, "1");
     } catch {
       /* noop */
