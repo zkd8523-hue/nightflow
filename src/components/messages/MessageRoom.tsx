@@ -214,28 +214,80 @@ export function MessageRoom({
   // (파트너 응답 전 블라인드 수락 방지 + 마찰 완화). leaderHasMessaged와 동일 값(상대 발신 여부).
   const counterpartReplied = leaderHasMessaged;
 
-  // "연락처 첨부" — MD가 본인이 등록한 채널(preferred_contact_methods 필터 적용) 중 골라 채팅에 탭 가능한 카드로 전송
+  // "연락처 남기기" — 등록된 채널은 바로 전송, 미등록(유저)은 인라인 등록 후 전송
   const [contactPickerOpen, setContactPickerOpen] = useState(false);
-  const availableContactMethods = (() => {
-    if (!isMd) return [];
-    const methods = me.preferred_contact_methods;
-    const showAll = !methods || methods.length === 0;
-    const list: { method: ContactCardMethod; label: string; value: string }[] = [];
-    if ((showAll || methods!.includes("dm")) && me.instagram) {
-      list.push({ method: "dm", label: "인스타그램 DM", value: me.instagram.replace(/^@/, "") });
+  const [myContact, setMyContact] = useState({
+    instagram: me.instagram ?? null,
+    kakao_open_chat_url: me.kakao_open_chat_url ?? null,
+  });
+  // 인라인 등록 모달 (미등록 인스타/오픈챗)
+  const [registerMethod, setRegisterMethod] = useState<"dm" | "kakao" | null>(null);
+  const [registerValue, setRegisterValue] = useState("");
+  const [registerPublic, setRegisterPublic] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
+
+  type ContactOption =
+    | { method: ContactCardMethod; label: string; value: string; registered: true }
+    | { method: "dm" | "kakao"; label: string; registered: false };
+
+  const contactOptions: ContactOption[] = (() => {
+    const list: ContactOption[] = [];
+    if (isMd) {
+      // MD: 본인이 등록한 채널만 (preferred_contact_methods 필터)
+      const methods = me.preferred_contact_methods;
+      const showAll = !methods || methods.length === 0;
+      if ((showAll || methods!.includes("dm")) && myContact.instagram)
+        list.push({ method: "dm", label: "인스타그램 DM", value: myContact.instagram.replace(/^@/, ""), registered: true });
+      if ((showAll || methods!.includes("kakao")) && myContact.kakao_open_chat_url)
+        list.push({ method: "kakao", label: "카카오 오픈채팅", value: myContact.kakao_open_chat_url, registered: true });
+      if ((showAll || methods!.includes("phone")) && me.phone)
+        list.push({ method: "phone", label: "전화", value: me.phone, registered: true });
+      return list;
     }
-    if ((showAll || methods!.includes("kakao")) && me.kakao_open_chat_url) {
-      list.push({ method: "kakao", label: "카카오 오픈채팅", value: me.kakao_open_chat_url });
-    }
-    if ((showAll || methods!.includes("phone")) && me.phone) {
-      list.push({ method: "phone", label: "전화", value: me.phone });
-    }
+    // 유저: 전화(인증됨) + 인스타/오픈챗(등록됨→전송 / 미등록→등록)
+    if (me.phone) list.push({ method: "phone", label: "전화번호 · 인증됨", value: me.phone, registered: true });
+    if (myContact.instagram) list.push({ method: "dm", label: "인스타그램", value: myContact.instagram.replace(/^@/, ""), registered: true });
+    else list.push({ method: "dm", label: "인스타그램", registered: false });
+    if (myContact.kakao_open_chat_url) list.push({ method: "kakao", label: "카카오 오픈채팅", value: myContact.kakao_open_chat_url, registered: true });
+    else list.push({ method: "kakao", label: "카카오 오픈채팅", registered: false });
     return list;
   })();
 
   function sendContactCard(method: ContactCardMethod, value: string) {
     setContactPickerOpen(false);
     handleSend(encodeContactCard(method, value));
+  }
+
+  function openRegister(method: "dm" | "kakao") {
+    setRegisterMethod(method);
+    setRegisterValue("");
+    setRegisterPublic(false);
+  }
+
+  async function saveAndSendContact() {
+    if (!registerMethod) return;
+    const raw = registerValue.trim();
+    if (!raw) return;
+    let value = raw;
+    const update: Record<string, unknown> = {};
+    if (registerMethod === "dm") {
+      value = raw.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, "");
+      if (!value) { toast.error("인스타그램 아이디를 확인해주세요"); return; }
+      update.instagram = value;
+    } else {
+      if (!/^https?:\/\//.test(raw)) { toast.error("오픈채팅 링크를 확인해주세요"); return; }
+      update.kakao_open_chat_url = raw;
+    }
+    if (registerPublic) update.contact_public = true;
+    setSavingContact(true);
+    const { error } = await createClient().from("users").update(update).eq("id", me.id);
+    setSavingContact(false);
+    if (error) { toast.error("저장에 실패했어요"); return; }
+    setMyContact((c) => registerMethod === "dm" ? { ...c, instagram: value } : { ...c, kakao_open_chat_url: value });
+    const m = registerMethod;
+    setRegisterMethod(null);
+    setContactPickerOpen(false);
+    handleSend(encodeContactCard(m, value));
   }
 
   // 방장 진입 게이트: 대화 안 시작한 방장이 채팅방에 들어오면 "대화하시겠어요?" 시트 → 확인 시 자동 인사.
@@ -604,16 +656,16 @@ export function MessageRoom({
         </div>
       ) : (
         <div className="sticky bottom-0 bg-[#0A0A0A] border-t border-neutral-800" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-          {/* 연락처/주소 보내기 — MD 전용, 항상 노출 */}
-          {isMd && (availableContactMethods.length > 0 || offerSummary.clubName) && (
+          {/* 연락처 남기기(유저·MD) / 주소 보내기(MD) */}
+          {(contactOptions.length > 0 || (isMd && offerSummary.clubName)) && (
             <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
-              {availableContactMethods.length > 0 && (
+              {contactOptions.length > 0 && (
                 <button
                   onClick={() => setContactPickerOpen(true)}
                   className="shrink-0 flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-[13px] font-bold text-neutral-200 whitespace-nowrap active:bg-neutral-800"
                 >
                   <IdCard className="w-3.5 h-3.5" />
-                  연락처 보내기
+                  {isMd ? "연락처 보내기" : "연락처 남기기"}
                 </button>
               )}
               {offerSummary.clubName && (
@@ -716,7 +768,7 @@ export function MessageRoom({
         </div>
       )}
 
-      {/* 연락처 첨부 선택 시트 — MD가 등록한 채널 중 골라 탭 가능한 카드로 전송 */}
+      {/* 연락처 남기기 선택 시트 — 등록된 채널은 전송, 미등록(유저)은 등록 모달 */}
       {contactPickerOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center"
@@ -728,18 +780,31 @@ export function MessageRoom({
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
-              {availableContactMethods.map(({ method, label, value }, i) => {
-                const Icon = method === "dm" ? Instagram : method === "kakao" ? MessageCircle : Phone;
+              {!isMd && (
+                <div className="px-5 pt-4 pb-2.5 border-b border-neutral-800/60">
+                  <p className="text-[15px] font-black text-white">연락처 남기기</p>
+                  <p className="text-[12px] text-neutral-500 mt-0.5">다른 연락수단을 선호하시다면, 바로 남겨주세요</p>
+                </div>
+              )}
+              {contactOptions.map((opt, i) => {
+                const Icon = opt.method === "dm" ? Instagram : opt.method === "kakao" ? MessageCircle : Phone;
                 return (
                   <button
-                    key={method}
-                    onClick={() => sendContactCard(method, value)}
+                    key={opt.method}
+                    onClick={() => (opt.registered ? sendContactCard(opt.method, opt.value) : openRegister(opt.method as "dm" | "kakao"))}
                     className={`w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-white hover:bg-neutral-800/40 ${
-                      i < availableContactMethods.length - 1 ? "border-b border-neutral-800/60" : ""
+                      i < contactOptions.length - 1 ? "border-b border-neutral-800/60" : ""
                     }`}
                   >
-                    <Icon className="w-5 h-5 text-neutral-400" />
-                    {label}
+                    <Icon className="w-5 h-5 text-neutral-400 shrink-0" />
+                    <span className="flex-1 text-left">{opt.label}</span>
+                    {opt.registered ? (
+                      <span className="text-[13px] text-neutral-500 font-medium truncate max-w-[45%]">
+                        {opt.method === "dm" ? `@${opt.value}` : opt.method === "phone" ? opt.value : "보내기"}
+                      </span>
+                    ) : (
+                      <span className="text-[13px] text-amber-400 font-bold shrink-0">등록하고 보내기 →</span>
+                    )}
                   </button>
                 );
               })}
@@ -750,6 +815,76 @@ export function MessageRoom({
             >
               취소
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 미등록 채널 인라인 등록 모달 */}
+      {registerMethod && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/60 flex items-end justify-center"
+          onClick={() => setRegisterMethod(null)}
+        >
+          <div
+            className="w-full max-w-lg p-3"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#1C1C1E] rounded-2xl p-5 space-y-4">
+              <p className="text-[15px] font-black text-white">
+                {registerMethod === "dm" ? "인스타그램 아이디" : "카카오 오픈채팅 링크"}
+              </p>
+              {registerMethod === "dm" ? (
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-[14px]">@</span>
+                  <input
+                    type="text"
+                    value={registerValue}
+                    onChange={(e) => setRegisterValue(e.target.value.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, ""))}
+                    maxLength={30}
+                    placeholder="your_instagram_id"
+                    autoFocus
+                    className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-7 pr-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-blue-500 font-mono"
+                  />
+                </div>
+              ) : (
+                <input
+                  type="url"
+                  value={registerValue}
+                  onChange={(e) => setRegisterValue(e.target.value)}
+                  placeholder="https://open.kakao.com/..."
+                  autoFocus
+                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-blue-500"
+                />
+              )}
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={registerPublic}
+                  onChange={(e) => setRegisterPublic(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-white"
+                />
+                <span>
+                  <span className="block text-[13px] text-white font-bold">내 프로필에도 표시하기</span>
+                  <span className="block text-[11px] text-neutral-500">꺼두면 이 대화에서만 공유돼요</span>
+                </span>
+              </label>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={() => setRegisterMethod(null)}
+                  className="flex-1 h-11 rounded-xl border border-neutral-700 text-neutral-300 font-bold text-[14px] hover:bg-neutral-800"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={saveAndSendContact}
+                  disabled={savingContact || !registerValue.trim()}
+                  className="flex-1 h-11 rounded-xl bg-white text-black font-black text-[14px] hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {savingContact ? "저장 중..." : "저장하고 보내기"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

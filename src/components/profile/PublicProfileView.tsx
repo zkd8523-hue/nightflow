@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, ChevronRight } from "lucide-react";
+import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, ChevronRight, Instagram } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { MUSIC_GENRE_MAP } from "@/lib/users/musicGenres";
@@ -26,6 +26,7 @@ interface ProfileData {
   preferred_music_genres: string[] | null;
   preferred_areas: string[] | null;
   kakao_open_chat_url: string | null;
+  contact_public?: boolean | null;
 }
 
 interface PinnedClub {
@@ -392,6 +393,34 @@ export function PublicProfileView({
             </div>
         </div>
 
+        {/* 연락처 (유저 opt-in 공개 — contact_public). MD는 상단 핸들로 노출됨 */}
+        {!profile.md_unique_slug && profile.contact_public && (profile.instagram || profile.kakao_open_chat_url) && (
+          <div className="mt-5">
+            <div className="text-[13px] font-bold text-neutral-400 mb-2">연락처</div>
+            <div className="flex flex-wrap gap-2">
+              {profile.instagram && (
+                <a
+                  href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-[13px] font-bold text-neutral-200 hover:bg-neutral-800"
+                >
+                  <Instagram className="w-3.5 h-3.5 text-pink-400" />@{profile.instagram.replace(/^@/, "")}
+                </a>
+              )}
+              {profile.kakao_open_chat_url && (
+                <a
+                  href={profile.kakao_open_chat_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-[13px] font-bold text-neutral-200 hover:bg-neutral-800"
+                >
+                  💬 카카오 오픈채팅
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 좋아하는 클럽 (값 없어도 뼈대는 항상 노출) */}
         <div className="mt-5">

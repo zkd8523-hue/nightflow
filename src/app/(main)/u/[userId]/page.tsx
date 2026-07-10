@@ -67,7 +67,7 @@ export default async function PublicProfilePage({ params }: PageProps) {
     supabase
       .from("users")
       .select(
-        "id, display_name, profile_image, bio, created_at, role, md_unique_slug, md_status, instagram, preferred_music_genres, preferred_areas, kakao_open_chat_url"
+        "id, display_name, profile_image, bio, created_at, role, md_unique_slug, md_status, instagram, preferred_music_genres, preferred_areas, kakao_open_chat_url, contact_public"
       )
       .eq("id", userId)
       .maybeSingle(),
