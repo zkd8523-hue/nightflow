@@ -62,7 +62,7 @@ interface MDPuzzleOffer extends PuzzleOffer {
         is_recruiting_party?: boolean;
         leader?: { name?: string; display_name?: string } | null;
     };
-    club?: Pick<import("@/types/database").Club, "id" | "name" | "area"> | null;
+    club?: Pick<import("@/types/database").Club, "id" | "name" | "area" | "drink_menu_url" | "drink_menu_urls" | "drink_menu_updated_at"> | null;
 }
 
 interface HotdealClubLite {

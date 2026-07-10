@@ -32,6 +32,8 @@ interface SecretOfferCardProps {
   isRecruitingParty?: boolean;
   /** 같은 클럽의 여러 MD 오퍼를 묶어 보여줄 때 — 그룹 상단에서 클럽명을 한 번만 보여주므로 카드 자체 헤더는 숨김 */
   hideClubHeader?: boolean;
+  /** 클럽 그룹 내 오퍼가 2개 이상일 때만 #번호 배지 노출 (1개면 구분할 필요 없음) */
+  showOfferNumber?: boolean;
 }
 
 export function SecretOfferCard({
@@ -49,6 +51,7 @@ export function SecretOfferCard({
   lang = "ko",
   isRecruitingParty = false,
   hideClubHeader = false,
+  showOfferNumber = true,
 }: SecretOfferCardProps) {
   const isForeigner = lang !== "ko";
   const club = offer.club as { name?: string; area?: string } | null;
@@ -61,18 +64,22 @@ export function SecretOfferCard({
   return (
     <div
       style={staggerStyle}
-      className={`animate-offer-card-enter relative rounded-2xl border p-4 space-y-3 overflow-hidden ${
-        hideClubHeader ? "pt-8" : ""
-      } ${
-        offer.status === "accepted"
-          ? "bg-amber-500/10 border-amber-500/30"
-          : "bg-[#1C1C1E] border-neutral-800"
-      }`}
+      className={
+        hideClubHeader
+          ? "animate-offer-card-enter relative py-5 first:pt-0 space-y-3"
+          : `animate-offer-card-enter relative rounded-2xl border p-4 space-y-3 ${
+              offer.status === "accepted"
+                ? "bg-amber-500/10 border-amber-500/30"
+                : "bg-[#0E0E10] border-neutral-800"
+            }`
+      }
     >
       {hideClubHeader ? (
-        <span className="absolute top-3 left-3 z-10 text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-bold">
-          {offer.status === "accepted" ? t("✓ 매치됨", "✓ Matched") : `#${offerNumber}`}
-        </span>
+        (offer.status === "accepted" || showOfferNumber) && (
+          <span className="block text-[13px] font-black text-neutral-300 tabular-nums">
+            {offer.status === "accepted" ? t("✓ 매치됨", "✓ Matched") : `${offerNumber}`.padStart(2, "0")}
+          </span>
+        )
       ) : (
         <div className="flex items-center justify-between">
           <div>
@@ -145,7 +152,9 @@ export function SecretOfferCard({
           );
         })()}
         {offer.comment && (
-          <p className="text-[12px] text-neutral-400 italic">&ldquo;{isForeigner ? (commentEn ?? offer.comment) : offer.comment}&rdquo;</p>
+          <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-3">
+            &ldquo;{isForeigner ? (commentEn ?? offer.comment) : offer.comment}&rdquo;
+          </p>
         )}
       </div>
 
@@ -225,15 +234,13 @@ export function SecretOfferCard({
               </Link>
             )
           ) : hideClubHeader ? (
-            /* 클럽 그룹 안 여러 MD 카드 — 큰 버튼 반복은 노이즈라 작은 화살표 버튼으로 축소 */
+            /* 클럽 그룹 안 여러 MD 카드 — 배경/보더 없는 골드 텍스트 링크형 CTA (Editorial Void) */
             <div className="flex justify-end pt-1">
               <Link
                 href={`/messages/${offer.id}`}
-                aria-label={t("상담하기", "Chat")}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-[12px]"
+                className="text-[13px] font-bold text-amber-200 hover:text-amber-100 transition-colors"
               >
-                {t("상담하기", "Chat")}
-                <ChevronRight className="w-3.5 h-3.5" />
+                {t("상담하기", "Chat")} →
               </Link>
             </div>
           ) : (

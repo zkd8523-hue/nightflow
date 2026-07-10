@@ -1459,69 +1459,68 @@ export function PuzzleDetailClient({
                     {t("단체채팅 바로가기", "Go to group chat")}
                   </Link>
                 )}
+                <div className="-mx-4 px-4 py-5 space-y-8 bg-[#100F0E]">
                 {offerGroups.map((group) => {
                   const groupClub = group.club;
                   const groupClubId = group.offers[0]?.club_id;
                   const hasDrinkMenu = !!(groupClub?.drink_menu_url || (groupClub?.drink_menu_urls && groupClub.drink_menu_urls.length > 0));
                   return (
-                    <div key={group.clubKey} className="space-y-2">
+                    <div key={group.clubKey} className="space-y-1">
                       {/* 클럽명 그룹 헤더 — 같은 클럽 MD가 여러 명이어도 한 번만 노출 */}
-                      <div className="flex items-center justify-between px-1">
+                      <div className="flex items-baseline justify-between px-1">
                         {groupClubId ? (
                           <Link
                             href={`/clubs/${groupClubId}`}
-                            className="inline-flex items-baseline gap-0.5 text-[21px] font-black text-white hover:text-amber-300 transition-colors"
+                            className="inline-flex items-baseline gap-0.5 text-[22px] font-black tracking-[-0.03em] leading-none text-white hover:text-amber-200 transition-colors"
                           >
                             {groupClub?.name || t("클럽", "Club")}
-                            <ChevronRight className="w-3.5 h-3.5 text-neutral-500 self-center" />
+                            <ChevronRight className="w-4 h-4 text-neutral-600 self-center" />
                           </Link>
                         ) : (
-                          <p className="text-[21px] font-black text-white">
+                          <p className="text-[22px] font-black tracking-[-0.03em] leading-none text-white">
                             {groupClub?.name || t("클럽", "Club")}
                           </p>
                         )}
                         {groupClub?.area && (
-                          <span className="text-[12px] text-neutral-500 font-black">{areaLabel(groupClub.area, lang)}</span>
+                          <span className="text-[11px] font-medium tracking-wide text-neutral-300">{areaLabel(groupClub.area, lang)}</span>
                         )}
                       </div>
                       {hasDrinkMenu && (
                         <button
                           type="button"
                           onClick={() => setCompareGroupKey(group.clubKey)}
-                          className="px-1 font-bold text-white hover:text-amber-300 underline decoration-dotted decoration-neutral-500 underline-offset-4 transition-colors"
+                          className="block px-1 pt-1 text-[13px] font-semibold text-neutral-200 hover:text-amber-200 transition-colors"
                         >
-                          {isForeigner ? (
-                            t("나플가 vs 정가 비교하기", "Compare NightFlow price vs list price")
-                          ) : (
-                            <>
-                              <span className="text-[15px]">나플가 vs 정가</span>
-                              <span className="text-[13px]"> 비교하기</span>
-                            </>
-                          )}
+                          {isForeigner
+                            ? t("나플가 vs 정가 비교하기 →", "Compare NightFlow price vs list price →")
+                            : "나플가 vs 정가 비교하기 →"}
                         </button>
                       )}
-                      {group.offers.map((offer, groupIdx) => {
-                        const idx = pendingOffers.indexOf(offer);
-                        return (
-                          <SecretOfferCard
-                            key={offer.id}
-                            offer={offer}
-                            offerNumber={groupIdx + 1}
-                            index={idx}
-                            userId={currentUserId}
-                            isAdmin={isAdmin}
-                            isOpen={canAcceptOffers}
-                            actionLoading={actionLoading}
-                            onAccept={handleAcceptOffer}
-                            onReject={handleRejectOffer}
-                            onWithdrawn={loadOffers}
-                            onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
-                            lang={lang}
-                            isRecruitingParty={isRecruitingParty}
-                            hideClubHeader
-                          />
-                        );
-                      })}
+                      <div className="divide-y divide-neutral-700 pt-3">
+                        {group.offers.map((offer, groupIdx) => {
+                          const idx = pendingOffers.indexOf(offer);
+                          return (
+                            <SecretOfferCard
+                              key={offer.id}
+                              offer={offer}
+                              offerNumber={groupIdx + 1}
+                              index={idx}
+                              userId={currentUserId}
+                              isAdmin={isAdmin}
+                              isOpen={canAcceptOffers}
+                              actionLoading={actionLoading}
+                              onAccept={handleAcceptOffer}
+                              onReject={handleRejectOffer}
+                              onWithdrawn={loadOffers}
+                              onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
+                              lang={lang}
+                              isRecruitingParty={isRecruitingParty}
+                              hideClubHeader
+                              showOfferNumber={group.offers.length > 1}
+                            />
+                          );
+                        })}
+                      </div>
                       {hasDrinkMenu && compareGroupKey === group.clubKey && groupClub && (
                         <OfferMenuCompareSheet
                           onClose={() => setCompareGroupKey(null)}
@@ -1534,6 +1533,7 @@ export function PuzzleDetailClient({
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
 

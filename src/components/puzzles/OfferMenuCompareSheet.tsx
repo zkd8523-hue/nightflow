@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { X, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
+import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import type { PuzzleOffer } from "@/types/database";
 import { splitOfferIncludes } from "@/lib/utils/offerTags";
@@ -43,29 +43,31 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
   const hasMultipleOffers = offers.length > 1;
   const { liquors, sellingPoints, extras } = splitOfferIncludes(offer.includes);
   const commentEn = useTranslatedComment(offer.comment, isForeigner);
-  // 앱 전역 userScalable:false로 브라우저 기본 핀치/휠 줌이 막혀있어 별도 확대 뷰 필요.
-  // 스크롤 목록과 분리된 라이트박스에서만 줌 활성화 — 스크롤 중 실수로 확대되는 것 방지.
-  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
-  // 세로로 이어붙이지 않고 좌우로 넘기는 페이지 방식 (DrinkMenuViewer 인라인 슬라이더와 동일 패턴)
+  // 세로로 이어붙이지 않고 좌우로 넘기는 페이지 방식 (DrinkMenuViewer 인라인 슬라이더와 동일 패턴).
+  // 별도 확대 버튼/라이트박스 없이 이 화면에서 바로 핀치·더블탭·휠 줌 가능 (TransformWrapper를 페이지별로 직접 부착).
+  // 줌 상태(scale>1)일 땐 페이지 스와이프를 막아 TransformWrapper의 팬 제스처와 충돌하지 않게 함.
   const [pageIdx, setPageIdx] = useState(0);
   const [dragX, setDragX] = useState(0);
   const touchStartXRef = useRef(0);
   const touchStartIdxRef = useRef(0);
   const isDraggingRef = useRef(false);
+  const currentScaleRef = useRef(1);
   const hasMultiple = sources.length > 1;
 
   const goToPage = (idx: number) => {
+    currentScaleRef.current = 1;
     setPageIdx(Math.max(0, Math.min(sources.length - 1, idx)));
     setDragX(0);
   };
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (currentScaleRef.current > 1.01 || e.touches.length !== 1) return;
     touchStartXRef.current = e.touches[0].clientX;
     touchStartIdxRef.current = pageIdx;
     isDraggingRef.current = true;
   };
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || currentScaleRef.current > 1.01) return;
     const dx = e.touches[0].clientX - touchStartXRef.current;
     const atStart = touchStartIdxRef.current === 0 && dx > 0;
     const atEnd = touchStartIdxRef.current === sources.length - 1 && dx < 0;
@@ -75,6 +77,7 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
+    if (currentScaleRef.current > 1.01) { setDragX(0); return; }
     const dx = e.changedTouches[0].clientX - touchStartXRef.current;
     const startIdx = touchStartIdxRef.current;
     const SWIPE_THRESHOLD = 40;
@@ -123,44 +126,41 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
                   ? `translateX(calc(${-pageIdx * 100}% + ${dragX}px))`
                   : "none",
                 transition: isDraggingRef.current ? "none" : "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
-                touchAction: hasMultiple ? "pan-y" : "auto",
               }}
             >
               {sources.map((src, i) => (
                 <div
                   key={src}
-                  className="relative w-full h-full flex-shrink-0 overflow-y-auto"
+                  className="relative w-full h-full flex-shrink-0"
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (Math.abs(dragX) > 5) return;
-                      setLightboxIdx(i);
+                  <TransformWrapper
+                    initialScale={1}
+                    minScale={1}
+                    maxScale={4}
+                    doubleClick={{ step: 1 }}
+                    pinch={{ step: 5 }}
+                    wheel={{ step: 0.2 }}
+                    panning={{ disabled: false }}
+                    onTransform={(_ref, state) => {
+                      if (i === pageIdx) currentScaleRef.current = state.scale;
                     }}
-                    aria-label={t("확대해서 보기", "Zoom in")}
-                    className="block w-full cursor-zoom-in"
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={src}
-                      alt={`${club.name ?? ""} 가격표 ${i + 1}`}
-                      className="w-full h-auto select-none"
-                      draggable={false}
-                    />
-                  </button>
+                    <TransformComponent
+                      wrapperClass="!w-full !h-full"
+                      contentClass="!w-full !h-full flex items-center justify-center"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={src}
+                        alt={`${club.name ?? ""} 가격표 ${i + 1}`}
+                        className="max-w-full max-h-full object-contain select-none"
+                        draggable={false}
+                      />
+                    </TransformComponent>
+                  </TransformWrapper>
                 </div>
               ))}
             </div>
-
-            {/* 확대 버튼 */}
-            <button
-              type="button"
-              onClick={() => setLightboxIdx(pageIdx)}
-              aria-label={t("확대해서 보기", "Zoom in")}
-              className="absolute bottom-3 right-3 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-white"
-            >
-              <ZoomIn className="w-4 h-4" />
-            </button>
 
             {/* 넘기기 버튼 — 모바일 스와이프 + 데스크탑/모바일 공통 버튼 */}
             {hasMultiple && pageIdx > 0 && (
@@ -265,7 +265,7 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
           </div>
         )}
         {offer.comment && (
-          <p className="text-[12px] text-neutral-400 italic">
+          <p className="text-[12px] text-neutral-400">
             &ldquo;{isForeigner ? (commentEn ?? offer.comment) : offer.comment}&rdquo;
           </p>
         )}
@@ -290,81 +290,6 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
         </div>
       </div>
 
-      {/* 확대 라이트박스 — 휠/핀치/더블클릭 줌 + 좌우 이동 (DrinkMenuViewer와 동일 패턴) */}
-      {lightboxIdx !== null && (
-        <div
-          className="fixed inset-0 z-[250] bg-black/95 flex items-center justify-center"
-          onClick={() => setLightboxIdx(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("가격표 확대 보기", "Price list zoomed view")}
-        >
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setLightboxIdx(null); }}
-            aria-label={t("닫기", "Close")}
-            className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
-          >
-            <X className="w-5 h-5" strokeWidth={2.5} />
-          </button>
-
-          {sources.length > 1 && lightboxIdx > 0 && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setLightboxIdx((i) => Math.max(0, (i ?? 0) - 1)); }}
-              aria-label={t("이전 사진", "Previous photo")}
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-          )}
-          {sources.length > 1 && lightboxIdx < sources.length - 1 && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); setLightboxIdx((i) => Math.min(sources.length - 1, (i ?? 0) + 1)); }}
-              aria-label={t("다음 사진", "Next photo")}
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          )}
-
-          {sources.length > 1 && (
-            <div className="absolute top-4 left-4 z-30 px-3 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-sm text-white text-[12px] font-bold">
-              {lightboxIdx + 1} / {sources.length}
-            </div>
-          )}
-
-          <div
-            className="relative z-0 w-full h-full max-w-5xl flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <TransformWrapper
-              key={lightboxIdx}
-              initialScale={1}
-              minScale={1}
-              maxScale={4}
-              doubleClick={{ step: 1 }}
-              pinch={{ step: 5 }}
-              wheel={{ step: 0.2 }}
-              panning={{ disabled: false }}
-            >
-              <TransformComponent
-                wrapperClass="!w-full !h-full"
-                contentClass="!w-full !h-full flex items-center justify-center"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={sources[lightboxIdx]}
-                  alt={`${club.name ?? ""} 가격표 확대 ${lightboxIdx + 1}`}
-                  className="max-w-full max-h-full object-contain select-none"
-                  draggable={false}
-                />
-              </TransformComponent>
-            </TransformWrapper>
-          </div>
-        </div>
-      )}
     </div>,
     document.body
   );
