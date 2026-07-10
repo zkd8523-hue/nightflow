@@ -125,15 +125,51 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
       };
       const partnerThumbnail = values.thumbnail_url || null;
 
+      // 신규 등록 시: 이름/좌표가 닮은 기존 클럽이 있으면 새로 만들지 말고 합류 제안.
+      // (중복 클럽 재발 방지 — 전면 신청제 1단계: find_similar_clubs, Migration 439)
+      if (!initialData) {
+        const { data: similar } = await supabase.rpc("find_similar_clubs", {
+          p_name: values.name,
+          p_lat: values.latitude,
+          p_lng: values.longitude,
+          p_exclude: null,
+        });
+        const strongMatch = (similar ?? []).find(
+          (c: { reason: string }) => c.reason === "이름+위치 일치" || c.reason === "이름 일치"
+        ) as { id: string; name: string; area: string } | undefined;
+
+        if (strongMatch) {
+          const join = window.confirm(
+            `이미 등록된 클럽 같아요: "${strongMatch.name}" (${strongMatch.area}).\n` +
+              `새로 만들지 않고 이 클럽에 파트너로 합류할까요?\n\n` +
+              `[확인] = 합류 신청 / [취소] = 정말 다른 클럽이라 새로 등록`
+          );
+          if (join) {
+            const { error: joinErr } = await supabase.from("club_partners").insert({
+              club_id: strongMatch.id,
+              md_id: mdId,
+              role: "partner",
+              thumbnail_url: partnerThumbnail,
+            });
+            if (joinErr) throw joinErr;
+            toast.success(`"${strongMatch.name}"에 파트너로 연결되었습니다!`);
+            router.push("/md/clubs");
+            router.refresh();
+            return;
+          }
+        }
+      }
+
       // Phase 4(Migration 182): clubs.md_id 제거 — 신규 INSERT 시 club_partners 명시 등록.
       let targetClubId: string | undefined = initialData?.id;
       if (initialData) {
         const { error } = await supabase.from("clubs").update(clubData).eq("id", initialData.id);
         if (error) throw error;
       } else {
+        // 전면 신청제: 신규 클럽은 관리자 승인 전까지 pending (유저 화면 비노출).
         const { data: inserted, error } = await supabase
           .from("clubs")
-          .insert({ ...clubData })
+          .insert({ ...clubData, status: "pending" })
           .select("id")
           .single();
         if (error) throw error;
@@ -172,7 +208,11 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
         }
       }
 
-      toast.success(initialData ? "클럽 정보가 수정되었습니다!" : "클럽이 등록되었습니다!");
+      toast.success(
+        initialData
+          ? "클럽 정보가 수정되었습니다!"
+          : "클럽 추가 신청이 접수되었습니다. 관리자 승인 후 노출됩니다."
+      );
       router.push("/md/clubs");
       router.refresh();
     } catch (error: unknown) {

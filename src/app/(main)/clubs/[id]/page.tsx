@@ -23,6 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .select("name, area")
     .eq("id", id)
     .is("deleted_at", null)
+    .eq("status", "approved")
     .single();
 
   if (!club) {
@@ -97,6 +98,7 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
       .select("*")
       .eq("id", id)
       .is("deleted_at", null)
+      .eq("status", "approved")
       .single(),
     supabase
       .from("auctions")

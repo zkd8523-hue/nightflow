@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -62,6 +62,60 @@ function ImagePreview({ url, label, onPreview }: { url: string | null | undefine
 }
 
 type SortMode = "newest" | "md_desc" | "md_asc";
+
+type SimilarClub = {
+  id: string;
+  name: string;
+  area: string | null;
+  status: string;
+  partner_count: number;
+  distance_m: number | null;
+  reason: string;
+};
+
+/** Migration 439: find_similar_clubs — 신청 클럽과 닮은 기존 클럽을 조회해 관리자에게 경고 */
+function SimilarClubsHint({ club }: { club: Club }) {
+  const [candidates, setCandidates] = useState<SimilarClub[] | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .rpc("find_similar_clubs", {
+        p_name: club.name,
+        p_lat: club.latitude ?? null,
+        p_lng: club.longitude ?? null,
+        p_exclude: club.id,
+      })
+      .then(({ data }: { data: SimilarClub[] | null }) => {
+        if (!cancelled) setCandidates(data ?? []);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [club.id]);
+
+  if (candidates === null) return <p className="text-xs text-neutral-600">닮은 클럽 확인 중...</p>;
+  if (candidates.length === 0) return <p className="text-xs text-emerald-500">✓ 닮은 기존 클럽 없음 — 새 클럽으로 보임</p>;
+
+  return (
+    <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 space-y-1.5">
+      <p className="text-xs font-bold text-red-400">⚠️ 닮은 기존 클럽 {candidates.length}개 — 중복일 수 있어요</p>
+      {candidates.slice(0, 5).map((c) => (
+        <div key={c.id} className="text-xs text-neutral-300 flex items-center justify-between gap-2">
+          <span>
+            {c.name} <span className="text-neutral-500">({c.area || "지역?"})</span>
+            {" · "}
+            <span className="text-amber-400">{c.reason}</span>
+            {c.distance_m != null && <span className="text-neutral-500"> · {c.distance_m}m</span>}
+          </span>
+          <span className="text-neutral-500 shrink-0">파트너{c.partner_count}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdLists }: AdminClubsListProps) {
   const [clubs, setClubs] = useState<Club[]>(initialClubs);
@@ -248,11 +302,13 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
     }
   };
 
-  const { activeClubs, deletedClubs } = useMemo(() => {
+  const { activeClubs, deletedClubs, pendingClubs } = useMemo(() => {
     const active: Club[] = [];
     const deleted: Club[] = [];
+    const pending: Club[] = [];
     for (const c of clubs) {
       if (c.deleted_at) deleted.push(c);
+      else if (c.status === "pending") pending.push(c);
       else active.push(c);
     }
     const sorter = (a: Club, b: Club) => {
@@ -266,7 +322,8 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
     };
     active.sort(sorter);
     deleted.sort(sorter);
-    return { activeClubs: active, deletedClubs: deleted };
+    pending.sort((a, b) => (a.created_at || "").localeCompare(b.created_at || "")); // 오래 기다린 순
+    return { activeClubs: active, deletedClubs: deleted, pendingClubs: pending };
   }, [clubs, sortMode, clubMdLists]);
 
   const getHealthScore = (mdId: string | null | undefined): MDHealthScore | undefined => {
@@ -276,6 +333,34 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
 
   const toggleExpand = (clubId: string) => {
     setExpandedClubId((prev) => (prev === clubId ? null : clubId));
+  };
+
+  const handleApproveClub = async (id: string) => {
+    try {
+      const { error } = await supabase.rpc("approve_club", { p_club_id: id });
+      if (error) throw error;
+      setClubs((prev) => prev.map((c) => (c.id === id ? { ...c, status: "approved" } : c)));
+      toast.success("클럽을 승인했습니다. 이제 유저 화면에 노출됩니다.");
+      router.refresh();
+    } catch (error: unknown) {
+      logError(error, "AdminClubsList.handleApproveClub");
+      toast.error(getErrorMessage(error) || "승인 실패");
+    }
+  };
+
+  const handleRejectClub = async (id: string) => {
+    const reason = window.prompt("반려 사유를 입력해주세요 (필수)");
+    if (!reason || !reason.trim()) return;
+    try {
+      const { error } = await supabase.rpc("reject_club", { p_club_id: id, p_reason: reason.trim() });
+      if (error) throw error;
+      setClubs((prev) => prev.map((c) => (c.id === id ? { ...c, status: "rejected" } : c)));
+      toast.success("반려했습니다.");
+      router.refresh();
+    } catch (error: unknown) {
+      logError(error, "AdminClubsList.handleRejectClub");
+      toast.error(getErrorMessage(error) || "반려 실패");
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -528,6 +613,51 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
     );
   };
 
+  const renderPendingCard = (club: Club) => (
+    <Card key={club.id} className="bg-[#1C1C1E] border-amber-500/20 overflow-hidden">
+      <div className="p-4 space-y-3">
+        <div>
+          <h3 className="text-white font-bold">
+            {club.name}
+            <span className="text-neutral-500 text-xs ml-2">{club.area}</span>
+          </h3>
+          <p className="text-xs text-neutral-500 mt-1">{club.address}</p>
+          <p className="text-xs text-neutral-600 mt-1">
+            신청 {dayjs(club.created_at).format("YYYY-MM-DD HH:mm")}
+            <span className="ml-1">({dayjs(club.created_at).fromNow()})</span>
+          </p>
+        </div>
+
+        <SimilarClubsHint club={club} />
+
+        <div className="flex items-center gap-2">
+          <Button
+            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+            onClick={() => handleApproveClub(club.id)}
+          >
+            승인
+          </Button>
+          <Button
+            variant="ghost"
+            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            onClick={() => handleRejectClub(club.id)}
+          >
+            거절
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-neutral-500 hover:text-amber-400 hover:bg-amber-500/10"
+            onClick={() => setMergeSource(club)}
+            title="기존 클럽으로 병합"
+          >
+            <GitMerge className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+
   return (
     <div className="space-y-3 pb-20">
       <div className="flex items-center justify-end gap-1.5">
@@ -549,11 +679,24 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
           </button>
         ))}
       </div>
-      <Tabs defaultValue="active">
-        <TabsList className="grid w-full grid-cols-2 bg-[#1C1C1E] border border-neutral-800/50">
+      <Tabs defaultValue={pendingClubs.length > 0 ? "pending" : "active"}>
+        <TabsList className="grid w-full grid-cols-3 bg-[#1C1C1E] border border-neutral-800/50">
+          <TabsTrigger value="pending" className="data-[state=active]:text-amber-400">
+            심사 대기 ({pendingClubs.length})
+          </TabsTrigger>
           <TabsTrigger value="active">활성 ({activeClubs.length})</TabsTrigger>
           <TabsTrigger value="deleted">삭제됨 ({deletedClubs.length})</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="pending" className="space-y-3 mt-4">
+          {pendingClubs.length === 0 ? (
+            <Card className="bg-[#1C1C1E] border-neutral-800/50 p-6 text-center">
+              <p className="text-neutral-500 text-sm">심사 대기 중인 클럽이 없습니다</p>
+            </Card>
+          ) : (
+            pendingClubs.map(renderPendingCard)
+          )}
+        </TabsContent>
 
         <TabsContent value="active" className="space-y-3 mt-4">
           {activeClubs.length === 0 ? (

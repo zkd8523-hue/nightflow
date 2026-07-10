@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -384,13 +385,15 @@ function PendingMDCard({
         setClubSearch(q);
         if (!q.trim()) { setClubResults([]); return; }
         const supabase = createClient();
-        const { data } = await supabase
+        // default_club_id가 없으면(승인 대기 MD) .neq("id","")가 uuid 캐스팅 에러를 내므로 조건부 적용.
+        // 필터(.neq)는 .limit()보다 먼저 와야 하므로 limit은 마지막에.
+        let query = supabase
             .from("clubs")
             .select("id, name, area, club_partners(count)")
             .ilike("name", `%${q}%`)
-            .is("deleted_at", null)
-            .neq("id", user.default_club_id ?? "")
-            .limit(8);
+            .is("deleted_at", null);
+        if (user.default_club_id) query = query.neq("id", user.default_club_id);
+        const { data } = await query.limit(8);
         setClubResults(
             (data ?? []).map((c: { id: string; name: string; area: string; club_partners?: { count: number }[] }) => ({
                 id: c.id,
@@ -412,8 +415,8 @@ function PendingMDCard({
             const result = await res.json();
             if (!res.ok) throw new Error(result.error);
             onUpdate({ id: user.id, md_status: "approved", role: "md" } as UserWithClub);
-        } catch {
-            // error
+        } catch (e) {
+            toast.error(e instanceof Error && e.message ? `승인 실패: ${e.message}` : "승인에 실패했습니다.");
         } finally {
             setLoading(false);
         }
@@ -430,8 +433,8 @@ function PendingMDCard({
             const result = await res.json();
             if (!res.ok) throw new Error(result.error);
             onUpdate({ id: user.id, md_status: "rejected", md_rejection_reason: rejectReason.trim() || null } as unknown as UserWithClub);
-        } catch {
-            // error
+        } catch (e) {
+            toast.error(e instanceof Error && e.message ? `거절 실패: ${e.message}` : "거절에 실패했습니다.");
         } finally {
             setLoading(false);
         }

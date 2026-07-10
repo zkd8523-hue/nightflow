@@ -44,7 +44,8 @@ export default async function ClubsIndexPage() {
       supabase
         .from("clubs")
         .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases, seed_favorite_count")
-        .is("deleted_at", null),
+        .is("deleted_at", null)
+        .eq("status", "approved"),
       ""
     );
 
@@ -53,7 +54,8 @@ export default async function ClubsIndexPage() {
       supabase
         .from("clubs")
         .select("id, name, area, thumbnail_url, latitude, longitude")
-        .is("deleted_at", null),
+        .is("deleted_at", null)
+        .eq("status", "approved"),
       ""
     );
   }

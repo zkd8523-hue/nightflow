@@ -44,6 +44,7 @@ export async function fetchNearestClubs(
     .select("id, name, area, latitude, longitude")
     .eq("area", krArea)
     .eq("is_test", false)
+    .eq("status", "approved")
     .not("latitude", "is", null)
     .not("longitude", "is", null);
 
@@ -84,6 +85,7 @@ export async function fetchNearestClubsAnyArea(
     .from("clubs")
     .select("id, name, area, latitude, longitude")
     .eq("is_test", false)
+    .eq("status", "approved")
     .not("latitude", "is", null)
     .not("longitude", "is", null);
 
@@ -126,6 +128,7 @@ export async function searchClubsByName(
     .from("clubs")
     .select("id, name, area, latitude, longitude")
     .eq("is_test", false)
+    .eq("status", "approved")
     .ilike("name", `%${q}%`)
     .limit(max);
 
