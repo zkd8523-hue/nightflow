@@ -6,7 +6,9 @@ import Image from "next/image";
 import { DrinkMenuViewer } from "@/components/clubs/DrinkMenuViewer";
 import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
 import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
+import { getTagsByGroup } from "@/lib/clubs/tags";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
+import { MapPin, ExternalLink } from "lucide-react";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
@@ -28,6 +30,8 @@ type Club = {
   google_rating: number | null;
   google_review_count: number | null;
   instagram: string | null;
+  dresscode: string | null;
+  tags: string[] | null;
 };
 
 // 로그인 후 깃발 폼으로 복귀하는 링크. 미로그인이면 폼 서버 컴포넌트가 자동으로 /login?redirect= 로 튕김.
@@ -36,6 +40,43 @@ function buildFlagHref(lang: Lang, area?: string) {
   params.set("lang", lang);
   if (area) params.set("area", area);
   return `/flags/new?${params.toString()}`;
+}
+
+// 클럽 특성 태그(venue_type·genre·smoking) 키 → 외국어 라벨.
+// KO FeatureIconRow는 한국어 라벨을 쓰므로 외국인 시트용으로 별도 매핑.
+// 장르는 대부분 만국공용(EDM/R&B/K-POP…)이라 en 값을 ja/zh에도 공유.
+const TAG_LABEL_I18N: Record<string, Record<Lang, string>> = {
+  // venue_type
+  club:        { ko: "클럽", en: "Club", ja: "クラブ", zh: "夜店", "zh-tw": "夜店" },
+  lounge:      { ko: "라운지", en: "Lounge", ja: "ラウンジ", zh: "酒廊", "zh-tw": "酒廊" },
+  pub:         { ko: "펍", en: "Pub", ja: "パブ", zh: "酒吧", "zh-tw": "酒吧" },
+  // genre
+  edm:         { ko: "EDM", en: "EDM", ja: "EDM", zh: "EDM", "zh-tw": "EDM" },
+  hiphop:      { ko: "힙합", en: "Hip-hop", ja: "ヒップホップ", zh: "嘻哈", "zh-tw": "嘻哈" },
+  rnb:         { ko: "R&B", en: "R&B", ja: "R&B", zh: "R&B", "zh-tw": "R&B" },
+  kpop:        { ko: "K-POP", en: "K-POP", ja: "K-POP", zh: "K-POP", "zh-tw": "K-POP" },
+  pop:         { ko: "팝", en: "Pop", ja: "ポップ", zh: "流行", "zh-tw": "流行" },
+  house:       { ko: "하우스", en: "House", ja: "ハウス", zh: "House", "zh-tw": "House" },
+  latin:       { ko: "라틴", en: "Latin", ja: "ラテン", zh: "拉丁", "zh-tw": "拉丁" },
+  techno:      { ko: "테크노", en: "Techno", ja: "テクノ", zh: "Techno", "zh-tw": "Techno" },
+  rock:        { ko: "락", en: "Rock", ja: "ロック", zh: "搖滾", "zh-tw": "搖滾" },
+  mix:         { ko: "믹스", en: "Mixed", ja: "ミックス", zh: "混合", "zh-tw": "混合" },
+  // smoking
+  allowed:     { ko: "흡연", en: "Smoking OK", ja: "喫煙可", zh: "可吸烟", "zh-tw": "可吸菸" },
+  vape_only:   { ko: "전자담배", en: "Vape only", ja: "電子タバコのみ", zh: "仅电子烟", "zh-tw": "僅電子菸" },
+  not_allowed: { ko: "금연", en: "Non-smoking", ja: "禁煙", zh: "禁烟", "zh-tw": "禁菸" },
+};
+
+// 클럽 tags에서 시트에 표시할 특성 배지 라벨 목록 추출 (타입 → 음악 → 흡연 순).
+function clubFeatureLabels(tags: string[] | null, lang: Lang): string[] {
+  if (!tags || tags.length === 0) return [];
+  const out: string[] = [];
+  for (const group of ["venue_type", "genre", "smoking"] as const) {
+    for (const opt of getTagsByGroup(tags, group)) {
+      out.push(TAG_LABEL_I18N[opt.key]?.[lang] ?? opt.label);
+    }
+  }
+  return out;
 }
 
 type SortKey = "popular" | "rating";
@@ -339,11 +380,40 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                     </a>
                   )}
 
+                  {/* 주소 + 구글맵 — 외국인은 카카오맵을 못 쓰므로 구글맵으로. 여행자에게 위치는 최우선 정보. */}
+                  {club.address && (
+                    <a
+                      href={getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, lang)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-[13px] text-neutral-400 hover:text-white transition-colors group"
+                    >
+                      <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{club.address}</span>
+                      <ExternalLink className="w-3 h-3 shrink-0 text-neutral-500 group-hover:text-white" aria-hidden="true" />
+                    </a>
+                  )}
                   {club.entry_fee_detail && (
                     <p className="text-[13px] text-neutral-400">🎟️ {translateClubMeta(club.entry_fee_detail, lang)}</p>
                   )}
                   {club.operating_hours && (
                     <p className="text-[13px] text-neutral-400">🕐 {translateClubMeta(club.operating_hours, lang)}</p>
+                  )}
+                  {club.dresscode && (
+                    <p className="text-[13px] text-neutral-400">👗 {translateClubMeta(club.dresscode, lang)}</p>
+                  )}
+                  {/* 특성 배지 — 타입·음악장르·흡연. 외국인이 취향 맞는 클럽 고르는 핵심 정보. */}
+                  {clubFeatureLabels(club.tags, lang).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {clubFeatureLabels(club.tags, lang).map((label) => (
+                        <span
+                          key={label}
+                          className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
                   )}
                   {club.instagram && (
                     <a href={`https://instagram.com/${club.instagram}`} target="_blank" rel="noopener noreferrer"
