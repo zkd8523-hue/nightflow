@@ -103,7 +103,9 @@ export function ShotCarousel({
   }
   const viewerShots = viewerSnapshotRef.current ?? displayShots;
 
-  if (!loading && shots.length === 0 && !showComposeButton) return null;
+  // 홈(showComposeButton=false): 로딩 중/빈 상태엔 아예 숨김 (빈 스켈레톤 원 안 보이게).
+  // 실제 LIVE가 로드되면 그때 나타남. 와글(showComposeButton=true)은 그대로 노출.
+  if (!showComposeButton && shots.length === 0) return null;
 
   // 내 LIVE 그룹 (인스타처럼: 내 원 = 내 라이브 보기, + 배지 = 게시)
   const myGroup = currentUserId
