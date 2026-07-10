@@ -213,7 +213,7 @@ export function PuzzleDetailClient({
   // admin 전용: 조각 상담(파티챗) 상태 — 초대 MD·선택 오퍼·과금·채팅 활성 (Migration 444)
   const [partyMdStatus, setPartyMdStatus] = useState<{
     invited: boolean;
-    md_name?: string;
+    md_name?: string | null;
     md_instagram?: string | null;
     consented_at?: string | null;
     offer_id?: string | null;
@@ -222,9 +222,9 @@ export function PuzzleDetailClient({
     offer_charged?: boolean | null;
     chat_total?: number;
     chat_md?: number;
-    chat_participant?: number;
     chat_last_at?: string | null;
-    chat_last_by?: "md" | "participant" | null;
+    chat_last_name?: string | null;
+    chat_last_is_md?: boolean;
   } | null>(null);
   const [editingOffer, setEditingOffer] = useState<PuzzleOffer | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -444,7 +444,22 @@ export function PuzzleDetailClient({
     });
   }, [isAdmin, isRecruitingParty, puzzle.host_is_md, puzzle.id, supabase]);
 
-  const pendingOffers = offers.filter((o) => o.status === "pending");
+  // 같은 클럽 오퍼끼리 묶어서 노출 (역경매라 가격 정렬 없음 — 등장 순서 유지하며 클럽만 클러스터링).
+  // 버뮤다/오션/버뮤다/DM/버뮤다 → 버뮤다/버뮤다/버뮤다/오션/DM
+  const pendingOffers = useMemo(() => {
+    const filtered = offers.filter((o) => o.status === "pending");
+    const groups = new Map<string, typeof filtered>();
+    const order: string[] = [];
+    for (const o of filtered) {
+      const key = o.club?.id ?? `noclub-${o.id}`;
+      if (!groups.has(key)) {
+        groups.set(key, []);
+        order.push(key);
+      }
+      groups.get(key)!.push(o);
+    }
+    return order.flatMap((k) => groups.get(k)!);
+  }, [offers]);
 
   // 방장이 본인 깃발 상세를 열면 현재 오퍼 수를 "확인함"으로 기록.
   // MY 목록의 "NEW +N"(확인 안 한 오퍼 수) 계산 기준. (localStorage 키: profile과 동일)
@@ -1253,47 +1268,18 @@ export function PuzzleDetailClient({
               <div className="rounded-2xl border border-neutral-800 bg-[#1C1C1E] p-4 space-y-3">
                 {partyMdStatus === null ? (
                   <p className="text-[13px] text-neutral-500">불러오는 중…</p>
-                ) : partyMdStatus.invited ? (
+                ) : (
                   <>
-                    <div className="flex items-center justify-between">
-                      <p className="text-[14px] font-bold text-white">{partyMdStatus.md_name}</p>
-                      {(() => {
-                        const replied = (partyMdStatus.chat_md ?? 0) > 0;
-                        const consented = !!partyMdStatus.consented_at;
-                        const label = replied ? "대화중" : consented ? "상담 시작" : "초대만";
-                        const cls = replied
-                          ? "bg-green-500/15 text-green-400"
-                          : consented
-                            ? "bg-amber-500/15 text-amber-400"
-                            : "bg-neutral-700 text-neutral-300";
-                        return <span className={`text-[12px] px-2.5 py-1 rounded-full font-bold ${cls}`}>{label}</span>;
-                      })()}
-                    </div>
-
-                    {/* 선택 오퍼 */}
-                    {partyMdStatus.offer_id ? (
-                      <div className="flex items-center gap-2 text-[13px] flex-wrap">
-                        <span className="text-neutral-500">선택 오퍼</span>
-                        <span className="font-bold text-white">{partyMdStatus.offer_club_name ?? "클럽"}</span>
-                        {partyMdStatus.offer_price != null && (
-                          <span className="text-green-400 font-bold">{partyMdStatus.offer_price.toLocaleString()}원</span>
-                        )}
-                        {partyMdStatus.offer_charged && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 font-bold">과금됨</span>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-[12px] text-neutral-500">MD 직통(무료) — 오퍼 없음</p>
-                    )}
-
-                    {/* 채팅 활성 */}
-                    <div className="rounded-lg bg-neutral-900/60 px-3 py-2 text-[12px] text-neutral-400 space-y-0.5">
+                    {/* 파티 채팅 활성 — MD 초대와 무관하게 항상 */}
+                    <div className="text-[13px] text-neutral-400 space-y-0.5">
                       <p>
-                        💬 총 <span className="text-white font-bold">{partyMdStatus.chat_total ?? 0}</span>건 · 방장·멤버 {partyMdStatus.chat_participant ?? 0} · MD {partyMdStatus.chat_md ?? 0}
+                        💬 파티 채팅 총 <span className="text-white font-bold">{partyMdStatus.chat_total ?? 0}</span>건
+                        {(partyMdStatus.chat_md ?? 0) > 0 && <span className="text-neutral-500"> · MD {partyMdStatus.chat_md}</span>}
                       </p>
                       {partyMdStatus.chat_last_at ? (
                         <p>
-                          마지막: <span className="text-neutral-300 font-medium">{partyMdStatus.chat_last_by === "md" ? "MD" : "방장·멤버"}</span>
+                          마지막: <span className="text-neutral-300 font-medium">{partyMdStatus.chat_last_name ?? "?"}</span>
+                          {partyMdStatus.chat_last_is_md && <span className="text-amber-400"> (MD)</span>}
                           {" · "}
                           <span suppressHydrationWarning>{dayjs(partyMdStatus.chat_last_at).fromNow()}</span>
                         </p>
@@ -1302,32 +1288,64 @@ export function PuzzleDetailClient({
                       )}
                     </div>
 
-                    {/* 관리자 전용 식별 정보 */}
-                    <div className="pt-2 mt-1 border-t border-red-500/20 bg-red-500/5 -mx-4 -mb-4 px-4 pb-4 space-y-1">
-                      <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — 파트너 식별 정보</p>
-                      <div className="flex items-center gap-3 text-[12px] text-neutral-300 flex-wrap">
-                        <span className="inline-flex items-center gap-1">
-                          <User className="w-3 h-3 text-neutral-500" />
-                          <span className="font-bold text-white">{partyMdStatus.md_name}</span>
-                        </span>
-                        {partyMdStatus.md_instagram ? (
-                          <a
-                            href={`https://instagram.com/${partyMdStatus.md_instagram.replace(/^@/, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-pink-400 hover:text-pink-300"
-                          >
-                            <Instagram className="w-3 h-3" />
-                            <span className="font-mono">@{partyMdStatus.md_instagram.replace(/^@/, "")}</span>
-                          </a>
-                        ) : (
-                          <span className="text-neutral-600 text-[11px]">인스타 미등록</span>
+                    {/* 초대 MD 상담 — 오퍼 선택해 초대됐을 때만 */}
+                    {partyMdStatus.invited ? (
+                      <div className="pt-3 border-t border-neutral-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[14px] font-bold text-white">{partyMdStatus.md_name}</p>
+                          {(() => {
+                            const replied = (partyMdStatus.chat_md ?? 0) > 0;
+                            const consented = !!partyMdStatus.consented_at;
+                            const label = replied ? "대화중" : consented ? "상담 시작" : "초대만";
+                            const cls = replied
+                              ? "bg-green-500/15 text-green-400"
+                              : consented
+                                ? "bg-amber-500/15 text-amber-400"
+                                : "bg-neutral-700 text-neutral-300";
+                            return <span className={`text-[12px] px-2.5 py-1 rounded-full font-bold ${cls}`}>{label}</span>;
+                          })()}
+                        </div>
+
+                        {partyMdStatus.offer_id && (
+                          <div className="flex items-center gap-2 text-[13px] flex-wrap">
+                            <span className="text-neutral-500">선택 오퍼</span>
+                            <span className="font-bold text-white">{partyMdStatus.offer_club_name ?? "클럽"}</span>
+                            {partyMdStatus.offer_price != null && (
+                              <span className="text-green-400 font-bold">{partyMdStatus.offer_price.toLocaleString()}원</span>
+                            )}
+                            {partyMdStatus.offer_charged && (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 font-bold">과금됨</span>
+                            )}
+                          </div>
                         )}
+
+                        <div className="pt-2 mt-1 border-t border-red-500/20 bg-red-500/5 -mx-4 -mb-4 px-4 pb-4 space-y-1">
+                          <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — 파트너 식별 정보</p>
+                          <div className="flex items-center gap-3 text-[12px] text-neutral-300 flex-wrap">
+                            <span className="inline-flex items-center gap-1">
+                              <User className="w-3 h-3 text-neutral-500" />
+                              <span className="font-bold text-white">{partyMdStatus.md_name}</span>
+                            </span>
+                            {partyMdStatus.md_instagram ? (
+                              <a
+                                href={`https://instagram.com/${partyMdStatus.md_instagram.replace(/^@/, "")}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-pink-400 hover:text-pink-300"
+                              >
+                                <Instagram className="w-3 h-3" />
+                                <span className="font-mono">@{partyMdStatus.md_instagram.replace(/^@/, "")}</span>
+                              </a>
+                            ) : (
+                              <span className="text-neutral-600 text-[11px]">인스타 미등록</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <p className="text-[12px] text-neutral-500">아직 MD 초대 전 — 파티원끼리 상의 중</p>
+                    )}
                   </>
-                ) : (
-                  <p className="text-[13px] text-neutral-500">아직 초대된 파트너가 없어요</p>
                 )}
               </div>
             </section>
@@ -1371,14 +1389,29 @@ export function PuzzleDetailClient({
             {/* 방장: 진행 중인(pending) 제안만 — 수락된 오퍼는 위 성사됨 카드에 이미 표시 */}
             {isLeader && !isAccepted && pendingOffers.length > 0 && (
               <div className="space-y-3">
+                {/* 방장 전용: 오퍼가 방장에게만 보이는 이유 (비방장 안내와 대칭) */}
+                <details className="group rounded-xl bg-neutral-900/50 border border-neutral-800 overflow-hidden">
+                  <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-amber-400">
+                    ⓘ {t("오퍼는 방장님만 볼 수 있어요!", "Only you can see these offers!", "オファーは主催者だけが見られます！", "只有队长能看到这些报价！")}
+                    <span className="ml-auto text-neutral-500 group-open:rotate-180 transition-transform text-[11px]">▾</span>
+                  </summary>
+                  <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep">
+                    {t(
+                      "다른 유저, 파트너는 오퍼를 볼 수 없어요. 눈치보지 않고 각자 최고 조건을 던집니다.",
+                      "Other users and partners can't see the offers. So each gives their real best without second-guessing.",
+                      "他のユーザーやパートナーはオファーを見られません。様子見せず、各自が最高の条件を出します。",
+                      "其他用户和夜店都看不到报价。所以各自盲投，给出真正的最优条件。",
+                    )}
+                  </p>
+                </details>
                 <FeatureGate flag="offer_chat">
                   <p className="text-[12px] text-neutral-400 bg-neutral-900/60 border border-neutral-800 rounded-xl px-3 py-2.5">
                     {isRecruitingParty
                       ? "💬 채팅에서 파티원과 상의한 뒤, 마음에 드는 파트너에게 예약하세요"
-                      : "💬 마음에 드는 오퍼와 채팅으로 상담해보세요 · 깃발당 최대 3개"}
+                      : "💬 마음에 드는 오퍼를 골라보세요"}
                   </p>
                 </FeatureGate>
-                {isRecruitingParty && (
+                {isRecruitingParty && !isAdmin && (
                   <Link
                     href={`/party/${puzzle.id}`}
                     className="flex items-center justify-center gap-2 w-full py-3 bg-white text-black font-black text-[14px] rounded-xl hover:bg-neutral-100 transition-colors"
