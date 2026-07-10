@@ -230,7 +230,7 @@ export function PuzzleDetailClient({
   // 조각 카톡 공유 시트 (?created=share 자동 오픈 / 공유 버튼 수동 오픈)
   const [showShareCreated, setShowShareCreated] = useState(searchParams.get("created") === "share");
   const [shareCreatedMode, setShareCreatedMode] = useState<"created" | "share">("created");
-  // 깃발 등록 직후 5자 리뷰 유도 팝업 — 최애 클럽 지정자에게만(rc/rn 파라미터), 기기당 최초 1회.
+  // 깃발 등록 직후 5자 리뷰 유도 팝업 — 최애 클럽 지정자에게만(rc/rn 파라미터), 계정당 최초 1회.
   const [showCreatedInfo, setShowCreatedInfo] = useState(false);
   const [reviewClub, setReviewClub] = useState<{ id: string; name: string } | null>(null);
   useEffect(() => {
@@ -238,16 +238,42 @@ export function PuzzleDetailClient({
     const rc = searchParams.get("rc");
     const rn = searchParams.get("rn");
     if (!rc || !rn) return; // 최애 클럽 미지정 → 팝업 안 띄움
-    const key = `flag_created_review_popup_seen`; // 깃발 ID 무관, 전 기기 최초 1회
+    if (!currentUserId) return; // 등록자는 항상 로그인 상태
+    // 로컬 즉시 가드 (같은 기기 재노출/중복 쿼리 방지, DB 컬럼 미배포 시 폴백)
+    const key = `flag_created_review_popup_seen`;
     try {
-      if (localStorage.getItem(key)) return; // 이미 본 적 있음
-      localStorage.setItem(key, "1");
+      if (localStorage.getItem(key)) return;
     } catch {
       /* noop */
     }
-    setReviewClub({ id: rc, name: rn });
-    setShowCreatedInfo(true);
-  }, [searchParams, puzzle.id]);
+    let cancelled = false;
+    (async () => {
+      // 계정 단위: DB 플래그로 이미 봤는지 확인 (다른 기기 포함)
+      const { data, error } = await supabase
+        .from("users")
+        .select("flag_review_popup_seen")
+        .eq("id", currentUserId)
+        .maybeSingle();
+      if (cancelled) return;
+      try {
+        localStorage.setItem(key, "1");
+      } catch {
+        /* noop */
+      }
+      // 컬럼 미배포(error) 시엔 로컬 가드만으로 동작 → 기기당 1회로 degrade
+      if (!error && data?.flag_review_popup_seen) return; // 이미 본 계정
+      // 최초 노출 → 팝업이 뜬 시점에 계정 플래그 기록 (best-effort)
+      void supabase
+        .from("users")
+        .update({ flag_review_popup_seen: true })
+        .eq("id", currentUserId);
+      setReviewClub({ id: rc, name: rn });
+      setShowCreatedInfo(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, puzzle.id, currentUserId, supabase]);
   const recentMatchedPuzzle = useRecentMatchedPuzzle();
 
   const handleShare = useCallback(async () => {
@@ -1868,7 +1894,7 @@ export function PuzzleDetailClient({
                   onClick={() => setShowCreatedInfo(false)}
                   className="flex items-center justify-center gap-1.5 w-full h-12 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors shadow-lg shadow-amber-500/20"
                 >
-                  ⭐ 리뷰 구경하기
+                  ⭐ 5자 리뷰 쓰러가기
                 </Link>
                 <button
                   onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}

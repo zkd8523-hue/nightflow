@@ -124,6 +124,8 @@ export interface User {
   // MD 전용
   md_status: MDStatus | null;
   md_onboarding_areas_seen: boolean;
+  /** 깃발 등록 후 5자 리뷰 유도 팝업 노출 완료 여부 (계정당 1회). Migration 445 */
+  flag_review_popup_seen: boolean;
   md_rejection_reason: string | null;
   md_unique_slug: string | null;
   bank_account: string | null;
