@@ -1568,24 +1568,8 @@ export function PuzzleDetailClient({
             </div>
           )}
 
-          {/* 비방장·비멤버·비MD: 홈 조각 캐러셀 끝 카드와 동일한 조각 올리기 유도 CTA (비로그인 포함)
-              단, '참가하기'(로그인+진행중) 버튼이 뜰 땐 중복 노출 방지 위해 숨김 */}
-          {!isLeader && !isMember && !isMd && isRecruitingParty && !(isOpen && currentUserId) && (
-            <div className="text-center space-y-1">
-              <p className="text-[14.5px] text-neutral-200 font-semibold mb-1.5">
-                {t("파티원과 함께 놀아요!", "Play with a crew.")}
-              </p>
-              <Link
-                href={currentUserId ? "/shares/new" : "/login?redirect=/shares/new"}
-                className="flex items-center justify-center w-full h-13 bg-green-500 hover:bg-green-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
-              >
-                {t("🧩 조각 올리기", "🧩 Post a party")}
-              </Link>
-              <p className="text-[10px] text-neutral-500">
-                {t("모든 서비스 무료", "All services free")}
-              </p>
-            </div>
-          )}
+          {/* (초록 '조각 올리기' 유도 CTA 제거 — 조각 상세에선 참가 CTA만 노출.
+              비로그인/종료 상태 모두 아래 스티키 '참가하기'/'로그인하고 참가'로 통일) */}
 
           {/* 참여자 목록: 파티원 모집 중일 때만.
               MD 직통 조각은 대표자(MD)가 주최자이지 파티원이 아니므로 목록에서 제외 → 실제 합류 유저만 노출 */}
@@ -1730,6 +1714,23 @@ export function PuzzleDetailClient({
                   제안 무료 · {isRecruitingParty ? "상담 시작 또는 수락시" : "첫 채팅 또는 수락시"} 크레딧 소모
                 </FeatureGate>
               </p>
+            </div>
+          )}
+
+          {/* MD가 다른 파트너의 직통 조각을 볼 때: 오퍼·참가 모두 불가라 화면이 비므로
+              본인 조각 등록으로 유도 (MD에게 자연스러운 액션) */}
+          {isMd && isRecruitingParty && puzzle.host_is_md && !isLeader && (
+            <div className="text-center space-y-1">
+              <p className="text-[13px] text-neutral-400 mb-1.5">
+                {t("다른 파트너의 직통 조각이에요", "This is another partner's direct share")}
+              </p>
+              <Link
+                href="/md/auctions/new"
+                className="flex items-center justify-center w-full h-13 bg-green-500 hover:bg-green-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
+              >
+                {t("🧩 내 조각도 올려보세요", "🧩 Post my share")}
+              </Link>
+              <p className="text-[10px] text-neutral-500">{t("등록 무료", "Free to post")}</p>
             </div>
           )}
 
