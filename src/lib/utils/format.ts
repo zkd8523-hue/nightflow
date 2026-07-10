@@ -222,6 +222,15 @@ export function getLiquorCategory(item: string): string {
   return "extra";
 }
 
+/** 주류 가격 구간 라벨 (예: "20만원대~", "20만원대~40만원대"). min이 없으면 null. */
+export function formatPriceBucket(min: number | null | undefined, max: number | null | undefined): string | null {
+  if (min == null) return null;
+  const tier = Math.floor(min / 100000) * 10; // 만원 단위 십의자리로 내림
+  if (max == null) return `${tier}만원대~`;
+  const maxTier = Math.floor(max / 100000) * 10;
+  return maxTier > tier ? `${tier}만원대~${maxTier}만원대` : `${tier}만원대`;
+}
+
 /** 주류 우선 정렬 (주류 먼저, 부가서비스 뒤로) */
 export function sortByLiquorFirst(includes: string[]): string[] {
   if (!includes || includes.length === 0) return [];

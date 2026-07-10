@@ -821,7 +821,7 @@ export interface PuzzleOffer {
   puzzle_id: string;
   md_id: string;
   club_id: string | null;
-  club?: Pick<Club, 'id' | 'name' | 'area'>;
+  club?: Pick<Club, 'id' | 'name' | 'area' | 'drink_menu_url' | 'drink_menu_urls' | 'drink_menu_updated_at'>;
   /** 수락 전: md_deal_count만 채워짐. display_name 등 식별 정보는 수락된 오퍼에 한해 별도 조회로 채워짐. */
   md?: Pick<PublicUserProfile,
     'id' | 'display_name' | 'profile_image' | 'md_deal_count' |
@@ -1069,6 +1069,25 @@ export interface AuctionTemplate {
   created_at: string;
   updated_at: string;
   club?: Club;
+}
+
+// 주류 정보 카드 (Migration 446) — 깃발 오퍼 주류 배지 탭 시 이미지/설명/가격대 표시
+export interface LiquorProduct {
+  id: string;
+  name: string;
+  category: string;
+  aliases: string[];
+  image_url: string | null;
+  description: string | null;
+  origin: string | null;
+  abv: number | null;
+  accolade: string | null;
+  price_min: number | null;
+  price_max: number | null;
+  is_active: boolean;
+  source: "club_menu" | "external" | "manual";
+  created_at: string;
+  updated_at: string;
 }
 
 // MD 오퍼 세트/프리셋 (Migration 437) — 깃발 오퍼 구성 원클릭 채움

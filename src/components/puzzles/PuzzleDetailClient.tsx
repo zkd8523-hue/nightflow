@@ -18,13 +18,16 @@ import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
 import { PuzzleCancelConfirmSheet } from "./PuzzleCancelConfirmSheet";
 import { SecretOfferCard } from "./SecretOfferCard";
+import { OfferMenuCompareSheet } from "./OfferMenuCompareSheet";
 import { ShareCreatedSheet } from "./ShareCreatedSheet";
 import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, OfferChatMeta, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
 import { getPublicIncludes } from "@/lib/utils/liquor";
 import { toEnglishInclude } from "@/lib/utils/liquorEn";
-import { LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
+import { splitOfferIncludes } from "@/lib/utils/offerTags";
+import { LiquorPill } from "./LiquorPill";
+import { useLiquorProducts } from "@/hooks/useLiquorProducts";
 import { getLang, makeT, areaLabel } from "@/lib/i18n";
 import { OfferCommentText } from "./OfferCommentText";
 import { useTranslatedText } from "@/hooks/useTranslatedComment";
@@ -170,6 +173,7 @@ export function PuzzleDetailClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  const { products: liquorProducts } = useLiquorProducts();
 
   const lang = getLang(searchParams.get("lang"));
   const isForeigner = lang !== "ko";
@@ -227,6 +231,8 @@ export function PuzzleDetailClient({
     chat_last_is_md?: boolean;
   } | null>(null);
   const [editingOffer, setEditingOffer] = useState<PuzzleOffer | null>(null);
+  // 클럽 그룹 단위로 여는 가격표 비교 창 — 어느 클럽 그룹이 열려있는지 clubKey로 추적
+  const [compareGroupKey, setCompareGroupKey] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [offers, setOffers] = useState<PuzzleOffer[]>([]);
   const [myOffer, setMyOffer] = useState<PuzzleOffer | null>(null);
@@ -368,7 +374,7 @@ export function PuzzleDetailClient({
     // 거래 횟수만 신뢰도 지표로 노출.
     const { data } = await supabase
       .from("puzzle_offers")
-      .select("*, club:clubs(id, name, area), md:public_user_profiles!puzzle_offers_md_id_fkey(md_deal_count)")
+      .select("*, club:clubs(id, name, area, drink_menu_url, drink_menu_urls, drink_menu_updated_at), md:public_user_profiles!puzzle_offers_md_id_fkey(md_deal_count)")
       .eq("puzzle_id", puzzle.id)
       .in("status", ["pending", "accepted"])
       .order("created_at", { ascending: true });
@@ -465,6 +471,22 @@ export function PuzzleDetailClient({
     }
     return order.flatMap((k) => groups.get(k)!);
   }, [offers]);
+
+  // 클럽별 그룹 — 같은 클럽의 여러 MD 오퍼는 클럽명 헤더를 한 번만 보여주고
+  // (반복되는 노이즈 제거), 각 MD의 조건·CTA는 접지 않고 그대로 나열 (비교 마찰 방지).
+  const offerGroups = useMemo(() => {
+    const result: { clubKey: string; club: PuzzleOffer["club"]; offers: PuzzleOffer[] }[] = [];
+    for (const o of pendingOffers) {
+      const key = o.club?.id ?? `noclub-${o.id}`;
+      const last = result[result.length - 1];
+      if (last && last.clubKey === key) {
+        last.offers.push(o);
+      } else {
+        result.push({ clubKey: key, club: o.club, offers: [o] });
+      }
+    }
+    return result;
+  }, [pendingOffers]);
 
   // 방장이 본인 깃발 상세를 열면 현재 오퍼 수를 "확인함"으로 기록.
   // MY 목록의 "NEW +N"(확인 안 한 오퍼 수) 계산 기준. (localStorage 키: profile과 동일)
@@ -1437,24 +1459,81 @@ export function PuzzleDetailClient({
                     {t("단체채팅 바로가기", "Go to group chat")}
                   </Link>
                 )}
-                {pendingOffers.map((offer, idx) => (
-                  <SecretOfferCard
-                    key={offer.id}
-                    offer={offer}
-                    offerNumber={idx + 1}
-                    index={idx}
-                    userId={currentUserId}
-                    isAdmin={isAdmin}
-                    isOpen={canAcceptOffers}
-                    actionLoading={actionLoading}
-                    onAccept={handleAcceptOffer}
-                    onReject={handleRejectOffer}
-                    onWithdrawn={loadOffers}
-                    onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
-                    lang={lang}
-                    isRecruitingParty={isRecruitingParty}
-                  />
-                ))}
+                {offerGroups.map((group) => {
+                  const groupClub = group.club;
+                  const groupClubId = group.offers[0]?.club_id;
+                  const hasDrinkMenu = !!(groupClub?.drink_menu_url || (groupClub?.drink_menu_urls && groupClub.drink_menu_urls.length > 0));
+                  return (
+                    <div key={group.clubKey} className="space-y-2">
+                      {/* 클럽명 그룹 헤더 — 같은 클럽 MD가 여러 명이어도 한 번만 노출 */}
+                      <div className="flex items-center justify-between px-1">
+                        {groupClubId ? (
+                          <Link
+                            href={`/clubs/${groupClubId}`}
+                            className="inline-flex items-baseline gap-0.5 text-[21px] font-black text-white hover:text-amber-300 transition-colors"
+                          >
+                            {groupClub?.name || t("클럽", "Club")}
+                            <ChevronRight className="w-3.5 h-3.5 text-neutral-500 self-center" />
+                          </Link>
+                        ) : (
+                          <p className="text-[21px] font-black text-white">
+                            {groupClub?.name || t("클럽", "Club")}
+                          </p>
+                        )}
+                        {groupClub?.area && (
+                          <span className="text-[12px] text-neutral-500 font-black">{areaLabel(groupClub.area, lang)}</span>
+                        )}
+                      </div>
+                      {hasDrinkMenu && (
+                        <button
+                          type="button"
+                          onClick={() => setCompareGroupKey(group.clubKey)}
+                          className="px-1 font-bold text-white hover:text-amber-300 underline decoration-dotted decoration-neutral-500 underline-offset-4 transition-colors"
+                        >
+                          {isForeigner ? (
+                            t("나플가 vs 정가 비교하기", "Compare NightFlow price vs list price")
+                          ) : (
+                            <>
+                              <span className="text-[15px]">나플가 vs 정가</span>
+                              <span className="text-[13px]"> 비교하기</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                      {group.offers.map((offer, groupIdx) => {
+                        const idx = pendingOffers.indexOf(offer);
+                        return (
+                          <SecretOfferCard
+                            key={offer.id}
+                            offer={offer}
+                            offerNumber={groupIdx + 1}
+                            index={idx}
+                            userId={currentUserId}
+                            isAdmin={isAdmin}
+                            isOpen={canAcceptOffers}
+                            actionLoading={actionLoading}
+                            onAccept={handleAcceptOffer}
+                            onReject={handleRejectOffer}
+                            onWithdrawn={loadOffers}
+                            onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
+                            lang={lang}
+                            isRecruitingParty={isRecruitingParty}
+                            hideClubHeader
+                          />
+                        );
+                      })}
+                      {hasDrinkMenu && compareGroupKey === group.clubKey && groupClub && (
+                        <OfferMenuCompareSheet
+                          onClose={() => setCompareGroupKey(null)}
+                          club={groupClub}
+                          offers={group.offers}
+                          lang={lang}
+                          myBudget={!isRecruitingParty ? baseBudget : undefined}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -1607,16 +1686,14 @@ export function PuzzleDetailClient({
                     </p>
                   )}
                   {myOffer.includes?.length > 0 && (() => {
-                    const liquors = myOffer.includes.filter((i: string) => LIQUOR_KEYWORDS.some((kw) => i.includes(kw)));
-                    const extras = myOffer.includes.filter((i: string) => !LIQUOR_KEYWORDS.some((kw) => i.includes(kw)));
+                    const { liquors, sellingPoints, extras: extraOnly } = splitOfferIncludes(myOffer.includes);
+                    const extras = [...sellingPoints, ...extraOnly];
                     return (
                       <div className="space-y-1.5">
                         {liquors.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {liquors.map((inc: string) => (
-                              <span key={inc} className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                                🍾 {isForeigner ? toEnglishInclude(inc) : inc}
-                              </span>
+                              <LiquorPill key={inc} includeText={inc} products={liquorProducts} isForeigner={isForeigner} />
                             ))}
                           </div>
                         )}

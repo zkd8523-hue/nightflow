@@ -7,14 +7,12 @@ import { AdminWithdrawOfferButton } from "@/components/admin/AdminWithdrawOfferB
 import { FeatureGate } from "@/components/common/FeatureGate";
 import type { PuzzleOffer } from "@/types/database";
 import { formatRelativeTime } from "@/lib/utils/format";
-import { LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
+import { splitOfferIncludes } from "@/lib/utils/offerTags";
 import { toEnglishInclude } from "@/lib/utils/liquorEn";
 import { useTranslatedComment } from "@/hooks/useTranslatedComment";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
-
-function isLiquor(item: string): boolean {
-  return LIQUOR_KEYWORDS.some((kw) => item.includes(kw));
-}
+import { LiquorPill } from "./LiquorPill";
+import { useLiquorProducts } from "@/hooks/useLiquorProducts";
 
 
 interface SecretOfferCardProps {
@@ -32,6 +30,8 @@ interface SecretOfferCardProps {
   lang?: Lang;
   /** 조각(파티): 1:1 대신 단체채팅에서 상담 */
   isRecruitingParty?: boolean;
+  /** 같은 클럽의 여러 MD 오퍼를 묶어 보여줄 때 — 그룹 상단에서 클럽명을 한 번만 보여주므로 카드 자체 헤더는 숨김 */
+  hideClubHeader?: boolean;
 }
 
 export function SecretOfferCard({
@@ -48,6 +48,7 @@ export function SecretOfferCard({
   onAdminEdit,
   lang = "ko",
   isRecruitingParty = false,
+  hideClubHeader = false,
 }: SecretOfferCardProps) {
   const isForeigner = lang !== "ko";
   const club = offer.club as { name?: string; area?: string } | null;
@@ -55,66 +56,75 @@ export function SecretOfferCard({
   const staggerStyle = { "--stagger-idx": index } as React.CSSProperties;
   const t = makeT(lang);
   const commentEn = useTranslatedComment(offer.comment, isForeigner);
+  const { products: liquorProducts } = useLiquorProducts();
 
   return (
     <div
       style={staggerStyle}
       className={`animate-offer-card-enter relative rounded-2xl border p-4 space-y-3 overflow-hidden ${
+        hideClubHeader ? "pt-8" : ""
+      } ${
         offer.status === "accepted"
           ? "bg-amber-500/10 border-amber-500/30"
           : "bg-[#1C1C1E] border-neutral-800"
       }`}
     >
-      <div className="flex items-center justify-between">
-        <div>
-          {offer.club_id ? (
-            <Link
-              href={`/clubs/${offer.club_id}`}
-              className="inline-flex items-center gap-0.5 text-[15px] font-black text-white hover:text-amber-300 transition-colors"
-            >
-              {club?.name || t("클럽", "Club")}
-              {club?.area && (
-                <span className="text-neutral-500 font-medium"> · {areaLabel(club.area, lang)}</span>
-              )}
-              <ChevronRight className="w-3.5 h-3.5 text-neutral-500 ml-0.5" />
-            </Link>
+      {hideClubHeader ? (
+        <span className="absolute top-3 left-3 z-10 text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-bold">
+          {offer.status === "accepted" ? t("✓ 매치됨", "✓ Matched") : `#${offerNumber}`}
+        </span>
+      ) : (
+        <div className="flex items-center justify-between">
+          <div>
+            {offer.club_id ? (
+              <Link
+                href={`/clubs/${offer.club_id}`}
+                className="inline-flex items-baseline gap-0.5 text-[21px] font-black text-white hover:text-amber-300 transition-colors"
+              >
+                {club?.name || t("클럽", "Club")}
+                <ChevronRight className="w-3.5 h-3.5 text-neutral-500 self-center" />
+              </Link>
+            ) : (
+              <p className="text-[21px] font-black text-white">
+                {club?.name || t("클럽", "Club")}
+              </p>
+            )}
+          </div>
+          {offer.status === "accepted" ? (
+            <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold">
+              {t("✓ 매치됨", "✓ Matched")}
+            </span>
+          ) : club?.area ? (
+            <span className="text-[12px] text-neutral-500 font-black">{areaLabel(club.area, lang)}</span>
           ) : (
-            <p className="text-[15px] font-black text-white">
-              {club?.name || t("클럽", "Club")}
-              {club?.area && (
-                <span className="text-neutral-500 font-medium"> · {areaLabel(club.area, lang)}</span>
-              )}
-            </p>
+            <span className="text-[11px] text-neutral-500 font-medium" suppressHydrationWarning>
+              {formatRelativeTime(offer.created_at)}
+            </span>
           )}
         </div>
-        {offer.status === "accepted" ? (
-          <span className="text-[11px] px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold">
-            {t("✓ 매치됨", "✓ Matched")}
-          </span>
-        ) : (
-          <span className="text-[11px] text-neutral-500 font-medium" suppressHydrationWarning>
-            {formatRelativeTime(offer.created_at)}
-          </span>
-        )}
-      </div>
+      )}
 
-      <div className="space-y-2 pt-2 border-t border-neutral-800/60">
-        <p className="text-[16px] font-black text-green-400">
-          {isForeigner ? `₩${offer.proposed_price.toLocaleString()}` : `${offer.proposed_price.toLocaleString()}원`}
-        </p>
+      <div className="space-y-2">
+        {/* 가격 제외 — 고정 예산이라 모든 오퍼가 동일 → 노이즈 */}
         {offer.includes.length > 0 && (() => {
-          const liquors = offer.includes.filter(isLiquor);
-          const extras = offer.includes.filter((i) => !isLiquor(i));
+          const { liquors, sellingPoints, extras } = splitOfferIncludes(offer.includes);
           return (
             <div className="space-y-1.5">
               {liquors.length > 0 && (
                 <div className="flex flex-wrap gap-1.5">
                   {liquors.map((inc) => (
+                    <LiquorPill key={inc} includeText={inc} products={liquorProducts} isForeigner={isForeigner} />
+                  ))}
+                </div>
+              )}
+              {sellingPoints.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {sellingPoints.map((inc) => (
                     <span
                       key={inc}
-                      className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                      className="text-[12px] font-semibold px-2.5 py-1 rounded-[7px] bg-amber-500/12 text-amber-200 border border-amber-500/25"
                     >
-                      🍾 {isForeigner ? toEnglishInclude(inc) : inc}
+                      {isForeigner ? toEnglishInclude(inc) : inc} 🤫
                     </span>
                   ))}
                 </div>
@@ -124,7 +134,7 @@ export function SecretOfferCard({
                   {extras.map((inc) => (
                     <span
                       key={inc}
-                      className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800"
+                      className="text-[11px] font-medium px-2 py-0.5 rounded-[7px] bg-neutral-900 text-neutral-300 border border-neutral-700/70"
                     >
                       {isForeigner ? toEnglishInclude(inc) : inc}
                     </span>
@@ -214,25 +224,28 @@ export function SecretOfferCard({
                 {t("상담중", "Chatting")}
               </Link>
             )
-          ) : (
-            /* 2분화: 채팅하기(흰색·왼쪽 강조) / 즉시수락(보조). 한 줄 나란히 */
-            <div className="flex gap-2 pt-1">
+          ) : hideClubHeader ? (
+            /* 클럽 그룹 안 여러 MD 카드 — 큰 버튼 반복은 노이즈라 작은 화살표 버튼으로 축소 */
+            <div className="flex justify-end pt-1">
               <Link
                 href={`/messages/${offer.id}`}
-                className="flex-[1.6] flex items-center justify-center gap-1.5 h-11 rounded-xl bg-white hover:bg-neutral-200 text-black font-black text-[13px]"
+                aria-label={t("상담하기", "Chat")}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-[12px]"
+              >
+                {t("상담하기", "Chat")}
+                <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          ) : (
+            /* 상담하기 단일 CTA — 즉시수락 제거, 채팅 상담을 통해서만 성사 유도 */
+            <div className="pt-1">
+              <Link
+                href={`/messages/${offer.id}`}
+                className="flex items-center justify-center gap-1.5 w-full h-11 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px]"
               >
                 <MessageCircle className="w-4 h-4" />
-                {t("대화하기", "Chat")}
+                {t("무료 상담하기", "Free chat")}
               </Link>
-              <Button
-                onClick={() => onAccept(offer.id)}
-                disabled={actionLoading}
-                variant="outline"
-                className="flex-1 h-11 border-neutral-700 bg-transparent text-neutral-200 hover:bg-neutral-800 font-bold text-[13px] rounded-xl"
-              >
-                <CheckCircle2 className="w-4 h-4 mr-1.5" />
-                {t("즉시수락", "Accept now")}
-              </Button>
             </div>
           )}
         </FeatureGate>
@@ -280,6 +293,7 @@ export function SecretOfferCard({
           <AdminWithdrawOfferButton offerId={offer.id} variant="full" onWithdrawn={onWithdrawn} />
         </div>
       )}
+
     </div>
   );
 }

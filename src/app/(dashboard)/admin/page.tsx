@@ -19,6 +19,7 @@ import {
   MessageSquareWarning,
   BarChart3,
   Gift,
+  Wine,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -239,6 +240,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/clubs",
+    },
+    {
+      label: "주류 정보 관리",
+      value: "관리",
+      icon: Wine,
+      color: "text-orange-400",
+      bgColor: "bg-orange-500/10",
+      badge: null,
+      href: "/admin/liquor-products",
     },
     {
       label: "깃발 현황",
