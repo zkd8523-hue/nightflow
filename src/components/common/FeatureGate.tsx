@@ -17,5 +17,8 @@ export function FeatureGate({
 }) {
   const offerChat = useOfferChatFlag();
   const enabled = flag === "offer_chat" ? offerChat : false;
+  // 확정 전(undefined)엔 fallback을 그리지 않는다 — 로딩 찰나에 레거시 문구가
+  // 깜빡이는 것을 막고, 확정되면 true→children / false→fallback 으로 정착.
+  if (enabled === undefined) return null;
   return <>{enabled ? children : fallback}</>;
 }

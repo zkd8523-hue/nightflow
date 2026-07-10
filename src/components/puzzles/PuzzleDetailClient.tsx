@@ -1798,9 +1798,20 @@ export function PuzzleDetailClient({
               <p className="text-[11px] text-neutral-600 text-center leading-relaxed">
                 <FeatureGate
                   flag="offer_chat"
-                  fallback={<>수락 시 30크레딧 차감 · 미선택 시 크레딧 차감 없음</>}
+                  fallback={
+                    <>
+                      제안은 무료 · 수락될 때만{" "}
+                      <span className="text-amber-400 font-bold">30크레딧</span>{" "}
+                      <span className="text-neutral-500">(3,000원)</span>
+                    </>
+                  }
                 >
-                  제안 무료 · {isRecruitingParty ? "상담 시작 또는 수락시" : "첫 채팅 또는 수락시"} 크레딧 소모
+                  {/* matchCost: OfferSheet.tsx:101과 동일 로직 (깃발 15 / 조각 10) */}
+                  제안은 무료 · {isRecruitingParty ? "상담 시작" : "매칭"}될 때만{" "}
+                  <span className="text-amber-400 font-bold">
+                    {isRecruitingParty ? 10 : 15}크레딧
+                  </span>{" "}
+                  <span className="text-neutral-500">(1크레딧 100원)</span>
                 </FeatureGate>
               </p>
             </div>
