@@ -55,6 +55,8 @@ interface Props {
   /** 'expired' | 'cancelled' 이면 읽기전용 */
   puzzleStatus: string;
   offerStatus: string;
+  /** MD가 방장 연락처를 이미 열람(과금)했는지 (Migration 449) */
+  mdContactUnlocked?: boolean;
   puzzleId: string;
   puzzleInfo: PuzzleInfo;
   offerSummary: OfferSummary;
@@ -101,6 +103,7 @@ export function MessageRoom({
   counterpart,
   puzzleStatus,
   offerStatus,
+  mdContactUnlocked = false,
   puzzleId,
   puzzleInfo,
   offerSummary,
@@ -207,6 +210,22 @@ export function MessageRoom({
   const leaderHasMessaged = messages.some((m) => m.sender_id === counterpart.id);
   const iHaveSent = messages.some((m) => m.sender_id === me.id);
   const mdHasReplied = iHaveSent;
+  // 방장 연락처 열람 과금 (Migration 449): MD가 답장/수락/열람 전이면 방장 연락처 카드 잠금
+  const [contactUnlockedLocal, setContactUnlockedLocal] = useState(mdContactUnlocked);
+  const [unlockingContact, setUnlockingContact] = useState(false);
+  const contactPaid = accepted || mdHasReplied || contactUnlockedLocal;
+  async function handleUnlockContact() {
+    if (unlockingContact) return;
+    setUnlockingContact(true);
+    const { data, error } = await createClient().rpc("unlock_leader_contact", { p_offer_id: offerId });
+    setUnlockingContact(false);
+    const res = data as { success?: boolean; error?: string } | null;
+    if (error || !res?.success) {
+      toast.error(res?.error ?? "열람에 실패했어요");
+      return;
+    }
+    setContactUnlockedLocal(true);
+  }
   // 수락 전(pending)에만 "방장 먼저" 차단 + 15크레딧 경고. 수락 후엔 우선순위·과금 없음.
   const mdBlocked = isMd && !leaderHasMessaged && !accepted;
   const mdFirstReply = isMd && !mdHasReplied && leaderHasMessaged && !accepted;
@@ -603,7 +622,22 @@ export function MessageRoom({
                       }
                     >
                       {isContactCard ? (
-                        <ContactCardMessage content={m.content} />
+                        // MD가 아직 과금 전이면 방장 연락처 카드 잠금(열람 시 과금)
+                        !mine && isMd && !contactPaid ? (
+                          <button
+                            onClick={handleUnlockContact}
+                            disabled={unlockingContact}
+                            className="flex flex-col items-start gap-0.5 rounded-2xl rounded-bl-md bg-[#1C1C1E] border border-amber-500/40 px-4 py-3 text-left active:bg-neutral-800 disabled:opacity-60"
+                          >
+                            <span className="text-[13px] font-bold text-amber-300">🔒 유저가 연락처를 남겼어요</span>
+                            <span className="text-[12px] text-neutral-400">열람 시 15크레딧이 차감돼요</span>
+                            <span className="mt-1 text-[13px] font-black text-white">
+                              {unlockingContact ? "여는 중…" : "열람하기 →"}
+                            </span>
+                          </button>
+                        ) : (
+                          <ContactCardMessage content={m.content} />
+                        )
                       ) : m.content ? (
                         <ChatContentText
                           content={m.content}

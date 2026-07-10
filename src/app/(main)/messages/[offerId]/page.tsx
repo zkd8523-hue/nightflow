@@ -47,7 +47,7 @@ export default async function OfferChatPage({ params }: PageProps) {
   const { data: offer } = await supabase
     .from("puzzle_offers")
     .select(
-      "id, md_id, club_id, table_type, proposed_price, includes, status, puzzle:puzzles!puzzle_offers_puzzle_id_fkey(id, leader_id, status, area, event_date, target_count, current_count, total_budget, budget_per_person, is_recruiting_party)"
+      "id, md_id, club_id, table_type, proposed_price, includes, status, md_contact_unlocked_at, puzzle:puzzles!puzzle_offers_puzzle_id_fkey(id, leader_id, status, area, event_date, target_count, current_count, total_budget, budget_per_person, is_recruiting_party)"
     )
     .eq("id", offerId)
     .maybeSingle();
@@ -128,6 +128,7 @@ export default async function OfferChatPage({ params }: PageProps) {
       }
       puzzleStatus={puzzle.status}
       offerStatus={offer.status as string}
+      mdContactUnlocked={!!offer.md_contact_unlocked_at}
       puzzleId={puzzle.id}
       puzzleInfo={{
         dateLabel,
