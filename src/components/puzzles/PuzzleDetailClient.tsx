@@ -322,8 +322,13 @@ export function PuzzleDetailClient({
     }
   }, [puzzle]);
 
-  const isAdmin = userRole === "admin";
-  const isLeader = currentUserId === puzzle.leader_id || isAdmin;
+  const isRealAdmin = userRole === "admin";
+  // 관리자가 "방장이 보는 화면"을 그대로 확인할 수 있는 미리보기 토글.
+  // isLeader는 미리보기 중에도 유지(오퍼 목록·상담 버튼 등 방장 뷰는 그대로 보여야 함) —
+  // isAdmin만 꺼서 관리자 전용 패널(식별정보·강제철회·수정)만 숨김.
+  const [previewAsUser, setPreviewAsUser] = useState(false);
+  const isAdmin = isRealAdmin && !previewAsUser;
+  const isLeader = currentUserId === puzzle.leader_id || isRealAdmin;
   const isMember = members.some((m) => m.user_id === currentUserId);
   const isMd = userRole === "md";
   const isRecruitingParty = puzzle.is_recruiting_party;
@@ -659,6 +664,18 @@ export function PuzzleDetailClient({
 
   return (
     <div className="min-h-screen bg-[#0A0A0A]">
+      {/* 관리자 전용: 일반 유저 화면 미리보기 토글 — 관리자 전용 UI(식별정보/강제철회 등)를 숨기고 유저가 보는 그대로 확인 */}
+      {isRealAdmin && (
+        <div className="sticky top-0 z-50 bg-blue-600 text-white text-[12px] font-bold px-4 py-2 flex items-center justify-between">
+          <span>{previewAsUser ? "👁 유저 화면 미리보기 중" : "🛠 관리자 화면"}</span>
+          <button
+            onClick={() => setPreviewAsUser((v) => !v)}
+            className="px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+          >
+            {previewAsUser ? "관리자 화면으로" : "유저 화면 보기"}
+          </button>
+        </div>
+      )}
       <div className="max-w-lg mx-auto px-4">
         {/* 헤더 */}
         <div className="flex items-center gap-3 py-5">
@@ -1447,15 +1464,15 @@ export function PuzzleDetailClient({
                 {/* 시크릿 오퍼 이유 + 소비자 이득 (왜 비공개인지 궁금증 해소) */}
                 <details className="group rounded-xl bg-neutral-900/50 border border-neutral-800 overflow-hidden">
                   <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-amber-400">
-                    ⓘ {t("왜 오퍼가 비공개인가요?", "Why are offers secret?", "なぜオファーは非公開？", "为什么报价不公开？")}
+                    ⓘ {t("오퍼는 방장님에게만 공개!", "Offers shown only to you!", "オファーは主催者だけに公開！", "报价仅向队长公开！")}
                     <span className="ml-auto text-neutral-400 group-open:rotate-180 transition-transform text-[16px] leading-none">▾</span>
                   </summary>
-                  <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep">
+                  <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep whitespace-pre-line">
                     {t(
-                      "클럽끼리 서로의 오퍼를 볼 수 없어요. 그래서 눈치 보지 않고 각자 최고 조건을 던집니다.",
-                      "Clubs can't see each other's offers, so each gives their real best without second-guessing.",
-                      "クラブはお互いのオファーを見られません。だから様子見せず、各自が最高の条件を出します。",
-                      "夜店看不到彼此的报价，所以各自盲投，给出真正的最优条件。",
+                      "다른 유저·파트너는 오퍼를 볼 수 없어요.\n클럽과 MD가 서로 눈치보지 않고, 당일 최선의 패키지를 구성합니다.\n최고의 밤을 골라보세요!",
+                      "Other users and partners can't see the offers.\nClubs and MDs, without second-guessing each other, build their best package for the day.\nPick your best night!",
+                      "他のユーザーやパートナーはオファーを見られません。\nクラブとMDがお互い様子見せず、当日の最善のパッケージを構成します。\n最高の夜を選んでください！",
+                      "其他用户和夜店都看不到报价。\n夜店和MD彼此不用顾忌，为当天组成最好的套餐。\n挑选你最棒的夜晚吧！",
                     )}
                   </p>
                 </details>
