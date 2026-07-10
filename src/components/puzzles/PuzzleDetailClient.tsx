@@ -1392,23 +1392,23 @@ export function PuzzleDetailClient({
                 {/* 방장 전용: 오퍼가 방장에게만 보이는 이유 (비방장 안내와 대칭) */}
                 <details className="group rounded-xl bg-neutral-900/50 border border-neutral-800 overflow-hidden">
                   <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-amber-400">
-                    ⓘ {t("오퍼는 방장님만 볼 수 있어요!", "Only you can see these offers!", "オファーは主催者だけが見られます！", "只有队长能看到这些报价！")}
-                    <span className="ml-auto text-neutral-500 group-open:rotate-180 transition-transform text-[11px]">▾</span>
+                    ⓘ {t("오퍼는 방장님에게만 공개!", "Offers shown only to you!", "オファーは主催者だけに公開！", "报价仅向队长公开！")}
+                    <span className="ml-auto text-neutral-400 group-open:rotate-180 transition-transform text-[16px] leading-none">▾</span>
                   </summary>
-                  <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep">
+                  <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep whitespace-pre-line">
                     {t(
-                      "다른 유저, 파트너는 오퍼를 볼 수 없어요. 눈치보지 않고 각자 최고 조건을 던집니다.",
-                      "Other users and partners can't see the offers. So each gives their real best without second-guessing.",
-                      "他のユーザーやパートナーはオファーを見られません。様子見せず、各自が最高の条件を出します。",
-                      "其他用户和夜店都看不到报价。所以各自盲投，给出真正的最优条件。",
+                      "다른 유저·파트너는 오퍼를 볼 수 없어요.\n클럽과 MD가 서로 눈치보지 않고, 당일 최선의 패키지를 구성합니다.\n최고의 밤을 골라보세요!",
+                      "Other users and partners can't see the offers.\nClubs and MDs, without second-guessing each other, build their best package for the day.\nPick your best night!",
+                      "他のユーザーやパートナーはオファーを見られません。\nクラブとMDがお互い様子見せず、当日の最善のパッケージを構成します。\n最高の夜を選んでください！",
+                      "其他用户和夜店都看不到报价。\n夜店和MD彼此不用顾忌，为当天组成最好的套餐。\n挑选你最棒的夜晚吧！",
                     )}
                   </p>
                 </details>
                 <FeatureGate flag="offer_chat">
-                  <p className="text-[12px] text-neutral-400 bg-neutral-900/60 border border-neutral-800 rounded-xl px-3 py-2.5">
+                  <p className="text-[12px] text-neutral-400 px-1">
                     {isRecruitingParty
                       ? "💬 채팅에서 파티원과 상의한 뒤, 마음에 드는 파트너에게 예약하세요"
-                      : "💬 마음에 드는 오퍼를 골라보세요"}
+                      : "마음에 드는 오퍼를 골라보세요"}
                   </p>
                 </FeatureGate>
                 {isRecruitingParty && !isAdmin && (
@@ -1448,7 +1448,7 @@ export function PuzzleDetailClient({
                 <details className="group rounded-xl bg-neutral-900/50 border border-neutral-800 overflow-hidden">
                   <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-amber-400">
                     ⓘ {t("왜 오퍼가 비공개인가요?", "Why are offers secret?", "なぜオファーは非公開？", "为什么报价不公开？")}
-                    <span className="ml-auto text-neutral-500 group-open:rotate-180 transition-transform text-[11px]">▾</span>
+                    <span className="ml-auto text-neutral-400 group-open:rotate-180 transition-transform text-[16px] leading-none">▾</span>
                   </summary>
                   <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep">
                     {t(
