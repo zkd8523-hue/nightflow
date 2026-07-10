@@ -1722,15 +1722,15 @@ export function PuzzleDetailClient({
           {isMd && isRecruitingParty && puzzle.host_is_md && !isLeader && (
             <div className="text-center space-y-1">
               <p className="text-[13px] text-neutral-400 mb-1.5">
-                {t("다른 파트너의 직통 조각이에요", "This is another partner's direct share")}
+                {t("나플에서 조각을 관리할 수 있어요.", "Manage your shares on NightFlow.")}
               </p>
               <Link
                 href="/md/auctions/new"
                 className="flex items-center justify-center w-full h-13 bg-green-500 hover:bg-green-400 active:scale-[0.98] text-black font-black text-[15px] rounded-2xl transition-all"
               >
-                {t("🧩 내 조각도 올려보세요", "🧩 Post my share")}
+                {t("🧩 나도 조각올리기", "🧩 Post my share")}
               </Link>
-              <p className="text-[10px] text-neutral-500">{t("등록 무료", "Free to post")}</p>
+              <p className="text-[10px] text-neutral-500">{t("무료 서비스", "Free service")}</p>
             </div>
           )}
 
