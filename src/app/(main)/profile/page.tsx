@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { MyStampsCard } from "@/components/profile/MyStampsCard";
+import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import type { ContactMethodType, Puzzle } from "@/types/database";
@@ -53,6 +54,10 @@ export default function ProfilePage() {
   const [savingBusiness, setSavingBusiness] = useState(false);
 
   const [myFlags, setMyFlags] = useState<Puzzle[]>([]);
+  // 진행중 깃발별 pending 오퍼 수 — 홈 카드와 동일한 "오퍼 N개 중에서 고르는중" 표시용
+  const [flagOfferCounts, setFlagOfferCounts] = useState<Record<string, number>>({});
+  // 깃발별 "마지막으로 확인한 오퍼 수"(localStorage) — 상세를 열면 갱신됨. NEW +N 계산 기준.
+  const [flagOffersSeen, setFlagOffersSeen] = useState<Record<string, number>>({});
   // 합류(참여)한 조각 — 내가 만든 게 아니라 puzzle_members로 들어간 조각
   const [joinedShares, setJoinedShares] = useState<Puzzle[]>([]);
 
@@ -66,7 +71,35 @@ export default function ProfilePage() {
       .is("leader_hidden_at", null)
       .order("created_at", { ascending: false })
       .then(({ data }) => {
-        if (data) setMyFlags(data as Puzzle[]);
+        if (!data) return;
+        setMyFlags(data as Puzzle[]);
+
+        // 진행중(open/selecting) 깃발의 pending 오퍼 수 집계 (홈과 동일 방식)
+        const activeIds = (data as Puzzle[])
+          .filter((f) => !f.is_recruiting_party && (f.status === "open" || f.status === "selecting"))
+          .map((f) => f.id);
+        if (activeIds.length === 0) return;
+        supabase
+          .from("puzzle_offers")
+          .select("puzzle_id")
+          .in("puzzle_id", activeIds)
+          .eq("status", "pending")
+          .then(({ data: offers }) => {
+            if (!offers) return;
+            const counts: Record<string, number> = {};
+            offers.forEach((o) => {
+              counts[o.puzzle_id] = (counts[o.puzzle_id] ?? 0) + 1;
+            });
+            setFlagOfferCounts(counts);
+
+            // 각 깃발의 "확인한 오퍼 수"를 localStorage에서 읽어옴
+            const seen: Record<string, number> = {};
+            activeIds.forEach((id) => {
+              const v = typeof window !== "undefined" ? localStorage.getItem(`flag_offers_seen_${id}`) : null;
+              seen[id] = v ? parseInt(v, 10) || 0 : 0;
+            });
+            setFlagOffersSeen(seen);
+          });
       });
 
     // 내가 합류한 조각 (방장 제외 — 내가 만든 건 위에서 이미 조회)
@@ -105,6 +138,14 @@ export default function ProfilePage() {
   // 깃발(인원 확정) / 조각(파티원 모집) 분리
   const flagsOnly = myFlags.filter((f) => !f.is_recruiting_party);
   const sharesOnly = myFlags.filter((f) => f.is_recruiting_party);
+  // 진행중(open/selecting) 판별 — 카드에 오퍼 현황/상태 뱃지 분기용
+  const isActiveStatus = (s: string) => s === "open" || s === "selecting";
+
+  // 내 조각(내가 만든 것 + 합류한 것) 통합
+  const allShares = [
+    ...sharesOnly.map((flag) => ({ flag, joined: false })),
+    ...joinedShares.map((flag) => ({ flag, joined: true })),
+  ];
 
   // 로딩 타임아웃: 5초 후 강제 해제
   const [timedOut, setTimedOut] = useState(false);
@@ -379,47 +420,37 @@ export default function ProfilePage() {
         {/* 내 스탬프 카드 (LIVE 활동 리워드) */}
         <MyStampsCard />
 
-        {/* 내 깃발 */}
-        <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-          <div className="flex items-center justify-between mb-4">
+        {/* 내 깃발 — 홈과 동일하게 카드를 페이지 배경 위에 올림(패널 없음) */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-[15px] font-bold text-white">내 깃발</h2>
           </div>
 
           {flagsOnly.length > 0 ? (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
+              {/* 모든 내 깃발 — 홈과 동일한 카드. 진행중은 오퍼 현황 노출, 종료는 상태 뱃지+삭제 */}
               {flagsOnly.map((flag) => {
+                const active = isActiveStatus(flag.status);
                 const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-neutral-400" };
-                const budget = flag.total_budget ?? (flag.budget_per_person ?? 0) * (flag.target_count ?? 1);
+                const offers = active ? (flagOfferCounts[flag.id] ?? 0) : 0;
+                const newOffers = Math.max(0, offers - (flagOffersSeen[flag.id] ?? 0));
                 return (
-                  <Link
-                    key={flag.id}
-                    href={`/flags/${flag.id}`}
-                    className="flex items-center justify-between gap-3 bg-neutral-800/40 rounded-xl px-4 py-3 hover:bg-neutral-800/70 transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-[14px] font-bold text-white truncate">
-                        {dayjs(flag.event_date).format("M/D")} · {flag.area} · {flag.target_count}명{budget ? ` · ${Math.round(budget / 10000)}만원` : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[12px] font-bold ${st.tone}`}>
-                        {st.text}
+                  <div key={flag.id} className={`relative ${active ? "" : "opacity-70"}`}>
+                    {newOffers > 0 && (
+                      <span className="pointer-events-none absolute -top-2 -right-1.5 z-10 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black leading-none tracking-tight shadow-md shadow-rose-900/40">
+                        NEW +{newOffers}
                       </span>
-                      {flag.status !== "open" && flag.status !== "selecting" && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleHideFlag(flag.id);
-                          }}
-                          className="p-1 -mr-1 text-neutral-600 hover:text-red-400 transition-colors"
-                          aria-label="삭제"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </Link>
+                    )}
+                    <PuzzleCard
+                      puzzle={flag}
+                      userRole="user"
+                      isLeader
+                      offerCount={offers}
+                      hideNewBadge
+                      myFlagStatus={active ? undefined : st}
+                      onHide={active ? undefined : () => handleHideFlag(flag.id)}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -460,53 +491,29 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* 내 조각 */}
-        <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-          <div className="flex items-center justify-between mb-4">
+        {/* 내 조각 — 홈과 동일하게 카드를 페이지 배경 위에 올림(패널 없음) */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-[15px] font-bold text-white">내 조각</h2>
           </div>
-          {sharesOnly.length > 0 || joinedShares.length > 0 ? (
-            <div className="flex flex-col gap-2">
-              {[
-                ...sharesOnly.map((flag) => ({ flag, joined: false })),
-                ...joinedShares.map((flag) => ({ flag, joined: true })),
-              ].map(({ flag, joined }) => {
+          {allShares.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {/* 모든 내 조각 — 홈과 동일한 카드. 종료는 상태 뱃지, 내가 만든 종료 조각만 삭제 */}
+              {allShares.map(({ flag, joined }) => {
+                const active = isActiveStatus(flag.status);
                 const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-neutral-400" };
-                const budget = flag.total_budget ?? (flag.budget_per_person ?? 0) * (flag.target_count ?? 1);
                 return (
-                  <Link
-                    key={flag.id}
-                    href={`/flags/${flag.id}`}
-                    className="flex items-center justify-between gap-3 bg-neutral-800/40 rounded-xl px-4 py-3 hover:bg-neutral-800/70 transition-colors"
-                  >
-                    <div className="min-w-0 flex items-center gap-2">
-                      {joined && (
-                        <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400 font-bold">
-                          합류
-                        </span>
-                      )}
-                      <p className="text-[14px] font-bold text-white truncate">
-                        {dayjs(flag.event_date).format("M/D")} · {flag.area} · {flag.current_count}/{flag.target_count}명{budget ? ` · ${Math.round(budget / 10000)}만원` : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className={`text-[12px] font-bold ${st.tone}`}>{st.text}</span>
-                      {/* 삭제는 내가 만든 조각(종료 상태)만 */}
-                      {!joined && flag.status !== "open" && flag.status !== "selecting" && (
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleHideFlag(flag.id);
-                          }}
-                          className="p-1 -mr-1 text-neutral-600 hover:text-red-400 transition-colors"
-                          aria-label="삭제"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </Link>
+                  <div key={flag.id} className={active ? "" : "opacity-70"}>
+                    <PuzzleCard
+                      puzzle={flag}
+                      userRole="user"
+                      isLeader={!joined}
+                      isMember={joined}
+                      hideNewBadge
+                      myFlagStatus={active ? undefined : st}
+                      onHide={active || joined ? undefined : () => handleHideFlag(flag.id)}
+                    />
+                  </div>
                 );
               })}
             </div>

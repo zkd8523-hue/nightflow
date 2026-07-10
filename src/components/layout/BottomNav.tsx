@@ -16,7 +16,7 @@ export function BottomNav() {
   const { user, isLoading } = useCurrentUser();
   // 내 깃발에 들어온 새 오퍼(미확인)가 있으면 "내 정보" 탭에 점 표시.
   // Hooks 규칙상 early return보다 위에서 호출. 비로그인 시 빈 배열 반환됨.
-  const { notifications } = useNotifications(user?.id);
+  const { notifications, markAsRead } = useNotifications(user?.id);
   const offerChatOn = useOfferChatFlag();
   // 채팅 점 = 실제 노출되는 것과 일치: 깃발(비모집) 1:1 오퍼 + 조각 단체방.
   // 조각 1:1 오퍼 채팅은 단체방으로 통합돼 목록에서 빠졌으므로 점 계산에서도 제외.
@@ -27,6 +27,13 @@ export function BottomNav() {
     reloadOffers();
     reloadParty();
   }, [pathname, reloadOffers, reloadParty]);
+  // MY(/profile) 진입 시 미확인 오퍼 알림을 읽음 처리 → "Offer" 배지 제거
+  useEffect(() => {
+    if (pathname !== "/profile") return;
+    notifications
+      .filter((n) => !n.is_read && n.type === "puzzle_offer_received")
+      .forEach((n) => markAsRead(n.id));
+  }, [pathname, notifications, markAsRead]);
   // 종료된 대화는 읽을 수 없으므로 점 계산에서 제외
   const isClosed = (s: string) => s === "expired" || s === "rejected" || s === "withdrawn";
   const isClosedPuzzle = (s: string) => s === "expired" || s === "cancelled";
@@ -60,10 +67,9 @@ export function BottomNav() {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
           // 와글 활성 시 보라 시그니처 (MUSIC 가치), 나머지는 흰색
           const activeClass = href === "/chat" ? "text-[#C084FC]" : "text-white";
-          // "내 정보"=새 오퍼, "채팅"=안읽은 대화 점 표시
-          const showOfferDot =
-            (href === "/profile" && hasNewOffer) ||
-            (href === "/messages" && hasUnreadChat);
+          // "내 정보"=새 오퍼는 NEW 뱃지, "채팅"=안읽은 대화는 점 표시
+          const showNewOfferBadge = href === "/profile" && hasNewOffer;
+          const showUnreadDot = href === "/messages" && hasUnreadChat;
           return (
             <Link
               key={href}
@@ -74,7 +80,12 @@ export function BottomNav() {
             >
               <span className="relative">
                 <Icon className="w-5 h-5" />
-                {showOfferDot && (
+                {showNewOfferBadge && (
+                  <span className="pointer-events-none absolute -top-2.5 -right-5 -rotate-12 px-2 py-0.5 text-[9px] font-black leading-none tracking-widest text-white bg-gradient-to-br from-red-500 to-rose-600 rounded-full shadow-lg shadow-rose-900/50">
+                    Offer
+                  </span>
+                )}
+                {showUnreadDot && (
                   <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-neutral-950" />
                 )}
               </span>

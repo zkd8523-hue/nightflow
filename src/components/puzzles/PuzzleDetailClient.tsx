@@ -210,11 +210,21 @@ export function PuzzleDetailClient({
   const [showJoin, setShowJoin] = useState(false);
   const [showOffer, setShowOffer] = useState(false);
   const [floorPlanOpen, setFloorPlanOpen] = useState(false);
-  // admin 전용: MD 직통 조각(host_is_md)의 상담 상태 — puzzle_party_md 초대 여부
+  // admin 전용: 조각 상담(파티챗) 상태 — 초대 MD·선택 오퍼·과금·채팅 활성 (Migration 444)
   const [partyMdStatus, setPartyMdStatus] = useState<{
     invited: boolean;
     md_name?: string;
     md_instagram?: string | null;
+    consented_at?: string | null;
+    offer_id?: string | null;
+    offer_price?: number | null;
+    offer_club_name?: string | null;
+    offer_charged?: boolean | null;
+    chat_total?: number;
+    chat_md?: number;
+    chat_participant?: number;
+    chat_last_at?: string | null;
+    chat_last_by?: "md" | "participant" | null;
   } | null>(null);
   const [editingOffer, setEditingOffer] = useState<PuzzleOffer | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -426,15 +436,24 @@ export function PuzzleDetailClient({
     loadOffers();
   }, [loadOffers]);
 
-  // admin 전용: MD 직통 조각(host_is_md)의 상담 상태 (puzzle_party_md 초대 여부)
+  // admin 전용: 일반 조각의 상담(파티챗) 상태 — 초대 MD·오퍼·과금·채팅 활성 (Migration 444)
   useEffect(() => {
-    if (!isAdmin || !puzzle.host_is_md) return;
+    if (!isAdmin || !isRecruitingParty || puzzle.host_is_md) return;
     supabase.rpc("admin_get_party_md_status", { p_puzzle_id: puzzle.id }).then(({ data }) => {
       if (data?.success) setPartyMdStatus(data);
     });
-  }, [isAdmin, puzzle.host_is_md, puzzle.id, supabase]);
+  }, [isAdmin, isRecruitingParty, puzzle.host_is_md, puzzle.id, supabase]);
 
   const pendingOffers = offers.filter((o) => o.status === "pending");
+
+  // 방장이 본인 깃발 상세를 열면 현재 오퍼 수를 "확인함"으로 기록.
+  // MY 목록의 "NEW +N"(확인 안 한 오퍼 수) 계산 기준. (localStorage 키: profile과 동일)
+  useEffect(() => {
+    if (currentUserId !== puzzle.leader_id) return;
+    try {
+      localStorage.setItem(`flag_offers_seen_${puzzle.id}`, String(pendingOffers.length));
+    } catch {}
+  }, [currentUserId, puzzle.leader_id, puzzle.id, pendingOffers.length]);
 
   // 비방장용: 본인 오퍼 제외 + public 변환
   // 클럽명은 1개만 공개(맛보기). 나머지는 클럽명 숨김.
@@ -1224,12 +1243,12 @@ export function PuzzleDetailClient({
             </section>
           )}
 
-          {/* admin 전용: MD 직통 조각의 상담 상태 (오퍼 대신 puzzle_party_md 초대 여부로 판단) */}
-          {isAdmin && puzzle.host_is_md && (
+          {/* admin 전용: 조각 상담(파티챗) 상태 — 선택 오퍼·초대 MD·과금·채팅 활성 (Migration 444) */}
+          {isAdmin && isRecruitingParty && !puzzle.host_is_md && (
             <section className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-[16px] leading-none">💌</span>
-                <h2 className="text-[16px] font-bold text-neutral-200">상담 상태</h2>
+                <span className="text-[16px] leading-none">💬</span>
+                <h2 className="text-[16px] font-bold text-neutral-200">조각 상담 상태</h2>
               </div>
               <div className="rounded-2xl border border-neutral-800 bg-[#1C1C1E] p-4 space-y-3">
                 {partyMdStatus === null ? (
@@ -1238,8 +1257,52 @@ export function PuzzleDetailClient({
                   <>
                     <div className="flex items-center justify-between">
                       <p className="text-[14px] font-bold text-white">{partyMdStatus.md_name}</p>
-                      <span className="text-[12px] px-2.5 py-1 rounded-full bg-neutral-700 text-neutral-300 font-bold">상담중</span>
+                      {(() => {
+                        const replied = (partyMdStatus.chat_md ?? 0) > 0;
+                        const consented = !!partyMdStatus.consented_at;
+                        const label = replied ? "대화중" : consented ? "상담 시작" : "초대만";
+                        const cls = replied
+                          ? "bg-green-500/15 text-green-400"
+                          : consented
+                            ? "bg-amber-500/15 text-amber-400"
+                            : "bg-neutral-700 text-neutral-300";
+                        return <span className={`text-[12px] px-2.5 py-1 rounded-full font-bold ${cls}`}>{label}</span>;
+                      })()}
                     </div>
+
+                    {/* 선택 오퍼 */}
+                    {partyMdStatus.offer_id ? (
+                      <div className="flex items-center gap-2 text-[13px] flex-wrap">
+                        <span className="text-neutral-500">선택 오퍼</span>
+                        <span className="font-bold text-white">{partyMdStatus.offer_club_name ?? "클럽"}</span>
+                        {partyMdStatus.offer_price != null && (
+                          <span className="text-green-400 font-bold">{partyMdStatus.offer_price.toLocaleString()}원</span>
+                        )}
+                        {partyMdStatus.offer_charged && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 font-bold">과금됨</span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[12px] text-neutral-500">MD 직통(무료) — 오퍼 없음</p>
+                    )}
+
+                    {/* 채팅 활성 */}
+                    <div className="rounded-lg bg-neutral-900/60 px-3 py-2 text-[12px] text-neutral-400 space-y-0.5">
+                      <p>
+                        💬 총 <span className="text-white font-bold">{partyMdStatus.chat_total ?? 0}</span>건 · 방장·멤버 {partyMdStatus.chat_participant ?? 0} · MD {partyMdStatus.chat_md ?? 0}
+                      </p>
+                      {partyMdStatus.chat_last_at ? (
+                        <p>
+                          마지막: <span className="text-neutral-300 font-medium">{partyMdStatus.chat_last_by === "md" ? "MD" : "방장·멤버"}</span>
+                          {" · "}
+                          <span suppressHydrationWarning>{dayjs(partyMdStatus.chat_last_at).fromNow()}</span>
+                        </p>
+                      ) : (
+                        <p className="text-neutral-600">아직 대화 없음</p>
+                      )}
+                    </div>
+
+                    {/* 관리자 전용 식별 정보 */}
                     <div className="pt-2 mt-1 border-t border-red-500/20 bg-red-500/5 -mx-4 -mb-4 px-4 pb-4 space-y-1">
                       <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — 파트너 식별 정보</p>
                       <div className="flex items-center gap-3 text-[12px] text-neutral-300 flex-wrap">

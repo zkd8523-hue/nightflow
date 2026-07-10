@@ -2,7 +2,7 @@
 
 import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Share2, BadgeCheck, Minus, Plus } from "lucide-react";
+import { Share2, BadgeCheck, Minus, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { ShareCreatedSheet } from "./ShareCreatedSheet";
@@ -23,6 +23,10 @@ interface PuzzleCardProps {
   isLeader?: boolean;
   hasOffered?: boolean;
   hideNewBadge?: boolean;
+  /** MY 화면 전용 — 종료된 내 깃발/조각 상태 뱃지 (우상단, area 아래) */
+  myFlagStatus?: { text: string; tone: string };
+  /** MY 화면 전용 — 삭제(숨김) 콜백. 있으면 우상단 X 버튼 노출 */
+  onHide?: () => void;
   onJoin?: (puzzle: Puzzle) => void;
   onUnlock?: (puzzle: Puzzle) => void;
 }
@@ -156,6 +160,8 @@ export const PuzzleCard = memo(function PuzzleCard({
   isLeader = false,
   hasOffered = false,
   hideNewBadge = false,
+  myFlagStatus,
+  onHide,
   onJoin,
   onUnlock,
 }: PuzzleCardProps) {
@@ -293,7 +299,7 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           <div className="flex items-center gap-1">
-            {isSelecting && (
+            {isSelecting && !myFlagStatus && (
               <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-neutral-700/60 text-neutral-300 text-[11px] font-bold">
                 검토 중
               </span>
@@ -303,9 +309,25 @@ export const PuzzleCard = memo(function PuzzleCard({
                 {puzzle.area}
               </span>
             )}
+            {/* MY 종료 깃발 삭제 */}
+            {onHide && (
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); onHide(); }}
+                className="p-0.5 -mr-1 text-neutral-600 hover:text-red-400 transition-colors"
+                aria-label="삭제"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
+          {/* MY 종료 깃발 상태 뱃지 */}
+          {myFlagStatus && (
+            <span className={`text-[12px] font-bold whitespace-nowrap ${myFlagStatus.tone}`}>
+              {myFlagStatus.text}
+            </span>
+          )}
           {/* 공유 아이콘 — 지역 밑 (조각만) */}
-          {isRecruitingParty && shareIconBtn}
+          {isRecruitingParty && !myFlagStatus && shareIconBtn}
         </div>
       </div>
 
