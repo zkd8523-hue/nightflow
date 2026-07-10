@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera } from "lucide-react";
+import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, ChevronRight } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { MUSIC_GENRE_MAP } from "@/lib/users/musicGenres";
@@ -330,9 +330,8 @@ export function PublicProfileView({
           </button>
         )}
 
-        {/* 음악 + 지역 (인스타 통계 자리 — 가로 2열) */}
-        {(hasMusic || hasAreas || isMe) && (
-          <div className="mt-5 grid grid-cols-2 gap-4">
+        {/* 음악 + 지역 (인스타 통계 자리 — 가로 2열, 값 없어도 뼈대는 항상 노출) */}
+        <div className="mt-5 grid grid-cols-2 gap-4">
             {/* 좋아하는 음악 */}
             <div>
               <div className="flex items-center gap-1 text-[12px] font-bold text-neutral-400 mb-1.5">
@@ -362,9 +361,7 @@ export function PublicProfileView({
                 >
                   추가하기
                 </button>
-              ) : (
-                <span className="text-[12px] text-neutral-600">-</span>
-              )}
+              ) : null}
             </div>
 
             {/* 자주 가는 곳 */}
@@ -391,17 +388,13 @@ export function PublicProfileView({
                 >
                   추가하기
                 </button>
-              ) : (
-                <span className="text-[12px] text-neutral-600">-</span>
-              )}
+              ) : null}
             </div>
-          </div>
-        )}
+        </div>
 
 
-        {/* 좋아하는 클럽 */}
-        {(hasPinnedClubs || isMe) && (
-          <div className="mt-5">
+        {/* 좋아하는 클럽 (값 없어도 뼈대는 항상 노출) */}
+        <div className="mt-5">
             <div className="text-[13px] font-bold text-neutral-400 mb-2">
               선호 클럽
             </div>
@@ -439,20 +432,32 @@ export function PublicProfileView({
                   ) : null
                 )}
               </div>
-            ) : (
+            ) : isMe ? (
               <button
                 onClick={() => setEditSection("club")}
                 className="text-[13px] text-neutral-500 hover:text-neutral-300"
               >
                 선호 클럽을 추가해보세요
               </button>
-            )}
-          </div>
-        )}
+            ) : null}
+        </div>
       </div>
 
       {/* 구분선 */}
       <div className="mt-8 border-t border-neutral-900" />
+
+      {/* 남의 프로필 → 내 프로필 꾸미기 유도 CTA (상대 프로필과 분리) */}
+      {!isMe && (
+        <div className="mt-10 flex flex-col items-center">
+          <Link
+            href="/profile"
+            className="inline-flex items-center gap-1 h-9 pl-4 pr-3 rounded-full bg-white hover:bg-neutral-200 transition-colors"
+          >
+            <span className="text-[13px] font-black text-black">내 프로필 관리하기</span>
+            <ChevronRight className="w-4 h-4 text-black" />
+          </Link>
+        </div>
+      )}
 
       {/* 편집 시트 */}
       {isMe && (

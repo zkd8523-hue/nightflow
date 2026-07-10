@@ -316,7 +316,7 @@ export function Header({
                   <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
                 </Link>
               )}
-              {!compact && user.role === "user" && user.md_status !== "pending" && pathname !== "/start" && !pathname?.startsWith("/auctions/") && !pathname?.startsWith("/flags/") && !pathname?.startsWith("/messages") && (
+              {!compact && user.role === "user" && user.md_status !== "pending" && pathname !== "/start" && !pathname?.startsWith("/auctions/") && !pathname?.startsWith("/flags/") && !pathname?.startsWith("/messages") && !pathname?.startsWith("/u/") && !pathname?.startsWith("/profile") && (
                 <Link
                   href="/start"
                   className="h-9 px-3.5 flex items-center rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
