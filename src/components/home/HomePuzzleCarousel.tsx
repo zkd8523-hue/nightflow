@@ -171,7 +171,7 @@ export function HomePuzzleCarousel({
       <div
         ref={scrollRef}
         data-no-pull-refresh
-        className="flex items-stretch gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x touch-pan-y -mt-3 pt-3 pb-1 -mx-2 px-2"
+        className="flex items-start gap-3 overflow-x-auto scrollbar-hide snap-x snap-proximity touch-pan-x touch-pan-y -mt-3 pt-3 pb-1 -mx-2 px-2"
         style={{ WebkitOverflowScrolling: "touch", overscrollBehaviorX: "contain" }}
       >
         {visible.map((puzzle) => {

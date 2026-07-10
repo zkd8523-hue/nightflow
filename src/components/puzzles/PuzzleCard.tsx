@@ -259,7 +259,7 @@ export const PuzzleCard = memo(function PuzzleCard({
 
   return (
     <div
-      className={`relative bg-[#1C1C1E] rounded-2xl p-3 flex flex-col gap-2 h-full ${isCardClickable ? "cursor-pointer active:scale-[0.98] transition-all" : ""}`}
+      className={`relative bg-[#1C1C1E] rounded-2xl p-3 flex flex-col gap-2 ${isCardClickable ? "cursor-pointer active:scale-[0.98] transition-all" : ""}`}
       onClick={isCardClickable ? () => router.push(`/flags/${puzzle.id}`) : undefined}
     >
       {shareSheet}
@@ -277,23 +277,33 @@ export const PuzzleCard = memo(function PuzzleCard({
           <div className="text-[16px] font-bold leading-snug break-keep tracking-tight line-clamp-2 text-neutral-100">
             {displayNotes || `${puzzle.area}에서 모여요`}
           </div>
-          {puzzle.leader?.display_name && (
+          {(puzzle.leader?.display_name || tags.length > 0) && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <p className="text-[12px] text-neutral-500 font-medium">
-                by {puzzle.leader.display_name}
-              </p>
+              {puzzle.leader?.display_name && (
+                <p className="text-[12px] text-neutral-500 font-medium">
+                  by {puzzle.leader.display_name}
+                </p>
+              )}
               {puzzle.host_is_md && (
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-[11px] font-bold whitespace-nowrap">
                   <BadgeCheck className="w-3 h-3" />파트너 직통
                 </span>
               )}
-              {puzzle.leader.country_code && puzzle.leader.country_code !== "KR" && (
+              {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR" && (
                 <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-neutral-800 border border-neutral-700 text-[11px] font-bold text-neutral-300">
                   {countryFlag(puzzle.leader.country_code)}
                   {countryNameKo(puzzle.leader.country_code)}
                 </span>
               )}
               {leaderTier && <TrustBadge tier={leaderTier} size="sm" />}
+              {tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-medium"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
           )}
         </div>
@@ -332,7 +342,7 @@ export const PuzzleCard = memo(function PuzzleCard({
       </div>
 
       {/* 예산 및 인원 정보 그룹 — 닉네임 바로 아래 고정 간격 (mt-auto 제거: 카드 높이 따라 간격 벌어지던 문제) */}
-      <div className="flex flex-col gap-1.5 mt-2">
+      <div className="flex flex-col gap-1.5 mt-1">
         {isRecruitingParty ? (
           <>
             {/* 파티원 모집 중: 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음) */}
@@ -419,23 +429,9 @@ export const PuzzleCard = memo(function PuzzleCard({
 
       {/* 조각 오퍼 현황은 하단 CTA 행에 자세히와 같은 행으로 통합됨 (깃발과 동일) */}
 
-      {/* 취향 태그 */}
-      {tags.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap pt-1">
-          {tags.map((tag) => (
-            <span
-              key={tag}
-              className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-medium"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-
       {/* CTA 버튼 (작성날짜는 카드 상단 깃발 배지 아래로 이동) */}
-      {/* 조각/모집 카드는 슬롯과 버튼 사이 간격 확보(mt-2), 그 외는 기존대로(-mt-2) */}
-      <div className={`relative ${isRecruitingParty ? "mt-2" : "-mt-2"}`}>
+      {/* 조각/깃발 모두 동일 간격으로 통일 (모바일에서 퍼즐피스와 겹치지 않게 -mt-1로 살짝 완화) */}
+      <div className="relative -mt-1">
       {isMd ? (
         // MD: 풀 버튼 대신 작고 둥근 자세히 스타일 버튼 — 오퍼수 + 버튼 한 행
         <div className="flex items-center justify-between gap-2">
@@ -458,8 +454,13 @@ export const PuzzleCard = memo(function PuzzleCard({
                 제안 완료
               </Button>
             ) : puzzle.host_is_md ? (
-              /* MD 직통 조각엔 다른 MD가 오퍼 불가 (남의 클럽 직통) */
-              null
+              /* MD 직통 조각엔 다른 MD가 오퍼 불가 (남의 클럽 직통) → 자세히로 대체해 CTA 높이 통일 */
+              <Button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
+                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700 transition-all"
+              >
+                자세히
+              </Button>
             ) : (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
