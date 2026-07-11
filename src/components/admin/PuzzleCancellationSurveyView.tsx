@@ -50,12 +50,14 @@ export async function PuzzleCancellationSurveyView({ from, to, trigger, category
     p_trigger: trigger || null,
   }) as { data: CancellationSurveyStatRow[] | null };
 
-  // 트리거별 카운트 (요약 카드용) — 응답 행 단위
-  const { data: triggerStats } = await supabase
+  // 트리거별 카운트 (요약 카드용) — 응답 행 단위. trigger 필터가 있으면 카드도 필터 반영
+  let triggerStatsQuery = supabase
     .from("puzzle_cancellation_surveys")
     .select("trigger_type")
     .gte("responded_at", from)
     .lte("responded_at", to + "T23:59:59");
+  if (trigger) triggerStatsQuery = triggerStatsQuery.eq("trigger_type", trigger as PuzzleSurveyTrigger);
+  const { data: triggerStats } = await triggerStatsQuery;
 
   const totalResponses = (triggerStats || []).length;
   const triggerCountMap = (triggerStats || []).reduce<Record<string, number>>((acc, r) => {
