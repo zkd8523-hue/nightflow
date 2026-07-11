@@ -135,11 +135,32 @@ export default function ProfilePage() {
     setMyFlags((prev) => prev.filter((f) => f.id !== id));
   };
 
+  // 취소/만료된 항목 한번에 정리 (진행중/매칭완료는 대상 아님)
+  const handleBulkCleanup = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    if (typeof window !== "undefined" &&
+        !window.confirm(`취소·만료된 ${ids.length}개를 삭제할까요?\n삭제하면 복구할 수 없습니다.`)) return;
+    const results = await Promise.all(
+      ids.map((id) => supabase.rpc("hide_my_puzzle", { p_puzzle_id: id }))
+    );
+    const succeededIds = ids.filter((_, i) => !results[i].error && results[i].data?.success);
+    const failedCount = ids.length - succeededIds.length;
+    if (succeededIds.length > 0) {
+      setMyFlags((prev) => prev.filter((f) => !succeededIds.includes(f.id)));
+    }
+    if (failedCount > 0) toast.error(`${failedCount}개는 삭제하지 못했습니다`);
+    if (succeededIds.length > 0) toast.success(`${succeededIds.length}개 정리했습니다`);
+  };
+
   // 깃발(인원 확정) / 조각(파티원 모집) 분리
   const flagsOnly = myFlags.filter((f) => !f.is_recruiting_party);
   const sharesOnly = myFlags.filter((f) => f.is_recruiting_party);
   // 진행중(open/selecting) 판별 — 카드에 오퍼 현황/상태 뱃지 분기용
   const isActiveStatus = (s: string) => s === "open" || s === "selecting";
+  // 취소/만료된 항목만 정리 대상 (매칭완료는 기록 보존을 위해 제외)
+  const isCleanable = (s: string) => s === "cancelled" || s === "expired";
+  const cleanableFlagIds = flagsOnly.filter((f) => isCleanable(f.status)).map((f) => f.id);
+  const cleanableShareIds = sharesOnly.filter((f) => isCleanable(f.status)).map((f) => f.id);
 
   // 내 조각(내가 만든 것 + 합류한 것) 통합
   const allShares = [
@@ -424,6 +445,15 @@ export default function ProfilePage() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[15px] font-bold text-white">내 깃발</h2>
+            {cleanableFlagIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleBulkCleanup(cleanableFlagIds)}
+                className="text-[12px] font-bold text-neutral-500 hover:text-neutral-300 transition-colors"
+              >
+                취소·만료 {cleanableFlagIds.length}개 정리
+              </button>
+            )}
           </div>
 
           {flagsOnly.length > 0 ? (
@@ -495,6 +525,15 @@ export default function ProfilePage() {
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-[15px] font-bold text-white">내 조각</h2>
+            {cleanableShareIds.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleBulkCleanup(cleanableShareIds)}
+                className="text-[12px] font-bold text-neutral-500 hover:text-neutral-300 transition-colors"
+              >
+                취소·만료 {cleanableShareIds.length}개 정리
+              </button>
+            )}
           </div>
           {allShares.length > 0 ? (
             <div className="flex flex-col gap-3">
