@@ -1454,7 +1454,7 @@ export function PuzzleDetailClient({
                   <p className="text-[12px] text-neutral-400 px-1">
                     {isRecruitingParty
                       ? "💬 채팅에서 파티원과 상의한 뒤, 마음에 드는 파트너에게 예약하세요"
-                      : "마음에 드는 오퍼를 골라보세요"}
+                      : "오퍼를 골라 무료로 상담해보세요"}
                   </p>
                 </FeatureGate>
                 {isRecruitingParty && !isAdmin && (
@@ -1496,11 +1496,11 @@ export function PuzzleDetailClient({
                         <button
                           type="button"
                           onClick={() => setCompareGroupKey(group.clubKey)}
-                          className="block px-1 pt-1 text-[13px] font-semibold text-neutral-200 hover:text-amber-200 transition-colors"
+                          className="block px-1 pt-1 text-[13px] font-semibold text-neutral-200 underline decoration-dotted decoration-neutral-600 underline-offset-4 hover:text-amber-200 hover:decoration-amber-300 transition-colors"
                         >
                           {isForeigner
-                            ? t("나플가 vs 정가 비교하기 →", "Compare NightFlow price vs list price →")
-                            : "나플가 vs 정가 비교하기 →"}
+                            ? t("나플 패키지 vs 정가 비교하기", "Compare NightFlow package vs list price")
+                            : "나플 패키지 vs 정가 비교하기"}
                         </button>
                       )}
                       <div className="divide-y divide-neutral-700 pt-3">

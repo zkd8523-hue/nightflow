@@ -275,7 +275,7 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
             onClick={onClose}
             className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px]"
           >
-            {t("문의하기", "Contact")}
+            {t("무료 상담", "Free chat")}
           </Link>
           {hasMultipleOffers && (
             <button

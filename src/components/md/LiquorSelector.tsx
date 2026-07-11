@@ -12,6 +12,8 @@ interface LiquorSelectorProps {
   compact?: boolean;
   /** true면 주류를 선택 입력으로 표시(별표·"최소 1병" 제거). 조각(share) 모드용. */
   optional?: boolean;
+  /** 필수 헤더의 보조 문구 오버라이드. 기본값 "최소 1병 이상"(경매). 깃발 오퍼는 "또는 혜택 1개 이상"(OR 룰 반영). */
+  requiredHint?: string;
 }
 
 function normalize(raw: string): string | null {
@@ -36,7 +38,7 @@ function normalize(raw: string): string | null {
   return `${trimmed} 1병`;
 }
 
-export function LiquorSelector({ selected, onSelect, disabled, compact, optional }: LiquorSelectorProps) {
+export function LiquorSelector({ selected, onSelect, disabled, compact, optional, requiredHint }: LiquorSelectorProps) {
   const [customBrand, setCustomBrand] = useState("");
 
   const selectedBrandSet = new Set(selected);
@@ -141,7 +143,9 @@ export function LiquorSelector({ selected, onSelect, disabled, compact, optional
         <Wine className="w-3 h-3 text-purple-400/70" />
         <span>주류</span>
         <span className="text-red-500">*</span>
-        <span className="text-neutral-600 font-medium">최소 1병 이상</span>
+        {(requiredHint ?? "최소 1병 이상") && (
+          <span className="text-neutral-600 font-medium">{requiredHint ?? "최소 1병 이상"}</span>
+        )}
       </div>
       <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5">
         {inner}
