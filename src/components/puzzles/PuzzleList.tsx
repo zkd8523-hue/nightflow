@@ -139,6 +139,8 @@ export function PuzzleList({
   const filterSheetOpen = filterOpen ?? internalFilterOpen;
   const setFilterSheetOpen = onFilterOpenChange ?? setInternalFilterOpen;
   const [recentCollapsed, setRecentCollapsed] = useState(false);
+  // MD 전용: 이미 오퍼 넣은 깃발 숨기기 — 더보기 화면에서 스캔할 때 새 깃발만 빠르게 훑기 위함
+  const [hideOffered, setHideOffered] = useState(false);
 
   // 리스트 끝에서 floating CTA 숨기기 (인라인 CTA와 시각적 중복 방지)
   const listEndRef = useRef<HTMLDivElement | null>(null);
@@ -172,6 +174,7 @@ export function PuzzleList({
   const filteredPuzzles = useMemo(() => {
     const base = puzzles.filter((p) => {
       if (partyOnly && !p.is_recruiting_party) return false;
+      if (hideOffered && myOfferedPuzzleIds.has(p.id)) return false;
       return (
         matchesNbi(p, nbiFilter) &&
         matchesSeat(p, seatFilter) &&
@@ -180,7 +183,7 @@ export function PuzzleList({
     });
     if (popularSort) return [...base].sort((a, b) => (offerCounts[b.id] || 0) - (offerCounts[a.id] || 0));
     return base;
-  }, [puzzles, nbiFilter, seatFilter, dateFilter, partyOnly, popularSort, offerCounts]);
+  }, [puzzles, nbiFilter, seatFilter, dateFilter, partyOnly, popularSort, offerCounts, hideOffered, myOfferedPuzzleIds]);
 
   const eventDates = useMemo(() => {
     return Array.from(new Set(puzzles.map((p) => p.event_date)));
@@ -226,22 +229,38 @@ export function PuzzleList({
   // 첫 보이는 헤더 우측에 붙이는 정렬 select
   // (모바일 칩 row와 겹침 방지 위해 헤더로 이동)
   const sortSelectEl = onSortModeChange ? (
-    <div className="relative flex-shrink-0 ml-auto">
-      <select
-        value={externalSortMode}
-        onChange={(e) => onSortModeChange(e.target.value as "none" | "popular" | "budget" | "recent")}
-        className={`appearance-none text-[11px] font-bold pl-3 pr-7 h-7 leading-none rounded-full transition-colors whitespace-nowrap cursor-pointer focus:outline-none box-border ${
-          externalSortMode === "none"
-            ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-            : "bg-amber-500 text-black"
-        }`}
-      >
-        <option value="none">정렬</option>
-        <option value="popular">인기순</option>
-        <option value="budget">예산순</option>
-        <option value="recent">최신순</option>
-      </select>
-      <ChevronDown className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 ${externalSortMode === "none" ? "text-neutral-400" : "text-black"}`} />
+    <div className="flex items-center gap-1.5 flex-shrink-0 ml-auto">
+      {/* MD 전용: 이미 오퍼 넣은 깃발 숨기고 새 것만 스캔 */}
+      {(userRole === "md" || userRole === "admin") && (
+        <button
+          type="button"
+          onClick={() => setHideOffered((v) => !v)}
+          className={`text-[11px] font-bold px-3 h-7 leading-none rounded-full transition-colors whitespace-nowrap ${
+            hideOffered
+              ? "bg-white text-black"
+              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+          }`}
+        >
+          오퍼 안한 것만
+        </button>
+      )}
+      <div className="relative flex-shrink-0">
+        <select
+          value={externalSortMode}
+          onChange={(e) => onSortModeChange(e.target.value as "none" | "popular" | "budget" | "recent")}
+          className={`appearance-none text-[11px] font-bold pl-3 pr-7 h-7 leading-none rounded-full transition-colors whitespace-nowrap cursor-pointer focus:outline-none box-border ${
+            externalSortMode === "none"
+              ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+              : "bg-white text-black"
+          }`}
+        >
+          <option value="none">정렬</option>
+          <option value="popular">인기순</option>
+          <option value="budget">예산순</option>
+          <option value="recent">최신순</option>
+        </select>
+        <ChevronDown className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 ${externalSortMode === "none" ? "text-neutral-400" : "text-black"}`} />
+      </div>
     </div>
   ) : null;
 

@@ -462,12 +462,13 @@ export const PuzzleCard = memo(function PuzzleCard({
                 자세히
               </Button>
             ) : (
-              <Button
+              <button
+                type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-                className="h-8 px-3 rounded-full font-black text-[12px] bg-amber-500 hover:bg-amber-400 text-black active:scale-[0.97] transition-all shrink-0"
+                className="text-[13px] font-bold text-amber-200 hover:text-amber-100 active:scale-[0.97] transition-all shrink-0"
               >
-                오퍼하기
-              </Button>
+                오퍼하기 →
+              </button>
             )}
           </div>
         </div>
