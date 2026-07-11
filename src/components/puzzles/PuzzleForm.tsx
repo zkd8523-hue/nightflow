@@ -22,6 +22,7 @@ import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { validateTitleDateConsistency } from "@/lib/utils/date";
 import { krwTo, RATE_AS_OF } from "@/lib/utils/currency";
+import { detectContactInfo, describeContactDetection } from "@/lib/utils/contact-detector";
 
 const CURRENCIES = [
   { code: "USD", symbol: "$" },
@@ -314,6 +315,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
   // 당일 18시 이후 등록 시도 시 안내 다이얼로그
   const [showLateTodayDialog, setShowLateTodayDialog] = useState(false);
   const [notes, setNotes] = useState(initialNotes);
+  const [leaderComment, setLeaderComment] = useState(puzzle?.leader_comment ?? "");
 
   // 선호 클럽 (신규 등록 시에만). 이미 취향을 등록한 유저면 다시 안 물어봄(한 번만).
   const [preferredClubs, setPreferredClubs] = useState<PreferredClubItem[]>([]);
@@ -550,6 +552,13 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     if (!notes.trim()) {
       return fail('title', t('어떤 모임인지 한 줄로 표현해주세요', 'Add a one-line description'));
     }
+    if (leaderComment.trim()) {
+      const found = detectContactInfo(leaderComment);
+      if (found.length > 0) {
+        const label = describeContactDetection(found);
+        return fail('contact_info', `${label} ${t('입력 불가', 'not allowed')}`);
+      }
+    }
     if (!eventDate) {
       return fail('date', t('날짜를 선택해주세요', 'Please select a date'));
     }
@@ -626,6 +635,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             target_male: submitMaleSlot,
             target_female: submitFemaleSlot,
             notes: notes.trim() || null,
+            leader_comment: leaderComment.trim() || null,
             // 날짜 변경 시에만 마감 시각 갱신. 미변경 시 기존 깃발(자정 마감 등) 보호.
             ...(isEventDateChanged ? {
               offer_deadline: getOfferDeadline(eventDate),
@@ -684,6 +694,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           target_female: targetFemale,
           is_recruiting_party: effectiveIsRecruiting,
           notes: notes.trim() || null,
+          leader_comment: leaderComment.trim() || null,
           offer_deadline: getOfferDeadline(eventDate),
           expires_at: getExpiresAt(eventDate),
         })
@@ -1021,7 +1032,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           <Users className="w-4 h-4 text-green-500" />
           <span>{t("인원 설정", "Group size")}</span>
         </div>
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
+        <div className="space-y-4">
           {!isRecruitingParty ? (
             /* OFF 모드 (깃발): 기존 totalPeople 단일 picker */
             <div className="space-y-2">
@@ -1125,7 +1136,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       {/* 예산 (모드에 따라 총액 or 인당) */}
       <section className="space-y-4">
         <div className="flex items-center gap-2 text-white font-bold mb-2">
-          <Coins className="w-4 h-4 text-amber-500" />
+          <Coins className="w-4 h-4 text-green-500" />
           <span>{isRecruitingParty ? t("인당 예산", "Budget per person") : t("총 예산", "Total budget")}</span>
         </div>
         <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
@@ -1195,7 +1206,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             <CurrencyHint amount={isRecruitingParty ? totalBudget : budgetAmount} convertLabel="Convert" />
           )}
           <p className="font-medium -my-2">
-            <span className="text-[14px] text-amber-500/80">{t("파트너가 예산에 맞춰 서비스를 구성해요", "Club offers match your budget")}</span>
+            <span className="text-[14px] text-neutral-400">{t("파트너가 예산에 맞춰 서비스를 구성해요", "Club offers match your budget")}</span>
             {!isRecruitingParty && (
               <>
                 <span className="text-[12px] text-neutral-400"> {t("(최소 금액 50만원)", "(minimum ₩500,000)")}</span>
@@ -1240,7 +1251,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           <span>{t("이런 분들을 선호해요", "Who you prefer")}</span>
         </div>
 
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-4 py-3 space-y-2.5">
+        <div className="space-y-2.5">
           {/* 성별 선호 — 조각은 성별 슬롯을 쓰지 않으므로 숨김 */}
           {!shareMode && (
           <div className="flex items-center gap-3">
@@ -1333,8 +1344,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       {/* 팀 소개 (한 줄 메모) */}
       <section className="space-y-4">
         <div className="flex items-baseline gap-2 text-white font-bold mb-2">
-          <MessageCircle className="w-4 h-4 text-purple-500 self-center" />
-          <span>{isRecruitingParty ? (shareMode ? t("조각 소개", "About your group") : t("퍼즐 소개", "About your group")) : t("파트너에게 한마디", "Message to club")}</span>
+          <MessageCircle className="w-4 h-4 text-green-500 self-center" />
+          <span>{isRecruitingParty ? (shareMode ? t("조각 소개", "About your group") : t("퍼즐 소개", "About your group")) : t("깃발 제목", "Flag title")}</span>
           {isRecruitingParty && (
             <span className="text-[11px] text-neutral-500 font-normal">
               {t("참여자와 파트너가 가장 먼저 읽어요", "First thing clubs see")}
@@ -1344,7 +1355,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             {notes.length}/60
           </span>
         </div>
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
+        <div>
           <Input
             type="text"
             value={notes}
@@ -1362,6 +1373,29 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         </div>
       </section>
 
+      {/* 덧붙이는 말 — notes(제목 60자)와 별개, MD 오퍼 코멘트와 동일한 UI 재사용. 카드엔 안 뜨고 상세에서만 노출 */}
+      <section className="space-y-4 -mt-4">
+        <div className="flex items-baseline gap-2 text-white font-bold mb-2">
+          <span>{t("덧붙이는 말", "Additional note")}<span className="text-[11px] font-normal text-neutral-500 ml-0.5">{t("(선택)", "(optional)")}</span></span>
+          <span className={`ml-auto text-[11px] font-normal ${leaderComment.length >= 200 ? "text-amber-500" : "text-neutral-500"}`}>
+            {leaderComment.length}/200
+          </span>
+        </div>
+        <div>
+          <textarea
+            value={leaderComment}
+            onChange={(e) => setLeaderComment(e.target.value)}
+            placeholder={t(
+              "클럽·MD에게 특별히 강조하거나 요구하고싶은 게 있나요?\n자유롭게 적어주세요.",
+              "Anything specific you'd like to emphasize or request to the club/partner?\nFeel free to write."
+            )}
+            rows={3}
+            maxLength={200}
+            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-[13px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
+          />
+        </div>
+      </section>
+
       {/* 카톡 오픈채팅 — 파티원 모집 중일 때만. 조각(shareMode)은 인앱 채팅 사용으로 숨김 */}
       {isRecruitingParty && !shareMode && (
         <section className="space-y-4">
@@ -1372,7 +1406,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
               <span className="text-[11px] text-neutral-500 font-normal">{t("수정 불가", "Can't edit")}</span>
             )}
           </div>
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
+          <div className="space-y-3">
             <Input
               type="url"
               value={kakaoUrl}

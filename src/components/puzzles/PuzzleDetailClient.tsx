@@ -805,6 +805,7 @@ export function PuzzleDetailClient({
                 </span>
               );
             })()}
+            <span className="ml-auto text-[14px] text-neutral-400">{areaLabel(puzzle.area, lang)}</span>
           </div>
 
           {/* 기본 정보 */}
@@ -815,7 +816,6 @@ export function PuzzleDetailClient({
                 {puzzle.notes && (
                   <p className="text-[22px] font-black text-white leading-snug tracking-tight break-keep">{displayNotes}</p>
                 )}
-                <span className="text-[14px] text-neutral-400">{areaLabel(puzzle.area, lang)}</span>
               </div>
               <button
                 onClick={() => {
@@ -890,47 +890,36 @@ export function PuzzleDetailClient({
                       </button>
                     )}
                   </div>
+                  {puzzle.leader_comment && (
+                    <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-3 pt-1.5">
+                      &ldquo;{puzzle.leader_comment}&rdquo;
+                    </p>
+                  )}
                 </>
               ) : (
                 <>
-                  {/* 홈 카드 패턴 통일: 예산 + 인원 pill + 닉네임 버튼 + 음악 한 줄 */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[19px] font-bold text-green-400">
-                      {isForeigner ? `₩${baseBudget.toLocaleString()}` : `예산 ${baseBudget.toLocaleString()}원`}
-                    </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[12px] font-bold">
-                      {puzzle.target_count}{t("명", " ppl")}
-                    </span>
-                    {puzzle.leader && (
+                  {/* 닉네임 버튼 + 신뢰도(신규가입 등) — 예산보다 먼저 */}
+                  {puzzle.leader && (
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         type="button"
                         onClick={() => setShowLeaderInfo(true)}
-                        className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2.5 py-1 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-md pl-1 pr-2.5 py-1 transition-colors"
                       >
                         {puzzle.leader.profile_image ? (
-                          <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-4 h-4 rounded-full object-cover" />
+                          <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-5 h-5 rounded-full object-cover" />
                         ) : (
-                          <div className="w-4 h-4 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
+                          <div className="w-5 h-5 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
                             {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
                           </div>
                         )}
                         {puzzle.leader.display_name || puzzle.leader.name || t("방장", "Host")}
+                        {(() => {
+                          const tier = getDealTier(puzzle.leader.deal_amount_total ?? 0);
+                          const leaderIsNew = isNewUser(puzzle.leader.created_at);
+                          return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
+                        })()}
                       </button>
-                    )}
-                    {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">
-                        {puzzle.music_preference === "hiphop" ? t("힙합", "Hip-hop") : "EDM"}{t(" 선호", " preferred")}
-                      </span>
-                    )}
-                  </div>
-                  {/* 신뢰도 메타 — 닉네임 버튼 아래 줄 */}
-                  {puzzle.leader && (
-                    <div className="flex items-center gap-1.5 flex-wrap pt-1.5">
-                      {(() => {
-                        const tier = getDealTier(puzzle.leader.deal_amount_total ?? 0);
-                        const leaderIsNew = isNewUser(puzzle.leader.created_at);
-                        return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
-                      })()}
                       {(() => {
                         const dealCount = puzzle.leader.deal_count_total ?? 0;
                         return dealCount > 0 ? (
@@ -938,6 +927,28 @@ export function PuzzleDetailClient({
                         ) : null;
                       })()}
                     </div>
+                  )}
+
+                  {/* 홈 카드 패턴 통일: 예산 + 인원 pill + 음악 한 줄 */}
+                  <div className="flex items-center gap-2 flex-wrap pt-1.5">
+                    <span className="text-[19px] font-bold text-green-400">
+                      {isForeigner ? `₩${baseBudget.toLocaleString()}` : `예산 ${baseBudget.toLocaleString()}원`}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[12px] font-bold">
+                      {puzzle.target_count}{t("명", " ppl")}
+                    </span>
+                    {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">
+                        {puzzle.music_preference === "hiphop" ? t("힙합", "Hip-hop") : "EDM"}{t(" 선호", " preferred")}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* 방장 덧붙이는 말 — MD 오퍼 코멘트와 동일한 인용 블록 스타일 재사용. 순서: 제목→닉네임→예산/인원→한마디 */}
+                  {puzzle.leader_comment && (
+                    <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-3 pt-1.5">
+                      &ldquo;{puzzle.leader_comment}&rdquo;
+                    </p>
                   )}
                 </>
               )}

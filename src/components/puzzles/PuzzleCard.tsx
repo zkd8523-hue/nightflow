@@ -455,12 +455,13 @@ export const PuzzleCard = memo(function PuzzleCard({
               </Button>
             ) : puzzle.host_is_md ? (
               /* MD 직통 조각엔 다른 MD가 오퍼 불가 (남의 클럽 직통) → 자세히로 대체해 CTA 높이 통일 */
-              <Button
+              <button
+                type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700 transition-all"
+                className="text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
               >
-                자세히
-              </Button>
+                자세히 →
+              </button>
             ) : (
               <button
                 type="button"
@@ -476,22 +477,24 @@ export const PuzzleCard = memo(function PuzzleCard({
         // 깃발: 오퍼수(왼쪽) + "자세히"(우측). 유저·비로그인 모두 노출.
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">{userOfferBadge}</div>
-          <Button
+          <button
+            type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700 shrink-0"
+            className="text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
           >
-            자세히
-          </Button>
+            자세히 →
+          </button>
         </div>
       ) : isFull ? (
         <div className="flex items-center gap-2">
           <span className="text-[12px] text-neutral-500 font-medium">파티 마감</span>
-          <Button
+          <button
+            type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="ml-auto h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700 shrink-0"
+            className="ml-auto text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
           >
-            자세히
-          </Button>
+            자세히 →
+          </button>
         </div>
       ) : isLeader ? (
         <div className="flex items-center gap-2">
@@ -516,12 +519,13 @@ export const PuzzleCard = memo(function PuzzleCard({
       ) : (
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">{userOfferBadge}</div>
-          <Button
+          <button
+            type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="h-7 px-3 rounded-full font-black text-[11px] transition-all active:scale-[0.97] bg-neutral-800 border border-neutral-700 text-neutral-300 hover:bg-neutral-700 shrink-0"
+            className="text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
           >
-            자세히
-          </Button>
+            자세히 →
+          </button>
         </div>
       )}
       </div>

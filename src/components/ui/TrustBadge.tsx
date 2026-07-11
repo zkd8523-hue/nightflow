@@ -38,10 +38,10 @@ export function TrustBadge({ tier, size = "sm", isNew = false, className = "" }:
         if (!isNew) return null;
         return (
             <span
-                className={`inline-flex items-center rounded-full font-black bg-cyan-500/15 text-cyan-400 leading-none ${sz.newPill} ${className}`}
+                className={`inline-flex items-center rounded font-black bg-cyan-500/15 text-cyan-400 leading-none ${sz.newPill} ${className}`}
                 title="가입 2주 이내 신규 회원"
             >
-                신규가입
+                신규
             </span>
         );
     }

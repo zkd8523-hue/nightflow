@@ -3,16 +3,17 @@
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
-import { ChevronDown, ChevronUp, History, Store } from "lucide-react";
+import { ChevronDown, ChevronUp, History } from "lucide-react";
 
 interface Props {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    /** 시트 제목 (기본 "방장 정보"). 채팅 등에서 "MD 정보"로 재사용 */
+    /** 시트 제목 (기본 "유저 정보"). 채팅 등에서 "MD 정보"로 재사용 */
     title?: string;
     leader: {
         deal_count_total?: number | null;
         deal_amount_total?: number | null;
+        consultation_count?: number | null;
         created_at?: string | null;
         display_name?: string | null;
         name?: string | null;
@@ -39,19 +40,7 @@ const TIER_ROWS = [
     { key: "president", label: "President", desc: "최상위 거래자",        thresholdLabel: "5000만원+", color: "text-yellow-300" },
 ];
 
-function formatKRW(amount: number): string {
-    if (amount >= 100_000_000) {
-        const eok = amount / 100_000_000;
-        return `${Number.isInteger(eok) ? eok : eok.toFixed(1)}억원`;
-    }
-    if (amount >= 10_000) {
-        const man = Math.floor(amount / 10_000);
-        return `${man.toLocaleString("ko-KR")}만원`;
-    }
-    return `${amount.toLocaleString("ko-KR")}원`;
-}
-
-export function LeaderInfoSheet({ open, onOpenChange, leader, title = "방장 정보" }: Props) {
+export function LeaderInfoSheet({ open, onOpenChange, leader, title = "유저 정보" }: Props) {
     const [showTierInfo, setShowTierInfo] = useState(false);
 
     if (!leader) return null;
@@ -59,6 +48,7 @@ export function LeaderInfoSheet({ open, onOpenChange, leader, title = "방장 �
     const dealAmount = leader.deal_amount_total ?? 0;
     const tier = getDealTier(dealAmount);
     const dealCount = leader.deal_count_total ?? 0;
+    const consultationCount = leader.consultation_count ?? 0;
     const leaderIsNew = isNewUser(leader.created_at);
 
     const signedUpShort = leader.created_at
@@ -183,55 +173,39 @@ export function LeaderInfoSheet({ open, onOpenChange, leader, title = "방장 �
                         </div>
                     </div>
 
-                    {/* 누적 거래 */}
+                    {/* 상담 횟수 */}
                     <div className="bg-neutral-900/50 border border-neutral-800/40 rounded-2xl px-4 py-4">
                         <div className="flex items-center justify-between">
                             <span className="text-[11px] text-neutral-500 font-bold uppercase tracking-wider">
-                                누적 거래
+                                상담 횟수
                             </span>
                             <span className="text-2xl font-black text-white">
-                                {dealCount}
+                                {consultationCount}
                                 <span className="text-sm text-neutral-500 font-bold ml-0.5">회</span>
-                                <span className="text-neutral-600 font-bold mx-1.5">·</span>
-                                {formatKRW(dealAmount)}
                             </span>
                         </div>
                         <p className="text-[11px] text-neutral-600 mt-2 leading-relaxed">
-                            깃발 거래완료 + 경매 거래확정 합산. 파트너가 거래완료를 마킹해야 누적됩니다.
+                            MD와 실제로 메시지를 주고받은 오퍼 수
                         </p>
                     </div>
 
-                    {/* MD 평가 (예정) */}
-                    <div>
-                        <div className="flex items-center gap-1.5 mb-2 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
-                            <Store className="w-3.5 h-3.5" />
-                            파트너 평가
+                    {/* 최근 거래 (예정, 거래 이력 있을 때만 노출) */}
+                    {dealCount > 0 && (
+                        <div>
+                            <div className="flex items-center gap-1.5 mb-2 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
+                                <History className="w-3.5 h-3.5" />
+                                최근 거래
+                            </div>
+                            <div className="bg-neutral-900/30 border border-dashed border-neutral-800 rounded-2xl py-6 text-center px-4">
+                                <p className="text-[12px] text-neutral-500 font-bold">
+                                    거래 기록이 아직 없어요
+                                </p>
+                                <p className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
+                                    양쪽이 거래완료에 동의한 깃발/경매가 여기 표시됩니다
+                                </p>
+                            </div>
                         </div>
-                        <div className="bg-neutral-900/30 border border-dashed border-neutral-800 rounded-2xl py-6 text-center px-4">
-                            <p className="text-[12px] text-neutral-500 font-bold">
-                                받은 평가가 아직 없어요
-                            </p>
-                            <p className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
-                                거래가 쌓이면 파트너가 남긴 평가가 표시됩니다
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* 최근 거래 (예정) */}
-                    <div>
-                        <div className="flex items-center gap-1.5 mb-2 text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
-                            <History className="w-3.5 h-3.5" />
-                            최근 거래
-                        </div>
-                        <div className="bg-neutral-900/30 border border-dashed border-neutral-800 rounded-2xl py-6 text-center px-4">
-                            <p className="text-[12px] text-neutral-500 font-bold">
-                                거래 기록이 아직 없어요
-                            </p>
-                            <p className="text-[11px] text-neutral-600 mt-1 leading-relaxed">
-                                양쪽이 거래완료에 동의한 깃발/경매가 여기 표시됩니다
-                            </p>
-                        </div>
-                    </div>
+                    )}
                 </div>
             </SheetContent>
         </Sheet>

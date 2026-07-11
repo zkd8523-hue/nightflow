@@ -766,7 +766,7 @@ export type MusicPref = 'hiphop' | 'edm' | 'any';
 export interface Puzzle {
   id: string;
   leader_id: string;
-  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'deal_count_total' | 'deal_amount_total' | 'created_at' | 'gender' | 'country_code'>;
+  leader?: Pick<User, 'id' | 'name' | 'display_name' | 'profile_image' | 'deal_count_total' | 'deal_amount_total' | 'created_at' | 'gender' | 'country_code'> & { consultation_count?: number | null };
   area: Area;
   event_date: string;
   kakao_open_chat_url: string | null; // 오퍼 수락 시점에 입력, MD에게만 공개
@@ -806,6 +806,8 @@ export interface Puzzle {
   /** Migration 167: 취소 시각 (admin/방장 공통) */
   cancelled_at: string | null;
   notes: string | null;
+  /** Migration 453: 방장이 참여자/파트너에게 남기는 덧붙이는 말 (선택, 최대 200자) */
+  leader_comment: string | null;
   expires_at: string;
   /** Migration 170: 오퍼 마감 시각 (NULL = 기존 자정 마감 깃발) */
   offer_deadline: string | null;

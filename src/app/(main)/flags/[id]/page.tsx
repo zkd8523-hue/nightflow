@@ -147,8 +147,8 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // 나머지 3쿼리는 병렬 실행 (puzzle에 의존)
-  const [{ data: leader }, { data: members }, { data: profile }] = await Promise.all([
+  // 나머지 4쿼리는 병렬 실행 (puzzle에 의존)
+  const [{ data: leader }, { data: members }, { data: profile }, { count: consultationCount }] = await Promise.all([
     supabase
       .from("users")
       .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked, deal_count_total, deal_amount_total, created_at, gender, last_seen_at, lang, alimtalk_consent, alimtalk_consent_at")
@@ -165,6 +165,12 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
     authUser
       ? supabase.from("users").select("role, kakao_open_chat_url").eq("id", authUser.id).single()
       : Promise.resolve({ data: null }),
+    // 상담 횟수: 이 유저가 방장인 깃발의 오퍼 중 첫 메시지를 보낸(=실제 상담 시작) 오퍼 수
+    supabase
+      .from("puzzle_offers")
+      .select("id, puzzle:puzzles!inner(leader_id)", { count: "exact", head: true })
+      .eq("puzzle.leader_id", puzzle.leader_id)
+      .not("leader_chat_started_at", "is", null),
   ]);
 
   // leader 정보를 puzzle에 attach (TrustBadge용 deal_count_total + 신규 유저 판별용 created_at)
@@ -181,6 +187,7 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
           created_at: leader.created_at,
           gender: leader.gender,
           last_seen_at: (leader as { last_seen_at?: string | null }).last_seen_at ?? null,
+          consultation_count: consultationCount ?? 0,
         },
       }
     : puzzle;
