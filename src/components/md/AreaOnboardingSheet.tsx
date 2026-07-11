@@ -68,7 +68,10 @@ export function AreaOnboardingSheet({ userId, onClose }: AreaOnboardingSheetProp
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 pb-8 animate-in slide-in-from-bottom duration-300">
+      <div
+        className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-300"
+        style={{ paddingBottom: "calc(2rem + 3.5rem + env(safe-area-inset-bottom))" }}
+      >
         {/* 헤더 */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">

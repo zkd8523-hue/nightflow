@@ -436,7 +436,10 @@ export default function AdminClubEditPage() {
 
       {/* 저장 바 (sticky) */}
       <div className="fixed bottom-0 left-0 right-0 bg-[#0A0A0A]/95 backdrop-blur border-t border-neutral-800 z-30">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex gap-2">
+        <div
+          className="max-w-2xl mx-auto px-4 py-3 flex gap-2"
+          style={{ paddingBottom: "calc(0.75rem + 3.5rem + env(safe-area-inset-bottom))" }}
+        >
           <button
             type="button"
             onClick={() => handleSave(false)}

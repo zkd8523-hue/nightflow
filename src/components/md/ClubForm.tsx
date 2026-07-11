@@ -465,7 +465,10 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
       </form>
 
       {/* Floating Submit Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-40">
+      <div
+        className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-40"
+        style={{ paddingBottom: "calc(1rem + 3.5rem + env(safe-area-inset-bottom))" }}
+      >
         <div className="max-w-lg mx-auto">
           <button
             type="submit"
