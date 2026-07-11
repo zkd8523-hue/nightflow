@@ -460,7 +460,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
                 className="text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
               >
-                자세히 →
+                자세히
               </button>
             ) : (
               <button
@@ -468,7 +468,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
                 className="text-[13px] font-bold text-amber-200 hover:text-amber-100 active:scale-[0.97] transition-all shrink-0"
               >
-                오퍼하기 →
+                {offerCount > 0 ? "나도 오퍼하기 →" : "먼저 오퍼하기 →"}
               </button>
             )}
           </div>
@@ -482,7 +482,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
             className="text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
           >
-            자세히 →
+            자세히
           </button>
         </div>
       ) : isFull ? (
@@ -493,7 +493,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
             className="ml-auto text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
           >
-            자세히 →
+            자세히
           </button>
         </div>
       ) : isLeader ? (
@@ -524,7 +524,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
             className="text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
           >
-            자세히 →
+            자세히
           </button>
         </div>
       )}
