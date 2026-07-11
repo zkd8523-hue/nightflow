@@ -167,13 +167,22 @@ export default async function AdminDashboardPage() {
     .eq("visit_result", "noshow")
     .is("strike_applied_at", null);
 
-  // 깃발 노매치 알림 — 취소/실패 설문 응답 수 (최근 7일)
-  const [{ count: totalSurveyResponses }, { count: recentSurveyResponses }] = await Promise.all([
-    supabase.from("puzzle_cancellation_surveys").select("id", { count: "exact", head: true }),
-    supabase
-      .from("puzzle_cancellation_surveys")
-      .select("id", { count: "exact", head: true })
-      .gte("responded_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+  // 설문 응답 수 — 트리거별 분리 (직접 취소 vs 노매치=선택 만료), 최근 7일 배지용
+  const survey7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [
+    { count: cancelSurveyTotal },
+    { count: cancelSurveyRecent },
+    { count: nomatchSurveyTotal },
+    { count: nomatchSurveyRecent },
+  ] = await Promise.all([
+    supabase.from("puzzle_cancellation_surveys").select("id", { count: "exact", head: true })
+      .eq("trigger_type", "self_cancelled"),
+    supabase.from("puzzle_cancellation_surveys").select("id", { count: "exact", head: true })
+      .eq("trigger_type", "self_cancelled").gte("responded_at", survey7d),
+    supabase.from("puzzle_cancellation_surveys").select("id", { count: "exact", head: true })
+      .eq("trigger_type", "selecting_expired"),
+    supabase.from("puzzle_cancellation_surveys").select("id", { count: "exact", head: true })
+      .eq("trigger_type", "selecting_expired").gte("responded_at", survey7d),
   ]);
 
   // 클럽 요청 (영업 리드) — 최근 7일
@@ -351,13 +360,22 @@ export default async function AdminDashboardPage() {
       href: "/admin/abuse",
     },
     {
-      label: "깃발 노매치 알림",
-      value: `${totalSurveyResponses || 0}건`,
+      label: "취소 설문",
+      value: `${cancelSurveyTotal || 0}건`,
       icon: MessageSquareWarning,
       color: "text-purple-400",
       bgColor: "bg-purple-500/10",
-      badge: recentSurveyResponses ? `최근 7일 ${recentSurveyResponses}건` : null,
-      href: "/admin/puzzles?tab=surveys",
+      badge: cancelSurveyRecent ? `최근 7일 ${cancelSurveyRecent}건` : null,
+      href: "/admin/puzzles?tab=surveys&trigger=self_cancelled",
+    },
+    {
+      label: "노매치 사유",
+      value: `${nomatchSurveyTotal || 0}건`,
+      icon: MessageSquareWarning,
+      color: "text-rose-400",
+      bgColor: "bg-rose-500/10",
+      badge: nomatchSurveyRecent ? `최근 7일 ${nomatchSurveyRecent}건` : null,
+      href: "/admin/puzzles?tab=surveys&trigger=selecting_expired",
     },
     {
       label: "클럽 요청 (영업 리드)",

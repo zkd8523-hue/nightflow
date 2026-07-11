@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { CancellationSurveyStatRow, PuzzleCancelReason, PuzzleSurveyTrigger } from "@/types/database";
+import { DeleteSurveyButton } from "./DeleteSurveyButton";
 
 interface Props {
   from: string;
@@ -10,12 +11,13 @@ interface Props {
 }
 
 const REASON_LABEL: Record<string, string> = {
-  // 현재 노출 중인 3개 (유저 화면과 문구 통일)
-  schedule_change:    "약속/일정이 바뀌었어요",
-  weak_offers:        "마음에 드는 오퍼가 없었어요",
-  forgot_about_it:    "잊어버렸어요",
+  // 현재 취소 시트에 노출 중인 4개 (유저 화면과 문구 통일)
+  schedule_change:    "일정·약속이 변경되었어요",
+  weak_offers:        "옵션이 마음에 들지 않아요",
+  no_preferred_venue: "마음에 드는 클럽이 없어요",
+  booked_elsewhere:   "다른 곳에서 예약했어요",
   // 과거 응답 조회용 (현재 옵션에서는 제거됨)
-  no_preferred_venue: "원하는 장소가 없어요",
+  forgot_about_it:    "잊어버렸어요",
   mind_change:        "단순변심",
   other:              "기타",
   no_answer:          "넘어가기",
@@ -150,9 +152,12 @@ export async function PuzzleCancellationSurveyView({ from, to, trigger, category
                     </span>
                   ))}
                 </div>
-                <span className="text-[11px] text-neutral-600 shrink-0">
-                  {formatDatetime(row.responded_at)}
-                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[11px] text-neutral-600">
+                    {formatDatetime(row.responded_at)}
+                  </span>
+                  <DeleteSurveyButton surveyId={row.id} />
+                </div>
               </div>
               {row.reason_text && (
                 <p className="text-[12px] text-neutral-400 bg-neutral-900 rounded-xl px-3 py-2">

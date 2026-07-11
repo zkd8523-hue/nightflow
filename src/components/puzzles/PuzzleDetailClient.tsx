@@ -525,7 +525,7 @@ export function PuzzleDetailClient({
   const handleCancelWithReason = async (
     reasons: PuzzleCancelReason[],
     reasonText: string | null
-  ) => {
+  ): Promise<boolean> => {
     setActionLoading(true);
     try {
       const { data, error } = await supabase.rpc("cancel_puzzle_with_reason", {
@@ -534,12 +534,19 @@ export function PuzzleDetailClient({
         p_reason_text: reasonText,
       });
       if (error) throw error;
-      if (!data?.success) { toast.error(data?.error || t("취소에 실패했습니다", "Failed to cancel")); return; }
-      setShowCancelSheet(false);
+      if (!data?.success) { toast.error(data?.error || t("취소에 실패했습니다", "Failed to cancel")); return false; }
       toast.success(t(isRecruitingParty ? "조각을 내렸습니다" : "깃발을 내렸습니다", "Request taken down"));
-      router.push(isForeigner ? "/en" : "/?tab=puzzle");
+      // 일정 변경(깃발·국내)만 재등록 제안을 위해 시트를 유지하고 이동을 보류
+      const offerReplant =
+        !isRecruitingParty && !isForeigner && reasons.includes("schedule_change");
+      if (!offerReplant) {
+        setShowCancelSheet(false);
+        router.push(isForeigner ? "/en" : "/?tab=puzzle");
+      }
+      return true;
     } catch {
       toast.error(t("취소에 실패했습니다", "Failed to cancel"));
+      return false;
     } finally {
       setActionLoading(false);
     }
@@ -1459,13 +1466,13 @@ export function PuzzleDetailClient({
                     {t("단체채팅 바로가기", "Go to group chat")}
                   </Link>
                 )}
-                <div className="-mx-4 px-4 py-5 space-y-8 bg-[#100F0E]">
+                <div className="-mx-4 px-4 py-5 divide-y divide-neutral-700 bg-[#100F0E]">
                 {offerGroups.map((group) => {
                   const groupClub = group.club;
                   const groupClubId = group.offers[0]?.club_id;
                   const hasDrinkMenu = !!(groupClub?.drink_menu_url || (groupClub?.drink_menu_urls && groupClub.drink_menu_urls.length > 0));
                   return (
-                    <div key={group.clubKey} className="space-y-1">
+                    <div key={group.clubKey} className="space-y-1 py-6 first:pt-0 last:pb-0">
                       {/* 클럽명 그룹 헤더 — 같은 클럽 MD가 여러 명이어도 한 번만 노출 */}
                       <div className="flex items-baseline justify-between px-1">
                         {groupClubId ? (
@@ -2044,6 +2051,8 @@ export function PuzzleDetailClient({
         submitting={actionLoading}
         onConfirm={handleCancelWithReason}
         shareMode={isRecruitingParty}
+        replantHref="/flags/new"
+        onGoList={() => { setShowCancelSheet(false); router.push(isForeigner ? "/en" : "/?tab=puzzle"); }}
       />
 
       {/* 조각 카톡 공유 시트 (등록 직후 자동 / 공유 버튼 수동) */}
