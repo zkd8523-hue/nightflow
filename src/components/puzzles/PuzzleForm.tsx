@@ -226,7 +226,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       return { male: puzzle.target_count ?? 2, female: 0 };
     }
     return {
-      male: (draft?.targetMale as number) ?? 2,
+      male: (draft?.targetMale as number) ?? 0,
       female: (draft?.targetFemale as number) ?? 0,
     };
   })();
@@ -319,6 +319,29 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
   const [showClubsSheet, setShowClubsSheet] = useState(false);
   // 당일 18시 이후 등록 시도 시 안내 다이얼로그
   const [showLateTodayDialog, setShowLateTodayDialog] = useState(false);
+  // 첫 매치 성사 전 깃발 총 예산 상한(300만원) 안내 다이얼로그
+  const [showBudgetCapDialog, setShowBudgetCapDialog] = useState(false);
+  // 매치 성사 이력(accepted/matched) 유무 — 조회 전 기본 true(오차단 방지), DB 트리거가 최종 강제
+  const [hasMatchHistory, setHasMatchHistory] = useState(true);
+  // 300만원 초과 안내를 이미 한 번 띄웠는지 — 300 이하로 내려가면 리셋(반복 나그 방지)
+  const [capNoticeShown, setCapNoticeShown] = useState(false);
+  // 상한 안내 팝업에서 "문의하기" 눌러 인스타/인앱 문의 옵션을 펼쳤는지
+  const [showContactOptions, setShowContactOptions] = useState(false);
+  // 신규 등록 시 대표자의 과거 매치 성사 이력 조회 → 300만원 상한 게이트 판정
+  useEffect(() => {
+    if (isEditMode) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("puzzles")
+        .select("id")
+        .eq("leader_id", userId)
+        .in("status", ["accepted", "matched"])
+        .limit(1);
+      if (!cancelled) setHasMatchHistory((data?.length ?? 0) > 0);
+    })();
+    return () => { cancelled = true; };
+  }, [isEditMode, userId, supabase]);
   const [notes, setNotes] = useState(initialNotes);
   const [leaderComment, setLeaderComment] = useState(puzzle?.leader_comment ?? "");
 
@@ -539,6 +562,42 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     router.push("/?tab=advance");
   };
 
+  // 300만원 상한 초과 시 "즉시 해제 문의" — 기존 고객 문의(support) 인프라 재사용.
+  // 운영팀 상담방(support_messages)에 문의를 남기고 /contact로 이동.
+  const handleContactForCap = async () => {
+    try {
+      await supabase.rpc("send_support_message", {
+        p_body: `[깃발 즉시 해제 문의] 지역: ${area || "-"} / 날짜: ${eventDate || "-"} / 희망 총예산: ${totalBudget.toLocaleString()}원`,
+      });
+    } catch (e) {
+      console.error("send_support_message error:", e);
+    }
+    setShowBudgetCapDialog(false);
+    setShowContactOptions(false);
+    router.push("/contact");
+  };
+
+  // 상한 안내 팝업에서 "확인했어요" — 팝업 닫고 홈으로 이동.
+  const handleAckBudgetCap = () => {
+    setShowBudgetCapDialog(false);
+    setShowContactOptions(false);
+    router.push("/");
+  };
+
+  // 금액 세팅 중(입력 확정/프리셋 탭) 깃발 총 예산이 300만원을 넘으면 안내 팝업.
+  // 무이력 신규 깃발에만 적용, 한 번만 자동 노출(300 이하로 내려가면 리셋).
+  const maybeShowBudgetCap = (value: number) => {
+    if (isEditMode || isRecruitingParty || hasMatchHistory) return;
+    if (value > 3000000) {
+      if (!capNoticeShown) {
+        setCapNoticeShown(true);
+        setShowBudgetCapDialog(true);
+      }
+    } else if (capNoticeShown) {
+      setCapNoticeShown(false);
+    }
+  };
+
   const formatWon = (n: number) =>
     n >= 10000 ? `${Math.round(n / 10000)}만원` : `${n.toLocaleString()}원`;
 
@@ -608,8 +667,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     if (effectiveIsRecruiting && effectiveCurrentCount > effectiveTargetCount) {
       return fail('headcount_overflow', t('일행 인원이 모집 인원을 초과합니다', 'Your group exceeds the target headcount'));
     }
-    if (!effectiveIsRecruiting && effectiveTargetCount < 2) {
-      return fail('headcount_min', t('인원 확정 깃발은 2명 이상이어야 합니다', 'Minimum 2 people required'));
+    if (!effectiveIsRecruiting && effectiveTargetCount < 1) {
+      return fail('headcount_min', t('인원을 설정해주세요', 'Please set the number of people'));
     }
     // 조각(shareMode)은 성별 슬롯을 쓰지 않으므로 성별을 묻지 않음.
     if (effectiveIsRecruiting && !shareMode && !myGender) {
@@ -1049,24 +1108,25 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         </div>
         <div className="space-y-4">
           {!isRecruitingParty ? (
-            /* OFF 모드 (깃발): 남/여 성별 구성 — 총원 = 남 + 여 (2~6명) */
+            /* OFF 모드 (깃발): 남/여 성별 구성 — 총원 = 남 + 여 (1~10명) */
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 {/* 남성 */}
                 <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
                   <button
                     type="button"
-                    onClick={() => { if (targetMale > 0 && totalPeople > 2) setTargetMale(targetMale - 1); }}
+                    onClick={() => { if (targetMale > 0 && totalPeople > 1) setTargetMale(targetMale - 1); }}
                     className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
-                    disabled={targetMale <= 0 || totalPeople <= 2}
+                    disabled={targetMale <= 0 || totalPeople <= 1}
                   >
                     <Minus className="w-3.5 h-3.5 text-white" />
                   </button>
                   <span className="text-[14px] font-black text-white">{t("남", "M")} {targetMale}</span>
                   <button
                     type="button"
-                    onClick={() => setTargetMale(targetMale + 1)}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                    onClick={() => { if (totalPeople < 10) setTargetMale(targetMale + 1); }}
+                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
+                    disabled={totalPeople >= 10}
                   >
                     <Plus className="w-3.5 h-3.5 text-white" />
                   </button>
@@ -1075,17 +1135,18 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                 <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
                   <button
                     type="button"
-                    onClick={() => { if (targetFemale > 0 && totalPeople > 2) setTargetFemale(targetFemale - 1); }}
+                    onClick={() => { if (targetFemale > 0 && totalPeople > 1) setTargetFemale(targetFemale - 1); }}
                     className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
-                    disabled={targetFemale <= 0 || totalPeople <= 2}
+                    disabled={targetFemale <= 0 || totalPeople <= 1}
                   >
                     <Minus className="w-3.5 h-3.5 text-white" />
                   </button>
                   <span className="text-[14px] font-black text-white">{t("여", "F")} {targetFemale}</span>
                   <button
                     type="button"
-                    onClick={() => setTargetFemale(targetFemale + 1)}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                    onClick={() => { if (totalPeople < 10) setTargetFemale(targetFemale + 1); }}
+                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
+                    disabled={totalPeople >= 10}
                   >
                     <Plus className="w-3.5 h-3.5 text-white" />
                   </button>
@@ -1196,6 +1257,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
               }}
               onBlur={() => {
                 if (budgetAmount > 0) setBudgetInputStr(budgetAmount.toLocaleString());
+                maybeShowBudgetCap(budgetAmount);
               }}
               placeholder={isRecruitingParty ? t("예) 100,000", "e.g. 100,000") : t("예) 500,000", "e.g. 500,000")}
               className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 pr-12"
@@ -1217,6 +1279,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                   const next = (budgetAmount || 0) + preset;
                   setBudgetAmount(next);
                   setBudgetInputStr(next.toLocaleString());
+                  maybeShowBudgetCap(next);
                 }}
                 className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-[13px]"
               >
@@ -1431,7 +1494,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             )}
             rows={3}
             maxLength={200}
-            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-[13px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
+            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-3 text-[13px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
           />
         </div>
       </section>
@@ -1511,6 +1574,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             // 예산 하한(총 50만원)은 깃발(인원 확정)에만 적용. 조각(파티원 모집)은 인당 하한(7만원)만 적용.
             if (!isEditMode && !isRecruitingParty && totalBudget < 500000) {
               toast.error(t('예산은 50만원 이상이어야 해요', 'Minimum budget is ₩500,000'));
+              return;
+            }
+            // 첫 매치 성사 전 깃발은 총 예산 300만원 상한. 초과 시 고객 문의로 즉시 해제 안내.
+            if (!isEditMode && !isRecruitingParty && totalBudget > 3000000 && !hasMatchHistory) {
+              setShowBudgetCapDialog(true);
               return;
             }
             if (isLateForToday()) {
@@ -1672,6 +1740,69 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             >
               {t("취소", "Cancel")}
             </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* 첫 매치 성사 전 총 예산 300만원 초과 시 — 고객 문의로 즉시 해제 안내 */}
+      <Sheet
+        open={showBudgetCapDialog}
+        onOpenChange={(open) => {
+          setShowBudgetCapDialog(open);
+          if (!open) setShowContactOptions(false);
+        }}
+      >
+        <SheetContent
+          side="bottom"
+          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-12 outline-none"
+        >
+          <SheetHeader className="text-left space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/10">
+                <Flag className="w-5 h-5 text-amber-500" />
+              </div>
+              <SheetTitle className="text-white font-black text-xl tracking-tight">
+                {t("첫 깃발은 300만원까지 올릴 수 있어요", "First flag caps at ₩3,000,000")}
+              </SheetTitle>
+            </div>
+            <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1">
+              {t("첫 매치가 성사되면 금액 제한이 풀려요. 당장 더 큰 예산을 원한다면 문의하기를 눌러주세요.",
+                 "The cap lifts after your first match. Want a bigger budget now? Tap Contact us below.")}
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="flex flex-col gap-3 mt-8">
+            <Button
+              onClick={handleAckBudgetCap}
+              className="h-12 rounded-2xl bg-white hover:bg-neutral-200 text-black font-black text-base shadow-lg flex items-center justify-center gap-2"
+            >
+              {t("확인했어요", "Got it")}
+            </Button>
+            {!showContactOptions ? (
+              <button
+                onClick={() => setShowContactOptions(true)}
+                className="text-sm text-neutral-400 py-2 font-medium hover:text-neutral-200"
+              >
+                {t("문의하기", "Contact us")}
+              </button>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => window.open("https://instagram.com/nightflow.kr", "_blank")}
+                  className="h-12 rounded-2xl border-neutral-800 bg-neutral-900/50 text-white font-bold hover:bg-neutral-800"
+                >
+                  {t("인스타그램", "Instagram")}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleContactForCap}
+                  className="h-12 rounded-2xl border-neutral-800 bg-neutral-900/50 text-white font-bold hover:bg-neutral-800"
+                >
+                  {t("문의하기(인앱)", "In-app")}
+                </Button>
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>

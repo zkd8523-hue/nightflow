@@ -343,21 +343,21 @@ export function MessageRoom({
     if (uploaded.length) setMedia((prev) => [...prev, ...uploaded].slice(0, 4));
   }
 
-  const handleSend = useCallback(async (textOverride?: string, skipLeaderGate?: boolean) => {
+  const handleSend = useCallback(async (textOverride?: string, skipLeaderGate?: boolean): Promise<boolean> => {
     const isPreset = typeof textOverride === "string";
     const trimmed = (isPreset ? textOverride : input).trim();
     const useMedia = isPreset ? [] : media;
-    if (sending || readOnly) return;
+    if (sending || readOnly) return false;
 
     // 수정 모드: 텍스트만 교체
     if (editingId && !isPreset) {
       if (trimmed.length < 1) {
         toast.error("내용을 입력해주세요");
-        return;
+        return false;
       }
       if (trimmed.length > MAX_LEN) {
         toast.error(`${MAX_LEN}자를 넘을 수 없어요`);
-        return;
+        return false;
       }
       setSending(true);
       const supabase = createClient();
@@ -368,30 +368,30 @@ export function MessageRoom({
       if (error || !data?.success) {
         toast.error(data?.error || error?.message || "수정에 실패했어요");
         setSending(false);
-        return;
+        return false;
       }
       updateLocalMessage(editingId, { content: trimmed, edited_at: new Date().toISOString() });
       setEditingId(null);
       setInput("");
       setSending(false);
-      return;
+      return true;
     }
 
-    if (trimmed.length < 1 && useMedia.length === 0) return;
+    if (trimmed.length < 1 && useMedia.length === 0) return false;
     if (trimmed.length > MAX_LEN) {
       toast.error(`${MAX_LEN}자를 넘을 수 없어요`);
-      return;
+      return false;
     }
     if (mdBlocked) {
       toast.error("방장이 먼저 대화를 시작해야 답장할 수 있어요");
-      return;
+      return false;
     }
     // MD 첫 답장 → 15크레딧 경고
     if (mdFirstReply) {
       const ok = window.confirm(
         "답장을 보내면 15크레딧이 차감됩니다.\n(이 대화에서 처음 한 번만 차감, 이후 무제한 무료)"
       );
-      if (!ok) return;
+      if (!ok) return false;
     }
 
     // 방장 첫 메시지 → 한 깃발 총 5팀 캡 (기본 3팀 앵커, 종료 포함·swap 없음)
@@ -407,7 +407,7 @@ export function MessageRoom({
       const label = puzzleInfo.isRecruitingParty ? "조각" : "깃발";
       if (n > 5) {
         toast.error("한 깃발에서는 최대 5팀과 대화할 수 있어요.");
-        return;
+        return false;
       }
       const confirmMsg =
         n <= 3
@@ -415,7 +415,7 @@ export function MessageRoom({
           : n === 4
             ? "기본은 3팀이에요. 신중히 고르셨나요?\n원하시면 최대 5팀까지 대화할 수 있어요.\n계속할까요?"
             : "마지막 5번째 팀이에요. 이후로는 더 대화할 수 없어요.\n시작할까요?";
-      if (typeof window !== "undefined" && !window.confirm(confirmMsg)) return;
+      if (typeof window !== "undefined" && !window.confirm(confirmMsg)) return false;
     }
 
     setSending(true);
@@ -440,7 +440,7 @@ export function MessageRoom({
       }
       toast.error(data?.error || error?.message || "전송에 실패했어요");
       setSending(false);
-      return;
+      return false;
     }
 
     // 옵티미스틱 추가 (realtime 이벤트보다 먼저)
@@ -458,6 +458,7 @@ export function MessageRoom({
       addLocalMessage(local);
     }
     setSending(false);
+    return true;
   }, [input, media, sending, readOnly, mdBlocked, mdFirstReply, myRole, iHaveSent, puzzleId, offerId, me, addLocalMessage, editingId, updateLocalMessage]);
 
   // 진입 게이트 오픈: 방장이 아직 대화 안 건 채팅방에 들어오면 자동 표시(1회).
@@ -476,12 +477,13 @@ export function MessageRoom({
     })();
   }, [loading, readOnly, myRole, iHaveSent, puzzleId]);
 
-  // 게이트 확인 → 자동으로 "안녕하세요!" 발송 (인라인 확인은 우회)
+  // 게이트 확인 → 자동으로 "안녕하세요!" 발송 (인라인 확인은 우회) → 성공 시 바로 "연락처 남기기" 시트 제안
   const confirmGate = useCallback(async () => {
     setGateSending(true);
-    await handleSend("안녕하세요!", true);
+    const ok = await handleSend("안녕하세요!", true);
     setGateSending(false);
     setGate(null);
+    if (ok) setContactPickerOpen(true);
   }, [handleSend]);
 
   // 삭제된 메시지는 흔적 없이 숨김 (인스타 언센드식)

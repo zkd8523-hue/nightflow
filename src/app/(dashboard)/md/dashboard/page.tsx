@@ -206,6 +206,21 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
 
     if (puzzleOffersError) console.error("puzzleOffers query error:", puzzleOffersError);
 
+    // 유저가 상담을 시작한(leader_chat_started_at) 대기중 오퍼 중, MD 본인이 이미 답장한 것 집합
+    // → 대시보드 배지를 "대기중" / "유저가 답장을 기다리고 있어요" / "상담중" 으로 세분화
+    const chatStartedPendingOfferIds = (puzzleOffers ?? [])
+        .filter((o) => o.status === "pending" && o.leader_chat_started_at)
+        .map((o) => o.id);
+    let mdRepliedOfferIds: string[] = [];
+    if (chatStartedPendingOfferIds.length > 0) {
+        const { data: mdReplies } = await supabase
+            .from("puzzle_offer_messages")
+            .select("offer_id")
+            .eq("sender_id", userId)
+            .in("offer_id", chatStartedPendingOfferIds);
+        mdRepliedOfferIds = Array.from(new Set((mdReplies ?? []).map((m) => m.offer_id)));
+    }
+
     // 5. 활성 경매의 최고 입찰자 조회
     const activeIds = (auctions || []).filter(a => a.status === "active").map(a => a.id);
     const topBids: Record<string, { bidder_name: string; bid_amount: number }> = {};
@@ -299,6 +314,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
                 initialClubs={clubs || []}
                 initialTopBids={topBids}
                 initialPuzzleOffers={puzzleOffers || []}
+                mdRepliedOfferIds={mdRepliedOfferIds}
                 hotdealClubs={hotdealClubs}
                 initialMyHotdeals={(myHotdeals ?? []) as unknown as DailyHotdeal[]}
                 guestSignClubs={hotdealClubs.map((c) => ({

@@ -115,6 +115,8 @@ interface MDDashboardProps {
     initialClubs: Club[];
     initialTopBids?: Record<string, TopBidInfo>;
     initialPuzzleOffers?: MDPuzzleOffer[];
+    /** leader_chat_started_at 오퍼 중 MD 본인이 이미 답장한 오퍼 id 목록 */
+    mdRepliedOfferIds?: string[];
     hotdealClubs?: HotdealClubLite[];
     initialMyHotdeals?: DailyHotdeal[];
     guestSignClubs?: GuestSignClubLite[];
@@ -136,6 +138,7 @@ export function MDDashboard({
     initialClubs,
     initialTopBids = {},
     initialPuzzleOffers = [],
+    mdRepliedOfferIds = [],
     hotdealClubs = [],
     initialMyHotdeals = [],
     guestSignClubs = [],
@@ -385,6 +388,7 @@ export function MDDashboard({
     const flagOffers = initialPuzzleOffers.filter((o) => !o.puzzle?.is_recruiting_party);
     const shareOffers = initialPuzzleOffers.filter((o) => !!o.puzzle?.is_recruiting_party);
     const tabOffers = activePuzzleTab === "share" ? shareOffers : flagOffers;
+    const mdRepliedOfferIdSet = useMemo(() => new Set(mdRepliedOfferIds), [mdRepliedOfferIds]);
 
     return (
         <div className="max-w-lg mx-auto pb-24 relative">
@@ -740,7 +744,9 @@ export function MDDashboard({
                                     if (!p) return null;
                                     const isAccepted = offer.status === "accepted";
                                     const isShare = !!p.is_recruiting_party;
-                                    const budget = p.total_budget ?? p.budget_per_person * p.target_count;
+                                    // 유저가 상담을 시작(leader_chat_started_at)했는데 아직 매치 전인 경우 → 배지/버튼을 채팅 상태 기준으로 세분화
+                                    const chatStarted = !isAccepted && !!offer.leader_chat_started_at;
+                                    const mdReplied = chatStarted && mdRepliedOfferIdSet.has(offer.id);
                                     const eventDateStr = (() => {
                                         const d = new Date(p.event_date + "T00:00:00");
                                         const days = ["일", "월", "화", "수", "목", "금", "토"];
@@ -755,12 +761,18 @@ export function MDDashboard({
                                                 <div className="flex items-start justify-between gap-2">
                                                     <div className="flex-1 min-w-0">
                                                         <div className="flex items-center gap-1.5 mb-1">
-                                                            <span className={`text-[9px] font-bold px-1.5 py-0 h-4 inline-flex items-center rounded-full ${
+                                                            <span className={`text-[9px] font-bold px-1.5 py-0.5 inline-flex items-center rounded-full whitespace-nowrap ${
                                                                 isAccepted
                                                                     ? "bg-green-500/20 text-green-400"
-                                                                    : "bg-amber-500/20 text-amber-400"
+                                                                    : chatStarted
+                                                                        ? (mdReplied ? "bg-blue-500/20 text-blue-400" : "bg-red-500/20 text-red-400")
+                                                                        : "bg-amber-500/20 text-amber-400"
                                                             }`}>
-                                                                {isAccepted ? "매치됨" : "대기중"}
+                                                                {isAccepted
+                                                                    ? "매치됨"
+                                                                    : chatStarted
+                                                                        ? (mdReplied ? "상담중" : "유저가 답장을 기다리고 있어요")
+                                                                        : "대기중"}
                                                             </span>
                                                         </div>
                                                         <h3 className="font-black text-[18px] text-white truncate leading-tight">
@@ -768,20 +780,6 @@ export function MDDashboard({
                                                         </h3>
                                                     </div>
                                                     </div>
-
-                                                <div className="flex items-end justify-between mt-1">
-                                                    <div>
-                                                        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">제안가</div>
-                                                        <div className="flex items-baseline gap-1">
-                                                            <span className="text-[20px] font-black text-white leading-none">{offer.proposed_price.toLocaleString()}</span>
-                                                            <span className="text-[12px] font-bold text-neutral-400">원</span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">예산</div>
-                                                        <span className="text-[14px] font-bold text-neutral-300">{budget.toLocaleString()}원 · {p.target_count}명</span>
-                                                    </div>
-                                                </div>
 
                                                 {/* 제안 상세 — 조각은 인원·가격 변동이라 주류/구성 무의미 → 숨김 */}
                                                 {!isShare && (
@@ -824,6 +822,15 @@ export function MDDashboard({
                                                             채팅
                                                         </Link>
                                                     </FeatureGate>
+                                                ) : chatStarted ? (
+                                                    <Link
+                                                        href={`/messages/${offer.id}`}
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        className="h-8 px-3 rounded-lg bg-white text-black font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-neutral-200 transition-colors"
+                                                    >
+                                                        <MessageCircle className="w-3.5 h-3.5" />
+                                                        채팅방으로 이동
+                                                    </Link>
                                                 ) : (
                                                     <Button
                                                         size="sm"
