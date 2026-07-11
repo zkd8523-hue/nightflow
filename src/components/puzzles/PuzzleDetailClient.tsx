@@ -33,7 +33,7 @@ import { OfferCommentText } from "./OfferCommentText";
 import { useTranslatedText } from "@/hooks/useTranslatedComment";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
-import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
+import { formatRelativeTime, getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
 import { useCountdown } from "@/hooks/useCountdown";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -795,7 +795,7 @@ export function PuzzleDetailClient({
               const isToday = dday === "오늘";
               return (
                 <span
-                  className={`text-[12px] font-bold px-2.5 py-0.5 rounded-full ${
+                  className={`relative top-[2px] text-[12px] font-bold px-2.5 py-0.5 rounded-full ${
                     isToday
                       ? "bg-amber-500/20 text-amber-400"
                       : "bg-neutral-800 text-neutral-400"
@@ -809,7 +809,7 @@ export function PuzzleDetailClient({
           </div>
 
           {/* 기본 정보 */}
-          <section className="bg-[#1C1C1E] rounded-2xl px-5 pt-4 pb-3 space-y-2.5">
+          <section className="bg-[#1C1C1E] rounded-xl px-5 pt-4 pb-3 space-y-2.5">
             {/* 제목 + 지역 (맨 위) — 우측에 공유 버튼 */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-wrap items-baseline gap-x-2 min-w-0">
@@ -898,44 +898,13 @@ export function PuzzleDetailClient({
                 </>
               ) : (
                 <>
-                  {/* 닉네임 버튼 + 신뢰도(신규가입 등) — 예산보다 먼저 */}
-                  {puzzle.leader && (
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => setShowLeaderInfo(true)}
-                        className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-md pl-1 pr-2.5 py-1 transition-colors"
-                      >
-                        {puzzle.leader.profile_image ? (
-                          <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-5 h-5 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-5 h-5 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
-                            {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
-                          </div>
-                        )}
-                        {puzzle.leader.display_name || puzzle.leader.name || t("방장", "Host")}
-                        {(() => {
-                          const tier = getDealTier(puzzle.leader.deal_amount_total ?? 0);
-                          const leaderIsNew = isNewUser(puzzle.leader.created_at);
-                          return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
-                        })()}
-                      </button>
-                      {(() => {
-                        const dealCount = puzzle.leader.deal_count_total ?? 0;
-                        return dealCount > 0 ? (
-                          <span className="text-[11px] text-neutral-500 font-bold">{isForeigner ? `${dealCount} deals` : `거래 ${dealCount}회`}</span>
-                        ) : null;
-                      })()}
-                    </div>
-                  )}
-
-                  {/* 홈 카드 패턴 통일: 예산 + 인원 pill + 음악 한 줄 */}
-                  <div className="flex items-center gap-2 flex-wrap pt-1.5">
+                  {/* 홈 카드 패턴 통일: 예산 + 인원 pill + 음악 한 줄 (닉네임은 카드 하단으로 이동) */}
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[19px] font-bold text-green-400">
                       {isForeigner ? `₩${baseBudget.toLocaleString()}` : `예산 ${baseBudget.toLocaleString()}원`}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[12px] font-bold">
-                      {puzzle.target_count}{t("명", " ppl")}
+                    <span className="relative top-[2px] inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 text-green-400 text-[12px] font-bold">
+                      {formatGenderComposition(puzzle.target_male, puzzle.target_female, puzzle.target_count, isForeigner ? "en" : "ko")}
                     </span>
                     {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">
@@ -987,14 +956,45 @@ export function PuzzleDetailClient({
               </div>
             )}
 
-            {/* 등록일시 — 우측 하단 */}
-            <p
-              className="text-[11px] text-neutral-600 text-right -mt-1"
-              suppressHydrationWarning
-            >
-              {formatRelativeTime(puzzle.created_at)}
-            </p>
+            {/* 방장 닉네임 — 우측 하단 (깃발만, 방금 자리) */}
+            {!isRecruitingParty && puzzle.leader && (
+              <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setShowLeaderInfo(true)}
+                  className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-md pl-1 pr-2.5 py-1 transition-colors"
+                >
+                  {puzzle.leader.profile_image ? (
+                    <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-5 h-5 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
+                      {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
+                    </div>
+                  )}
+                  {puzzle.leader.display_name || puzzle.leader.name || t("방장", "Host")}
+                  {(() => {
+                    const tier = getDealTier(puzzle.leader.deal_amount_total ?? 0);
+                    const leaderIsNew = isNewUser(puzzle.leader.created_at);
+                    return <TrustBadge tier={tier} isNew={leaderIsNew} size="sm" showLabel />;
+                  })()}
+                </button>
+                {(() => {
+                  const dealCount = puzzle.leader.deal_count_total ?? 0;
+                  return dealCount > 0 ? (
+                    <span className="text-[11px] text-neutral-500 font-bold">{isForeigner ? `${dealCount} deals` : `거래 ${dealCount}회`}</span>
+                  ) : null;
+                })()}
+              </div>
+            )}
           </section>
+
+          {/* 등록일시 — 박스 바깥, 다음 행, 우측 정렬 */}
+          <p
+            className="text-[11px] text-neutral-600 text-right px-1"
+            suppressHydrationWarning
+          >
+            {formatRelativeTime(puzzle.created_at)}
+          </p>
 
           {/* MD 한마디 — 기본 정보 카드 바로 아래 (MD 직통만). 실제 한마디(md_comment) 있을 때만 노출.
               제목(notes)을 한마디로 재출력하지 않음 — 중복이라 의미 없음 */}

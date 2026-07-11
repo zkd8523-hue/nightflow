@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import type { Puzzle, GenderPref, AgePref, VibePref, MusicPref } from "@/types/database";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
-import { formatRelativeTime, getDDayLabel } from "@/lib/utils/format";
+import { formatRelativeTime, getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
 import { countryFlag, countryNameKo } from "@/lib/utils/countryFlag";
 import { useTranslatedText } from "@/hooks/useTranslatedComment";
 
@@ -259,7 +259,7 @@ export const PuzzleCard = memo(function PuzzleCard({
 
   return (
     <div
-      className={`relative bg-[#1C1C1E] rounded-2xl p-3 flex flex-col gap-2 ${isCardClickable ? "cursor-pointer active:scale-[0.98] transition-all" : ""}`}
+      className={`relative bg-[#1C1C1E] rounded-xl p-3 flex flex-col gap-2 ${isCardClickable ? "cursor-pointer active:scale-[0.98] transition-all" : ""}`}
       onClick={isCardClickable ? () => router.push(`/flags/${puzzle.id}`) : undefined}
     >
       {shareSheet}
@@ -414,8 +414,8 @@ export const PuzzleCard = memo(function PuzzleCard({
               <span className="text-[18px] font-black text-green-400">
                 예산 {totalBudget.toLocaleString()}원
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-400 text-[11px] font-bold">
-                {puzzle.target_count}명
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 text-green-400 text-[11px] font-bold">
+                {formatGenderComposition(puzzle.target_male, puzzle.target_female, puzzle.target_count)}
               </span>
               {musicTag && (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">

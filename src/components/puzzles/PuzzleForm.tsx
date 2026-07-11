@@ -136,18 +136,13 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
   // 자동저장 draft 로드 (신규 등록 시에만)
   const DRAFT_KEY = `${shareMode ? "share" : "puzzle"}_form_draft_${userId}`;
-  const draft = (() => {
-    if (typeof window === "undefined" || isEditMode) return null;
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      return raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
-    } catch {
-      return null;
-    }
-  })();
+  // 신규 등록은 항상 빈 폼으로 시작 — draft 자동복원 비활성화 (사용자 요청).
+  // 편집 모드는 아래에서 puzzle 값으로 채우므로 영향 없음.
+  const draft: Record<string, unknown> | null = null;
 
-  // 편집 모드: puzzle에서 초기값 추출. 신규 등록 모드: draft → 기본값 순.
-  const initialEventDate = puzzle?.event_date ?? (draft?.eventDate as string) ?? searchParams.get("date") ?? "";
+  // 편집 모드: puzzle에서 초기값 추출. 신규 등록 모드: 날짜는 draft 복원 제외(지역과 동일) —
+  // 매 진입 시 미선택으로 시작해 "이미 선택됨"처럼 보이지 않도록. 딥링크(?date=)만 예외.
+  const initialEventDate = puzzle?.event_date ?? searchParams.get("date") ?? "";
   // 디폴트 모드 = 인원 확정(깃발). 모집(퍼즐/조각) 모드는 매 진입 시 OFF로 시작 (draft 미복원).
   // 지역은 draft 복원 제외 — 매 진입 시 미선택으로 리셋해 사용자가 의식적으로 지역을 고르도록 유도.
   // 단, ?area= 파라미터(외국인 /en 지역 버튼)로 들어오면 프리셋.
@@ -221,12 +216,22 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
   const [myGender, setMyGender] = useState<'male' | 'female' | null>(null);
   const [genderLoaded, setGenderLoaded] = useState(false);
   const [genderModalOpen, setGenderModalOpen] = useState(false);
-  const [targetMale, setTargetMale] = useState<number>(
-    puzzle?.target_male ?? (draft?.targetMale as number) ?? 0
-  );
-  const [targetFemale, setTargetFemale] = useState<number>(
-    puzzle?.target_female ?? (draft?.targetFemale as number) ?? 0
-  );
+  // 깃발(OFF) 일행 성별 구성 — target_male/target_female 컬럼 재사용.
+  // 편집 시 레거시 0/0(구버전 insert)은 "전원 남성"으로 폴백해 총원(target_count)과 합을 맞춘다.
+  const initialFlag = (() => {
+    if (puzzle && !puzzle.is_recruiting_party) {
+      const m = puzzle.target_male ?? 0;
+      const f = puzzle.target_female ?? 0;
+      if (m + f > 0) return { male: m, female: f };
+      return { male: puzzle.target_count ?? 2, female: 0 };
+    }
+    return {
+      male: (draft?.targetMale as number) ?? 2,
+      female: (draft?.targetFemale as number) ?? 0,
+    };
+  })();
+  const [targetMale, setTargetMale] = useState<number>(initialFlag.male);
+  const [targetFemale, setTargetFemale] = useState<number>(initialFlag.female);
   // book intent 소비 완료 시 sessionStorage에서 제거 (한 번만 사용).
   // initialArea 계산에서 이미 참조 완료 → mount 시점에 정리.
   useEffect(() => {
@@ -350,6 +355,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         budgetAmount !== initialBudget ||
         notes.trim() !== initialNotes.trim() ||
         totalPeople !== initialTotalPeople ||
+        targetMale !== initialFlag.male ||
+        targetFemale !== initialFlag.female ||
         isRecruitingParty !== (puzzle?.is_recruiting_party ?? false) ||
         targetCount !== (puzzle?.target_count ?? 4) ||
         hasGuest !== (initialGuest > 0) ||
@@ -377,9 +384,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     trackEvent(isEditMode ? 'puzzle_edit_view' : 'puzzle_form_view');
   }, [isEditMode]);
 
-  // 자동 저장 (신규 등록 시에만, 500ms debounce)
+  // 자동 저장 비활성화 (사용자 요청: 신규 등록은 항상 빈 폼).
+  // draft를 복원하지 않으므로 저장도 하지 않는다 — 진입 시 이전 입력값이 남아 보이는 문제 방지.
+  const DRAFT_AUTOSAVE_ENABLED = false;
   useEffect(() => {
-    if (isEditMode || typeof window === "undefined") return;
+    if (!DRAFT_AUTOSAVE_ENABLED || isEditMode || typeof window === "undefined") return;
     const timer = setTimeout(() => {
       try {
         localStorage.setItem(
@@ -428,6 +437,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     musicPref,
     leaderFemaleConfirmed,
   ]);
+
+  // 깃발(OFF) 모드: 총 일행 수 = 남성 + 여성. 성별 카운터가 마스터, totalPeople는 파생.
+  useEffect(() => {
+    if (!isRecruitingParty) setTotalPeople(targetMale + targetFemale);
+  }, [targetMale, targetFemale, isRecruitingParty]);
 
   // 등록 성공 시 draft 삭제
   const clearDraft = () => {
@@ -601,9 +615,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     if (effectiveIsRecruiting && !shareMode && !myGender) {
       return fail('gender_required', t('성별을 먼저 입력해주세요', 'Please set your gender first'));
     }
-    // 본인 성별 기반으로 슬롯 자동 매핑. 조각은 성별 슬롯을 쓰지 않으므로 0/0(성별 무관).
-    const submitMaleSlot   = shareMode ? 0 : (isHostMale  ? effectiveTargetCount : 0);
-    const submitFemaleSlot = shareMode ? 0 : (!isHostMale ? effectiveTargetCount : 0);
+    // 조각(shareMode)은 성별 슬롯 미사용(0/0). 파티원 모집(ON)은 본인 성별 기반 자동 매핑.
+    // 깃발(OFF)은 사용자가 입력한 남/여 구성(targetMale/targetFemale)을 그대로 사용.
+    const submitMaleSlot   = shareMode ? 0 : (effectiveIsRecruiting ? (isHostMale  ? effectiveTargetCount : 0) : targetMale);
+    const submitFemaleSlot = shareMode ? 0 : (effectiveIsRecruiting ? (!isHostMale ? effectiveTargetCount : 0) : targetFemale);
 
     setSubmitting(true);
     // 성공 시 router.push 후에도 버튼을 "등록 중..."으로 유지해야
@@ -690,8 +705,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             : Math.round(budgetAmount / effectiveTargetCount), // 하위 호환용
           target_count: effectiveTargetCount,
           current_count: effectiveCurrentCount,
-          target_male: targetMale,
-          target_female: targetFemale,
+          target_male: submitMaleSlot,
+          target_female: submitFemaleSlot,
           is_recruiting_party: effectiveIsRecruiting,
           notes: notes.trim() || null,
           leader_comment: leaderComment.trim() || null,
@@ -1034,26 +1049,51 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         </div>
         <div className="space-y-4">
           {!isRecruitingParty ? (
-            /* OFF 모드 (깃발): 기존 totalPeople 단일 picker */
-            <div className="space-y-2">
-              <p className="text-[11px] text-neutral-400">{t("총 일행 수 (본인 포함)", "Total in your group (including you)")}</p>
-              <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
-                <button
-                  type="button"
-                  onClick={() => setTotalPeople(Math.max(2, totalPeople - 1))}
-                  className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
-                >
-                  <Minus className="w-3.5 h-3.5 text-white" />
-                </button>
-                <span className="text-[15px] font-black text-white">{totalPeople}{t("명", " people")}</span>
-                <button
-                  type="button"
-                  onClick={() => setTotalPeople(Math.min(6, totalPeople + 1))}
-                  className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5 text-white" />
-                </button>
+            /* OFF 모드 (깃발): 남/여 성별 구성 — 총원 = 남 + 여 (2~6명) */
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                {/* 남성 */}
+                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                  <button
+                    type="button"
+                    onClick={() => { if (targetMale > 0 && totalPeople > 2) setTargetMale(targetMale - 1); }}
+                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
+                    disabled={targetMale <= 0 || totalPeople <= 2}
+                  >
+                    <Minus className="w-3.5 h-3.5 text-white" />
+                  </button>
+                  <span className="text-[14px] font-black text-white">{t("남", "M")} {targetMale}</span>
+                  <button
+                    type="button"
+                    onClick={() => setTargetMale(targetMale + 1)}
+                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
+                {/* 여성 */}
+                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                  <button
+                    type="button"
+                    onClick={() => { if (targetFemale > 0 && totalPeople > 2) setTargetFemale(targetFemale - 1); }}
+                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
+                    disabled={targetFemale <= 0 || totalPeople <= 2}
+                  >
+                    <Minus className="w-3.5 h-3.5 text-white" />
+                  </button>
+                  <span className="text-[14px] font-black text-white">{t("여", "F")} {targetFemale}</span>
+                  <button
+                    type="button"
+                    onClick={() => setTargetFemale(targetFemale + 1)}
+                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
               </div>
+              <p className="text-[12px] text-neutral-400">
+                {t("총", "Total")} <span className="font-black text-white">{totalPeople}{t("명", "")}</span>
+              </p>
             </div>
           ) : (
             /* ON 모드 (퍼즐): 단순 인원 picker */
@@ -1386,7 +1426,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             value={leaderComment}
             onChange={(e) => setLeaderComment(e.target.value)}
             placeholder={t(
-              "클럽·MD에게 특별히 강조하거나 요구하고싶은 게 있나요?\n자유롭게 적어주세요.",
+              "클럽·MD에게 특별히 강조하거나 요구하고싶은 게 있나요?\n자유롭게 전달해보세요.",
               "Anything specific you'd like to emphasize or request to the club/partner?\nFeel free to write."
             )}
             rows={3}

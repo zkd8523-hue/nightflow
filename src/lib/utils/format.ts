@@ -267,3 +267,25 @@ export function formatCountdownLong(seconds: number): string {
   return `${hh}:${mm}`;
 }
 
+
+/**
+ * 깃발 일행 성별 구성 라벨.
+ * target_male/target_female 기반. 성별 무관(둘 다 0)이면 총원("N명")으로 폴백.
+ * 예) 남3+여1 → "남3 여1", 남4+여0 → "남4", en → "M3 F1"
+ */
+export function formatGenderComposition(
+  male: number | null | undefined,
+  female: number | null | undefined,
+  totalCount: number,
+  lang: "ko" | "en" = "ko"
+): string {
+  const m = male ?? 0;
+  const f = female ?? 0;
+  if (m + f === 0) return lang === "en" ? `${totalCount} ppl` : `${totalCount}명`;
+  const mL = lang === "en" ? "M" : "남";
+  const fL = lang === "en" ? "F" : "여";
+  const parts: string[] = [];
+  if (m > 0) parts.push(`${mL}${m}`);
+  if (f > 0) parts.push(`${fL}${f}`);
+  return parts.join(" ");
+}

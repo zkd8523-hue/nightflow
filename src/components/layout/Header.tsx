@@ -319,10 +319,10 @@ export function Header({
               {!compact && user.role === "user" && user.md_status !== "pending" && pathname !== "/start" && !pathname?.startsWith("/auctions/") && !pathname?.startsWith("/flags/") && !pathname?.startsWith("/messages") && !pathname?.startsWith("/u/") && !pathname?.startsWith("/profile") && (
                 <Link
                   href="/start"
-                  className="h-9 px-3.5 flex items-center rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
+                  className="h-9 px-3.5 flex items-center rounded-lg border border-neutral-600 bg-transparent hover:bg-neutral-800 transition-colors"
                   aria-label="예약하기"
                 >
-                  <span className="text-[12px] font-black text-black whitespace-nowrap">예약하기</span>
+                  <span className="text-sm font-black text-white whitespace-nowrap">예약하기</span>
                 </Link>
               )}
               <button
