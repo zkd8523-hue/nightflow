@@ -18,6 +18,7 @@ import { trackEvent } from "@/lib/analytics/events";
 import { LiquorSelector } from "@/components/md/LiquorSelector";
 import { OfferPresetSheet } from "@/components/puzzles/OfferPresetSheet";
 import { EXTRAS_OPTIONS, LIQUOR_KEYWORDS } from "@/lib/constants/liquor";
+import { isLiquor, isSellingPoint } from "@/lib/utils/offerTags";
 import { detectContactInfo, describeContactDetection } from "@/lib/utils/contact-detector";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 
@@ -244,6 +245,12 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     }
     if (!puzzle.is_recruiting_party && selectedIncludes.length === 0) {
       toast.error("포함 내역을 최소 1개 이상 선택해주세요");
+      return;
+    }
+    // 기타 옵션(믹서·전광판 등)만으로는 오퍼가 밋밋해 보여 방장 클릭률이 떨어짐 →
+    // 주류 또는 셀링포인트(직접입력 혜택) 최소 1개를 강제해 카드에 골드 태그가 뜨게 함.
+    if (!puzzle.is_recruiting_party && !selectedIncludes.some((i) => isLiquor(i) || isSellingPoint(i))) {
+      toast.error("오퍼가 눈에 띄려면 주류나 혜택을 1개 이상 넣어주세요");
       return;
     }
     // 조각: 인원·가격 실시간 변동 → 구성 대신 코멘트 필수
