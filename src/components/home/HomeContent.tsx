@@ -213,8 +213,8 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
   share: {
     content: (
       <>
-        <div className="text-[14.5px] text-white">예산은 있는데, 인원이 모자라다면?</div>
-        <div className="text-[14.5px] text-white">클릭 한 번으로 파티 참가!</div>
+        <div className="text-[15.5px] text-white">예산은 있는데, 인원이 모자라다면?</div>
+        <div className="text-[15.5px] text-white">클릭 한 번으로 파티 참가!</div>
       </>
     ),
   },
@@ -239,7 +239,7 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
   share: {
     content: (
       <>
-        <div className="text-[14.5px] text-white">이번주 조각을 미리 올려보세요!</div>
+        <div className="text-[15.5px] text-white">이번주 조각을 미리 올려보세요!</div>
         <div className="text-[15.5px] text-white">링크 하나로 공유, 인원관리도 간편해요!</div>
       </>
     ),
@@ -1498,23 +1498,29 @@ export function HomeContent({
                 <div className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${((currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && !isDetailOfferSlide) ? "pr-[88px]" : ""}`}>
                   {(() => {
                     // compact와 동일한 3장 슬라이드 — 인트로 + (매치 있으면) "오퍼 궁금해?" + 본문
-                    const introText = currentTab === "share" ? "오픈채팅의 시대는 갔다!" : "예약금 Zero, 수수료 Zero";
+                    const introText = "예약금 Zero, 수수료 Zero";
                     const detailSlides: React.ReactNode[] = [
-                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">{introText}</div>,
+                      // 조각 탭은 인트로("오픈채팅으로 찾기 어려우셨다면?") 페이지 제거 — tip 슬라이드만 노출
+                      ...(currentTab !== "share" ? [
+                        <div key="new" className="text-[15.5px] text-neutral-100 font-black leading-snug break-keep">{introText}</div>,
+                      ] : []),
                       ...(!isMdOrAdmin && currentTab !== "share" && recentMatchedPuzzle ? [
                         <button
                           key="offer"
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
-                          className="w-full text-[14px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
+                          className="w-full text-[15.5px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
                         >
                           <span className="underline underline-offset-4 decoration-2 decoration-amber-400/70">어떤 오퍼 받을지 궁금해?</span>
                           <span aria-hidden>👈</span>
                         </button>
                       ] : []),
-                      <div key="tip" className="text-[14px] text-neutral-100 font-black leading-snug whitespace-pre-line break-keep">
-                        {overriddenTabPromises[currentTab].content}
-                      </div>,
+                      // "오퍼 받아보고, 별로면 패스해도 OK!" 슬라이드는 유저용 깃발 탭에서만 제거 (요청: 3페이지만 없애기). 조각/MD 탭은 유지.
+                      ...(!(currentTab === "puzzle" && !isMdOrAdmin) ? [
+                        <div key="tip" className="text-[15.5px] text-neutral-100 font-black leading-snug whitespace-pre-line break-keep">
+                          {overriddenTabPromises[currentTab].content}
+                        </div>,
+                      ] : []),
                     ];
                     const slideCount = detailSlides.length;
                     const safeRotation = tipRotation % slideCount;
