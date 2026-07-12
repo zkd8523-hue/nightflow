@@ -75,11 +75,18 @@ export function SecretOfferCard({
       }
     >
       {hideClubHeader ? (
-        (offer.status === "accepted" || showOfferNumber) && (
-          <span className="block text-[13px] font-black text-neutral-300 tabular-nums">
-            {offer.status === "accepted" ? t("✓ 매치됨", "✓ Matched") : `${offerNumber}`.padStart(2, "0")}
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-black text-neutral-300 tabular-nums">
+            {offer.status === "accepted"
+              ? t("✓ 매치됨", "✓ Matched")
+              : showOfferNumber
+                ? `${offerNumber}`.padStart(2, "0")
+                : ""}
           </span>
-        )
+          <span className="text-[11px] text-neutral-500 font-medium" suppressHydrationWarning>
+            {formatRelativeTime(offer.created_at)}
+          </span>
+        </div>
       ) : (
         <div className="flex items-center justify-between">
           <div>
