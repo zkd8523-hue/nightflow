@@ -891,7 +891,7 @@ export function PuzzleDetailClient({
                     )}
                   </div>
                   {puzzle.leader_comment && (
-                    <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-3 pt-1.5">
+                    <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-3 pt-1.5 break-words [overflow-wrap:anywhere]">
                       &ldquo;{puzzle.leader_comment}&rdquo;
                     </p>
                   )}
@@ -915,7 +915,7 @@ export function PuzzleDetailClient({
 
                   {/* 방장 덧붙이는 말 — MD 오퍼 코멘트와 동일한 인용 블록 스타일 재사용. 순서: 제목→닉네임→예산/인원→한마디 */}
                   {puzzle.leader_comment && (
-                    <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-3 pt-1.5">
+                    <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-3 pt-1.5 break-words [overflow-wrap:anywhere]">
                       &ldquo;{puzzle.leader_comment}&rdquo;
                     </p>
                   )}

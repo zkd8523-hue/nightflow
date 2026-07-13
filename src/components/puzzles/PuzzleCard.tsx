@@ -427,6 +427,13 @@ export const PuzzleCard = memo(function PuzzleCard({
         )}
       </div>
 
+      {/* 방장 추가설명(leader_comment) — 상세 페이지와 동일 인용구, 카드에선 2줄 clamp */}
+      {puzzle.leader_comment && (
+        <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-2.5 line-clamp-2 break-words [overflow-wrap:anywhere]">
+          &ldquo;{puzzle.leader_comment}&rdquo;
+        </p>
+      )}
+
       {/* 조각 오퍼 현황은 하단 CTA 행에 자세히와 같은 행으로 통합됨 (깃발과 동일) */}
 
       {/* CTA 버튼 (작성날짜는 카드 상단 깃발 배지 아래로 이동) */}
