@@ -167,7 +167,7 @@ export default async function ZhHomePage() {
   // 강남·홍대 클럽 (지역 섹션 "Spots competing for you"용) — /en 홈과 동일 로직
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, area, thumbnail_url, address")
+    .select("id, name, name_en, area, thumbnail_url, address")
     .in("area", ["강남", "홍대", "이태원"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -187,6 +187,7 @@ export default async function ZhHomePage() {
     .map((c) => ({
       id: c.id,
       name: c.name,
+      name_en: c.name_en,
       area: c.area,
       thumbnail_url: c.thumbnail_url,
       address: c.address,

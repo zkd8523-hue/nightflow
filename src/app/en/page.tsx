@@ -153,7 +153,7 @@ export default async function EnHomePage() {
   // /en/clubs 와 동일한 필터: 삭제·운영자·테스트 클럽 제외 + 썸네일 있는 것만 + 이름 중복 제거
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, area, thumbnail_url, address")
+    .select("id, name, name_en, area, thumbnail_url, address")
     .in("area", ["강남", "홍대", "이태원"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -173,6 +173,7 @@ export default async function EnHomePage() {
     .map((c) => ({
       id: c.id,
       name: c.name,
+      name_en: c.name_en,
       area: c.area,
       thumbnail_url: c.thumbnail_url,
       address: c.address,

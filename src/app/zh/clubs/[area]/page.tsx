@@ -218,7 +218,7 @@ export default async function ZhClubsAreaPage({
   const { data: clubs } = await supabase
     .from("clubs")
     .select(
-      "id, name, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags"
+      "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews"
     )
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")

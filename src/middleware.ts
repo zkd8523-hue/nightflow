@@ -81,12 +81,22 @@ export async function middleware(request: NextRequest) {
   // 루트 레이아웃에서 <html lang> 동적 결정용으로 request 헤더에 pathname 주입.
   // request.headers를 mutate하면 downstream(supabase middleware, 서버 컴포넌트)에서 next/headers로 읽을 수 있음.
   request.headers.set("x-pathname", pathname);
+  // /flags/new, /login 같은 언어-경로 프리픽스 없는 공용 라우트는 ?lang= 쿼리로만 언어를 실어옴.
+  // 경로 프리픽스만 보던 로직이라 이런 페이지는 항상 <html lang="ko">로 떨어져 날짜 input 등
+  // 브라우저 네이티브 UI(placeholder)가 한국어로 새는 버그가 있었음 — 쿼리도 폴백으로 전달.
+  const langQuery = request.nextUrl.searchParams.get("lang") ?? "";
+  request.headers.set("x-lang-query", langQuery);
   const response = await updateSession(request);
   // 응답에도 Content-Language 힌트 (Googlebot용)
-  const lang = pathname.startsWith("/en") ? "en-US"
-    : pathname.startsWith("/zh-tw") ? "zh-TW"
-    : pathname.startsWith("/zh") ? "zh-CN"
-    : pathname.startsWith("/ja") ? "ja-JP"
+  const effectiveLang = pathname.startsWith("/en") || (!pathname.startsWith("/zh") && !pathname.startsWith("/ja") && langQuery === "en") ? "en"
+    : pathname.startsWith("/zh-tw") || langQuery === "zh-tw" ? "zh-tw"
+    : pathname.startsWith("/zh") || langQuery === "zh" ? "zh"
+    : pathname.startsWith("/ja") || langQuery === "ja" ? "ja"
+    : "ko";
+  const lang = effectiveLang === "en" ? "en-US"
+    : effectiveLang === "zh-tw" ? "zh-TW"
+    : effectiveLang === "zh" ? "zh-CN"
+    : effectiveLang === "ja" ? "ja-JP"
     : "ko-KR";
   response.headers.set("Content-Language", lang);
   return response;

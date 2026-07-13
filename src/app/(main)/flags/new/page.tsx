@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
 import { ForeignRequestForm } from "@/components/foreign/ForeignRequestForm";
+import type { ForeignClubDetail } from "@/components/clubs/ForeignClubDetailPanel";
 import { getLang, makeT } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -105,18 +106,25 @@ export default async function PuzzleNewPage({
 
   if (profile?.role === "md") redirect("/?tab=puzzle");
 
-  // 외국인 컨시어지 폼용 클럽 목록 (강남·홍대·이태원, 썸네일 있는 것 — /en 클럽과 동일 필터)
-  let foreignClubs: { id: string; name: string; area: string; thumbnail_url: string | null }[] = [];
+  // 외국인 컨시어지 폼용 클럽 목록 (강남·홍대·이태원, 썸네일 있는 것 — /en 클럽과 동일 필터).
+  // ClubsClient(/en/clubs)와 동일한 전체 필드 — "Browse clubs" 팝업의 클럽상세 시트에서 재사용.
+  // club_partners 조인 → has_md("Recommend" 정렬: 담당 MD 있는 클럽 우선, 그다음 리뷰 많은 순).
+  let foreignClubs: ForeignClubDetail[] = [];
   if (isForeigner) {
     const { data } = await supabase
       .from("clubs")
-      .select("id, name, area, thumbnail_url")
+      .select(
+        "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, partners:club_partners(md_id)"
+      )
       .in("area", ["강남", "홍대", "이태원"])
       .is("deleted_at", null)
       .eq("is_test", false)
       .not("thumbnail_url", "is", null)
       .order("google_review_count", { ascending: false, nullsFirst: false });
-    foreignClubs = data ?? [];
+    foreignClubs = (data ?? []).map((c) => ({
+      ...c,
+      has_md: (c.partners?.length ?? 0) > 0,
+    }));
   }
 
   return (

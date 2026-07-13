@@ -3,12 +3,10 @@
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { DrinkMenuViewer } from "@/components/clubs/DrinkMenuViewer";
-import { getGoogleReviewsUrl } from "@/lib/utils/clubReviews";
-import { translateClubMeta } from "@/lib/utils/clubMetaI18n";
-import { getTagsByGroup } from "@/lib/clubs/tags";
+import { ForeignClubDetailPanel, displayClubName } from "@/components/clubs/ForeignClubDetailPanel";
+import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
+import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
-import { MapPin, ExternalLink } from "lucide-react";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
@@ -17,6 +15,7 @@ import { trackForeignEvent } from "@/lib/analytics/events";
 type Club = {
   id: string;
   name: string;
+  name_en?: string | null;
   area: string;
   address: string | null;
   thumbnail_url: string | null;
@@ -32,6 +31,14 @@ type Club = {
   instagram: string | null;
   dresscode: string | null;
   tags: string[] | null;
+  google_reviews: GoogleReview[] | null;
+};
+
+type GoogleReview = {
+  author_name: string | null;
+  rating: number | null;
+  relative_time: string | null;
+  text: string | null;
 };
 
 // 로그인 후 깃발 폼으로 복귀하는 링크. 미로그인이면 폼 서버 컴포넌트가 자동으로 /login?redirect= 로 튕김.
@@ -42,48 +49,14 @@ function buildFlagHref(lang: Lang, area?: string) {
   return `/flags/new?${params.toString()}`;
 }
 
-// 클럽 특성 태그(venue_type·genre·smoking) 키 → 외국어 라벨.
-// KO FeatureIconRow는 한국어 라벨을 쓰므로 외국인 시트용으로 별도 매핑.
-// 장르는 대부분 만국공용(EDM/R&B/K-POP…)이라 en 값을 ja/zh에도 공유.
-const TAG_LABEL_I18N: Record<string, Record<Lang, string>> = {
-  // venue_type
-  club:        { ko: "클럽", en: "Club", ja: "クラブ", zh: "夜店", "zh-tw": "夜店" },
-  lounge:      { ko: "라운지", en: "Lounge", ja: "ラウンジ", zh: "酒廊", "zh-tw": "酒廊" },
-  pub:         { ko: "펍", en: "Pub", ja: "パブ", zh: "酒吧", "zh-tw": "酒吧" },
-  // genre
-  edm:         { ko: "EDM", en: "EDM", ja: "EDM", zh: "EDM", "zh-tw": "EDM" },
-  hiphop:      { ko: "힙합", en: "Hip-hop", ja: "ヒップホップ", zh: "嘻哈", "zh-tw": "嘻哈" },
-  rnb:         { ko: "R&B", en: "R&B", ja: "R&B", zh: "R&B", "zh-tw": "R&B" },
-  kpop:        { ko: "K-POP", en: "K-POP", ja: "K-POP", zh: "K-POP", "zh-tw": "K-POP" },
-  pop:         { ko: "팝", en: "Pop", ja: "ポップ", zh: "流行", "zh-tw": "流行" },
-  house:       { ko: "하우스", en: "House", ja: "ハウス", zh: "House", "zh-tw": "House" },
-  latin:       { ko: "라틴", en: "Latin", ja: "ラテン", zh: "拉丁", "zh-tw": "拉丁" },
-  techno:      { ko: "테크노", en: "Techno", ja: "テクノ", zh: "Techno", "zh-tw": "Techno" },
-  rock:        { ko: "락", en: "Rock", ja: "ロック", zh: "搖滾", "zh-tw": "搖滾" },
-  mix:         { ko: "믹스", en: "Mixed", ja: "ミックス", zh: "混合", "zh-tw": "混合" },
-  // smoking
-  allowed:     { ko: "흡연", en: "Smoking OK", ja: "喫煙可", zh: "可吸烟", "zh-tw": "可吸菸" },
-  vape_only:   { ko: "전자담배", en: "Vape only", ja: "電子タバコのみ", zh: "仅电子烟", "zh-tw": "僅電子菸" },
-  not_allowed: { ko: "금연", en: "Non-smoking", ja: "禁煙", zh: "禁烟", "zh-tw": "禁菸" },
-};
-
-// 클럽 tags에서 시트에 표시할 특성 배지 라벨 목록 추출 (타입 → 음악 → 흡연 순).
-function clubFeatureLabels(tags: string[] | null, lang: Lang): string[] {
-  if (!tags || tags.length === 0) return [];
-  const out: string[] = [];
-  for (const group of ["venue_type", "genre", "smoking"] as const) {
-    for (const opt of getTagsByGroup(tags, group)) {
-      out.push(TAG_LABEL_I18N[opt.key]?.[lang] ?? opt.label);
-    }
-  }
-  return out;
-}
 
 type SortKey = "popular" | "rating";
 
 export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang }) {
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("popular");
+  const [venueType, setVenueType] = useState<string | null>(null);
+  const [genre, setGenre] = useState<string | null>(null);
   const t = makeT(lang);
 
   // 랜딩 노출 이벤트 — 이탈퍼널 1단계 (외국인 트랙 진입 총량)
@@ -139,11 +112,22 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
     }
     return arr;
   }, [clubs, sortKey]);
+  // 세부 필터(타입·장르) — 한국 가이드(ClubFilterChips)와 동일한 단일선택 토글 방식
+  const filtered = useMemo(() => {
+    return sorted.filter((c) => {
+      if (venueType && !c.tags?.includes(makeTag("venue_type", venueType))) return false;
+      if (genre && !c.tags?.includes(makeTag("genre", genre))) return false;
+      return true;
+    });
+  }, [sorted, venueType, genre]);
+  const activeFilterCount = (venueType ? 1 : 0) + (genre ? 1 : 0);
+
   // 강남/홍대/이태원 가로 스크롤 (한국 가이드처럼). 해당 지역 클럽 없으면 섹션 생략.
   const groups = ["강남", "홍대", "이태원"]
-    .map((ko) => ({ ko, items: sorted.filter((c) => c.area === ko) }))
+    .map((ko) => ({ ko, items: filtered.filter((c) => c.area === ko) }))
     .filter((g) => g.items.length > 0);
   const shownCount = groups.reduce((n, g) => n + g.items.length, 0);
+  const totalCount = clubs.length;
 
   const homeHref = lang === "ko" ? "/" : `/${lang}`;
   const bottomCtaHref = buildFlagHref(lang);
@@ -170,8 +154,6 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
     "希望のクラブを選んでください。私たちが直接連絡してテーブルを確保します。",
     "选好想去的夜店，我们会直接联系并为你锁定桌位。",
   );
-  const googleReviewsLabel = t("구글 리뷰", "Google reviews", "Googleレビュー", "谷歌评价");
-  const searchReviewsLabel = t("구글에서 리뷰 검색", "Search reviews on Google", "Googleでレビュー検索", "在谷歌搜索评价");
   // 클럽명 대신 지역명 사용. 이유: 예약 클릭 시 area 프리셀렉트한 깃발 폼으로 이동하고,
   // 외국인=컨시어지 모델: 유저가 찍은 클럽에 운영자가 직접 연결 → 클럽명 CTA가 정확.
   // (역경매 시절엔 area 오퍼라 클럽명이 오해였으나, 컨시어지 전환으로 지정 클럽이 실제 이행됨.
@@ -185,6 +167,15 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
     );
   const sortPopularLabel = t("인기순", "Popular", "人気順", "热门");
   const sortRatingLabel = t("평점순", "Top rated", "評価順", "评分");
+  const resetFiltersLabel = t("초기화", "Reset", "リセット", "重置");
+  const noMatchLabel = t(
+    "조건에 맞는 클럽이 없습니다",
+    "No clubs match your filters.",
+    "条件に合うクラブがありません。",
+    "没有符合条件的夜店。",
+  );
+  const venueTypeGroup = FILTER_GROUPS.find((g) => g.group === "venue_type");
+  const genreGroup = FILTER_GROUPS.find((g) => g.group === "genre");
   const stickyCtaLabel = t(
     "🍾 예약하기",
     "🍾 Book with NightFlow",
@@ -208,8 +199,8 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
           </div>
 
           {/* 정렬 버튼 (인기순=구글 리뷰수 default / 평점순=구글 별점) */}
-          {shownCount > 0 && (
-            <div className="flex gap-2 pt-1">
+          {totalCount > 0 && (
+            <div className="flex items-center gap-2 pt-1">
               <button
                 type="button"
                 onClick={() => {
@@ -244,11 +235,74 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
               </button>
             </div>
           )}
+
+          {/* 세부 필터(타입·장르) — 항상 노출, 단일선택 */}
+          {totalCount > 0 && (venueTypeGroup || genreGroup) && (
+            <div className="space-y-1.5 pt-1">
+              {venueTypeGroup && (
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                  {venueTypeGroup.options.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setVenueType((v) => (v === opt.key ? null : opt.key))}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition-colors ${
+                        venueType === opt.key
+                          ? "bg-white text-black"
+                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                      }`}
+                    >
+                      {TAG_LABEL_I18N[opt.key]?.[lang] ?? opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {genreGroup && (
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                  {genreGroup.options.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => setGenre((v) => (v === opt.key ? null : opt.key))}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition-colors ${
+                        genre === opt.key
+                          ? "bg-white text-black"
+                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                      }`}
+                    >
+                      {TAG_LABEL_I18N[opt.key]?.[lang] ?? opt.label}
+                    </button>
+                  ))}
+                  {activeFilterCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => { setVenueType(null); setGenre(null); }}
+                      className="text-[10px] text-neutral-500 hover:text-white shrink-0 ml-auto pl-2 underline underline-offset-2"
+                    >
+                      {resetFiltersLabel}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </header>
 
         {/* 지역별 가로 스크롤 (한국 가이드처럼 강남/홍대 두 줄) */}
-        {shownCount === 0 && (
+        {totalCount === 0 && (
           <p className="text-center text-neutral-500 py-12">{noClubs}</p>
+        )}
+        {totalCount > 0 && shownCount === 0 && (
+          <div className="text-center py-12 space-y-3">
+            <p className="text-neutral-500">{noMatchLabel}</p>
+            <button
+              type="button"
+              onClick={() => { setVenueType(null); setGenre(null); }}
+              className="text-[12px] font-bold text-white bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-full"
+            >
+              {resetFiltersLabel}
+            </button>
+          </div>
         )}
         {groups.map((g) => (
           <section key={g.ko} className="space-y-3">
@@ -256,7 +310,12 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
               <h2 className="text-[18px] font-black">{areaI18n(g.ko, lang)}</h2>
               <span className="text-[13px] text-neutral-500">{g.items.length}</span>
             </div>
-            <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4">
+            {/* key: 정렬/필터 바뀌면 DOM 리마운트 → scrollLeft 리셋 (안 그러면 가로 스크롤 위치가 남아서
+                리스트만 바뀌고 앞쪽 클럽들이 화면 밖으로 밀려남) */}
+            <div
+              key={`${sortKey}-${venueType}-${genre}`}
+              className="flex gap-3 overflow-x-auto no-scrollbar snap-x -mx-4 px-4"
+            >
               {g.items.map((club) => (
                 <button
                   key={club.id}
@@ -274,12 +333,12 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                 >
                   <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden bg-neutral-800 border border-neutral-800">
                     {club.thumbnail_url ? (
-                      <Image src={club.thumbnail_url} alt={club.name} fill className="object-cover" sizes="140px" />
+                      <Image src={club.thumbnail_url} alt={displayClubName(club)} fill className="object-cover" sizes="140px" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[11px] font-bold">{noImage}</div>
                     )}
                   </div>
-                  <p className="text-[13px] font-bold text-white mt-2 truncate">{club.name}</p>
+                  <p className="text-[13px] font-bold text-white mt-2 truncate">{displayClubName(club)}</p>
                   {club.google_rating != null && (
                     <p className="text-[12px] text-amber-400 mt-0.5">⭐ {club.google_rating.toFixed(1)}</p>
                   )}
@@ -351,161 +410,76 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
         <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
           {selectedClub && (() => {
             const club = selectedClub;
-            const hasDrinkMenu = club.drink_menu_url || (club.drink_menu_urls && club.drink_menu_urls.length > 0);
-            const googleUrl = getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, lang);
             const clubFlagHref = buildFlagHref(lang, club.area);
             return (
-              <div className="pb-8">
-                {club.thumbnail_url && (
-                  <div className="relative w-full h-48">
-                    <Image src={club.thumbnail_url} alt={club.name} fill className="object-cover" sizes="(max-width: 640px) 100vw, 512px" />
-                  </div>
-                )}
-                <div className="p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <SheetTitle className="font-black text-[20px] text-white leading-tight">{club.name}</SheetTitle>
-                    <span className="shrink-0 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400">
-                      {areaI18n(club.area, lang)}
-                    </span>
-                  </div>
-
-                  {club.google_rating != null && (
-                    <a href={googleUrl} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-[13px] text-amber-400 hover:text-amber-300 transition-colors">
-                      ⭐ {club.google_rating.toFixed(1)}
-                      {club.google_review_count != null && (
-                        <span className="text-neutral-500">· {club.google_review_count.toLocaleString()} {googleReviewsLabel} →</span>
-                      )}
-                    </a>
-                  )}
-
-                  {/* 주소 + 구글맵 — 외국인은 카카오맵을 못 쓰므로 구글맵으로. 여행자에게 위치는 최우선 정보. */}
-                  {club.address && (
-                    <a
-                      href={getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, lang)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-[13px] text-neutral-400 hover:text-white transition-colors group"
-                    >
-                      <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{club.address}</span>
-                      <ExternalLink className="w-3 h-3 shrink-0 text-neutral-500 group-hover:text-white" aria-hidden="true" />
-                    </a>
-                  )}
-                  {club.entry_fee_detail && (
-                    <p className="text-[13px] text-neutral-400">🎟️ {translateClubMeta(club.entry_fee_detail, lang)}</p>
-                  )}
-                  {club.operating_hours && (
-                    <p className="text-[13px] text-neutral-400">🕐 {translateClubMeta(club.operating_hours, lang)}</p>
-                  )}
-                  {club.dresscode && (
-                    <p className="text-[13px] text-neutral-400">👗 {translateClubMeta(club.dresscode, lang)}</p>
-                  )}
-                  {/* 특성 배지 — 타입·음악장르·흡연. 외국인이 취향 맞는 클럽 고르는 핵심 정보. */}
-                  {clubFeatureLabels(club.tags, lang).length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {clubFeatureLabels(club.tags, lang).map((label) => (
-                        <span
-                          key={label}
-                          className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300"
+              <>
+                <SheetTitle className="sr-only">{displayClubName(club)}</SheetTitle>
+                <ForeignClubDetailPanel
+                  club={club}
+                  lang={lang}
+                  cta={
+                    // 예약 CTA — 카드 클릭 유저를 구글로 내보내지 않고 깃발 폼으로 유도.
+                    // 닫힌 지역(OPEN_FLAG_AREAS 미포함)은 폼에서 area 선택 불가 → 예약 CTA 대신 "Coming soon" 안내.
+                    !isFlagAreaOpen(club.area) ? (
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center justify-center gap-1.5 w-full py-3.5 rounded-xl bg-neutral-900 border border-amber-500/30 text-amber-400 font-black text-[15px]">
+                          🚀 {t(
+                            "이태원은 준비중이에요",
+                            "Coming soon to NightFlow",
+                            "NightFlowで近日開始",
+                            "即将上线 NightFlow",
+                          )}
+                        </div>
+                        <Link
+                          href={`/en/clubs/hongdae?lang=${lang}`}
+                          onClick={() => setSelectedClub(null)}
+                          className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-amber-500 text-black text-[14px] font-black hover:bg-amber-400 transition-colors"
                         >
-                          {label}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {club.instagram && (
-                    <a href={`https://instagram.com/${club.instagram}`} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center text-[13px] text-blue-400 hover:text-blue-300 transition-colors">
-                      @{club.instagram}
-                    </a>
-                  )}
-
-                  {hasDrinkMenu && (
-                    <DrinkMenuViewer
-                      urls={club.drink_menu_urls ?? undefined}
-                      url={club.drink_menu_url}
-                      updatedAt={club.drink_menu_updated_at ?? null}
-                      clubName={club.name}
-                      floorPlanUrl={club.floor_plan_url}
-                      floorPlanUrls={club.floor_plan_urls ?? undefined}
-                    />
-                  )}
-
-                  {/* 예약 CTA — 카드 클릭 유저를 구글로 내보내지 않고 깃발 폼으로 유도.
-                      닫힌 지역(OPEN_FLAG_AREAS 미포함)은 폼에서 area 선택 불가 → 예약 CTA 대신 "Coming soon" 안내. */}
-                  {!isFlagAreaOpen(club.area) ? (
-                    <div className="mt-2 space-y-2">
-                      <div className="flex items-center justify-center gap-1.5 w-full py-3.5 rounded-xl bg-neutral-900 border border-amber-500/30 text-amber-400 font-black text-[15px]">
-                        🚀 {t(
-                          "이태원은 준비중이에요",
-                          "Coming soon to NightFlow",
-                          "NightFlowで近日開始",
-                          "即将上线 NightFlow",
-                        )}
+                          {t(
+                            "→ 홍대·강남 클럽 예약하기",
+                            "→ Book Gangnam or Hongdae instead",
+                            "→ 江南・弘大クラブを予約",
+                            "→ 预订江南或弘大夜店",
+                          )}
+                        </Link>
                       </div>
+                    ) : (
                       <Link
-                        href={`/en/clubs/hongdae?lang=${lang}`}
-                        onClick={() => setSelectedClub(null)}
-                        className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-amber-500 text-black text-[14px] font-black hover:bg-amber-400 transition-colors"
+                        href={clubFlagHref}
+                        onClick={() => {
+                          // 회원가입 완료 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트하기 위해
+                          // sessionStorage에 저장. 24시간 안에 소비 시 유효, PuzzleForm이 읽고 자동 삭제.
+                          if (typeof window !== "undefined") {
+                            try {
+                              sessionStorage.setItem(
+                                "nightflow_book_intent",
+                                JSON.stringify({
+                                  club_id: club.id,
+                                  club_name: club.name,
+                                  area: club.area,
+                                  lang,
+                                  savedAt: Date.now(),
+                                })
+                              );
+                            } catch { /* noop */ }
+                          }
+                          if (lang !== "ko") {
+                            trackForeignEvent("foreign_book_at_club_click", {
+                              area: club.area,
+                              club_id: club.id,
+                              club_name: club.name,
+                            });
+                          }
+                          setSelectedClub(null);
+                        }}
+                        className="flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
                       >
-                        {t(
-                          "→ 홍대·강남 클럽 예약하기",
-                          "→ Book Gangnam or Hongdae instead",
-                          "→ 江南・弘大クラブを予約",
-                          "→ 预订江南或弘大夜店",
-                        )}
+                        {bookAtClubLabel(displayClubName(club))}
                       </Link>
-                    </div>
-                  ) : (
-                    <Link
-                      href={clubFlagHref}
-                      onClick={() => {
-                        // 회원가입 완료 후 깃발 폼에서 원래 클릭한 클럽을 프리셀렉트하기 위해
-                        // sessionStorage에 저장. 24시간 안에 소비 시 유효, PuzzleForm이 읽고 자동 삭제.
-                        if (typeof window !== "undefined") {
-                          try {
-                            sessionStorage.setItem(
-                              "nightflow_book_intent",
-                              JSON.stringify({
-                                club_id: club.id,
-                                club_name: club.name,
-                                area: club.area,
-                                lang,
-                                savedAt: Date.now(),
-                              })
-                            );
-                          } catch { /* noop */ }
-                        }
-                        if (lang !== "ko") {
-                          trackForeignEvent("foreign_book_at_club_click", {
-                            area: club.area,
-                            club_id: club.id,
-                            club_name: club.name,
-                          });
-                        }
-                        setSelectedClub(null);
-                      }}
-                      className="flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl bg-amber-500 text-black font-black text-[15px] hover:bg-amber-400 transition-colors"
-                    >
-                      {bookAtClubLabel(club.name)}
-                    </Link>
-                  )}
-
-                  {/* 별점 있는 클럽은 상단 링크(별점+리뷰수)로 충분 → 하단 버튼 중복 제거.
-                      별점 없는 클럽만 정보 접근용 fallback으로 노출. */}
-                  {club.google_rating == null && (
-                    <a
-                      href={googleUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-neutral-800 border border-neutral-700 text-[14px] font-bold text-neutral-200 hover:bg-neutral-700/60 transition-colors"
-                    >
-                      🔍 {searchReviewsLabel}
-                    </a>
-                  )}
-                </div>
-              </div>
+                    )
+                  }
+                />
+              </>
             );
           })()}
         </SheetContent>

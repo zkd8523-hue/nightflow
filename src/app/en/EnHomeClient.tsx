@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
 import { LangSwitcher } from "@/components/layout/LangSwitcher";
 import { ForeignAppCta } from "@/components/layout/ForeignAppCta";
+import { displayClubName } from "@/components/clubs/ForeignClubDetailPanel";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
@@ -26,6 +27,7 @@ type MyRequest = {
 type ClubItem = {
   id: string;
   name: string;
+  name_en?: string | null;
   area: string;
   thumbnail_url: string | null;
   address?: string | null;
@@ -235,19 +237,9 @@ const REGIONS = [
   },
 ] as const;
 
-// 영어 사이트 전용 클럽명 표기 (한글 클럽명 → 영문)
-const CLUB_NAME_EN: Record<string, string> = {
-  "컬러 압구": "Color Apgu",
-  "컬러압구": "Color Apgu",
-  "도깨비": "Dokkebi",
-  "K-bat 빠따": "K-Bat",
-  "K-bat빠따": "K-Bat",
-};
-const clubNameEn = (name: string) => CLUB_NAME_EN[name.trim()] ?? name;
-
 function ClubThumb({ club }: { club: ClubItem }) {
   const { lang, tr } = useTr();
-  const name = clubNameEn(club.name);
+  const name = displayClubName(club);
   // 클릭 시 우리 클럽 페이지(/en/clubs)의 해당 클럽으로 앵커 스크롤.
   // 가격표·영업시간·평점 등 정보를 우리 페이지에서 보여주고, 리뷰만 거기서 Google 버튼으로.
   return (

@@ -148,11 +148,14 @@ export default async function RootLayout({
   // 루트에서는 pathname을 보고 <html lang>을 동적으로 결정하고, 한국어 트리에서만 한국어 Organization schema를 노출.
   const hdrs = await headers();
   const pathname = hdrs.get("x-pathname") || "/";
+  // /flags/new, /login 등 언어 경로 프리픽스 없이 ?lang= 쿼리로만 언어를 싣는 공용 라우트 폴백
+  // (미들웨어가 x-lang-query로 주입 — 없으면 "ko" 취급, 기존 동작 그대로 유지).
+  const langQuery = hdrs.get("x-lang-query") || "";
   const htmlLang =
-    pathname.startsWith("/en") ? "en"
-    : pathname.startsWith("/zh-tw") ? "zh-TW"
-    : pathname.startsWith("/zh") ? "zh-CN"
-    : pathname.startsWith("/ja") ? "ja"
+    pathname.startsWith("/en") || langQuery === "en" ? "en"
+    : pathname.startsWith("/zh-tw") || langQuery === "zh-tw" ? "zh-TW"
+    : pathname.startsWith("/zh") || langQuery === "zh" ? "zh-CN"
+    : pathname.startsWith("/ja") || langQuery === "ja" ? "ja"
     : "ko";
   const isKoreanTree = htmlLang === "ko";
 

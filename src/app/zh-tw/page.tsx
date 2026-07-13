@@ -177,7 +177,7 @@ export default async function ZhTwHomePage() {
 
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, area, thumbnail_url, address")
+    .select("id, name, name_en, area, thumbnail_url, address")
     .in("area", ["강남", "홍대", "이태원"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -197,6 +197,7 @@ export default async function ZhTwHomePage() {
     .map((c) => ({
       id: c.id,
       name: c.name,
+      name_en: c.name_en,
       area: c.area,
       thumbnail_url: c.thumbnail_url,
       address: c.address,
