@@ -37,6 +37,7 @@ interface Props {
   clubId: string;
   initialTags: string[];
   initialName: string;
+  initialNameEn?: string | null;
   initialAddress: string;
   initialOperatingHours: string;
   initialEntryFeeDetail: string;
@@ -57,6 +58,7 @@ interface Props {
   onSaved: (next: {
     tags: string[];
     name: string;
+    nameEn: string;
     address: string;
     operatingHours: string;
     entryFeeDetail: string;
@@ -70,7 +72,7 @@ interface Props {
   }) => void;
 }
 
-export function ClubProfileEditor({ clubId, initialTags, initialName, initialAddress, initialOperatingHours, initialEntryFeeDetail, initialInstagram, initialAliases = [], initialDresscode = "", initialDrinkMenuUrl = null, initialDrinkMenuUrls, initialFloorPlanUrl = null, initialFloorPlanUrls, mode = "admin", externalOpen, onExternalOpenChange, hideTrigger = false, onSaved }: Props) {
+export function ClubProfileEditor({ clubId, initialTags, initialName, initialNameEn = "", initialAddress, initialOperatingHours, initialEntryFeeDetail, initialInstagram, initialAliases = [], initialDresscode = "", initialDrinkMenuUrl = null, initialDrinkMenuUrls, initialFloorPlanUrl = null, initialFloorPlanUrls, mode = "admin", externalOpen, onExternalOpenChange, hideTrigger = false, onSaved }: Props) {
   const isPartnerMode = mode === "partner";
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -80,6 +82,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
   };
   const [tags, setTags] = useState<string[]>(initialTags);
   const [name, setName] = useState(initialName);
+  const [nameEn, setNameEn] = useState(initialNameEn ?? "");
   const [address, setAddress] = useState(initialAddress);
   const [operatingHours, setOperatingHours] = useState(initialOperatingHours);
   const [entryFeeDetail, setEntryFeeDetail] = useState(initialEntryFeeDetail);
@@ -271,6 +274,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
   const reset = () => {
     setTags(initialTags);
     setName(initialName);
+    setNameEn(initialNameEn ?? "");
     setAddress(initialAddress);
     setOperatingHours(initialOperatingHours);
     setEntryFeeDetail(initialEntryFeeDetail);
@@ -351,6 +355,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
         onSaved({
           tags,
           name: initialName,
+          nameEn: initialNameEn ?? "",
           address: initialAddress,
           operatingHours: trimmedHours,
           entryFeeDetail: initialEntryFeeDetail,
@@ -374,6 +379,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
     }
     // admin 모드: 기존 로직 그대로
     const trimmedName = name.trim();
+    const trimmedNameEn = nameEn.trim();
     if (!trimmedName) { toast.error("클럽명을 입력해주세요"); return; }
     setSaving(true);
     try {
@@ -398,6 +404,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
         floorPlanUrls.length !== baseInitialFloorUrls.length
         || floorPlanUrls.some((u, i) => u !== baseInitialFloorUrls[i]);
       const baseChanged = trimmedName !== initialName
+        || trimmedNameEn !== (initialNameEn ?? "")
         || trimmedAddress !== initialAddress
         || trimmedHours !== initialOperatingHours
         || trimmedFee !== initialEntryFeeDetail
@@ -412,6 +419,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
           body: JSON.stringify({
             clubId,
             name: trimmedName,
+            nameEn: trimmedNameEn,
             address: trimmedAddress,
             operating_hours: trimmedHours,
             entry_fee_detail: trimmedFee,
@@ -463,6 +471,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
       onSaved({
         tags: json.tags ?? tags,
         name: trimmedName,
+        nameEn: trimmedNameEn,
         address: trimmedAddress,
         operatingHours: trimmedHours,
         entryFeeDetail: trimmedFee,
@@ -532,6 +541,17 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialAdd
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                disabled={saving}
+                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+              />
+            </div>
+            <div>
+              <div className="text-[12px] text-neutral-400 font-bold mb-2">영어 표시명 (외국어 페이지용)</div>
+              <input
+                type="text"
+                value={nameEn}
+                onChange={(e) => setNameEn(e.target.value)}
+                placeholder="예: Color Apgu (비워두면 클럽명 그대로 노출)"
                 disabled={saving}
                 className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
               />

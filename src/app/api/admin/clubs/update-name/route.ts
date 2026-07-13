@@ -28,9 +28,10 @@ export async function POST(request: NextRequest) {
     const { data: userRow } = await supabaseAdmin.from("users").select("role").eq("id", authUser.id).single();
     if (!userRow || userRow.role !== "admin") return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
 
-    const { clubId, name, address, operating_hours, entry_fee_detail, instagram, aliases, drink_menu_url, drink_menu_urls, floor_plan_urls } = await request.json() as {
+    const { clubId, name, nameEn, address, operating_hours, entry_fee_detail, instagram, aliases, drink_menu_url, drink_menu_urls, floor_plan_urls } = await request.json() as {
       clubId: string;
       name?: string;
+      nameEn?: string | null;
       address?: string;
       operating_hours?: string | null;
       entry_fee_detail?: string | null;
@@ -44,6 +45,7 @@ export async function POST(request: NextRequest) {
 
     const patch: Record<string, string | string[] | null> = {};
     if (name?.trim()) patch.name = name.trim();
+    if (nameEn !== undefined) patch.name_en = nameEn?.trim() || null;
     if (address?.trim()) patch.address = address.trim();
     if (operating_hours !== undefined) patch.operating_hours = operating_hours?.trim() || null;
     if (entry_fee_detail !== undefined) patch.entry_fee_detail = entry_fee_detail?.trim() || null;

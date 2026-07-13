@@ -32,6 +32,8 @@ type Club = {
   dresscode: string | null;
   tags: string[] | null;
   google_reviews: GoogleReview[] | null;
+  /** club_partners에 담당 MD가 있는지 — "Recommend" 정렬용 */
+  has_md?: boolean;
 };
 
 type GoogleReview = {
@@ -50,14 +52,27 @@ function buildFlagHref(lang: Lang, area?: string) {
 }
 
 
-type SortKey = "popular" | "rating";
+// recommend: 담당 MD 있는 클럽 우선 + 그 안에서 리뷰 많은 순 (컨시어지 폼 Browse 팝업과 동일 기준)
+type SortKey = "recommend" | "reviews" | "rating";
 
 export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang }) {
   const [selectedClub, setSelectedClub] = useState<Club | null>(null);
-  const [sortKey, setSortKey] = useState<SortKey>("popular");
+  const [sortKey, setSortKey] = useState<SortKey>("recommend");
   const [venueType, setVenueType] = useState<string | null>(null);
   const [genre, setGenre] = useState<string | null>(null);
   const t = makeT(lang);
+
+  // 홈(EnHomeClient) 클럽 카드 클릭 시 ?club={id}로 넘어오면 해당 클럽 상세시트 자동 오픈.
+  // (예전엔 #club-{id} 앵커 스크롤을 썼는데, 카드 클릭=Sheet 오픈 방식으로 바뀌며 앵커 대상이
+  //  사라져 그냥 목록만 보이고 끝나던 버그 — useSearchParams 대신 window.location으로 읽어
+  //  Suspense 경계 없이도 동작하게 함(이 컴포넌트의 기존 이벤트 트래킹과 동일 패턴).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const clubId = new URLSearchParams(window.location.search).get("club");
+    if (!clubId) return;
+    const match = clubs.find((c) => c.id === clubId);
+    if (match) setSelectedClub(match);
+  }, [clubs]);
 
   // 랜딩 노출 이벤트 — 이탈퍼널 1단계 (외국인 트랙 진입 총량)
   useEffect(() => {
@@ -102,14 +117,17 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
     return () => window.removeEventListener("scroll", onScroll);
   }, [lang]);
 
-  // 정렬: 인기순(리뷰 수) 기본 / 평점순
+  // 정렬: 추천순(MD 있는 클럽 우선+리뷰순) 기본 / 리뷰 많은순 / 평점순
   const sorted = useMemo(() => {
     const arr = [...clubs];
-    if (sortKey === "rating") {
-      arr.sort((a, b) => (b.google_rating ?? 0) - (a.google_rating ?? 0));
-    } else {
-      arr.sort((a, b) => (b.google_review_count ?? 0) - (a.google_review_count ?? 0));
-    }
+    arr.sort((a, b) => {
+      if (sortKey === "rating") return (b.google_rating ?? 0) - (a.google_rating ?? 0);
+      if (sortKey === "recommend") {
+        const md = (b.has_md ? 1 : 0) - (a.has_md ? 1 : 0);
+        if (md !== 0) return md;
+      }
+      return (b.google_review_count ?? 0) - (a.google_review_count ?? 0);
+    });
     return arr;
   }, [clubs, sortKey]);
   // 세부 필터(타입·장르) — 한국 가이드(ClubFilterChips)와 동일한 단일선택 토글 방식
@@ -165,7 +183,8 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
       `🍾 ${name}を予約`,
       `🍾 预订 ${name}`,
     );
-  const sortPopularLabel = t("인기순", "Popular", "人気順", "热门");
+  const sortRecommendLabel = t("추천순", "Recommend", "おすすめ順", "推荐");
+  const sortPopularLabel = t("리뷰 많은순", "Most reviewed", "レビュー数順", "评价最多");
   const sortRatingLabel = t("평점순", "Top rated", "評価順", "评分");
   const resetFiltersLabel = t("초기화", "Reset", "リセット", "重置");
   const noMatchLabel = t(
@@ -198,41 +217,28 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
             <p className="text-[13px] text-neutral-500">{shownCount} {clubsSuffix}</p>
           </div>
 
-          {/* 정렬 버튼 (인기순=구글 리뷰수 default / 평점순=구글 별점) */}
+          {/* 정렬 버튼 (추천순 default = MD 있는 클럽 우선 / 리뷰 많은순 / 평점순) */}
           {totalCount > 0 && (
             <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setSortKey("popular");
-                  if (lang !== "ko") {
-                    trackForeignEvent("foreign_clubs_view", { sort_change: "popular", source: "sort" });
-                  }
-                }}
-                className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
-                  sortKey === "popular"
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
-                }`}
-              >
-                {sortPopularLabel}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSortKey("rating");
-                  if (lang !== "ko") {
-                    trackForeignEvent("foreign_clubs_view", { sort_change: "rating", source: "sort" });
-                  }
-                }}
-                className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
-                  sortKey === "rating"
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
-                }`}
-              >
-                {sortRatingLabel}
-              </button>
+              {(["recommend", "reviews", "rating"] as const).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => {
+                    setSortKey(k);
+                    if (lang !== "ko") {
+                      trackForeignEvent("foreign_clubs_view", { sort_change: k, source: "sort" });
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
+                    sortKey === k
+                      ? "bg-white text-black"
+                      : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                  }`}
+                >
+                  {k === "recommend" ? sortRecommendLabel : k === "reviews" ? sortPopularLabel : sortRatingLabel}
+                </button>
+              ))}
             </div>
           )}
 

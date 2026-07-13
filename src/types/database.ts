@@ -318,6 +318,7 @@ export interface ClubPartner {
 export interface Club {
   id: string;
   name: string;
+  name_en: string | null;  // 외국어 페이지 표시명 (비어있으면 name 그대로 노출)
   address: string;
   address_detail: string | null;  // Floor, unit number, etc.
   postal_code: string | null;  // From Naver Maps API

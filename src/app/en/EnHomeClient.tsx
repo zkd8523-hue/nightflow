@@ -240,11 +240,12 @@ const REGIONS = [
 function ClubThumb({ club }: { club: ClubItem }) {
   const { lang, tr } = useTr();
   const name = displayClubName(club);
-  // 클릭 시 우리 클럽 페이지(/en/clubs)의 해당 클럽으로 앵커 스크롤.
-  // 가격표·영업시간·평점 등 정보를 우리 페이지에서 보여주고, 리뷰만 거기서 Google 버튼으로.
+  // 클릭 시 클럽 페이지에서 해당 클럽 상세시트가 바로 열리도록 club 쿼리로 전달
+  // (예전엔 #club-{id} 앵커 스크롤이었는데, 그 페이지가 카드 클릭=Sheet 오픈 방식으로 바뀌면서
+  //  앵커 대상 엘리먼트가 없어져 그냥 목록만 보여주고 끝났음 — ClubsClient가 이 쿼리를 읽어 자동 오픈).
   return (
     <Link
-      href={`/en/clubs?lang=${lang}#club-${club.id}`}
+      href={`/${lang}/clubs?club=${club.id}`}
       className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity"
     >
       <div className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-neutral-800 border border-neutral-800">
@@ -267,7 +268,7 @@ function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: 
       <div className="px-4 flex items-center justify-between gap-2">
         <p className="text-[22px] font-black text-neutral-100 tracking-tight">{tr("Top clubs in Seoul")}</p>
         <Link
-          href={`/en/clubs?lang=${lang}`}
+          href={`/${lang}/clubs`}
           className="shrink-0 text-[12px] font-bold text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap"
         >
           {tr("See all")} →
@@ -527,7 +528,7 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
 
 // ── Map 탭 ───────────────────────────────────────────────────────
 function MapTab() {
-  const { tr } = useTr();
+  const { lang, tr } = useTr();
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-6 text-center">
       <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
@@ -542,7 +543,7 @@ function MapTab() {
       </div>
       <div className="w-full space-y-3">
         <Link
-          href="/en/clubs"
+          href={`/${lang}/clubs`}
           className="block w-full py-4 rounded-xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 transition-colors"
         >
           {tr("🗺️ Open club map")}

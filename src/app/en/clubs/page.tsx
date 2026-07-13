@@ -94,14 +94,14 @@ export default async function EnClubsPage() {
   const { data: clubs } = await supabase
     .from("clubs")
     .select(
-      "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews"
+      "id, name, name_en, area, address, thumbnail_url, drink_menu_url, drink_menu_updated_at, drink_menu_urls, floor_plan_url, floor_plan_urls, operating_hours, entry_fee_detail, google_rating, google_review_count, instagram, dresscode, tags, google_reviews, partners:club_partners(md_id)"
     )
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
     .eq("is_test", false)
     .order("google_review_count", { ascending: false, nullsFirst: false });
 
-  const clubList = clubs ?? [];
+  const clubList = (clubs ?? []).map((c) => ({ ...c, has_md: (c.partners?.length ?? 0) > 0 }));
   const clubCount = clubList.length;
 
   // SEO용 sr-only 콘텐츠 — ClubsClient는 client component라 SSR HTML이 비어 보임.

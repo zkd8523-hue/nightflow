@@ -257,6 +257,7 @@ export function ForeignRequestForm({
         {label(<Calendar className="w-4 h-4 text-green-500" />, t("날짜", "Date", "日付", "日期"))}
         <input
           type="date"
+          lang={lang}
           value={eventDate}
           onChange={(e) => setEventDate(e.target.value)}
           className="w-full h-12 px-4 rounded-xl bg-[#1C1C1E] border border-neutral-800 text-white text-[15px] focus:border-amber-500 outline-none"

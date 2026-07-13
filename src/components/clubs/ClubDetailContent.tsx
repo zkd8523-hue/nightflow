@@ -123,6 +123,7 @@ export function ClubDetailContent({
   const [guestSignCopied, setGuestSignCopied] = useState(false);
   const [clubTags, setClubTags] = useState<string[]>(club.tags ?? []);
   const [clubName, setClubName] = useState<string>(club.name);
+  const [clubNameEn, setClubNameEn] = useState<string>(club.name_en ?? "");
   const [clubAddress, setClubAddress] = useState<string>(club.address ?? "");
   const [clubOperatingHours, setClubOperatingHours] = useState<string>(club.operating_hours ?? "");
   const [clubEntryFeeDetail, setClubEntryFeeDetail] = useState<string>(club.entry_fee_detail ?? "");
@@ -362,6 +363,7 @@ export function ClubDetailContent({
               clubId={club.id}
               initialTags={clubTags}
               initialName={clubName}
+              initialNameEn={clubNameEn}
               initialAddress={clubAddress}
               initialOperatingHours={clubOperatingHours}
               initialEntryFeeDetail={clubEntryFeeDetail}
@@ -375,6 +377,7 @@ export function ClubDetailContent({
               onSaved={(next) => {
                 setClubTags(next.tags);
                 setClubName(next.name);
+                setClubNameEn(next.nameEn);
                 setClubAddress(next.address);
                 setClubOperatingHours(next.operatingHours);
                 setClubEntryFeeDetail(next.entryFeeDetail);
@@ -424,6 +427,7 @@ export function ClubDetailContent({
               clubId={club.id}
               initialTags={clubTags}
               initialName={clubName}
+              initialNameEn={clubNameEn}
               initialAddress={clubAddress}
               initialOperatingHours={clubOperatingHours}
               initialEntryFeeDetail={clubEntryFeeDetail}
