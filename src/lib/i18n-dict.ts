@@ -583,7 +583,7 @@ export const EN_TO_ZH_TW: Record<string, string> = {
   "Terms": "服務條款",
 
   // 컨텍스트 카드
-  "Clubs come to you with offers": "夜店主動發送報價",
+  "We book the club for you": "我們直接為您預訂夜店",
   "No deposit, no fees": "無預付款、無手續費",
   "Cancel anytime": "隨時可取消",
 

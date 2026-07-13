@@ -416,7 +416,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
       <Card className="w-full max-w-md p-8 space-y-5 relative">
         <div className="absolute top-4 left-4 z-10">
-          <BackButton fallbackHref="/" />
+          <BackButton fallbackHref={isForeigner ? `/${lang}` : "/"} />
         </div>
         <div className="text-center space-y-2">
           <h1
@@ -474,9 +474,9 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
                 <span className="text-emerald-400 shrink-0">✓</span>
                 <span>{tt(
                   "",
-                  "Clubs come to you with offers",
-                  "クラブがオファーを送ってくれる",
-                  "夜店主动发送报价",
+                  "We book the club for you",
+                  "私たちが直接クラブを予約します",
+                  "我们直接为您预订夜店",
                 )}</span>
               </li>
               <li className="text-[13px] text-neutral-300 flex items-start gap-2">
