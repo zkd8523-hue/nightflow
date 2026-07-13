@@ -20,6 +20,7 @@ import {
   BarChart3,
   Gift,
   Wine,
+  Globe,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -54,6 +55,7 @@ export default async function AdminDashboardPage() {
     { count: shareTotal },
     { count: shareActive },
     { count: marketingConsented },
+    { count: foreignNew },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "md"),
@@ -81,6 +83,8 @@ export default async function AdminDashboardPage() {
       .eq("alimtalk_consent", true)
       .is("deleted_at", null)
       .neq("role", "admin"),
+    // 외국인 컨시어지 신규 요청 (빨간 dot 배지용)
+    supabase.from("foreign_requests").select("*", { count: "exact", head: true }).eq("status", "new"),
   ]);
 
   // 시간 기반 필터: 종료 시간이 아직 안 지난 경매만 카운트
@@ -276,6 +280,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-green-500/10",
       badge: shareActive ? `${shareActive}건 모집 중` : null,
       href: "/admin/puzzles?kind=share",
+    },
+    {
+      label: "외국인 요청",
+      value: `${foreignNew || 0}건 신규`,
+      icon: Globe,
+      color: "text-red-400",
+      bgColor: "bg-red-500/10",
+      badge: foreignNew ? `🔴 ${foreignNew}건 대기` : null,
+      href: "/admin/foreign",
     },
     {
       label: "게스트 간판 배정",

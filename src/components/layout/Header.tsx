@@ -40,6 +40,7 @@ import {
   Settings,
   HelpCircle,
   Headset,
+  Globe,
 } from "lucide-react";
 import type { InAppNotification } from "@/types/database";
 
@@ -168,6 +169,7 @@ export function Header({
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [pendingMDCount, setPendingMDCount] = useState(0);
+  const [foreignNewCount, setForeignNewCount] = useState(0);
 
   useEffect(() => {
     if (user?.role !== "admin") return;
@@ -176,6 +178,11 @@ export function Header({
       .select("id", { count: "exact", head: true })
       .eq("md_status", "pending")
       .then(({ count }) => setPendingMDCount(count || 0));
+    supabase
+      .from("foreign_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "new")
+      .then(({ count }) => setForeignNewCount(count || 0));
   }, [user?.role, supabase]);
 
   const minSwipeDistance = 50;
@@ -504,6 +511,19 @@ export function Header({
                         >
                           <Headset className="w-5 h-5 text-blue-400" />
                           <span className="text-[15px] font-bold">고객 문의</span>
+                        </Link>
+                        <Link
+                          href="/admin/foreign"
+                          onClick={() => setMenuOpen(false)}
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                        >
+                          <Globe className="w-5 h-5 text-red-400" />
+                          <span className="text-[15px] font-bold">외국인 요청</span>
+                          {foreignNewCount > 0 && (
+                            <span className="ml-auto bg-red-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                              {foreignNewCount}
+                            </span>
+                          )}
                         </Link>
                       </>
                     )}

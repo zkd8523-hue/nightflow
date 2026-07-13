@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PuzzleForm } from "@/components/puzzles/PuzzleForm";
+import { ForeignRequestForm } from "@/components/foreign/ForeignRequestForm";
 import { getLang, makeT } from "@/lib/i18n";
 
 export const dynamic = "force-dynamic";
@@ -61,9 +62,9 @@ function inferLangFromCountry(countryCode: string | null | undefined): "ko" | "e
 export default async function PuzzleNewPage({
   searchParams,
 }: {
-  searchParams: Promise<{ lang?: string; area?: string }>;
+  searchParams: Promise<{ lang?: string; area?: string; club?: string }>;
 }) {
-  const { lang: raw, area } = await searchParams;
+  const { lang: raw, area, club } = await searchParams;
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -104,6 +105,20 @@ export default async function PuzzleNewPage({
 
   if (profile?.role === "md") redirect("/?tab=puzzle");
 
+  // 외국인 컨시어지 폼용 클럽 목록 (강남·홍대·이태원, 썸네일 있는 것 — /en 클럽과 동일 필터)
+  let foreignClubs: { id: string; name: string; area: string; thumbnail_url: string | null }[] = [];
+  if (isForeigner) {
+    const { data } = await supabase
+      .from("clubs")
+      .select("id, name, area, thumbnail_url")
+      .in("area", ["강남", "홍대", "이태원"])
+      .is("deleted_at", null)
+      .eq("is_test", false)
+      .not("thumbnail_url", "is", null)
+      .order("google_review_count", { ascending: false, nullsFirst: false });
+    foreignClubs = data ?? [];
+  }
+
   return (
     <div className="min-h-screen bg-[#0A0A0A] pb-20">
       <div className="max-w-lg mx-auto px-4 py-6">
@@ -132,16 +147,26 @@ export default async function PuzzleNewPage({
             </h1>
             <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">
               {t(
-                "예산만 정하면 클럽에서 시크릿오퍼를 제안해요",
-                "Set your budget — Seoul's clubs send you private VIP offers",
-                "予算を設定 — ソウルのクラブからプライベートVIPオファーが届きます",
-                "设置预算 — 首尔的夜店为您发送专属 VIP 报价"
+                "클럽 골라주면 우리가 연결해드려요",
+                "Pick your clubs — we'll get you in",
+                "クラブを選べば、私たちがつなぎます",
+                "选好夜店,我们帮你连接"
               )}
             </p>
           </div>
         )}
 
-        <PuzzleForm userId={user.id} />
+        {isForeigner ? (
+          <ForeignRequestForm
+            userId={user.id}
+            lang={lang}
+            clubs={foreignClubs}
+            presetArea={area}
+            presetClubId={club}
+          />
+        ) : (
+          <PuzzleForm userId={user.id} />
+        )}
       </div>
     </div>
   );
