@@ -343,7 +343,12 @@ export function ForeignRequestForm({
 
       {/* 클럽 (선택) */}
       <section>
-        {label(<Search className="w-4 h-4 text-green-500" />, t("가고싶은 클럽", "Clubs you want", "行きたいクラブ", "想去的夜店"))}
+        <div className="flex items-center justify-between mb-2">
+          {label(<Search className="w-4 h-4 text-green-500" />, t("가고싶은 클럽", "Clubs you want", "行きたいクラブ", "想去的夜店"))}
+          <span className="text-[12px] text-neutral-500 font-bold">
+            {t("최대 3개 선택 가능", "up to 3", "最大3つ", "最多3家")}
+          </span>
+        </div>
         {selectedClubIds.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
             {selectedClubIds.map((id) => (
@@ -357,7 +362,7 @@ export function ForeignRequestForm({
         <input
           value={clubSearch}
           onChange={(e) => setClubSearch(e.target.value)}
-          placeholder={t("클럽 이름 검색…", "Search a club…", "クラブ名を検索…", "搜索夜店…")}
+          placeholder={t("클럽 선택 또는 검색…", "Select or search clubs…", "クラブを選択・検索…", "选择或搜索夜店…")}
           className="w-full h-11 px-4 rounded-xl bg-[#1C1C1E] border border-neutral-800 text-white text-[14px] focus:border-amber-500 outline-none"
         />
         {isSearching ? (
