@@ -153,10 +153,10 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   const noImage = t("이미지 없음", "No image", "画像なし", "无图片");
   const notSureCopy = t("어디로 갈지 모르겠나요?", "Not sure where to go?", "どこに行くか迷っていますか？", "不知道去哪家?");
   const ctaLabel = t(
-    "🚩 깃발 꽂기 — 클럽이 오퍼 보내요",
-    "🚩 Plant your flag — clubs send you VIP offers",
-    "🚩 旗を立てる — クラブがVIPオファーを送ります",
-    "🚩 插旗 — 夜店主动发送 VIP 报价",
+    "🍾 예약하기 — 클럽에 직접 연결해드려요",
+    "🍾 Book with NightFlow",
+    "🍾 NightFlowで予約する",
+    "🍾 通过 NightFlow 预订",
   );
   const ctaSubLine1 = t(
     "날짜·인원·예산만 알려주세요.",
@@ -165,10 +165,10 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
     "告诉我们日期、预算和人数。",
   );
   const ctaSubLine2 = t(
-    "서울 주요 클럽들이 시크릿오퍼를 보내요. 당신이 골라요.",
-    "Top Seoul clubs send you private VIP offers. You pick.",
-    "ソウルの人気クラブがプライベートVIPオファーを送ります。あなたが選ぶ。",
-    "首尔顶级夜店发来专属 VIP 报价，任你挑选。",
+    "원하는 클럽을 골라주시면 저희가 직접 연결해드려요.",
+    "Pick your clubs — we contact them and lock in your table.",
+    "希望のクラブを選んでください。私たちが直接連絡してテーブルを確保します。",
+    "选好想去的夜店，我们会直接联系并为你锁定桌位。",
   );
   const googleReviewsLabel = t("구글 리뷰", "Google reviews", "Googleレビュー", "谷歌评价");
   const searchReviewsLabel = t("구글에서 리뷰 검색", "Search reviews on Google", "Googleでレビュー検索", "在谷歌搜索评价");
@@ -186,10 +186,10 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   const sortPopularLabel = t("인기순", "Popular", "人気順", "热门");
   const sortRatingLabel = t("평점순", "Top rated", "評価順", "评分");
   const stickyCtaLabel = t(
-    "🚩 시크릿오퍼 받기",
-    "🚩 Get VIP offers",
-    "🚩 VIPオファーを受け取る",
-    "🚩 获取 VIP 报价",
+    "🍾 예약하기",
+    "🍾 Book with NightFlow",
+    "🍾 NightFlowで予約",
+    "🍾 立即预订",
   );
 
   return (

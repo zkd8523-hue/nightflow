@@ -94,7 +94,7 @@ export default async function ZhTwClubsPage() {
         </ul>
         <h2>透過 NightFlow 預訂首爾夜店</h2>
         <p>
-          在 NightFlow 插旗,填寫日期、人數、預算。江南、弘大、梨泰院、狎鷗亭、清潭的夜店會直接向您發送專屬 VIP 報價。一個畫面比較價格、座位地圖、瓶裝套餐,一鍵預訂完成 — 無需韓語。
+          選好想去的夜店,填寫日期、人數、預算。NightFlow 會直接聯絡江南、弘大、梨泰院、狎鷗亭、清潭的夜店,為您鎖定桌位。一個畫面比較價格、座位地圖、瓶裝套餐,一鍵預訂完成 — 無需韓語。
         </p>
       </div>
       <ClubsClient clubs={clubList} lang="zh-tw" />

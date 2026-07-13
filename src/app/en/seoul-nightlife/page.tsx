@@ -120,10 +120,10 @@ export default function EnSeoulNightlifePage() {
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">How to Book Without Korean</h2>
           <p className="text-[13px] text-neutral-400 leading-relaxed">
-            Plant a flag on NightFlow with your date, group size, and budget. Seoul clubs send you private VIP offers in English. Pick one, show up, walk in.
+            Pick your club (or just tell us your vibe) — date, group size, and budget. We contact the club directly and lock in the best table for your budget, in English. Show up, walk in.
           </p>
           <Link href="/en" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors">
-            🚩 Plant your flag — get offers
+            🍾 Book with NightFlow
           </Link>
         </section>
 

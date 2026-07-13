@@ -58,7 +58,7 @@ const AREA_CONFIG: Record<
     title:
       "弘大夜店預訂 2026 — 嘻哈、K-POP &amp; 外國人友善 (首爾)",
     description:
-      "首爾弘大最佳嘻哈和 K-POP 夜店預訂,靠近弘益大學。外國人友善,英文 OK,真實價格,無中介。插旗後夜店為您發送 VIP 報價。台灣·香港旅客首選。",
+      "首爾弘大最佳嘻哈和 K-POP 夜店預訂,靠近弘益大學。外國人友善,英文 OK,真實價格,無中介。選好夜店,我們直接為您預訂。台灣·香港旅客首選。",
     intro:
       "弘大是首爾的嘻哈和 K-POP 夜生活區,雲集靠近弘益大學的外國人友善夜店。這是旅客最容易入門的地區 — 大多數夜店接受 walk-in,但透過 NightFlow 預訂 VIP 包廂和 guest list 可獲得更好的座位並跳過排隊。",
     vibe:
@@ -261,16 +261,16 @@ export default async function ZhTwClubsAreaPage({
 
         <h2>如何透過 NightFlow 預訂 {config.zh} 夜店</h2>
         <p>
-          插一面旗幟,填寫日期、人數、預算。{config.zh}夜店會在數小時內發送專屬 VIP 報價。在一個畫面比較價格和座位圖,一鍵預訂。無需韓語,無中介費,無押金。到場後直接付款給夜店。
+          選好想去的{config.zh}夜店(或者只告訴我們預算和喜好),填寫日期、人數和預算。NightFlow 會直接聯絡{config.zh}夜店,為您鎖定預算內最好的座位 — 真實價格,無中介加價。無需韓語,無中介費,無押金。到場後直接付款給夜店。
         </p>
 
         <h2>為什麼透過 NightFlow 預訂 {config.zh} 夜店</h2>
         <ul>
-          <li>英語·中文友善 — {config.zh}夜店主動聯絡您。</li>
-          <li>真實價格 — 私密報價僅您可見,無中介加價。</li>
+          <li>英語·中文友善 — NightFlow 直接為您聯絡{config.zh}夜店。</li>
+          <li>真實價格 — 價格透明公開,無中介加價。</li>
           <li>{config.zh}夜店 VIP 包廂 — 瓶裝服務、黃金座位、跳過排隊。</li>
           <li>零平台費 — 直接付款給 {config.zh} 夜店。</li>
-          <li>免費插旗,免費收報價,無需押金。計畫變更可隨時取消。</li>
+          <li>提交請求免費,無需押金。計畫變更可隨時取消。</li>
         </ul>
       </div>
       <ClubsClient clubs={clubList} lang="zh-tw" />

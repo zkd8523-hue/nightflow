@@ -85,11 +85,11 @@ export default function ZhGuidePage() {
         </p>
         <h2>通过 NightFlow 预订韩国夜店的流程</h2>
         <p>
-          告诉我们您的夜晚 — 日期、人数、预算。首尔夜店预订报价数小时内到达。在一个界面比较江南、弘大、梨泰院夜店报价。挑选并到场后直接付款。零预订费，无中介加价，无押金。
+          选好想去的夜店（或者只告诉我们您的预算和喜好）— 加上日期、人数、预算。NightFlow 会直接联系夜店，为您锁定预算内最好的桌位，通常几小时内就有回复。到场后直接付款给夜店。零预订费，无中介加价，无押金。
         </p>
         <h2>为什么在这里预订韩国夜店而不是 walk-in</h2>
         <p>
-          在首尔 walk-in 预订意味着游客价格和最差座位。NightFlow 首尔夜店预订颠覆了这一切 — 顶级夜店主动竞争您的预订，发送只有您能看到的专属 VIP 报价。真正的本地人这样预订，现在您也可以。
+          在首尔 walk-in 预订意味着游客价格和最差座位。NightFlow 以本地价格为您代订 — 我们直接联系夜店，无中介加价。真正的本地人这样预订，现在您也可以。
         </p>
       </div>
       <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
@@ -133,8 +133,8 @@ export default function ZhGuidePage() {
           </h2>
           <div className="space-y-4">
             {[
-              { n: "1", title: "告诉我们您的夜晚", body: "日期、预算、人数。不需要知道任何夜店名字。" },
-              { n: "2", title: "顶级夜店竞争您的预订", body: "首尔最好的夜店发送专属 VIP 报价 — 真实包间，真实价格。他们竞争，您挑选。" },
+              { n: "1", title: "选择您的夜店", body: "选好想去的夜店（或者只告诉我们您的喜好）— 日期、预算、人数。" },
+              { n: "2", title: "我们直接为您预订", body: "NightFlow 直接联系夜店，为您锁定预算内最好的桌位 — 真实价格，无中介加价。" },
               { n: "3", title: "像 VIP 一样入场", body: "最佳包间已预订，无排队，无中介。在 Instagram 联系夜店，到门口出示护照 (19+)。" },
             ].map((s) => (
               <div key={s.n} className="flex gap-4 p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800">

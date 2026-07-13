@@ -101,13 +101,13 @@ const PAINS = [
 const STEPS = [
   {
     n: "1",
-    title: "Tell us your night",
-    body: "Date, budget, how many of you. That's it — no need to know a single club name.",
+    title: "Pick your club",
+    body: "Choose the club you want (or just tell us your vibe) — date, budget, group size.",
   },
   {
     n: "2",
-    title: "Top clubs compete for you",
-    body: "Seoul's best clubs send you private VIP offers — real tables at real prices. They compete; you pick.",
+    title: "We book it for you",
+    body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup.",
   },
   {
     n: "3",
@@ -213,7 +213,7 @@ export default function EnglishLanding() {
         name: "Do I need to speak Korean to book a Seoul club?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "No. NightFlow lets foreign travelers book Seoul clubs entirely in English. You plant a flag with your date, group size, and budget, and Seoul clubs send you private VIP offers — no Korean required, no broker.",
+          text: "No. NightFlow lets foreign travelers book Seoul clubs entirely in English. You tell us the club you want (or just your budget and vibe), and we contact the club directly to lock in your table — no Korean required, no broker.",
         },
       },
       {
@@ -237,7 +237,7 @@ export default function EnglishLanding() {
         name: "How early should I book a Seoul club?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Best 3–7 days before your night. Acceptable 24 hours before. Last resort same day — still works but fewer offers. Friday/Saturday peak nights have the most action.",
+          text: "Best 3–7 days before your night. Acceptable 24 hours before. Last resort same day — we'll still try, but fewer clubs may be available. Friday/Saturday peak nights fill up fastest.",
         },
       },
       {
@@ -245,7 +245,7 @@ export default function EnglishLanding() {
         name: "Is there a booking fee or deposit?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "No booking fee, no deposit. Planting a flag on NightFlow is free. You receive offers free. You only pay the club directly when you accept and arrive — at Korean prices, no broker markup.",
+          text: "No booking fee, no deposit. Submitting a request on NightFlow is free. You only pay the club directly when you arrive — at Korean prices, no broker markup.",
         },
       },
       {
@@ -253,7 +253,7 @@ export default function EnglishLanding() {
         name: "Can I book a VIP table without Korean MD connections?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes. Traditional Seoul club booking required Korean MD (promoter) contacts. NightFlow inverts this — clubs and their MDs send you offers. You pick the best one. No connections, no language barrier.",
+          text: "Yes. Traditional Seoul club booking required Korean MD (promoter) contacts. NightFlow handles this for you — we contact the club directly and lock in your table. No connections needed, no language barrier.",
         },
       },
       {
@@ -292,17 +292,18 @@ export default function EnglishLanding() {
         </p>
         <h2>What Korea Club Booking Through NightFlow Looks Like</h2>
         <p>
-          Tell us your night — date, party size, budget. Seoul club booking
-          offers arrive within hours. Compare Gangnam, Hongdae, Itaewon club
-          deals on one screen. Pick your booking and pay the club directly when
-          you arrive. Zero booking fee, no broker markup, no deposit.
+          Pick your club — Gangnam, Hongdae, or Itaewon — along with your
+          date, party size, and budget. NightFlow contacts the club directly
+          and locks in the best table for your budget, usually within hours.
+          Pay the club directly when you arrive. Zero booking fee, no broker
+          markup, no deposit.
         </p>
         <h2>Why Book Korea Clubs Here Instead of Walk-In</h2>
         <p>
           Walk-in club booking in Seoul means tourist prices and the worst
-          tables. NightFlow Seoul club booking inverts that — top clubs compete
-          for your booking, sending private VIP offers only you can see. Real
-          locals book this way. Now you can too.
+          tables. NightFlow books it for you at insider prices — we contact
+          the club directly on your behalf, no broker markup. Real locals
+          book this way. Now you can too.
         </p>
       </div>
       <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
@@ -398,9 +399,9 @@ export default function EnglishLanding() {
             VIP club booking, fair prices
           </h2>
           <p className="text-[14px] text-neutral-400 leading-relaxed">
-            Every booking offer is private — Seoul clubs compete for you on the
-            deal, not on who shouts loudest. You see the price upfront and pay
-            the club directly. No booking fee, no broker cut. Just the best
+            We contact the club directly on your behalf and lock in the best
+            table for your budget. You see the price upfront and pay the
+            club directly. No booking fee, no broker cut. Just the best
             table, the
             way regulars get it.
           </p>
@@ -447,14 +448,14 @@ export default function EnglishLanding() {
             ))}
           </div>
           <p className="text-center text-[13px] text-neutral-500 leading-relaxed">
-            Set your budget — clubs send offers that match.
+            Set your budget — we&apos;ll find the best table to match.
             The more you bring, the more VIP the night.
           </p>
           <Link
             href="/login?lang=en"
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
           >
-            Get VIP offers
+            Book with NightFlow
           </Link>
         </section>
 

@@ -65,7 +65,7 @@ const AREA_CONFIG: Record<
     title:
       "Hongdae Club Booking 2026 — Hip-Hop, K-Pop & Foreigner-Friendly Nightclubs (Seoul)",
     description:
-      "Book Hongdae's best hip-hop and K-pop nightclubs near Hongik University. Foreigner-friendly, English OK, real prices, no broker. Plant a flag and clubs send you VIP offers.",
+      "Book Hongdae's best hip-hop and K-pop nightclubs near Hongik University. Foreigner-friendly, English OK, real prices, no broker. Book with NightFlow and we lock in your table.",
     intro:
       "Hongdae is Seoul's hip-hop and K-pop nightlife district, packed with foreigner-friendly nightclubs near Hongik University. It's the easiest entry point for travelers — most clubs accept walk-ins, but VIP tables and guest access through NightFlow get you better seats and skip the line.",
     vibe:
@@ -348,9 +348,9 @@ export default async function EnClubsAreaPage({
 
         <h2>How to Book a {config.en} Club Through NightFlow</h2>
         <p>
-          Plant a flag with your date, party size, and budget. {config.en}{" "}
-          Korean clubs send you private VIP offers within hours. Compare prices
-          and table maps on one screen, then book with a single tap. No Korean
+          Pick your {config.en} club (or just tell us your vibe) — date, party
+          size, and budget. We contact the club directly and lock in the best
+          table for your budget — real price, no broker markup. No Korean
           required, no broker fees, no deposit. You pay the {config.en} Korean
           club directly when you arrive — same prices Koreans pay, no tourist
           tax. NightFlow makes {config.en} Korean nightlife accessible to
@@ -360,11 +360,11 @@ export default async function EnClubsAreaPage({
         <h2>Why Book {config.en} Clubs Through NightFlow</h2>
         <ul>
           <li>
-            English-friendly — {config.en} clubs reach out to you, not the other
-            way around.
+            English-friendly — we contact {config.en} clubs directly on your
+            behalf, no need to speak Korean.
           </li>
           <li>
-            Real prices — secret offers visible only to you, no broker markup.
+            Real prices — the same price Koreans pay, no broker markup.
           </li>
           <li>
             VIP table access at {config.en} clubs — bottle service, prime
@@ -374,7 +374,7 @@ export default async function EnClubsAreaPage({
             Zero platform fee — you pay the {config.en} club directly.
           </li>
           <li>
-            Free flag, free offers, no deposit. Cancel anytime if plans change.
+            Free to request, no deposit. Cancel anytime if plans change.
           </li>
         </ul>
       </div>

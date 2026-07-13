@@ -104,10 +104,10 @@ export default function ZhVipTablesPage() {
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">VIP 预订流程</h2>
           <p className="text-[13px] text-neutral-400 leading-relaxed">
-            插一面旗帜，填写日期、人数和预算。首尔顶级夜店发送专属 VIP 报价 — 真实价格，真实瓶装套餐。挑选后到场，直接入场。
+            选好想去的夜店（或者只告诉我们喜好），填写日期、人数和预算。NightFlow 直接联系夜店，为您锁定预算内最好的桌位 — 真实价格，真实瓶装套餐。到场后直接入场。
           </p>
           <Link href="/zh" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">
-            🚩 插旗 — 获取 VIP 报价
+            🍾 通过 NightFlow 预订
           </Link>
         </section>
         <section className="space-y-3">

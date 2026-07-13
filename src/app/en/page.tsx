@@ -11,7 +11,7 @@ export const metadata: Metadata = {
       "Korea Club Booking — Gangnam, Hongdae, Itaewon VIP Tables (NightFlow Seoul)",
   },
   description:
-    "Book Korea's best clubs in Seoul — Gangnam, Hongdae, Itaewon, Apgujeong. Real prices, VIP tables, no broker, no Korean needed. Top Seoul clubs send you private offers. Korea nightlife made easy for travelers.",
+    "Book Korea's best clubs in Seoul — Gangnam, Hongdae, Itaewon, Apgujeong. Real prices, VIP tables, no broker, no Korean needed. Pick a club, we book it for you. Korea nightlife made easy for travelers.",
   keywords: [
     // Country-level (검색량 큼)
     "Korea club",
@@ -298,9 +298,9 @@ export default async function EnHomePage() {
           NightFlow is a Korean club booking platform for foreign travelers and
           tourists visiting Seoul. Book VIP tables at the best Korean clubs in
           Gangnam, Hongdae, Itaewon, and Apgujeong without speaking Korean.
-          Real prices, no broker, no hidden fees. Top Seoul nightclubs send you
-          private offers — you compare and pick the best one for your night
-          out. Korean nightlife made easy. Whether you&apos;re looking for a
+          Real prices, no broker, no hidden fees. Pick a club (or just tell us
+          your budget and vibe) and NightFlow contacts the club directly to
+          lock in your table. Korean nightlife made easy. Whether you&apos;re looking for a
           Korean bar, a K-pop club, a hip-hop nightclub, or a high-end VIP
           lounge, NightFlow handles the booking in English.
         </p>
@@ -363,27 +363,27 @@ export default async function EnHomePage() {
           NightFlow also covers nightlife outside Seoul. Busan club booking is
           increasingly popular among travelers visiting Korea&apos;s second
           city — Haeundae and Seomyeon are the main club districts. Daegu and
-          Gwangju have smaller scenes but solid local clubs. Plant a flag for
-          any Korean city and local clubs will send you offers.
+          Gwangju have smaller scenes but solid local clubs. Tell us which
+          city you&apos;re headed to and we&apos;ll connect you directly with
+          local clubs.
         </p>
 
         <h2>How NightFlow Korea Club Booking Works</h2>
         <p>
-          Plant a flag with your date, party size, and budget. Seoul&apos;s
-          hottest clubs — including Club ACE in Gangnam, Club Dokkaebi in
-          Hongdae, Soap Seoul in Itaewon, Core Lounge in Apgujeong, and many
-          more — send you VIP booking offers directly. You compare prices,
-          table locations, and bottle packages on one screen, then book with a
-          single tap. No Korean needed, no MD connections needed, no broker
-          fees.
+          Pick the club you want — including Club ACE in Gangnam, Club
+          Dokkaebi in Hongdae, Soap Seoul in Itaewon, Core Lounge in
+          Apgujeong, and many more — along with your date, group size, and
+          budget. Not sure which club? Just tell us your vibe and we&apos;ll
+          recommend one. NightFlow contacts the club directly and locks in
+          the best table for your budget. No Korean needed, no MD contacts
+          needed, no broker fees.
         </p>
 
-        <h2>Current Active Club Booking Flags</h2>
+        <h2>Live Seoul Nightlife Activity</h2>
         <p>
-          {flagCount} active Korea club booking flag{flagCount !== 1 ? "s" : ""}{" "}
-          right now from travelers planning their night in Seoul (Gangnam,
-          Hongdae, Itaewon, Apgujeong). Plant your flag and get private VIP
-          offers from Seoul&apos;s best clubs within hours.
+          {flagCount} people are planning nights out in Seoul right now
+          (Gangnam, Hongdae, Itaewon, Apgujeong). Pick a club and we&apos;ll
+          book it for you — most requests get a reply within hours.
         </p>
 
         <h2>Browse Korea Clubs by District</h2>
@@ -442,20 +442,21 @@ export default async function EnHomePage() {
         <h2>Why Book Korea Clubs Through NightFlow</h2>
         <ul>
           <li>
-            No Korean required — Gangnam, Hongdae, Itaewon clubs reach out to
-            you with English-friendly offers.
+            No Korean required — we contact Gangnam, Hongdae, and Itaewon
+            clubs on your behalf, in English.
           </li>
           <li>
-            Real prices — secret offers visible only to you, no broker markup.
+            Real prices — no broker markup, no hidden fees.
           </li>
           <li>
-            VIP table access — bottle service, prime locations, skip the line.
+            Book the best table for your budget — bottle service, prime
+            locations, skip the line.
           </li>
           <li>
             Zero platform fee — you pay the club directly, nothing to NightFlow.
           </li>
           <li>
-            Free to plant a flag, free to receive offers, no deposit required.
+            Free to submit a request, no fees, no deposit required.
           </li>
           <li>
             Covers all Seoul nightlife districts — Gangnam, Hongdae, Itaewon,

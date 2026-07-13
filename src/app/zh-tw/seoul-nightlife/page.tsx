@@ -67,8 +67,8 @@ export default function ZhTwSeoulNightlifePage() {
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">無需韓語如何預訂</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">在 NightFlow 插旗，填寫日期、人數和預算。首爾夜店向您發送中文 VIP 報價。挑選後到場，直接入場。</p>
-          <Link href="/zh-tw" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors">🚩 插旗 — 獲取報價</Link>
+          <p className="text-[13px] text-neutral-400 leading-relaxed">選好想去的夜店(或者只告訴我們喜好)，填寫日期、人數和預算。NightFlow 直接聯絡夜店，用中文為您鎖定桌位。到場後直接入場。</p>
+          <Link href="/zh-tw" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors">🍾 透過 NightFlow 預訂</Link>
         </section>
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">更多指南</h2>

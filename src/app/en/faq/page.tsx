@@ -49,7 +49,7 @@ export const metadata: Metadata = {
 const FAQS = [
   {
     q: "Do I need to speak Korean to book a Seoul club?",
-    a: "No. NightFlow lets foreign travelers book Seoul clubs entirely in English. You plant a flag with your date, group size, and budget, and Seoul clubs send you private VIP offers — no Korean required, no broker.",
+    a: "No. NightFlow lets foreign travelers book Seoul clubs entirely in English. You tell us the club you want (or just your budget and vibe), and we contact the club directly to lock in your table — no Korean required, no broker.",
   },
   {
     q: "How much does a Seoul club night cost for foreigners?",
@@ -61,15 +61,15 @@ const FAQS = [
   },
   {
     q: "How early should I book a Seoul club?",
-    a: "Best 3–7 days before your night. Acceptable 24 hours before. Last resort same day — still works but fewer offers. Friday/Saturday peak nights have the most action and require earlier booking.",
+    a: "Best 3–7 days before your night. Acceptable 24 hours before. Last resort same day — still works but availability is tighter. Friday/Saturday peak nights have the most action and require earlier booking.",
   },
   {
     q: "Is there a booking fee or deposit?",
-    a: "No booking fee, no deposit. Planting a flag on NightFlow is free. Receiving offers is free. You only pay the club directly when you accept an offer and arrive — at Korean prices, no broker markup.",
+    a: "No booking fee, no deposit. Submitting a request on NightFlow is free. You only pay the club directly when you arrive — at Korean prices, no broker markup.",
   },
   {
     q: "Can I book a VIP table without Korean MD connections?",
-    a: "Yes. Traditional Seoul club booking required Korean MD (promoter) contacts via Instagram or KakaoTalk. NightFlow inverts this — clubs and their MDs send you offers based on your flag. You pick the best one. No connections, no language barrier.",
+    a: "Yes. Traditional Seoul club booking required Korean MD (promoter) contacts via Instagram or KakaoTalk. NightFlow handles this for you — we contact the club directly and lock in your table. No connections, no language barrier.",
   },
   {
     q: "What's the dress code for Seoul clubs?",
@@ -81,7 +81,7 @@ const FAQS = [
   },
   {
     q: "Can I book a club for a group of 6 or more?",
-    a: "Yes. Group sizes of 4–6 are ideal for VIP tables (best cost split per person). Above 6 you may need to book multiple tables side by side. NightFlow lets you specify group size when you plant a flag, and clubs match accordingly.",
+    a: "Yes. Group sizes of 4–6 are ideal for VIP tables (best cost split per person). Above 6 you may need to book multiple tables side by side. NightFlow lets you specify group size when you submit a request, and we match you accordingly.",
   },
   {
     q: "What if I want to skip the line without a VIP table?",
@@ -169,7 +169,7 @@ export default function EnFaqPage() {
             href="/en"
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
           >
-            🚩 Plant your flag — get VIP offers
+            🍾 Book with NightFlow
           </Link>
           <p className="text-[12px] text-neutral-600">
             19+ only · Bring your passport · No booking fee

@@ -132,11 +132,10 @@ export default async function EnClubsPage() {
         </ul>
         <h2>How to Book a Seoul Club Through NightFlow</h2>
         <p>
-          Plant a flag on NightFlow with your date, group size, and budget.
-          Clubs in Gangnam, Hongdae, Itaewon, Apgujeong, and Cheongdam send you
-          private VIP offers. Compare prices, table maps, and bottle packages
-          on one screen. Book your Seoul club table with one tap — no Korean
-          required.
+          Pick the club you want (or just tell us your budget and vibe) —
+          Gangnam, Hongdae, Itaewon, Apgujeong, or Cheongdam. We contact the
+          club directly and lock in the best table for your budget — real
+          price, no broker markup. No Korean required.
         </p>
 
         <h2>Browse Seoul Clubs by District</h2>

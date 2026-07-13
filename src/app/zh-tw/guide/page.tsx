@@ -87,11 +87,11 @@ export default function ZhTwGuidePage() {
         </p>
         <h2>透過 NightFlow 預訂韓國夜店的流程</h2>
         <p>
-          告訴我們您的夜晚 — 日期、人數、預算。首爾夜店預訂報價數小時內到達。在一個介面比較江南、弘大、梨泰院夜店報價。挑選並到場後直接付款。零預訂費,無中介加價,無押金。
+          選好想去的夜店(或者只告訴我們您的預算和喜好) — 加上日期、人數、預算。NightFlow 會直接聯絡夜店,為您鎖定預算內最好的桌位,通常數小時內就有回覆。到場後直接付款給夜店。零預訂費,無中介加價,無押金。
         </p>
         <h2>為什麼在這裡預訂韓國夜店而不是 walk-in</h2>
         <p>
-          在首爾 walk-in 預訂意味著遊客價格和最差座位。NightFlow 首爾夜店預訂顛覆了這一切 — 頂級夜店主動競爭您的預訂,發送只有您能看到的專屬 VIP 報價。真正的本地人這樣預訂,現在您也可以。
+          在首爾 walk-in 預訂意味著遊客價格和最差座位。NightFlow 以在地價格為您代訂 — 我們直接聯絡夜店,無中介加價。真正的本地人這樣預訂,現在您也可以。
         </p>
       </div>
       <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
@@ -135,8 +135,8 @@ export default function ZhTwGuidePage() {
           </h2>
           <div className="space-y-4">
             {[
-              { n: "1", title: "告訴我們您的夜晚", body: "日期、預算、人數。不需要知道任何夜店名字。" },
-              { n: "2", title: "頂級夜店競爭您的預訂", body: "首爾最好的夜店發送專屬 VIP 報價 — 真實包廂,真實價格。他們競爭,您挑選。" },
+              { n: "1", title: "選擇您的夜店", body: "選好想去的夜店(或者只告訴我們您的喜好) — 日期、預算、人數。" },
+              { n: "2", title: "我們直接為您預訂", body: "NightFlow 直接聯絡夜店,為您鎖定預算內最好的桌位 — 真實價格,無中介加價。" },
               { n: "3", title: "像 VIP 一樣入場", body: "最佳包廂已預訂,無排隊,無中介。在 Instagram 聯絡夜店,到門口出示護照 (19+)。" },
             ].map((s) => (
               <div key={s.n} className="flex gap-4 p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800">

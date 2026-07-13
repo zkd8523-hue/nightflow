@@ -59,8 +59,8 @@ export default function JaVipTablesPage() {
         </section>
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">VIP予約の流れ</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">旗を立てて、日付・人数・予算を入力。ソウルのトップクラブがプライベートVIPオファーを送信 — 本物の価格、本物のボトルセット。選んで到着、直接入場。</p>
-          <Link href="/ja" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">🚩 旗を立てる — VIPオファー獲得</Link>
+          <p className="text-[13px] text-neutral-400 leading-relaxed">行きたいクラブを選ぶ（または雰囲気だけ伝える）— 日付・人数・予算と一緒に。NightFlowが直接クラブに連絡し、予算内で一番良い席を確保 — 本物の価格、本物のボトルセット。到着して直接入場。</p>
+          <Link href="/ja" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">🍾 NightFlowで予約する</Link>
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">エリア別</h2>

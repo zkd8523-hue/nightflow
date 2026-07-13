@@ -55,7 +55,7 @@ const AREA_CONFIG: Record<
     title:
       "弘大夜店预订 2026 — 嘻哈、K-POP &amp; 外国人友好 (首尔)",
     description:
-      "首尔弘大最佳嘻哈和 K-POP 夜店预订，靠近弘益大学。外国人友好，英文 OK，真实价格，无中介。插旗后夜店为您发送 VIP 报价。",
+      "首尔弘大最佳嘻哈和 K-POP 夜店预订，靠近弘益大学。外国人友好，英文 OK，真实价格，无中介。提交请求后，NightFlow 直接联系夜店为您锁定座位。",
     intro:
       "弘大是首尔的嘻哈和 K-POP 夜生活区，云集靠近弘益大学的外国人友好夜店。这是旅客最容易入门的地区 — 大多数夜店接受 walk-in，但通过 NightFlow 预订 VIP 包间和 guest list 可获得更好的座位并跳过排队。",
     vibe:
@@ -255,16 +255,16 @@ export default async function ZhClubsAreaPage({
 
         <h2>如何通过 NightFlow 预订 {config.zh} 夜店</h2>
         <p>
-          插一面旗帜，填写日期、人数、预算。{config.zh}夜店会在数小时内发送专属 VIP 报价。在一个界面比较价格和座位图，一键预订。无需韩语，无中介费，无押金。到场后直接付款给夜店。
+          选好想去的{config.zh}夜店(或者只告诉我们预算和喜好)，填写日期、人数和预算。NightFlow 会直接联系{config.zh}夜店，为您锁定预算内最好的座位 — 真实价格，无中介加价。无需韩语，无中介费，无押金。到场后直接付款给夜店。
         </p>
 
         <h2>为什么通过 NightFlow 预订 {config.zh} 夜店</h2>
         <ul>
-          <li>英语/中文友好 — {config.zh}夜店主动联系您。</li>
-          <li>真实价格 — 私密报价仅您可见，无中介加价。</li>
+          <li>英语/中文友好 — NightFlow 直接为您联系{config.zh}夜店。</li>
+          <li>真实价格 — 价格透明公开，无中介加价。</li>
           <li>{config.zh}夜店 VIP 包间 — 瓶装服务、黄金座位、跳过排队。</li>
           <li>零平台费 — 直接付款给 {config.zh} 夜店。</li>
-          <li>免费插旗，免费收报价，无需押金。计划变更可随时取消。</li>
+          <li>提交请求免费，无需押金。计划变更可随时取消。</li>
         </ul>
       </div>
       <ClubsClient clubs={clubList} lang="zh" />

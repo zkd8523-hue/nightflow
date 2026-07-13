@@ -158,15 +158,16 @@ export default function EnVipTablesPage() {
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">How VIP Booking Works</h2>
           <p className="text-[13px] text-neutral-400 leading-relaxed">
-            Plant a flag with your date, group size, and budget. Top Seoul clubs
-            send you private VIP offers — real prices, real bottle packages.
-            Pick the one you want, show up, walk straight in.
+            Pick your club (or just tell us your budget and vibe) — date,
+            group size, budget. We contact the club directly and lock in the
+            best table for your budget — real prices, real bottle packages.
+            Show up, walk straight in.
           </p>
           <Link
             href="/en"
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
           >
-            🚩 Plant your flag — get VIP offers
+            🍾 Book with NightFlow
           </Link>
         </section>
 

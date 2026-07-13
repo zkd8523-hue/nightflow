@@ -109,10 +109,10 @@ export default function ZhKpopClubsPage() {
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">K-POP 游客预订建议</h2>
           <p className="text-[13px] text-neutral-400 leading-relaxed">
-            大多数 K-POP 游客直接前往弘大 NB2。可行 — 但周末排队可能 90 分钟。如果您想保证入场和预订包间，在 NightFlow 插旗，弘大 K-POP 夜店会向您发送中文 VIP 报价。
+            大多数 K-POP 游客直接前往弘大 NB2。可行 — 但周末排队可能 90 分钟。如果您想保证入场和预订包间，通过 NightFlow 预订，我们会直接联系弘大 K-POP 夜店，用中文为您确认座位。
           </p>
           <Link href="/zh" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">
-            🚩 插旗 — 获取 K-POP 夜店报价
+            🍾 通过 NightFlow 预订
           </Link>
         </section>
         <section className="space-y-2 pt-4">

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { type Lang, makeT, areaLabel } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
 import { FaqTab } from "./FaqTab";
-import { ChevronLeft, ChevronRight, ChevronDown, Info, Home, User, HelpCircle, Map, Check } from "lucide-react";
+import { ChevronLeft, ChevronDown, Info, Home, User, HelpCircle, Map, Check } from "lucide-react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { BusinessInfo } from "@/components/layout/BusinessInfo";
@@ -14,15 +14,13 @@ import { ForeignAppCta } from "@/components/layout/ForeignAppCta";
 
 type Tab = "flags" | "my" | "qa" | "map";
 
-type MyFlag = {
+type MyRequest = {
   id: string;
-  area: string;
+  area: string | null;
   event_date: string;
   status: string;
-  total_budget: number | null;
-  budget_per_person: number;
-  target_count: number;
-  offerCount: number;
+  budget: number | null;
+  group_size: number;
 };
 
 type ClubItem = {
@@ -65,18 +63,22 @@ function formatEventDate(dateStr: string): string {
   return date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
-function formatBudget(total: number | null, perPerson: number, count: number): string {
-  const amt = total ?? perPerson * count;
+function formatAmount(amt: number): string {
   if (amt >= 1000000) return `₩${(amt / 1000000).toFixed(1)}M`;
   if (amt >= 1000) return `₩${Math.round(amt / 1000)}K`;
   return `₩${amt.toLocaleString()}`;
 }
 
-// ── My flags (로그인 유저의 내 깃발) ──────────────────────────────
+function formatBudget(total: number | null, perPerson: number, count: number): string {
+  return formatAmount(total ?? perPerson * count);
+}
+
+// ── My requests (로그인 외국인 유저의 내 컨시어지 요청, foreign_requests 기반) ──
 const MY_STATUS_LABEL: Record<string, { label: string; ja: string; zh: string; cls: string }> = {
-  open: { label: "Open", ja: "募集中", zh: "招募中", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
-  selecting: { label: "Reviewing", ja: "確認中", zh: "确认中", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
-  accepted: { label: "Matched", ja: "成立", zh: "已成立", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  new: { label: "Received", ja: "受付済み", zh: "已收到", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
+  contacted: { label: "In progress", ja: "対応中", zh: "处理中", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  done: { label: "Confirmed", ja: "確定", zh: "已确认", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
+  cancelled: { label: "Cancelled", ja: "キャンセル", zh: "已取消", cls: "bg-neutral-700/40 text-neutral-400 border-neutral-700" },
 };
 
 // 언어 Context — 서버(page.tsx)에서 initialLang을 확정해 EnHomeClient에 prop 주입.
@@ -94,7 +96,7 @@ function useTr() {
 function MyRequestsTab() {
   const { user, isLoading } = useCurrentUser();
   const { lang, t, tr } = useTr();
-  const [flags, setFlags] = useState<MyFlag[] | null>(null);
+  const [flags, setFlags] = useState<MyRequest[] | null>(null);
 
   useEffect(() => {
     if (!user) { setFlags(null); return; }
@@ -102,25 +104,12 @@ function MyRequestsTab() {
     (async () => {
       const supabase = createClient();
       const { data } = await supabase
-        .from("puzzles")
-        .select("id, area, event_date, status, total_budget, budget_per_person, target_count")
-        .eq("leader_id", user.id)
-        .in("status", ["open", "selecting", "accepted"])
-        .order("event_date", { ascending: true });
+        .from("foreign_requests")
+        .select("id, area, event_date, status, budget, group_size")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
       if (cancelled || !data) return;
-      const ids = data.map((p) => p.id);
-      const counts: Record<string, number> = {};
-      if (ids.length > 0) {
-        const { data: offerRows } = await supabase
-          .from("puzzle_offers")
-          .select("puzzle_id")
-          .in("puzzle_id", ids)
-          .eq("status", "pending");
-        offerRows?.forEach((r: { puzzle_id: string }) => {
-          counts[r.puzzle_id] = (counts[r.puzzle_id] || 0) + 1;
-        });
-      }
-      setFlags(data.map((p) => ({ ...p, offerCount: counts[p.id] ?? 0 })));
+      setFlags(data);
     })();
     return () => { cancelled = true; };
   }, [user]);
@@ -130,7 +119,7 @@ function MyRequestsTab() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="text-[15px] font-bold text-neutral-300">{tr("Log in to see your requests")}</p>
-        <p className="text-[13px] text-neutral-500">{tr("Track your requests and the offers clubs send you.")}</p>
+        <p className="text-[13px] text-neutral-500">{tr("Track your requests and our replies.")}</p>
         <Link href={`/login?lang=${lang}`} className="px-7 py-3 rounded-full bg-white text-black font-black text-[14px] hover:bg-neutral-200 transition-colors">
           {tr("Log in")}
         </Link>
@@ -150,7 +139,7 @@ function MyRequestsTab() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="text-[15px] font-bold text-neutral-300">{tr("No requests yet")}</p>
-        <p className="text-[13px] text-neutral-500">{tr("Post your date & budget — top clubs send you offers.")}</p>
+        <p className="text-[13px] text-neutral-500">{tr("Pick a club & we'll book it for you.")}</p>
         <Link href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
           {tr("Book with NightFlow")}
         </Link>
@@ -162,15 +151,14 @@ function MyRequestsTab() {
     <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-2.5">
       <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">{tr("My requests")}</p>
       {flags.map((f) => {
-        const area = areaLabel(f.area, lang);
+        const area = f.area ? areaLabel(f.area, lang) : tr("Anywhere in Seoul");
         const date = formatEventDate(f.event_date);
-        const budget = formatBudget(f.total_budget, f.budget_per_person, f.target_count);
-        const st = MY_STATUS_LABEL[f.status] ?? MY_STATUS_LABEL.open;
+        const budget = f.budget != null ? formatAmount(f.budget) : null;
+        const st = MY_STATUS_LABEL[f.status] ?? MY_STATUS_LABEL.new;
         return (
-          <Link
+          <div
             key={f.id}
-            href={`/flags/${f.id}?lang=${lang}`}
-            className="flex items-center justify-between gap-3 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-neutral-700 p-4 transition-colors"
+            className="flex items-center justify-between gap-3 rounded-2xl bg-[#1C1C1E] border border-neutral-800 p-4"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -178,21 +166,14 @@ function MyRequestsTab() {
                 <span className="text-neutral-500 text-[12px]">· {date}</span>
               </div>
               <div className="flex items-center gap-2 mt-1 text-[13px]">
-                <span className="font-black text-amber-400">{budget}</span>
-                {f.offerCount > 0 && (
-                  <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-400">
-                    {f.offerCount} {tr("offers")}
-                  </span>
-                )}
+                {budget && <span className="font-black text-amber-400">{budget}</span>}
+                <span className="text-neutral-500">{f.group_size} {tr("people")}</span>
               </div>
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${st.cls}`}>
-                {t("", st.label, st.ja, st.zh)}
-              </span>
-              <ChevronRight className="w-4 h-4 text-neutral-600" />
-            </div>
-          </Link>
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${st.cls}`}>
+              {t("", st.label, st.ja, st.zh)}
+            </span>
+          </div>
         );
       })}
     </div>
@@ -292,7 +273,7 @@ function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: 
   return (
     <div className="pt-5 pb-6 border-b border-neutral-900 space-y-5">
       <div className="px-4 flex items-center justify-between gap-2">
-        <p className="text-[22px] font-black text-neutral-100 tracking-tight">{tr("Spots competing for you")}</p>
+        <p className="text-[22px] font-black text-neutral-100 tracking-tight">{tr("Top clubs in Seoul")}</p>
         <Link
           href={`/en/clubs?lang=${lang}`}
           className="shrink-0 text-[12px] font-bold text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap"
@@ -400,16 +381,16 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
         </h1>
         <p className="text-[18px] font-black text-amber-400 pt-1">{tr("You're in the right place.")}</p>
         <p className="text-[14px] text-neutral-200 leading-relaxed font-medium">
-          {tr("Just enter your date & budget")}<br />
-          {tr("Korea's best clubs send you their offers.")}<br />
-          {tr("Just pick one!")}
+          {tr("Pick a club & your budget")}<br />
+          {tr("We book it with the club for you.")}<br />
+          {tr("No Korean, no hassle.")}
         </p>
       </div>
 
       {/* ② 신뢰 배지 — 被宰(바가지) 공포 해결. 프리미엄 유지 위해 초록 체크만(붉은색 X) */}
       <div className="px-5 py-4 border-b border-neutral-900">
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-w-[320px] mx-auto">
-          {["No middleman", "Real price", "Zero fee", "No deposit"].map((b) => (
+          {["No markup", "Real price", "Zero fee", "No deposit"].map((b) => (
             <div key={b} className="flex items-center gap-1.5">
               <Check className="w-4 h-4 text-green-500 shrink-0" strokeWidth={3} />
               <span className="text-[13px] font-bold text-neutral-200">{tr(b)}</span>
@@ -443,8 +424,8 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
           </summary>
           <div className="px-4 pb-4 space-y-3">
             {[
-              { n: "1", title: "Tell us your night", body: "Date, budget (₩500,000 minimum), how many of you. No need to know a single club name." },
-              { n: "2", title: "Top clubs compete for you", body: "Seoul's best clubs send you private VIP offers — real tables, real prices. They compete; you pick." },
+              { n: "1", title: "Pick your club", body: "Choose the clubs you want (or just tell us your vibe) — date, budget, group size." },
+              { n: "2", title: "We book it for you", body: "We contact the club directly and lock in the best table for your budget — real price, no broker markup." },
               { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line, no broker. Show your passport at the door (19+)." },
             ].map((s) => (
               <div key={s.n} className="flex gap-3">

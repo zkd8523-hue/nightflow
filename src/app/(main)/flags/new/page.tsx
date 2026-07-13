@@ -41,9 +41,9 @@ export async function generateMetadata({
   const t = makeT(lang);
   const title = t(
     "깃발 꽂기",
-    "Get VIP offers",
-    "VIPオファーを獲得",
-    "获取 VIP 报价"
+    "Book with NightFlow",
+    "NightFlowで予約する",
+    "通过 NightFlow 预订"
   );
   return { title: { absolute: `${title} | NightFlow` } };
 }
@@ -140,9 +140,9 @@ export default async function PuzzleNewPage({
             <h1 className="text-2xl font-black text-white tracking-tight">
               {t(
                 "🚩 깃발",
-                "Tell us your night",
-                "あなたの夜を教えて",
-                "告诉我们您的夜晚"
+                "Pick your club",
+                "クラブを選ぶ",
+                "选择夜店"
               )}
             </h1>
             <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">

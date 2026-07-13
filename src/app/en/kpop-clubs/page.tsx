@@ -155,14 +155,14 @@ export default function EnKpopClubsPage() {
           <p className="text-[13px] text-neutral-400 leading-relaxed">
             Most K-pop tourists head to NB2 in Hongdae. It works — but the line
             on weekends can be 90 minutes. If you want guaranteed entry and a
-            table, plant a flag on NightFlow and Hongdae K-pop clubs send you
-            VIP offers in English.
+            table, book with NightFlow and we contact Hongdae K-pop clubs
+            directly for you, in English.
           </p>
           <Link
             href="/en"
             className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
           >
-            🚩 Plant your flag — get K-pop club offers
+            🍾 Book with NightFlow
           </Link>
         </section>
 
