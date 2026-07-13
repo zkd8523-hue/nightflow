@@ -431,9 +431,6 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
         </div>
       )}
 
-      {/* 앱 다운로드 CTA (플랫폼 자동 감지: iPhone→App Store / Android→Play) */}
-      <ForeignAppCta lang={lang} />
-
       {/* How it works (드롭다운) */}
       <div className="px-4 pb-6">
         <details className="group rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden">
@@ -507,6 +504,9 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
           </details>
         ))}
       </div>
+
+      {/* 앱 다운로드 CTA (플랫폼 자동 감지: iPhone→App Store / Android→Play) */}
+      <ForeignAppCta lang={lang} />
 
       {/* 19+ 안내 — 하단 CTA 버튼은 상단 amber CTA와 중복이라 제거 */}
       <div className="px-4 pb-6">
