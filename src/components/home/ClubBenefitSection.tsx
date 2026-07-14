@@ -25,16 +25,8 @@ const PRIORITY_GROUP_SIZE = 8;
 // 여기 속한 클럽은 최상위(최대 PRIORITY_GROUP_SIZE개)로 노출되며, 이 그룹 내에서 새로고침마다 셔플.
 // 비워두면 기존 혜택-우선 정렬을 그대로 사용 (비회귀).
 // 아래 목록 = 누적 오퍼 수 상위 8개 클럽 (프로덕션 puzzle_offers 집계, 2026-07-01 기준).
-const PRIORITY_CLUBS: string[] = [
-  "d912c171-7b9c-40a4-8c89-dc05caf35ebd", // CLUB BERMUDA (홍대) · 38
-  "93f1081a-250c-402a-a0d4-9b8a309aff57", // 도깨비 (홍대) · 13
-  "bd820f57-46b6-4d95-822a-4f0cf8e84542", // OCEAN (홍대) · 12
-  "35de296e-5fdc-435b-baf2-1c7c05538687", // Club Ace (강남) · 10
-  "fa3c81f0-29ab-4756-8f87-8c681b5cde10", // K-bat 빠따 (홍대) · 4
-  "80ba0738-ffbb-4463-b97e-7e68e4c0da60", // 컬러 압구 (강남) · 3
-  "cc7db051-b75d-4c1f-9f95-29f7d8ce70d7", // DM SEOUL (강남) · 3
-  "a0890c9f-ac6e-4c2f-9665-c45667ca10e4", // Core Seoul (강남) · 2
-];
+// 하드코딩 상위노출 제거 (2026-07-10). 비워두면 혜택-우선 정렬로 폴백.
+const PRIORITY_CLUBS: string[] = [];
 const HIDDEN_PATTERN = /운영자/;
 const SHOW_TEST_CLUBS = process.env.NEXT_PUBLIC_VERCEL_ENV !== "production";
 
