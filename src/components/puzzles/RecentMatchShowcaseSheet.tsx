@@ -27,11 +27,12 @@ export type RecentMatchedPuzzle = {
  * "이 정도는 받아야죠" 쇼케이스 시트(RecentMatchShowcaseSheet)와 함께 사용.
  * 홈/깃발 상세 양쪽에서 동일하게 쓰도록 훅 + 시트를 분리.
  */
-export function useRecentMatchedPuzzle() {
+export function useRecentMatchedPuzzle(enabled: boolean = true) {
   const supabase = createClient();
   const [recentMatchedPuzzle, setRecentMatchedPuzzle] = useState<RecentMatchedPuzzle | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase.rpc("get_recent_matched_puzzle");
@@ -42,7 +43,7 @@ export function useRecentMatchedPuzzle() {
     return () => {
       cancelled = true;
     };
-  }, [supabase]);
+  }, [supabase, enabled]);
 
   return recentMatchedPuzzle;
 }

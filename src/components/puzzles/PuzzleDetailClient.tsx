@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { ChevronLeft, ChevronRight, Users, CheckCircle2, Undo2, Building2, Share2, ShieldCheck, Pencil, User, Eye, MessageCircle, MapPin, ChevronDown, Instagram } from "lucide-react";
 import { TableDetailsCard } from "@/components/auctions/TableDetailsCard";
 import { FloorPlanViewer } from "@/components/auctions/FloorPlanViewer";
@@ -10,16 +11,10 @@ import { FeatureGate } from "@/components/common/FeatureGate";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
-import { OfferSheet } from "./OfferSheet";
-import { OfferAcceptSheet } from "./OfferAcceptSheet";
 import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
-import { PuzzleCancelConfirmSheet } from "./PuzzleCancelConfirmSheet";
 import { SecretOfferCard } from "./SecretOfferCard";
-import { OfferMenuCompareSheet } from "./OfferMenuCompareSheet";
-import { ShareCreatedSheet } from "./ShareCreatedSheet";
 import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, OfferChatMeta, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
@@ -43,10 +38,19 @@ import "dayjs/locale/en";
 dayjs.extend(relativeTime);
 dayjs.locale("ko");
 import { normalizeProfileImage } from "@/lib/utils/image";
-import { LeaderInfoSheet } from "./LeaderInfoSheet";
 import { ContentMoreMenu } from "@/components/moderation/ContentMoreMenu";
-import { RecentMatchShowcaseSheet, useRecentMatchedPuzzle } from "./RecentMatchShowcaseSheet";
+import { useRecentMatchedPuzzle } from "./RecentMatchShowcaseSheet";
 import { shareViaNative } from "@/lib/native/nativeShare";
+
+// 모달 시트는 열릴 때만 로드 — 초기 JS 번들·하이드레이션에서 제외 (동작 동일).
+const PuzzleJoinSheet = dynamic(() => import("./PuzzleJoinSheet").then((m) => ({ default: m.PuzzleJoinSheet })), { ssr: false });
+const OfferSheet = dynamic(() => import("./OfferSheet").then((m) => ({ default: m.OfferSheet })), { ssr: false });
+const OfferAcceptSheet = dynamic(() => import("./OfferAcceptSheet").then((m) => ({ default: m.OfferAcceptSheet })), { ssr: false });
+const PuzzleCancelConfirmSheet = dynamic(() => import("./PuzzleCancelConfirmSheet").then((m) => ({ default: m.PuzzleCancelConfirmSheet })), { ssr: false });
+const OfferMenuCompareSheet = dynamic(() => import("./OfferMenuCompareSheet").then((m) => ({ default: m.OfferMenuCompareSheet })), { ssr: false });
+const ShareCreatedSheet = dynamic(() => import("./ShareCreatedSheet").then((m) => ({ default: m.ShareCreatedSheet })), { ssr: false });
+const LeaderInfoSheet = dynamic(() => import("./LeaderInfoSheet").then((m) => ({ default: m.LeaderInfoSheet })), { ssr: false });
+const RecentMatchShowcaseSheet = dynamic(() => import("./RecentMatchShowcaseSheet").then((m) => ({ default: m.RecentMatchShowcaseSheet })), { ssr: false });
 
 interface PuzzleLeaderInfo {
   id: string;
@@ -173,7 +177,6 @@ export function PuzzleDetailClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
-  const { products: liquorProducts } = useLiquorProducts();
 
   const lang = getLang(searchParams.get("lang"));
   const isForeigner = lang !== "ko";
@@ -235,12 +238,17 @@ export function PuzzleDetailClient({
   const [compareGroupKey, setCompareGroupKey] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [offers, setOffers] = useState<PuzzleOffer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(true);
   const [myOffer, setMyOffer] = useState<PuzzleOffer | null>(null);
   const [acceptedOffer, setAcceptedOffer] = useState<PuzzleOffer | null>(null);
+  // 술 정보(LiquorPill)는 MD가 자기 오퍼를 볼 때만 필요 → 그 전엔 liquor_products 전체 로드 스킵
+  const { products: liquorProducts } = useLiquorProducts(!!myOffer);
   const [showAcceptSheet, setShowAcceptSheet] = useState(false);
   const [pendingAcceptOfferId, setPendingAcceptOfferId] = useState<string | null>(null);
   const [acceptingMd, setAcceptingMd] = useState<NonNullable<PuzzleOffer["md"]> | null>(null);
   const [showLeaderInfo, setShowLeaderInfo] = useState(false);
+  // 방장 상담 횟수 — 리더 정보 시트 열 때만 지연 조회 (서버 크리티컬 패스에서 제외됨)
+  const [leaderConsultCount, setLeaderConsultCount] = useState<number | null>(null);
   const [showCancelSheet, setShowCancelSheet] = useState(false);
   const [showMatchedShowcase, setShowMatchedShowcase] = useState(false);
   // 조각 카톡 공유 시트 (?created=share 자동 오픈 / 공유 버튼 수동 오픈)
@@ -290,7 +298,8 @@ export function PuzzleDetailClient({
       cancelled = true;
     };
   }, [searchParams, puzzle.id, currentUserId, supabase]);
-  const recentMatchedPuzzle = useRecentMatchedPuzzle();
+  // 매치 쇼케이스는 "구경하기"를 눌러 시트를 열 때만 RPC 실행 (모든 상세 진입마다 호출 방지)
+  const recentMatchedPuzzle = useRecentMatchedPuzzle(showMatchedShowcase);
 
   const handleShare = useCallback(async () => {
     const url = `${window.location.origin}/flags/${puzzle.id}${lq}`;
@@ -379,7 +388,7 @@ export function PuzzleDetailClient({
       .in("status", ["pending", "accepted"])
       .order("created_at", { ascending: true });
 
-    if (!data) return;
+    if (!data) { setOffersLoading(false); return; }
     let merged = data as PuzzleOffer[];
 
     // 2단계: 수락된 오퍼만 별도로 MD 식별 정보 조회 (방장 또는 MD 본인에게만).
@@ -429,6 +438,7 @@ export function PuzzleDetailClient({
     }
 
     setOffers(merged);
+    setOffersLoading(false);
 
     if (currentUserId && (isMd || isAdmin)) {
       const mine = merged.find((o) => o.md_id === currentUserId && o.status === "pending")
@@ -454,6 +464,22 @@ export function PuzzleDetailClient({
       if (data?.success) setPartyMdStatus(data);
     });
   }, [isAdmin, isRecruitingParty, puzzle.host_is_md, puzzle.id, supabase]);
+
+  // 방장 상담 횟수 — 리더 정보 시트를 열 때 1회만 조회 (서버 SSR 크리티컬 패스에서 이관).
+  // 서버가 쓰던 쿼리를 그대로 사용 (뷰어 권한 동일 → 결과값 불변).
+  useEffect(() => {
+    if (!showLeaderInfo || leaderConsultCount !== null || !puzzle.leader_id) return;
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("puzzle_offers")
+        .select("id, puzzle:puzzles!inner(leader_id)", { count: "exact", head: true })
+        .eq("puzzle.leader_id", puzzle.leader_id)
+        .not("leader_chat_started_at", "is", null);
+      if (!cancelled) setLeaderConsultCount(count ?? 0);
+    })();
+    return () => { cancelled = true; };
+  }, [showLeaderInfo, leaderConsultCount, puzzle.leader_id, supabase]);
 
   // 같은 클럽 오퍼끼리 묶어서 노출 (역경매라 가격 정렬 없음 — 등장 순서 유지하며 클럽만 클러스터링).
   // 버뮤다/오션/버뮤다/DM/버뮤다 → 버뮤다/버뮤다/버뮤다/오션/DM
@@ -1129,6 +1155,7 @@ export function PuzzleDetailClient({
                             <img
                               src={normalizeProfileImage(md.profile_image)!}
                               alt={md.display_name || "파트너"}
+                              loading="lazy"
                               decoding="async"
                               className="relative w-full h-full object-cover"
                               onError={(e) => { e.currentTarget.style.display = "none"; }}
@@ -1238,6 +1265,7 @@ export function PuzzleDetailClient({
                     <img
                       src={normalizeProfileImage(leader.profile_image)!}
                       alt={leader.display_name || leader.name || "leader"}
+                      loading="lazy"
                       decoding="async"
                       className="relative w-full h-full object-cover"
                       onError={(e) => { e.currentTarget.style.display = "none"; }}
@@ -1435,13 +1463,29 @@ export function PuzzleDetailClient({
                   </span>
                 );
               })() : (
-                (isAccepted || pendingOffers.length === 0) && (
+                (isAccepted || (!offersLoading && pendingOffers.length === 0)) && (
                   <span className="text-[11px] text-neutral-500">
                     {isAccepted ? t("제안 마감", "Offers closed") : t("아직 제안 없음", "No offers yet")}
                   </span>
                 )
               )}
             </div>
+
+            {/* 오퍼 첫 로드 동안 빈 화면 대신 골격 표시 (loadOffers 완료 시 사라짐) */}
+            {offersLoading && pendingOffers.length === 0 && !isAccepted && (
+              <div className="space-y-3" aria-hidden>
+                {[0, 1].map((i) => (
+                  <div key={i} className="bg-[#1C1C1E] rounded-2xl border border-neutral-800 p-4 space-y-2 animate-pulse">
+                    <div className="h-4 w-24 bg-neutral-800 rounded" />
+                    <div className="h-6 w-32 bg-neutral-800 rounded" />
+                    <div className="flex gap-1.5">
+                      <div className="h-5 w-16 bg-neutral-800 rounded-full" />
+                      <div className="h-5 w-14 bg-neutral-800 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* 방장: 진행 중인(pending) 제안만 — 수락된 오퍼는 위 성사됨 카드에 이미 표시 */}
             {isLeader && !isAccepted && pendingOffers.length > 0 && (
@@ -1573,7 +1617,7 @@ export function PuzzleDetailClient({
                     )}
                   </p>
                 </details>
-                {pendingOffers.length === 0 && (
+                {!offersLoading && pendingOffers.length === 0 && (
                   <p className="text-[12px] text-neutral-600 text-center py-2">
                     {t("오퍼를 기다리고 있어요", "No offers yet")}
                   </p>
@@ -1832,6 +1876,7 @@ export function PuzzleDetailClient({
                         <img
                           src={member.user.profile_image}
                           alt={member.user.display_name || member.user.name || "파티원"}
+                          loading="lazy"
                           decoding="async"
                           className="w-9 h-9 rounded-full object-cover"
                         />
@@ -2046,7 +2091,7 @@ export function PuzzleDetailClient({
       <LeaderInfoSheet
         open={showLeaderInfo}
         onOpenChange={setShowLeaderInfo}
-        leader={puzzle.leader ?? null}
+        leader={puzzle.leader ? { ...puzzle.leader, consultation_count: leaderConsultCount } : null}
       />
 
       <RecentMatchShowcaseSheet

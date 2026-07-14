@@ -1,9 +1,22 @@
+import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PuzzleDetailClient } from "@/components/puzzles/PuzzleDetailClient";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+// generateMetadata와 페이지 본체가 같은 요청에서 puzzles를 두 번 조회하던 것을 dedupe (React cache).
+// notFound/redirect는 각 호출부에 남기고, 여기선 데이터(or null)만 반환.
+const getPuzzle = cache(async (id: string) => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("puzzles")
+    .select("*, club:clubs(id, name, area, thumbnail_url, floor_plan_url, latitude, longitude)")
+    .eq("id", id)
+    .single();
+  return data;
+});
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -21,13 +34,8 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const { id } = await params;
   const { lang } = await searchParams;
   const isForeigner = !!lang && lang !== "ko";
-  const supabase = await createClient();
 
-  const { data: puzzle } = await supabase
-    .from("puzzles")
-    .select("area, event_date, target_count, current_count, budget_per_person, total_budget, is_recruiting_party, status")
-    .eq("id", id)
-    .single();
+  const puzzle = await getPuzzle(id);
 
   if (!puzzle) {
     notFound(); // HTTP 404 응답 (Soft 404 방지)
@@ -134,12 +142,8 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
 
   const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  // puzzle 먼저 받아서 leader_id 확보
-  const { data: puzzle } = await supabase
-    .from("puzzles")
-    .select("*, club:clubs(id, name, area, thumbnail_url, floor_plan_url, latitude, longitude)")
-    .eq("id", id)
-    .single();
+  // puzzle 먼저 받아서 leader_id 확보 (generateMetadata와 캐시 공유 → DB 왕복 1회)
+  const puzzle = await getPuzzle(id);
 
   if (!puzzle) {
     // 미인증 사용자가 RLS로 막힌 경우 → 로그인 후 돌아오도록
@@ -147,8 +151,10 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // 나머지 4쿼리는 병렬 실행 (puzzle에 의존)
-  const [{ data: leader }, { data: members }, { data: profile }, { count: consultationCount }] = await Promise.all([
+  // 나머지 3쿼리는 병렬 실행 (puzzle에 의존)
+  // 상담 횟수(consultation_count)는 리더 정보 시트에서만 쓰이므로 크리티컬 패스에서 제외 →
+  // 클라이언트에서 시트 열 때 지연 조회 (PuzzleDetailClient). SSR blocking 쿼리 4→3.
+  const [{ data: leader }, { data: members }, { data: profile }] = await Promise.all([
     supabase
       .from("users")
       .select("id, name, display_name, profile_image, phone, instagram, role, strike_count, is_blocked, deal_count_total, deal_amount_total, created_at, gender, last_seen_at, lang, alimtalk_consent, alimtalk_consent_at")
@@ -165,12 +171,6 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
     authUser
       ? supabase.from("users").select("role, kakao_open_chat_url").eq("id", authUser.id).single()
       : Promise.resolve({ data: null }),
-    // 상담 횟수: 이 유저가 방장인 깃발의 오퍼 중 첫 메시지를 보낸(=실제 상담 시작) 오퍼 수
-    supabase
-      .from("puzzle_offers")
-      .select("id, puzzle:puzzles!inner(leader_id)", { count: "exact", head: true })
-      .eq("puzzle.leader_id", puzzle.leader_id)
-      .not("leader_chat_started_at", "is", null),
   ]);
 
   // leader 정보를 puzzle에 attach (TrustBadge용 deal_count_total + 신규 유저 판별용 created_at)
@@ -187,7 +187,6 @@ export default async function PuzzleDetailPage({ params }: PageProps) {
           created_at: leader.created_at,
           gender: leader.gender,
           last_seen_at: (leader as { last_seen_at?: string | null }).last_seen_at ?? null,
-          consultation_count: consultationCount ?? 0,
         },
       }
     : puzzle;
