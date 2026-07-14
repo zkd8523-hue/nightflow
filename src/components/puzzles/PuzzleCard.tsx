@@ -309,11 +309,6 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           <div className="flex items-center gap-1">
-            {isSelecting && !myFlagStatus && (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-neutral-700/60 text-neutral-300 text-[11px] font-bold">
-                검토 중
-              </span>
-            )}
             {puzzle.area && (
               <span className="text-[12px] font-bold text-neutral-300 whitespace-nowrap">
                 {puzzle.area}
