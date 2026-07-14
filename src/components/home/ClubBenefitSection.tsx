@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChevronRight, Heart } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { normalizeDowSlots, summarizeSlots, benefitLabel, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
-import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
+import { pickUpcomingBenefit, benefitLabel, getActiveWeekStartISO } from "@/lib/utils/hotdeal";
+import type { HotdealBenefitsByDow } from "@/types/database";
 
 interface ClubBenefitItem {
   club_id: string;
@@ -46,7 +46,6 @@ export function ClubBenefitSection() {
     let cancelled = false;
     (async () => {
       const thisWeekISO = getActiveWeekStartISO();
-      const todayDowKey = getBusinessDowKey();
 
       const [slotsRes, clubsRes, hotdealsRes, favoritesRes] = await Promise.all([
         supabase
@@ -71,8 +70,10 @@ export function ClubBenefitSection() {
 
       if (cancelled) return;
 
-      // 유효한 슬롯에서 오늘 혜택 추출
-      const slotMap = new Map<string, { text: string; tags: string[] }>();
+      // 이번 주 전체에서 "오늘부터 가장 가까운 다가오는 요일" 혜택 추출 (전 화면 공용 규칙).
+      // 오늘 혜택이 없어도 이번 주 남은 요일 혜택을 미리 노출해 노출을 최대화한다.
+      // (미래 요일은 "(금) …" 라벨 + from은 항상 "HH:00부터"로 예고, dowIdx는 날짜순 정렬 키)
+      const slotMap = new Map<string, { text: string; tags: string[]; dowIdx: number }>();
       for (const s of (slotsRes.data ?? []) as Array<{
         club_id: string;
         benefits_by_dow: HotdealBenefitsByDow | null;
@@ -80,18 +81,9 @@ export function ClubBenefitSection() {
       }>) {
         if (!s.club_id) continue;
         // 노출 판정은 week_start(getActiveWeekStartISO, 월 18시 게이트 포함) 단일 기준.
-        // expires_at(=다음 월 18:00, Migration 283)과 등가이므로 중복 필터는 두지 않는다.
-        const todaySlots = normalizeDowSlots(
-          (s.benefits_by_dow ?? {})[todayDowKey as HotdealDow]
-        );
-        const summary = summarizeSlots(todaySlots);
-        // 오늘 슬롯의 모든 benefits를 합쳐 unique 배열로
-        const tagSet = new Set<string>();
-        for (const slot of todaySlots) {
-          for (const b of slot.benefits ?? []) tagSet.add(b);
-        }
-        if (summary || tagSet.size > 0) {
-          slotMap.set(s.club_id, { text: summary, tags: [...tagSet] });
+        const ub = pickUpcomingBenefit(s.benefits_by_dow);
+        if (ub && (ub.labeledText || ub.tags.length > 0)) {
+          slotMap.set(s.club_id, { text: ub.labeledText, tags: ub.tags, dowIdx: ub.dowIdx });
         }
       }
 
@@ -177,8 +169,13 @@ export function ClubBenefitSection() {
       const prioritySet = new Set(priorityGroup.map((c) => c.id));
       const rest = remaining.filter((c) => !prioritySet.has(c.id));
 
-      // 나머지: 혜택 있는 클럽 최우선 → 혜택 없는 클럽. 각 그룹 내 셔플.
+      // 나머지: 혜택 있는 클럽 최우선 → 혜택 없는 클럽.
+      // 혜택 클럽은 "가장 가까운 혜택 요일(dowIdx)" 오름차순(=날짜순) 정렬.
+      // 같은 요일끼리는 셔플로 공정 노출 (shuffle 후 stable sort).
       const withBenefit = shuffle(rest.filter((c) => slotMap.has(c.id)));
+      withBenefit.sort(
+        (a, b) => (slotMap.get(a.id)?.dowIdx ?? 99) - (slotMap.get(b.id)?.dowIdx ?? 99)
+      );
       const withoutBenefit = shuffle(rest.filter((c) => !slotMap.has(c.id)));
       let ordered = [...priorityGroup, ...withBenefit, ...withoutBenefit];
 

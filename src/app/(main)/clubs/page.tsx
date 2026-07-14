@@ -3,10 +3,10 @@ import { Suspense } from "react";
 import { createServerClient } from "@supabase/ssr";
 import { ClubList } from "@/components/clubs/ClubList";
 import { ClubsAdminFab } from "@/components/clubs/ClubsAdminFab";
-import { normalizeDowSlots, summarizeSlots, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
+import { pickUpcomingBenefit, getActiveWeekStartISO } from "@/lib/utils/hotdeal";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
 import { hideTestData } from "@/lib/utils/testData";
-import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
+import type { HotdealBenefitsByDow } from "@/types/database";
 
 export const revalidate = 60;
 
@@ -67,7 +67,6 @@ export default async function ClubsIndexPage() {
 
   // 오늘 활성 HOT DEAL 슬롯 (이번 주 슬롯에서 오늘 요일 혜택 추출)
   // 요일은 영업일 기준(새벽 6시 경계) — 일요일 혜택이 월요일 새벽까지 노출되도록.
-  const todayDowKey = getBusinessDowKey();
   // 월요일 18시 오픈 갭 보정 포함 (지난 주 슬롯 노출)
   const thisWeekISO = getActiveWeekStartISO();
 
@@ -96,20 +95,10 @@ export default async function ClubsIndexPage() {
   for (const h of hotdealRes.data ?? []) {
     if (!h.club_id) continue;
     // 노출 판정은 week_start(getActiveWeekStartISO, 월 18시 게이트 포함) 단일 기준.
-    // expires_at(=다음 월 18:00, Migration 283)과 등가이므로 중복 필터는 두지 않는다.
-    const byDow = (h.benefits_by_dow ?? {}) as HotdealBenefitsByDow;
-    const todaySlots = normalizeDowSlots(byDow[todayDowKey as HotdealDow]);
-    const summary = summarizeSlots(todaySlots);
-    if (summary) {
-      hotdealMap[h.club_id] = summary;
-    }
-    const tagSet = new Set<string>();
-    for (const slot of todaySlots) {
-      for (const b of slot.benefits ?? []) tagSet.add(b);
-    }
-    if (tagSet.size > 0) {
-      benefitTagsMap[h.club_id] = [...tagSet];
-    }
+    // 오늘부터 이번 주 가장 가까운 혜택 요일을 노출 (전 화면 공용 규칙, 미래 요일은 "(금)" 라벨).
+    const ub = pickUpcomingBenefit(h.benefits_by_dow as HotdealBenefitsByDow | null);
+    if (ub?.labeledText) hotdealMap[h.club_id] = ub.labeledText;
+    if (ub && ub.tags.length > 0) benefitTagsMap[h.club_id] = ub.tags;
   }
 
   const favCountMap: Record<string, number> = {};

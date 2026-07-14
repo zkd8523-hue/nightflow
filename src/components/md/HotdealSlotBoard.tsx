@@ -120,6 +120,8 @@ function currentBusinessDayKstISO(): string {
 
 function TimeSelect({
   value, options, onChange, disabled, muted,
+  nullLabel = "영업종료까지",
+  formatValue = (t: string) => `~${formatTimeLabel(t)}`,
 }: {
   value: string | null;
   options: string[];
@@ -127,12 +129,16 @@ function TimeSelect({
   disabled: boolean;
   /** 사용자가 아직 선택하지 않은 기본값 — placeholder처럼 회색 처리 */
   muted?: boolean;
+  /** 미선택(null) 시 라벨 (기본: 마감용 "영업종료까지") */
+  nullLabel?: string;
+  /** 선택값 표시 포맷 (기본: 마감용 "~HH:00") */
+  formatValue?: (t: string) => string;
 }) {
   const [open, setOpen] = useState(false);
-  const label = value ? `~${formatTimeLabel(value)}` : "영업종료까지";
+  const label = value ? formatValue(value) : nullLabel;
   const allOptions = [...options, null] as (string | null)[];
   return (
-    <div className="relative shrink-0 w-[100px] self-stretch">
+    <div className="relative shrink-0 w-[92px] self-stretch">
       <button
         type="button"
         disabled={disabled}
@@ -155,7 +161,7 @@ function TimeSelect({
                   onClick={() => { onChange(t); setOpen(false); }}
                   className={`w-full text-left px-3 py-2 text-[12px] hover:bg-neutral-800 flex items-center justify-between ${isSelected ? "text-amber-400 font-bold" : "text-white"}`}
                 >
-                  {t ? `~${formatTimeLabel(t)}` : "영업종료까지"}
+                  {t ? formatValue(t) : nullLabel}
                   {isSelected && <span className="text-amber-400 text-[10px]">✓</span>}
                 </button>
               );
@@ -828,6 +834,7 @@ function MyClaimedSection({
     return a.some(
       (s, i) =>
         (s.until ?? null) !== (b[i].until ?? null) ||
+        (s.from ?? null) !== (b[i].from ?? null) ||
         s.text !== b[i].text ||
         !sameBenefits(s.benefits, b[i].benefits)
     );
@@ -1034,7 +1041,22 @@ function MyClaimedSection({
                     return (
                       <div key={idx} className="space-y-1">
                       <div className="flex gap-1.5">
-                        {/* 시간 셀렉트: 항상 표시. 단일 슬롯이면 "영업종료까지"(null)가 기본 */}
+                        {/* 시작시각(단일 슬롯 전용): 이 시각 전엔 유저에게 "HH:00부터"로 예고, 지나면 뗌 */}
+                        {!isPast && displaySlots.length === 1 && (
+                          <TimeSelect
+                            value={s.from ?? null}
+                            disabled={saving}
+                            muted={(s.from ?? null) === null}
+                            nullLabel="바로 시작"
+                            formatValue={(t) => `${formatTimeLabel(t)}부터`}
+                            onChange={(val) => { setEditingSlot(`${dow}:${idx}`); updateSlot(dow, idx, { from: val }); }}
+                            options={TIME_OPTIONS.filter((t) =>
+                              s.until ? TIME_OPTIONS.indexOf(t) < TIME_OPTIONS.indexOf(s.until) : true
+                            )}
+                          />
+                        )}
+
+                        {/* 마감 셀렉트: 항상 표시. 단일 슬롯이면 "영업종료까지"(null)가 기본 */}
                         {!isPast && (
                           <TimeSelect
                             value={s.until}

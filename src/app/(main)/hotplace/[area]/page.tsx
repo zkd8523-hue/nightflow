@@ -113,9 +113,8 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
   const supabase = createAnonClient();
 
   // 이번 주 게스트 간판 — 노출 판정은 week_start(getActiveWeekStartISO, 월 18시 게이트 포함) 단일 기준
-  const { getActiveWeekStartISO, getBusinessDowKey, normalizeDowSlots, summarizeSlots } = await import("@/lib/utils/hotdeal");
+  const { getActiveWeekStartISO, pickUpcomingBenefit } = await import("@/lib/utils/hotdeal");
   const thisWeekISO = getActiveWeekStartISO();
-  const todayDowKey = getBusinessDowKey();
 
   // 지역의 활성 클럽 + 이번 주 게스트 간판 동시 조회
   // 테스트/가짜 클럽 숨김은 is_test 기준(SSOT). 프로덕션에서만 필터.
@@ -146,10 +145,9 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
   const hotdealMap: Record<string, string> = {};
   for (const slot of guestSignSlots ?? []) {
     if (!slot.club_id) continue;
-    const byDow = (slot.benefits_by_dow ?? {}) as Record<string, unknown>;
-    const todaySlots = normalizeDowSlots(byDow[todayDowKey] as never);
-    const summary = summarizeSlots(todaySlots);
-    if (summary) hotdealMap[slot.club_id] = summary;
+    // 오늘부터 이번 주 가장 가까운 혜택 요일 (전 화면 공용 규칙, 미래 요일은 "(금)" 라벨)
+    const ub = pickUpcomingBenefit(slot.benefits_by_dow as never);
+    if (ub?.labeledText) hotdealMap[slot.club_id] = ub.labeledText;
   }
 
   const HIDDEN = ["prism", "eclipse", "luna", "orion"];

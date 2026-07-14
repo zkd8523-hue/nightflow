@@ -1136,6 +1136,8 @@ export type HotdealBenefitTag = 'free_entry' | 'free_drink' | string;
 export interface HotdealTimeSlot {
   /** "HH:00" 또는 null (영업종료) */
   until: string | null;
+  /** 시작 시각 "HH:00" 또는 null/undefined (지정 안 함). 이 시각 전에는 "HH:00부터"로 예고, 지나면 문구에서 뗌 */
+  from?: string | null;
   /** MD가 자유롭게 입력하는 멘트 (예: 입구에서 "나플" 무료입장) */
   text: string;
   /** 혜택 태그 (무료입장/프리드링크/기타 직접입력) */

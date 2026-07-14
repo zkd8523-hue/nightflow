@@ -129,19 +129,113 @@ export function normalizeDowSlots(
     )
     .map((s) => ({
       until: s.until ?? null,
+      from: s.from ?? null,
       text: s.text,
       benefits: Array.isArray(s.benefits) ? s.benefits.filter((b) => typeof b === "string") : [],
     }));
+}
+
+/** "HH:00" → 영업일(새벽 6시) 기준 경과 분. 새벽 시간(0~5시)은 익일로 취급해 뒤로 정렬. */
+function toBusinessMinutes(hhmm: string): number {
+  const h = parseInt(hhmm.slice(0, 2), 10);
+  const m = parseInt(hhmm.slice(3, 5), 10) || 0;
+  const shifted = h < BUSINESS_DAY_CUTOFF_HOUR ? h + 24 : h;
+  return (shifted - BUSINESS_DAY_CUTOFF_HOUR) * 60 + m;
+}
+
+/** 현재 KST 시각의 영업일 기준 경과 분. */
+function nowBusinessMinutes(): number {
+  const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const h = kst.getUTCHours();
+  const m = kst.getUTCMinutes();
+  const shifted = h < BUSINESS_DAY_CUTOFF_HOUR ? h + 24 : h;
+  return (shifted - BUSINESS_DAY_CUTOFF_HOUR) * 60 + m;
+}
+
+/**
+ * 시작시각(from)이 이미 지났는지. 지났으면 "부터 HH:00" 예고 문구를 뗀다.
+ * @param nowMin 테스트/SSR용 현재 영업분 오버라이드 (미지정 시 실제 현재 시각)
+ */
+export function isSlotStarted(from: string | null | undefined, nowMin?: number): boolean {
+  if (!from) return true; // 시작시각 미지정 = 항상 진행 중으로 취급 (하위호환)
+  const n = nowMin ?? nowBusinessMinutes();
+  return n >= toBusinessMinutes(from);
 }
 
 /**
  * 단일 줄 요약 (소비측에서 한 줄 노출이 필요할 때).
  * 예: "~01:00 프리패스 / 이후 테이블 50%"
  */
-export function summarizeSlots(slots: HotdealTimeSlot[]): string {
+export function summarizeSlots(slots: HotdealTimeSlot[], nowMin?: number): string {
   if (slots.length === 0) return "";
-  if (slots.length === 1) return slots[0].text;
+  if (slots.length === 1) {
+    const s = slots[0];
+    // 시작시각이 아직 안 됐으면 "HH:00부터 …"(마감도 있으면 "HH:00~HH:00 …")로 예고.
+    // 시작시각이 지났거나 미지정이면 기존과 동일하게 텍스트만.
+    if (s.from && !isSlotStarted(s.from, nowMin)) {
+      return s.until ? `${s.from}~${s.until} ${s.text}` : `${s.from}부터 ${s.text}`;
+    }
+    return s.text;
+  }
   return slots
     .map((s) => (s.until ? `~${s.until} ${s.text}` : `이후 ${s.text}`))
     .join(" / ");
+}
+
+/** 요일 한글 1글자 (미래 요일 라벨용) */
+const DOW_KO: Record<HotdealDow, string> = {
+  mon: "월", tue: "화", wed: "수", thu: "목", fri: "금", sat: "토", sun: "일",
+};
+const WEEK_ORDER_MON_FIRST: HotdealDow[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+export interface UpcomingBenefit {
+  dow: HotdealDow;
+  /** 오늘부터의 근접도. 0=오늘, 클수록 나중 → 날짜순 정렬 키 */
+  dowIdx: number;
+  isToday: boolean;
+  /** 라벨 없는 요약 */
+  summary: string;
+  /** 오늘이면 요약 그대로, 미래 요일이면 "(금) …" 라벨 부착 */
+  labeledText: string;
+  tags: string[];
+}
+
+/**
+ * 이번 주 benefits_by_dow에서 "오늘부터 가장 가까운 다가오는 요일"의 혜택을 뽑는다.
+ * 오늘 혜택이 없어도 이번 주 남은 요일 혜택을 미리 노출해 게스트 간판 노출을 최대화한다.
+ * (홈 "오늘 어디갈래?" / 클럽목록 / 핫플 / 찜 — 전 화면 표시 규칙 통일용 공용 헬퍼)
+ *
+ * @param byDow 슬롯의 benefits_by_dow
+ * @param nowMin 테스트용 현재 영업분 오버라이드 (오늘 요일 from 예고 판정에만 사용)
+ * @returns 가장 가까운 혜택 요일 정보. 이번 주 남은 요일에 혜택이 없으면 null
+ */
+export function pickUpcomingBenefit(
+  byDow: HotdealBenefitsByDow | null | undefined,
+  nowMin?: number
+): UpcomingBenefit | null {
+  const source = byDow ?? {};
+  const todayDow = getBusinessDowKey();
+  const todayIdx = WEEK_ORDER_MON_FIRST.indexOf(todayDow);
+  const upcoming = todayIdx >= 0 ? WEEK_ORDER_MON_FIRST.slice(todayIdx) : WEEK_ORDER_MON_FIRST;
+
+  for (let di = 0; di < upcoming.length; di++) {
+    const dow = upcoming[di];
+    const daySlots = normalizeDowSlots(source[dow]);
+    if (daySlots.length === 0) continue;
+    const isToday = dow === todayDow;
+    // 오늘이면 실시간 from 판정, 미래 요일이면 항상 예고(nowMin=-1 → 시작 전 취급)
+    const summary = summarizeSlots(daySlots, isToday ? nowMin : -1);
+    const tags: string[] = [];
+    const seen = new Set<string>();
+    for (const slot of daySlots) {
+      for (const b of slot.benefits ?? []) {
+        if (!seen.has(b)) { seen.add(b); tags.push(b); }
+      }
+    }
+    if (summary || tags.length > 0) {
+      const labeledText = summary ? (isToday ? summary : `(${DOW_KO[dow]}) ${summary}`) : "";
+      return { dow, dowIdx: di, isToday, summary, labeledText, tags };
+    }
+  }
+  return null;
 }

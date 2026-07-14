@@ -7,14 +7,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Heart, Wine } from "lucide-react";
-import type { UserFavoriteClub, HotdealBenefitsByDow, HotdealDow } from "@/types/database";
+import type { UserFavoriteClub, HotdealBenefitsByDow } from "@/types/database";
 import { createClient } from "@/lib/supabase/client";
 import {
-  normalizeDowSlots,
-  summarizeSlots,
+  pickUpcomingBenefit,
   benefitLabel,
   getActiveWeekStartISO,
-  getBusinessDowKey,
 } from "@/lib/utils/hotdeal";
 import { getOpeningStatus } from "@/lib/clubs/openingStatus";
 
@@ -34,7 +32,6 @@ function useGuestSigns(clubIds: string[]): Record<string, GuestSign> {
     (async () => {
       const supabase = createClient();
       const thisWeekISO = getActiveWeekStartISO();
-      const todayDowKey = getBusinessDowKey();
       const { data } = await supabase
         .from("weekly_hotdeal_slots")
         .select("club_id, benefits_by_dow")
@@ -49,14 +46,10 @@ function useGuestSigns(clubIds: string[]): Record<string, GuestSign> {
         benefits_by_dow: HotdealBenefitsByDow | null;
       }>) {
         if (!s.club_id) continue;
-        const todaySlots = normalizeDowSlots((s.benefits_by_dow ?? {})[todayDowKey as HotdealDow]);
-        const summary = summarizeSlots(todaySlots);
-        const tagSet = new Set<string>();
-        for (const slot of todaySlots) {
-          for (const b of slot.benefits ?? []) tagSet.add(b);
-        }
-        if (summary || tagSet.size > 0) {
-          map[s.club_id] = { text: summary, tags: [...tagSet] };
+        // 오늘부터 이번 주 가장 가까운 혜택 요일 (전 화면 공용 규칙, 미래 요일은 "(금)" 라벨)
+        const ub = pickUpcomingBenefit(s.benefits_by_dow);
+        if (ub && (ub.labeledText || ub.tags.length > 0)) {
+          map[s.club_id] = { text: ub.labeledText, tags: ub.tags };
         }
       }
       setSigns(map);

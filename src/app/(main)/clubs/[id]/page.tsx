@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import { ClubDetailContent } from "@/components/clubs/ClubDetailContent";
 import { getClubAliases, getPrimaryAlias } from "@/lib/clubs/aliases";
-import { normalizeDowSlots, summarizeSlots, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
+import { normalizeDowSlots, summarizeSlots, pickUpcomingBenefit, getActiveWeekStartISO, getBusinessDowKey } from "@/lib/utils/hotdeal";
 import type { HotdealBenefitsByDow, HotdealDow } from "@/types/database";
 import type { Metadata } from "next";
 
@@ -143,7 +143,9 @@ export default async function ClubDetailPage({ params, searchParams }: PageProps
     if (mdRow) {
       const byDow = (slotRow.benefits_by_dow ?? {}) as HotdealBenefitsByDow;
       const todaySlots = normalizeDowSlots(byDow[todayDowKey as HotdealDow]);
-      const todayText = summarizeSlots(todaySlots) || null;
+      // 표시용: 오늘 혜택 없으면 이번 주 가장 가까운 요일 혜택 (미래는 "(금)" 라벨).
+      // 편집 대상(today_dow/today_slots)은 오늘 그대로 유지 — admin "오늘 혜택" 수정은 오늘 기준.
+      const todayText = pickUpcomingBenefit(byDow)?.labeledText || null;
       guestSignSlot = {
         slot_id: slotRow.id,
         today_dow: todayDowKey,
