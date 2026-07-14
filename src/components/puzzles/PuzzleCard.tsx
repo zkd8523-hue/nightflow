@@ -236,6 +236,10 @@ export const PuzzleCard = memo(function PuzzleCard({
   const notesKo = useTranslatedText(puzzle.notes, "ko", !!leaderLang && leaderLang !== "ko");
   const displayNotes = notesKo ?? puzzle.notes;
 
+  // 카드 인용구: 파트너 직통 조각은 "파트너의 한마디"(md_comment), 그 외는 방장 추가설명(leader_comment)을
+  // 동일한 인용구 스타일로 노출 (깃발 추가멘트와 UI 통일).
+  const cardComment = puzzle.host_is_md ? puzzle.md_comment : puzzle.leader_comment;
+
   const isMd = userRole === "md" || userRole === "admin";
   const isRecruitingParty = puzzle.is_recruiting_party;
   const isFull = puzzle.current_count >= puzzle.target_count;
@@ -422,10 +426,10 @@ export const PuzzleCard = memo(function PuzzleCard({
         )}
       </div>
 
-      {/* 방장 추가설명(leader_comment) — 상세 페이지와 동일 인용구, 카드에선 2줄 clamp */}
-      {puzzle.leader_comment && (
+      {/* 추가 한마디 — 방장 추가설명(leader_comment) 또는 파트너 직통의 파트너 한마디(md_comment). 동일 인용구, 카드에선 2줄 clamp */}
+      {cardComment && (
         <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-2.5 line-clamp-2 break-words [overflow-wrap:anywhere]">
-          &ldquo;{puzzle.leader_comment}&rdquo;
+          &ldquo;{cardComment}&rdquo;
         </p>
       )}
 

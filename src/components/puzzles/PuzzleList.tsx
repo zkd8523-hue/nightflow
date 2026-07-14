@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
-import { Plus, SlidersHorizontal, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, SlidersHorizontal, ChevronDown, ChevronUp, BadgeCheck } from "lucide-react";
 import { PuzzleCard } from "./PuzzleCard";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
@@ -185,6 +185,22 @@ export function PuzzleList({
     return base;
   }, [puzzles, nbiFilter, seatFilter, dateFilter, partyOnly, popularSort, offerCounts, hideOffered, myOfferedPuzzleIds]);
 
+  // 조각 모드: 파트너 직통(host_is_md) 조각을 목록 맨 위 고정 섹션으로 분리(날짜 빠른 순).
+  // 나머지(listPuzzles)는 그 아래에서 기존 날짜순/정렬 그대로 노출 — "파트너 먼저 → 그 다음 날짜순".
+  const pinnedPartnerPuzzles = useMemo(
+    () =>
+      shareMode
+        ? [...filteredPuzzles.filter((p) => p.host_is_md)].sort(
+            (a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime()
+          )
+        : [],
+    [filteredPuzzles, shareMode]
+  );
+  const listPuzzles = useMemo(
+    () => (shareMode ? filteredPuzzles.filter((p) => !p.host_is_md) : filteredPuzzles),
+    [filteredPuzzles, shareMode]
+  );
+
   const eventDates = useMemo(() => {
     return Array.from(new Set(puzzles.map((p) => p.event_date)));
   }, [puzzles]);
@@ -361,6 +377,40 @@ export function PuzzleList({
         </SheetContent>
       </Sheet>
 
+      {/* ── 파트너 직통 고정 섹션 — 조각 더보기 목록 맨 위. 그 아래는 날짜순 목록 ── */}
+      {shareMode && pinnedPartnerPuzzles.length > 0 && (
+        <div className="space-y-3 mb-8">
+          <div className="flex items-center gap-2 px-1 pt-1">
+            <BadgeCheck className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">파트너 직통</h3>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
+              {pinnedPartnerPuzzles.length}
+            </span>
+          </div>
+          <div className="flex flex-col gap-6">
+            {pinnedPartnerPuzzles.map((puzzle) => (
+              <Link
+                key={puzzle.id}
+                href={`/flags/${puzzle.id}`}
+                className="block"
+                onClick={(e) => { e.stopPropagation(); trackEvent('puzzle_card_click', { puzzle_id: puzzle.id, area: puzzle.area, is_recruiting: puzzle.is_recruiting_party, source: 'partner_pinned' }); }}
+              >
+                <PuzzleCard
+                  puzzle={puzzle}
+                  userRole={userRole}
+                  offerCount={offerCounts[puzzle.id] || 0}
+                  isMember={myPuzzleIds.has(puzzle.id)}
+                  hasOffered={myOfferedPuzzleIds.has(puzzle.id)}
+                  onJoin={(p) => setJoinTarget(p)}
+                  onUnlock={(p) => setUnlockTarget(p)}
+                />
+              </Link>
+            ))}
+          </div>
+          {listPuzzles.length > 0 && <div className="border-t border-neutral-800 mt-2" />}
+        </div>
+      )}
+
       {filteredPuzzles.length === 0 ? (
         hideEmptyState && !hasActiveFilter ? null : (
         <div className="flex flex-col items-center justify-center py-20 gap-2">
@@ -403,7 +453,7 @@ export function PuzzleList({
         /* 인기순/최신순/예산순: 날짜 그룹 헤더 유지 + 정렬 */
         <div className="pb-24 -mt-3">
           {Object.entries(
-            filteredPuzzles.reduce((groups, puzzle) => {
+            listPuzzles.reduce((groups, puzzle) => {
               const date = puzzle.event_date;
               if (!groups[date]) groups[date] = [];
               groups[date].push(puzzle);
@@ -468,13 +518,13 @@ export function PuzzleList({
             const now = Date.now();
             // MD: 오퍼할 수 있는 깃발 상태(직접 등록 깃발 + 인원 충족된 퍼즐)만
             // 유저/비로그인: 모든 최근 퍼즐 (퍼즐/깃발 둘 다)
-            const recentPuzzles = filteredPuzzles
+            const recentPuzzles = listPuzzles
               .filter(p => now - new Date(p.created_at).getTime() < RECENT_THRESHOLD_MS)
               .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
             const recentTitle = shareMode ? "방금 올라온 조각" : "방금 꽂힌 깃발";
             // "방금 꽂힌 깃발"에 노출된 깃발은 아래 날짜별 전체 목록에서 제외 (중복 방지)
             const recentIds = new Set(recentPuzzles.map(p => p.id));
-            const rest = filteredPuzzles.filter(p => !recentIds.has(p.id));
+            const rest = listPuzzles.filter(p => !recentIds.has(p.id));
 
             const recentDeadline = getPuzzleGroupDeadline(recentPuzzles);
 

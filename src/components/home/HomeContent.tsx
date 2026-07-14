@@ -679,7 +679,16 @@ export function HomeContent({
   const areaFilteredPuzzles = visiblePuzzles;
   // 깃발(인원 확정) vs 조각(파티원 모집) 분리 — 각각 별도 캐러셀로 노출.
   const flagPuzzles = useMemo(() => areaFilteredPuzzles.filter((p) => !p.is_recruiting_party), [areaFilteredPuzzles]);
-  const sharePuzzles = useMemo(() => areaFilteredPuzzles.filter((p) => p.is_recruiting_party), [areaFilteredPuzzles]);
+  const sharePuzzles = useMemo(() => {
+    const shares = areaFilteredPuzzles.filter((p) => p.is_recruiting_party);
+    // 1순위: 파트너 직통(host_is_md) 조각 최우선 노출 (캐러셀 앞 슬롯 차지)
+    // 2순위: 그 다음부터는 이벤트 날짜 빠른 순
+    return [...shares].sort((a, b) => {
+      const partner = (b.host_is_md ? 1 : 0) - (a.host_is_md ? 1 : 0);
+      if (partner !== 0) return partner;
+      return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+    });
+  }, [areaFilteredPuzzles]);
   const areaFilteredShares = useMemo(
     () => visibleAuctions.filter((a) => a.listing_type === "share"),
     [visibleAuctions]

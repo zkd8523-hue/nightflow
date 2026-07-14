@@ -1016,7 +1016,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         {...register("table_info")}
                         type="text"
                         disabled={!isTermsEditable}
-                        placeholder="예) A3, B~C열"
+                        placeholder="예) A3, B~C열, 준메인, 빠통"
                         className={`bg-neutral-900 border-neutral-800 h-11 rounded-lg text-white ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                     {errors.table_info && <p className="text-red-500 text-xs">{errors.table_info?.message?.toString()}</p>}
