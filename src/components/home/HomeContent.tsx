@@ -681,9 +681,14 @@ export function HomeContent({
   const flagPuzzles = useMemo(() => areaFilteredPuzzles.filter((p) => !p.is_recruiting_party), [areaFilteredPuzzles]);
   const sharePuzzles = useMemo(() => {
     const shares = areaFilteredPuzzles.filter((p) => p.is_recruiting_party);
-    // 1순위: 파트너 직통(host_is_md) 조각 최우선 노출 (캐러셀 앞 슬롯 차지)
-    // 2순위: 그 다음부터는 이벤트 날짜 빠른 순
+    const isNew = (p: Puzzle) =>
+      Date.now() - new Date(p.created_at).getTime() < 6 * 60 * 60 * 1000;
+    // 1순위: NEW(등록 6시간 이내) 최우선 노출
+    // 2순위: 파트너 직통(host_is_md) 조각
+    // 3순위: 이벤트 날짜 빠른 순
     return [...shares].sort((a, b) => {
+      const news = (isNew(b) ? 1 : 0) - (isNew(a) ? 1 : 0);
+      if (news !== 0) return news;
       const partner = (b.host_is_md ? 1 : 0) - (a.host_is_md ? 1 : 0);
       if (partner !== 0) return partner;
       return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
