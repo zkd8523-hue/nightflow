@@ -15,6 +15,7 @@ import { MDContactCard } from "./MDContactCard";
 import { CopyAcceptedMessageButton } from "./CopyAcceptedMessageButton";
 import { AdminCancelPuzzleButton } from "@/components/admin/AdminCancelPuzzleButton";
 import { SecretOfferCard } from "./SecretOfferCard";
+import { OfferCompareNudge } from "./OfferCompareNudge";
 import { PuzzlePiece, buildPuzzleSlotLayout } from "./PuzzleCard";
 import type { Puzzle, PuzzleMember, PuzzleOffer, OfferChatMeta, GenderPref, AgePref, VibePref, PublicUserProfile, PuzzleCancelReason } from "@/types/database";
 import { trackEvent } from "@/lib/analytics/events";
@@ -236,6 +237,8 @@ export function PuzzleDetailClient({
   const [editingOffer, setEditingOffer] = useState<PuzzleOffer | null>(null);
   // 클럽 그룹 단위로 여는 가격표 비교 창 — 어느 클럽 그룹이 열려있는지 clubKey로 추적
   const [compareGroupKey, setCompareGroupKey] = useState<string | null>(null);
+  // 방장이 오퍼 받고도 상담 안 시작한 채 머물 때 1회 뜨는 "정가 비교" 넛지
+  const [showCompareNudge, setShowCompareNudge] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [offers, setOffers] = useState<PuzzleOffer[]>([]);
   const [offersLoading, setOffersLoading] = useState(true);
@@ -513,6 +516,36 @@ export function PuzzleDetailClient({
     }
     return result;
   }, [pendingOffers]);
+
+  // 정가표(주류 메뉴)가 있는 클럽 그룹만 — 비교 시트가 클럽 경계를 넘어 연속으로 넘길 대상
+  const compareGroups = useMemo(
+    () =>
+      offerGroups.filter((g) => {
+        const c = g.club as { drink_menu_url?: string | null; drink_menu_urls?: string[] | null } | null;
+        return !!(c?.drink_menu_url || (c?.drink_menu_urls && c.drink_menu_urls.length > 0));
+      }),
+    [offerGroups],
+  );
+  // 비교 넛지 CTA가 열 첫 그룹
+  const firstCompareGroupKey = compareGroups[0]?.clubKey ?? null;
+  // 이미 어느 오퍼든 상담을 시작했으면 넛지 불필요
+  const anyChatStarted = useMemo(
+    () => pendingOffers.some((o) => o.leader_chat_started_at),
+    [pendingOffers],
+  );
+
+  // 방장이 오퍼를 받고도 상담을 시작하지 않고 잠깐 머물면 비교 넛지 1회 노출.
+  // (localStorage로 깃발당 1회 제한 · 정가표 있는 클럽이 있을 때만)
+  useEffect(() => {
+    if (!isLeader || isAccepted) return;
+    if (pendingOffers.length === 0 || !firstCompareGroupKey || anyChatStarted) return;
+    try {
+      if (localStorage.getItem(`flag_compare_nudge_${puzzle.id}`) === "1") return;
+    } catch {}
+    // 진입 후 5초 뒤 1회 노출 (아직 상담 안 시작한 방장에게만)
+    const timer = setTimeout(() => setShowCompareNudge(true), 5000);
+    return () => clearTimeout(timer);
+  }, [isLeader, isAccepted, pendingOffers.length, firstCompareGroupKey, anyChatStarted, puzzle.id]);
 
   // 방장이 본인 깃발 상세를 열면 현재 오퍼 수를 "확인함"으로 기록.
   // MY 목록의 "NEW +N"(확인 안 한 오퍼 수) 계산 기준. (localStorage 키: profile과 동일)
@@ -1583,15 +1616,6 @@ export function PuzzleDetailClient({
                           );
                         })}
                       </div>
-                      {hasDrinkMenu && compareGroupKey === group.clubKey && groupClub && (
-                        <OfferMenuCompareSheet
-                          onClose={() => setCompareGroupKey(null)}
-                          club={groupClub}
-                          offers={group.offers}
-                          lang={lang}
-                          myBudget={!isRecruitingParty ? baseBudget : undefined}
-                        />
-                      )}
                     </div>
                   );
                 })}
@@ -2093,6 +2117,31 @@ export function PuzzleDetailClient({
         onOpenChange={setShowLeaderInfo}
         leader={puzzle.leader ? { ...puzzle.leader, consultation_count: leaderConsultCount } : null}
       />
+
+      {compareGroupKey && compareGroups.length > 0 && (
+        <OfferMenuCompareSheet
+          onClose={() => setCompareGroupKey(null)}
+          groups={compareGroups}
+          startGroupKey={compareGroupKey}
+          lang={lang}
+          myBudget={!isRecruitingParty ? baseBudget : undefined}
+        />
+      )}
+
+      {showCompareNudge && firstCompareGroupKey && !compareGroupKey && !anyChatStarted && (
+        <OfferCompareNudge
+          lang={lang}
+          onCompare={() => {
+            try { localStorage.setItem(`flag_compare_nudge_${puzzle.id}`, "1"); } catch {}
+            setShowCompareNudge(false);
+            setCompareGroupKey(firstCompareGroupKey);
+          }}
+          onClose={() => {
+            try { localStorage.setItem(`flag_compare_nudge_${puzzle.id}`, "1"); } catch {}
+            setShowCompareNudge(false);
+          }}
+        />
+      )}
 
       <RecentMatchShowcaseSheet
         open={showMatchedShowcase}

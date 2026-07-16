@@ -248,7 +248,7 @@ export function SecretOfferCard({
                 className="inline-flex items-center gap-1.5 rounded-full px-4 h-9 bg-gradient-to-b from-amber-400 to-amber-500 text-black font-black text-[13px] shadow-[0_0_16px_-2px_rgba(245,158,11,0.6)] hover:from-amber-300 hover:to-amber-400 active:scale-[0.97] transition-all"
               >
                 <MessageCircle className="w-4 h-4" />
-                {t("상담하기", "Chat")}
+                {t("무료 상담", "Free chat")}
               </Link>
             </div>
           ) : (

@@ -7,7 +7,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { getDrinkCategoryImage } from "@/lib/constants/drink-images";
 import { getLiquorCategory, formatPriceBucket } from "@/lib/utils/format";
 import type { LiquorProduct } from "@/types/database";
 
@@ -27,24 +26,25 @@ const CATEGORY_LABEL: Record<string, string> = {
 interface LiquorInfoSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** 매칭된 구조화 데이터 — 없으면 카테고리 폴백으로 표시 */
+  /** 매칭된 구조화 데이터 — 없으면 이미지 없이 이름/카테고리만 표시 */
   product: LiquorProduct | null;
-  /** 매칭 실패 시 폴백 이미지/이름을 만들기 위한 원본 텍스트 */
+  /** 매칭 실패 시 이름으로 쓸 원본 텍스트 */
   includeText: string;
 }
 
 export function LiquorInfoSheet({ open, onOpenChange, product, includeText }: LiquorInfoSheetProps) {
   const category = getLiquorCategory(includeText);
-  const fallbackImage = getDrinkCategoryImage([includeText]);
   const priceBucket = product ? formatPriceBucket(product.price_min, product.price_max) : null;
 
-  const imageUrl = product?.image_url || fallbackImage;
+  // 확인된 실제 상품 이미지가 없으면 카테고리 폴백 없이 그냥 빈 상태로 둔다 (틀린 사진 노출 방지)
+  const imageUrl = product?.image_url || null;
   const name = product?.name || includeText;
   const description = product?.description || null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+      {/* z-[210]: 풀스크린 비교창(z-200) 위에서도 뜨도록 */}
+      <SheetContent side="bottom" className="z-[210] bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
         <SheetHeader>
           <SheetTitle className="sr-only">주류 정보</SheetTitle>
         </SheetHeader>

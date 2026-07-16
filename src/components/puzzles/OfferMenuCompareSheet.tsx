@@ -3,24 +3,35 @@
 import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 import type { PuzzleOffer } from "@/types/database";
 import { splitOfferIncludes } from "@/lib/utils/offerTags";
 import { toEnglishInclude } from "@/lib/utils/liquorEn";
 import { useTranslatedComment } from "@/hooks/useTranslatedComment";
 import { type Lang, makeT } from "@/lib/i18n";
+import { LiquorPill } from "./LiquorPill";
+import { useLiquorProducts } from "@/hooks/useLiquorProducts";
+
+interface CompareClub {
+  name?: string;
+  drink_menu_url?: string | null;
+  drink_menu_urls?: string[];
+  drink_menu_updated_at?: string | null;
+}
+
+interface CompareGroup {
+  clubKey: string;
+  club: CompareClub;
+  offers: PuzzleOffer[];
+}
 
 interface OfferMenuCompareSheetProps {
   onClose: () => void;
-  club: {
-    name?: string;
-    drink_menu_url?: string | null;
-    drink_menu_urls?: string[];
-    drink_menu_updated_at?: string | null;
-  };
-  /** 같은 클럽의 모든 오퍼 — 가격표는 그대로 두고 "다음 오퍼보기"로 이 안에서만 넘김 */
-  offers: PuzzleOffer[];
+  /** 정가표 있는 모든 클럽 그룹 — 가격표 페이지 끝나면 다음 오퍼(다른 클럽 포함) 비교로 연속 */
+  groups: CompareGroup[];
+  /** 처음 열 그룹(클럽) key — 유저가 특정 클럽 "비교하기"를 누른 지점 */
+  startGroupKey?: string | null;
   lang?: Lang;
   /** 방장의 총 예산 — 정가와 빠르게 대조할 수 있게 하단 고정 패널에 노출 */
   myBudget?: number;
@@ -29,20 +40,29 @@ interface OfferMenuCompareSheetProps {
 /**
  * 풀스크린 비교 뷰 — 배경에 클럽 주대표(가격표)를 스크롤로 보여주고,
  * 오퍼 정보(태그·코멘트·상담 CTA)는 하단에 고정해 열고닫지 않고 바로 대조할 수 있게 함.
- * 같은 클럽에 MD가 여럿이면, 가격표는 그대로 둔 채 "다음 오퍼보기"로 오퍼만 넘겨볼 수 있음.
+ * 가격표 이미지 마지막 페이지에서 계속 넘기면 → 다음 오퍼(다른 클럽이면 그 클럽 가격표)로 이어짐.
  */
-export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBudget }: OfferMenuCompareSheetProps) {
+export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "ko", myBudget }: OfferMenuCompareSheetProps) {
   const isForeigner = lang !== "ko";
   const t = makeT(lang);
+
+  // 전체 오퍼를 (그룹, 오퍼) 평면 시퀀스로 — "다음 오퍼"가 클럽 경계를 넘어 연속되게.
+  const sequence = groups.flatMap((g, gi) => g.offers.map((_, oi) => ({ gi, oi })));
+  const startGroupIndex = Math.max(0, groups.findIndex((g) => g.clubKey === startGroupKey));
+  const startSeqPos = Math.max(0, sequence.findIndex((s) => s.gi === startGroupIndex && s.oi === 0));
+  const [seqPos, setSeqPos] = useState(startSeqPos);
+  const { gi: groupIdx, oi: offerIdx } = sequence[seqPos] ?? { gi: 0, oi: 0 };
+  const group = groups[groupIdx];
+  const club = group.club;
+  const offer = group.offers[offerIdx];
+  const hasMultipleOffers = sequence.length > 1;
+
   const sources = (club.drink_menu_urls && club.drink_menu_urls.length > 0)
     ? club.drink_menu_urls
     : (club.drink_menu_url ? [club.drink_menu_url] : []);
-  // 가격표 이미지 넘기기와는 별개 상태 — "다음 오퍼보기"만 이걸 바꾼다.
-  const [offerIdx, setOfferIdx] = useState(0);
-  const offer = offers[offerIdx];
-  const hasMultipleOffers = offers.length > 1;
   const { liquors, sellingPoints, extras } = splitOfferIncludes(offer.includes);
   const commentEn = useTranslatedComment(offer.comment, isForeigner);
+  const { products: liquorProducts } = useLiquorProducts();
 
   // 세로로 이어붙이지 않고 좌우로 넘기는 페이지 방식 (DrinkMenuViewer 인라인 슬라이더와 동일 패턴).
   // 별도 확대 버튼/라이트박스 없이 이 화면에서 바로 핀치·더블탭·휠 줌 가능 (TransformWrapper를 페이지별로 직접 부착).
@@ -59,6 +79,26 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
     currentScaleRef.current = 1;
     setPageIdx(Math.max(0, Math.min(sources.length - 1, idx)));
     setDragX(0);
+  };
+
+  const isLastOffer = seqPos >= sequence.length - 1;
+  // 다음/이전 오퍼로 — 순환하지 않고 끝에서 멈춤(clamp). 클럽이 바뀌면 가격표 페이지를 처음으로 리셋.
+  const goToOffer = (nextPos: number) => {
+    const clamped = Math.max(0, Math.min(sequence.length - 1, nextPos));
+    if (clamped === seqPos) return;
+    const next = sequence[clamped];
+    const clubChanges = next.gi !== groupIdx;
+    setSeqPos(clamped);
+    if (clubChanges) {
+      currentScaleRef.current = 1;
+      setPageIdx(0);
+      setDragX(0);
+    }
+  };
+  // 가격표 앞으로 넘기기: 마지막 페이지에서 더 넘기면 다음 오퍼(가격비교)로 연속. 마지막 오퍼면 멈춤.
+  const goForward = () => {
+    if (pageIdx < sources.length - 1) goToPage(pageIdx + 1);
+    else if (!isLastOffer) goToOffer(seqPos + 1);
   };
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (currentScaleRef.current > 1.01 || e.touches.length !== 1) return;
@@ -81,6 +121,12 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
     const dx = e.changedTouches[0].clientX - touchStartXRef.current;
     const startIdx = touchStartIdxRef.current;
     const SWIPE_THRESHOLD = 40;
+    // 마지막 페이지에서 왼쪽으로 더 밀면 → 다음 오퍼 비교로 연속 (흐름 끊기지 않게)
+    if (dx <= -SWIPE_THRESHOLD && startIdx === sources.length - 1 && hasMultipleOffers && !isLastOffer) {
+      setDragX(0);
+      goToOffer(seqPos + 1);
+      return;
+    }
     let targetIdx = startIdx;
     if (dx <= -SWIPE_THRESHOLD) targetIdx = Math.min(sources.length - 1, startIdx + 1);
     else if (dx >= SWIPE_THRESHOLD) targetIdx = Math.max(0, startIdx - 1);
@@ -96,11 +142,16 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
     // data-no-pull-refresh="strict": 전역 PullToRefresh의 document 터치 리스너가
     // 멀티터치(핀치)를 단일 터치로 오인해 preventDefault를 걸어 핀치줌과 충돌하는 것을 차단.
     <div className="fixed inset-0 z-[200] bg-black flex flex-col" role="dialog" aria-modal="true" data-no-pull-refresh="strict">
-      {/* 상단 바 */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black/90 backdrop-blur-sm border-b border-neutral-800 shrink-0">
-        <p className="text-[14px] font-black text-white truncate">
-          {club.name || t("클럽", "Club")} {t("가격표", "Price list")}
-        </p>
+      {/* 상단 바 — 클럽명을 크게(남은 폭 전부). 클럽이 바뀌면 key로 재애니메이션돼 전환이 바로 느껴짐 */}
+      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-black/90 backdrop-blur-sm border-b border-neutral-800 shrink-0">
+        <div key={groupIdx} className="min-w-0 flex-1 animate-in fade-in slide-in-from-right-3 duration-300">
+          <p className="flex items-baseline gap-1.5 min-w-0">
+            <span className="text-[20px] font-black text-white truncate tracking-tight">
+              {club.name || t("클럽", "Club")}
+            </span>
+            <span className="text-[12px] font-bold text-neutral-500 shrink-0">{t("가격표", "Price list")}</span>
+          </p>
+        </div>
         <button
           type="button"
           onClick={onClose}
@@ -117,10 +168,10 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
           <>
             <div
               className="flex w-full h-full"
-              onTouchStart={hasMultiple ? handleTouchStart : undefined}
-              onTouchMove={hasMultiple ? handleTouchMove : undefined}
-              onTouchEnd={hasMultiple ? handleTouchEnd : undefined}
-              onTouchCancel={hasMultiple ? handleTouchEnd : undefined}
+              onTouchStart={(hasMultiple || hasMultipleOffers) ? handleTouchStart : undefined}
+              onTouchMove={(hasMultiple || hasMultipleOffers) ? handleTouchMove : undefined}
+              onTouchEnd={(hasMultiple || hasMultipleOffers) ? handleTouchEnd : undefined}
+              onTouchCancel={(hasMultiple || hasMultipleOffers) ? handleTouchEnd : undefined}
               style={{
                 transform: hasMultiple
                   ? `translateX(calc(${-pageIdx * 100}% + ${dragX}px))`
@@ -173,11 +224,12 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
                 <ChevronLeft className="w-5 h-5" />
               </button>
             )}
-            {hasMultiple && pageIdx < sources.length - 1 && (
+            {/* 앞으로: 페이지가 남았으면 다음 페이지, 마지막이면 다음 오퍼 비교로 연속. 마지막 오퍼 끝이면 숨김 */}
+            {(pageIdx < sources.length - 1 || !isLastOffer) && (
               <button
                 type="button"
-                onClick={() => goToPage(pageIdx + 1)}
-                aria-label={t("다음 페이지", "Next page")}
+                onClick={goForward}
+                aria-label={pageIdx < sources.length - 1 ? t("다음 페이지", "Next page") : t("다음 오퍼 비교", "Next offer")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-white"
               >
                 <ChevronRight className="w-5 h-5" />
@@ -210,9 +262,9 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
 
       {/* 하단 고정 — 오퍼 요약 + 상담 CTA */}
       <div className="shrink-0 bg-[#1C1C1E] border-t border-neutral-800 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] space-y-2 max-h-[45vh] overflow-y-auto">
-        {hasMultipleOffers && (
-          <p className="text-[11px] font-bold text-neutral-500">
-            {t(`오퍼 ${offerIdx + 1} / ${offers.length}`, `Offer ${offerIdx + 1} / ${offers.length}`)}
+        {club.name && (
+          <p key={groupIdx} className="text-[13px] font-black text-white truncate animate-in fade-in slide-in-from-right-2 duration-300">
+            {club.name}
           </p>
         )}
         {myBudget != null && (
@@ -226,15 +278,7 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
             {liquors.length > 0 && (
               <div className="flex flex-wrap gap-1.5">
                 {liquors.map((inc) => (
-                  <span
-                    key={inc}
-                    className="inline-flex items-center gap-1 text-[13px] font-bold px-2.5 py-1 rounded-[7px] bg-gradient-to-b from-amber-400/15 to-amber-600/10 border border-amber-300/40 ring-1 ring-inset ring-amber-200/20 shadow-[0_0_12px_-2px_rgba(245,158,11,0.35)]"
-                  >
-                    <span aria-hidden>🍾</span>
-                    <span className="bg-gradient-to-b from-amber-200 to-amber-500 bg-clip-text text-transparent">
-                      {isForeigner ? toEnglishInclude(inc) : inc}
-                    </span>
-                  </span>
+                  <LiquorPill key={inc} includeText={inc} products={liquorProducts} isForeigner={isForeigner} />
                 ))}
               </div>
             )}
@@ -273,19 +317,35 @@ export function OfferMenuCompareSheet({ onClose, club, offers, lang = "ko", myBu
           <Link
             href={`/messages/${offer.id}`}
             onClick={onClose}
-            className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px]"
+            className="flex-1 flex items-center justify-center gap-1.5 h-11 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px] shadow-[0_0_16px_-3px_rgba(245,158,11,0.55)]"
           >
-            {t("무료 상담", "Free chat")}
+            {t("문의하기", "Contact")}
           </Link>
           {hasMultipleOffers && (
-            <button
-              type="button"
-              onClick={() => setOfferIdx((i) => (i + 1) % offers.length)}
-              className="flex-1 flex items-center justify-center gap-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-[13px]"
-            >
-              {t("다음 오퍼보기", "Next offer")}
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            isLastOffer ? (
+              <button
+                type="button"
+                onClick={() => goToOffer(0)}
+                className="flex-1 flex flex-col items-center justify-center h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white leading-tight"
+              >
+                <span className="flex items-center gap-1 font-bold text-[13px]">
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  {t("첫 오퍼 보기", "First offer")}
+                </span>
+                <span className="text-[10px] font-medium text-neutral-400">
+                  {t("마지막 오퍼예요", "Last offer")}
+                </span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => goToOffer(seqPos + 1)}
+                className="flex-1 flex items-center justify-center gap-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-[13px]"
+              >
+                {t("다음 오퍼", "Next offer")}
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )
           )}
         </div>
       </div>
