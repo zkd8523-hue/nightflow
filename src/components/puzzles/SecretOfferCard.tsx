@@ -241,13 +241,14 @@ export function SecretOfferCard({
               </Link>
             )
           ) : hideClubHeader ? (
-            /* 클럽 그룹 안 여러 MD 카드 — 배경/보더 없는 골드 텍스트 링크형 CTA (Editorial Void) */
+            /* 클럽 그룹 안 여러 MD 카드 — 빛나는 골드 칩형 CTA (주류 배지보다 위계 우선) */
             <div className="flex justify-end pt-1">
               <Link
                 href={`/messages/${offer.id}`}
-                className="text-[13px] font-bold text-amber-200 hover:text-amber-100 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-full px-4 h-9 bg-gradient-to-b from-amber-400 to-amber-500 text-black font-black text-[13px] shadow-[0_0_16px_-2px_rgba(245,158,11,0.6)] hover:from-amber-300 hover:to-amber-400 active:scale-[0.97] transition-all"
               >
-                {t("상담하기", "Chat")} →
+                <MessageCircle className="w-4 h-4" />
+                {t("상담하기", "Chat")}
               </Link>
             </div>
           ) : (
