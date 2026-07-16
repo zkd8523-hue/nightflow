@@ -537,7 +537,8 @@ export function PuzzleDetailClient({
   // 방장이 오퍼를 받고도 상담을 시작하지 않고 잠깐 머물면 비교 넛지 1회 노출.
   // (localStorage로 깃발당 1회 제한 · 정가표 있는 클럽이 있을 때만)
   useEffect(() => {
-    if (!isLeader || isAccepted) return;
+    // 어드민 모니터링 화면에는 넛지 제외 — 실제 방장 본인에게만.
+    if (!isLeader || isRealAdmin || isAccepted) return;
     if (pendingOffers.length === 0 || !firstCompareGroupKey || anyChatStarted) return;
     try {
       if (localStorage.getItem(`flag_compare_nudge_${puzzle.id}`) === "1") return;
@@ -2128,7 +2129,7 @@ export function PuzzleDetailClient({
         />
       )}
 
-      {showCompareNudge && firstCompareGroupKey && !compareGroupKey && !anyChatStarted && (
+      {showCompareNudge && !isRealAdmin && firstCompareGroupKey && !compareGroupKey && !anyChatStarted && (
         <OfferCompareNudge
           lang={lang}
           onCompare={() => {
