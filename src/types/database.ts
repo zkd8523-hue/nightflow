@@ -349,6 +349,12 @@ export interface Club {
   // Migration 203: 공식 인스타그램 핸들 (https://instagram.com/{handle})
   instagram: string | null;
 
+  // Migration 462: 공식 홈페이지 URL (풀파티/이벤트 venue용)
+  website_url?: string | null;
+
+  // Migration 461: 클럽 가이드/지도 노출 차단 (비-클럽 venue용)
+  hidden_from_guide?: boolean;
+
   // Migration 208: 클럽지도 필터/특징 태그 + 주대표
   tags: string[];  // prefix-grouped: 'genre:hiphop', 'crowd:foreign', etc.
   drink_menu_url: string | null;

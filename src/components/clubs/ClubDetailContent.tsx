@@ -24,6 +24,7 @@ import {
   Copy,
   Check,
   Pencil,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 import { uploadImage } from "@/lib/utils/upload";
@@ -603,6 +604,19 @@ export function ClubDetailContent({
               <Instagram className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="sr-only">{club.name} 인스타그램: </span>
               @{clubInstagram}
+            </a>
+          )}
+
+          {club.website_url && (
+            <a
+              href={club.website_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-blue-400 transition-colors mt-1"
+            >
+              <Globe className="w-3.5 h-3.5" aria-hidden="true" />
+              <span className="sr-only">{club.name} 공식 홈페이지: </span>
+              공식 홈페이지
             </a>
           )}
 

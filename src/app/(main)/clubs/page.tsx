@@ -45,7 +45,9 @@ export default async function ClubsIndexPage() {
         .from("clubs")
         .select("id, name, area, thumbnail_url, tags, drink_menu_url, latitude, longitude, operating_hours, entry_fee_detail, aliases, seed_favorite_count")
         .is("deleted_at", null)
-        .eq("status", "approved"),
+        .eq("status", "approved")
+        // 반얀트리 풀파티 등 비-클럽 venue는 가이드/지도에서 제외 (조각/깃발은 정상)
+        .not("hidden_from_guide", "is", true),
       ""
     );
 

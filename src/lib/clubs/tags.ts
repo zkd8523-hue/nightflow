@@ -31,6 +31,7 @@ export const CLUB_TAG_GROUPS: ClubTagGroupDef[] = [
       { key: "club", label: "클럽" },
       { key: "lounge", label: "라운지" },
       { key: "pub", label: "펍" },
+      { key: "pool_party", label: "풀파티" },
     ],
   },
   {
