@@ -93,8 +93,9 @@ export async function GET(request: NextRequest) {
         langParam && langParam !== "ko"
           ? langParam
           : (safeNext.match(/lang=(en|ja|zh)/)?.[1] ?? null);
+      // country_code='KR'은 한국인(/en 트랙 유입 후 대한민국 선택)이므로 외국인에서 제외.
       const isForeigner =
-        (profile.country_code != null && profile.country_code !== "") ||
+        (profile.country_code != null && profile.country_code !== "" && profile.country_code !== "KR") ||
         foreignLang != null;
       // next가 의미있는 목적지(단순 루트+lang= 제외)가 아닐 때만 /en으로
       const isDefaultNext =

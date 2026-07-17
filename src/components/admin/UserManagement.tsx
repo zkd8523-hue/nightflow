@@ -102,7 +102,9 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
   const [visitFilter, setVisitFilter] = useState<"all" | "upcoming" | "past" | "none">("all");
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "recent_seen" | "long_inactive">("newest");
 
-  const foreignCount = users.filter((u) => u.country_code != null && u.country_code !== "").length;
+  // 외국인 판정: country_code가 있고 KR(한국)이 아닌 경우.
+  // 한국인이 /en 트랙으로 유입 후 국가=대한민국을 고르면 country_code='KR'이 저장되지만 내국인으로 분류.
+  const foreignCount = users.filter((u) => u.country_code != null && u.country_code !== "" && u.country_code !== "KR").length;
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<UserActivityStats | null>(null);
@@ -248,7 +250,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
   };
 
   const filteredUsers = users.filter((u) => {
-    const isForeign = u.country_code != null && u.country_code !== "";
+    const isForeign = u.country_code != null && u.country_code !== "" && u.country_code !== "KR";
     const matchesNationality =
       nationalityFilter === "foreign" ? isForeign : !isForeign;
 

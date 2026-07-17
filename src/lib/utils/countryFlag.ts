@@ -6,6 +6,7 @@ export function countryFlag(code: string): string {
 }
 
 export const COUNTRIES = [
+  { code: "KR", name: "South Korea", nameKo: "대한민국" },
   { code: "US", name: "United States", nameKo: "미국" },
   { code: "JP", name: "Japan", nameKo: "일본" },
   { code: "CN", name: "China", nameKo: "중국" },
