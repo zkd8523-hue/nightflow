@@ -683,10 +683,14 @@ export function HomeContent({
     const shares = areaFilteredPuzzles.filter((p) => p.is_recruiting_party);
     const isNew = (p: Puzzle) =>
       Date.now() - new Date(p.created_at).getTime() < 6 * 60 * 60 * 1000;
-    // 1순위: NEW(등록 6시간 이내) 최우선 노출
-    // 2순위: 파트너 직통(host_is_md) 조각
-    // 3순위: 이벤트 날짜 빠른 순
+    const isFull = (p: Puzzle) => p.current_count >= p.target_count;
+    // 1순위: 퍼즐 완성(모집 완료) 조각 최상단 노출
+    // 2순위: NEW(등록 6시간 이내)
+    // 3순위: 파트너 직통(host_is_md) 조각
+    // 4순위: 이벤트 날짜 빠른 순
     return [...shares].sort((a, b) => {
+      const full = (isFull(b) ? 1 : 0) - (isFull(a) ? 1 : 0);
+      if (full !== 0) return full;
       const news = (isNew(b) ? 1 : 0) - (isNew(a) ? 1 : 0);
       if (news !== 0) return news;
       const partner = (b.host_is_md ? 1 : 0) - (a.host_is_md ? 1 : 0);

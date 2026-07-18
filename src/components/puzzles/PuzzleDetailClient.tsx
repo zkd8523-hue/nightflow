@@ -353,6 +353,9 @@ export function PuzzleDetailClient({
   // 파티원 모집 중일 때만 인원 가득 찬 개념이 의미 있음
   const isFull = isRecruitingParty && puzzle.current_count >= puzzle.target_count;
   const isOpen = puzzle.status === "open" && !isFull;
+  // MD/파트너 오퍼 제출 가능 여부: 정원이 찬(퍼즐 완성) 조각도 status='open'이면 오퍼 가능.
+  // isOpen은 유저 '참가하기'용이라 isFull을 제외하지만, 완성된 파티야말로 오퍼 적기라 여기선 정원 무관.
+  const canSubmitOffer = puzzle.status === "open";
   // Migration 297: 오퍼 마감 후 'selecting' 단계에서도 방장은 60분간 수락 가능.
   // isOpen 은 신규 오퍼 제출/join 같은 동작용이라 selecting 을 포함하면 안 됨.
   const canAcceptOffers =
@@ -801,7 +804,7 @@ export function PuzzleDetailClient({
           )}
         </div>
 
-        <div className={`space-y-5 ${(isRecruitingParty && isOpen && currentUserId && !isMember && !isLeader && !isMd) || (isRecruitingParty && isOpen && !currentUserId) ? "pb-28" : "pb-10"}`}>
+        <div className={`space-y-5 ${(isMd || isAdmin) && canSubmitOffer && !myOffer && !puzzle.host_is_md ? "pb-44" : (isRecruitingParty && isOpen && currentUserId && !isMember && !isLeader && !isMd) || (isRecruitingParty && isOpen && !currentUserId) ? "pb-28" : "pb-10"}`}>
           {/* 검토 중 배너 (status = selecting) */}
           {puzzle.status === "selecting" && (
             <SelectingBanner expiresAt={puzzle.expires_at} en={isForeigner} />
@@ -987,7 +990,7 @@ export function PuzzleDetailClient({
             {isRecruitingParty && (
               <div className="space-y-1.5">
                 {puzzle.current_count >= puzzle.target_count && (
-                  <span className="text-[13px] text-neutral-400">퍼즐 완성!</span>
+                  <span className="text-[13px] text-neutral-400">조각 완성!</span>
                 )}
                 <div className="flex flex-wrap gap-1.5">
                   {buildPuzzleSlotLayout(puzzle).map((slot, i) => (
@@ -1995,40 +1998,26 @@ export function PuzzleDetailClient({
             </button>
           )}
 
-          {/* MD/Admin 제안하기 버튼 — MD 직통 조각(host_is_md)엔 다른 MD 오퍼 불가 */}
-          {(isMd || isAdmin) && isOpen && !myOffer && !puzzle.host_is_md && (
-            <div className="space-y-2">
-              {/* 외국인 깃발 안내 (Migration 343 Escrow 결제 트리거) */}
-              {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR" && (
-                <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[12px] text-amber-300 leading-relaxed">
-                  💳 <strong>{t(isRecruitingParty ? "외국인 조각" : "외국인 깃발", isRecruitingParty ? "International Share" : "International Flag")}</strong> — {t("매칭 시 사용자가 즉시 선결제, 방문 확정 후 정산 (NightFlow 9% 차감 후 송금)", "Prepaid instantly on match, settled after the visit is confirmed (9% NightFlow fee deducted)")}
-                </div>
-              )}
-              <Button
-                onClick={() => setShowOffer(true)}
-                className="w-full h-13 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl"
-              >
-                오퍼하기
-              </Button>
-              <p className="text-[11px] text-neutral-600 text-center leading-relaxed">
-                <FeatureGate
-                  flag="offer_chat"
-                  fallback={
-                    <>
-                      제안은 무료 · 수락될 때만{" "}
-                      <span className="text-amber-400 font-bold">30크레딧</span>{" "}
-                      <span className="text-neutral-500">(3,000원)</span>
-                    </>
-                  }
+          {/* MD/Admin 제안하기 버튼 — MD 직통 조각(host_is_md)엔 다른 MD 오퍼 불가 · 스티키 고정(유저 참가하기와 동일 패턴) */}
+          {(isMd || isAdmin) && canSubmitOffer && !myOffer && !puzzle.host_is_md && (
+            <div
+              className="fixed left-0 right-0 z-30 px-4 pointer-events-none"
+              style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom) - 0.25rem)" }}
+            >
+              <div className="max-w-lg mx-auto space-y-2 pointer-events-auto">
+                {/* 외국인 깃발 안내 (Migration 343 Escrow 결제 트리거) */}
+                {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR" && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[12px] text-amber-300 leading-relaxed backdrop-blur">
+                    💳 <strong>{t(isRecruitingParty ? "외국인 조각" : "외국인 깃발", isRecruitingParty ? "International Share" : "International Flag")}</strong> — {t("매칭 시 사용자가 즉시 선결제, 방문 확정 후 정산 (NightFlow 9% 차감 후 송금)", "Prepaid instantly on match, settled after the visit is confirmed (9% NightFlow fee deducted)")}
+                  </div>
+                )}
+                <Button
+                  onClick={() => setShowOffer(true)}
+                  className="w-full py-3.5 h-auto rounded-full bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] border border-black/60 shadow-[0_0_20px_rgba(245,158,11,0.45)] active:scale-[0.98] transition-all"
                 >
-                  {/* matchCost: OfferSheet.tsx:101과 동일 로직 (깃발 15 / 조각 10) */}
-                  제안은 무료 · {isRecruitingParty ? "상담 시작" : "매칭"}될 때만{" "}
-                  <span className="text-amber-400 font-bold">
-                    {isRecruitingParty ? 10 : 15}크레딧
-                  </span>{" "}
-                  <span className="text-neutral-500">(1크레딧 100원)</span>
-                </FeatureGate>
-              </p>
+                  오퍼하기
+                </Button>
+              </div>
             </div>
           )}
 

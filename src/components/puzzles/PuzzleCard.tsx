@@ -83,9 +83,7 @@ export function PuzzlePiece({
       ? "bg-pink-500 shadow-[0_0_8px_rgba(236,72,153,0.4)]"
       : "bg-pink-500/80"
     : isNeutral
-      ? isLeader
-        ? "bg-green-500"
-        : "bg-green-500/80"
+      ? "bg-green-500/80"
       : isLeader
         ? "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
         : "bg-blue-500/80";
@@ -357,7 +355,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             <div className="space-y-1">
               {isFull && (
                 <span className="text-[13px] text-green-400 font-bold">
-                  퍼즐 완성! 🎉
+                  조각 완성! 🎉
                 </span>
               )}
               <div className="flex flex-wrap gap-1">
@@ -472,9 +470,11 @@ export const PuzzleCard = memo(function PuzzleCard({
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-                className="text-[13px] font-bold text-amber-200 hover:text-amber-100 active:scale-[0.97] transition-all shrink-0"
+                className="text-[13px] font-bold text-amber-200 hover:text-amber-100 active:scale-[0.97] transition-all shrink-0 [text-shadow:0_0_10px_rgba(245,158,11,0.65)]"
               >
-                {offerCount > 0 ? "나도 오퍼하기 →" : "먼저 오퍼하기 →"}
+                {isRecruitingParty
+                  ? "조각줍기 →"
+                  : offerCount > 0 ? "나도 오퍼하기 →" : "먼저 오퍼하기 →"}
               </button>
             )}
           </div>

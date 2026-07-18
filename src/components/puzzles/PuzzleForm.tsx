@@ -407,6 +407,14 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     trackEvent(isEditMode ? 'puzzle_edit_view' : 'puzzle_form_view');
   }, [isEditMode]);
 
+  // 외국인 여행 확정 게이트 노출 트래킹 — puzzle_form_view와 puzzle_created 사이
+  // 최대 이탈 구간을 계측. 게이트에서 죽는지(planning) vs 폼에서 죽는지 구분용.
+  useEffect(() => {
+    if (isForeigner && !isEditMode && tripStatus === null) {
+      trackEvent('foreign_trip_gate_view');
+    }
+  }, [isForeigner, isEditMode, tripStatus]);
+
   // 자동 저장 비활성화 (사용자 요청: 신규 등록은 항상 빈 폼).
   // draft를 복원하지 않으므로 저장도 하지 않는다 — 진입 시 이전 입력값이 남아 보이는 문제 방지.
   const DRAFT_AUTOSAVE_ENABLED = false;
@@ -867,14 +875,14 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             <div className="space-y-3">
               <button
                 type="button"
-                onClick={() => setTripStatus("qualified")}
+                onClick={() => { trackEvent('foreign_trip_gate_qualified'); setTripStatus("qualified"); }}
                 className="w-full h-14 rounded-2xl bg-white text-black font-black text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-200 active:scale-[0.99] transition-all"
               >
                 ✅ Yes — booked or already in Korea
               </button>
               <button
                 type="button"
-                onClick={() => setTripStatus("planning")}
+                onClick={() => { trackEvent('foreign_trip_gate_planning'); setTripStatus("planning"); }}
                 className="w-full h-14 rounded-2xl bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-700/60 active:scale-[0.99] transition-all"
               >
                 🗓️ Not yet, just planning
