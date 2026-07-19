@@ -200,7 +200,7 @@ export function ShotViewerSheet({
                 }}
                 className="px-7 py-3 rounded-full bg-white text-black text-[15px] font-black active:scale-95 transition-transform"
               >
-                와글 가기 →
+                Live 가기 →
               </button>
               <button
                 type="button"

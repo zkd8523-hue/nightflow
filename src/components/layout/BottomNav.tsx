@@ -53,7 +53,7 @@ export function BottomNav() {
   const tabs = [
     { label: "홈", icon: Home, href: "/" },
     { label: "주변", icon: Map, href: "/clubs" },
-    { label: "와글", icon: WagleIcon, href: "/chat" },
+    { label: "Live", icon: WagleIcon, href: "/chat" },
     offerChatOn
       ? { label: "채팅", icon: MessageCircle, href: "/messages" }
       : { label: "찜", icon: Heart, href: "/favorites" },

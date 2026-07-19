@@ -660,8 +660,8 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
         <div className="py-10 px-6 text-center">
           <p className="text-[13px] text-neutral-500">
             {room === "all"
-              ? "첫 와글을 남겨보세요!"
-              : `지금 ${ROOM_LABEL[room]}에 있다면 첫 와글을 남겨보세요!`}
+              ? "첫 Live를 남겨보세요!"
+              : `지금 ${ROOM_LABEL[room]}에 있다면 첫 Live를 남겨보세요!`}
           </p>
         </div>
       ) : (
