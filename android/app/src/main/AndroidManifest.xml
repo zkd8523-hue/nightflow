@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -90,6 +91,11 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <!-- capgo camera-preview 영상 저장(Android 12 이하). 13+는 scoped storage라 불필요 → maxSdkVersion 제한 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- 카메라 플러그인 라이브러리가 required="true"로 선언해 병합 시 이겨버린다.
+         카메라 없는 기기까지 배포 대상에서 빠지므로 tools:replace로 false를 강제. -->
+    <uses-feature android:name="android.hardware.camera" android:required="false"
+        tools:replace="android:required" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false"
+        tools:replace="android:required" />
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
 </manifest>
