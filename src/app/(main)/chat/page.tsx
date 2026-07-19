@@ -24,28 +24,31 @@ export default function ChatPage() {
   const [room, setRoom] = useState<ChatRegionCode>(LAUNCH_REGIONS[0].code);
 
   return (
-    <div className="max-w-lg mx-auto bg-[#0B0A11] pb-24">
+    <div className="max-w-lg mx-auto bg-[#0B0A11] flex flex-col overflow-hidden h-[calc(100dvh-52px-56px-env(safe-area-inset-bottom))]">
       <LiveIntroModal />
 
-      {/* 지역 라벨 — 소속감(수도권). LAUNCH_REGIONS가 늘면 탭 선택 UI로 확장 */}
-      <div className="sticky top-[52px] z-20 bg-[#0B0A11]/95 backdrop-blur-sm border-b border-neutral-800 flex items-center gap-1.5 px-3 py-2">
-        {LAUNCH_REGIONS.map((r) => (
-          <button
-            key={r.code}
-            type="button"
-            onClick={() => setRoom(r.code)}
-            className={`px-3.5 py-1.5 rounded-full text-[13px] font-black transition-colors ${
-              room === r.code
-                ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-400 hover:text-white"
-            }`}
-          >
-            {r.label}
-          </button>
-        ))}
-      </div>
-
-      <ChatRoom room={room} />
+      {/* 지역 필터 — LIVE 라벨 행 우측에 배치 (세로 공간 절약, 컴팩트 크기) */}
+      <ChatRoom
+        room={room}
+        regionFilter={
+          <div className="flex items-center gap-1">
+            {LAUNCH_REGIONS.map((r) => (
+              <button
+                key={r.code}
+                type="button"
+                onClick={() => setRoom(r.code)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-black transition-colors ${
+                  room === r.code
+                    ? "bg-white text-black"
+                    : "bg-neutral-800 text-neutral-400 hover:text-white"
+                }`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+        }
+      />
     </div>
   );
 }

@@ -39,6 +39,10 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
   const [elapsedMs, setElapsedMs] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [retryTick, setRetryTick] = useState(0); // 재시도 버튼 → start() 재실행
+  // 획득한 스트림을 상태로 들고 있다가, video가 확실히 마운트된 뒤 별도 effect에서 부착.
+  // (getUserMedia async 타이밍에 videoRef가 늦게 준비돼 첫 스트림이 안 붙던 문제 → 전/후면 전환해야 동작하던 버그 해결)
+  const [activeStream, setActiveStream] = useState<MediaStream | null>(null);
+  const [videoReady, setVideoReady] = useState(false); // loadedmetadata 후 캡처 가능
 
   // 카메라 뷰가 열린 동안 롱프레스 컨텍스트 메뉴/텍스트 선택/이미지 저장 팝업 억제.
   // 안드로이드 WebView·Chrome은 pointer 이벤트보다 먼저 롱프레스 기본 동작을 발동하므로,
@@ -107,10 +111,9 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
           return;
         }
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.play().catch(() => {});
-        }
+        // 부착은 별도 effect에서 (video 마운트 보장). 여기선 상태만 세팅.
+        setVideoReady(false);
+        setActiveStream(stream);
         setError(null);
       } catch (e) {
         console.error("[CameraCaptureView] getUserMedia error", e);
@@ -142,8 +145,19 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
         streamRef.current.getTracks().forEach((t) => t.stop());
         streamRef.current = null;
       }
+      setActiveStream(null);
     };
   }, [open, facing, retryTick]);
+
+  // 스트림 → video 부착 (video 마운트 보장 후 실행). 첫 스트림이 안 붙던 문제 해결.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v || !activeStream) return;
+    if (v.srcObject !== activeStream) {
+      v.srcObject = activeStream;
+    }
+    v.play().catch(() => {});
+  }, [activeStream]);
 
   function takePhoto() {
     const video = videoRef.current;
@@ -358,6 +372,8 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
           autoPlay
           playsInline
           muted
+          onLoadedMetadata={() => setVideoReady(true)}
+          onCanPlay={() => setVideoReady(true)}
           className={`w-full h-full object-cover ${
             facing === "user" ? "-scale-x-100" : ""
           }`}
@@ -466,11 +482,11 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
                 />
               </svg>
             )}
-            {/* 내부 캡처 인디케이터 */}
+            {/* 내부 캡처 인디케이터 — 준비 전엔 흐리게(탭은 되지만 곧 준비됨을 안내) */}
             <div
               className={`rounded-full bg-red-500 transition-all duration-150 pointer-events-none ${
                 recording ? "w-7 h-7 rounded-md" : "w-14 h-14"
-              }`}
+              } ${videoReady || recording ? "" : "opacity-40"}`}
             />
           </button>
         </div>

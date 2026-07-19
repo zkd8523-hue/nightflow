@@ -45,6 +45,7 @@ export async function fetchNearestClubs(
     .eq("area", krArea)
     .eq("is_test", false)
     .eq("status", "approved")
+    .is("deleted_at", null)
     .not("latitude", "is", null)
     .not("longitude", "is", null);
 
@@ -86,6 +87,7 @@ export async function fetchNearestClubsAnyArea(
     .select("id, name, area, latitude, longitude")
     .eq("is_test", false)
     .eq("status", "approved")
+    .is("deleted_at", null)
     .not("latitude", "is", null)
     .not("longitude", "is", null);
 
@@ -129,6 +131,7 @@ export async function searchClubsByName(
     .select("id, name, area, latitude, longitude")
     .eq("is_test", false)
     .eq("status", "approved")
+    .is("deleted_at", null)
     .ilike("name", `%${q}%`)
     .limit(max);
 
@@ -173,7 +176,8 @@ export async function fetchMyClubs(
     .from("clubs")
     .select("id, name, area, latitude, longitude")
     .in("id", ids)
-    .eq("is_test", false);
+    .eq("is_test", false)
+    .is("deleted_at", null);
 
   return (data ?? []).map((c) => {
     const lat = c.latitude as number | null;

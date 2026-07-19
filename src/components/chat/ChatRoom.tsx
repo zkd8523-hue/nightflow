@@ -37,11 +37,13 @@ interface Props {
   room: ChatRoomCode;
   onAreaVerified?: (detected: VerifiableArea) => void;
   loginRedirect?: string;
+  /** LIVE 라벨 행에 넣을 지역 필터 (세로 공간 절약) */
+  regionFilter?: React.ReactNode;
 }
 
 const MAX_LEN = 500;
 
-export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
+export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: Props) {
   const router = useRouter();
   const { user } = useCurrentUser();
   const { messages, loading, reload, addLocalMessage } = useChatMessages(room);
@@ -67,6 +69,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
   // 메시지 전송 시 club_tags 컬럼에 사용
   const taggedClubsRef = useRef<Map<string, string>>(new Map());
   const newMsgAnchorRef = useRef<HTMLDivElement>(null);
+  const scrollPaneRef = useRef<HTMLDivElement>(null);
   const prevLenRef = useRef(0);
   const loginTarget = `/login?redirect=${encodeURIComponent(loginRedirect ?? "/chat")}`;
   // 도배 방지 (클라 사전 차단)
@@ -148,17 +151,23 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
     prevLenRef.current = 0;
   }, [room]);
 
-  // 메시지가 "새로" 들어왔을 때만 부드럽게 스크롤
-  // 초기 로드(0→N)에선 스크롤 호출 안 함 — 페이지 점프 방지
+  // 카톡식: 최신이 아래. 내부 스크롤 pane(상단 캐러셀은 pane 밖이라 항상 보임).
+  // 초기 로드는 즉시 맨 아래(최신)로, 새 글은 부드럽게 아래로. pane 내부만 스크롤됨.
   useEffect(() => {
-    if (
-      prevLenRef.current > 0 &&
-      messages.length > prevLenRef.current
-    ) {
-      newMsgAnchorRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
+    if (messages.length === 0) {
+      prevLenRef.current = 0;
+      return;
+    }
+    const isInitial = prevLenRef.current === 0;
+    const grew = messages.length > prevLenRef.current;
+    if (isInitial || grew) {
+      const pane = scrollPaneRef.current;
+      if (pane) {
+        pane.scrollTo({
+          top: pane.scrollHeight,
+          behavior: isInitial ? "auto" : "smooth",
+        });
+      }
     }
     prevLenRef.current = messages.length;
   }, [messages.length]);
@@ -371,10 +380,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
 
   // 컴포저 JSX (메시지 리스트 아래로 렌더)
   const composer = (
-    <div
-      className="fixed inset-x-0 z-40 bg-[#0A0A0A] border-t border-neutral-800"
-      style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
-    >
+    <div className="shrink-0 bg-[#0A0A0A] border-t border-neutral-800">
       <div className="max-w-lg mx-auto px-3 py-2">
         {/* 미디어 미리보기 */}
         {media.length > 0 && (
@@ -580,10 +586,12 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
   );
 
   return (
-    <div className="flex flex-col pb-52">
-      {/* 와글 LIVE 통합 캐러셀 (Migration 413 이후 방 필터 X) */}
+    <div className="flex-1 min-h-0 flex flex-col">
+      {/* 와글 LIVE 통합 캐러셀 — 상단 고정(스크롤 안 됨), 채팅만 내부 스크롤 */}
+      <div className="shrink-0">
       <ShotCarousel
         currentRoom={room === "all" ? undefined : (room as ChatRegionCode)}
+        headerRight={regionFilter}
         showComposeButton={true}
         currentUserId={user?.id}
         currentUserProfile={user ? { profile_image: user.profile_image ?? null, display_name: user.display_name ?? null } : null}
@@ -596,6 +604,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
           setShotComposeOpen(true);
         }}
       />
+      </div>
 
       {/* LIVE 캡처 시트 — area 없어도 클럽 미지정 LIVE는 게시 가능 */}
       {user && (
@@ -641,10 +650,8 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
         </div>
       )}
 
-      {/* 새 메시지 스크롤 앵커 */}
-      <div ref={newMsgAnchorRef} />
-
-      {/* 메시지 리스트 */}
+      {/* 메시지 영역 — 높이 제한 내부 스크롤 (카톡식). 새 글이 오면 아래로, 오래된 건 위로 밀림 */}
+      <div ref={scrollPaneRef} className="flex-1 min-h-0 overflow-y-auto">
       {loading ? (
         <div className="py-10 text-center text-[13px] text-neutral-500">
           불러오는 중...
@@ -659,11 +666,9 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
         </div>
       ) : (
         <div>
-          {/* 최신 → 오래된 순으로 표시 (트위터식) — parent_id 있는 답글은 타임라인에서 제외 */}
+          {/* 오래된 → 최신 순으로 표시 (카톡식, 새 메시지가 아래) — parent_id 있는 답글은 타임라인에서 제외 */}
           {(() => {
-            const sorted = [...messages]
-              .reverse()
-              .filter((m) => !m.parent_id);
+            const sorted = [...messages].filter((m) => !m.parent_id);
             // 같은 작성자 + 5분 이내 연속이면 그루핑 (헤더 숨김)
             const GROUP_GAP_MS = 5 * 60 * 1000;
             return sorted.map((m, idx) => {
@@ -694,7 +699,11 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
         </div>
       )}
 
-      {/* 카톡식 컴포저 — 메시지 리스트 아래 */}
+      {/* 새 메시지 스크롤 앵커 — 리스트 맨 아래 */}
+      <div ref={newMsgAnchorRef} />
+      </div>
+
+      {/* 카톡식 컴포저 — 컬럼 하단 고정 (fixed 아님, 내부 스크롤 pane 아래) */}
       {composer}
 
       <AreaVerifySheet

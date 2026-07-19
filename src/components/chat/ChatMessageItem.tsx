@@ -195,8 +195,6 @@ export function ChatMessageItem({
 
   const hasReactionCounts = visibleReactions.length > 0;
   const hasReplyCount = !hideReplyButton && message.reply_count > 0;
-  // 카운트 정보가 있으면 항상 표시, 없으면 hover/active일 때만 보임
-  const showActionRow = hasReactionCounts || hasReplyCount;
 
   return (
     <div
@@ -290,6 +288,37 @@ export function ChatMessageItem({
               <ChatMediaGrid items={message.media ?? []} />
             </div>
 
+            {/* 반응(❤️ 등) — 말풍선 오른쪽 하단 인라인 (세로 공간 절약) */}
+            {hasReactionCounts && (
+              <div className="flex items-center gap-0.5 shrink-0 mb-0.5 flex-wrap">
+                {visibleReactions.map(([emoji, count]) => {
+                  const mine = reactionSummary?.mine.has(
+                    emoji as ChatReactionEmoji
+                  );
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => {
+                        if (!isLoggedIn) {
+                          onRequireLogin?.();
+                          return;
+                        }
+                        onReact?.(emoji as ChatReactionEmoji);
+                      }}
+                      className={`inline-flex items-center gap-0.5 px-1 py-0.5 text-[11px] transition-colors ${
+                        mine ? "text-amber-300" : "text-neutral-400 hover:text-white"
+                      }`}
+                      aria-label={`${emoji} ${count}개`}
+                    >
+                      <span>{emoji}</span>
+                      <span className="font-bold">{count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* 인라인 액션 — 데스크탑(md+)만, hover 시 노출 */}
             <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover/msg:opacity-100 transition-opacity shrink-0 mb-0.5">
               {!hideReplyButton && (
@@ -333,52 +362,22 @@ export function ChatMessageItem({
             </div>
           </div>
 
-          {/* 카운트 행 — 반응/답글 카운트가 있을 때만 표시 */}
-          {showActionRow && (
-            <div className="mt-1 flex items-center gap-1 flex-wrap">
-              {visibleReactions.map(([emoji, count]) => {
-                const mine = reactionSummary?.mine.has(
-                  emoji as ChatReactionEmoji
-                );
-                return (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => {
-                      if (!isLoggedIn) {
-                        onRequireLogin?.();
-                        return;
-                      }
-                      onReact?.(emoji as ChatReactionEmoji);
-                    }}
-                    className={`inline-flex items-center gap-0.5 px-1 py-0.5 text-[11px] transition-colors ${
-                      mine
-                        ? "text-amber-300"
-                        : "text-neutral-400 hover:text-white"
-                    }`}
-                    aria-label={`${emoji} ${count}개`}
-                  >
-                    <span>{emoji}</span>
-                    <span className="font-bold">{count}</span>
-                  </button>
-                );
-              })}
-
-              {!hideReplyButton &&
-                hasReplyCount &&
-                !(replyPreview && replyPreview.preview.length > 0) && (
-                  <button
-                    type="button"
-                    onClick={() => onOpenReplies?.(message)}
-                    className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
-                    aria-label="답글 보기"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" />
-                    <span className="font-bold">답글 {message.reply_count}</span>
-                  </button>
-                )}
-            </div>
-          )}
+          {/* 답글 카운트 행 — 반응은 말풍선 옆으로 이동, 여기선 답글 버튼만 */}
+          {!hideReplyButton &&
+            hasReplyCount &&
+            !(replyPreview && replyPreview.preview.length > 0) && (
+              <div className="mt-1 flex items-center gap-1 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => onOpenReplies?.(message)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
+                  aria-label="답글 보기"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span className="font-bold">답글 {message.reply_count}</span>
+                </button>
+              </div>
+            )}
 
           {/* 답글 배지 (카톡식 ↳ 댓글 N) — 누르면 답글 스레드 열림 */}
           {!hideReplyButton && replyPreview && replyPreview.total > 0 && (

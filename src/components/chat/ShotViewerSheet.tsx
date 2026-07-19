@@ -16,6 +16,7 @@ import {
   Volume2,
   VolumeX,
   Eye,
+  BadgeCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -73,16 +74,25 @@ export function ShotViewerSheet({
   }, [onIndexChange]);
   const [commentOpen, setCommentOpen] = useState(false);
 
-  // 현재 shot이 속한 유저 그룹의 세그먼트 위치 계산 (인스타 진행바용).
-  // shots는 유저별로 정렬돼 있어 같은 author의 연속 구간이 한 유저의 스토리 묶음.
+  // 현재 shot이 속한 그룹의 세그먼트 위치 계산 (인스타 진행바용).
+  // 캐러셀과 동일한 그룹 키: 남의 LIVE는 클럽 단위(클럽 없으면 작성자), 내 LIVE는 "me" 하나.
+  // shots(groupedShots)는 같은 그룹이 연속되도록 정렬돼 있어, 연속 구간이 한 스토리 묶음.
+  const segKeyOf = (s: ChatShot) =>
+    currentUserId && s.author_id === currentUserId
+      ? "me"
+      : s.club?.name
+      ? `c:${s.club.name.trim().toLowerCase()}|${s.club.area ?? ""}`
+      : s.club_id
+      ? `c:${s.club_id}`
+      : `u:${s.author_id}`;
   let segTotal = 1;
   let segIndex = 0;
   if (index !== null && shot) {
-    const authorId = shot.author_id;
+    const key = segKeyOf(shot);
     let start = index;
-    while (start > 0 && shots[start - 1]?.author_id === authorId) start--;
+    while (start > 0 && shots[start - 1] && segKeyOf(shots[start - 1]) === key) start--;
     let end = index;
-    while (end < shots.length - 1 && shots[end + 1]?.author_id === authorId) end++;
+    while (end < shots.length - 1 && shots[end + 1] && segKeyOf(shots[end + 1]) === key) end++;
     segTotal = end - start + 1;
     segIndex = index - start;
   }
@@ -256,15 +266,18 @@ function ShotViewerContent({
   // 더블탭 좋아요 — 단일탭(넘김)과 구분
   const lastTapRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // 길게 누름 → 정지 판정
   const [likeBurst, setLikeBurst] = useState(0); // 값 바뀔 때마다 하트 애니메이션 재생
   const [soundOn, setSoundOn] = useState(false); // 영상 소리 (기본 음소거 — 자동재생 보장)
   const [activityOpen, setActivityOpen] = useState(false); // 활동(본 사람) 시트 — 본인 LIVE만
   const [dmOpen, setDmOpen] = useState(false); // 메시지 신청 시트 (유저 LIVE "나도 갈래")
   const [videoReady, setVideoReady] = useState(false); // 재생 시작 전 첫프레임(정지화면) 숨김용
+  const [holdPaused, setHoldPaused] = useState(false); // 화면 누르고 있는 동안 일시정지 (인스타 스토리식)
 
   // 댓글 입력(메시지 남기기) 중이거나 활동 시트가 열리면 재생+자동진행 일시정지.
   // (인스타처럼: 타이핑하는 동안 다음으로 안 넘어감)
-  const isPaused = !!paused || activityOpen || dmOpen;
+  // holdPaused: 사용자가 화면을 누르고 있는 동안 정지 (떼면 재개)
+  const isPaused = !!paused || activityOpen || dmOpen || holdPaused;
 
   // 본인 LIVE면 조회/좋아요 요약을 하단에 항상 노출 (인스타 스토리식)
   const { viewers: myViewers } = useShotActivity(shot.id, isMine);
@@ -420,6 +433,15 @@ function ShotViewerContent({
   function handlePointerDown(e: React.PointerEvent) {
     startYRef.current = e.clientY;
     startXRef.current = e.clientX;
+    // 다른 시트(댓글/활동)로 이미 정지 상태면 hold-pause 개입 안 함
+    if (!isPausedRef.current) {
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      // 250ms 이상 누르고 있으면 정지 (짧은 탭은 넘김/좋아요 유지)
+      holdTimerRef.current = setTimeout(() => {
+        holdTimerRef.current = null;
+        setHoldPaused(true);
+      }, 250);
+    }
     try {
       (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     } catch {
@@ -428,7 +450,14 @@ function ShotViewerContent({
   }
   function handlePointerMove(e: React.PointerEvent) {
     if (startYRef.current === null) return;
-    setDragY(e.clientY - startYRef.current);
+    const dy = e.clientY - startYRef.current;
+    const dx = e.clientX - (startXRef.current ?? e.clientX);
+    // 스와이프로 판단되면 hold-pause 타이머 취소 (누름 정지 아님)
+    if (holdTimerRef.current && (Math.abs(dx) > 12 || Math.abs(dy) > 12)) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    setDragY(dy);
   }
   function handlePointerUp(e: React.PointerEvent) {
     if (startYRef.current === null) return;
@@ -442,6 +471,17 @@ function ShotViewerContent({
     startYRef.current = null;
     startXRef.current = null;
     setDragY(0);
+
+    // 길게 누름(정지) 상태였으면 → 떼는 순간 재개, 넘김 없음
+    const wasHoldPause = holdPaused;
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (wasHoldPause) {
+      setHoldPaused(false);
+      return;
+    }
 
     // 시트(댓글/활동 등) 열렸을 때 탭/스와이프 넘김·좋아요 차단
     if (isPausedRef.current) return;
@@ -498,6 +538,7 @@ function ShotViewerContent({
   useEffect(() => {
     return () => {
       if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
     };
   }, []);
 
@@ -603,7 +644,10 @@ function ShotViewerContent({
               key={i}
               className="flex-1 h-0.5 rounded-full bg-white/30 overflow-hidden"
             >
+              {/* key에 shot.id 포함 → shot 바뀔 때마다 새로 마운트해 정적 너비를 다시 적용.
+                  (RAF가 imperative로 쓴 활성 세그먼트 너비가 뒤로 갈 때 남던 '찌꺼기' 방지) */}
               <div
+                key={`${shot.id}-${i}`}
                 ref={i === segIndex ? activeFillRef : undefined}
                 className="h-full bg-white"
                 style={{ width: i < segIndex ? "100%" : "0%" }}
@@ -643,6 +687,14 @@ function ShotViewerContent({
               <span className="text-white text-[13px] font-black truncate drop-shadow-lg">
                 {shot.author?.display_name ?? "익명"}
               </span>
+              {/* 파트너 배지 — role='md'면 항상 표시 (클럽 무관, '이 유저는 파트너'라는 표식).
+                  ※ '나도 갈래요' 문의 버튼은 본인 클럽일 때만 (author_is_club_partner). */}
+              {shot.author?.role === "md" && (
+                <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-[9px] font-black leading-none">
+                  <BadgeCheck className="w-2.5 h-2.5" strokeWidth={2.5} />
+                  파트너
+                </span>
+              )}
               <span className="text-[10px] text-white/60 drop-shadow-lg shrink-0">
                 {remaining}
               </span>
@@ -912,13 +964,15 @@ function ShotViewerContent({
               </span>
             </button>
           </div>
-        ) : shot.author?.kakao_open_chat_url ? (
-          // 파트너(MD) LIVE — 문의 버튼'만' (댓글 없음)
+        ) : shot.author?.role === "md" && shot.author_is_club_partner ? (
+          // 파트너(role='md')가 '본인 클럽'에 올린 LIVE — 문의 버튼'만' (댓글 없음).
+          // 남의 클럽에서 놀며 올린 경우엔 이 버튼 대신 일반 유저 LIVE(댓글)로 처리.
           <button
             type="button"
             onClick={() => {
               const url = shot.author?.kakao_open_chat_url;
               if (url) window.open(url, "_blank");
+              else toast("아직 연락 수단이 등록되지 않은 파트너예요");
             }}
             className="w-full flex flex-col items-center justify-center py-2.5 rounded-full bg-amber-500 text-black active:scale-[0.98] transition-transform"
           >

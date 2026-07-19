@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Heart, Plus, Zap } from "lucide-react";
@@ -29,6 +29,8 @@ interface Props {
   subtitle?: string;
   /** 마지막 LIVE까지 다 보면 이 경로로 유도(엔드카드). 홈 캐러셀 전용 */
   endCardTo?: string;
+  /** LIVE 라벨 행 우측에 넣을 노드 (와글: 지역 필터). 세로 공간 절약용 */
+  headerRight?: ReactNode;
 }
 
 /**
@@ -46,6 +48,7 @@ export function ShotCarousel({
   endCardTo,
   currentUserId,
   currentUserProfile,
+  headerRight,
 }: Props) {
   const router = useRouter();
   const { shots, loading, toggleLike } = useChatShots(areas, currentUserId, clubId);
@@ -76,26 +79,56 @@ export function ShotCarousel({
     return withRank.map((r) => r.s);
   }, [shots, viewedSet, currentRoom]);
 
-  // 유저별 그룹 (인스타 스토리식) — 한 유저의 여러 LIVE를 원 하나로 묶는다.
-  // 대표 썸네일 = 그 유저의 첫(정렬 우선) shot. 탭하면 그 유저의 첫 shot index로 뷰어 오픈.
-  // 뷰어는 평면 sortedShots를 순차 재생하므로, 유저 그룹이 끝나면 자동으로 다음 유저로 넘어간다.
-  const userGroups = useMemo(() => {
-    const seen = new Map<string, { rep: ChatShot; firstIndex: number; count: number; allViewed: boolean }>();
-    sortedShots.forEach((s, i) => {
-      const key = s.author_id;
-      const existing = seen.get(key);
-      const viewed = viewedSet.has(s.id);
-      if (!existing) {
-        seen.set(key, { rep: s, firstIndex: i, count: 1, allViewed: viewed });
-      } else {
-        existing.count += 1;
-        existing.allViewed = existing.allViewed && viewed;
-      }
-    });
-    return Array.from(seen.values());
-  }, [sortedShots, viewedSet]);
+  // 그룹 키 — 남의 LIVE는 "클럽 단위"(클럽 없으면 작성자), 내 LIVE는 하나("me")로 묶음.
+  //  → 같은 유저가 여러 클럽에 올려도 클럽별로 다른 원. 같은 클럽 여러 유저는 한 원("그 클럽 지금 분위기").
+  const groupKeyOf = useCallback(
+    (s: ChatShot) => {
+      if (currentUserId && s.author_id === currentUserId) return "me";
+      // 클럽은 이름+지역 기준으로 묶음 — 같은 이름의 중복 클럽 레코드(다른 id)도 한 원으로.
+      if (s.club?.name)
+        return `c:${s.club.name.trim().toLowerCase()}|${s.club.area ?? ""}`;
+      return s.club_id ? `c:${s.club_id}` : `u:${s.author_id}`;
+    },
+    [currentUserId]
+  );
 
-  const displayShots = sortedShots;
+  // 클럽별 그룹 (인스타 스토리식) + 같은 그룹 shot이 연속되도록 재정렬.
+  // 대표 썸네일 = 그 그룹의 첫(정렬 우선) shot. 탭하면 그 그룹 첫 shot index로 뷰어 오픈.
+  // 뷰어는 그룹 연속 정렬된 groupedShots를 순차 재생 → 한 클럽이 끝나면 다음 그룹으로.
+  const { userGroups, groupedShots } = useMemo(() => {
+    const order: string[] = [];
+    const buckets = new Map<string, ChatShot[]>();
+    sortedShots.forEach((s) => {
+      const k = groupKeyOf(s);
+      if (!buckets.has(k)) {
+        buckets.set(k, []);
+        order.push(k);
+      }
+      buckets.get(k)!.push(s);
+    });
+    const flat: ChatShot[] = [];
+    const grps: {
+      key: string;
+      rep: ChatShot;
+      firstIndex: number;
+      count: number;
+      allViewed: boolean;
+    }[] = [];
+    order.forEach((k) => {
+      const arr = buckets.get(k)!;
+      grps.push({
+        key: k,
+        rep: arr[0],
+        firstIndex: flat.length,
+        count: arr.length,
+        allViewed: arr.every((s) => viewedSet.has(s.id)),
+      });
+      flat.push(...arr);
+    });
+    return { userGroups: grps, groupedShots: flat };
+  }, [sortedShots, viewedSet, groupKeyOf]);
+
+  const displayShots = groupedShots;
 
   // 뷰어용 shots 스냅샷 — 뷰어가 열린 동안엔 배열을 고정한다.
   // 재생 중 markViewed가 viewedSet을 바꿔 정렬이 재계산되면 index가 다른 shot을
@@ -113,16 +146,20 @@ export function ShotCarousel({
   if (!showComposeButton && shots.length === 0) return null;
 
   // 내 LIVE 그룹 (인스타처럼: 내 원 = 내 라이브 보기, + 배지 = 게시)
+  // 내 shot은 클럽 무관하게 "me" 그룹 하나로 묶임.
   const myGroup = currentUserId
-    ? userGroups.find((g) => g.rep.author_id === currentUserId)
+    ? userGroups.find((g) => g.key === "me")
     : undefined;
-  const otherGroups = userGroups.filter((g) => g.rep.author_id !== currentUserId);
+  const otherGroups = userGroups.filter((g) => g.key !== "me");
 
   return (
-    <div className="px-3 py-2.5 border-b border-neutral-900 bg-[#0B0A11]">
-      <div className="flex items-center gap-1.5 mb-2 px-1">
-        <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />
-        <span className="text-[12px] font-black text-red-400">LIVE</span>
+    <div className="px-3 py-2 border-b border-neutral-900 bg-[#0B0A11]">
+      <div className="flex items-center justify-between gap-2 mb-1.5 px-1">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />
+          <span className="text-[12px] font-black text-red-400">LIVE</span>
+        </div>
+        {headerRight}
       </div>
       <div className="flex items-start gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
         {showComposeButton && (
@@ -179,7 +216,7 @@ export function ShotCarousel({
           const shot = group.rep;
           return (
             <button
-              key={shot.author_id}
+              key={group.key}
               type="button"
               onClick={() => {
                 markShotViewed(shot.id);

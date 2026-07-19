@@ -1463,11 +1463,14 @@ export interface ChatShot {
   comment_count: number;
   created_at: string;
   expires_at: string;
-  author?: { id: string; display_name: string | null; profile_image: string | null; kakao_open_chat_url?: string | null };
+  author?: { id: string; display_name: string | null; profile_image: string | null; role?: string | null; kakao_open_chat_url?: string | null };
   /** 클럽 정보 (club_id join) — LIVE의 지역/클럽명 표시 + 광역 정렬용 */
   club?: { id: string; name: string; area: string | null } | null;
   /** 클라이언트 측에서 chat_shot_likes 조회 후 채움 */
   liked_by_me?: boolean;
+  /** 작성자가 이 club_id의 파트너(club_partners)인지 — 파트너 배지 + 문의 버튼 노출 조건.
+   *  클라이언트에서 club_partners 조회 후 채움. club_id 없으면 항상 false. */
+  author_is_club_partner?: boolean;
 }
 
 /** Migration 325 — SHOT 댓글 */

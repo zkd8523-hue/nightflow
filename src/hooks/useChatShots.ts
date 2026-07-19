@@ -36,7 +36,7 @@ export function useChatShots(
       .from("chat_shots")
       .select(
         `id, area, club_id, author_id, media_type, media_url, width, height, duration, caption, text_overlays, image_overlays, poll, like_count, comment_count, created_at, expires_at,
-         author:public_user_profiles!author_id(id, display_name, profile_image, kakao_open_chat_url),
+         author:public_user_profiles!author_id(id, display_name, profile_image, role, kakao_open_chat_url),
          club:clubs!club_id(id, name, area)`
       )
       .gt("expires_at", new Date().toISOString())
@@ -94,6 +94,30 @@ export function useChatShots(
           liked_by_me: false,
         };
       });
+
+      // 작성자가 그 클럽의 파트너인지 일괄 판정 (club_partners) → 파트너 배지 + 문의 버튼 조건.
+      // MD가 남의 클럽에서 놀며 올린 LIVE엔 파트너 표시/문의 버튼이 안 뜨게 하기 위함.
+      const partnerCandidates = parsed.filter((s) => s.club_id && s.author_id);
+      if (partnerCandidates.length > 0) {
+        const clubIds = Array.from(
+          new Set(partnerCandidates.map((s) => s.club_id as string))
+        );
+        const authorIds = Array.from(
+          new Set(partnerCandidates.map((s) => s.author_id))
+        );
+        const { data: partners } = await supabase
+          .from("club_partners")
+          .select("md_id, club_id")
+          .in("club_id", clubIds)
+          .in("md_id", authorIds);
+        const partnerSet = new Set(
+          (partners ?? []).map((p) => `${p.md_id}|${p.club_id}`)
+        );
+        parsed.forEach((s) => {
+          s.author_is_club_partner =
+            !!s.club_id && partnerSet.has(`${s.author_id}|${s.club_id}`);
+        });
+      }
 
       // 본인 좋아요 일괄 조회
       if (currentUserId && parsed.length > 0) {
