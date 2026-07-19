@@ -71,6 +71,8 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
   const newMsgAnchorRef = useRef<HTMLDivElement>(null);
   const scrollPaneRef = useRef<HTMLDivElement>(null);
   const prevLenRef = useRef(0);
+  const forceScrollRef = useRef(false); // 내가 방금 보낸 글 → 스크롤 위치 무관 강제 하단
+  const initialScrollDoneRef = useRef(false); // 현재 방 초기 스크롤 완료 여부
   const loginTarget = `/login?redirect=${encodeURIComponent(loginRedirect ?? "/chat")}`;
   // 도배 방지 (클라 사전 차단)
   const lastSentAtRef = useRef<number>(0);
@@ -146,31 +148,44 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
     };
   }, []);
 
-  // 방 전환 시 prevLen 리셋 (이전 방의 카운트와 혼동 방지)
+  // 방 전환 시 초기 스크롤/카운트 리셋 (이전 방과 혼동 방지)
   useEffect(() => {
     prevLenRef.current = 0;
+    initialScrollDoneRef.current = false;
   }, [room]);
 
   // 카톡식: 최신이 아래. 내부 스크롤 pane(상단 캐러셀은 pane 밖이라 항상 보임).
-  // 초기 로드는 즉시 맨 아래(최신)로, 새 글은 부드럽게 아래로. pane 내부만 스크롤됨.
+  // - 방 최초 로드(로딩 끝 + 메시지 있음): 즉시 맨 아래.
+  // - 새 글: 사용자가 이미 바닥 근처거나(nearBottom) 내가 방금 보낸 글일 때만 하단으로.
+  //   (위로 스크롤해 옛 글 읽는 중이면 강제로 튀지 않음)
   useEffect(() => {
-    if (messages.length === 0) {
-      prevLenRef.current = 0;
-      return;
+    if (loading) return; // 방 전환 스피너 중엔 스킵 (stale 메시지로 스크롤 방지)
+    if (messages.length === 0) return;
+    const pane = scrollPaneRef.current;
+    if (!pane) return;
+    const nearBottom =
+      pane.scrollHeight - pane.scrollTop - pane.clientHeight < 120;
+    if (!initialScrollDoneRef.current) {
+      pane.scrollTo({ top: pane.scrollHeight, behavior: "auto" });
+      initialScrollDoneRef.current = true;
+    } else if (
+      (messages.length > prevLenRef.current && nearBottom) ||
+      forceScrollRef.current
+    ) {
+      pane.scrollTo({ top: pane.scrollHeight, behavior: "smooth" });
     }
-    const isInitial = prevLenRef.current === 0;
-    const grew = messages.length > prevLenRef.current;
-    if (isInitial || grew) {
-      const pane = scrollPaneRef.current;
-      if (pane) {
-        pane.scrollTo({
-          top: pane.scrollHeight,
-          behavior: isInitial ? "auto" : "smooth",
-        });
-      }
-    }
+    forceScrollRef.current = false;
     prevLenRef.current = messages.length;
-  }, [messages.length]);
+  }, [messages.length, loading, room]);
+
+  // 컴포저 textarea 자동높이 동기화 — input이 프로그램적으로 바뀌는 경로
+  // (전송 후 비우기, 해시태그 삽입, 전송 실패 복원)에서도 높이가 stale하지 않게.
+  useEffect(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    ta.style.height = "auto";
+    ta.style.height = `${Math.min(ta.scrollHeight, 112)}px`;
+  }, [input]);
 
   // Migration 421: 광역 채팅방은 인증 불필요 — 로그인만 하면 누구나 쓰기.
   const requiresVerification = false;
@@ -296,6 +311,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
     const sentMedia = media;
     setInput("");
     setMedia([]);
+    setHashtagToken(null); // 전송 시 클럽태그 추천 팝업 닫기
 
     const { data: inserted, error } = await supabase
       .from("chat_messages")
@@ -351,6 +367,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
 
     // 옵티미스틱 prepend — realtime 이벤트보다 먼저 화면에 표시
     if (inserted) {
+      forceScrollRef.current = true; // 내가 보낸 글은 위치 무관 하단으로
       addLocalMessage({
         id: inserted.id,
         room: inserted.room as typeof room,
