@@ -81,7 +81,6 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
   // 도배 방지 (클라 사전 차단)
   const lastSentAtRef = useRef<number>(0);
   const lastSentContentRef = useRef<string>("");
-  const recentSentTimesRef = useRef<number[]>([]);
 
   // 답글 시트
   const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
@@ -268,21 +267,12 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
       return;
     }
 
-    // 도배 방지 (클라 사전 차단, 서버 트리거 Migration 321과 동일 기준)
+    // 도배 방지 (클라 사전 차단, 서버 트리거 Migration 466과 동일 기준)
     const now = Date.now();
-    // 5초 간격 정책 제거 — 사용자 응답성 우선
+    // 분당 글수 제한 제거 (Migration 466) — 카톡식 실시간 UX. 서버도 더 이상 안 막음.
     // 1시간 내 같은 텍스트는 서버에서 1차 차단, 클라는 최근 1건만 빠른 가드
     if (trimmed.length > 0 && trimmed === lastSentContentRef.current) {
       toast.error("같은 내용은 잠시 후에 다시 보낼 수 있어요");
-      return;
-    }
-    // 분당 5개 (서버와 동일)
-    const cutoff = now - 60_000;
-    recentSentTimesRef.current = recentSentTimesRef.current.filter(
-      (t) => t > cutoff
-    );
-    if (recentSentTimesRef.current.length >= 5) {
-      toast.error("1분에 5개까지만 보낼 수 있어요");
       return;
     }
 
@@ -367,7 +357,6 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
     // 성공 시 도배 방지 ref 업데이트
     lastSentAtRef.current = now;
     lastSentContentRef.current = trimmed;
-    recentSentTimesRef.current.push(now);
 
     // 옵티미스틱 prepend — realtime 이벤트보다 먼저 화면에 표시
     if (inserted) {
