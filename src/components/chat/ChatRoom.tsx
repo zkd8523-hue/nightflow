@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { MapPin, ImagePlus, X, Loader2, Hash } from "lucide-react";
+import { MapPin, ImagePlus, X, Loader2, Hash, ArrowUp } from "lucide-react";
 import { WagleIcon } from "@/components/icons/WagleIcon";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -372,48 +372,66 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
   // 컴포저 JSX (메시지 리스트 아래로 렌더)
   const composer = (
     <div
-      className="fixed bottom-0 inset-x-0 z-40 bg-[#0A0A0A] border-t border-neutral-800"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed inset-x-0 z-40 bg-[#0A0A0A] border-t border-neutral-800"
+      style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
     >
-      <div className="max-w-lg mx-auto px-4 py-3">
-      <div className="flex items-start gap-3">
-        <div className="flex-1 min-w-0 relative">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => {
-              const v = e.target.value;
-              setInput(v);
-              const cursor = e.target.selectionStart ?? v.length;
-              setHashtagToken(getCurrentHashtagToken(v, cursor));
-            }}
-            onSelect={(e) => {
-              const t = e.currentTarget;
-              setHashtagToken(
-                getCurrentHashtagToken(t.value, t.selectionStart ?? 0)
-              );
-            }}
-            onBlur={() => {
-              setTimeout(() => setHashtagToken(null), 100);
-            }}
-            onKeyDown={(e) => {
-              if (e.nativeEvent.isComposing) return;
-              if (e.key === "Escape" && hashtagToken) {
-                setHashtagToken(null);
-                return;
-              }
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            placeholder="오늘 밤 어떤 계획이 있나요?"
-            rows={2}
-            maxLength={MAX_LEN}
-            className="w-full bg-transparent text-white text-[16px] placeholder:text-neutral-500 focus:outline-none resize-none leading-snug"
-          />
+      <div className="max-w-lg mx-auto px-3 py-2">
+        {/* 미디어 미리보기 */}
+        {media.length > 0 && (
+          <div className="mb-2 flex gap-1.5 flex-wrap">
+            {media.map((m, i) => (
+              <div
+                key={i}
+                className="relative w-16 h-16 rounded-lg overflow-hidden bg-neutral-900 border border-neutral-800"
+              >
+                {m.type === "image" ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={m.url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <>
+                    <video
+                      src={m.url}
+                      className="w-full h-full object-cover"
+                      muted
+                      playsInline
+                      preload="metadata"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px]">
+                        ▶
+                      </div>
+                    </div>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeMedia(i)}
+                  className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center text-white"
+                  aria-label="삭제"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* 카톡식 한 줄 입력 */}
+        <div className="relative flex items-end gap-2">
+          {/* 클럽태그 안내 (# 눌렀지만 아직 클럽명 입력 전) */}
+          {hashtagToken && hashtagToken.token.length === 0 && (
+            <div className="absolute left-0 right-0 bottom-full mb-2 z-20 flex justify-center">
+              <div className="px-3 py-2 rounded-full bg-neutral-800 border border-neutral-700 text-[12px] text-neutral-300 shadow-lg">
+클럽을 <span className="text-amber-400 font-bold">태그</span>할 수 있어요 🏷️
+              </div>
+            </div>
+          )}
+          {/* 해시태그 추천 (입력창 위 팝업) */}
           {hashtagToken && hashtagToken.token.length > 0 && (
-            <div className="absolute left-0 right-0 bottom-full mb-1 z-20">
+            <div className="absolute left-0 right-0 bottom-full mb-2 z-20">
               <ClubHashtagSuggester
                 query={hashtagToken.token}
                 open={true}
@@ -428,8 +446,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
                   setTimeout(() => {
                     const ta = textareaRef.current;
                     if (ta) {
-                      const cursor =
-                        hashtagToken.start + insert.length + 1;
+                      const cursor = hashtagToken.start + insert.length + 1;
                       ta.focus();
                       ta.setSelectionRange(cursor, cursor);
                     }
@@ -438,135 +455,132 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect }: Props) {
               />
             </div>
           )}
-          {media.length > 0 && (
-            <div className="mt-2 flex gap-1.5 flex-wrap">
-              {media.map((m, i) => (
-                <div
-                  key={i}
-                  className="relative w-16 h-16 rounded-lg overflow-hidden bg-neutral-900 border border-neutral-800"
-                >
-                  {m.type === "image" ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={m.url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <>
-                      <video
-                        src={m.url}
-                        className="w-full h-full object-cover"
-                        muted
-                        playsInline
-                        preload="metadata"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px]">
-                          ▶
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeMedia(i)}
-                    className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center text-white"
-                    aria-label="삭제"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center justify-between mt-2 gap-2">
-            <div className="flex items-center gap-1">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                hidden
-                onChange={handleFilePick}
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (!user) {
-                    router.push(loginTarget);
-                    return;
-                  }
-                  fileInputRef.current?.click();
-                }}
-                disabled={uploading || media.length >= CHAT_MEDIA_MAX_COUNT}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-amber-400 hover:bg-neutral-800 disabled:text-neutral-700 disabled:hover:bg-transparent transition-colors"
-                aria-label="사진/동영상 첨부"
-              >
-                {uploading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ImagePlus className="w-4 h-4" />
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const ta = textareaRef.current;
-                  if (!ta) return;
-                  const start = ta.selectionStart ?? input.length;
-                  const end = ta.selectionEnd ?? input.length;
-                  const prev = input.slice(0, start);
-                  const next = input.slice(end);
-                  const needsSpace = prev.length > 0 && !/\s$/.test(prev);
-                  const insert = needsSpace ? " #" : "#";
-                  const newValue = `${prev}${insert}${next}`;
-                  setInput(newValue);
-                  const cursor = prev.length + insert.length;
-                  setTimeout(() => {
-                    ta.focus();
-                    ta.setSelectionRange(cursor, cursor);
-                    setHashtagToken({ token: "", start: cursor - 1, end: cursor });
-                  }, 0);
-                }}
-                className="h-8 px-2.5 inline-flex items-center gap-1 rounded-full text-amber-400 hover:bg-neutral-800 transition-colors"
-                aria-label="클럽 태그"
-              >
-                <Hash className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-bold">클럽태그</span>
-              </button>
-              <span
-                className={`text-[11px] ${
-                  input.length >= 450
-                    ? "text-amber-400"
-                    : "text-neutral-600"
-                }`}
-              >
-                {input.length}/{MAX_LEN}
-              </span>
-            </div>
-            <button
-              onClick={handleSend}
-              disabled={
-                !user ||
-                (requiresVerification && !verifiedForRoom) ||
-                (!input.trim() && media.length === 0) ||
-                sending ||
-                uploading
+          {/* 사진/동영상 첨부 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            hidden
+            onChange={handleFilePick}
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (!user) {
+                router.push(loginTarget);
+                return;
               }
-              className="px-4 py-1.5 rounded-full text-[13px] font-black bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
+              fileInputRef.current?.click();
+            }}
+            disabled={uploading || media.length >= CHAT_MEDIA_MAX_COUNT}
+            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-amber-400 hover:bg-neutral-800 disabled:text-neutral-700 disabled:hover:bg-transparent transition-colors"
+            aria-label="사진/동영상 첨부"
+          >
+            {uploading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <ImagePlus className="w-5 h-5" />
+            )}
+          </button>
+          {/* 입력 pill */}
+          <div className="flex-1 min-w-0 flex items-end gap-1 bg-neutral-900 rounded-3xl pl-4 pr-1.5 py-1.5">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => {
+                const v = e.target.value;
+                setInput(v);
+                const cursor = e.target.selectionStart ?? v.length;
+                setHashtagToken(getCurrentHashtagToken(v, cursor));
+                // 카톡식 자동 높이 조절 (최대 ~4줄)
+                const el = e.target;
+                el.style.height = "auto";
+                el.style.height = `${Math.min(el.scrollHeight, 112)}px`;
+              }}
+              onSelect={(e) => {
+                const t = e.currentTarget;
+                setHashtagToken(
+                  getCurrentHashtagToken(t.value, t.selectionStart ?? 0)
+                );
+              }}
+              onBlur={() => {
+                setTimeout(() => setHashtagToken(null), 100);
+              }}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === "Escape" && hashtagToken) {
+                  setHashtagToken(null);
+                  return;
+                }
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="메시지 입력"
+              rows={1}
+              maxLength={MAX_LEN}
+              className="flex-1 min-w-0 bg-transparent text-white text-[16px] placeholder:text-neutral-500 focus:outline-none resize-none leading-snug py-1.5 max-h-28"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const ta = textareaRef.current;
+                if (!ta) return;
+                const start = ta.selectionStart ?? input.length;
+                const end = ta.selectionEnd ?? input.length;
+                const prev = input.slice(0, start);
+                const next = input.slice(end);
+                const needsSpace = prev.length > 0 && !/\s$/.test(prev);
+                const insert = needsSpace ? " #" : "#";
+                const newValue = `${prev}${insert}${next}`;
+                setInput(newValue);
+                const cursor = prev.length + insert.length;
+                setTimeout(() => {
+                  ta.focus();
+                  ta.setSelectionRange(cursor, cursor);
+                  setHashtagToken({ token: "", start: cursor - 1, end: cursor });
+                }, 0);
+              }}
+              className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center text-amber-400 hover:bg-neutral-800 transition-colors"
+              aria-label="클럽 태그"
             >
-              {sending ? "전송 중..." : "게시"}
+              <Hash className="w-4 h-4" />
             </button>
           </div>
+          {/* 전송 */}
+          <button
+            onClick={handleSend}
+            disabled={
+              !user ||
+              (requiresVerification && !verifiedForRoom) ||
+              (!input.trim() && media.length === 0) ||
+              sending ||
+              uploading
+            }
+            className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
+            aria-label="전송"
+          >
+            {sending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ArrowUp className="w-5 h-5" strokeWidth={2.5} />
+            )}
+          </button>
         </div>
-      </div>
+        {/* 글자수 (한도 임박 시에만) */}
+        {input.length >= 450 && (
+          <div className="mt-1 pr-12 text-right text-[11px] text-amber-400">
+            {input.length}/{MAX_LEN}
+          </div>
+        )}
       </div>
     </div>
   );
 
   return (
-    <div className="flex flex-col pb-40">
+    <div className="flex flex-col pb-52">
       {/* 와글 LIVE 통합 캐러셀 (Migration 413 이후 방 필터 X) */}
       <ShotCarousel
         currentRoom={room === "all" ? undefined : (room as ChatRegionCode)}

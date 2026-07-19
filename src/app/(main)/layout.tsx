@@ -111,7 +111,7 @@ export default function MainLayout({
         )}
         <main className={isChromeless ? "" : isChatPage ? "" : "pb-16"}>{children}</main>
         {!isChromeless && !isChatPage && <Footer />}
-        {!isChromeless && !isChatPage && <BottomNav />}
+        {!isChromeless && <BottomNav />}
         <SelectingFlagAlertSheet />
         <NewOffersAlertSheet />
         <CancellationSurveySheet isOtherSheetOpen={false} />

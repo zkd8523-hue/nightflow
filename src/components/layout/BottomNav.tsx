@@ -66,7 +66,7 @@ export function BottomNav() {
         {tabs.map(({ label, icon: Icon, href }) => {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
           // 와글 활성 시 보라 시그니처 (MUSIC 가치), 나머지는 흰색
-          const activeClass = href === "/chat" ? "text-[#C084FC]" : "text-white";
+          const activeClass = "text-white";
           // "내 정보"=새 오퍼는 NEW 뱃지, "채팅"=안읽은 대화는 점 표시
           const showNewOfferBadge = href === "/profile" && hasNewOffer;
           const showUnreadDot = href === "/messages" && hasUnreadChat;
