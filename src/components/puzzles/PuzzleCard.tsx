@@ -348,7 +348,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 1인 {perPersonBudget.toLocaleString()}원
               </span>
               <span className="text-[14px] font-bold text-neutral-600">/</span>
-              <span className="text-[14px] font-bold text-neutral-500">
+              <span className="text-[14px] font-bold text-neutral-300">
                 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
               </span>
             </div>

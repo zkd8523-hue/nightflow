@@ -1107,6 +1107,8 @@ export interface MdOfferPreset {
   club_id: string | null;
   includes: string[];
   comment: string | null;
+  /** 'flag' = 깃발(고정가) 오퍼, 'share' = 조각(파티원 모집) 오퍼 — Migration 464 */
+  offer_kind: "flag" | "share";
   created_at: string;
   club?: Pick<Club, "name" | "area"> | null;
 }

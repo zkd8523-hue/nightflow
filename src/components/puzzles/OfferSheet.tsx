@@ -100,6 +100,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     : Math.round(baseBudget * puzzle.current_count / puzzle.target_count);
   // Migration 358: 조각 매치 크레딧 정액 10, 깃발 15. (DB puzzle_match_credit_cost와 일치)
   const matchCost = puzzle.is_recruiting_party ? 10 : 15;
+  // 오퍼 템플릿 종류 — 깃발/조각 템플릿을 분리 저장·조회 (Migration 464)
+  const offerKind: "flag" | "share" = puzzle.is_recruiting_party ? "share" : "flag";
 
   useEffect(() => {
     if (open) {
@@ -270,10 +272,14 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       return;
     }
 
-    // 깃발 신규 오퍼: 제출 직전 "템플릿으로 저장할까요?" 확인 (레퍼런스: 조각 등록 플로우)
+    // 신규 오퍼: 제출 직전 "템플릿으로 저장할까요?" 확인 (레퍼런스: 조각 등록 플로우)
     // 방금 템플릿에서 불러온 그대로거나 이미 물어본 구성이면 다시 묻지 않음.
+    // 깃발은 구성(includes), 조각은 코멘트 유무를 저장 대상으로 판단.
     const key = JSON.stringify({ i: selectedIncludes, c: comment.trim() });
-    if (!editingOffer && !puzzle.is_recruiting_party && selectedIncludes.length > 0 && key !== lastLoadedKey) {
+    const hasSavableContent = puzzle.is_recruiting_party
+      ? comment.trim().length > 0
+      : selectedIncludes.length > 0;
+    if (!editingOffer && hasSavableContent && key !== lastLoadedKey) {
       setTemplateName(""); // 프롬프트는 항상 빈 칸으로 (플레이스홀더 예시만 노출)
       setShowSavePrompt(true);
       return;
@@ -356,6 +362,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       const { data } = await supabase
         .from("md_offer_presets")
         .select("id, name")
+        .eq("offer_kind", offerKind)
         .order("created_at", { ascending: false });
       setExistingPresets((data ?? []) as { id: string; name: string }[]);
     })();
@@ -443,17 +450,15 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         </div>
 
         <div className="space-y-6">
-          {/* 템플릿 불러오기 (깃발 전용 — 저장은 제안서 보내기 직후 프롬프트에서) */}
-          {!puzzle.is_recruiting_party && (
-            <button
-              type="button"
-              onClick={() => setPresetOpen(true)}
-              className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-neutral-200 border border-neutral-400 text-[13px] font-bold text-neutral-900 hover:bg-neutral-300 transition-all"
-            >
-              <Bookmark className="w-4 h-4 text-neutral-900" />
-              템플릿 불러오기
-            </button>
-          )}
+          {/* 템플릿 불러오기 (깃발·조각 각각 분리 저장 — 저장은 제안서 보내기 직후 프롬프트에서) */}
+          <button
+            type="button"
+            onClick={() => setPresetOpen(true)}
+            className="w-full flex items-center justify-center gap-2 h-11 rounded-xl bg-neutral-200 border border-neutral-400 text-[13px] font-bold text-neutral-900 hover:bg-neutral-300 transition-all"
+          >
+            <Bookmark className="w-4 h-4 text-neutral-900" />
+            템플릿 불러오기
+          </button>
 
           {/* 클럽 선택 */}
           <div className="space-y-2">
@@ -703,6 +708,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       open={presetOpen}
       onOpenChange={setPresetOpen}
       onApply={applyPreset}
+      kind={offerKind}
     />
 
     {/* 제안서 보내기 직전 "템플릿으로 저장할까요?" — 예/아니오 모두 실제 전송으로 이어짐 */}
@@ -755,7 +761,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           <Input
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
-            placeholder="예: 평일 50만원 / 주말 100만원"
+            placeholder={puzzle.is_recruiting_party ? "예: 주말 조각 기본 멘트" : "예: 평일 50만원 / 주말 100만원"}
             maxLength={30}
             className="bg-neutral-900 border-neutral-800 h-11 text-amber-400 font-bold text-[14px]"
           />
@@ -778,13 +784,18 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             disabled={savingTemplate}
             onClick={async () => {
               setSavingTemplate(true);
-              const name = templateName.trim() || selectedIncludes[0] || "내 템플릿";
+              // 조각은 구성이 없으므로 코멘트 앞부분을, 깃발은 첫 구성 항목을 이름 기본값으로.
+              const fallbackName = puzzle.is_recruiting_party
+                ? comment.trim().slice(0, 20)
+                : selectedIncludes[0];
+              const name = templateName.trim() || fallbackName || "내 템플릿";
               // 코멘트·구성은 handleSubmit에서 이미 식별정보 검증 통과 → 그대로 저장
               const { error } = await supabase.from("md_offer_presets").insert({
                 name,
                 club_id: selectedClubId || null,
                 includes: selectedIncludes,
                 comment: comment.trim() || null,
+                offer_kind: offerKind,
               });
               setSavingTemplate(false);
               setShowSavePrompt(false);

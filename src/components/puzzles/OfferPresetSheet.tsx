@@ -17,10 +17,12 @@ interface OfferPresetSheetProps {
   onOpenChange: (open: boolean) => void;
   /** 템플릿 적용 콜백 — OfferSheet 폼을 채운다 */
   onApply: (preset: MdOfferPreset) => void;
+  /** 오퍼 종류 — 깃발/조각 템플릿을 섞이지 않게 분리 (Migration 464) */
+  kind: "flag" | "share";
 }
 
 // 저장한 오퍼 템플릿을 불러오는 시트 (저장은 제안서 전송 직후 프롬프트에서 처리)
-export function OfferPresetSheet({ open, onOpenChange, onApply }: OfferPresetSheetProps) {
+export function OfferPresetSheet({ open, onOpenChange, onApply, kind }: OfferPresetSheetProps) {
   const supabase = createClient();
   const [presets, setPresets] = useState<MdOfferPreset[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,10 +30,11 @@ export function OfferPresetSheet({ open, onOpenChange, onApply }: OfferPresetShe
 
   const fetchPresets = async () => {
     setLoading(true);
-    // RLS가 md_id = auth.uid()로 이미 제한 → 별도 필터 불필요
+    // RLS가 md_id = auth.uid()로 이미 제한 → 종류 필터만 추가
     const { data } = await supabase
       .from("md_offer_presets")
       .select("*, club:clubs(name, area)")
+      .eq("offer_kind", kind)
       .order("created_at", { ascending: false });
     setPresets((data ?? []) as MdOfferPreset[]);
     setLoading(false);
@@ -40,7 +43,7 @@ export function OfferPresetSheet({ open, onOpenChange, onApply }: OfferPresetShe
   useEffect(() => {
     if (open) fetchPresets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, kind]);
 
   const handleDelete = async (id: string) => {
     setDeleting(id);
