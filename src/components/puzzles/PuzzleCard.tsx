@@ -249,7 +249,7 @@ export const PuzzleCard = memo(function PuzzleCard({
   // 🔥 + 숫자 강조는 살리되 문구는 기존 그대로. 0개면 표시하지 않음.
   const userOfferBadge =
     offerCount > 0 ? (
-      <span className="text-[12px] font-bold text-amber-400">
+      <span className="text-[12px] font-bold text-amber-400 [text-shadow:0_0_5px_rgba(251,191,36,0.25)]">
         {/* 3개 이상 = 경쟁이 붙은 핫한 깃발일 때만 🔥로 강조 */}
         {offerCount >= 3 && <span aria-hidden>🔥 </span>}
         오퍼 <span className="text-[14px] font-black tabular-nums">{offerCount}</span>개 중에서 고르는중
