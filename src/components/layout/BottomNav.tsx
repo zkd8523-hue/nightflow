@@ -53,7 +53,7 @@ export function BottomNav() {
   const tabs = [
     { label: "홈", icon: Home, href: "/" },
     { label: "주변", icon: Map, href: "/clubs" },
-    { label: "Live", icon: WagleIcon, href: "/chat" },
+    { label: "LIVE", icon: WagleIcon, href: "/chat" },
     offerChatOn
       ? { label: "채팅", icon: MessageCircle, href: "/messages" }
       : { label: "찜", icon: Heart, href: "/favorites" },
@@ -89,7 +89,7 @@ export function BottomNav() {
                   <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-neutral-950" />
                 )}
               </span>
-              <span className="text-[10px] font-bold">{label}</span>
+              <span className={`font-bold ${label === "LIVE" ? "text-[11px]" : "text-[10px]"}`}>{label}</span>
             </Link>
           );
         })}

@@ -186,29 +186,38 @@ export function ShotViewerSheet({
 
           {/* 엔드카드 — 홈에서 마지막까지 다 보면 와글로 유도 */}
           {endCardOpen && endCardTo && (
-            <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center gap-6 px-8 text-center">
-              <div className="flex flex-col items-center gap-2">
-                <div className="text-[34px]">🌙</div>
-                <h2 className="text-white text-[20px] font-black">다 봤어요</h2>
+            <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center gap-7 px-8 text-center">
+              <h2 className="text-white text-[21px] font-black leading-tight">
+                LIVE를 다 봤어요
+              </h2>
+
+              {/* 가치 안내 — 거기 가면 뭘 할 수 있는지 */}
+              <div className="flex items-center gap-3 text-white text-[15px] font-bold">
+                <span className="text-[17px]">💬</span>
+                지금 노는 사람들과 바로 대화
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const to = endCardTo;
-                  onIndexChange(null);
-                  router.push(to);
-                }}
-                className="px-7 py-3 rounded-full bg-white text-black text-[15px] font-black active:scale-95 transition-transform"
-              >
-                Live 가기 →
-              </button>
-              <button
-                type="button"
-                onClick={() => onIndexChange(null)}
-                className="text-neutral-500 text-[13px]"
-              >
-                닫기
-              </button>
+
+              <div className="flex flex-col items-center gap-3 w-full max-w-[280px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    // onIndexChange(null)로 먼저 닫으면 뷰어 popstate 정리의 history.back()이
+                    // 이 push를 되돌려버림 → 바로 push만. 네비 커밋 시 자연 언마운트되고
+                    // history.state가 바뀌어 back() 가드에 걸려 이동이 유지됨.
+                    router.push(endCardTo);
+                  }}
+                  className="w-full px-7 py-3.5 rounded-full bg-white text-black text-[15px] font-black active:scale-95 transition-transform"
+                >
+                  더보기 →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onIndexChange(null)}
+                  className="text-neutral-500 text-[13px]"
+                >
+                  닫기
+                </button>
+              </div>
             </div>
           )}
         </SheetContent>

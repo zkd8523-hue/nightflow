@@ -153,7 +153,7 @@ export function ShotCarousel({
   const otherGroups = userGroups.filter((g) => g.key !== "me");
 
   return (
-    <div className="px-3 pt-2 pb-1 border-b border-neutral-900 bg-[#0B0A11]">
+    <div className="px-3 pt-1 pb-1 border-b border-neutral-900 bg-[#0B0A11]">
       <div className="flex items-center justify-between gap-2 mb-0.5 px-1">
         <div className="flex items-center gap-1.5 shrink-0">
           <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />

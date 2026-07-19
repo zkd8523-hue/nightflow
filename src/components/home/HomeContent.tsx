@@ -1153,7 +1153,7 @@ export function HomeContent({
         <div className="flex flex-col">
           {/* ── LIVE — 고정헤더 바로 아래 (핵심: 실시간 클럽 분위기).
                  LIVE 없으면 ShotCarousel이 null 반환 → 섹션·여백 모두 안 보임 (mb 없음) ── */}
-          <div className="-mx-4">
+          <div className="-mx-4 -mt-3">
             <ShotCarousel
               showComposeButton={false}
               currentUserId={user?.id}
