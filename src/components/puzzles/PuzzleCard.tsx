@@ -493,7 +493,6 @@ export const PuzzleCard = memo(function PuzzleCard({
         </div>
       ) : isFull ? (
         <div className="flex items-center gap-2">
-          <span className="text-[12px] text-neutral-500 font-medium">파티 마감</span>
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
