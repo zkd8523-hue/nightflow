@@ -13,7 +13,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
 import { type VerifiableArea } from "@/lib/chat/areas";
-import { fetchNearestClubsAnyArea, searchClubsByName, type NearestClub } from "@/lib/clubs/nearestClubs";
+import { fetchNearestClubsAnyArea, fetchMyClubs, searchClubsByName, type NearestClub } from "@/lib/clubs/nearestClubs";
 import { getCurrentCoords } from "@/lib/geo/currentCoords";
 import type { ChatShot, TextOverlay, ImageOverlay, ShotPoll } from "@/types/database";
 import { useCameraStore } from "@/stores/useCameraStore";
@@ -73,31 +73,39 @@ export function ShotCaptureSheet({
   const [nearestClubs, setNearestClubs] = useState<NearestClub[] | null>(null);
   const [clubsLoading, setClubsLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
+  // MD 본인 클럽 id (리스트 최상단 + "내 클럽" 배지)
+  const [myClubIds, setMyClubIds] = useState<Set<string>>(new Set());
   // 검색 시 거리 계산용 유저 좌표
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
 
-  // 위치 → 가까운 클럽 로드. 실패하면 geoError로 원인 표시(+재시도 버튼에서 재호출).
+  // 위치 → 가까운 클럽 로드. MD 본인 클럽은 GPS 무관하게 항상 최상단.
   const loadNearby = useCallback(async () => {
     setClubsLoading(true);
     setGeoError(null);
+    // MD 본인 클럽 먼저 확보 (GPS 실패해도 노출)
+    const mine = userId ? await fetchMyClubs(userId) : [];
+    const mineIds = new Set(mine.map((c) => c.id));
+    setMyClubIds(mineIds);
     try {
       const c = await getCurrentCoords();
       setUserCoords({ lat: c.latitude, lng: c.longitude });
-      const clubs = await fetchNearestClubsAnyArea(c.latitude, c.longitude, 10);
-      setNearestClubs(clubs);
+      const nearby = await fetchNearestClubsAnyArea(c.latitude, c.longitude, 10);
+      setNearestClubs([...mine, ...nearby.filter((x) => !mineIds.has(x.id))]);
     } catch (err) {
       console.warn("[ShotCaptureSheet] geo error", err);
-      setNearestClubs([]);
-      const msg = err instanceof Error ? err.message : String(err);
-      setGeoError(
-        /denied|permission|권한|kCLError|denied/i.test(msg)
-          ? "위치 권한이 꺼져 있어요. 설정에서 허용해주세요"
-          : "위치를 가져오지 못했어요"
-      );
+      setNearestClubs(mine); // GPS 실패해도 내 클럽은 보여줌
+      if (mine.length === 0) {
+        const msg = err instanceof Error ? err.message : String(err);
+        setGeoError(
+          /denied|permission|권한|kCLError/i.test(msg)
+            ? "위치 권한이 꺼져 있어요. 설정에서 허용해주세요"
+            : "위치를 가져오지 못했어요"
+        );
+      }
     } finally {
       setClubsLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   // LIVE 진입 즉시 클럽 픽 시트 자동 오픈 (presetClub 있으면 skip).
   // 인증 여부와 무관 — 위치 동의 → 가까운 클럽 리스트업 흐름.
@@ -439,6 +447,7 @@ export function ShotCaptureSheet({
         setClubSheetOpen(v);
       }}
       clubs={nearestClubs}
+      myClubIds={myClubIds}
       loading={clubsLoading}
       geoError={geoError}
       onRetryLocation={loadNearby}
@@ -463,6 +472,7 @@ function ClubPickerSheet({
   loading,
   geoError,
   onRetryLocation,
+  myClubIds,
   userCoords,
   selectedId,
   onSelect,
@@ -473,6 +483,7 @@ function ClubPickerSheet({
   loading: boolean;
   geoError?: string | null;
   onRetryLocation?: () => void;
+  myClubIds?: Set<string>;
   userCoords: { lat: number; lng: number } | null;
   selectedId: string | null;
   onSelect: (c: { id: string; name: string }) => void;
@@ -579,8 +590,15 @@ function ClubPickerSheet({
                       className="w-full flex items-center gap-3 px-3 py-3 text-left"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="text-[14px] font-black text-white truncate">
-                          {c.name}
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[14px] font-black text-white truncate">
+                            {c.name}
+                          </span>
+                          {myClubIds?.has(c.id) && (
+                            <span className="shrink-0 text-[10px] font-black text-black bg-amber-500 rounded-full px-1.5 py-0.5 leading-none">
+                              내 클럽
+                            </span>
+                          )}
                         </div>
                         <div className="text-[11px] text-neutral-500">
                           {c.area}

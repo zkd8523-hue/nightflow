@@ -151,3 +151,42 @@ export async function searchClubsByName(
     };
   });
 }
+
+/**
+ * MD 본인이 소속된 클럽 (club_partners 기준) — LIVE 클럽 선택 시 최상단 노출용.
+ * 좌표 있으면 거리도 계산.
+ */
+export async function fetchMyClubs(
+  userId: string,
+  userLat?: number,
+  userLng?: number
+): Promise<NearestClub[]> {
+  const supabase = createClient();
+  const { data: parts } = await supabase
+    .from("club_partners")
+    .select("club_id")
+    .eq("md_id", userId);
+  const ids = [...new Set((parts ?? []).map((p) => p.club_id as string))];
+  if (ids.length === 0) return [];
+
+  const { data } = await supabase
+    .from("clubs")
+    .select("id, name, area, latitude, longitude")
+    .in("id", ids)
+    .eq("is_test", false);
+
+  return (data ?? []).map((c) => {
+    const lat = c.latitude as number | null;
+    const lng = c.longitude as number | null;
+    const hasCoords =
+      lat != null && lng != null && userLat != null && userLng != null;
+    return {
+      id: c.id,
+      name: c.name,
+      area: c.area,
+      latitude: lat ?? 0,
+      longitude: lng ?? 0,
+      distance_km: hasCoords ? distanceKm(userLat!, userLng!, lat!, lng!) : -1,
+    };
+  });
+}

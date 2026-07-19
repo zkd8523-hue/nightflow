@@ -38,6 +38,7 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
   const [recording, setRecording] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [retryTick, setRetryTick] = useState(0); // 재시도 버튼 → start() 재실행
 
   // 카메라 뷰가 열린 동안 롱프레스 컨텍스트 메뉴/텍스트 선택/이미지 저장 팝업 억제.
   // 안드로이드 WebView·Chrome은 pointer 이벤트보다 먼저 롱프레스 기본 동작을 발동하므로,
@@ -78,7 +79,7 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
         }
         // 고해상도 요청 (ideal 1920x1080) — 미지원 기기는 자동으로 가능한 최대치로 다운.
         const videoConstraints: MediaTrackConstraints = {
-          facingMode: facing,
+          facingMode: { ideal: facing }, // soft: 후면 없는 기기(데스크톱/시뮬)도 available 카메라로
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         };
@@ -142,7 +143,7 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
         streamRef.current = null;
       }
     };
-  }, [open, facing]);
+  }, [open, facing, retryTick]);
 
   function takePhoto() {
     const video = videoRef.current;
@@ -367,9 +368,18 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
             <div className="text-center max-w-xs">
               <p className="text-white text-[14px] font-bold">{error}</p>
               <p className="text-neutral-400 text-[12px] mt-2">
-                브라우저 설정에서 카메라 권한을 허용해주세요. HTTPS가 아니면
-                카메라가 동작하지 않아요.
+                카메라 권한을 허용해주세요.
               </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setError(null);
+                  setRetryTick((t) => t + 1);
+                }}
+                className="mt-4 px-5 py-2.5 rounded-full bg-white text-black text-[13px] font-black active:scale-95 transition-transform"
+              >
+                다시 시도
+              </button>
             </div>
           </div>
         )}
@@ -401,13 +411,6 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
           >
             <RotateCcw className="w-5 h-5" />
           </button>
-        </div>
-
-        {/* 디버그 배지 (진단용 — 확인 후 제거) */}
-        <div className="absolute top-16 inset-x-0 text-center pointer-events-none">
-          <span className="inline-block px-2 py-1 rounded bg-black/70 text-yellow-400 text-[11px] font-mono">
-            WEB fallback{error ? ` · err=${error.slice(0, 30)}` : ""}
-          </span>
         </div>
 
         {/* 하단 안내 */}

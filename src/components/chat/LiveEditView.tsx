@@ -78,7 +78,7 @@ export function LiveEditView({
   onRetake,
   onPost,
 }: Props) {
-  const captionRef = useRef<HTMLInputElement>(null);
+  const [caption, setCaption] = useState("");
   const stageRef = useRef<HTMLDivElement>(null);
 
   const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
@@ -405,9 +405,9 @@ export function LiveEditView({
       {/* 하단: 캡션 + 액션 */}
       <div className="relative z-10 mt-auto bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-16 pb-6 px-4 space-y-3">
         <input
-          ref={captionRef}
+          value={caption}
+          onChange={(e) => setCaption(e.target.value)}
           type="text"
-          defaultValue=""
           placeholder="캡션을 추가해보세요..."
           maxLength={200}
           enterKeyHint="done"
@@ -417,7 +417,16 @@ export function LiveEditView({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => onPost(captionRef.current?.value ?? "", textOverlays, imageOverlays, poll)}
+            onClick={() => {
+              // 편집 중이던 텍스트가 확정 안 됐으면 여기서 flush해 유실 방지
+              const overlays =
+                editingText && editingText.text.trim()
+                  ? textOverlays.some((o) => o.id === editingText.id)
+                    ? textOverlays.map((o) => (o.id === editingText.id ? editingText : o))
+                    : [...textOverlays, editingText]
+                  : textOverlays;
+              onPost(caption, overlays, imageOverlays, poll);
+            }}
             disabled={uploading}
             className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-white text-black text-[15px] font-black active:scale-95 transition-transform disabled:opacity-70"
           >
