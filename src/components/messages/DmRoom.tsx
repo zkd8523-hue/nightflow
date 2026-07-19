@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, Fragment } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Send } from "lucide-react";
@@ -14,6 +14,27 @@ interface Props {
 }
 
 /** 1:1 DM 방 — 요청/수락 상태 배너 + 대화 (accepted 일 때만 입력) */
+// ── 깃발 채팅(MessageRoom)과 동일한 날짜·시간 표기 ──────────────────────────
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+function isSameMinute(a: Date, b: Date) {
+  return isSameDay(a, b) && a.getHours() === b.getHours() && a.getMinutes() === b.getMinutes();
+}
+function formatTime(d: Date) {
+  const h = d.getHours();
+  const h12 = h % 12 || 12;
+  return `${h < 12 ? "오전" : "오후"} ${h12}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+function formatDateDivider(d: Date) {
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAYS[d.getDay()]}요일`;
+}
+
 export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
   const router = useRouter();
   const { thread, messages, loading, send, respond } = useDmThread(threadId, currentUserId);
@@ -63,7 +84,7 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] bg-[#0B0A11]">
+    <div className="flex flex-col h-[100dvh] overflow-hidden bg-[#0B0A11]">
       {/* 헤더 */}
       <div
         className="sticky top-0 z-20 bg-[#0B0A11]/95 backdrop-blur-sm border-b border-neutral-800 flex items-center gap-2 px-3 py-2.5"
@@ -85,19 +106,52 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
       </div>
 
       {/* 메시지 */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
-        {messages.map((m) => {
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-2">
+        {messages.map((m, i) => {
           const mine = m.sender_id === currentUserId;
+          const d = new Date(m.created_at);
+          const prev = i > 0 ? messages[i - 1] : null;
+          const showDate = !prev || !isSameDay(new Date(prev.created_at), d);
+          const next = i < messages.length - 1 ? messages[i + 1] : null;
+          // 같은 사람·같은 분의 연속 메시지는 마지막 것만 시간 표시 (카톡식)
+          const showTime =
+            !next ||
+            next.sender_id !== m.sender_id ||
+            !isSameMinute(new Date(next.created_at), d);
           return (
-            <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`max-w-[75%] px-3 py-2 rounded-2xl text-[14px] leading-snug whitespace-pre-wrap break-words ${
-                  mine ? "bg-amber-500 text-black rounded-tr-sm" : "bg-[#1C1C1E] text-white rounded-tl-sm"
-                }`}
-              >
-                {m.content}
+            <Fragment key={m.id}>
+              {showDate && (
+                <div className="flex justify-center my-3">
+                  <span className="text-[11px] text-neutral-400 bg-neutral-800/70 rounded-full px-3 py-1">
+                    {formatDateDivider(d)}
+                  </span>
+                </div>
+              )}
+              <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+                <div
+                  className={`flex items-end gap-1.5 max-w-[80%] ${mine ? "flex-row-reverse" : ""}`}
+                >
+                  <div
+                    className={`px-3 py-2 rounded-2xl select-none ${
+                      mine
+                        ? "bg-white text-black rounded-br-md"
+                        : "bg-[#1C1C1E] text-white rounded-bl-md"
+                    }`}
+                  >
+                    <p className="text-[14px] leading-snug whitespace-pre-wrap break-words">
+                      {m.content}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
+                    {showTime && (
+                      <span className="text-[10px] text-neutral-500 whitespace-nowrap">
+                        {formatTime(d)}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            </Fragment>
           );
         })}
         <div ref={bottomRef} />
@@ -140,20 +194,27 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
           className="border-t border-neutral-800 flex items-center gap-2 px-3 py-2.5"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom,0px)+10px)" }}
         >
-          <input
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }}
-            placeholder="메시지..."
-            className="flex-1 bg-[#1C1C1E] border border-neutral-800 rounded-full px-4 py-2.5 text-white text-[16px] placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600"
+            onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            rows={1}
+            placeholder="메시지 보내기"
+            className="flex-1 min-w-0 resize-none bg-[#1C1C1E] text-white text-[14px] rounded-2xl px-4 py-2.5 outline-none placeholder:text-neutral-600 max-h-28"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim()}
-            className="shrink-0 w-11 h-11 flex items-center justify-center rounded-full bg-amber-500 text-black disabled:bg-neutral-800 disabled:text-neutral-600"
-            aria-label="보내기"
+            className="p-2.5 rounded-full bg-white text-black shrink-0 disabled:opacity-30"
+            aria-label="전송"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4" />
           </button>
         </div>
       ) : null}
