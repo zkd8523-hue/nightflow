@@ -229,7 +229,7 @@ export function ClubBenefitSection() {
           >
             {/* 혜택 띠 (이미지 위 별도 영역) */}
             {item.benefit_text && (
-              <div className="bg-amber-500 px-2.5 pt-1.5 pb-1 rounded-t-2xl border-b border-black/20">
+              <div className="bg-amber-500 px-2.5 pt-1.5 pb-1 rounded-t-md border-b border-black/20">
                 <span
                   className="block whitespace-pre-line text-black text-[13px] tracking-tight text-center leading-[1.1] line-clamp-2"
                   style={{ fontFamily: "var(--font-display-kr)" }}
@@ -242,7 +242,7 @@ export function ClubBenefitSection() {
             {/* 이미지 */}
             <div
               className={`relative w-full aspect-[4/3] overflow-hidden bg-neutral-900 ${
-                item.benefit_text ? "rounded-b-2xl" : "rounded-2xl"
+                item.benefit_text ? "rounded-b-md" : "rounded-md"
               }`}
             >
               {item.club_thumbnail ? (
