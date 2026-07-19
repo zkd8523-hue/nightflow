@@ -22,7 +22,7 @@ interface Props {
   open: boolean;
   file: File;
   previewUrl: string;
-  /** 클럽 지정 시 표시(스탬프 안내) */
+  /** 클럽 지정 시 표시 */
   clubName?: string | null;
   uploading?: boolean;
   onClose: () => void;

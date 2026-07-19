@@ -1432,7 +1432,7 @@ export interface ShotPoll {
 
 /**
  * 와글 LIVE (Migration 413) — 유저의 휘발성 미디어 (12시간)
- * 게시 자유, 클럽 지정 시 스탬프 대상. 노출은 잡담방 + 지역방 + 클럽 페이지
+ * 게시 자유. 노출은 잡담방 + 지역방 + 클럽 페이지
  */
 export interface ChatShot {
   id: string;
@@ -1481,31 +1481,4 @@ export interface ChatShotComment {
   author?: { id: string; display_name: string | null; profile_image: string | null };
 }
 
-// ── 스탬프 보상 (Migration 418) ──
-export type RewardType = 'product' | 'voucher' | 'raffle';
-export type RedemptionStatus = 'pending' | 'fulfilled' | 'cancelled';
-
-export interface RewardCatalogItem {
-  code: string;
-  name: string;
-  reward_type: RewardType;
-  stamp_cost: number;
-  stock: number | null; // null = 무제한
-  is_active: boolean;
-  sort_order: number;
-}
-
-export interface RewardRedemption {
-  id: string;
-  user_id: string;
-  reward_code: string;
-  reward_name: string;
-  reward_type: RewardType;
-  stamp_cost: number;
-  status: RedemptionStatus;
-  admin_note: string | null;
-  fulfilled_by: string | null;
-  fulfilled_at: string | null;
-  created_at: string;
-}
 

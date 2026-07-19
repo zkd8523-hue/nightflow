@@ -44,8 +44,8 @@ const MAX_CAPTION = 200;
  * LIVE 캡처/업로드 시트 (Migration 413 이후)
  *   플로우: 시트 열림 → (인증자) 클럽 픽 시트 자동 오픈 → 카메라 → 캡션 → 게시
  *
- *   - 클럽 지정 시: club_id + area 있는 LIVE → 조건 충족하면 스탬프 1개
- *   - 클럽 미지정 시: area/club 둘 다 null → 일반 게시 (스탬프 X)
+ *   - 클럽 지정 시: club_id + area 있는 LIVE → 클럽 페이지 노출
+ *   - 클럽 미지정 시: area/club 둘 다 null → 일반 게시
  *   - 미인증자: 클럽 픽 불가, 자동으로 일반 게시 모드
  */
 export function ShotCaptureSheet({
@@ -204,8 +204,8 @@ export function ShotCaptureSheet({
     }
 
     // 페이로드 결정:
-    //   클럽 지정 → area + club_id 필수 (LIVE, 스탬프 대상)
-    //   클럽 미지정 → area/club 모두 null (일반, 스탬프 X)
+    //   클럽 지정 → area + club_id 필수 (클럽 페이지 노출 LIVE)
+    //   클럽 미지정 → area/club 모두 null (일반)
     const isLive = !!selectedClub;
     const payload: Record<string, unknown> = {
       author_id: userId,
@@ -256,22 +256,8 @@ export function ShotCaptureSheet({
       return;
     }
 
-    // 스탬프 적립 확인 (LIVE 게시 후, my_stamp_status 뷰로 마지막 적립 시각 확인)
     if (isLive) {
-      const { data: stampStatus } = await supabase
-        .from("my_stamp_status")
-        .select("last_earned_at, next_eligible_at, earned_last_24h")
-        .maybeSingle();
-      const justEarned =
-        stampStatus?.last_earned_at &&
-        new Date(stampStatus.last_earned_at).getTime() > Date.now() - 10_000;
-      if (justEarned) {
-        toast.success(`🎫 스탬프 1개 적립! (${selectedClub?.name})`);
-      } else if (stampStatus?.earned_last_24h && stampStatus.earned_last_24h >= 7) {
-        toast.message("🎫 오늘 스탬프 한도(7개)에 도달했어요");
-      } else {
-        toast.message("🎫 30분 후 다음 스탬프를 받을 수 있어요");
-      }
+      toast.success(`🔥 LIVE 올렸어요! (${selectedClub?.name})`);
     } else {
       toast.success("LIVE 올렸어요 (12시간 후 사라져요)");
     }
@@ -362,15 +348,6 @@ export function ShotCaptureSheet({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-          {/* 스탬프 안내 배너 */}
-          <div className="rounded-2xl bg-neutral-800/40 border border-neutral-700/50 px-3 py-2 flex items-center gap-2">
-            <span className="text-[16px]">🎫</span>
-            <div className="text-[12px] text-neutral-300 leading-tight">
-              <span className="font-black">클럽 지정 + 위치 확인</span>
-              <span className="text-neutral-500"> 시 스탬프 1개 지급 (30분/일7개)</span>
-            </div>
-          </div>
-
           {/* 클럽 선택 CTA */}
           <button
             type="button"

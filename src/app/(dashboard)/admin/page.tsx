@@ -18,7 +18,6 @@ import {
   Star,
   MessageSquareWarning,
   BarChart3,
-  Gift,
   Wine,
   Globe,
 } from "lucide-react";
@@ -199,12 +198,6 @@ export default async function AdminDashboardPage() {
       .select("id", { count: "exact", head: true })
       .gte("created_at", sevenDaysAgo),
   ]);
-
-  // 스탬프 보상 발행 — 처리 대기 건수 (테이블 없으면 null)
-  const { count: pendingRedemptions } = await supabase
-    .from("reward_redemptions")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending");
 
   // 사용자 차단 통계 (Apple Guideline 1.2 대응)
   const [
@@ -407,15 +400,6 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/reviews",
-    },
-    {
-      label: "스탬프 보상 발행",
-      value: `${pendingRedemptions || 0}건 대기`,
-      icon: Gift,
-      color: pendingRedemptions ? "text-red-400" : "text-neutral-400",
-      bgColor: pendingRedemptions ? "bg-red-500/10" : "bg-neutral-500/10",
-      badge: pendingRedemptions ? `처리 대기 ${pendingRedemptions}` : null,
-      href: "/admin/redemptions",
     },
     {
       label: "사용자 차단",
