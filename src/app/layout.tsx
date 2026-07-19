@@ -137,6 +137,9 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  // 키보드가 올라오면 레이아웃 뷰포트도 함께 줄인다(Chrome Android 기본은 resizes-visual라
+  // 하단 고정 입력창이 키보드 뒤에 숨음). LIVE 뷰어 메시지 입력·와글 컴포저가 키보드 위로 올라옴.
+  interactiveWidget: "resizes-content" as const,
 };
 
 export default async function RootLayout({

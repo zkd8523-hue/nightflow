@@ -282,11 +282,44 @@ function ShotViewerContent({
   const [dmOpen, setDmOpen] = useState(false); // 메시지 신청 시트 (유저 LIVE "나도 갈래")
   const [videoReady, setVideoReady] = useState(false); // 재생 시작 전 첫프레임(정지화면) 숨김용
   const [holdPaused, setHoldPaused] = useState(false); // 화면 누르고 있는 동안 일시정지 (인스타 스토리식)
+  // 인라인 메시지 입력 (인스타식) — 시트 대신 뷰어 하단에서 바로 전송
+  const [commentInput, setCommentInput] = useState("");
+  const [commentSending, setCommentSending] = useState(false);
+  const [inputFocused, setInputFocused] = useState(false);
 
   // 댓글 입력(메시지 남기기) 중이거나 활동 시트가 열리면 재생+자동진행 일시정지.
   // (인스타처럼: 타이핑하는 동안 다음으로 안 넘어감)
   // holdPaused: 사용자가 화면을 누르고 있는 동안 정지 (떼면 재개)
-  const isPaused = !!paused || activityOpen || dmOpen || holdPaused;
+  const isPaused =
+    !!paused || activityOpen || dmOpen || holdPaused || inputFocused;
+
+  // 인라인 댓글 전송 — 시트 열지 않고 뷰어 하단 입력에서 바로.
+  async function sendInlineComment() {
+    const trimmed = commentInput.trim();
+    if (!trimmed || commentSending) return;
+    if (!currentUserId) {
+      onRequireLogin?.();
+      return;
+    }
+    setCommentSending(true);
+    const { error } = await createClient().from("chat_shot_comments").insert({
+      shot_id: shot.id,
+      author_id: currentUserId,
+      content: trimmed,
+    });
+    setCommentSending(false);
+    if (error) {
+      console.error("[ShotViewerSheet] inline comment error", error);
+      if (error.code === "42P01" || error.code === "42703") {
+        toast.error("댓글 마이그레이션 미적용 (325)");
+      } else {
+        toast.error(`전송 실패: ${error.message ?? ""}`);
+      }
+      return;
+    }
+    setCommentInput("");
+    toast.success("메시지를 보냈어요");
+  }
 
   // 본인 LIVE면 조회/좋아요 요약을 하단에 항상 노출 (인스타 스토리식)
   const { viewers: myViewers } = useShotActivity(shot.id, isMine);
@@ -993,13 +1026,43 @@ function ShotViewerContent({
         ) : (
           // 일반 유저 LIVE — 댓글'만' (메시지 남기기 + 하트 + 댓글)
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => (currentUserId ? onOpenComments?.() : onRequireLogin?.())}
-              className="flex-1 text-left px-4 py-2.5 rounded-full border border-white/25 text-white/50 text-[14px]"
-            >
-              메시지 남기기...
-            </button>
+            {/* 인스타식 인라인 메시지 입력 — 키보드 바로 위에 뜸(시트 안 열림) */}
+            <input
+              type="text"
+              value={commentInput}
+              onChange={(e) => setCommentInput(e.target.value)}
+              onFocus={() => {
+                if (!currentUserId) {
+                  onRequireLogin?.();
+                  return;
+                }
+                setInputFocused(true);
+              }}
+              onBlur={() => setInputFocused(false)}
+              onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  sendInlineComment();
+                }
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onPointerUp={(e) => e.stopPropagation()}
+              placeholder="메시지 보내기"
+              maxLength={300}
+              className="flex-1 min-w-0 px-4 py-2.5 rounded-full bg-transparent border border-white/40 text-white text-[14px] placeholder:text-white/60 focus:outline-none focus:border-white/70"
+            />
+            {commentInput.trim() && (
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={sendInlineComment}
+                disabled={commentSending}
+                className="shrink-0 px-3 py-2 text-[14px] font-black text-white disabled:text-white/40"
+              >
+                보내기
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {

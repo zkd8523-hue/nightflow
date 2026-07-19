@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChatRoom } from "@/components/chat/ChatRoom";
 import { LiveIntroModal } from "@/components/chat/LiveIntroModal";
 import { type ChatRegionCode } from "@/lib/chat/areas";
+import { useChatComposerStore } from "@/stores/useChatComposerStore";
 
 /**
  * 와글 페이지 (Migration 421)
@@ -22,10 +23,16 @@ const LAUNCH_REGIONS: { code: ChatRegionCode; label: string }[] = [
 
 export default function ChatPage() {
   const [room, setRoom] = useState<ChatRegionCode>(LAUNCH_REGIONS[0].code);
+  // 입력 포커스 시 BottomNav가 숨으므로 그 56px만큼 채팅 영역 확장
+  const composerFocused = useChatComposerStore((s) => s.focused);
 
   return (
     <div
-      className="max-w-lg mx-auto bg-[#0B0A11] flex flex-col overflow-hidden h-[calc(100dvh-56px-env(safe-area-inset-bottom))]"
+      className={`max-w-lg mx-auto bg-[#0B0A11] flex flex-col overflow-hidden ${
+        composerFocused
+          ? "h-[calc(100dvh-env(safe-area-inset-bottom))]"
+          : "h-[calc(100dvh-56px-env(safe-area-inset-bottom))]"
+      }`}
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <LiveIntroModal />

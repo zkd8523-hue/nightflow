@@ -72,6 +72,9 @@ public class NativeCameraActivity extends AppCompatActivity {
     private VideoCapture<Recorder> videoCapture;
     private Camera camera;
     private Recording activeRecording;
+    // 카메라 바인딩(비동기) 전에 셔터를 누르면 그 요청을 기억했다가 준비되면 촬영.
+    // (첫 셔터가 imageCapture==null로 조용히 무시되던 문제 해결)
+    private boolean pendingPhoto = false;
 
     private CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
     private final ExecutorService cameraExecutor = Executors.newSingleThreadExecutor();
@@ -200,6 +203,11 @@ public class NativeCameraActivity extends AppCompatActivity {
                 int target = Math.round(range.getUpper() * 0.6f);
                 camera.getCameraControl().setExposureCompensationIndex(target);
             }
+            // 바인딩 전에 눌렀던 셔터가 있으면 지금 촬영 (첫 셔터 큐잉).
+            if (pendingPhoto) {
+                pendingPhoto = false;
+                takePhoto();
+            }
         } catch (Exception e) {
             setResult(RESULT_CANCELED);
             finish();
@@ -214,7 +222,11 @@ public class NativeCameraActivity extends AppCompatActivity {
     }
 
     private void takePhoto() {
-        if (imageCapture == null) return;
+        // 아직 카메라 바인딩 전이면 요청을 큐잉 → bindUseCases 완료 시 자동 촬영.
+        if (imageCapture == null) {
+            pendingPhoto = true;
+            return;
+        }
         imageCapture.takePicture(cameraExecutor, new ImageCapture.OnImageCapturedCallback() {
             @Override
             public void onCaptureSuccess(@NonNull androidx.camera.core.ImageProxy image) {

@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useChatMessages } from "@/hooks/useChatMessages";
+import { useChatComposerStore } from "@/stores/useChatComposerStore";
 import { useAreaVerification } from "@/hooks/useAreaVerification";
 import { useChatReactions } from "@/hooks/useChatReactions";
 import { useChatReplyPreviews } from "@/hooks/useChatReplyPreviews";
@@ -58,6 +59,9 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const setComposerFocused = useChatComposerStore((s) => s.setFocused);
+  // 언마운트(와글 이탈) 시 포커스 상태 리셋 → 다른 탭에서 네비 숨김 잔존 방지
+  useEffect(() => () => setComposerFocused(false), [setComposerFocused]);
 
   // 자동완성용 현재 # 토큰 위치
   const [hashtagToken, setHashtagToken] = useState<{
@@ -527,7 +531,9 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
                   getCurrentHashtagToken(t.value, t.selectionStart ?? 0)
                 );
               }}
+              onFocus={() => setComposerFocused(true)}
               onBlur={() => {
+                setComposerFocused(false);
                 setTimeout(() => setHashtagToken(null), 100);
               }}
               onKeyDown={(e) => {

@@ -10,10 +10,13 @@ import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 import { useOfferChats } from "@/hooks/useOfferChats";
 import { usePartyChats } from "@/hooks/usePartyChats";
 import { WagleIcon } from "@/components/icons/WagleIcon";
+import { useChatComposerStore } from "@/stores/useChatComposerStore";
 
 export function BottomNav() {
   const pathname = usePathname();
   const { user, isLoading } = useCurrentUser();
+  // 와글 채팅 입력 중이면 네비 숨김 (채팅 공간 확보 + 키보드 겹침 완화)
+  const composerFocused = useChatComposerStore((s) => s.focused);
   // 내 깃발에 들어온 새 오퍼(미확인)가 있으면 "내 정보" 탭에 점 표시.
   // Hooks 규칙상 early return보다 위에서 호출. 비로그인 시 빈 배열 반환됨.
   const { notifications, markAsRead } = useNotifications(user?.id);
@@ -48,6 +51,8 @@ export function BottomNav() {
   // 비로그인 사용자에게도 탭바를 노출해 기능(와글/주변/찜 등)을 발견할 수 있게 함.
   // 인증이 필요한 탭(찜/내 정보)은 탭 시 미들웨어가 /login으로 유도 → 자연스러운 가입 전환점.
   if (isLoading) return null;
+  // 채팅 입력 포커스 중엔 네비 숨김
+  if (composerFocused) return null;
 
   // 찜 자리를 채팅으로 대체 (플래그 OFF면 찜 유지)
   const tabs = [
