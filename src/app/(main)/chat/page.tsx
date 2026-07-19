@@ -24,7 +24,10 @@ export default function ChatPage() {
   const [room, setRoom] = useState<ChatRegionCode>(LAUNCH_REGIONS[0].code);
 
   return (
-    <div className="max-w-lg mx-auto bg-[#0B0A11] flex flex-col overflow-hidden h-[calc(100dvh-52px-56px-env(safe-area-inset-bottom))]">
+    <div
+      className="max-w-lg mx-auto bg-[#0B0A11] flex flex-col overflow-hidden h-[calc(100dvh-56px-env(safe-area-inset-bottom))]"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
       <LiveIntroModal />
 
       {/* 지역 필터 — LIVE 라벨 행 우측에 배치 (세로 공간 절약, 컴팩트 크기) */}

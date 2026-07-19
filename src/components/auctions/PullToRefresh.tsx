@@ -6,9 +6,11 @@ import { RefreshCw } from "lucide-react";
 interface PullToRefreshProps {
   children: React.ReactNode;
   onRefresh: () => Promise<void>;
+  /** 특정 페이지(와글 등 내부 스크롤 영역)에서 당겨서 새로고침 비활성화 */
+  disabled?: boolean;
 }
 
-export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
+export function PullToRefresh({ children, onRefresh, disabled }: PullToRefreshProps) {
   const [pullDistance, setPullDistance] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const startXRef = useRef(0);
@@ -40,6 +42,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
   }, []);
 
   useEffect(() => {
+    if (disabled) return; // 와글 등 내부 스크롤 페이지: 당겨서 새로고침 완전 비활성
     // iOS Safari에서 body position:fixed가 가로 스크롤 깨뜨림 → iOS는 락 skip
     const isIOS = typeof navigator !== "undefined" && /iPad|iPhone|iPod/.test(navigator.userAgent);
     const lockPageScroll = () => {
@@ -193,7 +196,7 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
         lockedScrollYRef.current = null;
       }
     };
-  }, []); // 빈 dependency — 리스너 한 번만 등록, ref로 최신값 참조
+  }, [disabled]); // disabled 토글 시 리스너 재등록 (ref로 최신값 참조)
 
   const refreshProgress = Math.min(pullDistance / THRESHOLD, 1);
 

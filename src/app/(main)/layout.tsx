@@ -95,20 +95,10 @@ export default function MainLayout({
   const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner || isMessageDetail || isPartyChat || isContact;
 
   return (
-    <PullToRefresh onRefresh={handleRefresh}>
+    <PullToRefresh onRefresh={handleRefresh} disabled={isChatPage}>
       <div className="bg-[#0B0A11] flex flex-col">
-        {!isChromeless && (
-          isChatPage ? (
-            <Header
-              compact
-              customTitle="WAGLE"
-              customSubtitle="지금 이 순간을 공유해보세요!"
-              backHref="/"
-            />
-          ) : (
-            <Header />
-          )
-        )}
+        {/* 와글은 헤더 바 제거 — 채팅 영역 확보 (LIVE 행/탭은 페이지 내부에서 노출) */}
+        {!isChromeless && !isChatPage && <Header />}
         <main className={isChromeless ? "" : isChatPage ? "" : "pb-16"}>{children}</main>
         {!isChromeless && !isChatPage && <Footer />}
         {!isChromeless && <BottomNav />}

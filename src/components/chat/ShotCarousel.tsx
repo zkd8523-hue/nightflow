@@ -153,8 +153,8 @@ export function ShotCarousel({
   const otherGroups = userGroups.filter((g) => g.key !== "me");
 
   return (
-    <div className="px-3 py-2 border-b border-neutral-900 bg-[#0B0A11]">
-      <div className="flex items-center justify-between gap-2 mb-1.5 px-1">
+    <div className="px-3 pt-2 pb-1 border-b border-neutral-900 bg-[#0B0A11]">
+      <div className="flex items-center justify-between gap-2 mb-0.5 px-1">
         <div className="flex items-center gap-1.5 shrink-0">
           <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />
           <span className="text-[12px] font-black text-red-400">LIVE</span>
@@ -163,8 +163,8 @@ export function ShotCarousel({
       </div>
       <div className="flex items-start gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
         {showComposeButton && (
-          <div className="shrink-0 w-[72px] flex flex-col items-center gap-1">
-            <div className="relative w-[72px] h-[72px]">
+          <div className="shrink-0 w-[60px] flex flex-col items-center gap-1">
+            <div className="relative w-[60px] h-[60px]">
               {/* 원 탭 — 내 LIVE 있으면 보기, 없으면 게시 */}
               <button
                 type="button"
@@ -177,16 +177,16 @@ export function ShotCarousel({
                     onComposeClick?.();
                   }
                 }}
-                className="block w-[72px] h-[72px]"
+                className="block w-[60px] h-[60px]"
                 aria-label={myGroup ? "내 LIVE 보기" : "LIVE 올리기"}
               >
                 {myGroup ? (
                   <ShotThumb shot={myGroup.rep} isMine isViewed={myGroup.allViewed} />
                 ) : (
-                  <div className="w-[72px] h-[72px] rounded-full p-[2px] bg-neutral-700">
+                  <div className="w-[60px] h-[60px] rounded-full p-[2px] bg-neutral-700">
                     <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
                       {currentUserProfile?.profile_image ? (
-                        <Image src={currentUserProfile.profile_image} alt="" fill sizes="72px" className="object-cover" />
+                        <Image src={currentUserProfile.profile_image} alt="" fill sizes="60px" className="object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/40 text-[18px] font-black">
                           {(currentUserProfile?.display_name ?? "나").charAt(0)}
@@ -223,7 +223,7 @@ export function ShotCarousel({
                 setViewedSet((prev) => new Set(prev).add(shot.id));
                 setViewerIndex(group.firstIndex);
               }}
-              className="shrink-0 w-[72px] flex flex-col items-center gap-1"
+              className="shrink-0 w-[60px] flex flex-col items-center gap-1"
             >
               <ShotThumb
                 shot={shot}
@@ -248,7 +248,7 @@ export function ShotCarousel({
           Array.from({ length: 3 }).map((_, i) => (
             <div
               key={`skel-${i}`}
-              className="shrink-0 w-[72px] h-[72px] rounded-full bg-neutral-900 animate-pulse"
+              className="shrink-0 w-[60px] h-[60px] rounded-full bg-neutral-900 animate-pulse"
             />
           ))}
       </div>
@@ -292,14 +292,14 @@ function ShotThumb({
         ? "bg-gradient-to-br from-amber-400 to-amber-600"
         : "bg-gradient-to-br from-[#A78BFA] to-[#C084FC]";
   return (
-    <div className={`relative w-[72px] h-[72px] rounded-full p-[2px] ${ringClass}`}>
+    <div className={`relative w-[60px] h-[60px] rounded-full p-[2px] ${ringClass}`}>
       <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
         {shot.media_type === "image" ? (
           <Image
             src={shot.media_url}
             alt=""
             fill
-            sizes="72px"
+            sizes="60px"
             className="object-cover"
           />
         ) : (

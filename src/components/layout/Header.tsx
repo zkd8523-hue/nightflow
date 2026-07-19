@@ -273,16 +273,16 @@ export function Header({
           )}
           <div className="flex flex-col gap-0.5 min-w-0">
           {compact && customTitle ? (
-            <>
-              <div className="text-lg font-black tracking-tighter leading-none bg-gradient-to-r from-[#A78BFA] to-[#F472B6] bg-clip-text text-transparent">
+            <div className="flex items-baseline gap-2 min-w-0">
+              <span className="shrink-0 text-lg font-black tracking-tighter leading-none bg-gradient-to-r from-[#A78BFA] to-[#F472B6] bg-clip-text text-transparent">
                 {customTitle}
-              </div>
+              </span>
               {customSubtitle && (
-                <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
+                <span className="text-[12px] text-neutral-400 font-medium tracking-tight truncate">
                   {customSubtitle}
-                </p>
+                </span>
               )}
-            </>
+            </div>
           ) : (
             <>
               <Link
