@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useOfferChats } from "@/hooks/useOfferChats";
 import { usePartyChats } from "@/hooks/usePartyChats";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
+import { useDmThreads } from "@/hooks/useDmThreads";
 
 function formatDate(d: string): string {
   try {
@@ -48,6 +49,7 @@ export function MessagesListClient() {
   const { user, isLoading } = useCurrentUser();
   const { chats, loading, reload } = useOfferChats(user?.id);
   const { rooms: partyRooms, loading: partyLoading, reload: reloadParty } = usePartyChats(user?.id);
+  const { threads: dmThreads } = useDmThreads(user?.id);
 
   // 롱프레스 → 채팅방 나가기
   type LeaveTarget =
@@ -132,7 +134,7 @@ export function MessagesListClient() {
     { key: "share", label: "🧩 조각", items: groups.filter((g) => g[0].is_recruiting_party) },
   ], [groups]);
 
-  const [tab, setTab] = useState<"flag" | "share">("flag");
+  const [tab, setTab] = useState<"flag" | "share" | "dm">("flag");
   const activeSection = sections.find((s) => s.key === tab)!;
   const didAutoSelect = useRef(false);
 
@@ -142,14 +144,17 @@ export function MessagesListClient() {
     const [flag] = sections;
     const flagCount = flag.items.length;
     const shareCount = partyRooms.length; // 조각 탭 = 파티 단체방만 (1:1 제거)
-    if (flagCount === 0 && shareCount === 0) return;
+    if (flagCount === 0 && shareCount === 0) {
+      if (dmThreads.length > 0) { setTab("dm"); didAutoSelect.current = true; }
+      return;
+    }
     const flagUnread = flag.items.some((g) => g.some((c) => !isClosedStatus(c.offer_status) && c.unread));
     const shareUnread = partyRooms.some((r) => r.unread);
     if (flagUnread && !shareUnread) setTab("flag");
     else if (shareUnread && !flagUnread) setTab("share");
     else setTab(flagCount > 0 ? "flag" : "share");
     didAutoSelect.current = true;
-  }, [loading, partyLoading, sections, partyRooms]);
+  }, [loading, partyLoading, sections, partyRooms, dmThreads]);
 
   // 플래그 OFF면 기능 자체가 없음 → 홈으로
   useEffect(() => {
@@ -171,8 +176,8 @@ export function MessagesListClient() {
           </button>
           <h1 className="text-[16px] font-black text-white">나의 채팅</h1>
         </header>
-        {user && (chats.length > 0 || partyRooms.length > 0) && (
-          <div className="grid grid-cols-2 gap-1 p-1 mx-4 mb-2 bg-neutral-900 rounded-full">
+        {user && (chats.length > 0 || partyRooms.length > 0 || dmThreads.length > 0) && (
+          <div className={`grid ${dmThreads.length > 0 ? "grid-cols-3" : "grid-cols-2"} gap-1 p-1 mx-4 mb-2 bg-neutral-900 rounded-full`}>
             {sections.map((s) => {
               const isShare = s.key === "share";
               // 조각 탭 = 파티 단체방만(1:1 제거), 깃발 탭 = 1:1 오퍼 채팅
@@ -201,6 +206,23 @@ export function MessagesListClient() {
                 </button>
               );
             })}
+            {/* 메시지(DM) 탭 — DM이 있을 때만 노출 (유저 LIVE 진입점은 현재 보류) */}
+            {dmThreads.length > 0 && (
+            <button
+              onClick={() => { didAutoSelect.current = true; setTab("dm"); }}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-white" : "text-neutral-500"}`}
+            >
+              <span>💬 메시지</span>
+              {dmThreads.length > 0 && (
+                <span className={`text-[11px] ${tab === "dm" ? "text-neutral-300" : "text-neutral-500"}`}>
+                  {dmThreads.length}
+                </span>
+              )}
+              {dmThreads.some((t) => t.recipient_id === user?.id && t.status === "pending") && (
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+              )}
+            </button>
+            )}
           </div>
         )}
       </div>
@@ -209,13 +231,56 @@ export function MessagesListClient() {
         <p className="text-center text-[13px] text-neutral-600 mt-16">불러오는 중…</p>
       ) : !user ? (
         <p className="text-center text-[13px] text-neutral-500 mt-16">로그인이 필요해요</p>
-      ) : chats.length === 0 && partyRooms.length === 0 ? (
+      ) : chats.length === 0 && partyRooms.length === 0 && dmThreads.length === 0 ? (
         <div className="text-center mt-20 px-8">
           <p className="text-[14px] text-neutral-400 font-bold">아직 대화가 없어요</p>
           <p className="text-[13px] text-neutral-600 mt-1.5 leading-relaxed">
             깃발 상세에서 마음에 드는 오퍼에 <br />“대화하기”를 눌러 시작해보세요
           </p>
         </div>
+      ) : tab === "dm" ? (
+        dmThreads.length === 0 ? (
+          <p className="text-center text-[13px] text-neutral-600 mt-16">메시지가 없어요</p>
+        ) : (
+          <div className="px-2 pt-1">
+            {dmThreads.map((t) => {
+              const pendingIn = t.recipient_id === user?.id && t.status === "pending";
+              const name = t.counterpart?.display_name ?? "익명";
+              return (
+                <Link
+                  key={t.id}
+                  href={`/dm/${t.id}`}
+                  className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-neutral-900 transition-colors"
+                >
+                  <div className="relative w-11 h-11 rounded-full overflow-hidden bg-neutral-800 shrink-0">
+                    {t.counterpart?.profile_image ? (
+                      <Image src={t.counterpart.profile_image} alt="" fill sizes="44px" className="object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white/60 text-[14px] font-black">
+                        {name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-white text-[14px] font-black truncate">{name}</span>
+                      {pendingIn && (
+                        <span className="shrink-0 text-[10px] font-black text-black bg-amber-500 rounded-full px-1.5 py-0.5 leading-none">
+                          신청
+                        </span>
+                      )}
+                      {t.status === "pending" && !pendingIn && (
+                        <span className="shrink-0 text-[10px] font-bold text-neutral-500">대기중</span>
+                      )}
+                    </div>
+                    <p className="text-[13px] text-neutral-500 truncate">{t.last_message ?? ""}</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-neutral-600 shrink-0" />
+                </Link>
+              );
+            })}
+          </div>
+        )
       ) : tab === "share" && partyRooms.length === 0 ? (
         <p className="text-center text-[13px] text-neutral-600 mt-16">조각 대화가 없어요</p>
       ) : tab === "flag" && activeSection.items.length === 0 ? (

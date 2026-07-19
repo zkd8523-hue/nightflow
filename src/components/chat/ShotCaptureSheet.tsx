@@ -66,6 +66,9 @@ export function ShotCaptureSheet({
   const openCamera = useCameraStore((s) => s.openCamera);
 
   const [selectedClub, setSelectedClub] = useState<{ id: string; name: string } | null>(presetClub);
+  // 카메라 열릴 때 시트 onOpenChange→resetState로 selectedClub이 리셋되는 걸 우회.
+  // 클럽 선택을 카메라 왕복 동안 보존해 게시 시 club_id가 유실되지 않게 한다.
+  const selectedClubRef = useRef<{ id: string; name: string } | null>(presetClub);
   const [clubSheetOpen, setClubSheetOpen] = useState(false);
   const [nearestClubs, setNearestClubs] = useState<NearestClub[] | null>(null);
   const [clubsLoading, setClubsLoading] = useState(false);
@@ -101,6 +104,7 @@ export function ShotCaptureSheet({
   useEffect(() => {
     if (!open) return;
     setSelectedClub(presetClub);
+    selectedClubRef.current = presetClub; // 새 세션 시작 시 ref도 초기화
     if (!presetClub) {
       setClubSheetOpen(true);
     }
@@ -160,6 +164,8 @@ export function ShotCaptureSheet({
   function launchCamera() {
     if (canUseLiveCamera()) {
       openCamera((captured) => {
+        // 카메라 열리며 시트가 닫혀 selectedClub이 리셋됐을 수 있어 ref에서 복원
+        if (selectedClubRef.current) setSelectedClub(selectedClubRef.current);
         setFile(captured);
         setPreviewUrl(URL.createObjectURL(captured));
       });
@@ -206,7 +212,9 @@ export function ShotCaptureSheet({
     // 페이로드 결정:
     //   클럽 지정 → area + club_id 필수 (클럽 페이지 노출 LIVE)
     //   클럽 미지정 → area/club 모두 null (일반)
-    const isLive = !!selectedClub;
+    // 게시 시점의 클럽 = ref 우선 (state가 카메라 왕복 중 리셋됐을 수 있음)
+    const club = selectedClubRef.current ?? selectedClub;
+    const isLive = !!club;
     const payload: Record<string, unknown> = {
       author_id: userId,
       media_type: media.type,
@@ -219,7 +227,7 @@ export function ShotCaptureSheet({
       image_overlays: imageOverlays,
       poll: poll ?? null,
       area: isLive ? area : null,
-      club_id: isLive ? selectedClub?.id ?? null : null,
+      club_id: isLive ? club?.id ?? null : null,
     };
 
     const supabase = createClient();
@@ -257,7 +265,7 @@ export function ShotCaptureSheet({
     }
 
     if (isLive) {
-      toast.success(`🔥 LIVE 올렸어요! (${selectedClub?.name})`);
+      toast.success(`🔥 LIVE 올렸어요! (${club?.name})`);
     } else {
       toast.success("LIVE 올렸어요 (12시간 후 사라져요)");
     }
@@ -438,6 +446,7 @@ export function ShotCaptureSheet({
       selectedId={selectedClub?.id ?? null}
       onSelect={(c) => {
         setSelectedClub(c);
+        selectedClubRef.current = c; // 카메라 왕복 동안 보존
         setClubSheetOpen(false);
         // 클럽 선택 즉시 카메라 진입 (메인 시트의 촬영 버튼 단계 생략)
         launchCamera();

@@ -10,6 +10,9 @@ import { ShotViewerSheet } from "./ShotViewerSheet";
 import { getViewedShotIds, markShotViewed } from "@/lib/chat/viewedShots";
 import { areaToRegion, type ChatRegionCode } from "@/lib/chat/areas";
 
+// 클럽 미지정 LIVE 라벨 폴백 — 닉네임 대신 지역 (캐러셀은 "어디가 핫한가"용)
+const AREA_KR: Record<string, string> = { gangnam: "강남", hongdae: "홍대", itaewon: "이태원" };
+
 interface Props {
   /** (하위호환) 필터 파라미터 — Migration 404 이후 무시됨 */
   areas?: VerifiableArea[];
@@ -24,6 +27,8 @@ interface Props {
   currentUserProfile?: { profile_image: string | null; display_name: string | null } | null;
   /** 헤더 부제 멘트 (기본: 와글 문구). 홈 등에서 커스텀 */
   subtitle?: string;
+  /** 마지막 LIVE까지 다 보면 이 경로로 유도(엔드카드). 홈 캐러셀 전용 */
+  endCardTo?: string;
 }
 
 /**
@@ -38,7 +43,7 @@ export function ShotCarousel({
   clubId,
   showComposeButton,
   onComposeClick,
-  subtitle,
+  endCardTo,
   currentUserId,
   currentUserProfile,
 }: Props) {
@@ -118,9 +123,6 @@ export function ShotCarousel({
       <div className="flex items-center gap-1.5 mb-2 px-1">
         <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />
         <span className="text-[12px] font-black text-red-400">LIVE</span>
-        <span className="text-[11px] text-neutral-500">
-          — {subtitle ?? "지금 이 순간을 공유해보세요!"}
-        </span>
       </div>
       <div className="flex items-start gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
         {showComposeButton && (
@@ -196,7 +198,9 @@ export function ShotCarousel({
                   group.allViewed ? "text-neutral-600" : "text-neutral-300"
                 }`}
               >
-                {shot.club?.name ?? shot.author?.display_name ?? "익명"}
+                {shot.club?.name ??
+                  (shot.area ? AREA_KR[shot.area] : null) ??
+                  "익명"}
               </span>
             </button>
           );
@@ -225,6 +229,7 @@ export function ShotCarousel({
         }}
         currentUserId={currentUserId}
         onToggleLike={toggleLike}
+        endCardTo={endCardTo}
         onRequireLogin={() => router.push("/login?redirect=/chat")}
       />
     </div>

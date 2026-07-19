@@ -82,22 +82,24 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
           width: { ideal: 1920 },
           height: { ideal: 1080 },
         };
-        // audio:true 우선 시도 → 마이크 없거나 권한 거부 시 video만으로 fallback
+        // getUserMedia: audio 우선(동영상 녹음용) → 실패 시 video-only.
+        // 또 facingMode(후면) 미지원 기기(데스크톱/단일 카메라/시뮬레이터)면
+        // facing 제약을 빼고 available 카메라로 재시도 → 전/후면 토글 없이도 스트림 확보.
+        const tryGet = async (v: MediaTrackConstraints) => {
+          try {
+            return await navigator.mediaDevices.getUserMedia({ video: v, audio: true });
+          } catch {
+            return await navigator.mediaDevices.getUserMedia({ video: v, audio: false });
+          }
+        };
         let stream: MediaStream;
         try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: videoConstraints,
-            audio: true,
-          });
-        } catch (audioErr) {
-          console.warn(
-            "[CameraCaptureView] audio fail, retry video only",
-            audioErr
-          );
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: videoConstraints,
-            audio: false,
-          });
+          stream = await tryGet(videoConstraints);
+        } catch (facingErr) {
+          console.warn("[CameraCaptureView] facingMode fail, retry without facing", facingErr);
+          const { facingMode: _omit, ...noFacing } = videoConstraints;
+          void _omit;
+          stream = await tryGet(noFacing);
         }
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());

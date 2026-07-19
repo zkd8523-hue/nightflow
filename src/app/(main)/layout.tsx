@@ -102,7 +102,7 @@ export default function MainLayout({
             <Header
               compact
               customTitle="WAGLE"
-              customSubtitle="놀고, 공유하면, 포인트가 쌓인다!"
+              customSubtitle="지금 이 순간을 공유해보세요!"
               backHref="/"
             />
           ) : (

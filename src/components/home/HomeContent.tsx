@@ -1157,7 +1157,7 @@ export function HomeContent({
             <ShotCarousel
               showComposeButton={false}
               currentUserId={user?.id}
-              subtitle="지금 뜨거운 클럽, 실시간 분위기"
+              endCardTo="/chat"
             />
           </div>
 

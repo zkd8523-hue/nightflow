@@ -29,6 +29,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { ChatShot } from "@/types/database";
 import { ShotCommentSheet } from "./ShotCommentSheet";
 import { ShotActivitySheet } from "./ShotActivitySheet";
+import { useShotActivity } from "@/hooks/useShotActivity";
+import { DmRequestSheet } from "@/components/messages/DmRequestSheet";
 
 interface Props {
   shots: ChatShot[];
@@ -37,6 +39,8 @@ interface Props {
   currentUserId?: string;
   onToggleLike?: (shotId: string) => void;
   onRequireLogin?: () => void;
+  /** 마지막 LIVE까지 다 보면 닫는 대신 이 경로로 유도(엔드카드). 홈 캐러셀 전용 */
+  endCardTo?: string;
 }
 
 const SWIPE_THRESHOLD = 80; // 세로 스와이프 임계값(px)
@@ -49,9 +53,16 @@ export function ShotViewerSheet({
   currentUserId,
   onToggleLike,
   onRequireLogin,
+  endCardTo,
 }: Props) {
+  const router = useRouter();
   const open = index !== null;
   const shot = index !== null ? shots[index] : null;
+  // 홈에서 마지막 LIVE까지 다 보면 뜨는 엔드카드 (와글로 유도)
+  const [endCardOpen, setEndCardOpen] = useState(false);
+  useEffect(() => {
+    if (index === null) setEndCardOpen(false);
+  }, [index]);
 
   // onIndexChange를 ref로 안정화 — popstate effect가 이걸 deps에 두면,
   // 넘길 때마다 부모가 새 함수를 주며 effect가 재실행 → cleanup의 history.back()이
@@ -125,10 +136,11 @@ export function ShotViewerSheet({
     if (index < shots.length - 1) onIndexChange(index + 1);
     // 마지막 SHOT에서 수동 넘김은 닫지 않음 (사용자가 X로 명시적으로 닫게)
   }
-  // 영상/이미지 재생이 '자연 종료'됐을 때 — 마지막이면 뷰어를 닫는다.
+  // 영상/이미지 재생이 '자연 종료'됐을 때 — 마지막이면 엔드카드(홈) 또는 닫기.
   function playbackEnd() {
     if (index === null) return;
     if (index < shots.length - 1) onIndexChange(index + 1);
+    else if (endCardTo) setEndCardOpen(true); // 홈: 와글로 유도
     else onIndexChange(null);
   }
 
@@ -161,6 +173,34 @@ export function ShotViewerSheet({
               onRequireLogin={onRequireLogin}
             />
           ) : null}
+
+          {/* 엔드카드 — 홈에서 마지막까지 다 보면 와글로 유도 */}
+          {endCardOpen && endCardTo && (
+            <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center gap-6 px-8 text-center">
+              <div className="flex flex-col items-center gap-2">
+                <div className="text-[34px]">🌙</div>
+                <h2 className="text-white text-[20px] font-black">다 봤어요</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const to = endCardTo;
+                  onIndexChange(null);
+                  router.push(to);
+                }}
+                className="px-7 py-3 rounded-full bg-white text-black text-[15px] font-black active:scale-95 transition-transform"
+              >
+                와글 가기 →
+              </button>
+              <button
+                type="button"
+                onClick={() => onIndexChange(null)}
+                className="text-neutral-500 text-[13px]"
+              >
+                닫기
+              </button>
+            </div>
+          )}
         </SheetContent>
       </Sheet>
 
@@ -219,11 +259,15 @@ function ShotViewerContent({
   const [likeBurst, setLikeBurst] = useState(0); // 값 바뀔 때마다 하트 애니메이션 재생
   const [soundOn, setSoundOn] = useState(false); // 영상 소리 (기본 음소거 — 자동재생 보장)
   const [activityOpen, setActivityOpen] = useState(false); // 활동(본 사람) 시트 — 본인 LIVE만
+  const [dmOpen, setDmOpen] = useState(false); // 메시지 신청 시트 (유저 LIVE "나도 갈래")
   const [videoReady, setVideoReady] = useState(false); // 재생 시작 전 첫프레임(정지화면) 숨김용
 
   // 댓글 입력(메시지 남기기) 중이거나 활동 시트가 열리면 재생+자동진행 일시정지.
   // (인스타처럼: 타이핑하는 동안 다음으로 안 넘어감)
-  const isPaused = !!paused || activityOpen;
+  const isPaused = !!paused || activityOpen || dmOpen;
+
+  // 본인 LIVE면 조회/좋아요 요약을 하단에 항상 노출 (인스타 스토리식)
+  const { viewers: myViewers } = useShotActivity(shot.id, isMine);
   const isPausedRef = useRef(isPaused);
   useEffect(() => {
     isPausedRef.current = isPaused;
@@ -344,6 +388,7 @@ function ShotViewerContent({
   // 키보드 (위/아래/Esc)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (isPausedRef.current) return; // 시트(댓글/활동 등) 열렸을 때 키보드 넘김 차단
       if (e.key === "ArrowUp" || e.key === "ArrowRight") {
         e.preventDefault();
         onNext();
@@ -361,6 +406,7 @@ function ShotViewerContent({
   // 마우스 휠 (throttle)
   const wheelLockRef = useRef(false);
   function handleWheel(e: React.WheelEvent) {
+    if (isPausedRef.current) return; // 시트 열렸을 때 휠 넘김 차단
     if (wheelLockRef.current) return;
     if (Math.abs(e.deltaY) < 30) return;
     wheelLockRef.current = true;
@@ -396,6 +442,9 @@ function ShotViewerContent({
     startYRef.current = null;
     startXRef.current = null;
     setDragY(0);
+
+    // 시트(댓글/활동 등) 열렸을 때 탭/스와이프 넘김·좋아요 차단
+    if (isPausedRef.current) return;
 
     const absX = Math.abs(dx);
     const absY = Math.abs(dy);
@@ -517,6 +566,7 @@ function ShotViewerContent({
         onPointerUp={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
+          if (isPausedRef.current) return;
           onPrev();
         }}
         className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 items-center justify-center text-white transition-colors"
@@ -530,6 +580,7 @@ function ShotViewerContent({
         onPointerUp={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();
+          if (isPausedRef.current) return;
           onPlaybackEnd(); // 다음, 마지막이면 닫힘 (인스타 웹 화살표와 동일)
         }}
         className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 items-center justify-center text-white transition-colors"
@@ -843,8 +894,26 @@ function ShotViewerContent({
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
       >
-        {/* 나도 갈래 — 남의 LIVE + 작성자가 오픈챗 등록했을 때만 (합류 열림 = 동의) */}
-        {!isMine && shot.author?.kakao_open_chat_url && (
+        {isMine ? (
+          // 본인 LIVE — 조회/좋아요 요약 항상 노출 (탭하면 상세)
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActivityOpen(true)}
+              className="flex-1 inline-flex items-center gap-4 px-4 py-2.5 text-white text-[14px] font-bold active:opacity-70 transition-opacity"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Eye className="w-5 h-5" />
+                {myViewers.length}
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Heart className={`w-5 h-5 ${shot.like_count > 0 ? "fill-red-500 text-red-500" : ""}`} />
+                {shot.like_count}
+              </span>
+            </button>
+          </div>
+        ) : shot.author?.kakao_open_chat_url ? (
+          // 파트너(MD) LIVE — 문의 버튼'만' (댓글 없음)
           <button
             type="button"
             onClick={() => {
@@ -853,29 +922,14 @@ function ShotViewerContent({
             }}
             className="w-full flex flex-col items-center justify-center py-2.5 rounded-full bg-amber-500 text-black active:scale-[0.98] transition-transform"
           >
-            <span className="inline-flex items-center gap-1.5 text-[15px] font-black leading-tight">
-              <Zap className="w-4 h-4 fill-black" />
-              나도 갈래
-            </span>
+            <span className="text-[15px] font-black leading-tight">🎉 나도 갈래요</span>
             <span className="text-[11px] font-bold text-black/55 leading-tight mt-0.5">
               파트너에게 문의하기
             </span>
           </button>
-        )}
-        <div className="flex items-center gap-2">
-        {isMine ? (
-          // 본인 LIVE — 활동 보기
-          <button
-            type="button"
-            onClick={() => setActivityOpen(true)}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full border border-white/25 text-white/80 text-[13px] font-bold"
-          >
-            <Eye className="w-4 h-4" />
-            활동 보기
-          </button>
         ) : (
-          <>
-            {/* 메시지 남기기 → 댓글 */}
+          // 일반 유저 LIVE — 댓글'만' (메시지 남기기 + 하트 + 댓글)
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => (currentUserId ? onOpenComments?.() : onRequireLogin?.())}
@@ -883,7 +937,6 @@ function ShotViewerContent({
             >
               메시지 남기기...
             </button>
-            {/* 좋아요 */}
             <button
               type="button"
               onClick={() => {
@@ -898,7 +951,6 @@ function ShotViewerContent({
                 <span className="text-[10px] font-bold text-white/80 leading-none">{shot.like_count}</span>
               )}
             </button>
-            {/* 댓글 */}
             <button
               type="button"
               onClick={() => onOpenComments?.()}
@@ -910,12 +962,22 @@ function ShotViewerContent({
                 <span className="text-[10px] font-bold text-white/80 leading-none">{shot.comment_count}</span>
               )}
             </button>
-          </>
+          </div>
         )}
-        </div>
       </div>
 
       <ShotActivitySheet open={activityOpen} onOpenChange={setActivityOpen} shotId={shot.id} />
+
+      {/* 메시지 신청 (유저 LIVE "나도 갈래") */}
+      <DmRequestSheet
+        open={dmOpen}
+        onOpenChange={setDmOpen}
+        recipientId={shot.author_id}
+        recipientName={shot.author?.display_name}
+        shotId={shot.id}
+        currentUserId={currentUserId}
+        onRequireLogin={onRequireLogin}
+      />
     </div>
   );
 }
