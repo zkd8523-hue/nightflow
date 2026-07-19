@@ -32,6 +32,7 @@ import { ShotCommentSheet } from "./ShotCommentSheet";
 import { ShotActivitySheet } from "./ShotActivitySheet";
 import { useShotActivity } from "@/hooks/useShotActivity";
 import { DmRequestSheet } from "@/components/messages/DmRequestSheet";
+import { getViewedShotIds, markShotViewed } from "@/lib/chat/viewedShots";
 
 interface Props {
   shots: ChatShot[];
@@ -46,6 +47,7 @@ interface Props {
 
 const SWIPE_THRESHOLD = 80; // 세로 스와이프 임계값(px)
 const IMAGE_AUTO_MS = 5000; // 이미지 SHOT 자동 다음 (5초)
+const DRAG_ENGAGE_PX = 12; // 이 이상 움직여야 드래그로 인정 (탭 오인식 방지)
 
 export function ShotViewerSheet({
   shots,
@@ -74,6 +76,54 @@ export function ShotViewerSheet({
   }, [onIndexChange]);
   const [commentOpen, setCommentOpen] = useState(false);
 
+  // ── 인스타식 3D 큐브 전환 ────────────────────────────────────────────────
+  // 앞면=현재 스토리, 오른쪽면=다음, 왼쪽면=이전. 드래그하면 컨테이너가 회전해
+  // 두 면이 모서리로 동시에 보이고, 놓으면 ±90°로 스냅하며 인덱스를 커밋한다.
+  const cubeRef = useRef<HTMLDivElement>(null);
+  const [cubeW, setCubeW] = useState(390);
+  const [angle, setAngle] = useState(0);
+  const [animating, setAnimating] = useState(false);
+  const animatingRef = useRef(false); // setState보다 즉시 반영 — 중복 커밋 차단용
+  const commitRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const CUBE_MS = 320;
+
+  // 폭 측정 — 0으로 잡히면 translateZ(0)이 되어 세 면이 겹쳐 이웃이 안 보인다.
+  // ResizeObserver로 레이아웃 확정 시점까지 추적하고, 실패 시 화면폭으로 폴백.
+  useEffect(() => {
+    if (!open) return;
+    const measure = () => {
+      const w =
+        cubeRef.current?.clientWidth ||
+        (typeof window !== "undefined" ? window.innerWidth : 0) ||
+        390;
+      setCubeW(w);
+    };
+    measure();
+    const raf = requestAnimationFrame(measure);
+    const el = cubeRef.current;
+    const ro =
+      el && typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(measure)
+        : null;
+    if (el && ro) ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro?.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [open]);
+
+  useEffect(
+    () => () => {
+      if (commitRef.current) clearTimeout(commitRef.current);
+    },
+    []
+  );
+
+  const hasNext = index !== null && index < shots.length - 1;
+  const hasPrev = index !== null && index > 0;
+
   // 현재 shot이 속한 그룹의 세그먼트 위치 계산 (인스타 진행바용).
   // 캐러셀과 동일한 그룹 키: 남의 LIVE는 클럽 단위(클럽 없으면 작성자), 내 LIVE는 "me" 하나.
   // shots(groupedShots)는 같은 그룹이 연속되도록 정렬돼 있어, 연속 구간이 한 스토리 묶음.
@@ -85,17 +135,73 @@ export function ShotViewerSheet({
       : s.club_id
       ? `c:${s.club_id}`
       : `u:${s.author_id}`;
-  let segTotal = 1;
-  let segIndex = 0;
-  if (index !== null && shot) {
-    const key = segKeyOf(shot);
-    let start = index;
+  /** 임의 인덱스의 세그먼트 위치 — 앞면/이웃 면 모두 같은 값을 써야 전환 시 깜빡이지 않음 */
+  function segFor(i: number): { total: number; idx: number } {
+    const s = shots[i];
+    if (!s) return { total: 1, idx: 0 };
+    const key = segKeyOf(s);
+    let start = i;
     while (start > 0 && shots[start - 1] && segKeyOf(shots[start - 1]) === key) start--;
-    let end = index;
+    let end = i;
     while (end < shots.length - 1 && shots[end + 1] && segKeyOf(shots[end + 1]) === key) end++;
-    segTotal = end - start + 1;
-    segIndex = index - start;
+    return { total: end - start + 1, idx: i - start };
   }
+  // ── 클럽(그룹) 단위 이동 ─────────────────────────────────────────────────
+  // 슬라이드 = 클럽 간 이동, 탭 = 클럽 안 이동(끝이면 옆 클럽).
+  // 클럽으로 들어갈 때는 "마지막으로 본 것 다음"(= 첫 미시청)부터 재생한다.
+  const [viewedSet, setViewedSet] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (open) setViewedSet(getViewedShotIds());
+  }, [open]);
+
+  // 보고 있는 shot은 본 것으로 기록 (재개 위치 계산에 필요)
+  useEffect(() => {
+    if (index === null || !shot) return;
+    markShotViewed(shot.id);
+    setViewedSet((prev) => {
+      if (prev.has(shot.id)) return prev;
+      const nextSet = new Set(prev);
+      nextSet.add(shot.id);
+      return nextSet;
+    });
+  }, [index, shot]);
+
+  /** i가 속한 그룹의 [시작, 끝] 인덱스 */
+  function groupRange(i: number): [number, number] {
+    const s0 = shots[i];
+    if (!s0) return [i, i];
+    const key = segKeyOf(s0);
+    let start = i;
+    while (start > 0 && shots[start - 1] && segKeyOf(shots[start - 1]) === key) start--;
+    let end = i;
+    while (end < shots.length - 1 && shots[end + 1] && segKeyOf(shots[end + 1]) === key) end++;
+    return [start, end];
+  }
+
+  /** 그룹 안에서 재개할 위치 — 첫 미시청, 다 봤으면 그룹 첫 번째 */
+  function resumeIn(start: number, end: number) {
+    for (let i = start; i <= end; i++) {
+      if (shots[i] && !viewedSet.has(shots[i].id)) return i;
+    }
+    return start;
+  }
+
+  /** 다음/이전 클럽의 재개 인덱스 (없으면 null) */
+  function neighborGroupIndex(dir: 1 | -1): number | null {
+    if (index === null) return null;
+    const [gs, ge] = groupRange(index);
+    const probe = dir === 1 ? ge + 1 : gs - 1;
+    if (probe < 0 || probe >= shots.length) return null;
+    const [ns, ne] = groupRange(probe);
+    return resumeIn(ns, ne);
+  }
+
+  const nextGroupIdx = neighborGroupIndex(1);
+  const prevGroupIdx = neighborGroupIndex(-1);
+
+  const seg = index !== null && shot ? segFor(index) : { total: 1, idx: 0 };
+  const segTotal = seg.total;
+  const segIndex = seg.idx;
 
   // index가 배열 범위를 넘으면 닫지 말고 마지막으로 클램프 (그룹핑/필터로 length가
   // 순간 바뀔 때 뷰어가 통째로 닫히던 버그 방지).
@@ -136,22 +242,89 @@ export function ShotViewerSheet({
   function close() {
     onIndexChange(null);
   }
+
+  /** 목표 각도까지 회전 → 애니메이션 끝에 인덱스 커밋 + 각도 0으로(트랜지션 없이) 리셋 */
+  function rotateAndCommit(target: number, commit: () => void) {
+    if (animatingRef.current) return; // 회전 중 중복 호출 차단 (두 칸 넘김 방지)
+    animatingRef.current = true;
+    setAnimating(true);
+    setAngle(target);
+    if (commitRef.current) clearTimeout(commitRef.current);
+    commitRef.current = setTimeout(() => {
+      animatingRef.current = false;
+      setAnimating(false);
+      setAngle(0);
+      commit();
+    }, CUBE_MS);
+  }
+
+  /** 임계값 미달/막다른 끝 → 원래 면으로 되돌림 */
+  function rotateBack() {
+    animatingRef.current = true;
+    setAnimating(true);
+    setAngle(0);
+    if (commitRef.current) clearTimeout(commitRef.current);
+    commitRef.current = setTimeout(() => {
+      animatingRef.current = false;
+      setAnimating(false);
+    }, CUBE_MS);
+  }
+
+  /** 클럽 간 이동 — 큐브 회전 후 커밋 (슬라이드/그룹 경계 탭) */
+  function goGroup(dir: 1 | -1) {
+    const target = dir === 1 ? nextGroupIdx : prevGroupIdx;
+    if (target === null) return rotateBack(); // 양 끝 — 닫지 않고 되돌림
+    rotateAndCommit(dir === 1 ? -90 : 90, () => onIndexChange(target));
+  }
+
+  /** 탭 — 같은 클럽 안에서는 컷 전환, 클럽 경계면 옆 클럽으로(큐브) */
   function prev() {
-    if (index === null) return;
-    if (index > 0) onIndexChange(index - 1);
-    // 첫 SHOT에서 더 못 감 — 닫지 않음
+    if (index === null || animating) return;
+    const [gs] = groupRange(index);
+    if (index > gs) {
+      setAngle(0);
+      onIndexChange(index - 1); // 같은 클럽 안 — 애니메이션 없음
+      return;
+    }
+    goGroup(-1); // 그룹 첫 번째에서 왼쪽 탭 → 이전 클럽의 '마지막 본 것 다음'
   }
   function next() {
-    if (index === null) return;
-    if (index < shots.length - 1) onIndexChange(index + 1);
-    // 마지막 SHOT에서 수동 넘김은 닫지 않음 (사용자가 X로 명시적으로 닫게)
+    if (index === null || animating) return;
+    const [, ge] = groupRange(index);
+    if (index < ge) {
+      setAngle(0);
+      onIndexChange(index + 1); // 같은 클럽 안 — 애니메이션 없음
+      return;
+    }
+    goGroup(1); // 그룹 마지막에서 오른쪽 탭 → 다음 클럽
   }
+
   // 영상/이미지 재생이 '자연 종료'됐을 때 — 마지막이면 엔드카드(홈) 또는 닫기.
   function playbackEnd() {
     if (index === null) return;
-    if (index < shots.length - 1) onIndexChange(index + 1);
-    else if (endCardTo) setEndCardOpen(true); // 홈: 와글로 유도
+    if (hasNext) next();
+    else if (endCardTo) setEndCardOpen(true); // 홈: LIVE로 유도
     else onIndexChange(null);
+  }
+
+  /** 드래그 중 — 손가락 따라 큐브 회전 (다음/이전이 없으면 저항) */
+  function handleDrag(dx: number) {
+    if (animating || index === null) return;
+    // 슬라이드는 클럽 간 이동 — 옆 클럽이 없으면 저항만 준다
+    const blocked = (dx < 0 && nextGroupIdx === null) || (dx > 0 && prevGroupIdx === null);
+    const eff = blocked ? dx * 0.2 : dx;
+    // 오른쪽→왼쪽으로 밀면(dx<0) 각도가 음수 → 오른쪽 면(다음)이 앞으로 온다
+    setAngle(Math.max(-90, Math.min(90, (eff / cubeW) * 90)));
+  }
+
+  /** 드래그 종료 — 임계값(22%) 넘으면 넘기고, 아니면 되돌림 */
+  function handleDragEnd(dx: number) {
+    if (animating) return;
+    const r = dx / cubeW;
+    // 슬라이드는 항상 '클럽 단위' 이동 (같은 클럽 내 이동은 탭으로)
+    if (r < -0.22 && nextGroupIdx !== null) goGroup(1);
+    else if (r > 0.22 && prevGroupIdx !== null) goGroup(-1);
+    else rotateBack();
   }
 
   return (
@@ -160,29 +333,77 @@ export function ShotViewerSheet({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="bg-black border-none p-0 h-[100dvh] max-h-[100dvh] flex flex-col"
+          className="bg-black border-none p-0 h-[100dvh] max-h-[100dvh] overflow-hidden"
         >
-          {shot ? (
-            <ShotViewerContent
-              shot={shot}
-              segTotal={segTotal}
-              segIndex={segIndex}
-              currentUserId={currentUserId}
-              paused={commentOpen}
-              nextVideoUrl={
-                index !== null && shots[index + 1]?.media_type === "video"
-                  ? shots[index + 1].media_url
-                  : null
-              }
-              onPrev={prev}
-              onNext={next}
-              onPlaybackEnd={playbackEnd}
-              onClose={close}
-              onToggleLike={onToggleLike}
-              onOpenComments={() => setCommentOpen(true)}
-              onRequireLogin={onRequireLogin}
-            />
-          ) : null}
+          {/* 큐브 뷰포트 — perspective로 3D 깊이 부여 */}
+          <div
+            ref={cubeRef}
+            className="relative w-full h-full"
+            style={{ perspective: "1400px" }}
+          >
+            {/* 큐브 본체 — translateZ(-w/2)로 앞면을 화면 평면에 맞춘 뒤 rotateY */}
+            <div
+              className="absolute inset-0"
+              style={{
+                transformStyle: "preserve-3d",
+                transform: `translateZ(-${cubeW / 2}px) rotateY(${angle}deg)`,
+                transition: animating
+                  ? `transform ${CUBE_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`
+                  : "none",
+              }}
+            >
+              {/* 3면 윈도우 — 각 면을 shot.id로 key 고정해 '위치만' 바뀌게 한다.
+                  넘어갈 때 이웃 면 인스턴스가 그대로 앞면이 되므로 재마운트가 없고,
+                  영상·진행바·헤더가 처음부터 다시 로딩되는 깜빡임이 사라진다. */}
+              {index !== null &&
+                ([
+                  [prevGroupIdx, -1] as const,
+                  [index, 0] as const,
+                  [nextGroupIdx, 1] as const,
+                ]
+                  .filter(([i]) => i !== null && i >= 0 && i < shots.length)
+                  .map(([i, offset]) => {
+                    const si = i as number;
+                    const sh = shots[si];
+                    const isFront = offset === 0;
+                    const fseg = segFor(si);
+                    return (
+                      <div
+                        key={sh.id}
+                        className="absolute inset-0"
+                        style={{
+                          transform: `rotateY(${offset * 90}deg) translateZ(${cubeW / 2}px)`,
+                          pointerEvents: isFront ? "auto" : "none",
+                        }}
+                      >
+                        <ShotViewerContent
+                          shot={sh}
+                          active={isFront}
+                          onDrag={handleDrag}
+                          onDragEnd={handleDragEnd}
+                          segTotal={fseg.total}
+                          segIndex={fseg.idx}
+                          currentUserId={currentUserId}
+                          paused={commentOpen}
+                          nextVideoUrl={
+                            nextGroupIdx !== null &&
+                            shots[nextGroupIdx]?.media_type === "video"
+                              ? shots[nextGroupIdx].media_url
+                              : null
+                          }
+                          onPrev={prev}
+                          onNext={next}
+                          onPlaybackEnd={playbackEnd}
+                          onClose={close}
+                          onToggleLike={onToggleLike}
+                          onOpenComments={() => setCommentOpen(true)}
+                          onRequireLogin={onRequireLogin}
+                        />
+                      </div>
+                    );
+                  }))}
+            </div>
+          </div>
 
           {/* 엔드카드 — 홈에서 마지막까지 다 보면 와글로 유도 */}
           {endCardOpen && endCardTo && (
@@ -236,6 +457,9 @@ export function ShotViewerSheet({
 
 function ShotViewerContent({
   shot,
+  active = true,
+  onDrag,
+  onDragEnd,
   segTotal,
   segIndex,
   currentUserId,
@@ -250,6 +474,12 @@ function ShotViewerContent({
   onRequireLogin,
 }: {
   shot: ChatShot;
+  /** 앞면(현재 보는 면)일 때만 true — 이웃 면은 재생/조회기록/키보드 비활성 */
+  active?: boolean;
+  /** 가로 드래그 중 실시간 이동량 (상위 큐브 회전용) */
+  onDrag?: (dx: number) => void;
+  /** 가로 드래그 종료 — 상위가 스냅/커밋 결정 */
+  onDragEnd?: (dx: number) => void;
   segTotal: number;
   segIndex: number;
   currentUserId?: string;
@@ -272,11 +502,24 @@ function ShotViewerContent({
   const startYRef = useRef<number | null>(null);
   const startXRef = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
+  const [dragX, setDragX] = useState(0); // 가로 드래그 → 3D 큐브 회전각
   // 더블탭 좋아요 — 단일탭(넘김)과 구분
   const lastTapRef = useRef(0);
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null); // 길게 누름 → 정지 판정
   const [likeBurst, setLikeBurst] = useState(0); // 값 바뀔 때마다 하트 애니메이션 재생
+  // 낙관적 좋아요 — 서버 왕복을 기다리지 않고 즉시 하트/카운트/애니메이션 반영.
+  // null이면 서버값(shot.liked_by_me) 사용. 서버값이 따라잡으면 자동 해제.
+  const [optimisticLiked, setOptimisticLiked] = useState<boolean | null>(null);
+  const liked = optimisticLiked ?? !!shot.liked_by_me;
+  const likeCount =
+    shot.like_count +
+    (optimisticLiked === null || optimisticLiked === !!shot.liked_by_me
+      ? 0
+      : optimisticLiked
+      ? 1
+      : -1);
+
   const [soundOn, setSoundOn] = useState(false); // 영상 소리 (기본 음소거 — 자동재생 보장)
   const [activityOpen, setActivityOpen] = useState(false); // 활동(본 사람) 시트 — 본인 LIVE만
   const [dmOpen, setDmOpen] = useState(false); // 메시지 신청 시트 (유저 LIVE "나도 갈래")
@@ -293,7 +536,9 @@ function ShotViewerContent({
   const isPaused =
     !!paused || activityOpen || dmOpen || holdPaused || inputFocused;
 
-  // 인라인 댓글 전송 — 시트 열지 않고 뷰어 하단 입력에서 바로.
+  // 인라인 1:1 메시지(DM) 전송 — 댓글(공개)과 다른 개인 메시지.
+  //  신규 상대면 '메시지 신청'(pending) + 알림, 이미 스레드가 있으면 그 대화에 이어붙음.
+  //  ※ 공개 댓글은 하단 💬 아이콘(ShotCommentSheet)에서 별도로 작성.
   async function sendInlineComment() {
     const trimmed = commentInput.trim();
     if (!trimmed || commentSending) return;
@@ -302,27 +547,37 @@ function ShotViewerContent({
       return;
     }
     setCommentSending(true);
-    const { error } = await createClient().from("chat_shot_comments").insert({
-      shot_id: shot.id,
-      author_id: currentUserId,
-      content: trimmed,
+    const { error } = await createClient().rpc("request_dm", {
+      p_recipient_id: shot.author_id,
+      p_shot_id: shot.id,
+      p_first_message: trimmed,
     });
     setCommentSending(false);
     if (error) {
-      console.error("[ShotViewerSheet] inline comment error", error);
-      if (error.code === "42P01" || error.code === "42703") {
-        toast.error("댓글 마이그레이션 미적용 (325)");
+      const msg = error.message || "";
+      console.error("[ShotViewerSheet] inline dm error", error);
+      if (msg.includes("request_declined")) {
+        toast.error("이전에 거절된 상대예요");
+      } else if (msg.includes("cannot_dm_self")) {
+        toast.error("본인에게는 보낼 수 없어요");
+      } else if (msg.includes("does not exist") || error.code === "42883") {
+        toast.error("DM 마이그레이션 미적용 (465/469)");
       } else {
         toast.error(`전송 실패: ${error.message ?? ""}`);
       }
       return;
     }
     setCommentInput("");
-    toast.success("메시지를 보냈어요");
+    toast.success("메시지를 보냈어요 · 채팅 탭에서 확인");
   }
 
   // 본인 LIVE면 조회/좋아요 요약을 하단에 항상 노출 (인스타 스토리식)
   const { viewers: myViewers } = useShotActivity(shot.id, isMine);
+  // RAF 루프 안에서 최신 active를 참조 (stale 클로저 방지)
+  const activeRef = useRef(active);
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
   const isPausedRef = useRef(isPaused);
   useEffect(() => {
     isPausedRef.current = isPaused;
@@ -333,9 +588,17 @@ function ShotViewerContent({
     setVideoReady(false);
   }, [shot.id]);
 
+  // 서버값이 낙관적 값을 따라잡으면 해제 (이후엔 서버값을 그대로 따름)
+  useEffect(() => {
+    setOptimisticLiked((cur) =>
+      cur === null || cur === !!shot.liked_by_me ? null : cur
+    );
+  }, [shot.liked_by_me, shot.id]);
+
   // 숨긴 <video>의 프레임을 canvas에 object-cover로 그린다 (Samsung 네이티브 컨트롤 우회).
   useEffect(() => {
     if (shot.media_type !== "video") return;
+    if (!active) return; // 이웃 면은 canvas 드로잉 안 함
     let raf = 0;
     const draw = () => {
       const video = videoRef.current;
@@ -357,7 +620,7 @@ function ShotViewerContent({
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [shot.id, shot.media_type]);
+  }, [shot.id, shot.media_type, active]);
 
   // onNext/onPlaybackEnd를 ref로 최신 유지 — 자동진행 raf가 stale 클로저를 잡지 않게.
   const onNextRef = useRef(onNext);
@@ -386,7 +649,7 @@ function ShotViewerContent({
       const dt = now - last;
       last = now;
       // 일시정지(댓글 입력/활동 시트) 중엔 게이지·자동넘김 정지. 영상은 pause로 currentTime 고정.
-      if (!isPausedRef.current) {
+      if (!isPausedRef.current && activeRef.current) {
         let pct: number;
         if (shot.media_type === "video") {
           const v = videoRef.current;
@@ -406,14 +669,16 @@ function ShotViewerContent({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // shot.id만 의존 — onNext 바뀌어도 재생성 안 함 (ref로 최신 호출)
-  }, [shot.id, shot.media_type]);
+    // active 포함 — 이웃 면에서 앞면이 되는 순간 루프를 새로 만들어
+    // 게이지를 0부터 다시 시작시킨다 (안 하면 이웃 시절 루프가 남아 안 움직임).
+  }, [shot.id, shot.media_type, active]);
 
   // 영상 자동재생 — 음소거 상태면 WebView에서도 무조건 재생됨(재생버튼 오버레이 방지).
   // 소리 켜진 상태(사용자가 스피커 탭)면 소리로 재생 시도, 막히면 조용히 무시.
   useEffect(() => {
     const v = videoRef.current;
     if (!v || shot.media_type !== "video") return;
+    if (!active) { try { v.pause(); } catch {} return; } // 이웃 면은 재생 안 함
     v.muted = !soundOn;
     v.play()
       .then(() => setVideoReady(true))
@@ -422,20 +687,24 @@ function ShotViewerContent({
         v.muted = true;
         v.play().then(() => setVideoReady(true)).catch(() => {});
       });
-  }, [shot.id, shot.media_type, soundOn]);
+  }, [shot.id, shot.media_type, soundOn, active]);
 
   // 일시정지 토글 — 댓글 입력/활동 시트가 열리면 영상을 실제로 멈추고, 닫히면 재개.
   useEffect(() => {
     const v = videoRef.current;
     if (!v || shot.media_type !== "video") return;
-    if (isPaused) {
+    // 이웃 면은 항상 정지 — 3면이 동시에 play()하면 모바일 디코더 한계로
+    // 앞면 영상이 재생에 실패한다.
+    if (!active || isPaused) {
       v.pause();
     } else {
       v.play().catch(() => {});
     }
-  }, [isPaused, shot.id, shot.media_type]);
+  }, [isPaused, shot.id, shot.media_type, active]);
 
   function handleVideoEnded() {
+    // 앞면일 때만 넘김 — 이웃 면의 ended 이벤트로 두 번 넘어가는 것 방지
+    if (!activeRef.current) return;
     // 영상이 끝까지 재생됨 → 다음, 마지막이면 뷰어 닫기
     onPlaybackEnd();
   }
@@ -454,9 +723,10 @@ function ShotViewerContent({
         onClose();
       }
     }
+    if (!active) return; // 이웃 면에서 중복 등록 방지
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onNext, onPrev, onClose]);
+  }, [onNext, onPrev, onClose, active]);
 
   // 마우스 휠 (throttle)
   const wheelLockRef = useRef(false);
@@ -499,7 +769,22 @@ function ShotViewerContent({
       clearTimeout(holdTimerRef.current);
       holdTimerRef.current = null;
     }
-    setDragY(dy);
+    // ⚠️ 임계값 필수 — 탭할 때 손가락이 1~2px만 흔들려도 드래그로 잡히면
+    //    pointerUp이 드래그 분기로 빠져 좌/우 탭 넘김이 통째로 먹힌다.
+    if (Math.abs(dx) < DRAG_ENGAGE_PX && Math.abs(dy) < DRAG_ENGAGE_PX) return;
+    // 가로 우세 = 스토리 넘김 → 상위 큐브 컨테이너를 손가락 따라 회전시킨다.
+    // 세로 우세 = 닫기 드래그 → 기존 translateY.
+    if (Math.abs(dx) > Math.abs(dy)) {
+      setDragX(dx);
+      setDragY(0);
+      onDrag?.(dx);
+    } else {
+      if (dragX !== 0) {
+        setDragX(0);
+        onDrag?.(0);
+      }
+      setDragY(dy);
+    }
   }
   function handlePointerUp(e: React.PointerEvent) {
     if (startYRef.current === null) return;
@@ -513,6 +798,8 @@ function ShotViewerContent({
     startYRef.current = null;
     startXRef.current = null;
     setDragY(0);
+    const hadDragX = dragX !== 0;
+    setDragX(0);
 
     // 길게 누름(정지) 상태였으면 → 떼는 순간 재개, 넘김 없음
     const wasHoldPause = holdPaused;
@@ -522,9 +809,22 @@ function ShotViewerContent({
     }
     if (wasHoldPause) {
       setHoldPaused(false);
+      if (hadDragX) onDragEnd?.(0); // 큐브 원위치
       return;
     }
 
+    // 가로로 큐브를 돌리고 있었다면 스냅/커밋은 상위 큐브가 처리 (여기선 넘김 X)
+    if (hadDragX) {
+      onDragEnd?.(dx);
+      return;
+    }
+
+    // 메시지 입력에 포커스가 남아 있으면 탭이 전부 막히므로, 먼저 포커스만 해제.
+    if (inputFocused) {
+      setInputFocused(false);
+      (document.activeElement as HTMLElement | null)?.blur();
+      return;
+    }
     // 시트(댓글/활동 등) 열렸을 때 탭/스와이프 넘김·좋아요 차단
     if (isPausedRef.current) return;
 
@@ -544,10 +844,10 @@ function ShotViewerContent({
       return;
     }
     // 탭(거의 안 움직임)
-    if (absX < 12 && absY < 12) {
+    if (absX < DRAG_ENGAGE_PX && absY < DRAG_ENGAGE_PX) {
       const now = Date.now();
       // 더블탭(300ms 이내 두 번) = 좋아요. 대기 중이던 단일탭 넘김 취소.
-      if (now - lastTapRef.current < 300) {
+      if (now - lastTapRef.current < 200) {
         lastTapRef.current = 0;
         if (tapTimerRef.current) {
           clearTimeout(tapTimerRef.current);
@@ -564,14 +864,15 @@ function ShotViewerContent({
         tapTimerRef.current = null;
         if (clientX > width / 2) onNext();
         else onPrev();
-      }, 300);
+      }, 200);
     }
   }
 
   // 더블탭 좋아요 — 하트 애니메이션 + (남의 LIVE면) 좋아요 반영. 항상 like(취소 안 함).
   function doDoubleTapLike() {
     setLikeBurst((n) => n + 1);
-    if (currentUserId && !isMine && !shot.liked_by_me) {
+    if (currentUserId && !isMine && !liked) {
+      setOptimisticLiked(true); // 즉시 반영
       onToggleLike?.(shot.id);
     }
   }
@@ -587,8 +888,9 @@ function ShotViewerContent({
   // 조회 기록 (Migration 424) — 로그인 + 남의 LIVE일 때만. 본인 샷은 RPC가 스킵.
   useEffect(() => {
     if (!currentUserId || isMine) return;
+    if (!active) return; // 앞면일 때만 조회 기록
     createClient().rpc("record_shot_view", { p_shot_id: shot.id });
-  }, [shot.id, currentUserId, isMine]);
+  }, [shot.id, currentUserId, isMine, active]);
 
   async function handleDelete() {
     if (!confirm("이 LIVE를 삭제할까요?")) return;
@@ -639,7 +941,11 @@ function ShotViewerContent({
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       onWheel={handleWheel}
-      style={{ transform: `translateY(${dragY * 0.3}px)`, transition: dragY === 0 ? "transform 0.2s" : "none" }}
+      style={{
+        // 가로 회전은 상위 큐브 컨테이너가 담당. 여기선 세로(닫기) 드래그만.
+        transform: `translateY(${dragY * 0.3}px)`,
+        transition: dragY === 0 ? "transform 0.2s" : "none",
+      }}
     >
       {/* 웹 전용 좌우 네비 버튼 (터치 기기엔 숨김 — 탭/스와이프로 이동) */}
       <button
@@ -838,10 +1144,10 @@ function ShotViewerContent({
               src={shot.media_url}
               className="pointer-events-none"
               style={{ position: "fixed", left: -99999, top: 0, width: 2, height: 2, opacity: 0.01 }}
-              autoPlay
+              autoPlay={active}
               playsInline
               muted={!soundOn}
-              preload="auto"
+              preload={active ? "auto" : "metadata"}
               controls={false}
               disablePictureInPicture
               onPlaying={() => setVideoReady(true)}
@@ -851,7 +1157,7 @@ function ShotViewerContent({
                 넘길 때 blackout 안 함: 새 영상 프레임이 그려질 때까지 직전 프레임 유지 → 검은 깜빡임 없음 */}
             <canvas ref={canvasRef} className="w-full h-full pointer-events-none" />
             {/* 다음 영상 미리 로드 (캐시 워밍) → 넘겼을 때 즉시 재생 */}
-            {nextVideoUrl && (
+            {active && nextVideoUrl && (
               <video
                 key={nextVideoUrl}
                 src={nextVideoUrl}
@@ -1067,14 +1373,21 @@ function ShotViewerContent({
               type="button"
               onClick={() => {
                 if (!currentUserId) return onRequireLogin?.();
+                const nextLiked = !liked;
+                setOptimisticLiked(nextLiked); // 서버 응답 기다리지 않고 즉시 반영
+                if (nextLiked) setLikeBurst((n) => n + 1); // 하트 애니메이션 즉시
                 onToggleLike?.(shot.id);
               }}
               className="shrink-0 w-10 flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform"
-              aria-label={shot.liked_by_me ? "좋아요 취소" : "좋아요"}
+              aria-label={liked ? "좋아요 취소" : "좋아요"}
             >
-              <Heart className={`w-7 h-7 ${shot.liked_by_me ? "fill-red-500 text-red-500" : "text-white"}`} />
-              {shot.like_count > 0 && (
-                <span className="text-[10px] font-bold text-white/80 leading-none">{shot.like_count}</span>
+              <Heart
+                className={`w-7 h-7 transition-transform duration-150 ${
+                  liked ? "fill-red-500 text-red-500 scale-110" : "text-white"
+                }`}
+              />
+              {likeCount > 0 && (
+                <span className="text-[10px] font-bold text-white/80 leading-none">{likeCount}</span>
               )}
             </button>
             <button

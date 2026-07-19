@@ -176,8 +176,8 @@ export function MessagesListClient() {
           </button>
           <h1 className="text-[16px] font-black text-white">나의 채팅</h1>
         </header>
-        {user && (chats.length > 0 || partyRooms.length > 0 || dmThreads.length > 0) && (
-          <div className={`grid ${dmThreads.length > 0 ? "grid-cols-3" : "grid-cols-2"} gap-1 p-1 mx-4 mb-2 bg-neutral-900 rounded-full`}>
+        {user && (
+          <div className="grid grid-cols-3 gap-1 p-1 mx-4 mb-2 bg-neutral-900 rounded-full">
             {sections.map((s) => {
               const isShare = s.key === "share";
               // 조각 탭 = 파티 단체방만(1:1 제거), 깃발 탭 = 1:1 오퍼 채팅
@@ -206,8 +206,7 @@ export function MessagesListClient() {
                 </button>
               );
             })}
-            {/* 메시지(DM) 탭 — DM이 있을 때만 노출 (유저 LIVE 진입점은 현재 보류) */}
-            {dmThreads.length > 0 && (
+            {/* 메시지(DM) 탭 — 항상 노출 (깃발/조각/개인메시지 3채널 구조) */}
             <button
               onClick={() => { didAutoSelect.current = true; setTab("dm"); }}
               className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-white" : "text-neutral-500"}`}
@@ -222,7 +221,6 @@ export function MessagesListClient() {
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
               )}
             </button>
-            )}
           </div>
         )}
       </div>
