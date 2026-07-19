@@ -836,13 +836,33 @@ function ShotViewerContent({
 
       </div>
 
-      {/* 하단 검은 바 (인스타 스토리식) — 메시지(댓글) + 하트 */}
+      {/* 하단 검은 바 (인스타 스토리식) — 나도 갈래 + 메시지(댓글) + 하트 */}
       <div
-        className="relative shrink-0 z-20 bg-black px-3 pt-2.5 flex items-center gap-2"
+        className="relative shrink-0 z-20 bg-black px-3 pt-2.5 flex flex-col gap-2"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
       >
+        {/* 나도 갈래 — 남의 LIVE + 작성자가 오픈챗 등록했을 때만 (합류 열림 = 동의) */}
+        {!isMine && shot.author?.kakao_open_chat_url && (
+          <button
+            type="button"
+            onClick={() => {
+              const url = shot.author?.kakao_open_chat_url;
+              if (url) window.open(url, "_blank");
+            }}
+            className="w-full flex flex-col items-center justify-center py-2.5 rounded-full bg-amber-500 text-black active:scale-[0.98] transition-transform"
+          >
+            <span className="inline-flex items-center gap-1.5 text-[15px] font-black leading-tight">
+              <Zap className="w-4 h-4 fill-black" />
+              나도 갈래
+            </span>
+            <span className="text-[11px] font-bold text-black/55 leading-tight mt-0.5">
+              파트너에게 문의하기
+            </span>
+          </button>
+        )}
+        <div className="flex items-center gap-2">
         {isMine ? (
           // 본인 LIVE — 활동 보기
           <button
@@ -870,22 +890,29 @@ function ShotViewerContent({
                 if (!currentUserId) return onRequireLogin?.();
                 onToggleLike?.(shot.id);
               }}
-              className="shrink-0 w-10 h-10 flex items-center justify-center active:scale-90 transition-transform"
+              className="shrink-0 w-10 flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform"
               aria-label={shot.liked_by_me ? "좋아요 취소" : "좋아요"}
             >
               <Heart className={`w-7 h-7 ${shot.liked_by_me ? "fill-red-500 text-red-500" : "text-white"}`} />
+              {shot.like_count > 0 && (
+                <span className="text-[10px] font-bold text-white/80 leading-none">{shot.like_count}</span>
+              )}
             </button>
             {/* 댓글 */}
             <button
               type="button"
               onClick={() => onOpenComments?.()}
-              className="shrink-0 w-10 h-10 flex items-center justify-center active:scale-90 transition-transform"
+              className="shrink-0 w-10 flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform"
               aria-label="댓글"
             >
               <MessageCircle className="w-7 h-7 text-white" />
+              {shot.comment_count > 0 && (
+                <span className="text-[10px] font-bold text-white/80 leading-none">{shot.comment_count}</span>
+              )}
             </button>
           </>
         )}
+        </div>
       </div>
 
       <ShotActivitySheet open={activityOpen} onOpenChange={setActivityOpen} shotId={shot.id} />

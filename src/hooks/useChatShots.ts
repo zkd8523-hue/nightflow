@@ -36,7 +36,7 @@ export function useChatShots(
       .from("chat_shots")
       .select(
         `id, area, club_id, author_id, media_type, media_url, width, height, duration, caption, text_overlays, image_overlays, poll, like_count, comment_count, created_at, expires_at,
-         author:public_user_profiles!author_id(id, display_name, profile_image),
+         author:public_user_profiles!author_id(id, display_name, profile_image, kakao_open_chat_url),
          club:clubs!club_id(id, name, area)`
       )
       .gt("expires_at", new Date().toISOString())
