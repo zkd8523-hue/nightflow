@@ -31,6 +31,8 @@ interface Props {
   endCardTo?: string;
   /** LIVE 라벨 행 우측에 넣을 노드 (와글: 지역 필터). 세로 공간 절약용 */
   headerRight?: ReactNode;
+  /** 원 지름(px). 홈=60 기본, LIVE 탭은 조금 크게 */
+  size?: number;
 }
 
 /**
@@ -49,6 +51,7 @@ export function ShotCarousel({
   currentUserId,
   currentUserProfile,
   headerRight,
+  size = 60,
 }: Props) {
   const router = useRouter();
   const { shots, loading, toggleLike } = useChatShots(areas, currentUserId, clubId);
@@ -163,8 +166,8 @@ export function ShotCarousel({
       </div>
       <div className="flex items-start gap-2 overflow-x-auto no-scrollbar -mx-1 px-1">
         {showComposeButton && (
-          <div className="shrink-0 w-[60px] flex flex-col items-center gap-1">
-            <div className="relative w-[60px] h-[60px]">
+          <div className="shrink-0 flex flex-col items-center gap-1" style={{ width: size }}>
+            <div className="relative" style={{ width: size, height: size }}>
               {/* 원 탭 — 내 LIVE 있으면 보기, 없으면 게시 */}
               <button
                 type="button"
@@ -177,16 +180,16 @@ export function ShotCarousel({
                     onComposeClick?.();
                   }
                 }}
-                className="block w-[60px] h-[60px]"
+                className="block" style={{ width: size, height: size }}
                 aria-label={myGroup ? "내 LIVE 보기" : "LIVE 올리기"}
               >
                 {myGroup ? (
-                  <ShotThumb shot={myGroup.rep} isMine isViewed={myGroup.allViewed} />
+                  <ShotThumb shot={myGroup.rep} isMine isViewed={myGroup.allViewed} size={size} />
                 ) : (
-                  <div className="w-[60px] h-[60px] rounded-full p-[2px] bg-neutral-700">
+                  <div className="rounded-full p-[2px] bg-neutral-700" style={{ width: size, height: size }}>
                     <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
                       {currentUserProfile?.profile_image ? (
-                        <Image src={currentUserProfile.profile_image} alt="" fill sizes="60px" className="object-cover" />
+                        <Image src={currentUserProfile.profile_image} alt="" fill sizes={`${size}px`} className="object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/40 text-[18px] font-black">
                           {(currentUserProfile?.display_name ?? "나").charAt(0)}
@@ -223,9 +226,11 @@ export function ShotCarousel({
                 setViewedSet((prev) => new Set(prev).add(shot.id));
                 setViewerIndex(group.firstIndex);
               }}
-              className="shrink-0 w-[60px] flex flex-col items-center gap-1"
+              className="shrink-0 flex flex-col items-center gap-1"
+              style={{ width: size }}
             >
               <ShotThumb
+                size={size}
                 shot={shot}
                 isMine={shot.author_id === currentUserId}
                 isViewed={group.allViewed}
@@ -248,7 +253,8 @@ export function ShotCarousel({
           Array.from({ length: 3 }).map((_, i) => (
             <div
               key={`skel-${i}`}
-              className="shrink-0 w-[60px] h-[60px] rounded-full bg-neutral-900 animate-pulse"
+              className="shrink-0 rounded-full bg-neutral-900 animate-pulse"
+              style={{ width: size, height: size }}
             />
           ))}
       </div>
@@ -277,10 +283,12 @@ function ShotThumb({
   shot,
   isMine,
   isViewed,
+  size = 60,
 }: {
   shot: ChatShot;
   isMine: boolean;
   isViewed: boolean;
+  size?: number;
 }) {
   // LIVE(클럽 지정)는 red-amber, 일반은 인스타 스토리 그라데이션, 본 SHOT은 회색
   const isLive = shot.club_id !== null;
@@ -292,14 +300,14 @@ function ShotThumb({
         ? "bg-gradient-to-br from-amber-400 to-amber-600"
         : "bg-gradient-to-br from-[#A78BFA] to-[#C084FC]";
   return (
-    <div className={`relative w-[60px] h-[60px] rounded-full p-[2px] ${ringClass}`}>
+    <div className={`relative rounded-full p-[2px] ${ringClass}`} style={{ width: size, height: size }}>
       <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
         {shot.media_type === "image" ? (
           <Image
             src={shot.media_url}
             alt=""
             fill
-            sizes="60px"
+            sizes={`${size}px`}
             className="object-cover"
           />
         ) : (

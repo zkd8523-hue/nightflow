@@ -1153,7 +1153,9 @@ export function HomeContent({
         <div className="flex flex-col">
           {/* ── LIVE — 고정헤더 바로 아래 (핵심: 실시간 클럽 분위기).
                  LIVE 없으면 ShotCarousel이 null 반환 → 섹션·여백 모두 안 보임 (mb 없음) ── */}
-          <div className="-mx-4 -mt-3">
+          {/* ⚠️ 여기에 음수 margin을 주면 LIVE가 없을 때(ShotCarousel이 null)
+              빈 래퍼만 남아 뒤 콘텐츠까지 끌어올려 헤더에 붙는다. */}
+          <div className="-mx-4">
             <ShotCarousel
               showComposeButton={false}
               currentUserId={user?.id}

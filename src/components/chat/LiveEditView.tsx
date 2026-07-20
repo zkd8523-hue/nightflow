@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { X, Loader2, Zap, RotateCcw, Type, ImagePlus, BarChart3, Trash2 } from "lucide-react";
+import { X, Loader2, LocateFixed, RotateCcw, Type, ImagePlus, BarChart3, Trash2 } from "lucide-react";
 import type { TextOverlay, ShotPoll } from "@/types/database";
 import { LiveTextEditor } from "./LiveTextEditor";
 import { LivePollEditor } from "./LivePollEditor";
@@ -53,6 +53,8 @@ interface Gesture {
   anchorX: number;
   anchorY: number;
   baseDist: number; // 핀치 시작 두 손가락 거리
+  baseRotation: number; // 제스처 시작 시 오버레이 각도(deg)
+  baseTheta: number; // 제스처 시작 시 두 손가락이 이루는 각(rad)
 }
 
 const clampPct = (v: number) => Math.max(0, Math.min(100, v));
@@ -78,7 +80,6 @@ export function LiveEditView({
   onRetake,
   onPost,
 }: Props) {
-  const [caption, setCaption] = useState("");
   const stageRef = useRef<HTMLDivElement>(null);
 
   const [textOverlays, setTextOverlays] = useState<TextOverlay[]>([]);
@@ -140,26 +141,27 @@ export function LiveEditView({
 
   // ── 오버레이 제스처 (드래그 + 두 손가락 핀치 확대/축소) ──
   // 현재 오버레이의 위치/스케일을 최신 state에서 읽는다 (핸들러는 매 렌더 재생성).
-  function overlayGeom(kind: OverlayKind, id: string): { x: number; y: number; scale: number } | null {
+  function overlayGeom(kind: OverlayKind, id: string): { x: number; y: number; scale: number; rotation: number } | null {
     if (kind === "text") {
       const o = textOverlays.find((o) => o.id === id);
-      return o ? { x: o.xPct, y: o.yPct, scale: o.fontScale } : null;
+      return o ? { x: o.xPct, y: o.yPct, scale: o.fontScale, rotation: o.rotation ?? 0 } : null;
     }
     if (kind === "image") {
       const o = imageOverlays.find((o) => o.id === id);
-      return o ? { x: o.xPct, y: o.yPct, scale: o.widthPct } : null;
+      return o ? { x: o.xPct, y: o.yPct, scale: o.widthPct, rotation: o.rotation ?? 0 } : null;
     }
-    if (poll && poll.id === id) return { x: poll.xPct ?? 50, y: poll.yPct ?? 70, scale: poll.scale ?? 1 };
+    if (poll && poll.id === id)
+      return { x: poll.xPct ?? 50, y: poll.yPct ?? 70, scale: poll.scale ?? 1, rotation: 0 };
     return null;
   }
-  function applyGeom(kind: OverlayKind, id: string, x: number, y: number, scale?: number) {
+  function applyGeom(kind: OverlayKind, id: string, x: number, y: number, scale?: number, rotation?: number) {
     if (kind === "text") {
       setTextOverlays((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, xPct: x, yPct: y, ...(scale != null ? { fontScale: scale } : {}) } : o))
+        prev.map((o) => (o.id === id ? { ...o, xPct: x, yPct: y, ...(scale != null ? { fontScale: scale } : {}), ...(rotation != null ? { rotation } : {}) } : o))
       );
     } else if (kind === "image") {
       setImageOverlays((prev) =>
-        prev.map((o) => (o.id === id ? { ...o, xPct: x, yPct: y, ...(scale != null ? { widthPct: scale } : {}) } : o))
+        prev.map((o) => (o.id === id ? { ...o, xPct: x, yPct: y, ...(scale != null ? { widthPct: scale } : {}), ...(rotation != null ? { rotation } : {}) } : o))
       );
     } else {
       setPoll((prev) => (prev && prev.id === id ? { ...prev, xPct: x, yPct: y, ...(scale != null ? { scale } : {}) } : prev));
@@ -172,12 +174,14 @@ export function LiveEditView({
       g.baseX = geom.x;
       g.baseY = geom.y;
       g.baseScale = geom.scale;
+      g.baseRotation = geom.rotation;
     }
     const pts = [...g.pointers.values()];
     if (pts.length >= 2) {
       g.anchorX = (pts[0].x + pts[1].x) / 2;
       g.anchorY = (pts[0].y + pts[1].y) / 2;
       g.baseDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y) || 1;
+      g.baseTheta = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
     } else if (pts.length === 1) {
       g.anchorX = pts[0].x;
       g.anchorY = pts[0].y;
@@ -191,6 +195,7 @@ export function LiveEditView({
       gestureRef.current = {
         kind, id, mode: "move", pointers: new Map(),
         baseX: 0, baseY: 0, baseScale: 1, anchorX: 0, anchorY: 0, baseDist: 0,
+        baseRotation: 0, baseTheta: 0,
       };
     }
     gestureRef.current.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -205,6 +210,7 @@ export function LiveEditView({
     gestureRef.current = {
       kind: "image", id, mode: "resize", pointers: new Map([[e.pointerId, { x: e.clientX, y: e.clientY }]]),
       baseX: geom.x, baseY: geom.y, baseScale: geom.scale, anchorX: e.clientX, anchorY: e.clientY, baseDist: 0,
+      baseRotation: geom.rotation, baseTheta: 0,
     };
   }
   function onOverlayPointerMove(e: React.PointerEvent) {
@@ -230,7 +236,11 @@ export function LiveEditView({
       const ratio = g.baseDist > 0 ? dist / g.baseDist : 1;
       const nx = clampPct(g.baseX + ((cx - g.anchorX) / rect.width) * 100);
       const ny = clampPct(g.baseY + ((cy - g.anchorY) / rect.height) * 100);
-      applyGeom(g.kind, g.id, nx, ny, scaleClamp(g.kind, g.baseScale * ratio));
+      // 두 손가락이 이루는 각의 변화량 = 기울이기(회전)
+      const theta = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+      const deltaDeg = ((theta - g.baseTheta) * 180) / Math.PI;
+      const nrot = g.baseRotation + deltaDeg;
+      applyGeom(g.kind, g.id, nx, ny, scaleClamp(g.kind, g.baseScale * ratio), nrot);
     } else {
       // 드래그 (한 손가락)
       const p = pts[0];
@@ -377,16 +387,19 @@ export function LiveEditView({
           <X className="w-5 h-5" />
         </button>
 
-        {/* 상단 우측엔 클럽 배지만 — 도구는 아래 우측 중앙으로 내림 */}
-        <div className="flex flex-col items-end gap-2 pointer-events-auto">
-          {clubName && (
-            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/90 text-white text-[12px] font-black">
-              <Zap className="w-3 h-3 fill-white" />
-              📍 {clubName}
-            </span>
-          )}
-        </div>
+        {/* 우측 여백 (닫기 버튼과 균형) — 클럽 배지는 상단 중앙으로 이동 */}
+        <div className="w-10" aria-hidden="true" />
       </div>
+
+      {/* 클럽 배지 — 상단 중앙, GPS 아이콘 */}
+      {clubName && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500/90 text-white text-[12px] font-black max-w-[70vw]">
+            <LocateFixed className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">{clubName}</span>
+          </span>
+        </div>
+      )}
 
       {/* 편집 도구 (텍스트/이미지/설문) — 화면 우측 중앙 */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex flex-col items-end gap-2 pointer-events-auto">
@@ -407,18 +420,8 @@ export function LiveEditView({
       </div>
 
 
-      {/* 하단: 캡션 + 액션 */}
+      {/* 하단: 액션 — 캡션 입력창 제거(텍스트는 T 오버레이로 넣는다) */}
       <div className="relative z-10 mt-auto bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-16 pb-6 px-4 space-y-3">
-        <input
-          value={caption}
-          onChange={(e) => setCaption(e.target.value)}
-          type="text"
-          placeholder=""
-          maxLength={200}
-          enterKeyHint="done"
-          className="w-full bg-white/10 backdrop-blur border border-white/20 rounded-full px-4 py-3 text-white text-[15px] placeholder:text-white/50 focus:outline-none focus:border-white/40"
-        />
-
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -430,7 +433,7 @@ export function LiveEditView({
                     ? textOverlays.map((o) => (o.id === editingText.id ? editingText : o))
                     : [...textOverlays, editingText]
                   : textOverlays;
-              onPost(caption, overlays, imageOverlays, poll);
+              onPost("", overlays, imageOverlays, poll);
             }}
             disabled={uploading}
             className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-white text-black text-[15px] font-black active:scale-95 transition-transform disabled:opacity-70"
