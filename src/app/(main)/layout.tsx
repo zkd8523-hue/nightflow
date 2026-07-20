@@ -9,6 +9,7 @@ import { SelectingFlagAlertSheet } from "@/components/puzzles/SelectingFlagAlert
 import { NewOffersAlertSheet } from "@/components/puzzles/NewOffersAlertSheet";
 import { FlagCreatedInstallSheet } from "@/components/puzzles/FlagCreatedInstallSheet";
 import { ChatUpdateSheet } from "@/components/common/ChatUpdateSheet";
+import { PriceRangeOnboardingSheet } from "@/components/md/PriceRangeOnboardingSheet";
 import { CancellationSurveySheet } from "@/components/puzzles/CancellationSurveySheet";
 import { CameraLayer } from "@/components/chat/CameraLayer";
 import { useRouter, usePathname } from "next/navigation";
@@ -111,6 +112,7 @@ export default function MainLayout({
         <CancellationSurveySheet isOtherSheetOpen={false} />
         <FlagCreatedInstallSheet />
         <ChatUpdateSheet />
+        <PriceRangeOnboardingSheet />
       </div>
       {/* 전역 카메라 레이어 — 모든 Sheet/Dialog 바깥. Radix 조상 불투명 레이어 영향 없음 */}
       <CameraLayer />

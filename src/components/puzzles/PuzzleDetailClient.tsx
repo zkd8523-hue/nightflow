@@ -1653,21 +1653,21 @@ export function PuzzleDetailClient({
                     <span className="ml-auto text-muted-foreground group-open:rotate-180 transition-transform text-[16px] leading-none">▾</span>
                   </summary>
                   <p className="px-3 pb-3 text-[12px] text-muted-foreground leading-relaxed break-keep whitespace-pre-line">
-                    {t(
-                      "다른 유저·파트너는 오퍼를 볼 수 없어요.\n클럽과 MD가 서로 눈치보지 않고, 당일 최선의 패키지를 구성합니다.\n최고의 밤을 골라보세요!",
-                      "Other users and partners can't see the offers.\nClubs and MDs, without second-guessing each other, build their best package for the day.\nPick your best night!",
-                      "他のユーザーやパートナーはオファーを見られません。\nクラブとMDがお互い様子見せず、当日の最善のパッケージを構成します。\n最高の夜を選んでください！",
-                      "其他用户和夜店都看不到报价。\n夜店和MD彼此不用顾忌，为当天组成最好的套餐。\n挑选你最棒的夜晚吧！",
-                    )}
+                    {isRecruitingParty
+                      ? t(
+                          "다른 유저·파트너는 오퍼를 볼 수 없어요.\n클럽과 MD가 서로 눈치보지 않고, 당일 최선의 패키지를 구성합니다.\n파티원과 상의한 뒤, 마음에 드는 파트너를 골라보세요!",
+                          "Other users and partners can't see the offers.\nClubs and MDs, without second-guessing each other, build their best package for the day.\nTalk it over with your crew, then pick the partner you like best!",
+                          "他のユーザーやパートナーはオファーを見られません。\nクラブとMDがお互い様子見せず、当日の最善のパッケージを構成します。\nパーティーメンバーと相談してから、気に入ったパートナーを選んでください！",
+                          "其他用户和夜店都看不到报价。\n夜店和MD彼此不用顾忌，为当天组成最好的套餐。\n和搭子商量后，挑选你喜欢的搭档吧！",
+                        )
+                      : t(
+                          "다른 유저·파트너는 오퍼를 볼 수 없어요.\n클럽과 MD가 서로 눈치보지 않고, 당일 최선의 패키지를 구성합니다.\n최고의 오퍼를 골라 무료로 상담해보세요",
+                          "Other users and partners can't see the offers.\nClubs and MDs, without second-guessing each other, build their best package for the day.\nPick the best offer and get a free consultation",
+                          "他のユーザーやパートナーはオファーを見られません。\nクラブとMDがお互い様子見せず、当日の最善のパッケージを構成します。\n最高のオファーを選んで無料相談してみてください",
+                          "其他用户和夜店都看不到报价。\n夜店和MD彼此不用顾忌，为当天组成最好的套餐。\n挑选最棒的报价，免费咨询吧",
+                        )}
                   </p>
                 </details>
-                <FeatureGate flag="offer_chat">
-                  <p className="text-[12px] text-muted-foreground px-1">
-                    {isRecruitingParty
-                      ? "💬 채팅에서 파티원과 상의한 뒤, 마음에 드는 파트너에게 예약하세요"
-                      : "오퍼를 골라 무료로 상담해보세요"}
-                  </p>
-                </FeatureGate>
                 <div className="-mx-4 px-4 py-5 divide-y divide-neutral-700 bg-offer-well">
                 {offerGroups.map((group) => {
                   const groupClub = group.club;

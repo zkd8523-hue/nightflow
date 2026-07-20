@@ -32,6 +32,7 @@ import { ShareAuctionGroups } from "@/components/md/ShareAuctionGroups";
 import { Plus, Minus, TrendingUp, MapPin, ChevronDown, ChevronLeft, Settings, CheckCircle, Trash2, CheckSquare, Square, ExternalLink, Coins, MessageCircle, Pencil } from "lucide-react";
 import { FeatureGate } from "@/components/common/FeatureGate";
 import { toast } from "sonner";
+import { getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
 
 import { createClient } from "@/lib/supabase/client";
 import { DateGroup } from "@/components/ui/DateGroup";
@@ -51,12 +52,15 @@ export interface TopBidInfo {
 interface MDPuzzleOffer extends PuzzleOffer {
     puzzle?: {
         id: string;
+        notes?: string | null;
         area: string;
         event_date: string;
         total_budget: number | null;
         budget_per_person: number;
         target_count: number;
         current_count: number;
+        target_male?: number | null;
+        target_female?: number | null;
         status: string;
         kakao_open_chat_url: string;
         is_recruiting_party?: boolean;
@@ -161,14 +165,18 @@ export function MDDashboard({
     const [clubFavCounts, setClubFavCounts] = useState<Record<string, number>>({});
     const [mdCredits, setMdCredits] = useState<number | null>(user.md_credits ?? null);
     const [showAreaOnboarding, setShowAreaOnboarding] = useState(false);
+    // 내 오퍼 카드의 "..." 수정/삭제 메뉴 — 한 번에 하나만 열림
+    const [openOfferMenuId, setOpenOfferMenuId] = useState<string | null>(null);
+    // 내 오퍼 카드의 세부사항(제안가·구성·코멘트) 드롭다운 — 한 번에 하나만 열림
+    const [openOfferDetailsId, setOpenOfferDetailsId] = useState<string | null>(null);
     // prop은 서버 스냅샷이라 markSeen 후에도 갱신 안 됨 → 로컬 상태로 "봤음"을 즉시 반영해 재노출 차단
     const [areaOnboardingSeen, setAreaOnboardingSeen] = useState(user.md_onboarding_areas_seen);
     const [hotdealSheetOpen, setHotdealSheetOpen] = useState(false);
     const [hotdealInlineOpen, setHotdealInlineOpen] = useState(false);
     // 홈 CTA(?section=guestsign / share)로 진입 시 해당 탭을 열어준다.
     const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
-    // 조각 UI는 MD 대시보드에서 숨김(유저 주도 조각으로 전환). 기본 열림 탭 = 게스트 간판.
-    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(initialSection !== "hotdeal");
+    // 홈 CTA(?section=guestsign)로 진입했을 때만 펼침. 그냥 대시보드 진입 시엔 접힌 상태.
+    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(initialSection === "guestsign");
     const [shareInlineOpen, setShareInlineOpen] = useState(false);
     const supabase = createClient();
 
@@ -388,6 +396,10 @@ export function MDDashboard({
     const flagOffers = initialPuzzleOffers.filter((o) => !o.puzzle?.is_recruiting_party);
     const shareOffers = initialPuzzleOffers.filter((o) => !!o.puzzle?.is_recruiting_party);
     const tabOffers = activePuzzleTab === "share" ? shareOffers : flagOffers;
+    // 거래 확정 카드(위 섹션)로 빠진 것 제외 — 날짜 헤더 그룹핑용으로 목록을 한 번만 계산
+    const visibleOffers = tabOffers.filter(o =>
+        !(o.status === "accepted" && o.puzzle?.event_date && o.puzzle.event_date < new Date().toISOString().split("T")[0] && !o.visit_marked_at)
+    );
     const mdRepliedOfferIdSet = useMemo(() => new Set(mdRepliedOfferIds), [mdRepliedOfferIds]);
 
     return (
@@ -460,8 +472,8 @@ export function MDDashboard({
                         <span className="text-muted-foreground text-[13px]">&middot;</span>
                         <span className="text-[13px] text-muted-foreground">{clubs[0].area}</span>
                         <Link href="/md/clubs" className="ml-auto">
-                            <Button variant="ghost" className="h-7 px-2 text-[11px] font-bold text-muted-foreground hover:text-foreground rounded-lg">
-                                관리
+                            <Button variant="ghost" className="h-7 px-2 text-[11px] font-bold text-muted-foreground hover:text-foreground rounded-lg whitespace-nowrap">
+                                클럽 관리
                             </Button>
                         </Link>
                     </div>
@@ -644,7 +656,7 @@ export function MDDashboard({
 
             {/* 내 오퍼 (받은 오퍼) — 위 조각 등록과 구분 */}
             <div className="px-4 mt-5">
-                <p className="text-[13px] font-black text-muted-foreground mb-2 px-1">내 오퍼</p>
+                <p className="text-[13px] font-black text-muted-foreground mb-2 px-1 text-center">내 오퍼</p>
                 <Tabs value={activePuzzleTab} onValueChange={(v) => setActivePuzzleTab(v as "flag" | "share")} className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-card border border-border/50 h-11 p-1 rounded-xl">
@@ -734,14 +746,13 @@ export function MDDashboard({
                                     </div>
                                 );
                             })()}
-                            {tabOffers.filter(o =>
-                                !(o.status === "accepted" && o.puzzle?.event_date && o.puzzle.event_date < new Date().toISOString().split("T")[0] && !o.visit_marked_at)
-                            ).length > 0 ? (
-                                tabOffers.filter(o =>
-                                    !(o.status === "accepted" && o.puzzle?.event_date && o.puzzle.event_date < new Date().toISOString().split("T")[0] && !o.visit_marked_at)
-                                ).map(offer => {
+                            {visibleOffers.length > 0 ? (
+                                visibleOffers.map((offer, i) => {
                                     const p = offer.puzzle;
                                     if (!p) return null;
+                                    // 날짜가 바뀌는 첫 카드 위에만 날짜 헤더 (유저 프로필 목록과 동일 스타일)
+                                    const prevDate = i === 0 ? null : visibleOffers[i - 1].puzzle?.event_date;
+                                    const showDateHeader = i === 0 || prevDate !== p.event_date;
                                     const isAccepted = offer.status === "accepted";
                                     const isShare = !!p.is_recruiting_party;
                                     // 방장이 오픈채팅 링크를 등록해뒀으면 offer_chat 플래그와 무관하게 항상 그쪽으로 보낸다
@@ -761,14 +772,23 @@ export function MDDashboard({
                                     // 유저가 상담을 시작(leader_chat_started_at)했는데 아직 매치 전인 경우 → 배지/버튼을 채팅 상태 기준으로 세분화
                                     const chatStarted = !isAccepted && !!offer.leader_chat_started_at;
                                     const mdReplied = chatStarted && mdRepliedOfferIdSet.has(offer.id);
-                                    const eventDateStr = (() => {
-                                        const d = new Date(p.event_date + "T00:00:00");
-                                        const days = ["일", "월", "화", "수", "목", "금", "토"];
-                                        return `${d.getMonth() + 1}/${d.getDate()} ${days[d.getDay()]}`;
-                                    })();
-
                                     return (
-                                        <Card key={offer.id} className={`overflow-hidden bg-card border-border/50 hover:border-border transition-all p-3 cursor-pointer active:scale-[0.98] ${
+                                        <div key={offer.id}>
+                                        {showDateHeader && p.event_date && (() => {
+                                            const d = new Date(p.event_date + "T00:00:00");
+                                            const days = ["일", "월", "화", "수", "목", "금", "토"];
+                                            const dday = getDDayLabel(p.event_date);
+                                            return (
+                                                <div className="flex items-center gap-2.5 px-1 pt-1 pb-0 mb-1.5">
+                                                    <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
+                                                    <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">
+                                                        {`${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`}
+                                                    </h3>
+                                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-brand-amber" : "bg-muted text-muted-foreground"}`}>{dday}</span>
+                                                </div>
+                                            );
+                                        })()}
+                                        <Card className={`overflow-hidden bg-card border-border/50 hover:border-border transition-all p-3 gap-2 cursor-pointer active:scale-[0.98] ${
                                             isAccepted ? "border-green-500/30" : ""
                                         }`}>
                                             <Link href={`/flags/${p.id}`} className="block">
@@ -786,18 +806,135 @@ export function MDDashboard({
                                                                     ? "매치됨"
                                                                     : chatStarted
                                                                         ? (mdReplied ? "상담중" : "유저가 답장을 기다리고 있어요")
-                                                                        : "대기중"}
+                                                                        : "오퍼완료"}
                                                             </span>
                                                         </div>
+                                                        {/* 깃발 제목 — 방장이 쓴 헤드라인 (깃발 미리보기 카드와 동일) */}
                                                         <h3 className="font-black text-[18px] text-foreground truncate leading-tight">
-                                                            {p.area} · {eventDateStr}
+                                                            {p.notes || `${p.area}에서 모여요`}
                                                         </h3>
+                                                        {/* 깃발 예산 + 인원 배지 — 실제 깃발 카드와 동일한 스타일 */}
+                                                        {!isShare && (
+                                                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                                                            <span className="text-[16px] font-black text-money">
+                                                                예산 {(p.total_budget ?? p.budget_per_person * p.target_count).toLocaleString()}원
+                                                            </span>
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 text-money text-[11px] font-bold">
+                                                                {formatGenderComposition(p.target_male, p.target_female, p.target_count)}
+                                                            </span>
+                                                        </div>
+                                                        )}
+                                                        {/* 오퍼한 클럽 — 항상 노출 (핵심 정보 우선) */}
+                                                        <p className="text-[13px] text-muted-foreground truncate">
+                                                            {offer.club?.name || "클럽"}
+                                                        </p>
+                                                    </div>
+                                                    <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                        {isAccepted ? (
+                                                            kakaoButton ? (
+                                                                kakaoButton
+                                                            ) : (
+                                                                <FeatureGate
+                                                                    flag="offer_chat"
+                                                                    fallback={
+                                                                        <a
+                                                                            href={p.kakao_open_chat_url}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="h-8 px-3 rounded-lg bg-[#FEE500] text-[#3C1E1E] font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-[#FDD835] transition-colors"
+                                                                        >
+                                                                            <ExternalLink className="w-3.5 h-3.5" />
+                                                                            오픈채팅 연락
+                                                                        </a>
+                                                                    }
+                                                                >
+                                                                    <Link
+                                                                        href={`/messages/${offer.id}`}
+                                                                        className="h-8 px-3 rounded-lg bg-inverse text-inverse-foreground font-black text-[13px] inline-flex items-center gap-1.5 hover:opacity-90 transition-colors"
+                                                                    >
+                                                                        <MessageCircle className="w-3.5 h-3.5" />
+                                                                        채팅
+                                                                    </Link>
+                                                                </FeatureGate>
+                                                            )
+                                                        ) : chatStarted ? (
+                                                            <Link
+                                                                href={`/messages/${offer.id}`}
+                                                                className="h-8 px-3 rounded-lg bg-inverse text-inverse-foreground font-black text-[13px] inline-flex items-center gap-1.5 hover:opacity-90 transition-colors"
+                                                            >
+                                                                <MessageCircle className="w-3.5 h-3.5" />
+                                                                채팅
+                                                            </Link>
+                                                        ) : (
+                                                            <div className="relative">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setOpenOfferMenuId((v) => (v === offer.id ? null : offer.id))}
+                                                                    className="h-8 px-3 rounded-lg font-black text-[12px] transition-all bg-muted border border-border text-foreground/80 hover:bg-accent"
+                                                                >
+                                                                    ⋯
+                                                                </button>
+                                                                {openOfferMenuId === offer.id && (
+                                                                    <>
+                                                                        <div className="fixed inset-0 z-40" onClick={() => setOpenOfferMenuId(null)} />
+                                                                        <div className="absolute right-0 top-9 z-50 w-28 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+                                                                            <Link
+                                                                                href={`/flags/${p.id}`}
+                                                                                onClick={() => setOpenOfferMenuId(null)}
+                                                                                className="block w-full px-3 py-2.5 text-left text-[13px] font-bold text-foreground hover:bg-muted transition-colors"
+                                                                            >
+                                                                                수정
+                                                                            </Link>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setOpenOfferMenuId(null);
+                                                                                    if (!confirm("이 제안을 철회하시겠습니까?")) return;
+                                                                                    (async () => {
+                                                                                        const supabase = createClient();
+                                                                                        const { data, error } = await supabase.rpc("withdraw_offer", { p_offer_id: offer.id });
+                                                                                        if (error || !data?.success) {
+                                                                                            toast.error(data?.error || "철회에 실패했습니다");
+                                                                                            return;
+                                                                                        }
+                                                                                        toast.success("오퍼가 철회됐습니다");
+                                                                                        window.location.reload();
+                                                                                    })();
+                                                                                }}
+                                                                                className="w-full px-3 py-2.5 text-left text-[13px] font-bold text-red-400 hover:bg-muted transition-colors border-t border-border"
+                                                                            >
+                                                                                삭제
+                                                                            </button>
+                                                                        </div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                     </div>
+                                            </Link>
 
-                                                {/* 제안 상세 — 조각은 인원·가격 변동이라 주류/구성 무의미 → 숨김 */}
-                                                {!isShare && (
-                                                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                                            {/* 세부사항 드롭다운 — 내 제안가·구성·코멘트 (조각은 인원·가격 변동이라 숨김) */}
+                                            {!isShare && (
+                                            <div className="border-t border-border/60">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        setOpenOfferDetailsId((v) => (v === offer.id ? null : offer.id));
+                                                    }}
+                                                    className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground hover:text-foreground transition-colors"
+                                                >
+                                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openOfferDetailsId === offer.id ? "rotate-180" : ""}`} />
+                                                    내 오퍼
+                                                </button>
+                                                {openOfferDetailsId === offer.id && (
+                                                <div className="mt-2 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                                                    <p className="text-[13px] font-black text-brand-amber">
+                                                        내 제안가 {offer.proposed_price.toLocaleString()}원
+                                                    </p>
+                                                    <div className="flex flex-wrap items-center gap-1.5">
                                                     <span className="text-[11px] font-bold text-foreground/80 bg-muted px-2 py-0.5 rounded">{offer.table_type}</span>
                                                     {offer.includes?.slice(0, 3).map((item: string) => (
                                                         <span key={item} className="text-[11px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">{item}</span>
@@ -805,76 +942,16 @@ export function MDDashboard({
                                                     {offer.includes?.length > 3 && (
                                                         <span className="text-[11px] text-muted-foreground">+{offer.includes.length - 3}</span>
                                                     )}
+                                                    </div>
+                                                    {offer.comment && (
+                                                        <p className="text-[12px] text-foreground/80 border-l border-border pl-2">&ldquo;{offer.comment}&rdquo;</p>
+                                                    )}
                                                 </div>
                                                 )}
-                                            </Link>
-
-                                            {/* Footer */}
-                                            <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-end">
-                                                {isAccepted ? (
-                                                    kakaoButton ? (
-                                                        kakaoButton
-                                                    ) : (
-                                                        <FeatureGate
-                                                            flag="offer_chat"
-                                                            fallback={
-                                                                <a
-                                                                    href={p.kakao_open_chat_url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    onClick={(e) => e.stopPropagation()}
-                                                                    className="h-8 px-3 rounded-lg bg-[#FEE500] text-[#3C1E1E] font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-[#FDD835] transition-colors"
-                                                                >
-                                                                    <ExternalLink className="w-3.5 h-3.5" />
-                                                                    오픈채팅 연락
-                                                                </a>
-                                                            }
-                                                        >
-                                                            <Link
-                                                                href={`/messages/${offer.id}`}
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="h-8 px-3 rounded-lg bg-inverse text-inverse-foreground font-black text-[13px] inline-flex items-center gap-1.5 hover:opacity-90 transition-colors"
-                                                            >
-                                                                <MessageCircle className="w-3.5 h-3.5" />
-                                                                채팅
-                                                            </Link>
-                                                        </FeatureGate>
-                                                    )
-                                                ) : chatStarted ? (
-                                                    <Link
-                                                        href={`/messages/${offer.id}`}
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="h-8 px-3 rounded-lg bg-inverse text-inverse-foreground font-black text-[13px] inline-flex items-center gap-1.5 hover:opacity-90 transition-colors"
-                                                    >
-                                                        <MessageCircle className="w-3.5 h-3.5" />
-                                                        채팅방으로 이동
-                                                    </Link>
-                                                ) : (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            e.stopPropagation();
-                                                            if (!confirm("이 제안을 철회하시겠습니까?")) return;
-                                                            (async () => {
-                                                                const supabase = createClient();
-                                                                const { data, error } = await supabase.rpc("withdraw_offer", { p_offer_id: offer.id });
-                                                                if (error || !data?.success) {
-                                                                    toast.error(data?.error || "철회에 실패했습니다");
-                                                                    return;
-                                                                }
-                                                                toast.success("오퍼가 철회됐습니다");
-                                                                window.location.reload();
-                                                            })();
-                                                        }}
-                                                        className="h-8 px-3 rounded-lg bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20 hover:border-red-400"
-                                                    >
-                                                        철회
-                                                    </Button>
-                                                )}
                                             </div>
+                                            )}
                                         </Card>
+                                        </div>
                                     );
                                 })
                             ) : tabOffers.length === 0 ? (
@@ -924,6 +1001,9 @@ export function MDDashboard({
                         <Plus className="w-4 h-4" />충전
                     </span>
                 </Link>
+                <p className="text-[12px] text-muted-foreground px-1 -mt-2">
+                    충전 No! 크레딧은 인스타DM 주시면 채워드립니다.
+                </p>
             </div>
 
             {/* Club Selector Sheet (복수 클럽용) */}

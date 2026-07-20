@@ -37,10 +37,6 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   const [loading, setLoading] = useState(false);
   const [credits, setCredits] = useState<number | null>(null);
   const offerChatOn = useOfferChatFlag();
-  const [activeOffers, setActiveOffers] = useState<number>(0);
-  const [activeOfferList, setActiveOfferList] = useState<{ id: string; puzzle_title: string; table_type: string; proposed_price: number }[]>([]);
-  const [showSlotDropdown, setShowSlotDropdown] = useState(false);
-  const [withdrawingId, setWithdrawingId] = useState<string | null>(null);
   const [myClubs, setMyClubs] = useState<Pick<Club, "id" | "name" | "area">[]>([]);
 
   const [selectedClubId, setSelectedClubId] = useState<string>("");
@@ -98,6 +94,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   const currentBudget = puzzle.current_count === puzzle.target_count
     ? baseBudget
     : Math.round(baseBudget * puzzle.current_count / puzzle.target_count);
+  // 깃발: 예산의 80~120% 범위에서 제안 가능 (조각은 인원 변동으로 currentBudget 그대로 고정)
+  const minPrice = Math.round(currentBudget * 0.8);
+  const maxPrice = Math.round(currentBudget * 1.2);
+  const [proposedPrice, setProposedPrice] = useState<number>(currentBudget);
   // Migration 358: 조각 매치 크레딧 정액 10, 깃발 15. (DB puzzle_match_credit_cost와 일치)
   const matchCost = puzzle.is_recruiting_party ? 10 : 15;
   // 오퍼 템플릿 종류 — 깃발/조각 템플릿을 분리 저장·조회 (Migration 464)
@@ -109,12 +109,16 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     }
   }, [open]);
 
-  // 수정 모드 prefill (가격은 항상 currentBudget 고정이라 prefill 불필요)
+  // 수정 모드 prefill + 신규 오퍼는 예산으로 초기화
   useEffect(() => {
-    if (open && editingOffer) {
+    if (!open) return;
+    if (editingOffer) {
       setSelectedClubId(editingOffer.club_id || "");
       setSelectedIncludes(editingOffer.includes || []);
       setComment(editingOffer.comment || "");
+      setProposedPrice(editingOffer.proposed_price ?? currentBudget);
+    } else {
+      setProposedPrice(currentBudget);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, editingOffer?.id]);
@@ -155,57 +159,6 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     if (clubs && clubs.length === 1) {
       setSelectedClubId(clubs[0].id);
     }
-
-    const { data: offerData, error: offerError } = await supabase
-      .from("puzzle_offers")
-      .select("id, table_type, proposed_price, puzzle_id")
-      .eq("md_id", user.id)
-      .eq("status", "pending");
-
-    if (offerError) {
-      console.error("offer load error:", offerError);
-      return;
-    }
-
-    if (!offerData || offerData.length === 0) {
-      setActiveOfferList([]);
-      setActiveOffers(0);
-      return;
-    }
-
-    const puzzleIds = offerData.map((o) => o.puzzle_id);
-    const { data: puzzleData } = await supabase
-      .from("puzzles")
-      .select("id, notes, area, is_recruiting_party")
-      .in("id", puzzleIds);
-
-    const puzzleMap = Object.fromEntries((puzzleData ?? []).map((p) => [p.id, p]));
-
-    const list = offerData.map((o) => ({
-      id: o.id,
-      table_type: o.table_type,
-      proposed_price: o.proposed_price,
-      puzzle_title: puzzleMap[o.puzzle_id]?.notes || puzzleMap[o.puzzle_id]?.area || (puzzleMap[o.puzzle_id]?.is_recruiting_party ? "조각" : "깃발"),
-    }));
-
-    setActiveOfferList(list);
-    setActiveOffers(list.length); // 실제 pending 오퍼 수 기준으로 동기화
-  };
-
-  const handleWithdraw = async (offerId: string) => {
-    setWithdrawingId(offerId);
-    try {
-      const { data, error } = await supabase.rpc("withdraw_offer", { p_offer_id: offerId });
-      if (error) throw error;
-      if (!data?.success) { toast.error(data?.error || "철회에 실패했습니다"); return; }
-      toast.success("오퍼가 철회됐습니다.");
-      await loadMdInfo();
-      setShowSlotDropdown(false);
-    } catch {
-      toast.error("철회에 실패했습니다");
-    } finally {
-      setWithdrawingId(null);
-    }
   };
 
   const toggleExtra = (item: string) => {
@@ -245,6 +198,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
       toast.error(puzzle.is_recruiting_party ? "예산이 0원인 조각에는 제안할 수 없습니다" : "예산이 0원인 깃발에는 제안할 수 없습니다");
       return;
     }
+    if (!puzzle.is_recruiting_party && (proposedPrice < minPrice || proposedPrice > maxPrice)) {
+      toast.error(`제안가는 예산의 ±20% 사이여야 해요 (${minPrice.toLocaleString()}원 ~ ${maxPrice.toLocaleString()}원)`);
+      return;
+    }
     if (!puzzle.is_recruiting_party && selectedIncludes.length === 0) {
       toast.error("포함 내역을 최소 1개 이상 선택해주세요");
       return;
@@ -274,11 +231,9 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
     // 신규 오퍼: 제출 직전 "템플릿으로 저장할까요?" 확인 (레퍼런스: 조각 등록 플로우)
     // 방금 템플릿에서 불러온 그대로거나 이미 물어본 구성이면 다시 묻지 않음.
-    // 깃발은 구성(includes), 조각은 코멘트 유무를 저장 대상으로 판단.
+    // 조각은 템플릿 대상에서 제외 (인원·가격 실시간 변동).
     const key = JSON.stringify({ i: selectedIncludes, c: comment.trim() });
-    const hasSavableContent = puzzle.is_recruiting_party
-      ? comment.trim().length > 0
-      : selectedIncludes.length > 0;
+    const hasSavableContent = !puzzle.is_recruiting_party && selectedIncludes.length > 0;
     if (!editingOffer && hasSavableContent && key !== lastLoadedKey) {
       setTemplateName(""); // 프롬프트는 항상 빈 칸으로 (플레이스홀더 예시만 노출)
       setShowSavePrompt(true);
@@ -288,6 +243,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
   };
 
   const performSubmit = async () => {
+    // 조각은 예산 고정, 깃발은 사용자가 조정한 제안가(예산의 80~120%) 사용
+    const finalPrice = puzzle.is_recruiting_party ? currentBudget : proposedPrice;
     // 같은 구성 재제출 시 프롬프트 재노출/중복 저장 방지
     setLastLoadedKey(JSON.stringify({ i: selectedIncludes, c: comment.trim() }));
     setLoading(true);
@@ -296,7 +253,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         ? await supabase.rpc("update_offer", {
             p_offer_id: editingOffer.id,
             p_club_id: selectedClubId,
-            p_proposed_price: currentBudget,
+            p_proposed_price: finalPrice,
             p_includes: selectedIncludes,
             p_comment: comment.trim() || null,
           })
@@ -304,7 +261,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             p_puzzle_id: puzzle.id,
             p_club_id: selectedClubId,
             p_table_type: "일반석",
-            p_proposed_price: currentBudget,
+            p_proposed_price: finalPrice,
             p_includes: selectedIncludes,
             p_comment: comment.trim() || null,
           });
@@ -317,7 +274,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
       trackEvent(editingOffer ? 'puzzle_offer_updated' : 'puzzle_offer_submitted', {
         puzzle_id: puzzle.id,
-        proposed_price: currentBudget,
+        proposed_price: finalPrice,
       });
 
       toast.success(editingOffer ? "제안이 수정되었습니다." : "제안서가 전송되었습니다! 방장의 채팅을 기다려주세요!");
@@ -396,61 +353,10 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           )}
         </SheetHeader>
 
-        {/* 슬롯 & 크레딧 상태 */}
-        <div className="mb-4">
-          <div className="bg-card/60 border border-border rounded-xl px-4 py-2.5 flex justify-between items-center">
-            <button
-              type="button"
-              onClick={() => activeOffers > 0 && setShowSlotDropdown((v) => !v)}
-              className="flex items-center gap-1.5 text-left"
-            >
-              <div>
-                <p className="text-[11px] text-muted-foreground">활성 오퍼</p>
-                <p className="text-[14px] font-black text-foreground">
-                  {activeOffers}건 진행 중
-                </p>
-              </div>
-              {activeOffers > 0 && (
-                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showSlotDropdown ? "rotate-180" : ""}`} />
-              )}
-            </button>
-            <div className="text-right">
-              <p className="text-[11px] text-muted-foreground">크레딧 잔액</p>
-              <p className={`text-[14px] font-black ${credits !== null && credits < 30 ? "text-red-400" : "text-brand-amber"}`}>
-                {credits !== null ? `${credits} 크레딧` : "..."}
-              </p>
-            </div>
-          </div>
-
-          {/* 활성 오퍼 드롭다운 */}
-          {showSlotDropdown && (
-            <div className="mt-1 border border-border rounded-xl overflow-hidden">
-              {activeOfferList.length === 0 && (
-                <p className="px-4 py-3 text-[12px] text-muted-foreground">활성 오퍼가 없습니다.</p>
-              )}
-              {activeOfferList.map((offer) => (
-                <div key={offer.id} className="flex items-center justify-between px-4 py-3 border-b border-border/60 last:border-0 bg-card/40">
-                  <div>
-                    <p className="text-[13px] font-bold text-foreground">{offer.puzzle_title}</p>
-                    <p className="text-[11px] text-muted-foreground">{offer.table_type} · {offer.proposed_price.toLocaleString()}원</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleWithdraw(offer.id)}
-                    disabled={withdrawingId === offer.id}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-[11px] font-bold hover:bg-red-500/20 transition-all disabled:opacity-50"
-                  >
-                    <X className="w-3 h-3" />
-                    {withdrawingId === offer.id ? "철회 중" : "철회"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         <div className="space-y-6">
-          {/* 템플릿 불러오기 (깃발·조각 각각 분리 저장 — 저장은 제안서 보내기 직후 프롬프트에서) */}
+          {/* 템플릿 불러오기 — 조각은 인원·가격이 실시간 변동돼 템플릿 대상에서 제외 */}
+          {!puzzle.is_recruiting_party && (
           <button
             type="button"
             onClick={() => setPresetOpen(true)}
@@ -459,6 +365,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             <Bookmark className="w-4 h-4 text-neutral-900" />
             템플릿 불러오기
           </button>
+          )}
 
           {/* 클럽 선택 */}
           <div className="space-y-2">
@@ -493,28 +400,31 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           </div>
 
 
-          {/* 제안 금액 (예산 정가 고정) — 조각(파티원 모집)은 인원에 따라 총액이 변동되므로 숨김 */}
+          {/* 제안 금액 (예산의 80~120%) — 조각(파티원 모집)은 인원에 따라 총액이 변동되므로 숨김 */}
           {!puzzle.is_recruiting_party && (
           <div className="space-y-2">
             <p className="text-[11px] font-bold text-muted-foreground tracking-wide">제안 금액</p>
-            <div className="bg-card border border-border rounded-xl h-11 px-4 flex items-center justify-between">
-              <span className="text-foreground font-bold text-[15px]">
-                {currentBudget.toLocaleString()}원
-              </span>
-              <span className="text-[11px] text-muted-foreground font-bold flex items-center gap-1">
-                <Lock className="w-3 h-3" />
-                예산 고정
-              </span>
+            <div className="bg-card border border-border rounded-xl h-11 px-4 flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={proposedPrice.toLocaleString()}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/[^0-9]/g, "");
+                  setProposedPrice(digits ? Number(digits) : 0);
+                }}
+                className="flex-1 bg-transparent text-foreground font-bold text-[15px] outline-none min-w-0"
+              />
+              <span className="text-[13px] text-muted-foreground font-bold shrink-0">원</span>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              깃발 예산과 동일한 금액으로만 제안할 수 있어요. 보틀·서비스 구성으로 차별화하세요.
+              예산의 ±20%로 제안할 수 있어요 ({minPrice.toLocaleString()}원 ~ {maxPrice.toLocaleString()}원)
             </p>
           </div>
           )}
 
-          {/* 주류·테이블 구성 — 조각은 인원·가격이 실시간 변동되므로 제거(코멘트만) */}
-          {!puzzle.is_recruiting_party && (<>
-          {/* 주류 선택 */}
+          {/* 주류 선택 — 조각은 인원·가격이 실시간 변동되므로 제거 */}
+          {!puzzle.is_recruiting_party && (
           <LiquorSelector
             selected={liquorItems}
             onSelect={(liquors) => {
@@ -522,6 +432,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             }}
             requiredHint=""
           />
+          )}
 
           {/* 테이블 구성 */}
           <div className="space-y-2">
@@ -609,7 +520,6 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               </div>
             )}
           </div>
-          </>)}
 
           {/* MD 코멘트 */}
           <div className="space-y-2">
@@ -694,7 +604,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           <Button
             onClick={handleSubmit}
-            disabled={loading || myClubs.length === 0 || currentBudget <= 0 || (puzzle.is_recruiting_party ? !comment.trim() : selectedIncludes.length === 0) || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
+            disabled={loading || myClubs.length === 0 || currentBudget <= 0 || (!puzzle.is_recruiting_party && (proposedPrice < minPrice || proposedPrice > maxPrice)) || (puzzle.is_recruiting_party ? !comment.trim() : selectedIncludes.length === 0) || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
             className="w-full h-13 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
             {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "제안서 보내기")}

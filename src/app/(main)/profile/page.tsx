@@ -17,6 +17,7 @@ import { MyProfileSection } from "@/components/profile/MyProfileSection";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import dayjs from "dayjs";
+import { getDDayLabel } from "@/lib/utils/format";
 import type { Puzzle } from "@/types/database";
 
 const FLAG_STATUS: Record<string, { text: string; tone: string }> = {
@@ -59,9 +60,10 @@ export default function ProfilePage() {
         if (!data) return;
         setMyFlags(data as Puzzle[]);
 
-        // 진행중(open/selecting) 깃발의 pending 오퍼 수 집계 (홈과 동일 방식)
+        // 진행중(open/selecting) 깃발·조각의 pending 오퍼 수 집계 (홈과 동일 방식)
+        // 조각도 오퍼를 받으므로 제외하지 않는다 (제외 시 조각 카드에 오퍼 배지가 안 뜸)
         const activeIds = (data as Puzzle[])
-          .filter((f) => !f.is_recruiting_party && (f.status === "open" || f.status === "selecting"))
+          .filter((f) => f.status === "open" || f.status === "selecting")
           .map((f) => f.id);
         if (activeIds.length === 0) return;
         supabase
@@ -256,13 +258,29 @@ export default function ProfilePage() {
           {flagsOnly.length > 0 ? (
             <div className="flex flex-col gap-3">
               {/* 모든 내 깃발 — 홈과 동일한 카드. 진행중은 오퍼 현황 노출, 종료는 상태 뱃지+삭제 */}
-              {flagsOnly.map((flag) => {
+              {flagsOnly.map((flag, i) => {
                 const active = isActiveStatus(flag.status);
                 const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-muted-foreground" };
                 const offers = active ? (flagOfferCounts[flag.id] ?? 0) : 0;
                 const newOffers = Math.max(0, offers - (flagOffersSeen[flag.id] ?? 0));
+                // 날짜가 바뀌는 첫 카드 위에만 날짜 헤더 (홈 목록과 동일 스타일)
+                const showDateHeader = i === 0 || flagsOnly[i - 1].event_date !== flag.event_date;
                 return (
                   <div key={flag.id} className={`relative ${active ? "" : "opacity-70"}`}>
+                    {showDateHeader && flag.event_date && (() => {
+                      const d = new Date(flag.event_date + "T00:00:00");
+                      const days = ["일","월","화","수","목","금","토"];
+                      const dday = getDDayLabel(flag.event_date);
+                      return (
+                        <div className="flex items-center gap-2.5 px-1 pt-1 pb-0 mb-1.5">
+                          <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
+                          <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">
+                            {`${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`}
+                          </h3>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-brand-amber" : "bg-muted text-muted-foreground"}`}>{dday}</span>
+                        </div>
+                      );
+                    })()}
                     {newOffers > 0 && (
                       <span className="pointer-events-none absolute -top-2 -right-1.5 z-10 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black leading-none tracking-tight shadow-md shadow-rose-900/40">
                         NEW +{newOffers}
@@ -275,7 +293,8 @@ export default function ProfilePage() {
                       offerCount={offers}
                       hideNewBadge
                       myFlagStatus={active ? undefined : st}
-                      onHide={active ? undefined : () => handleHideFlag(flag.id)}
+                      onEdit={active ? () => router.push(`/flags/${flag.id}/edit`) : undefined}
+                      onHide={() => handleHideFlag(flag.id)}
                     />
                   </div>
                 );
@@ -303,19 +322,45 @@ export default function ProfilePage() {
           {allShares.length > 0 ? (
             <div className="flex flex-col gap-3">
               {/* 모든 내 조각 — 홈과 동일한 카드. 종료는 상태 뱃지, 내가 만든 종료 조각만 삭제 */}
-              {allShares.map(({ flag, joined }) => {
+              {allShares.map(({ flag, joined }, i) => {
                 const active = isActiveStatus(flag.status);
                 const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-muted-foreground" };
+                // 조각도 오퍼를 받으므로 깃발과 동일하게 오퍼 수·NEW 배지 노출
+                const offers = active ? (flagOfferCounts[flag.id] ?? 0) : 0;
+                const newOffers = Math.max(0, offers - (flagOffersSeen[flag.id] ?? 0));
+                // 날짜가 바뀌는 첫 카드 위에만 날짜 헤더 (깃발 목록과 동일 스타일)
+                const showDateHeader = i === 0 || allShares[i - 1].flag.event_date !== flag.event_date;
                 return (
-                  <div key={flag.id} className={active ? "" : "opacity-70"}>
+                  <div key={flag.id} className={`relative ${active ? "" : "opacity-70"}`}>
+                    {showDateHeader && flag.event_date && (() => {
+                      const d = new Date(flag.event_date + "T00:00:00");
+                      const days = ["일","월","화","수","목","금","토"];
+                      const dday = getDDayLabel(flag.event_date);
+                      return (
+                        <div className="flex items-center gap-2.5 px-1 pt-1 pb-0 mb-1.5">
+                          <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
+                          <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">
+                            {`${d.getMonth()+1}월 ${d.getDate()}일 (${days[d.getDay()]})`}
+                          </h3>
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-brand-amber" : "bg-muted text-muted-foreground"}`}>{dday}</span>
+                        </div>
+                      );
+                    })()}
+                    {newOffers > 0 && (
+                      <span className="pointer-events-none absolute -top-2 -right-1.5 z-10 px-1.5 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-black leading-none tracking-tight shadow-md shadow-rose-900/40">
+                        NEW +{newOffers}
+                      </span>
+                    )}
                     <PuzzleCard
                       puzzle={flag}
                       userRole="user"
                       isLeader={!joined}
                       isMember={joined}
+                      offerCount={offers}
                       hideNewBadge
                       myFlagStatus={active ? undefined : st}
-                      onHide={active || joined ? undefined : () => handleHideFlag(flag.id)}
+                      onEdit={!joined && active ? () => router.push(`/flags/${flag.id}/edit`) : undefined}
+                      onHide={joined ? undefined : () => handleHideFlag(flag.id)}
                     />
                   </div>
                 );

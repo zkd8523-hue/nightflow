@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import type { Puzzle, GenderPref, AgePref, VibePref, MusicPref } from "@/types/database";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier } from "@/lib/utils/dealTier";
-import { formatRelativeTime, getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
+import { formatRelativeTime, getDDayLabel, formatGenderComposition, formatEventDate } from "@/lib/utils/format";
 import { countryFlag, countryNameKo } from "@/lib/utils/countryFlag";
 import { useTranslatedText } from "@/hooks/useTranslatedComment";
 
@@ -27,6 +27,8 @@ interface PuzzleCardProps {
   myFlagStatus?: { text: string; tone: string };
   /** MY 화면 전용 — 삭제(숨김) 콜백. 있으면 우상단 X 버튼 노출 */
   onHide?: () => void;
+  /** MY 화면 전용 — 수정 콜백. isLeader와 함께 주면 ⋯ 메뉴(수정/삭제) 노출 */
+  onEdit?: () => void;
   onJoin?: (puzzle: Puzzle) => void;
   onUnlock?: (puzzle: Puzzle) => void;
 }
@@ -160,10 +162,13 @@ export const PuzzleCard = memo(function PuzzleCard({
   hideNewBadge = false,
   myFlagStatus,
   onHide,
+  onEdit,
   onJoin,
   onUnlock,
 }: PuzzleCardProps) {
   const router = useRouter();
+  // 방장 ⋯ 메뉴(수정/삭제) 열림 상태
+  const [menuOpen, setMenuOpen] = useState(false);
   // MD 직통 조각: 방장(MD)이 카드에서 "이미 찬 자리(외부 인원)" 조정
   // 옛 AuctionCard 패턴 — +/-로 델타 누적(슬롯 즉시 미리 차고) → "반영"으로 저장
   const [committedCount, setCommittedCount] = useState(puzzle.current_count);
@@ -256,6 +261,44 @@ export const PuzzleCard = memo(function PuzzleCard({
       </span>
     ) : null;
 
+  // 방장 전용 ⋯ pill 메뉴(수정/삭제) — 깃발·조각 하단 CTA 자리에서 공용으로 사용
+  const editMenuButton =
+    isLeader && onEdit ? (
+      <div className="relative shrink-0">
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen((v) => !v); }}
+          className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-muted border border-border text-foreground/80 hover:bg-accent"
+        >
+          ⋯
+        </button>
+        {menuOpen && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(false); }}
+            />
+            <div className="absolute right-0 bottom-9 z-50 w-28 rounded-xl border border-border bg-card shadow-lg overflow-hidden">
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(false); onEdit(); }}
+                className="w-full px-3 py-2.5 text-left text-[13px] font-bold text-foreground hover:bg-muted transition-colors"
+              >
+                수정
+              </button>
+              {onHide && (
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMenuOpen(false); onHide(); }}
+                  className="w-full px-3 py-2.5 text-left text-[13px] font-bold text-red-400 hover:bg-muted transition-colors border-t border-border"
+                >
+                  삭제
+                </button>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    ) : null;
+
   // 카드 전체 클릭 가능 — 내부 액션 버튼들은 stopPropagation으로 보호됨
   const isCardClickable = true;
 
@@ -316,8 +359,8 @@ export const PuzzleCard = memo(function PuzzleCard({
                 {puzzle.area}
               </span>
             )}
-            {/* MY 종료 깃발 삭제 */}
-            {onHide && (
+            {/* 종료 깃발 삭제(X) — 방장 수정/삭제는 하단 ⋯ 메뉴로 이동 */}
+            {onHide && !onEdit && (
               <button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onHide(); }}
                 className="p-0.5 -mr-1 text-muted-foreground hover:text-red-400 transition-colors"
@@ -480,16 +523,18 @@ export const PuzzleCard = memo(function PuzzleCard({
           </div>
         </div>
       ) : !isRecruitingParty ? (
-        // 깃발: 오퍼수(왼쪽) + "자세히"(우측). 유저·비로그인 모두 노출.
+        // 깃발: 오퍼수(왼쪽) + "자세히"(우측). 방장은 자세히 대신 ⋯ pill(수정/삭제).
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">{userOfferBadge}</div>
-          <button
-            type="button"
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="text-[13px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.97] transition-all shrink-0"
-          >
-            자세히
-          </button>
+          {editMenuButton ?? (
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
+              className="text-[13px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.97] transition-all shrink-0"
+            >
+              자세히
+            </button>
+          )}
         </div>
       ) : isFull ? (
         <div className="flex items-center gap-2">
@@ -504,12 +549,14 @@ export const PuzzleCard = memo(function PuzzleCard({
       ) : isLeader ? (
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1">{userOfferBadge}</div>
-          <Button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-muted border border-border text-foreground/80 pointer-events-none shrink-0"
-          >
-            내 조각
-          </Button>
+          {editMenuButton ?? (
+            <Button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-muted border border-border text-foreground/80 pointer-events-none shrink-0"
+            >
+              내 조각
+            </Button>
+          )}
         </div>
       ) : isMember ? (
         <div className="flex items-center gap-2">

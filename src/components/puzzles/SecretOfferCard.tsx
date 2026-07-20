@@ -137,7 +137,12 @@ export function SecretOfferCard({
       )}
 
       <div className="space-y-2">
-        {/* 가격 제외 — 고정 예산이라 모든 오퍼가 동일 → 노이즈 */}
+        {/* 깃발은 예산의 ±20% 범위에서 제안가가 달라질 수 있어 표기 (조각은 예산 고정이라 노이즈라 생략) */}
+        {!isRecruitingParty && (
+          <p className="text-[16px] font-black text-money">
+            {isForeigner ? `₩${offer.proposed_price.toLocaleString()}` : `${offer.proposed_price.toLocaleString()}원`}
+          </p>
+        )}
         {offer.includes.length > 0 && (() => {
           const { liquors, sellingPoints, extras } = splitOfferIncludes(offer.includes);
           return (

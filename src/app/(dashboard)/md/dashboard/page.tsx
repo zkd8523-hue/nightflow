@@ -166,9 +166,11 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
             .from("puzzle_offers")
             .select(`
                 *,
+                club:clubs (id, name, area),
                 puzzle:puzzles!puzzle_offers_puzzle_id_fkey (
-                    id, area, event_date, total_budget, budget_per_person,
-                    target_count, current_count, status, kakao_open_chat_url,
+                    id, notes, area, event_date, total_budget, budget_per_person,
+                    target_count, current_count, target_male, target_female,
+                    status, kakao_open_chat_url,
                     is_recruiting_party, leader_id
                 )
             `)
