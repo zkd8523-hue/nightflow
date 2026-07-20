@@ -377,6 +377,7 @@ export function LiveEditView({
           <X className="w-5 h-5" />
         </button>
 
+        {/* 상단 우측엔 클럽 배지만 — 도구는 아래 우측 중앙으로 내림 */}
         <div className="flex flex-col items-end gap-2 pointer-events-auto">
           {clubName && (
             <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-red-500/90 text-white text-[12px] font-black">
@@ -384,21 +385,25 @@ export function LiveEditView({
               📍 {clubName}
             </span>
           )}
-          <ToolButton label="텍스트 추가" onClick={addText}>
-            <Type className="w-5 h-5" />
-          </ToolButton>
-          {/* 이미지 추가 — label+input 직결 (WebView의 programmatic click 차단 우회) */}
-          <label
-            className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white active:scale-90 transition-transform cursor-pointer"
-            aria-label="이미지 추가"
-          >
-            <ImagePlus className="w-5 h-5" />
-            <input type="file" accept="image/*" className="sr-only" onChange={pickImage} />
-          </label>
-          <ToolButton label="설문 추가" onClick={() => setEditingPoll(true)}>
-            <BarChart3 className="w-5 h-5" />
-          </ToolButton>
         </div>
+      </div>
+
+      {/* 편집 도구 (텍스트/이미지/설문) — 화면 우측 중앙 */}
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 z-10 flex flex-col items-end gap-2 pointer-events-auto">
+        <ToolButton label="텍스트 추가" onClick={addText}>
+          <Type className="w-5 h-5" />
+        </ToolButton>
+        {/* 이미지 추가 — label+input 직결 (WebView의 programmatic click 차단 우회) */}
+        <label
+          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white active:scale-90 transition-transform cursor-pointer"
+          aria-label="이미지 추가"
+        >
+          <ImagePlus className="w-5 h-5" />
+          <input type="file" accept="image/*" className="sr-only" onChange={pickImage} />
+        </label>
+        <ToolButton label="설문 추가" onClick={() => setEditingPoll(true)}>
+          <BarChart3 className="w-5 h-5" />
+        </ToolButton>
       </div>
 
 
@@ -408,7 +413,7 @@ export function LiveEditView({
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
           type="text"
-          placeholder="캡션을 추가해보세요..."
+          placeholder=""
           maxLength={200}
           enterKeyHint="done"
           className="w-full bg-white/10 backdrop-blur border border-white/20 rounded-full px-4 py-3 text-white text-[15px] placeholder:text-white/50 focus:outline-none focus:border-white/40"
