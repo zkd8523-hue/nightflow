@@ -201,6 +201,16 @@ export function LiveEditView({
     gestureRef.current.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     rebaseline(gestureRef.current);
   }
+  // 두 번째 손가락은 스테이지 어디에 닿아도 현재 제스처에 합류시킨다.
+  // 오버레이(특히 텍스트)는 글자 크기만 한 작은 영역이라, 두 손가락을 벌리면
+  // 두 번째 손가락이 요소 밖으로 나가 핀치/회전이 아예 안 잡혔다.
+  function onStagePointerDown(e: React.PointerEvent) {
+    const g = gestureRef.current;
+    if (!g || g.mode === "resize" || g.pointers.size !== 1) return;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    g.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    rebaseline(g);
+  }
   // 이미지 모서리 리사이즈 핸들 (데스크톱 — 손가락 하나로 크기)
   function onResizeDown(e: React.PointerEvent, id: string) {
     e.stopPropagation();
@@ -265,7 +275,8 @@ export function LiveEditView({
       {/* 미디어 + 오버레이 스테이지 */}
       <div
         ref={stageRef}
-        className="absolute inset-0"
+        className="absolute inset-0 touch-none"
+        onPointerDown={onStagePointerDown}
         onPointerMove={onOverlayPointerMove}
         onPointerUp={onOverlayPointerUp}
         onPointerCancel={onOverlayPointerUp}

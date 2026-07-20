@@ -10,6 +10,7 @@ import android.webkit.WebView;
 import androidx.core.app.ActivityCompat;
 
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.BridgeWebChromeClient;
 import com.kakao.sdk.common.KakaoSdk;
 import kr.nightflow.app.camera.NativeCameraPlugin;
 
@@ -49,7 +50,12 @@ public class MainActivity extends BridgeActivity {
             // false로 두면 음소거 자동재생이 바로 시작돼 재생버튼이 안 뜬다. (LIVE 뷰어/썸네일)
             wv.getSettings().setMediaPlaybackRequiresUserGesture(false);
 
-            wv.setWebChromeClient(new WebChromeClient() {
+            // ⚠️ 반드시 BridgeWebChromeClient를 상속할 것.
+            //    맨 WebChromeClient로 교체하면 Capacitor가 제공하던
+            //    onShowFileChooser(파일 선택창) / JS alert·confirm·prompt /
+            //    위치 권한 프롬프트가 전부 사라진다.
+            //    (실제로 그 상태에서 LIVE 이미지 첨부·채팅 사진 첨부가 먹통이었음)
+            wv.setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
                 @Override
                 public void onPermissionRequest(final PermissionRequest request) {
                     runOnUiThread(() -> handlePermissionRequest(request));
