@@ -24,7 +24,16 @@ export default async function PuzzleEditPage({ params }: PageProps) {
     .single();
 
   if (!puzzle) notFound();
-  if (puzzle.leader_id !== user.id) redirect(`/flags/${id}`);
+
+  // 운영팀 교정용: 유저가 인원/예산을 잘못 등록한 경우 admin이 대신 고친다 (Migration 474)
+  const { data: me } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+  const isAdmin = me?.role === "admin";
+
+  if (puzzle.leader_id !== user.id && !isAdmin) redirect(`/flags/${id}`);
   if (puzzle.status !== "open") redirect(`/flags/${id}`);
 
   const { count: pendingOfferCount } = await supabase
@@ -36,6 +45,17 @@ export default async function PuzzleEditPage({ params }: PageProps) {
   if ((pendingOfferCount ?? 0) > 0) {
     redirect(`/flags/${id}?edit_blocked=offers`);
   }
+
+  // 방장 외 참가자가 채운 인원. 폼이 current_count를 방장 일행만으로 덮어써
+  // 실제 참가자를 지워버리지 않도록 넘긴다.
+  const { data: members } = await supabase
+    .from("puzzle_members")
+    .select("user_id, guest_count")
+    .eq("puzzle_id", id);
+
+  const joinedOthers = (members ?? [])
+    .filter((m) => m.user_id !== puzzle.leader_id)
+    .reduce((sum, m) => sum + 1 + (m.guest_count ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -54,7 +74,7 @@ export default async function PuzzleEditPage({ params }: PageProps) {
           </p>
         </div>
 
-        <PuzzleForm userId={user.id} puzzle={puzzle} shareMode={puzzle.is_recruiting_party} />
+        <PuzzleForm userId={user.id} puzzle={puzzle} shareMode={puzzle.is_recruiting_party} joinedOthers={joinedOthers} />
       </div>
     </div>
   );

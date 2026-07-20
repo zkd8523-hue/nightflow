@@ -744,6 +744,20 @@ export function MDDashboard({
                                     if (!p) return null;
                                     const isAccepted = offer.status === "accepted";
                                     const isShare = !!p.is_recruiting_party;
+                                    // 방장이 오픈채팅 링크를 등록해뒀으면 offer_chat 플래그와 무관하게 항상 그쪽으로 보낸다
+                                    // (인앱 채팅과 카톡 중 두 곳에서 각자 다른 걸 보고 있는 상황 방지).
+                                    const kakaoButton = p.kakao_open_chat_url ? (
+                                        <a
+                                            href={p.kakao_open_chat_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            className="h-8 px-3 rounded-lg bg-[#FEE500] text-[#3C1E1E] font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-[#FDD835] transition-colors"
+                                        >
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                            오픈채팅 연락
+                                        </a>
+                                    ) : null;
                                     // 유저가 상담을 시작(leader_chat_started_at)했는데 아직 매치 전인 경우 → 배지/버튼을 채팅 상태 기준으로 세분화
                                     const chatStarted = !isAccepted && !!offer.leader_chat_started_at;
                                     const mdReplied = chatStarted && mdRepliedOfferIdSet.has(offer.id);
@@ -798,30 +812,34 @@ export function MDDashboard({
                                             {/* Footer */}
                                             <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-end">
                                                 {isAccepted ? (
-                                                    <FeatureGate
-                                                        flag="offer_chat"
-                                                        fallback={
-                                                            <a
-                                                                href={p.kakao_open_chat_url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="h-8 px-3 rounded-lg bg-[#FEE500] text-[#3C1E1E] font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-[#FDD835] transition-colors"
-                                                            >
-                                                                <ExternalLink className="w-3.5 h-3.5" />
-                                                                오픈채팅 연락
-                                                            </a>
-                                                        }
-                                                    >
-                                                        <Link
-                                                            href={`/messages/${offer.id}`}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="h-8 px-3 rounded-lg bg-inverse text-inverse-foreground font-black text-[13px] inline-flex items-center gap-1.5 hover:opacity-90 transition-colors"
+                                                    kakaoButton ? (
+                                                        kakaoButton
+                                                    ) : (
+                                                        <FeatureGate
+                                                            flag="offer_chat"
+                                                            fallback={
+                                                                <a
+                                                                    href={p.kakao_open_chat_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="h-8 px-3 rounded-lg bg-[#FEE500] text-[#3C1E1E] font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-[#FDD835] transition-colors"
+                                                                >
+                                                                    <ExternalLink className="w-3.5 h-3.5" />
+                                                                    오픈채팅 연락
+                                                                </a>
+                                                            }
                                                         >
-                                                            <MessageCircle className="w-3.5 h-3.5" />
-                                                            채팅
-                                                        </Link>
-                                                    </FeatureGate>
+                                                            <Link
+                                                                href={`/messages/${offer.id}`}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="h-8 px-3 rounded-lg bg-inverse text-inverse-foreground font-black text-[13px] inline-flex items-center gap-1.5 hover:opacity-90 transition-colors"
+                                                            >
+                                                                <MessageCircle className="w-3.5 h-3.5" />
+                                                                채팅
+                                                            </Link>
+                                                        </FeatureGate>
+                                                    )
                                                 ) : chatStarted ? (
                                                     <Link
                                                         href={`/messages/${offer.id}`}

@@ -850,7 +850,9 @@ export function PuzzleDetailClient({
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <h1 className="text-[17px] font-black text-foreground flex-1">{t(isRecruitingParty ? "조각 상세" : "깃발 상세", "Request detail")}</h1>
-          {currentUserId === puzzle.leader_id && isOpen && pendingOffers.length === 0 && (
+          {/* 정원이 찬(조각 완성) 뒤에도 방장은 인원/예산을 고칠 수 있어야 한다.
+              isOpen은 참가하기용이라 isFull을 빼므로 여기선 status만 본다. */}
+          {(currentUserId === puzzle.leader_id || isAdmin) && puzzle.status === "open" && pendingOffers.length === 0 && (
             <Link
               // MD 직통 조각(host_is_md)은 등록과 동일한 AuctionForm 수정 폼으로, 그 외는 유저 조각/깃발 폼으로
               href={puzzle.host_is_md ? `/md/auctions/${puzzle.id}/edit` : `/flags/${puzzle.id}/edit${lq}`}

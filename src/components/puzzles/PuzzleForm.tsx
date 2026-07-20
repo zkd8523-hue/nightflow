@@ -93,8 +93,9 @@ const BUDGET_PRESETS_FIXED = [500000, 100000, 50000]; // 깃발(총액) +50만/+
 
 const GENDER_OPTIONS: { value: GenderPref; label: string; en: string }[] = [
   { value: 'any', label: '상관없음', en: 'Any' },
-  { value: 'male_only', label: '남자만', en: 'Men only' },
-  { value: 'female_only', label: '여자만', en: 'Women only' },
+  // 섹션이 '선호'라 '~만'은 모순 → 라벨은 '남자'/'여자'. DB 값은 enum이라 유지.
+  { value: 'male_only', label: '남자', en: 'Men' },
+  { value: 'female_only', label: '여자', en: 'Women' },
 ];
 
 const AGE_OPTIONS: { value: AgePref; label: string; en: string }[] = [
@@ -117,7 +118,7 @@ const MUSIC_OPTIONS: { value: MusicPref; label: string; en: string }[] = [
   { value: "edm", label: "EDM", en: "EDM" },
 ];
 
-export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: string; puzzle?: PuzzleType; shareMode?: boolean }) {
+export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0 }: { userId: string; puzzle?: PuzzleType; shareMode?: boolean; joinedOthers?: number }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const lang = getLang(searchParams.get("lang"));
@@ -201,8 +202,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
   const [targetCount, setTargetCount] = useState<number>(
     (puzzle?.is_recruiting_party ? puzzle?.target_count : undefined) ?? (draft?.targetCount as number) ?? 5
   );
-  // edit 모드에서 추가 멤버 없으므로 current_count - 1 = 방장 본인의 일행 수
-  const initialGuest = puzzle?.is_recruiting_party ? Math.max(0, (puzzle?.current_count ?? 1) - 1) : 0;
+  // 방장 본인의 일행 수 = 채워진 인원 - 방장 1명 - 다른 참가자들
+  const initialGuest = puzzle?.is_recruiting_party
+    ? Math.max(0, (puzzle?.current_count ?? 1) - 1 - joinedOthers)
+    : 0;
   const [hasGuest, setHasGuest] = useState<boolean>(
     puzzle ? initialGuest > 0 : ((draft?.hasGuest as boolean) ?? false)
   );
@@ -210,7 +213,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     initialGuest > 0 ? initialGuest : ((draft?.guestCount as number) ?? 1)
   );
   const [genderPref, setGenderPref] = useState<GenderPref>(
-    puzzle?.gender_pref ?? (draft?.genderPref as GenderPref) ?? "male_only"
+    // 기본 'any' — 다른 선호(연령/음악/바이브)와 동일하게 "상관없음"에서 시작.
+    // 과거 파티원 모집 모드의 'male_only' 기본값은 조각에 맞지 않아 제거.
+    puzzle?.gender_pref ?? (draft?.genderPref as GenderPref) ?? "any"
   );
   // Migration 184: 성별 슬롯 분리
   const [myGender, setMyGender] = useState<'male' | 'female' | null>(null);
@@ -384,7 +389,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         targetCount !== (puzzle?.target_count ?? 4) ||
         hasGuest !== (initialGuest > 0) ||
         (hasGuest && guestCount !== initialGuest) ||
-        genderPref !== (puzzle?.gender_pref ?? "male_only") ||
+        genderPref !== (puzzle?.gender_pref ?? "any") ||
         JSON.stringify([...agePref].sort()) !== JSON.stringify([...(puzzle?.age_pref ?? ["any"])].sort()) ||
         vibePref !== (puzzle?.vibe_pref ?? "any") ||
         (musicPref === "any" ? null : musicPref) !== (puzzle?.music_preference ?? null)
@@ -535,10 +540,17 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
   const maxDateStr = maxObj.toISOString().split("T")[0];
 
   // 모드별 인원/예산 파생값
-  const isHostMale = myGender !== 'female';
+  // 수정 모드에선 기존 성별 슬롯에서 방장 성별을 역산한다.
+  // myGender는 '로그인한 사람'의 성별이라, admin이 대신 고치면 방장 슬롯이 뒤집힌다.
+  const existingSlotTotal = (puzzle?.target_male ?? 0) + (puzzle?.target_female ?? 0);
+  const isHostMale = isEditMode && existingSlotTotal > 0
+    ? (puzzle?.target_male ?? 0) > 0
+    : myGender !== 'female';
   const effectiveTargetCount = isRecruitingParty ? targetCount : totalPeople;
   const effectiveGuestCount = isRecruitingParty ? (hasGuest ? guestCount : 0) : Math.max(0, effectiveTargetCount - 1);
-  const effectiveCurrentCount = isRecruitingParty ? 1 + effectiveGuestCount : effectiveTargetCount;
+  const effectiveCurrentCount = isRecruitingParty ? 1 + effectiveGuestCount + joinedOthers : effectiveTargetCount;
+  // 이미 참가한 인원 아래로는 모집 인원을 줄일 수 없다 (방장 1명 + 다른 참가자).
+  const minTargetCount = Math.max(2, 1 + joinedOthers);
   // OFF: budgetAmount = 총액, ON: budgetAmount = 인당
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
 
@@ -679,13 +691,25 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       return fail('headcount_min', t('인원을 설정해주세요', 'Please set the number of people'));
     }
     // 조각(shareMode)은 성별 슬롯을 쓰지 않으므로 성별을 묻지 않음.
-    if (effectiveIsRecruiting && !shareMode && !myGender) {
+    // 수정 모드는 기존 슬롯에서 방장 성별을 역산하므로 로그인한 사람의 성별을 묻지 않는다
+    // (admin이 대신 고칠 때 admin 성별이 없다고 막히면 안 됨).
+    if (!isEditMode && effectiveIsRecruiting && !shareMode && !myGender) {
       return fail('gender_required', t('성별을 먼저 입력해주세요', 'Please set your gender first'));
     }
     // 조각(shareMode)은 성별 슬롯 미사용(0/0). 파티원 모집(ON)은 본인 성별 기반 자동 매핑.
     // 깃발(OFF)은 사용자가 입력한 남/여 구성(targetMale/targetFemale)을 그대로 사용.
     const submitMaleSlot   = shareMode ? 0 : (effectiveIsRecruiting ? (isHostMale  ? effectiveTargetCount : 0) : targetMale);
     const submitFemaleSlot = shareMode ? 0 : (effectiveIsRecruiting ? (!isHostMale ? effectiveTargetCount : 0) : targetFemale);
+
+    // 세션 확인 — userId prop은 페이지 진입 시점(SSR) 값이라, 폼을 오래 붙잡고 있는 동안
+    // 세션이 만료되면 그 stale한 id로 insert가 나가 "row-level security policy" 에러로 실패한다.
+    // 제출 직전에 실제 로그인 상태를 재확인해 그 경우를 먼저 걸러낸다.
+    const { data: { user: sessionUser } } = await supabase.auth.getUser();
+    if (!sessionUser || sessionUser.id !== userId) {
+      toast.error(t('세션이 만료되었습니다. 다시 로그인해주세요.', 'Your session has expired. Please log in again.'));
+      router.push("/login");
+      return;
+    }
 
     setSubmitting(true);
     // 성공 시 router.push 후에도 버튼을 "등록 중..."으로 유지해야
@@ -701,7 +725,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             area,
             event_date: eventDate,
             is_recruiting_party: effectiveIsRecruiting,
-            gender_pref: (effectiveIsRecruiting && !shareMode) ? genderPref : 'any',
+            gender_pref: effectiveIsRecruiting ? genderPref : 'any',
             age_pref: effectiveIsRecruiting ? agePref : ['any'],
             vibe_pref: effectiveIsRecruiting ? vibePref : 'any',
             music_preference: musicPref === 'any' ? null : musicPref,
@@ -725,7 +749,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             } : {}),
           })
           .eq("id", puzzle.id)
-          .eq("leader_id", userId);
+          // userId가 아닌 puzzle.leader_id 기준 — admin이 대신 고칠 때도 같은 행을 잡는다.
+          // 실제 권한은 RLS(방장 본인 or is_admin, Migration 474)가 판정.
+          .eq("leader_id", puzzle.leader_id);
 
         if (updateError) {
           console.error("puzzles update error:", updateError);
@@ -737,7 +763,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           .from("puzzle_members")
           .update({ guest_count: effectiveGuestCount })
           .eq("puzzle_id", puzzle.id)
-          .eq("user_id", userId);
+          .eq("user_id", puzzle.leader_id);
 
         trackEvent('puzzle_updated', {
           puzzle_id: puzzle.id,
@@ -1172,8 +1198,19 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                 <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-4">
                   <button
                     type="button"
-                    onClick={() => setTargetCount(Math.max(2, targetCount - 1))}
-                    className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
+                    onClick={() => {
+                      const next = Math.max(minTargetCount, targetCount - 1);
+                      setTargetCount(next);
+                      // 일행이 새 정원을 넘으면 같이 줄여준다. 안 그러면 저장 시
+                      // "일행 인원이 모집 인원을 초과합니다"로 막혀 인원을 못 줄인다.
+                      const maxGuest = next - 1 - joinedOthers;
+                      if (guestCount > maxGuest) {
+                        if (maxGuest < 1) { setHasGuest(false); setGuestCount(1); }
+                        else setGuestCount(maxGuest);
+                      }
+                    }}
+                    disabled={targetCount <= minTargetCount}
+                    className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30"
                   >
                     <Minus className="w-3.5 h-3.5 text-foreground" />
                   </button>
@@ -1216,13 +1253,14 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                       <Minus className="w-3.5 h-3.5 text-foreground" />
                     </button>
                     <span className="text-[15px] font-black text-foreground">
+                      {/* MD 직통은 방장(MD)이 일행에 안 들어가므로 "나 포함" 표기 X */}
                       {puzzle?.host_is_md
                         ? t(`${guestCount}명`, `${guestCount}`)
-                        : t(`일행 ${guestCount}명`, `${guestCount} friend${guestCount > 1 ? "s" : ""}`)}
+                        : t(`나 포함 ${guestCount + 1}명`, `${guestCount + 1} incl. you`)}
                     </span>
                     <button
                       type="button"
-                      onClick={() => setGuestCount(Math.min(targetCount - 1, guestCount + 1))}
+                      onClick={() => setGuestCount(Math.min(targetCount - 1 - joinedOthers, guestCount + 1))}
                       className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
                     >
                       <Plus className="w-3.5 h-3.5 text-foreground" />
@@ -1231,10 +1269,15 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                 )}
               </div>
 
-              {/* 모집 요약 */}
-              {effectiveTargetCount - effectiveCurrentCount > 0 && (
+              {/* 모집 요약 — 딱 채워서 남는 자리가 0일 때도 반드시 노출.
+                  숨기면 정작 헷갈리는 케이스(총원=일행)에 확인 문구가 사라진다. */}
+              {effectiveTargetCount - effectiveCurrentCount > 0 ? (
                 <p className="text-[12px] text-money font-bold">
                   🧩 {t(`총 ${effectiveTargetCount - effectiveCurrentCount}명을 구해요`, `Looking for ${effectiveTargetCount - effectiveCurrentCount} more`)}
+                </p>
+              ) : (
+                <p className="text-[12px] text-muted-foreground font-bold">
+                  {t(`인원이 다 찼어요 — 더 구하지 않아요`, `Party is full — not looking for anyone else`)}
                 </p>
               )}
             </>
@@ -1363,8 +1406,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         </div>
 
         <div className="space-y-2.5">
-          {/* 성별 선호 — 조각은 성별 슬롯을 쓰지 않으므로 숨김 */}
-          {!shareMode && (
+          {/* 성별 선호 — 조각은 성별 '슬롯'(정원 배분)은 안 쓰지만 선호는 받는다 */}
           <div className="flex items-center gap-3">
             <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("성별", "Gender")}</p>
             <div className="flex gap-1.5 flex-wrap">
@@ -1384,7 +1426,6 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
               ))}
             </div>
           </div>
-          )}
 
           <div className="flex items-center gap-3">
             <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("연령", "Age")}</p>

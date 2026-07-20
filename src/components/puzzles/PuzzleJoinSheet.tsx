@@ -190,7 +190,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
               </p>
             ) : maxGuest === 0 ? (
               <p className="text-[12px] text-muted-foreground bg-card/50 rounded-xl px-4 py-3">
-                {genderNeutral ? "자리가 1명 남아 동행 없이 본인만 참여 가능합니다" : `${myGender === "female" ? "여자" : "남자"} 자리가 1명 남아 동행 없이 본인만 참여 가능합니다`}
+                {genderNeutral ? "마지막 1자리 입니다" : `${myGender === "female" ? "여자" : "남자"} 마지막 1자리 입니다`}
               </p>
             ) : (
               <>
@@ -251,7 +251,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
               disabled={submitting || slotFull}
               className="w-full h-13 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-[15px] rounded-2xl transition-all active:scale-[0.98] disabled:bg-muted disabled:text-muted-foreground"
             >
-              {submitting ? "뭉치는 중..." : "파티원 합류하기"}
+              {submitting ? "뭉치는 중..." : "계속하기"}
             </Button>
           </div>
         )}
