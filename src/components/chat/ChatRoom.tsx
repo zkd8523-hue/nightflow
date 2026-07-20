@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { MapPin, ImagePlus, X, Loader2, Hash, ArrowUp } from "lucide-react";
+import { MapPin, X, Loader2, Hash, ArrowUp } from "lucide-react";
 import { WagleIcon } from "@/components/icons/WagleIcon";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -19,9 +19,11 @@ import { ChatReplySheet } from "./ChatReplySheet";
 import { ClubHashtagSuggester } from "./ClubHashtagSuggester";
 import { ShotCarousel } from "./ShotCarousel";
 import { ShotCaptureSheet } from "./ShotCaptureSheet";
+import { ChatAttachMenu } from "./ChatAttachMenu";
+import { SharePuzzleSheet } from "./SharePuzzleSheet";
 import { getCurrentHashtagToken, extractHashtags } from "@/lib/chat/hashtag";
 import { findClubIdsByAlias } from "@/lib/clubs/aliases";
-import type { ChatMessage } from "@/types/database";
+import type { ChatMessage, Puzzle } from "@/types/database";
 import {
   ROOM_LABEL,
   type ChatRoomCode,
@@ -57,7 +59,6 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
   const [verifyReason, setVerifyReason] = useState<"chat" | "shot">("chat");
   const [media, setMedia] = useState<ChatMediaItem[]>([]);
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const setComposerFocused = useChatComposerStore((s) => s.setFocused);
   // 언마운트(와글 이탈) 시 포커스 상태 리셋 → 다른 탭에서 네비 숨김 잔존 방지
@@ -96,6 +97,10 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
 
   // LIVE 캡처 시트
   const [shotComposeOpen, setShotComposeOpen] = useState(false);
+
+  // 내 조각 공유 (Migration 471) — 사진처럼 입력창에 첨부했다가 함께 전송
+  const [sharePuzzleOpen, setSharePuzzleOpen] = useState(false);
+  const [attachedPuzzle, setAttachedPuzzle] = useState<Puzzle | null>(null);
 
   // 메시지 ID 리스트 (이모지 반응 일괄 로드)
   const messageIds = useMemo(() => messages.map((m) => m.id), [messages]);
@@ -208,9 +213,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
     return activeAreas.length > 0 ? activeAreas[0].area : null;
   }, [activeAreas]);
 
-  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    e.target.value = ""; // 같은 파일 재선택 가능하게
+  async function handleFiles(files: File[]) {
     if (files.length === 0) return;
     if (!user) {
       router.push(loginTarget);
@@ -241,6 +244,23 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
     }
   }
 
+  // 내 위치 — 첨부 미리보기에 담지 않고 바로 전송 (DM·조각방과 동일)
+  async function handleLocation(item: ChatMediaItem) {
+    if (!user) {
+      router.push(loginTarget);
+      return;
+    }
+    const { error } = await createClient()
+      .from("chat_messages")
+      .insert({ room, author_id: user.id, content: "", media: [item], club_tags: [] });
+    if (error) {
+      toast.error("위치를 보내지 못했어요");
+      return;
+    }
+    forceScrollRef.current = true;
+    reload();
+  }
+
   function removeMedia(idx: number) {
     setMedia((prev) => prev.filter((_, i) => i !== idx));
   }
@@ -248,8 +268,8 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
   async function handleSend() {
     const trimmed = input.trim();
     if (sending) return;
-    // 텍스트 또는 미디어 중 하나 이상 있어야 함
-    if (trimmed.length < 1 && media.length === 0) return;
+    // 텍스트 / 미디어 / 조각 첨부 중 하나 이상 있어야 함
+    if (trimmed.length < 1 && media.length === 0 && !attachedPuzzle) return;
     if (trimmed.length > MAX_LEN) {
       toast.error(`${MAX_LEN}자를 넘을 수 없어요`);
       return;
@@ -287,6 +307,30 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
 
     setSending(true);
     const supabase = createClient();
+
+    // 조각 첨부는 RPC 경유 (본인 조각·모집중 검증이 서버에 있음)
+    if (attachedPuzzle) {
+      const puzzleId = attachedPuzzle.id;
+      const { data, error } = await supabase.rpc("share_puzzle_to_chat", {
+        p_room: room,
+        p_puzzle_id: puzzleId,
+        p_content: trimmed,
+      });
+      setSending(false);
+      if (error || !data?.success) {
+        const msg = error?.message ?? "";
+        if (msg.includes("does not exist")) toast.error("조각 공유 마이그레이션 미적용 (471)");
+        else toast.error(data?.error ?? "공유하지 못했어요");
+        return;
+      }
+      setInput("");
+      setAttachedPuzzle(null);
+      lastSentContentRef.current = trimmed;
+      lastSentAtRef.current = Date.now();
+      forceScrollRef.current = true;
+      reload();
+      return;
+    }
 
     // 본문에서 해시태그 추출 → 클럽 ID 매핑
     // 1) taggedClubsRef (자동완성으로 선택한 것) 우선
@@ -402,6 +446,26 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
     <div className="shrink-0 bg-[#0A0A0A] border-t border-neutral-800">
       <div className="max-w-lg mx-auto px-3 py-2">
         {/* 미디어 미리보기 */}
+        {attachedPuzzle && (
+          <div className="mb-2 flex items-center gap-2 rounded-2xl border border-neutral-700 bg-[#1C1C1E] px-3 py-2.5">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-black text-white truncate">
+                🧩 {attachedPuzzle.event_date.slice(5).replace("-", "/")} · {attachedPuzzle.area}
+              </span>
+              <span className="block text-[11px] text-neutral-400">
+                {attachedPuzzle.current_count}/{attachedPuzzle.target_count}명 모집 중
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setAttachedPuzzle(null)}
+              className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white shrink-0"
+              aria-label="조각 첨부 삭제"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         {media.length > 0 && (
           <div className="mb-2 flex gap-1.5 flex-wrap">
             {media.map((m, i) => (
@@ -480,34 +544,18 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
               />
             </div>
           )}
-          {/* 사진/동영상 첨부 */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,video/*"
-            multiple
-            hidden
-            onChange={handleFilePick}
-          />
-          <button
-            type="button"
-            onClick={() => {
+          <ChatAttachMenu
+            onFiles={handleFiles}
+            onLocation={handleLocation}
+            onSharePuzzle={() => {
               if (!user) {
                 router.push(loginTarget);
                 return;
               }
-              fileInputRef.current?.click();
+              setSharePuzzleOpen(true);
             }}
             disabled={uploading || media.length >= CHAT_MEDIA_MAX_COUNT}
-            className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-amber-400 hover:bg-neutral-800 disabled:text-neutral-700 disabled:hover:bg-transparent transition-colors"
-            aria-label="사진/동영상 첨부"
-          >
-            {uploading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <ImagePlus className="w-5 h-5" />
-            )}
-          </button>
+          />
           {/* 입력 pill */}
           <div className="flex-1 min-w-0 flex items-end gap-1 bg-neutral-900 rounded-3xl pl-4 pr-1.5 py-1.5">
             <textarea
@@ -584,7 +632,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
             disabled={
               !user ||
               (requiresVerification && !verifiedForRoom) ||
-              (!input.trim() && media.length === 0) ||
+              (!input.trim() && media.length === 0 && !attachedPuzzle) ||
               sending ||
               uploading
             }
@@ -649,6 +697,13 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
         />
       )}
 
+      {/* 내 조각 공유 (Migration 471) */}
+      <SharePuzzleSheet
+        open={sharePuzzleOpen}
+        onOpenChange={setSharePuzzleOpen}
+        userId={user?.id}
+        onSelect={setAttachedPuzzle}
+      />
 
       {/* 지역방 + 미인증 = 항상 보이는 인증 학습 안내 (글 유무 무관) */}
       {requiresVerification && !verifiedForRoom && (

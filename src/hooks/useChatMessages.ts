@@ -27,7 +27,7 @@ export function useChatMessages(room: ChatRoomCode) {
       .from("chat_messages")
       .select(
         `
-        id, room, author_id, parent_id, reply_count, content, media, author_area, club_tags, is_deleted, created_at, quoted_message_id,
+        id, room, author_id, parent_id, reply_count, content, media, author_area, club_tags, is_deleted, created_at, quoted_message_id, shared_puzzle_id,
         author:public_user_profiles!chat_messages_author_id_fkey(id, display_name, profile_image),
         quoted_message:chat_messages!quoted_message_id(
           id, room, author_id, content, media, author_area, is_deleted, created_at,
@@ -103,6 +103,8 @@ export function useChatMessages(room: ChatRoomCode) {
           is_deleted: d.is_deleted,
           created_at: d.created_at,
           author: authorObj,
+          shared_puzzle_id:
+            (d as { shared_puzzle_id?: string | null }).shared_puzzle_id ?? null,
           quoted_message_id:
             (d as { quoted_message_id?: string | null }).quoted_message_id ??
             null,
@@ -158,6 +160,7 @@ export function useChatMessages(room: ChatRoomCode) {
             is_deleted: boolean;
             created_at: string;
             quoted_message_id: string | null;
+            shared_puzzle_id: string | null;
           };
           if (newMsg.is_deleted) return;
           // 답글은 타임라인에 추가하지 않되, 부모 reply_count 옵티미스틱 +1
@@ -225,6 +228,7 @@ export function useChatMessages(room: ChatRoomCode) {
                 created_at: newMsg.created_at,
                 author: author ?? undefined,
                 quoted_message_id: newMsg.quoted_message_id,
+                shared_puzzle_id: newMsg.shared_puzzle_id ?? null,
                 quoted_message: quotedObj,
               },
             ];

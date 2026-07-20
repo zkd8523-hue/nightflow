@@ -1326,6 +1326,8 @@ export interface ChatMessage {
   club_tags: string[];
   /** 인용 공유의 원본 메시지 ID (Migration 314). NULL이면 일반 메시지. */
   quoted_message_id: string | null;
+  /** 공유한 조각 (Migration 471). 카드로 렌더. 조각당 1회만 공유 가능 */
+  shared_puzzle_id?: string | null;
   /** joined: 인용된 원본 메시지 (요약 정보만) */
   quoted_message?: {
     id: string;
