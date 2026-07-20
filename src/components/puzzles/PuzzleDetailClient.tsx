@@ -401,7 +401,9 @@ export function PuzzleDetailClient({
       .select("*, club:clubs(id, name, area, drink_menu_url, drink_menu_urls, drink_menu_updated_at), md:public_user_profiles!puzzle_offers_md_id_fkey(md_deal_count)")
       .eq("puzzle_id", puzzle.id)
       .in("status", ["pending", "accepted"])
-      .order("created_at", { ascending: true });
+      // 최신 오퍼가 위로 — 방장이 상세를 다시 열었을 때 "새 오퍼 왔네"를 바로 인지하도록.
+      // (클럽 그룹 순서도 이 순서를 따라가므로, 가장 최근 오퍼가 온 클럽이 최상단)
+      .order("created_at", { ascending: false });
 
     if (!data) { setOffersLoading(false); return; }
     let merged = data as PuzzleOffer[];
