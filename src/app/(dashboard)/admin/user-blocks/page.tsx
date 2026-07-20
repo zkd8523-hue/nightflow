@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 const REASON_LABELS: Record<string, { label: string; color: string }> = {
   inappropriate_content: { label: "부적절 콘텐츠", color: "bg-red-500/20 text-red-400" },
   scam_suspect: { label: "사기 의심", color: "bg-orange-500/20 text-orange-400" },
-  harassment: { label: "불쾌한 응대", color: "bg-amber-500/20 text-amber-400" },
+  harassment: { label: "괴롭힘·욕설", color: "bg-amber-500/20 text-amber-400" },
   spam: { label: "스팸/반복", color: "bg-purple-500/20 text-purple-400" },
   other: { label: "기타", color: "bg-neutral-700/30 text-neutral-300" },
 };

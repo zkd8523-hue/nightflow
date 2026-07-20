@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
+import { MyProfileSection } from "@/components/profile/MyProfileSection";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import type { ContactMethodType, Puzzle } from "@/types/database";
@@ -250,6 +251,11 @@ export default function ProfilePage() {
             <ArrowLeft className="w-5 h-5 text-neutral-400" />
           </button>
           <h1 className="text-xl font-black text-white">MY</h1>
+        </div>
+
+        {/* 내 공개 프로필 — /u/[id]와 동일한 화면을 그대로 렌더 */}
+        <div className="-mx-4 mb-4">
+          <MyProfileSection userId={user.id} />
         </div>
 
         {/* 제재 상태 배너 */}

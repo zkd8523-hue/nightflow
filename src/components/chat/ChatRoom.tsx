@@ -63,6 +63,15 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
   // 언마운트(와글 이탈) 시 포커스 상태 리셋 → 다른 탭에서 네비 숨김 잔존 방지
   useEffect(() => () => setComposerFocused(false), [setComposerFocused]);
 
+  // 네비 숨김은 "가상 키보드가 화면을 먹는" 터치 기기에서만.
+  // 데스크톱 웹은 키보드가 화면을 가리지 않으므로 숨기면 나갈 방법만 사라진다.
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  useEffect(() => {
+    setIsTouchDevice(
+      window.matchMedia("(hover: none) and (pointer: coarse)").matches
+    );
+  }, []);
+
   // 자동완성용 현재 # 토큰 위치
   const [hashtagToken, setHashtagToken] = useState<{
     token: string;
@@ -520,7 +529,9 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
                   getCurrentHashtagToken(t.value, t.selectionStart ?? 0)
                 );
               }}
-              onFocus={() => setComposerFocused(true)}
+              onFocus={() => {
+                if (isTouchDevice) setComposerFocused(true);
+              }}
               onBlur={() => {
                 setComposerFocused(false);
                 setTimeout(() => setHashtagToken(null), 100);
@@ -604,6 +615,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
       <ShotCarousel
         currentRoom={room === "all" ? undefined : (room as ChatRegionCode)}
         headerRight={regionFilter}
+        size={68} // LIVE 탭은 홈(60)보다 조금 크게
         showComposeButton={true}
         currentUserId={user?.id}
         currentUserProfile={user ? { profile_image: user.profile_image ?? null, display_name: user.display_name ?? null } : null}
@@ -663,7 +675,23 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
       )}
 
       {/* 메시지 영역 — 높이 제한 내부 스크롤 (카톡식). 새 글이 오면 아래로, 오래된 건 위로 밀림 */}
-      <div ref={scrollPaneRef} className="flex-1 min-h-0 overflow-y-auto">
+      {/* 입력 중일 때 메시지 영역을 터치하면 키보드를 내린다(카톡식).
+          /chat은 헤더가 없고 입력 포커스 시 BottomNav도 숨어서, 이게 없으면
+          키보드를 띄운 뒤 화면을 빠져나갈 방법이 없다. */}
+      <div
+        ref={scrollPaneRef}
+        className="flex-1 min-h-0 overflow-y-auto"
+        onPointerDown={(e) => {
+          // 웹은 네비가 계속 보이므로 굳이 포커스를 뺏지 않는다(입력 중 클릭 시 짜증)
+          if (!isTouchDevice) return;
+          if (!textareaRef.current) return;
+          if (document.activeElement !== textareaRef.current) return;
+          // 메시지 안의 버튼/링크 탭은 그대로 살린다 (blur 후에도 click은 발생)
+          const el = e.target as HTMLElement;
+          if (el.closest("button, a, input, textarea")) return;
+          textareaRef.current.blur();
+        }}
+      >
       {loading ? (
         <div className="py-10 text-center text-[13px] text-neutral-500">
           불러오는 중...

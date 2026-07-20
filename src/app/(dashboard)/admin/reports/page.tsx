@@ -17,7 +17,7 @@ const PUZZLE_REASON_LABELS: Record<string, { label: string; color: string }> = {
   fake_listing: { label: "허위 모임", color: "bg-red-500/15 text-red-400 border border-red-500/20" },
   scam_suspect: { label: "사기 의심", color: "bg-amber-500/15 text-amber-400 border border-amber-500/20" },
   inappropriate_content: { label: "부적절 콘텐츠", color: "bg-red-500/15 text-red-400 border border-red-500/20" },
-  harassment: { label: "불쾌한 응대", color: "bg-orange-500/15 text-orange-400 border border-orange-500/20" },
+  harassment: { label: "괴롭힘·욕설", color: "bg-orange-500/15 text-orange-400 border border-orange-500/20" },
   spam: { label: "스팸/반복", color: "bg-purple-500/15 text-purple-400 border border-purple-500/20" },
   other: { label: "기타", color: "bg-neutral-800 text-neutral-400 border border-neutral-700/50" },
 };

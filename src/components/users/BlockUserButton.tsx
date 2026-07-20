@@ -22,7 +22,7 @@ interface BlockUserButtonProps {
 const REASONS = [
   { value: "inappropriate_content", label: "부적절한 콘텐츠", desc: "음란·폭력·혐오 표현 포함" },
   { value: "scam_suspect", label: "사기 의심", desc: "금전 피해가 우려되는 사용자" },
-  { value: "harassment", label: "불쾌한 응대", desc: "무례·괴롭힘·욕설" },
+  { value: "harassment", label: "괴롭힘·욕설", desc: "무례한 언행, 집요한 연락, 성희롱" },
   { value: "spam", label: "스팸/반복 게시", desc: "도배 또는 광고성 게시글" },
   { value: "other", label: "기타", desc: "직접 입력" },
 ] as const;
