@@ -192,7 +192,7 @@ export function ShareCreatedSheet({
         <div className="flex items-start justify-between">
           <div className="space-y-1.5">
             <p className="text-[20px] font-black text-white">
-              {mode === "created" ? "🧩 조각 등록 완료!" : "🧩 조각 공유하기"}
+              {mode === "created" ? "🧩 조각 등록 성공!" : "🧩 조각 공유하기"}
             </p>
             <p className="text-[14px] text-neutral-300 leading-relaxed">
               <span className="text-green-400 font-bold">링크를 공유</span>해서

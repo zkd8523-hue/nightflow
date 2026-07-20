@@ -257,6 +257,15 @@ export function PuzzleDetailClient({
   // 조각 카톡 공유 시트 (?created=share 자동 오픈 / 공유 버튼 수동 오픈)
   const [showShareCreated, setShowShareCreated] = useState(searchParams.get("created") === "share");
   const [shareCreatedMode, setShareCreatedMode] = useState<"created" | "share">("created");
+  // ?created=share(등록 직후)로 들어오면 항상 "등록" 모드로 되돌린다.
+  // state 기본값에만 의존하면, 같은 /flags/[id] 세그먼트에서 공유 버튼을 눌러
+  // "share"가 된 상태가 새 조각 등록 후에도 남아 "조각 공유하기"가 뜬다.
+  useEffect(() => {
+    if (searchParams.get("created") === "share") {
+      setShareCreatedMode("created");
+      setShowShareCreated(true);
+    }
+  }, [searchParams]);
   // 깃발 등록 직후 5자 리뷰 유도 팝업 — 최애 클럽 지정자에게만(rc/rn 파라미터), 계정당 최초 1회.
   const [showCreatedInfo, setShowCreatedInfo] = useState(false);
   const [reviewClub, setReviewClub] = useState<{ id: string; name: string } | null>(null);

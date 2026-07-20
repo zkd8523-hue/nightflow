@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ExternalLink, MapPin, Play, Volume2, VolumeX } from "lucide-react";
 import type { ChatMediaItem } from "@/types/database";
+import { ChatImageViewer } from "./ChatImageViewer";
+
+/** 셀에서 그리드 루트의 뷰어를 열기 위한 통로 (props 드릴링 회피) */
+const ViewerContext = createContext<((index: number) => void) | null>(null);
 
 interface Props {
   items: ChatMediaItem[];
@@ -18,7 +22,25 @@ interface Props {
  * 동영상: 음소거 자동재생 (IntersectionObserver, 보일 때만)
  */
 export function ChatMediaGrid({ items }: Props) {
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   if (!items || items.length === 0) return null;
+
+  const files = items.filter((i) => i.type !== "location");
+  return (
+    <ViewerContext.Provider value={(i) => setViewerIndex(i)}>
+      <GridBody items={items} />
+      {viewerIndex !== null && files.length > 0 && (
+        <ChatImageViewer
+          items={files}
+          index={Math.min(viewerIndex, files.length - 1)}
+          onClose={() => setViewerIndex(null)}
+        />
+      )}
+    </ViewerContext.Provider>
+  );
+}
+
+function GridBody({ items }: Props) {
 
   // 위치 공유는 사진 그리드와 성격이 달라 카드로 따로 렌더
   const locations = items.filter((i) => i.type === "location");
@@ -29,7 +51,7 @@ export function ChatMediaGrid({ items }: Props) {
         {locations.map((loc, i) => (
           <LocationCard key={`loc-${i}`} item={loc} />
         ))}
-        {files.length > 0 && <ChatMediaGrid items={files} />}
+        {files.length > 0 && <GridBody items={files} />}
       </>
     );
   }
@@ -38,46 +60,39 @@ export function ChatMediaGrid({ items }: Props) {
 
   if (count === 1) {
     const item = items[0];
-    // 가로형(width/height >= 16/9)은 원본 비율 유지, 그 외는 16:9 crop
-    const isLandscape =
-      item.width && item.height
-        ? item.width / item.height >= 16 / 9
-        : false;
-
-    if (isLandscape && item.width && item.height) {
-      return (
-        <div
-          className="mt-2 rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-900"
-          style={{ aspectRatio: `${item.width} / ${item.height}` }}
-        >
-          <MediaCell item={item} aspect="cover" />
-        </div>
-      );
-    }
+    // 원본 비율 그대로 (카톡식). 예전엔 16:9로 강제 크롭해서
+    // 세로 스크린샷이 위아래로 잘려 나갔다.
+    // 극단적인 세로 이미지만 3:4로 제한해 채팅이 한 장에 먹히지 않게 한다.
+    const ratio =
+      item.width && item.height ? item.width / item.height : 4 / 3;
+    const aspect = Math.max(ratio, 3 / 4);
 
     return (
-      <div className="mt-2 rounded-2xl overflow-hidden border border-neutral-800 aspect-[16/9] bg-neutral-900">
-        <MediaCell item={item} aspect="cover" />
+      <div
+        className="mt-2 rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-900 w-[200px] max-w-full"
+        style={{ aspectRatio: String(aspect) }}
+      >
+        <MediaCell item={item} aspect="cover" index={0} />
       </div>
     );
   }
 
   if (count === 2) {
     return (
-      <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-neutral-800">
-        <MediaCell item={items[0]} aspect="square" />
-        <MediaCell item={items[1]} aspect="square" />
+      <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-neutral-800 w-[200px] max-w-full">
+        <MediaCell item={items[0]} aspect="square" index={0} />
+        <MediaCell item={items[1]} aspect="square" index={1} />
       </div>
     );
   }
 
   if (count === 3) {
     return (
-      <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-neutral-800 aspect-[4/3]">
-        <MediaCell item={items[0]} aspect="cover" />
+      <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-neutral-800 aspect-[4/3] w-[200px] max-w-full">
+        <MediaCell item={items[0]} aspect="cover" index={0} />
         <div className="grid grid-rows-2 gap-0.5">
-          <MediaCell item={items[1]} aspect="cover" />
-          <MediaCell item={items[2]} aspect="cover" />
+          <MediaCell item={items[1]} aspect="cover" index={1} />
+          <MediaCell item={items[2]} aspect="cover" index={2} />
         </div>
       </div>
     );
@@ -85,9 +100,9 @@ export function ChatMediaGrid({ items }: Props) {
 
   // 4개
   return (
-    <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-neutral-800">
+    <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-neutral-800 w-[200px] max-w-full">
       {items.slice(0, 4).map((it, i) => (
-        <MediaCell key={i} item={it} aspect="square" />
+        <MediaCell key={i} item={it} aspect="square" index={i} />
       ))}
     </div>
   );
@@ -96,9 +111,11 @@ export function ChatMediaGrid({ items }: Props) {
 interface CellProps {
   item: ChatMediaItem;
   aspect: "square" | "cover";
+  index: number;
 }
 
-function MediaCell({ item, aspect }: CellProps) {
+function MediaCell({ item, aspect, index }: CellProps) {
+  const openViewer = useContext(ViewerContext);
   const containerClass =
     aspect === "square"
       ? "relative aspect-square w-full bg-neutral-900"
@@ -107,11 +124,15 @@ function MediaCell({ item, aspect }: CellProps) {
   if (item.type === "image") {
     return (
       <div className={containerClass}>
-        <a
-          href={item.url}
-          target="_blank"
-          rel="noopener noreferrer"
+        {/* 인앱 뷰어로 열기 — 예전엔 target="_blank"라 외부 브라우저가 떴다 */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            openViewer?.(index);
+          }}
           className="block absolute inset-0"
+          aria-label="사진 크게 보기"
         >
           <Image
             src={item.url}
@@ -120,7 +141,7 @@ function MediaCell({ item, aspect }: CellProps) {
             sizes="(max-width: 512px) 100vw, 512px"
             className="object-cover"
           />
-        </a>
+        </button>
       </div>
     );
   }

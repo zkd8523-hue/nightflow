@@ -1386,9 +1386,8 @@ function ShotViewerContent({
                   liked ? "fill-red-500 text-red-500 scale-110" : "text-white"
                 }`}
               />
-              {likeCount > 0 && (
-                <span className="text-[10px] font-bold text-white/80 leading-none">{likeCount}</span>
-              )}
+              {/* 좋아요 개수는 당분간 숨김 — 초기엔 숫자가 낮게 보여
+                  오히려 인기 없어 보이는 역효과. 하트 상태만 노출 */}
             </button>
             <button
               type="button"

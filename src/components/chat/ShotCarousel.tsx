@@ -332,12 +332,7 @@ function ShotThumb({
           </>
         )}
       </div>
-      {shot.like_count > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 inline-flex items-center gap-0.5 text-[8px] font-black bg-red-500 text-white px-1 py-0.5 rounded-full border border-[#0B0A11] leading-none">
-          <Heart className="w-2 h-2 fill-white" />
-          {shot.like_count}
-        </span>
-      )}
+      {/* 좋아요 수 배지 숨김 — 뷰어와 동일한 이유(초기엔 낮은 숫자가 역효과) */}
     </div>
   );
 }
