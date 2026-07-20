@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
 import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { ChatAttachMenu } from "@/components/chat/ChatAttachMenu";
+import { SwipeToReply } from "@/components/chat/SwipeToReply";
 import { ChatContentText } from "@/components/chat/ChatContentText";
 import { usePartyMessages } from "@/hooks/usePartyMessages";
 import { usePartyOffers } from "@/hooks/usePartyOffers";
@@ -698,6 +699,7 @@ export function PartyChatRoom({
                             <SmilePlus className="w-4 h-4" />
                           </button>
                         </div>
+                        <SwipeToReply isMine onReply={() => setReplyTarget(m)} onMoveCancel={cancelPress}>
                         <div
                           onContextMenu={(e) => { e.preventDefault(); setMenuMsg(m); }}
                           onDoubleClick={() => !m.is_system && toggleReaction(m.id, "❤️")}
@@ -707,9 +709,11 @@ export function PartyChatRoom({
                           onPointerDown={() => startPress(m)}
                           onPointerUp={cancelPress}
                           onPointerLeave={cancelPress}
-                          className="px-3 py-2 rounded-2xl bg-white text-black rounded-br-md select-none"
+                          className="px-3 py-2 rounded-2xl bg-amber-400 text-black rounded-br-md select-none"
                         >
                           {renderQuoted(m)}
+                          {/* 사진 → 텍스트 순서 (와글·DM과 동일) */}
+                          {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                           {m.content && (
                             <ChatContentText
                               content={m.content}
@@ -717,9 +721,9 @@ export function PartyChatRoom({
                               className="text-[14px] leading-snug whitespace-pre-wrap break-words"
                             />
                           )}
-                          {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                           {renderSharedOffer(m, true)}
                         </div>
+                        </SwipeToReply>
                         {(unread > 0 || showTime) && (
                           <div className="flex flex-col items-end justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
                             {unread > 0 && (
@@ -762,6 +766,7 @@ export function PartyChatRoom({
                         <span className="text-[12px] text-neutral-400 mb-0.5 ml-0.5">{senderName}</span>
                       )}
                       <div className="flex items-end gap-1.5 max-w-full group">
+                        <SwipeToReply isMine={false} onReply={() => setReplyTarget(m)} onMoveCancel={cancelPress}>
                         <div
                           onContextMenu={(e) => { e.preventDefault(); setMenuMsg(m); }}
                           onDoubleClick={() => !m.is_system && toggleReaction(m.id, "❤️")}
@@ -774,6 +779,8 @@ export function PartyChatRoom({
                           className="px-3 py-2 rounded-2xl bg-[#1C1C1E] text-white rounded-bl-md select-none"
                         >
                           {renderQuoted(m)}
+                          {/* 사진 → 텍스트 순서 (와글·DM과 동일) */}
+                          {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                           {m.content && (
                             <ChatContentText
                               content={m.content}
@@ -781,9 +788,9 @@ export function PartyChatRoom({
                               className="text-[14px] leading-snug whitespace-pre-wrap break-words"
                             />
                           )}
-                          {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                           {renderSharedOffer(m, false)}
                         </div>
+                        </SwipeToReply>
                         {(unread > 0 || showTime) && (
                           <div className="flex flex-col items-start justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
                             {unread > 0 && (

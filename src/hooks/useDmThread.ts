@@ -26,7 +26,7 @@ export function useDmThread(threadId: string | null, currentUserId?: string) {
       supabase.from("dm_threads").select("*").eq("id", threadId).maybeSingle(),
       supabase
         .from("dm_messages")
-        .select("id, thread_id, sender_id, content, media, is_deleted, read_at, created_at")
+        .select("id, thread_id, sender_id, content, media, is_deleted, read_at, created_at, reply_to")
         .eq("thread_id", threadId)
         .eq("is_deleted", false)
         .order("created_at", { ascending: true })
@@ -84,15 +84,15 @@ export function useDmThread(threadId: string | null, currentUserId?: string) {
   }, [threadId]);
 
   const send = useCallback(
-    async (content: string, media: ChatMediaItem[] = []) => {
+    async (content: string, media: ChatMediaItem[] = [], replyTo: string | null = null) => {
       if (!threadId || !currentUserId) return;
       const body = content.trim();
       if (!body && media.length === 0) return;
       const supabase = createClient();
       const { data, error } = await supabase
         .from("dm_messages")
-        .insert({ thread_id: threadId, sender_id: currentUserId, content: body, media })
-        .select("id, thread_id, sender_id, content, media, is_deleted, read_at, created_at")
+        .insert({ thread_id: threadId, sender_id: currentUserId, content: body, media, reply_to: replyTo })
+        .select("id, thread_id, sender_id, content, media, is_deleted, read_at, created_at, reply_to")
         .maybeSingle();
       if (error) {
         console.error("[useDmThread] send error", error);

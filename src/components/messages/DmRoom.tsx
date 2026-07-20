@@ -8,7 +8,9 @@ import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { ArrowLeft, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { useDmThread } from "@/hooks/useDmThread";
+import type { DmMessage } from "@/types/dm";
 import { ChatAttachMenu } from "@/components/chat/ChatAttachMenu";
+import { SwipeToReply } from "@/components/chat/SwipeToReply";
 
 interface Props {
   threadId: string;
@@ -43,6 +45,8 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
   const { thread, messages, loading, send } = useDmThread(threadId, currentUserId);
   const [input, setInput] = useState("");
   const [media, setMedia] = useState<ChatMediaItem[]>([]);
+  // 밀어서 답글 대상 (Migration 472)
+  const [replyTarget, setReplyTarget] = useState<DmMessage | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,8 +92,10 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
     if (!body && media.length === 0) return;
     setInput("");
     const sentMedia = media;
+    const replyId = replyTarget?.id ?? null;
     setMedia([]);
-    await send(body, sentMedia);
+    setReplyTarget(null);
+    await send(body, sentMedia, replyId);
   }
 
   return (
@@ -140,20 +146,34 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
                 <div
                   className={`flex items-end gap-1.5 max-w-[80%] ${mine ? "flex-row-reverse" : ""}`}
                 >
+                  <SwipeToReply isMine={mine} onReply={() => setReplyTarget(m)}>
                   <div
                     className={`px-3 py-2 rounded-2xl select-none ${
                       mine
-                        ? "bg-white text-black rounded-br-md"
+                        ? "bg-amber-400 text-black rounded-br-md"
                         : "bg-[#1C1C1E] text-white rounded-bl-md"
                     }`}
                   >
+                    {m.reply_to && (
+                      <div
+                        className={`mb-1 pl-2 border-l-2 text-[12px] truncate ${
+                          mine
+                            ? "border-black/30 text-black/60"
+                            : "border-neutral-600 text-neutral-400"
+                        }`}
+                      >
+                        {messages.find((x) => x.id === m.reply_to)?.content ??
+                          "삭제된 메시지"}
+                      </div>
+                    )}
+                    {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                     {m.content && (
                       <p className="text-[14px] leading-snug whitespace-pre-wrap break-words">
                         {m.content}
                       </p>
                     )}
-                    {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                   </div>
+                  </SwipeToReply>
                   <div className="flex flex-col items-end justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
                     {showTime && (
                       <span className="text-[10px] text-neutral-500 whitespace-nowrap">
@@ -174,6 +194,24 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
           className="sticky bottom-0 bg-[#0A0A0A] border-t border-neutral-800"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
+          {replyTarget && (
+            <div className="flex items-center gap-2 px-3 pt-3">
+              <div className="flex-1 min-w-0 pl-2 border-l-2 border-amber-400">
+                <p className="text-[11px] font-bold text-amber-400">답글</p>
+                <p className="text-[12px] text-neutral-400 truncate">
+                  {replyTarget.content || "사진"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReplyTarget(null)}
+                className="w-6 h-6 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0"
+                aria-label="답글 취소"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
           {media.length > 0 && (
             <div className="flex gap-2 px-3 pt-3 overflow-x-auto">
               {media.map((m, i) => (

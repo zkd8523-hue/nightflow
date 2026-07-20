@@ -9,6 +9,7 @@ import { ROOM_LABEL } from "@/lib/chat/areas";
 import { ChatMediaGrid } from "./ChatMediaGrid";
 import { ChatContentText } from "./ChatContentText";
 import { ChatQuotedBox } from "./ChatQuotedBox";
+import { ChatSharedPuzzleCard } from "./ChatSharedPuzzleCard";
 import { ChatActionSheet } from "./ChatActionSheet";
 import { UserPeekSheet } from "@/components/users/UserPeekSheet";
 import { ChatShareSheet } from "./ChatShareSheet";
@@ -18,6 +19,7 @@ import type {
   ChatReactionSummary,
 } from "@/types/database";
 import type { ReplyPreview } from "@/hooks/useChatReplyPreviews";
+import { useSwipeToReply } from "@/hooks/useSwipeToReply";
 
 function timeShort(dateStr: string): string {
   const d = new Date(dateStr);
@@ -87,7 +89,19 @@ export function ChatMessageItem({
     setPressing(false);
   }
 
-  function handlePointerDown() {
+  // 밀어서 답글 — 와글/LIVE·조각 단체방 공용 훅
+  const swipe = useSwipeToReply({
+    isMine,
+    onReply: () => {
+      longPressTriggeredRef.current = true; // 뒤따르는 탭(더블탭 좋아요) 무시
+      onOpenReplies?.(message);
+    },
+    onMoveCancel: clearLongPress,
+  });
+  const dragX = swipe.dragX;
+
+  function handlePointerDown(e: React.PointerEvent) {
+    swipe.handlers.onPointerDown(e);
     longPressTriggeredRef.current = false;
     setPressing(true);
     clearTimeout(longPressTimerRef.current ?? undefined);
@@ -100,10 +114,13 @@ export function ChatMessageItem({
 
   function handlePointerUp() {
     clearLongPress();
+    swipe.handlers.onPointerUp();
   }
 
   function handlePointerLeave() {
+    if (swipe.isSwiping()) return;
     clearLongPress();
+    swipe.handlers.onPointerLeave();
   }
 
   function handleTap() {
@@ -258,17 +275,36 @@ export function ChatMessageItem({
           )}
 
           {/* 본문 + 인라인 액션 — 카톡 스타일 (말풍선 옆에 작은 아이콘) */}
-          <div className={`flex items-end gap-1 ${isMine ? "flex-row-reverse" : ""}`}>
+          <div className={`relative flex items-end gap-1 ${isMine ? "flex-row-reverse" : ""}`}>
+            {/* 밀어서 답글 — 끄는 동안 반대편에 아이콘이 드러남 */}
+            {dragX !== 0 && (
+              <span
+                className={`absolute top-1/2 -translate-y-1/2 pointer-events-none ${
+                  isMine ? "right-0" : "left-0"
+                }`}
+                style={{ opacity: Math.min(1, Math.abs(dragX) / 56) }}
+              >
+                <CornerDownRight className="w-4 h-4 text-neutral-400" />
+              </span>
+            )}
             {/* 본문 + 미디어 — 더블탭/길게누름 영역 */}
             <div
               ref={bodyRef}
-              className="relative touch-manipulation min-w-0"
+              className={`relative touch-manipulation min-w-0 flex flex-col ${
+                isMine ? "items-end" : "items-start"
+              }`}
               onClick={handleTap}
               onPointerDown={handlePointerDown}
+              onPointerMove={swipe.handlers.onPointerMove}
               onPointerUp={handlePointerUp}
               onPointerLeave={handlePointerLeave}
+              onPointerCancel={handlePointerLeave}
               onContextMenu={(e) => e.preventDefault()}
-              style={{ WebkitUserSelect: "none", userSelect: "none" }}
+              style={{
+                WebkitUserSelect: "none",
+                userSelect: "none",
+                ...swipe.style,
+              }}
             >
               {/* 인용된 원본 (공유) */}
               {message.quoted_message && (
@@ -277,19 +313,29 @@ export function ChatMessageItem({
                 </div>
               )}
 
-              {message.content && (
+              <ChatMediaGrid items={message.media ?? []} />
+              {/* 조각 공유는 본문을 카드 안에 넣어 한 덩어리로 보인다 (말풍선 분리 X) */}
+              {message.content && !message.shared_puzzle_id && (
                 <div>
                   <ChatContentText
                     content={message.content}
                     clubTags={message.club_tags ?? []}
-                    className={`inline-block max-w-full px-3 py-1.5 rounded-2xl rounded-tl-sm bg-white text-black text-[14px] leading-snug whitespace-pre-wrap break-words transition-colors ${
-                      pressing ? "bg-neutral-200" : ""
-                    }`}
+                    className={`inline-block max-w-full px-3 py-1.5 rounded-2xl text-[14px] leading-snug whitespace-pre-wrap break-words transition-colors ${
+                      isMine
+                        ? "rounded-tr-sm bg-amber-400 text-black"
+                        : "rounded-tl-sm bg-white text-black"
+                    } ${pressing ? (isMine ? "bg-amber-300" : "bg-neutral-200") : ""}`}
                     data-chat-body-text
                   />
                 </div>
               )}
-              <ChatMediaGrid items={message.media ?? []} />
+              {/* 공유된 조각 카드 (Migration 471) */}
+              {message.shared_puzzle_id && (
+                <ChatSharedPuzzleCard
+                  puzzleId={message.shared_puzzle_id}
+                  caption={message.content}
+                />
+              )}
             </div>
 
             {/* 반응(❤️ 등) — 말풍선 오른쪽 하단 인라인 (세로 공간 절약) */}

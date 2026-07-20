@@ -3,6 +3,8 @@ import type { ChatMediaItem } from "@/types/database";
 export type DmStatus = "pending" | "accepted" | "declined";
 
 export interface DmMessage {
+  /** 인용 답글 대상 (Migration 472) */
+  reply_to?: string | null;
   id: string;
   thread_id: string;
   sender_id: string;
