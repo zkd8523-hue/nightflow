@@ -17,8 +17,8 @@ interface Props {
 }
 
 /**
- * 1:1 메시지 신청 시트 — 유저 LIVE "나도 갈래" 진입.
- * 첫 메시지 필수 → request_dm RPC → 성공 시 그 스레드로 이동.
+ * 1:1 메시지 보내기 시트 — 유저 LIVE "나도 갈래" 진입.
+ * 수락 게이트 없음(Migration 470): 첫 메시지 → 바로 대화 개설 → 그 스레드로 이동.
  */
 export function DmRequestSheet({
   open,
@@ -53,20 +53,20 @@ export function DmRequestSheet({
     setSending(false);
     if (error) {
       const msg = error.message || "";
-      if (msg.includes("request_declined")) {
-        toast.error("이전에 거절된 상대예요");
+      if (msg.includes("blocked")) {
+        toast.error("차단된 상대예요");
       } else if (msg.includes("cannot_dm_self")) {
-        toast.error("본인에게는 신청할 수 없어요");
+        toast.error("본인에게는 보낼 수 없어요");
       } else if (msg.includes("42P01") || msg.includes("does not exist")) {
-        toast.error("DM 마이그레이션 미적용 (465)");
+        toast.error("DM 마이그레이션 미적용 (470)");
       } else {
-        toast.error("신청에 실패했어요");
+        toast.error("전송에 실패했어요");
       }
       return;
     }
     onOpenChange(false);
     setText("");
-    toast.success("메시지 신청을 보냈어요");
+    toast.success("메시지를 보냈어요");
     if (data) router.push(`/dm/${data}`);
   }
 
@@ -78,12 +78,12 @@ export function DmRequestSheet({
       >
         <SheetHeader className="px-4 pt-4 pb-2">
           <SheetTitle className="text-white text-[16px] text-left">
-            {recipientName ? `${recipientName}님에게 메시지 신청` : "메시지 신청"}
+            {recipientName ? `${recipientName}님에게 메시지` : "메시지 보내기"}
           </SheetTitle>
         </SheetHeader>
         <div className="px-4 space-y-3">
           <p className="text-[12px] text-neutral-400 leading-relaxed">
-            상대가 수락하면 1:1 대화가 시작돼요. 첫 메시지로 자연스럽게 말 걸어보세요.
+            바로 1:1 대화가 시작돼요. 첫 메시지로 자연스럽게 말 걸어보세요.
           </p>
           <textarea
             value={text}
@@ -98,7 +98,7 @@ export function DmRequestSheet({
             disabled={sending || !text.trim()}
             className="w-full py-3 rounded-full bg-amber-500 text-black text-[15px] font-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
           >
-            {sending ? "보내는 중..." : "신청 보내기"}
+            {sending ? "보내는 중..." : "보내기"}
           </button>
         </div>
       </SheetContent>

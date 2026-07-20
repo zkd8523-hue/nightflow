@@ -3,9 +3,12 @@
 import { useEffect, useRef, useState, Fragment } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Send } from "lucide-react";
+import { uploadChatMedia, type ChatMediaItem } from "@/lib/utils/uploadChatMedia";
+import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
+import { ArrowLeft, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { useDmThread } from "@/hooks/useDmThread";
+import { ChatAttachMenu } from "@/components/chat/ChatAttachMenu";
 
 interface Props {
   threadId: string;
@@ -13,7 +16,7 @@ interface Props {
   onRequireLogin?: () => void;
 }
 
-/** 1:1 DM 방 — 요청/수락 상태 배너 + 대화 (accepted 일 때만 입력) */
+/** 1:1 DM 방 — 수락 게이트 없이 바로 대화 (Migration 470) */
 // ── 깃발 채팅(MessageRoom)과 동일한 날짜·시간 표기 ──────────────────────────
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 function isSameDay(a: Date, b: Date) {
@@ -37,9 +40,9 @@ function formatDateDivider(d: Date) {
 
 export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
   const router = useRouter();
-  const { thread, messages, loading, send, respond } = useDmThread(threadId, currentUserId);
+  const { thread, messages, loading, send } = useDmThread(threadId, currentUserId);
   const [input, setInput] = useState("");
-  const [responding, setResponding] = useState(false);
+  const [media, setMedia] = useState<ChatMediaItem[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,31 +66,37 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
     return <div className="py-16 text-center text-neutral-500 text-[13px]">대화를 찾을 수 없어요</div>;
   }
 
-  const isRecipient = thread.recipient_id === currentUserId;
-  const isPending = thread.status === "pending";
-  const isDeclined = thread.status === "declined";
-  const isAccepted = thread.status === "accepted";
   const name = thread.counterpart?.display_name ?? "상대";
 
-  async function handleRespond(accept: boolean) {
-    setResponding(true);
-    const ok = await respond(accept);
-    setResponding(false);
-    if (ok) toast.success(accept ? "수락했어요" : "신청을 거절했어요");
+  // 사진/카메라 첨부 — 조각 단체방(PartyChatRoom)과 동일 구현
+  async function handleFiles(files: File[]) {
+    if (files.length === 0) return;
+    const slots = Math.max(0, 4 - media.length);
+    const uploaded = (
+      await Promise.all(files.slice(0, slots).map((f) => uploadChatMedia(f, currentUserId)))
+    ).filter(Boolean) as ChatMediaItem[];
+    if (uploaded.length) setMedia((prev) => [...prev, ...uploaded].slice(0, 4));
+  }
+
+  // 내 위치 — 첨부로 담지 않고 바로 전송 (사진과 섞을 이유가 없음)
+  async function handleLocation(item: ChatMediaItem) {
+    await send("", [item]);
   }
 
   async function handleSend() {
     const body = input.trim();
-    if (!body) return;
+    if (!body && media.length === 0) return;
     setInput("");
-    await send(body);
+    const sentMedia = media;
+    setMedia([]);
+    await send(body, sentMedia);
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] overflow-hidden bg-[#0B0A11]">
+    <div className="max-w-lg mx-auto min-h-dvh bg-[#0A0A0A] flex flex-col">
       {/* 헤더 */}
       <div
-        className="sticky top-0 z-20 bg-[#0B0A11]/95 backdrop-blur-sm border-b border-neutral-800 flex items-center gap-2 px-3 py-2.5"
+        className="sticky top-0 z-30 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-neutral-800 flex items-center gap-2 px-3 py-3"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)" }}
       >
         <button onClick={() => router.back()} aria-label="뒤로" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-900">
@@ -106,7 +115,7 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
       </div>
 
       {/* 메시지 */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-2">
+      <div className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
         {messages.map((m, i) => {
           const mine = m.sender_id === currentUserId;
           const d = new Date(m.created_at);
@@ -138,9 +147,12 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
                         : "bg-[#1C1C1E] text-white rounded-bl-md"
                     }`}
                   >
-                    <p className="text-[14px] leading-snug whitespace-pre-wrap break-words">
-                      {m.content}
-                    </p>
+                    {m.content && (
+                      <p className="text-[14px] leading-snug whitespace-pre-wrap break-words">
+                        {m.content}
+                      </p>
+                    )}
+                    {m.media?.length > 0 && <ChatMediaGrid items={m.media} />}
                   </div>
                   <div className="flex flex-col items-end justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
                     {showTime && (
@@ -157,43 +169,32 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      {/* 상태별 하단 */}
-      {isDeclined ? (
-        <div className="px-4 py-4 text-center text-[13px] text-neutral-500 border-t border-neutral-800">
-          거절된 대화예요
-        </div>
-      ) : isPending && isRecipient ? (
-        // 받은 신청 → 수락/거절
-        <div className="px-4 py-3 border-t border-neutral-800 flex flex-col gap-2" style={{ paddingBottom: "calc(env(safe-area-inset-bottom,0px)+10px)" }}>
-          <p className="text-[12px] text-neutral-400 text-center">{name}님이 메시지를 신청했어요</p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleRespond(false)}
-              disabled={responding}
-              className="flex-1 py-3 rounded-full border border-neutral-700 text-neutral-300 text-[14px] font-bold"
-            >
-              거절
-            </button>
-            <button
-              onClick={() => handleRespond(true)}
-              disabled={responding}
-              className="flex-1 py-3 rounded-full bg-amber-500 text-black text-[14px] font-black"
-            >
-              수락하고 대화
-            </button>
-          </div>
-        </div>
-      ) : isPending && !isRecipient ? (
-        // 보낸 신청 → 대기중
-        <div className="px-4 py-4 text-center text-[13px] text-neutral-500 border-t border-neutral-800" style={{ paddingBottom: "calc(env(safe-area-inset-bottom,0px)+14px)" }}>
-          수락 대기중 — 상대가 수락하면 대화가 시작돼요
-        </div>
-      ) : isAccepted ? (
-        // 대화 입력
-        <div
-          className="border-t border-neutral-800 flex items-center gap-2 px-3 py-2.5"
-          style={{ paddingBottom: "calc(env(safe-area-inset-bottom,0px)+10px)" }}
+      {/* 입력 — 수락 게이트 없이 항상 노출 (Migration 470) */}
+      <div
+          className="sticky bottom-0 bg-[#0A0A0A] border-t border-neutral-800"
+          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
+          {media.length > 0 && (
+            <div className="flex gap-2 px-3 pt-3 overflow-x-auto">
+              {media.map((m, i) => (
+                <div key={i} className="relative w-14 h-14 rounded-lg overflow-hidden bg-neutral-900">
+                  {m.type === "image" ? (
+                    <Image src={m.url} alt="" fill className="object-cover" sizes="56px" />
+                  ) : (
+                    <video src={m.url} className="w-full h-full object-cover" muted />
+                  )}
+                  <button
+                    onClick={() => setMedia((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 grid place-items-center"
+                  >
+                    <X className="w-2.5 h-2.5 text-white" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="relative flex items-end gap-2 px-3 py-3">
+          <ChatAttachMenu onFiles={handleFiles} onLocation={handleLocation} />
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -210,14 +211,14 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
           />
           <button
             onClick={handleSend}
-            disabled={!input.trim()}
+            disabled={input.trim().length === 0 && media.length === 0}
             className="p-2.5 rounded-full bg-white text-black shrink-0 disabled:opacity-30"
             aria-label="전송"
           >
             <Send className="w-4 h-4" />
           </button>
-        </div>
-      ) : null}
+          </div>
+      </div>
     </div>
   );
 }

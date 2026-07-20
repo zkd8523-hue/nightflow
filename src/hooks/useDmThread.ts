@@ -103,20 +103,7 @@ export function useDmThread(threadId: string | null, currentUserId?: string) {
     [threadId, currentUserId]
   );
 
-  const respond = useCallback(
-    async (accept: boolean) => {
-      if (!threadId) return;
-      const supabase = createClient();
-      const { error } = await supabase.rpc("respond_dm", { p_thread_id: threadId, p_accept: accept });
-      if (error) {
-        console.error("[useDmThread] respond error", error);
-        return false;
-      }
-      await load();
-      return true;
-    },
-    [threadId, load]
-  );
+  // respond(수락/거절)는 Migration 470에서 폐기 — 게이트 없이 바로 대화
 
-  return { thread, messages, loading, send, respond, reload: load };
+  return { thread, messages, loading, send, reload: load };
 }

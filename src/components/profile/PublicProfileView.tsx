@@ -3,13 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, ChevronRight, Instagram } from "lucide-react";
+import { ArrowLeft, Pencil, MapPin, Music, BadgeCheck, Camera, ChevronRight, Instagram, MessageCircle } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { MUSIC_GENRE_MAP } from "@/lib/users/musicGenres";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ProfileEditSheet, type ProfileEditSection } from "./ProfileEditSheet";
+import { BlockUserButton } from "@/components/users/BlockUserButton";
 
 
 
@@ -54,6 +55,8 @@ interface Props {
   pinnedClubs: PinnedClub[];
   partnerClubs: PartnerClub[];
   isMe: boolean;
+  /** MY 탭 안에 끼워 넣을 때 — 뒤로가기·페이지 높이 제거 (내용은 동일) */
+  embedded?: boolean;
 }
 
 export function PublicProfileView({
@@ -62,6 +65,7 @@ export function PublicProfileView({
   pinnedClubs,
   partnerClubs,
   isMe,
+  embedded = false,
 }: Props) {
   const router = useRouter();
   const { user } = useCurrentUser();
@@ -78,6 +82,29 @@ export function PublicProfileView({
   const [editSection, setEditSection] = useState<ProfileEditSection | null>(
     null
   );
+  const [openingDm, setOpeningDm] = useState(false);
+
+  /** 수락 게이트 없이 바로 1:1 채팅방으로 (Migration 470) */
+  async function handleOpenDm() {
+    if (!user) {
+      toast.message("로그인이 필요해요");
+      return;
+    }
+    setOpeningDm(true);
+    const { data, error } = await createClient().rpc("open_dm", {
+      p_recipient_id: profile.id,
+      p_shot_id: null,
+    });
+    setOpeningDm(false);
+    if (error) {
+      const msg = error.message || "";
+      if (msg.includes("blocked")) toast.error("차단된 상대예요");
+      else if (msg.includes("does not exist")) toast.error("DM 마이그레이션 미적용 (470)");
+      else toast.error("채팅방을 열지 못했어요");
+      return;
+    }
+    router.push(`/dm/${data}`);
+  }
   const [verifyOpen, setVerifyOpen] = useState(false);
   const verifyRef = useRef<HTMLDivElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -153,17 +180,25 @@ export function PublicProfileView({
   const hasPinnedClubs = pinnedClubs.length > 0;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white max-w-lg mx-auto pb-12">
-      {/* 상단: 뒤로가기 */}
-      <div className="px-4 pt-3">
-        <button
-          onClick={() => router.back()}
-          aria-label="뒤로가기"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-neutral-900 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-      </div>
+    <div
+      className={
+        embedded
+          ? "bg-[#0A0A0A] text-white"
+          : "min-h-screen bg-[#0A0A0A] text-white max-w-lg mx-auto pb-12"
+      }
+    >
+      {/* 상단: 뒤로가기 — MY 탭에 끼워 넣을 땐 그 페이지 헤더가 대신한다 */}
+      {!embedded && (
+        <div className="px-4 pt-3">
+          <button
+            onClick={() => router.back()}
+            aria-label="뒤로가기"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-neutral-900 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       {/* 상단: 사진 + 이름 (인스타 스타일 가로 배치) */}
       <div className="px-4 mt-2">
@@ -475,16 +510,25 @@ export function PublicProfileView({
       {/* 구분선 */}
       <div className="mt-8 border-t border-neutral-900" />
 
-      {/* 남의 프로필 → 내 프로필 꾸미기 유도 CTA (상대 프로필과 분리) */}
+      {/* 남의 프로필 → 채팅하기 / 차단 (채팅 프로필 팝업과 동일한 액션) */}
       {!isMe && (
-        <div className="mt-10 flex flex-col items-center">
-          <Link
-            href="/profile"
-            className="inline-flex items-center gap-1 h-9 pl-4 pr-3 rounded-full bg-white hover:bg-neutral-200 transition-colors"
+        <div className="mt-6 flex items-stretch rounded-2xl overflow-hidden bg-[#1C1C1E] border border-neutral-800 mx-4">
+          <button
+            type="button"
+            onClick={handleOpenDm}
+            disabled={openingDm}
+            className="flex-1 flex items-center justify-center gap-1.5 py-3.5 text-white text-[14px] font-black active:bg-white/5 disabled:text-neutral-600"
           >
-            <span className="text-[13px] font-black text-black">내 프로필 관리하기</span>
-            <ChevronRight className="w-4 h-4 text-black" />
-          </Link>
+            <MessageCircle className="w-4 h-4" />
+            {openingDm ? "여는 중..." : "1:1 채팅"}
+          </button>
+          <div className="w-px bg-neutral-800" />
+          <div className="flex-1 flex items-center justify-center [&_button]:py-3.5 [&_span]:text-[14px] [&_span]:font-black [&_span]:text-neutral-400 [&_svg]:w-4 [&_svg]:h-4">
+            <BlockUserButton
+              targetUserId={profile.id}
+              targetDisplayName={displayName}
+            />
+          </div>
         </div>
       )}
 

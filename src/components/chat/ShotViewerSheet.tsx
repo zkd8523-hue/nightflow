@@ -522,7 +522,7 @@ function ShotViewerContent({
 
   const [soundOn, setSoundOn] = useState(false); // 영상 소리 (기본 음소거 — 자동재생 보장)
   const [activityOpen, setActivityOpen] = useState(false); // 활동(본 사람) 시트 — 본인 LIVE만
-  const [dmOpen, setDmOpen] = useState(false); // 메시지 신청 시트 (유저 LIVE "나도 갈래")
+  const [dmOpen, setDmOpen] = useState(false); // 메시지 보내기 시트 (유저 LIVE "나도 갈래")
   const [videoReady, setVideoReady] = useState(false); // 재생 시작 전 첫프레임(정지화면) 숨김용
   const [holdPaused, setHoldPaused] = useState(false); // 화면 누르고 있는 동안 일시정지 (인스타 스토리식)
   // 인라인 메시지 입력 (인스타식) — 시트 대신 뷰어 하단에서 바로 전송
@@ -537,7 +537,7 @@ function ShotViewerContent({
     !!paused || activityOpen || dmOpen || holdPaused || inputFocused;
 
   // 인라인 1:1 메시지(DM) 전송 — 댓글(공개)과 다른 개인 메시지.
-  //  신규 상대면 '메시지 신청'(pending) + 알림, 이미 스레드가 있으면 그 대화에 이어붙음.
+  //  수락 게이트 없음(Migration 470) — 바로 전송 + 알림, 기존 스레드면 이어붙음.
   //  ※ 공개 댓글은 하단 💬 아이콘(ShotCommentSheet)에서 별도로 작성.
   async function sendInlineComment() {
     const trimmed = commentInput.trim();
@@ -556,12 +556,12 @@ function ShotViewerContent({
     if (error) {
       const msg = error.message || "";
       console.error("[ShotViewerSheet] inline dm error", error);
-      if (msg.includes("request_declined")) {
-        toast.error("이전에 거절된 상대예요");
+      if (msg.includes("blocked")) {
+        toast.error("차단된 상대예요");
       } else if (msg.includes("cannot_dm_self")) {
         toast.error("본인에게는 보낼 수 없어요");
       } else if (msg.includes("does not exist") || error.code === "42883") {
-        toast.error("DM 마이그레이션 미적용 (465/469)");
+        toast.error("DM 마이그레이션 미적용 (470)");
       } else {
         toast.error(`전송 실패: ${error.message ?? ""}`);
       }
@@ -1407,7 +1407,7 @@ function ShotViewerContent({
 
       <ShotActivitySheet open={activityOpen} onOpenChange={setActivityOpen} shotId={shot.id} />
 
-      {/* 메시지 신청 (유저 LIVE "나도 갈래") */}
+      {/* 메시지 보내기 (유저 LIVE "나도 갈래") */}
       <DmRequestSheet
         open={dmOpen}
         onOpenChange={setDmOpen}

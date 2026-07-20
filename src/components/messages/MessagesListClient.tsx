@@ -134,26 +134,22 @@ export function MessagesListClient() {
     { key: "share", label: "🧩 조각", items: groups.filter((g) => g[0].is_recruiting_party) },
   ], [groups]);
 
-  const [tab, setTab] = useState<"flag" | "share" | "dm">("flag");
+  // 탭 순서·기본값: 메시지(1) → 조각(2) → 깃발(3), 진입 시 항상 메시지
+  const [tab, setTab] = useState<"flag" | "share" | "dm">("dm");
   const activeSection = sections.find((s) => s.key === tab)!;
   const didAutoSelect = useRef(false);
 
-  // 로드 후 1회: 현재 탭이 비어있으면 방이 있는 탭으로 자동 전환(미읽음 우선)
+  // 메시지가 비어 있어도 다른 탭으로 튀지 않는다(기본 탭 고정).
+  // 단, 깃발/조각에 안 읽은 대화가 있으면 그쪽을 1회 먼저 보여준다.
   useEffect(() => {
     if (didAutoSelect.current || loading || partyLoading) return;
+    didAutoSelect.current = true;
+    if (dmThreads.length > 0) return; // 메시지가 있으면 그대로 메시지 탭
     const [flag] = sections;
-    const flagCount = flag.items.length;
-    const shareCount = partyRooms.length; // 조각 탭 = 파티 단체방만 (1:1 제거)
-    if (flagCount === 0 && shareCount === 0) {
-      if (dmThreads.length > 0) { setTab("dm"); didAutoSelect.current = true; }
-      return;
-    }
     const flagUnread = flag.items.some((g) => g.some((c) => !isClosedStatus(c.offer_status) && c.unread));
     const shareUnread = partyRooms.some((r) => r.unread);
-    if (flagUnread && !shareUnread) setTab("flag");
-    else if (shareUnread && !flagUnread) setTab("share");
-    else setTab(flagCount > 0 ? "flag" : "share");
-    didAutoSelect.current = true;
+    if (shareUnread) setTab("share");
+    else if (flagUnread) setTab("flag");
   }, [loading, partyLoading, sections, partyRooms, dmThreads]);
 
   // 플래그 OFF면 기능 자체가 없음 → 홈으로
@@ -178,7 +174,22 @@ export function MessagesListClient() {
         </header>
         {user && (
           <div className="grid grid-cols-3 gap-1 p-1 mx-4 mb-2 bg-neutral-900 rounded-full">
-            {sections.map((s) => {
+            {/* 1번 메시지(DM) — 항상 노출 (메시지/조각/깃발 3채널 구조) */}
+            <button
+              onClick={() => { didAutoSelect.current = true; setTab("dm"); }}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-white" : "text-neutral-500"}`}
+            >
+              <span>💬 메시지</span>
+              {dmThreads.length > 0 && (
+                <span className={`text-[11px] ${tab === "dm" ? "text-neutral-300" : "text-neutral-500"}`}>
+                  {dmThreads.length}
+                </span>
+              )}
+              {/* 수락 게이트 폐지(470) — 신청 알림점 제거.
+                  DM은 아직 미읽음 집계가 없어 여기 점을 띄울 근거가 없다. */}
+            </button>
+            {/* 2번 조각 → 3번 깃발 (sections는 flag,share 순이라 역순 렌더) */}
+            {[...sections].reverse().map((s) => {
               const isShare = s.key === "share";
               // 조각 탭 = 파티 단체방만(1:1 제거), 깃발 탭 = 1:1 오퍼 채팅
               const count = isShare ? partyRooms.length : s.items.length;
@@ -206,21 +217,6 @@ export function MessagesListClient() {
                 </button>
               );
             })}
-            {/* 메시지(DM) 탭 — 항상 노출 (깃발/조각/개인메시지 3채널 구조) */}
-            <button
-              onClick={() => { didAutoSelect.current = true; setTab("dm"); }}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-white" : "text-neutral-500"}`}
-            >
-              <span>💬 메시지</span>
-              {dmThreads.length > 0 && (
-                <span className={`text-[11px] ${tab === "dm" ? "text-neutral-300" : "text-neutral-500"}`}>
-                  {dmThreads.length}
-                </span>
-              )}
-              {dmThreads.some((t) => t.recipient_id === user?.id && t.status === "pending") && (
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-              )}
-            </button>
           </div>
         )}
       </div>
@@ -242,7 +238,6 @@ export function MessagesListClient() {
         ) : (
           <div className="px-2 pt-1">
             {dmThreads.map((t) => {
-              const pendingIn = t.recipient_id === user?.id && t.status === "pending";
               const name = t.counterpart?.display_name ?? "익명";
               return (
                 <Link
@@ -262,14 +257,7 @@ export function MessagesListClient() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-white text-[14px] font-black truncate">{name}</span>
-                      {pendingIn && (
-                        <span className="shrink-0 text-[10px] font-black text-black bg-amber-500 rounded-full px-1.5 py-0.5 leading-none">
-                          신청
-                        </span>
-                      )}
-                      {t.status === "pending" && !pendingIn && (
-                        <span className="shrink-0 text-[10px] font-bold text-neutral-500">대기중</span>
-                      )}
+                      {/* 수락 게이트 폐지(Migration 470) — 신청/대기중 배지 없음 */}
                     </div>
                     <p className="text-[13px] text-neutral-500 truncate">{t.last_message ?? ""}</p>
                   </div>

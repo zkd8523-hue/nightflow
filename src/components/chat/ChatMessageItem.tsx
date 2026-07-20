@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { CornerDownRight, MapPin, MessageCircle, SmilePlus, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
@@ -11,6 +10,7 @@ import { ChatMediaGrid } from "./ChatMediaGrid";
 import { ChatContentText } from "./ChatContentText";
 import { ChatQuotedBox } from "./ChatQuotedBox";
 import { ChatActionSheet } from "./ChatActionSheet";
+import { UserPeekSheet } from "@/components/users/UserPeekSheet";
 import { ChatShareSheet } from "./ChatShareSheet";
 import type {
   ChatMessage,
@@ -67,8 +67,9 @@ export function ChatMessageItem({
   const isMine = !!currentUserId && message.author_id === currentUserId;
   const author = message.author;
   const displayName = author?.display_name ?? "익명";
-  const profileHref = `/u/${message.author_id}`;
+  // 프사/이름 탭 → 바로 이동하지 않고 미리보기 팝업(정보 + 메시지/프로필 선택)
 
+  const [peekOpen, setPeekOpen] = useState(false);
   const [actionOpen, setActionOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [pressing, setPressing] = useState(false);
@@ -202,12 +203,14 @@ export function ChatMessageItem({
         groupedWithPrev ? "pt-0.5 pb-1" : "pt-2 pb-2"
       } ${pressing ? "bg-[#1A1424]/80" : ""}`}
     >
-      <div className="flex items-start gap-2">
-        {groupedWithPrev ? (
+      <div className={`flex items-start gap-2 ${isMine ? "justify-end" : ""}`}>
+        {/* 아바타 — 내 글은 카톡처럼 표시하지 않음 */}
+        {isMine ? null : groupedWithPrev ? (
           <div className="w-9 shrink-0" aria-hidden="true" />
         ) : (
-          <Link
-            href={profileHref}
+          <button
+            type="button"
+            onClick={() => setPeekOpen(true)}
             className="relative w-9 h-9 rounded-full overflow-hidden bg-neutral-800 shrink-0 hover:opacity-80 transition-opacity"
             aria-label={`${displayName} 프로필 보기`}
           >
@@ -224,14 +227,15 @@ export function ChatMessageItem({
                 {displayName.charAt(0)}
               </div>
             )}
-          </Link>
+          </button>
         )}
 
-        <div className="flex-1 min-w-0">
-          {!groupedWithPrev && (
+        <div className={`min-w-0 ${isMine ? "flex flex-col items-end" : "flex-1"}`}>
+          {!groupedWithPrev && !isMine && (
             <div className="flex items-center gap-1.5 min-w-0 flex-wrap mb-0.5">
-              <Link
-                href={profileHref}
+              <button
+                type="button"
+                onClick={() => setPeekOpen(true)}
                 className="text-[13px] font-medium text-neutral-300 truncate hover:underline"
               >
                 {displayName}
@@ -240,7 +244,7 @@ export function ChatMessageItem({
                     나
                   </span>
                 )}
-              </Link>
+              </button>
               {message.author_area && (
                 <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-300 text-[10px] font-bold leading-none">
                   <MapPin className="w-2.5 h-2.5" />
@@ -254,7 +258,7 @@ export function ChatMessageItem({
           )}
 
           {/* 본문 + 인라인 액션 — 카톡 스타일 (말풍선 옆에 작은 아이콘) */}
-          <div className="flex items-end gap-1">
+          <div className={`flex items-end gap-1 ${isMine ? "flex-row-reverse" : ""}`}>
             {/* 본문 + 미디어 — 더블탭/길게누름 영역 */}
             <div
               ref={bodyRef}
@@ -393,6 +397,19 @@ export function ChatMessageItem({
           )}
         </div>
       </div>
+
+      {/* 프사/이름 탭 시 프로필 미리보기 (메시지 보내기 / 프로필 보러가기) */}
+      {peekOpen && (
+        <UserPeekSheet
+          open={peekOpen}
+          onOpenChange={setPeekOpen}
+          userId={message.author_id}
+          fallbackName={displayName}
+          fallbackImage={author?.profile_image ?? null}
+          currentUserId={currentUserId}
+          onRequireLogin={onRequireLogin}
+        />
+      )}
 
       {/* 길게 누름 시 액션 시트 */}
       <ChatActionSheet
