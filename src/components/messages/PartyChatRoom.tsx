@@ -4,11 +4,12 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, AtSign, ChevronDown, ChevronRight, CornerDownRight, ImageIcon, Send, SmilePlus, ThumbsDown, ThumbsUp, Trash2, UserPlus, Users, X } from "lucide-react";
+import { ArrowLeft, AtSign, ChevronDown, ChevronRight, CornerDownRight, Send, SmilePlus, ThumbsDown, ThumbsUp, Trash2, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
 import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
+import { ChatAttachMenu } from "@/components/chat/ChatAttachMenu";
 import { ChatContentText } from "@/components/chat/ChatContentText";
 import { usePartyMessages } from "@/hooks/usePartyMessages";
 import { usePartyOffers } from "@/hooks/usePartyOffers";
@@ -246,7 +247,6 @@ export function PartyChatRoom({
     setKickReason("");
     setKicking(false);
   }
-  const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   // 만료(expired)는 채팅을 막지 않음 — 오퍼는 마감돼도 "그날 밤 만나는" 파티는
@@ -265,15 +265,27 @@ export function PartyChatRoom({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  async function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []);
-    if (fileRef.current) fileRef.current.value = "";
+  async function handleFiles(files: File[]) {
     if (files.length === 0) return;
     const slots = Math.max(0, 4 - media.length);
     const uploaded = (
       await Promise.all(files.slice(0, slots).map((f) => uploadChatMedia(f, me.id)))
     ).filter(Boolean) as ChatMediaItem[];
     if (uploaded.length) setMedia((prev) => [...prev, ...uploaded].slice(0, 4));
+  }
+
+  // 내 위치 — 첨부 미리보기에 담지 않고 바로 전송 (DmRoom과 동일)
+  async function handleLocation(item: ChatMediaItem) {
+    if (sending || readOnly) return;
+    const { data, error } = await createClient().rpc("send_party_message", {
+      p_puzzle_id: puzzleId,
+      p_content: "",
+      p_media: [item],
+      p_reply_to: null,
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error || "위치를 보내지 못했어요");
+    }
   }
 
   const handleSend = useCallback(async (textOverride?: string) => {
@@ -873,15 +885,8 @@ export function PartyChatRoom({
               ))}
             </div>
           )}
-          <div className="flex items-end gap-2 px-3 py-3">
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="p-2 text-neutral-400 shrink-0"
-              aria-label="사진 첨부"
-            >
-              <ImageIcon className="w-5 h-5" />
-            </button>
-            <input ref={fileRef} type="file" accept="image/*,video/*" multiple hidden onChange={handleFilePick} />
+          <div className="relative flex items-end gap-2 px-3 py-3">
+            <ChatAttachMenu onFiles={handleFiles} onLocation={handleLocation} />
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}

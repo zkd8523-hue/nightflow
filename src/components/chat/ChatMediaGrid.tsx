@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { Play, Volume2, VolumeX } from "lucide-react";
+import { ExternalLink, MapPin, Play, Volume2, VolumeX } from "lucide-react";
 import type { ChatMediaItem } from "@/types/database";
 
 interface Props {
@@ -19,6 +19,20 @@ interface Props {
  */
 export function ChatMediaGrid({ items }: Props) {
   if (!items || items.length === 0) return null;
+
+  // 위치 공유는 사진 그리드와 성격이 달라 카드로 따로 렌더
+  const locations = items.filter((i) => i.type === "location");
+  const files = items.filter((i) => i.type !== "location");
+  if (locations.length > 0) {
+    return (
+      <>
+        {locations.map((loc, i) => (
+          <LocationCard key={`loc-${i}`} item={loc} />
+        ))}
+        {files.length > 0 && <ChatMediaGrid items={files} />}
+      </>
+    );
+  }
 
   const count = Math.min(items.length, 4);
 
@@ -193,5 +207,39 @@ function ChatVideo({ item }: { item: ChatMediaItem; aspect: CellProps["aspect"] 
         </div>
       )}
     </>
+  );
+}
+
+/**
+ * 위치 공유 카드 — 지도 썸네일 없이 주소 + 지도 앱 링크.
+ * (Static Map API를 새로 붙이지 않기로 한 결정. 링크는 카카오맵으로 연다)
+ */
+function LocationCard({ item }: { item: ChatMediaItem }) {
+  const href =
+    item.url ||
+    (item.lat != null && item.lng != null
+      ? `https://map.kakao.com/link/map/${encodeURIComponent(
+          item.label || "공유된 위치"
+        )},${item.lat},${item.lng}`
+      : undefined);
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-2 flex items-center gap-2.5 rounded-2xl border border-neutral-700 bg-neutral-900/60 px-3 py-2.5 hover:bg-neutral-900 transition-colors"
+    >
+      <span className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">
+        <MapPin className="w-4 h-4 text-red-400" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-black text-white">위치 공유</span>
+        <span className="block text-[12px] text-neutral-400 truncate">
+          {item.label ?? "지도에서 보기"}
+        </span>
+      </span>
+      <ExternalLink className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+    </a>
   );
 }

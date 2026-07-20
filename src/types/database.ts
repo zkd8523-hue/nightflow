@@ -1293,14 +1293,20 @@ export type ChatRoomCode =
 /** LIVE GPS 인증 지역 (채팅방과 별개) */
 export type VerifiableArea = 'gangnam' | 'hongdae' | 'itaewon';
 
-export type ChatMediaType = 'image' | 'video';
+export type ChatMediaType = 'image' | 'video' | 'location';
 
 export interface ChatMediaItem {
   type: ChatMediaType;
+  /** image/video: 파일 URL. location: 지도 앱으로 여는 링크 */
   url: string;
   width?: number;
   height?: number;
   duration?: number; // 초 (동영상)
+  // ── location 전용 (기존 media JSONB에 그대로 실림 — 마이그레이션 불필요) ──
+  lat?: number;
+  lng?: number;
+  /** 역지오코딩한 주소. 실패 시 없을 수 있음 */
+  label?: string;
 }
 
 export interface ChatMessage {
