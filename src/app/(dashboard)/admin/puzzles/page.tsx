@@ -212,7 +212,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
       : statusFilteredPuzzles;
 
   // 최신 제안 탭 데이터 — 해당 탭일 때만 로드 (list 탭에서 불필요한 조회 방지)
-  const { data: recentOffersRaw, error: recentOffersError } = tab === "recent"
+  const { data: recentOffersRaw, error: recentOffersError } = tab === "offers"
     ? await supabase
         .from("puzzle_offers")
         .select(`
@@ -230,21 +230,33 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
 
   // puzzles 정보 별도 조회 후 매핑
   const recentPuzzleIds = [...new Set((recentOffersRaw || []).map((o) => o.puzzle_id))];
-  const recentPuzzleMap = new Map<string, { notes: string | null; area: string; event_date: string }>();
+  const recentPuzzleMap = new Map<string, { notes: string | null; area: string; event_date: string; is_recruiting_party: boolean }>();
   if (recentPuzzleIds.length > 0) {
     const { data: recentPuzzlesData } = await supabase
       .from("puzzles")
-      .select("id, notes, area, event_date")
+      .select("id, notes, area, event_date, is_recruiting_party")
       .in("id", recentPuzzleIds);
     for (const p of recentPuzzlesData || []) {
-      recentPuzzleMap.set(p.id, { notes: p.notes, area: p.area, event_date: p.event_date });
+      recentPuzzleMap.set(p.id, {
+        notes: p.notes,
+        area: p.area,
+        event_date: p.event_date,
+        is_recruiting_party: !!p.is_recruiting_party,
+      });
     }
   }
 
-  const recentOffers = (recentOffersRaw || []).map((o) => ({
-    ...o,
-    puzzle: recentPuzzleMap.get(o.puzzle_id) || null,
-  }));
+  // 제안을 깃발/조각으로 분류 (조각 = is_recruiting_party, 전체 목록 탭과 동일 기준)
+  const recentOffersAll = (recentOffersRaw || []).map((o) => {
+    const puzzle = recentPuzzleMap.get(o.puzzle_id) || null;
+    return { ...o, puzzle, kind: puzzle?.is_recruiting_party ? "share" : "flag" };
+  });
+  const offerFlagCount = recentOffersAll.filter((o) => o.kind === "flag").length;
+  const offerShareCount = recentOffersAll.filter((o) => o.kind === "share").length;
+  const recentOffers =
+    kindFilter === "flag" || kindFilter === "share"
+      ? recentOffersAll.filter((o) => o.kind === kindFilter)
+      : recentOffersAll;
 
   const OFFER_STATUS_LABEL: Record<string, string> = {
     pending: "대기 중",
@@ -322,7 +334,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                   : "bg-neutral-800 text-neutral-400 border border-neutral-700"
               }`}
             >
-              최신 제안 {recentOffers ? `${recentOffers.length}건` : ""}
+              최신 제안 {tab === "offers" ? `${recentOffersAll.length}건` : ""}
             </button>
           </Link>
           <Link href="?tab=reports">
@@ -718,6 +730,26 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
         {/* 최신 제안 탭 */}
         {tab === "offers" && (
           <div className="space-y-3">
+            {/* 깃발/조각 토글 (전체 목록 탭과 동일 기준) */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[11px] text-neutral-500 font-bold mr-1">종류:</span>
+              <Link href="?tab=offers">
+                <button className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${!kindFilter ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 border border-neutral-700"}`}>
+                  전체 {recentOffersAll.length}
+                </button>
+              </Link>
+              <Link href="?tab=offers&kind=flag">
+                <button className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${kindFilter === "flag" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 border border-neutral-700"}`}>
+                  🚩 깃발 {offerFlagCount}
+                </button>
+              </Link>
+              <Link href="?tab=offers&kind=share">
+                <button className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${kindFilter === "share" ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 border border-neutral-700"}`}>
+                  🧩 조각 {offerShareCount}
+                </button>
+              </Link>
+            </div>
+
             {(recentOffers || []).length === 0 ? (
               <div className="text-center py-20 text-neutral-500">
                 <p>제안이 없습니다</p>
@@ -729,11 +761,21 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                 const club = offer.club as { name?: string } | null;
                 return (
                   <Card key={offer.id} className="bg-[#1C1C1E] border-neutral-800 p-4">
+                    <Link href={`/flags/${offer.puzzle_id}`} className="block active:opacity-70 transition-opacity">
                     <div className="flex items-start justify-between gap-2">
                       <div className="space-y-0.5 min-w-0">
-                        <p className="text-[13px] font-black text-white truncate">
-                          {puzzle?.notes || `${puzzle?.area} ${puzzle?.event_date ? formatDate(puzzle.event_date) : ""}`}
-                        </p>
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                            offer.kind === "share"
+                              ? "bg-purple-500/20 text-purple-300"
+                              : "bg-blue-500/20 text-blue-300"
+                          }`}>
+                            {offer.kind === "share" ? "🧩 조각" : "🚩 깃발"}
+                          </span>
+                          <p className="text-[13px] font-black text-white truncate">
+                            {puzzle?.notes || `${puzzle?.area} ${puzzle?.event_date ? formatDate(puzzle.event_date) : ""}`}
+                          </p>
+                        </div>
                         <p className="text-[12px] text-neutral-400">
                           {club?.name || "클럽 미정"} · {offer.table_type} · {offer.proposed_price.toLocaleString()}원
                         </p>
@@ -754,6 +796,7 @@ export default async function AdminPuzzlesPage({ searchParams }: PageProps) {
                         {offer.comment}
                       </p>
                     )}
+                    </Link>
                     <div className="flex justify-end mt-2">
                       <AdminDeleteOfferButton offerId={offer.id} />
                     </div>
