@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
 import { MyProfileSection } from "@/components/profile/MyProfileSection";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import dayjs from "dayjs";
 import type { Puzzle } from "@/types/database";
@@ -42,6 +43,8 @@ export default function ProfilePage() {
   const [flagOffersSeen, setFlagOffersSeen] = useState<Record<string, number>>({});
   // 합류(참여)한 조각 — 내가 만든 게 아니라 puzzle_members로 들어간 조각
   const [joinedShares, setJoinedShares] = useState<Puzzle[]>([]);
+  // MD 대시보드 '내 오퍼'와 동일한 깃발/조각 탭
+  const [myTab, setMyTab] = useState<"flag" | "share">("flag");
 
   useEffect(() => {
     if (!user) return;
@@ -150,6 +153,16 @@ export default function ProfilePage() {
     ...joinedShares.map((flag) => ({ flag, joined: true })),
   ];
 
+  // 탭이 되면서 한쪽만 보이므로, 첫 로드 때 내용이 있는 탭을 연다.
+  // (조각만 있는 유저가 "깃발이 없어요"만 보고 조각이 사라졌다고 오해하는 것 방지)
+  const tabAutoPicked = useRef(false);
+  useEffect(() => {
+    if (tabAutoPicked.current) return;
+    if (flagsOnly.length === 0 && allShares.length === 0) return;
+    tabAutoPicked.current = true;
+    if (flagsOnly.length === 0) setMyTab("share");
+  }, [flagsOnly.length, allShares.length]);
+
   // 로딩 타임아웃: 5초 후 강제 해제
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
@@ -214,11 +227,22 @@ export default function ProfilePage() {
         {user.role !== "md" && user.role !== "admin" && (
         <>
 
-        {/* 내 깃발 — 홈과 동일하게 카드를 페이지 배경 위에 올림(패널 없음) */}
+        {/* 내 깃발/조각 — MD 대시보드 '내 오퍼'와 동일한 탭 구조.
+            카드는 홈과 동일하게 페이지 배경 위에 올림(패널 없음) */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[15px] font-bold text-foreground">내 깃발</h2>
-            {cleanableFlagIds.length > 0 && (
+          <Tabs value={myTab} onValueChange={(v) => setMyTab(v as "flag" | "share")} className="w-full">
+            <TabsList className="w-full bg-card border border-border/50 h-11 p-1 rounded-xl mb-3">
+              <TabsTrigger value="flag" className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]">
+                ⛳ 깃발 {flagsOnly.length > 0 && <span className="ml-0.5 text-brand-amber">{flagsOnly.length}</span>}
+              </TabsTrigger>
+              <TabsTrigger value="share" className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]">
+                🧩 조각 {allShares.length > 0 && <span className="ml-0.5 text-money">{allShares.length}</span>}
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="flag" className="m-0">
+          {cleanableFlagIds.length > 0 && (
+            <div className="flex justify-end mb-2">
               <button
                 type="button"
                 onClick={() => handleBulkCleanup(cleanableFlagIds)}
@@ -226,8 +250,8 @@ export default function ProfilePage() {
               >
                 취소·만료 {cleanableFlagIds.length}개 정리
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {flagsOnly.length > 0 ? (
             <div className="flex flex-col gap-3">
@@ -262,8 +286,50 @@ export default function ProfilePage() {
               <p className="text-[13px] text-muted-foreground">아직 꽂은 깃발이 없어요</p>
             </div>
           )}
+            </TabsContent>
 
-          {/* 제재 정보 */}
+            <TabsContent value="share" className="m-0">
+          {cleanableShareIds.length > 0 && (
+            <div className="flex justify-end mb-2">
+              <button
+                type="button"
+                onClick={() => handleBulkCleanup(cleanableShareIds)}
+                className="text-[12px] font-bold text-muted-foreground hover:text-foreground/80 transition-colors"
+              >
+                취소·만료 {cleanableShareIds.length}개 정리
+              </button>
+            </div>
+          )}
+          {allShares.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {/* 모든 내 조각 — 홈과 동일한 카드. 종료는 상태 뱃지, 내가 만든 종료 조각만 삭제 */}
+              {allShares.map(({ flag, joined }) => {
+                const active = isActiveStatus(flag.status);
+                const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-muted-foreground" };
+                return (
+                  <div key={flag.id} className={active ? "" : "opacity-70"}>
+                    <PuzzleCard
+                      puzzle={flag}
+                      userRole="user"
+                      isLeader={!joined}
+                      isMember={joined}
+                      hideNewBadge
+                      myFlagStatus={active ? undefined : st}
+                      onHide={active || joined ? undefined : () => handleHideFlag(flag.id)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6">
+              <p className="text-[13px] text-muted-foreground">아직 올린 조각이 없어요</p>
+            </div>
+          )}
+            </TabsContent>
+          </Tabs>
+
+          {/* 제재 정보 — 깃발/조각 공통이라 탭 밖에 둔다 */}
           {((user.warning_count || 0) > 0 || (user.strike_count || 0) > 0) && (
             <Link
               href="/my-penalties"
@@ -290,48 +356,6 @@ export default function ProfilePage() {
               <p className="text-[12px] text-brand-amber">
                 정지 해제: {dayjs(user.blocked_until).format("YYYY.MM.DD HH:mm")}
               </p>
-            </div>
-          )}
-        </div>
-
-        {/* 내 조각 — 홈과 동일하게 카드를 페이지 배경 위에 올림(패널 없음) */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[15px] font-bold text-foreground">내 조각</h2>
-            {cleanableShareIds.length > 0 && (
-              <button
-                type="button"
-                onClick={() => handleBulkCleanup(cleanableShareIds)}
-                className="text-[12px] font-bold text-muted-foreground hover:text-foreground/80 transition-colors"
-              >
-                취소·만료 {cleanableShareIds.length}개 정리
-              </button>
-            )}
-          </div>
-          {allShares.length > 0 ? (
-            <div className="flex flex-col gap-3">
-              {/* 모든 내 조각 — 홈과 동일한 카드. 종료는 상태 뱃지, 내가 만든 종료 조각만 삭제 */}
-              {allShares.map(({ flag, joined }) => {
-                const active = isActiveStatus(flag.status);
-                const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-muted-foreground" };
-                return (
-                  <div key={flag.id} className={active ? "" : "opacity-70"}>
-                    <PuzzleCard
-                      puzzle={flag}
-                      userRole="user"
-                      isLeader={!joined}
-                      isMember={joined}
-                      hideNewBadge
-                      myFlagStatus={active ? undefined : st}
-                      onHide={active || joined ? undefined : () => handleHideFlag(flag.id)}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-6">
-              <p className="text-[13px] text-muted-foreground">아직 올린 조각이 없어요</p>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import type { Puzzle } from "@/types/database";
 import { getClubEventDate } from "@/lib/utils/date";
+import { DATE_RANGE_SEPARATOR } from "@/lib/utils/auctionFilters";
 
 // Phase 1: 퍼즐 리스트 4종 필터
 
@@ -16,7 +17,7 @@ export type SeatFilter = "all" | "1" | "2" | "3+" | "full";
 // 날짜 필터
 // - "all" | "this_weekend" | "next_weekend"
 // - 단일 날짜: "YYYY-MM-DD"
-// - 범위: "YYYY-MM-DD~YYYY-MM-DD"
+// - 범위: "YYYY-MM-DD..YYYY-MM-DD" (구형 "~" 구분자도 계속 허용)
 export type DateFilter = "all" | "this_weekend" | "next_weekend" | string;
 
 export const NBI_BANDS: Record<Exclude<NbiFilter, "all">, { label: string; min: number; max: number }> = {
@@ -81,9 +82,11 @@ export function matchesDate(puzzle: Puzzle, filter: DateFilter): boolean {
       return date.isSame(fri, "day") || date.isSame(sat, "day");
     }
     default: {
-      // 범위: "YYYY-MM-DD~YYYY-MM-DD"
-      if (filter.includes("~")) {
-        const [from, to] = filter.split("~");
+      // 범위. DateFilterCalendar가 내보내는 ".." 구분자를 쓰고,
+      // 예전 "~" 형식(북마크/공유 링크에 남아있을 수 있음)도 계속 받아준다.
+      const sep = filter.includes(DATE_RANGE_SEPARATOR) ? DATE_RANGE_SEPARATOR : filter.includes("~") ? "~" : null;
+      if (sep) {
+        const [from, to] = filter.split(sep);
         const dateStr = date.format("YYYY-MM-DD");
         return dateStr >= from && dateStr <= to;
       }

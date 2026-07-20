@@ -735,6 +735,29 @@ export function PuzzleDetailClient({
     setShowAcceptSheet(true);
   };
 
+  // 조각: 카드의 "무료 상담" = 깃발의 1:1 채팅과 동일한 자리의 CTA.
+  // 조각은 단체채팅이 상담 채널이라 해당 MD를 단체방에 초대한 뒤 그 방으로 이동시킨다.
+  const handleInviteOffer = async (offerId: string) => {
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.rpc("invite_md_to_party", {
+        p_puzzle_id: puzzle.id,
+        p_offer_id: offerId,
+      });
+      if (error) throw error;
+      if (!data?.success) {
+        toast.error(data?.error || t("초대에 실패했습니다", "Failed to invite"));
+        return;
+      }
+      trackEvent('puzzle_party_md_invited', { puzzle_id: puzzle.id, offer_id: offerId });
+      router.push(`/party/${puzzle.id}`);
+    } catch {
+      toast.error(t("초대에 실패했습니다", "Failed to invite"));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleAcceptConfirm = async (): Promise<boolean> => {
     if (!pendingAcceptOfferId) return false;
     setActionLoading(true);
@@ -1692,6 +1715,7 @@ export function PuzzleDetailClient({
                               isOpen={canAcceptOffers}
                               actionLoading={actionLoading}
                               onAccept={handleAcceptOffer}
+                              onInvite={handleInviteOffer}
                               onReject={handleRejectOffer}
                               onWithdrawn={loadOffers}
                               onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}

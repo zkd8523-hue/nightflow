@@ -6,11 +6,9 @@ import { Plus, SlidersHorizontal, ChevronDown, ChevronUp, BadgeCheck } from "luc
 import { PuzzleCard } from "./PuzzleCard";
 import { PuzzleJoinSheet } from "./PuzzleJoinSheet";
 import { OfferSheet } from "./OfferSheet";
-import { DateFilterChips } from "@/components/auctions/filters/DateFilterChips";
+import { DateFilterCalendar } from "@/components/auctions/filters/DateFilterCalendar";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Calendar } from "@/components/ui/calendar";
 import dayjs from "dayjs";
-import type { DateRange } from "react-day-picker";
 import { createClient } from "@/lib/supabase/client";
 import { trackEvent } from "@/lib/analytics/events";
 import type { Puzzle } from "@/types/database";
@@ -335,16 +333,17 @@ export function PuzzleList({
               value={seatFilter}
               onChange={(v) => setSeatFilter(v as SeatFilter)}
             />
-            {eventDates.length > 1 && (
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-muted-foreground whitespace-nowrap flex-shrink-0">날짜</span>
-                <DateFilterChips
-                  eventDates={eventDates}
-                  value={dateFilter}
-                  onChange={(v) => setDateFilter(v)}
-                />
-              </div>
-            )}
+            <div className="space-y-2">
+              <p className="text-[12px] font-bold text-muted-foreground px-1">날짜</p>
+              {/* 경매 필터와 동일한 달력. rangeMode: 시작일/종료일 두 번 탭으로 기간 선택,
+                  한 번만 탭하면 그 날짜 하루만 필터된다. */}
+              <DateFilterCalendar
+                eventDates={eventDates}
+                value={dateFilter}
+                onChange={(v) => setDateFilter(v)}
+                rangeMode
+              />
+            </div>
             {nbiFilter === "value" && (
               <p className="text-[11px] text-brand-amber dark:text-brand-amber/80 px-1">
                 💡 가성비 ({NBI_BANDS.value.label}) 퍼즐엔 방장수고비를 받지 않아요.

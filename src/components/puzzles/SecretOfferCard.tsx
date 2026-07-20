@@ -25,6 +25,8 @@ interface SecretOfferCardProps {
   actionLoading: boolean;
   onAccept: (offerId: string) => void;
   onReject: (offerId: string) => void;
+  /** 조각: "무료 상담" 클릭 시 해당 MD를 단체채팅에 초대 */
+  onInvite?: (offerId: string) => void;
   onWithdrawn: () => void;
   onAdminEdit?: (offer: PuzzleOffer) => void;
   lang?: Lang;
@@ -46,6 +48,7 @@ export function SecretOfferCard({
   actionLoading,
   onAccept,
   onReject,
+  onInvite,
   onWithdrawn,
   onAdminEdit,
   lang = "ko",
@@ -66,7 +69,6 @@ export function SecretOfferCard({
     hideClubHeader &&
     isOpen &&
     offer.status === "pending" &&
-    !isRecruitingParty &&
     !offer.leader_chat_started_at;
 
   return (
@@ -217,8 +219,35 @@ export function SecretOfferCard({
           }
         >
           {isRecruitingParty ? (
-            /* 조각: 카드엔 액션 없음(보기 전용). 상담·초대·수락은 단체채팅에서 진행. */
-            null
+            /* 조각: 상담·수락은 단체채팅에서 진행 — CTA는 해당 MD를 단체채팅에 초대하는 것 */
+            hideClubHeader ? (
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[11px] text-muted-foreground font-medium" suppressHydrationWarning>
+                  {formatRelativeTime(offer.created_at)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onInvite?.(offer.id)}
+                  disabled={actionLoading}
+                  className="inline-flex items-center gap-1.5 rounded-full px-4 h-9 bg-gradient-to-b from-amber-400 to-amber-500 text-black font-black text-[13px] shadow-[0_0_16px_-2px_rgba(245,158,11,0.6)] hover:from-amber-300 hover:to-amber-400 active:scale-[0.97] transition-all disabled:opacity-50"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {t("무료 상담", "Free chat")}
+                </button>
+              </div>
+            ) : (
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => onInvite?.(offer.id)}
+                  disabled={actionLoading}
+                  className="flex items-center justify-center gap-1.5 w-full h-11 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-[13px] disabled:opacity-50"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  {t("무료 상담하기", "Free chat")}
+                </button>
+              </div>
+            )
           ) : offer.leader_chat_started_at ? (
             isAdmin ? (
               /* admin 모니터링: MD 답장 여부로 상태 구분 + 상담 건수/마지막 대화(Migration 417) */
