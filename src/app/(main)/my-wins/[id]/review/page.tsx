@@ -91,7 +91,7 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
@@ -101,15 +101,15 @@ export default function ReviewPage() {
   if (submitted || existingReview) {
     const displayRating = existingReview?.rating || rating;
     return (
-      <div className="min-h-screen bg-[#0A0A0A] pt-16 pb-32">
+      <div className="min-h-screen bg-background pt-16 pb-32">
         <div className="max-w-lg mx-auto px-4">
           <div className="py-24 text-center space-y-6">
             <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-10 h-10 text-green-500" />
+              <CheckCircle2 className="w-10 h-10 text-money" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-black text-white">리뷰 완료</h2>
-              <p className="text-neutral-500 font-medium">
+              <h2 className="text-2xl font-black text-foreground">리뷰 완료</h2>
+              <p className="text-muted-foreground font-medium">
                 소중한 리뷰 감사합니다!
               </p>
             </div>
@@ -117,18 +117,18 @@ export default function ReviewPage() {
               {[1, 2, 3, 4, 5].map((s) => (
                 <Star
                   key={s}
-                  className={`w-8 h-8 ${s <= displayRating ? "text-yellow-400 fill-yellow-400" : "text-neutral-700"}`}
+                  className={`w-8 h-8 ${s <= displayRating ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`}
                 />
               ))}
             </div>
             {(existingReview?.comment || comment) && (
-              <p className="text-neutral-400 text-sm italic">
+              <p className="text-muted-foreground text-sm italic">
                 &ldquo;{existingReview?.comment || comment}&rdquo;
               </p>
             )}
             <Button
               onClick={() => router.push("/my-wins")}
-              className="bg-white text-black font-black rounded-xl px-8 h-12"
+              className="bg-inverse text-inverse-foreground font-black rounded-xl px-8 h-12"
             >
               돌아가기
             </Button>
@@ -141,10 +141,10 @@ export default function ReviewPage() {
   // confirmed가 아닌 경우
   if (auction.status !== "confirmed") {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] pt-16 pb-32">
+      <div className="min-h-screen bg-background pt-16 pb-32">
         <div className="max-w-lg mx-auto px-4 py-24 text-center space-y-4">
-          <p className="text-neutral-500 font-medium">방문 확인된 경매만 리뷰를 작성할 수 있습니다.</p>
-          <Button onClick={() => router.back()} variant="link" className="text-neutral-400">
+          <p className="text-muted-foreground font-medium">방문 확인된 경매만 리뷰를 작성할 수 있습니다.</p>
+          <Button onClick={() => router.back()} variant="link" className="text-muted-foreground">
             돌아가기
           </Button>
         </div>
@@ -153,24 +153,24 @@ export default function ReviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pt-16 pb-32">
+    <div className="min-h-screen bg-background pt-16 pb-32">
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
         <header className="py-6">
-          <button onClick={() => router.back()} className="flex items-center gap-2 text-neutral-500 mb-4">
+          <button onClick={() => router.back()} className="flex items-center gap-2 text-muted-foreground mb-4">
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm font-bold">뒤로</span>
           </button>
-          <h1 className="text-2xl font-black text-white tracking-tight">경험은 어떠셨나요?</h1>
-          <p className="text-neutral-500 font-medium mt-1">
+          <h1 className="text-2xl font-black text-foreground tracking-tight">경험은 어떠셨나요?</h1>
+          <p className="text-muted-foreground font-medium mt-1">
             {auction.club?.name} 방문 리뷰
           </p>
         </header>
 
-        <Card className="bg-[#1C1C1E] border-neutral-800 p-6 space-y-8">
+        <Card className="bg-card border-border p-6 space-y-8">
           {/* Star Rating */}
           <div className="text-center space-y-4">
-            <p className="text-neutral-400 text-sm font-bold">파트너 서비스를 평가해주세요</p>
+            <p className="text-muted-foreground text-sm font-bold">파트너 서비스를 평가해주세요</p>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((s) => (
                 <button
@@ -184,7 +184,7 @@ export default function ReviewPage() {
                     className={`w-10 h-10 transition-colors ${
                       s <= (hoverRating || rating)
                         ? "text-yellow-400 fill-yellow-400"
-                        : "text-neutral-700"
+                        : "text-muted-foreground"
                     }`}
                   />
                 </button>
@@ -199,8 +199,8 @@ export default function ReviewPage() {
 
           {/* Comment */}
           <div className="space-y-2">
-            <label className="text-neutral-400 text-sm font-bold">
-              한줄 코멘트 <span className="text-neutral-600">(선택)</span>
+            <label className="text-muted-foreground text-sm font-bold">
+              한줄 코멘트 <span className="text-muted-foreground">(선택)</span>
             </label>
             <textarea
               value={comment}
@@ -208,16 +208,16 @@ export default function ReviewPage() {
               placeholder="자리 좋았어요, 파트너 친절했어요..."
               maxLength={200}
               rows={3}
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-white text-sm placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
+              className="w-full bg-card border border-border rounded-xl p-4 text-foreground text-sm placeholder:text-muted-foreground resize-none focus:outline-none focus:border-border"
             />
-            <p className="text-right text-neutral-600 text-xs">{comment.length}/200</p>
+            <p className="text-right text-muted-foreground text-xs">{comment.length}/200</p>
           </div>
 
           {/* Submit */}
           <Button
             onClick={handleSubmit}
             disabled={rating === 0 || submitting}
-            className="w-full h-14 bg-white text-black font-black text-base rounded-xl disabled:opacity-30"
+            className="w-full h-14 bg-inverse text-inverse-foreground font-black text-base rounded-xl disabled:opacity-30"
           >
             {submitting ? "제출 중..." : "리뷰 남기기"}
           </Button>

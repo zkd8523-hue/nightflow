@@ -43,11 +43,11 @@ export function ClubShotSection({ clubId }: Props) {
   if (shots.length === 0) return null;
 
   return (
-    <section className="px-3 py-3 border-b border-neutral-900 bg-[#0A0A0A]">
+    <section className="px-3 py-3 border-b border-border bg-background">
       <div className="flex items-center gap-1.5 mb-2 px-1">
         <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />
-        <span className="text-[12px] font-black text-white">LIVE</span>
-        <span className="text-[11px] text-neutral-500">
+        <span className="text-[12px] font-black text-foreground">LIVE</span>
+        <span className="text-[11px] text-muted-foreground">
           — 지금 이 클럽의 분위기
         </span>
       </div>
@@ -69,11 +69,11 @@ export function ClubShotSection({ clubId }: Props) {
               <div
                 className={`relative w-[72px] h-[72px] rounded-full p-[2px] ${
                   viewed
-                    ? "bg-neutral-700"
+                    ? "bg-muted"
                     : "bg-gradient-to-br from-red-500 via-pink-500 to-amber-500"
                 }`}
               >
-                <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0A0A0A]">
+                <div className="relative w-full h-full rounded-full overflow-hidden bg-card border-2 border-background">
                   {shot.media_type === "image" ? (
                     <Image
                       src={shot.media_url}
@@ -99,7 +99,7 @@ export function ClubShotSection({ clubId }: Props) {
               {/* 업로드 시간 */}
               <span
                 className={`text-[10px] truncate w-full text-center font-bold ${
-                  viewed ? "text-neutral-600" : "text-neutral-400"
+                  viewed ? "text-muted-foreground" : "text-muted-foreground"
                 }`}
               >
                 {agoText(shot.created_at)}

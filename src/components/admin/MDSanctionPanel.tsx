@@ -46,9 +46,9 @@ const ACTION_LABELS: Record<MDSanctionAction, string> = {
 };
 
 const ACTION_COLORS: Record<MDSanctionAction, string> = {
-  warning: "text-amber-500",
+  warning: "text-brand-amber",
   suspend: "text-red-500",
-  unsuspend: "text-green-500",
+  unsuspend: "text-money",
   revoke: "text-red-600",
 };
 
@@ -122,10 +122,10 @@ export function MDSanctionPanel({
       {/* 현재 상태 배너 */}
       {isApproved && (
         <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-4 flex items-center gap-3">
-          <ShieldCheck className="w-5 h-5 text-green-500 shrink-0" />
+          <ShieldCheck className="w-5 h-5 text-money shrink-0" />
           <div>
-            <p className="text-sm font-bold text-green-500">정상 활동 중</p>
-            <p className="text-xs text-green-500/70">현재 제재 없이 정상 활동 중입니다.</p>
+            <p className="text-sm font-bold text-money">정상 활동 중</p>
+            <p className="text-xs text-money dark:text-money/70">현재 제재 없이 정상 활동 중입니다.</p>
           </div>
         </div>
       )}
@@ -148,11 +148,11 @@ export function MDSanctionPanel({
       )}
 
       {isRevoked && (
-        <div className="bg-neutral-500/5 border border-neutral-500/20 rounded-2xl p-4 flex items-center gap-3">
-          <ShieldOff className="w-5 h-5 text-neutral-500 shrink-0" />
+        <div className="bg-muted/5 border border-border/20 rounded-2xl p-4 flex items-center gap-3">
+          <ShieldOff className="w-5 h-5 text-muted-foreground shrink-0" />
           <div>
-            <p className="text-sm font-bold text-neutral-400">자격 박탈됨</p>
-            <p className="text-xs text-neutral-500">파트너 자격이 영구적으로 박탈되었습니다. 일반 유저로 전환되었습니다.</p>
+            <p className="text-sm font-bold text-muted-foreground">자격 박탈됨</p>
+            <p className="text-xs text-muted-foreground">파트너 자격이 영구적으로 박탈되었습니다. 일반 유저로 전환되었습니다.</p>
           </div>
         </div>
       )}
@@ -164,7 +164,7 @@ export function MDSanctionPanel({
             <Button
               variant="outline"
               onClick={() => openDialog("warning")}
-              className="border-amber-500/30 text-amber-500 hover:bg-amber-500/10 rounded-xl h-10 px-4 font-bold"
+              className="border-amber-500/30 text-brand-amber hover:bg-amber-500/10 rounded-xl h-10 px-4 font-bold"
             >
               <AlertTriangle className="w-4 h-4 mr-1.5" />
               경고
@@ -186,7 +186,7 @@ export function MDSanctionPanel({
             <Button
               variant="outline"
               onClick={() => openDialog("unsuspend")}
-              className="border-green-500/30 text-green-500 hover:bg-green-500/10 rounded-xl h-10 px-4 font-bold"
+              className="border-green-500/30 text-money hover:bg-green-500/10 rounded-xl h-10 px-4 font-bold"
             >
               <Undo2 className="w-4 h-4 mr-1.5" />
               정지 해제
@@ -208,10 +208,10 @@ export function MDSanctionPanel({
       {/* 제재 이력 */}
       {sanctions.length > 0 && (
         <div className="space-y-2">
-          <p className="text-sm font-bold text-neutral-400">제재 이력</p>
+          <p className="text-sm font-bold text-muted-foreground">제재 이력</p>
           <div className="space-y-2">
             {sanctions.map((s) => (
-              <Card key={s.id} className="bg-[#1C1C1E] border-neutral-800 p-3">
+              <Card key={s.id} className="bg-card border-border p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export function MDSanctionPanel({
                         {ACTION_LABELS[s.action]}
                       </span>
                       {s.duration_days && (
-                        <span className="text-[10px] text-neutral-600 font-bold">
+                        <span className="text-[10px] text-muted-foreground font-bold">
                           {s.duration_days}일
                         </span>
                       )}
@@ -229,9 +229,9 @@ export function MDSanctionPanel({
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-neutral-300 leading-relaxed">{s.reason}</p>
+                    <p className="text-xs text-foreground/80 leading-relaxed">{s.reason}</p>
                   </div>
-                  <span className="text-[10px] text-neutral-600 shrink-0">
+                  <span className="text-[10px] text-muted-foreground shrink-0">
                     {dayjs(s.created_at).format("YY.MM.DD HH:mm")}
                   </span>
                 </div>
@@ -248,13 +248,13 @@ export function MDSanctionPanel({
           setReason("");
         }
       }}>
-        <DialogContent className="bg-[#1C1C1E] border-neutral-800 text-white" showCloseButton={false}>
+        <DialogContent className="bg-card border-border text-foreground" showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle className="text-white font-black text-xl">
+            <DialogTitle className="text-foreground font-black text-xl">
               {dialogAction && ACTION_LABELS[dialogAction]}
             </DialogTitle>
-            <DialogDescription className="text-neutral-400">
-              <span className="text-white font-bold">{mdName}</span> 파트너에게{" "}
+            <DialogDescription className="text-muted-foreground">
+              <span className="text-foreground font-bold">{mdName}</span> 파트너에게{" "}
               {dialogAction === "warning" && "경고를 발송합니다."}
               {dialogAction === "suspend" && "활동 정지를 적용합니다. 진행중인 경매가 취소됩니다."}
               {dialogAction === "unsuspend" && "활동 정지를 해제합니다."}
@@ -265,7 +265,7 @@ export function MDSanctionPanel({
           {/* 정지 기간 선택 */}
           {dialogAction === "suspend" && (
             <div className="space-y-2">
-              <p className="text-xs text-neutral-500 font-bold">정지 기간</p>
+              <p className="text-xs text-muted-foreground font-bold">정지 기간</p>
               <div className="flex gap-2">
                 {[7, 30, 90].map((d) => (
                   <button
@@ -274,7 +274,7 @@ export function MDSanctionPanel({
                     className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${
                       durationDays === d
                         ? "bg-red-500 text-white"
-                        : "bg-neutral-900 text-neutral-400 border border-neutral-800 hover:border-neutral-600"
+                        : "bg-card text-muted-foreground border border-border hover:border-border"
                     }`}
                   >
                     {d}일
@@ -300,14 +300,14 @@ export function MDSanctionPanel({
             value={reason}
             onChange={(e) => setReason(e.target.value)}
             placeholder="제재 사유를 입력해주세요"
-            className="w-full h-28 bg-neutral-900 border border-neutral-800 rounded-xl p-4 text-sm text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
+            className="w-full h-28 bg-card border border-border rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-border"
           />
 
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
               onClick={() => { setDialogAction(null); setReason(""); }}
-              className="border-neutral-800 text-neutral-400 hover:bg-neutral-900 rounded-xl"
+              className="border-border text-muted-foreground hover:bg-card rounded-xl"
             >
               취소
             </Button>

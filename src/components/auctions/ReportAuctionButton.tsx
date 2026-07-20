@@ -90,16 +90,16 @@ export function ReportAuctionButton({ auctionId }: ReportAuctionButtonProps) {
         onClick={() => setOpen(true)}
         className="flex items-center gap-1.5 py-3 group mx-auto"
       >
-        <AlertTriangle className="w-3 h-3 text-neutral-600 group-hover:text-neutral-400 transition-colors" />
-        <span className="text-[11px] text-neutral-600 font-medium group-hover:text-neutral-400 transition-colors">
+        <AlertTriangle className="w-3 h-3 text-muted-foreground group-hover:text-muted-foreground transition-colors" />
+        <span className="text-[11px] text-muted-foreground font-medium group-hover:text-muted-foreground transition-colors">
           이 게시글 신고
         </span>
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-8">
+        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-8">
           <SheetHeader className="pb-2">
-            <SheetTitle className="text-white text-[16px]">게시글 신고</SheetTitle>
+            <SheetTitle className="text-foreground text-[16px]">게시글 신고</SheetTitle>
           </SheetHeader>
 
           <div className="space-y-4 mt-4">
@@ -111,13 +111,13 @@ export function ReportAuctionButton({ auctionId }: ReportAuctionButtonProps) {
                   className={`w-full text-left p-3.5 rounded-xl border transition-colors ${
                     reason === r.value
                       ? "border-red-500/50 bg-red-500/10"
-                      : "border-neutral-800 bg-[#0A0A0A] hover:border-neutral-700"
+                      : "border-border bg-background hover:border-border"
                   }`}
                 >
-                  <p className={`text-[14px] font-bold ${reason === r.value ? "text-red-400" : "text-white"}`}>
+                  <p className={`text-[14px] font-bold ${reason === r.value ? "text-red-400" : "text-foreground"}`}>
                     {r.label}
                   </p>
-                  <p className="text-[12px] text-neutral-500 mt-0.5">{r.desc}</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">{r.desc}</p>
                 </button>
               ))}
             </div>
@@ -126,7 +126,7 @@ export function ReportAuctionButton({ auctionId }: ReportAuctionButtonProps) {
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               placeholder={reason === "other" ? "신고 사유를 입력해주세요 (필수)" : "추가 설명 (선택)"}
-              className="w-full h-20 bg-[#0A0A0A] border border-neutral-800 rounded-xl p-3 text-[13px] text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
+              className="w-full h-20 bg-background border border-border rounded-xl p-3 text-[13px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-border"
               maxLength={500}
             />
 
@@ -134,7 +134,7 @@ export function ReportAuctionButton({ auctionId }: ReportAuctionButtonProps) {
               <Button
                 variant="outline"
                 onClick={() => { setOpen(false); setReason(""); setMemo(""); }}
-                className="h-12 rounded-xl border-neutral-800 text-neutral-400 font-bold"
+                className="h-12 rounded-xl border-border text-muted-foreground font-bold"
               >
                 취소
               </Button>

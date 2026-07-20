@@ -98,15 +98,15 @@ export default async function EditAuctionPage({ params }: EditAuctionPageProps) 
             : "등록된 경매 내용을 수정합니다.";
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] pb-20">
+        <div className="min-h-screen bg-background pb-20">
             <div className="max-w-lg mx-auto p-6 pt-12">
                 <div className="flex items-center gap-4 mb-8">
-                    <Link href="/md/dashboard" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800">
-                        <ChevronLeft className="w-5 h-5 text-neutral-400" />
+                    <Link href="/md/dashboard" className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border">
+                        <ChevronLeft className="w-5 h-5 text-muted-foreground" />
                     </Link>
                     <div className="space-y-0.5">
-                        <h1 className="text-2xl font-black text-white tracking-tight">{editTitle}</h1>
-                        <p className="text-neutral-500 text-sm font-medium">{editDesc}</p>
+                        <h1 className="text-2xl font-black text-foreground tracking-tight">{editTitle}</h1>
+                        <p className="text-muted-foreground text-sm font-medium">{editDesc}</p>
                     </div>
                 </div>
 

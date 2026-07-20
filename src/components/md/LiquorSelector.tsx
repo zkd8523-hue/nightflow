@@ -85,21 +85,21 @@ export function LiquorSelector({ selected, onSelect, disabled, compact, optional
             }
           }}
           placeholder="예: 돔페3 (입력 후 엔터)"
-          className="bg-neutral-900 border-neutral-800 h-11 text-white text-[13px] flex-1"
+          className="bg-card border-border h-11 text-foreground text-[13px] flex-1"
         />
         <Button
           type="button"
           onClick={handleCustomAdd}
           disabled={!customBrand.trim()}
-          className="h-11 px-4 bg-white text-black hover:bg-neutral-200 font-bold"
+          className="h-11 px-4 bg-inverse text-inverse-foreground hover:opacity-90 font-bold"
         >
           <Plus className="w-4 h-4" />
         </Button>
       </div>
-      <p className="text-[10px] text-neutral-600">하나씩 입력 후 엔터 (쉼표로 여러 개 한 번에 가능)</p>
+      <p className="text-[10px] text-muted-foreground">하나씩 입력 후 엔터 (쉼표로 여러 개 한 번에 가능)</p>
 
       {selected.length > 0 && (
-        <div className="pt-3 border-t border-neutral-800/50 space-y-2">
+        <div className="pt-3 border-t border-border/50 space-y-2">
           <p className="text-purple-400 text-[10px] font-bold">선택된 주류 ({selected.length}개)</p>
           <div className="flex flex-wrap gap-2">
             {selected.map((item) => (
@@ -111,7 +111,7 @@ export function LiquorSelector({ selected, onSelect, disabled, compact, optional
                 <button
                   type="button"
                   onClick={() => removeLiquor(item)}
-                  className="hover:text-white transition-colors"
+                  className="hover:text-foreground transition-colors"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -130,7 +130,7 @@ export function LiquorSelector({ selected, onSelect, disabled, compact, optional
   if (optional) {
     return (
       <div className={`space-y-2 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
-        <p className="text-[12px] text-neutral-400 font-medium">주류 (선택)</p>
+        <p className="text-[12px] text-muted-foreground font-medium">주류 (선택)</p>
         {inner}
       </div>
     );
@@ -139,15 +139,15 @@ export function LiquorSelector({ selected, onSelect, disabled, compact, optional
   // 일반 경매(주류 필수): 기존 강조 헤더 + 카드 박스 유지.
   return (
     <section className={`space-y-4 ${disabled ? "opacity-50 pointer-events-none" : ""}`}>
-      <div className="flex items-center gap-1.5 text-[11px] font-bold text-neutral-500 tracking-wide mb-2">
+      <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground tracking-wide mb-2">
         <Wine className="w-3 h-3 text-purple-400/70" />
         <span>주류</span>
         <span className="text-red-500">*</span>
         {(requiredHint ?? "최소 1병 이상") && (
-          <span className="text-neutral-600 font-medium">{requiredHint ?? "최소 1병 이상"}</span>
+          <span className="text-muted-foreground font-medium">{requiredHint ?? "최소 1병 이상"}</span>
         )}
       </div>
-      <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5">
+      <div className="bg-card border border-border rounded-2xl p-5">
         {inner}
       </div>
     </section>

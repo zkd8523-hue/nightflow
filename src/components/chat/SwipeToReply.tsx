@@ -27,7 +27,7 @@ export function SwipeToReply({ isMine, onReply, onMoveCancel, children }: Props)
           }`}
           style={{ opacity: Math.min(1, Math.abs(swipe.dragX) / 48) }}
         >
-          <CornerDownRight className="w-4 h-4 text-neutral-400" />
+          <CornerDownRight className="w-4 h-4 text-muted-foreground" />
         </span>
       )}
       <div {...swipe.handlers} style={swipe.style}>

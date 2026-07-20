@@ -89,16 +89,16 @@ export function PuzzlePiece({
         : "bg-blue-500/80";
 
   const emptyClass = isFemale
-    ? "bg-neutral-800/50 border border-dashed border-pink-500/40"
+    ? "bg-muted/50 border border-dashed border-pink-500/40"
     : gender === 'male'
-      ? "bg-neutral-800/50 border border-dashed border-blue-500/40"
+      ? "bg-muted/50 border border-dashed border-blue-500/40"
       : isNeutral
-        ? "bg-neutral-800/50 border border-dashed border-green-500/40"
-        : "bg-neutral-800/50 border border-dashed border-neutral-600";
+        ? "bg-muted/50 border border-dashed border-green-500/40"
+        : "bg-muted/50 border border-dashed border-border";
 
   return (
     <div className={`relative ${size} rounded-lg flex items-center justify-center transition-all ${filled ? filledClass : emptyClass}`}>
-      <svg viewBox="0 0 24 24" className={`${iconSize} ${filled ? "text-black/40" : isFemale ? "text-pink-500/40" : gender === 'male' ? "text-blue-500/40" : "text-green-500/40"}`}>
+      <svg viewBox="0 0 24 24" className={`${iconSize} ${filled ? "text-black/40" : isFemale ? "text-pink-500/40" : gender === 'male' ? "text-blue-500/40" : "text-money dark:text-money/40"}`}>
         <path fill="currentColor" d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-2 .9-2 2v3.8h1.5c1.38 0 2.5 1.12 2.5 2.5S4.88 15.8 3.5 15.8H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/>
       </svg>
     </div>
@@ -195,7 +195,7 @@ export const PuzzleCard = memo(function PuzzleCard({
     <button
       onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShareOpen(true); }}
       aria-label="공유"
-      className="w-7 h-7 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white flex items-center justify-center shrink-0 transition-colors active:scale-[0.97]"
+      className="w-7 h-7 rounded-full bg-muted hover:bg-muted text-foreground/80 hover:text-foreground flex items-center justify-center shrink-0 transition-colors active:scale-[0.97]"
     >
       <Share2 className="w-3.5 h-3.5" />
     </button>
@@ -249,7 +249,7 @@ export const PuzzleCard = memo(function PuzzleCard({
   // 🔥 + 숫자 강조는 살리되 문구는 기존 그대로. 0개면 표시하지 않음.
   const userOfferBadge =
     offerCount > 0 ? (
-      <span className="text-[12px] font-bold text-amber-400 [text-shadow:0_0_5px_rgba(251,191,36,0.25)]">
+      <span className="text-[12px] font-bold text-brand-amber [text-shadow:0_0_5px_rgba(251,191,36,0.25)]">
         {/* 3개 이상 = 경쟁이 붙은 핫한 깃발일 때만 🔥로 강조 */}
         {offerCount >= 3 && <span aria-hidden>🔥 </span>}
         오퍼 <span className="text-[14px] font-black tabular-nums">{offerCount}</span>개 중에서 고르는중
@@ -261,13 +261,13 @@ export const PuzzleCard = memo(function PuzzleCard({
 
   return (
     <div
-      className={`relative bg-[#1C1C1E] rounded-xl p-3 flex flex-col gap-2 ${isCardClickable ? "cursor-pointer active:scale-[0.98] transition-all" : ""}`}
+      className={`relative bg-card border border-border rounded-xl p-3 flex flex-col gap-2 ${isCardClickable ? "cursor-pointer active:scale-[0.98] transition-all" : ""}`}
       onClick={isCardClickable ? () => router.push(`/flags/${puzzle.id}`) : undefined}
     >
       {shareSheet}
       {isNew && !hideNewBadge && !isSelecting && (
         <div
-          className="animate-new-badge pointer-events-none absolute -top-2 -right-1 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest select-none shadow-lg shadow-rose-900/40"
+          className="animate-new-badge pointer-events-none absolute -top-2 -right-1 z-10 px-2.5 py-1 rounded-full bg-gradient-to-br from-red-500 to-rose-600 text-foreground text-[10px] font-black tracking-widest select-none shadow-lg shadow-rose-900/40"
           aria-label="6시간 이내 등록"
         >
           NEW!
@@ -276,13 +276,13 @@ export const PuzzleCard = memo(function PuzzleCard({
       {/* 상단: 메모(방 제목) + 지역 + 거래 등급 배지 (찜 자리) */}
       <div className="flex items-start justify-between gap-2">
         <div className="flex flex-col gap-1 flex-1 min-w-0">
-          <div className="text-[16px] font-bold leading-snug break-keep tracking-tight line-clamp-2 text-neutral-100">
+          <div className="text-[16px] font-bold leading-snug break-keep tracking-tight line-clamp-2 text-foreground">
             {displayNotes || `${puzzle.area}에서 모여요`}
           </div>
           {(puzzle.leader?.display_name || tags.length > 0) && (
             <div className="flex items-center gap-1.5 flex-wrap">
               {puzzle.leader?.display_name && (
-                <p className="text-[12px] text-neutral-500 font-medium">
+                <p className="text-[12px] text-muted-foreground font-medium">
                   by {puzzle.leader.display_name}
                 </p>
               )}
@@ -292,7 +292,7 @@ export const PuzzleCard = memo(function PuzzleCard({
                 </span>
               )}
               {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR" && (
-                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-neutral-800 border border-neutral-700 text-[11px] font-bold text-neutral-300">
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-muted border border-border text-[11px] font-bold text-foreground/80">
                   {countryFlag(puzzle.leader.country_code)}
                   {countryNameKo(puzzle.leader.country_code)}
                 </span>
@@ -301,7 +301,7 @@ export const PuzzleCard = memo(function PuzzleCard({
               {tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[11px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 font-medium"
+                  className="text-[11px] px-2 py-0.5 rounded-full bg-muted text-foreground/80 font-medium"
                 >
                   {tag}
                 </span>
@@ -312,7 +312,7 @@ export const PuzzleCard = memo(function PuzzleCard({
         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           <div className="flex items-center gap-1">
             {puzzle.area && (
-              <span className="text-[12px] font-bold text-neutral-300 whitespace-nowrap">
+              <span className="text-[12px] font-bold text-foreground/80 whitespace-nowrap">
                 {puzzle.area}
               </span>
             )}
@@ -320,7 +320,7 @@ export const PuzzleCard = memo(function PuzzleCard({
             {onHide && (
               <button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onHide(); }}
-                className="p-0.5 -mr-1 text-neutral-600 hover:text-red-400 transition-colors"
+                className="p-0.5 -mr-1 text-muted-foreground hover:text-red-400 transition-colors"
                 aria-label="삭제"
               >
                 <X className="w-4 h-4" />
@@ -344,17 +344,17 @@ export const PuzzleCard = memo(function PuzzleCard({
           <>
             {/* 파티원 모집 중: 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음) */}
             <div className="flex items-baseline gap-1">
-              <span className="text-[18px] font-black text-green-400">
+              <span className="text-[18px] font-black text-money">
                 1인 {perPersonBudget.toLocaleString()}원
               </span>
-              <span className="text-[14px] font-bold text-neutral-600">/</span>
-              <span className="text-[14px] font-bold text-neutral-300">
+              <span className="text-[14px] font-bold text-muted-foreground">/</span>
+              <span className="text-[14px] font-bold text-foreground/80">
                 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
               </span>
             </div>
             <div className="space-y-1">
               {isFull && (
-                <span className="text-[13px] text-green-400 font-bold">
+                <span className="text-[13px] text-money font-bold">
                   조각 완성! 🎉
                 </span>
               )}
@@ -372,30 +372,30 @@ export const PuzzleCard = memo(function PuzzleCard({
               {/* 방장(MD) 전용: 이미 찬 자리(외부 인원) — 델타 누적 후 "반영"으로 저장 */}
               {canAdjustExternal && (
                 <div className="flex items-center gap-2 pt-1.5">
-                  <span className="text-[11px] text-neutral-500 font-bold">인원 수정</span>
+                  <span className="text-[11px] text-muted-foreground font-bold">인원 수정</span>
                   <button
                     type="button"
                     disabled={savingExt || displayCount <= 1}
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExtDelta((d) => d - 1); }}
-                    className="w-6 h-6 rounded-full bg-neutral-700 hover:bg-neutral-600 flex items-center justify-center disabled:opacity-30 transition-colors"
+                    className="w-6 h-6 rounded-full bg-muted hover:bg-muted flex items-center justify-center disabled:opacity-30 transition-colors"
                   >
-                    <Minus className="w-3 h-3 text-white" />
+                    <Minus className="w-3 h-3 text-foreground" />
                   </button>
-                  <span className="text-[13px] font-black text-white tabular-nums w-4 text-center">{displayCount}</span>
+                  <span className="text-[13px] font-black text-foreground tabular-nums w-4 text-center">{displayCount}</span>
                   <button
                     type="button"
                     disabled={savingExt || displayCount >= puzzle.target_count}
                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); setExtDelta((d) => d + 1); }}
-                    className="w-6 h-6 rounded-full bg-neutral-700 hover:bg-neutral-600 flex items-center justify-center disabled:opacity-30 transition-colors"
+                    className="w-6 h-6 rounded-full bg-muted hover:bg-muted flex items-center justify-center disabled:opacity-30 transition-colors"
                   >
-                    <Plus className="w-3 h-3 text-white" />
+                    <Plus className="w-3 h-3 text-foreground" />
                   </button>
                   {extDelta !== 0 && (
                     <button
                       type="button"
                       disabled={savingExt}
                       onClick={(e) => { e.preventDefault(); e.stopPropagation(); applyExternal(); }}
-                      className="ml-1 px-3 h-6 rounded-full bg-white text-black text-[11px] font-black active:scale-95 transition disabled:opacity-50"
+                      className="ml-1 px-3 h-6 rounded-full bg-inverse text-inverse-foreground text-[11px] font-black active:scale-95 transition disabled:opacity-50"
                     >
                       {savingExt ? "저장중" : "적용"}
                     </button>
@@ -408,14 +408,14 @@ export const PuzzleCard = memo(function PuzzleCard({
           <>
             {/* 인원 확정: 총 예산 + 인원 배지 + 음악 한 줄 (음악을 별도 줄로 빼면 지역 위치가 밀림) */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[18px] font-black text-green-400">
+              <span className="text-[18px] font-black text-money">
                 예산 {totalBudget.toLocaleString()}원
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 text-green-400 text-[11px] font-bold">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 text-money text-[11px] font-bold">
                 {formatGenderComposition(puzzle.target_male, puzzle.target_female, puzzle.target_count)}
               </span>
               {musicTag && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted text-foreground/80 text-[11px] font-medium">
                   {musicTag}
                 </span>
               )}
@@ -426,7 +426,7 @@ export const PuzzleCard = memo(function PuzzleCard({
 
       {/* 추가 한마디 — 방장 추가설명(leader_comment) 또는 파트너 직통의 파트너 한마디(md_comment). 동일 인용구, 카드에선 2줄 clamp */}
       {cardComment && (
-        <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-2.5 line-clamp-2 break-words [overflow-wrap:anywhere]">
+        <p className="text-[13px] leading-relaxed text-foreground/80 border-l border-border pl-2.5 line-clamp-2 break-words [overflow-wrap:anywhere]">
           &ldquo;{cardComment}&rdquo;
         </p>
       )}
@@ -440,20 +440,20 @@ export const PuzzleCard = memo(function PuzzleCard({
         // MD: 풀 버튼 대신 작고 둥근 자세히 스타일 버튼 — 오퍼수 + 버튼 한 행
         <div className="flex items-center justify-between gap-2">
           {offerCount > 0 && (
-            <span className="text-[12px] text-amber-400 font-bold tabular-nums">{offerCount} offers</span>
+            <span className="text-[12px] text-brand-amber font-bold tabular-nums">{offerCount} offers</span>
           )}
           <div className="ml-auto flex items-center gap-2">
             {isSelecting ? (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-neutral-800 border border-neutral-700 text-neutral-400 pointer-events-none"
+                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-muted border border-border text-muted-foreground pointer-events-none"
               >
                 검토 중
               </Button>
             ) : hasOffered ? (
               <Button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500/15 border border-amber-500/30 text-amber-400 pointer-events-none"
+                className="h-8 px-3 rounded-full font-black text-[12px] shrink-0 bg-amber-500/15 border border-amber-500/30 text-brand-amber pointer-events-none"
               >
                 제안 완료
               </Button>
@@ -462,7 +462,7 @@ export const PuzzleCard = memo(function PuzzleCard({
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-                className="text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
+                className="text-[13px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.97] transition-all shrink-0"
               >
                 자세히
               </button>
@@ -470,7 +470,7 @@ export const PuzzleCard = memo(function PuzzleCard({
               <button
                 type="button"
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onUnlock?.(puzzle); }}
-                className="text-[13px] font-bold text-amber-200 hover:text-amber-100 active:scale-[0.97] transition-all shrink-0 [text-shadow:0_0_10px_rgba(245,158,11,0.65)]"
+                className="text-[13px] font-bold text-brand-amber hover:text-amber-100 active:scale-[0.97] transition-all shrink-0 [text-shadow:0_0_10px_rgba(245,158,11,0.65)]"
               >
                 {isRecruitingParty
                   ? "조각줍기 →"
@@ -486,7 +486,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
+            className="text-[13px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.97] transition-all shrink-0"
           >
             자세히
           </button>
@@ -496,7 +496,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="ml-auto text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
+            className="ml-auto text-[13px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.97] transition-all shrink-0"
           >
             자세히
           </button>
@@ -506,7 +506,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           <div className="min-w-0 flex-1">{userOfferBadge}</div>
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-neutral-800 border border-neutral-700 text-neutral-300 pointer-events-none shrink-0"
+            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-muted border border-border text-foreground/80 pointer-events-none shrink-0"
           >
             내 조각
           </Button>
@@ -516,7 +516,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           <div className="min-w-0 flex-1">{userOfferBadge}</div>
           <Button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-green-500/15 border border-green-500/30 text-green-400 pointer-events-none shrink-0"
+            className="h-8 px-3 rounded-full font-black text-[12px] transition-all bg-green-500/15 border border-green-500/30 text-money pointer-events-none shrink-0"
           >
             합류 완료
           </Button>
@@ -527,7 +527,7 @@ export const PuzzleCard = memo(function PuzzleCard({
           <button
             type="button"
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(`/flags/${puzzle.id}`); }}
-            className="text-[13px] font-bold text-neutral-300 hover:text-white active:scale-[0.97] transition-all shrink-0"
+            className="text-[13px] font-bold text-foreground/80 hover:text-foreground active:scale-[0.97] transition-all shrink-0"
           >
             자세히
           </button>

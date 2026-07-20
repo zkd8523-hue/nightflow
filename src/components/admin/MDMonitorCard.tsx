@@ -291,7 +291,7 @@ export function MDMonitorCard({ md, clubs = [], defaultClubId = null }: Props) {
               {!showAddClub && (
                 <button
                   onClick={() => setShowAddClub(true)}
-                  className="flex items-center gap-1 text-[11px] font-bold text-brand-amber hover:text-brand-amber/80 transition-colors"
+                  className="flex items-center gap-1 text-[11px] font-bold text-brand-amber hover:text-brand-amber dark:text-brand-amber/80 transition-colors"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   클럽 추가

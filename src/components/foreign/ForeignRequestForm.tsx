@@ -244,7 +244,7 @@ export function ForeignRequestForm({
   };
 
   const label = (icon: React.ReactNode, text: string) => (
-    <div className="flex items-center gap-2 text-white font-bold mb-2">
+    <div className="flex items-center gap-2 text-foreground font-bold mb-2">
       {icon}
       <span>{text}</span>
     </div>
@@ -254,19 +254,19 @@ export function ForeignRequestForm({
     <div className="space-y-7">
       {/* 날짜 */}
       <section>
-        {label(<Calendar className="w-4 h-4 text-green-500" />, t("날짜", "Date", "日付", "日期"))}
+        {label(<Calendar className="w-4 h-4 text-money" />, t("날짜", "Date", "日付", "日期"))}
         <input
           type="date"
           lang={lang}
           value={eventDate}
           onChange={(e) => setEventDate(e.target.value)}
-          className="w-full h-12 px-4 rounded-xl bg-[#1C1C1E] border border-neutral-800 text-white text-[15px] focus:border-amber-500 outline-none"
+          className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
         />
       </section>
 
       {/* 지역 */}
       <section>
-        {label(<MapPin className="w-4 h-4 text-green-500" />, t("지역", "Area", "エリア", "区域"))}
+        {label(<MapPin className="w-4 h-4 text-money" />, t("지역", "Area", "エリア", "区域"))}
         <div className="flex flex-wrap gap-2">
           {AREAS.map((a) => (
             <button
@@ -274,7 +274,7 @@ export function ForeignRequestForm({
               type="button"
               onClick={() => setArea((prev) => (prev === a ? "" : a))}
               className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
-                area === a ? "bg-white text-black border-transparent" : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white"
+                area === a ? "bg-inverse text-inverse-foreground border-transparent" : "bg-card text-muted-foreground border-border hover:text-foreground"
               }`}
             >
               {areaLabel(a, lang)}
@@ -285,17 +285,17 @@ export function ForeignRequestForm({
 
       {/* 인원 */}
       <section>
-        {label(<Users className="w-4 h-4 text-green-500" />, t("인원", "Group size", "人数", "人数"))}
-        <div className="flex items-center gap-4 bg-[#1C1C1E] border border-neutral-800 rounded-xl p-2 w-fit">
-          <button type="button" onClick={() => setGroupSize((n) => Math.max(1, n - 1))} className="w-10 h-10 rounded-lg bg-neutral-800 text-white text-xl font-bold">−</button>
-          <span className="min-w-[3rem] text-center text-white font-black text-lg">{groupSize}</span>
-          <button type="button" onClick={() => setGroupSize((n) => Math.min(20, n + 1))} className="w-10 h-10 rounded-lg bg-neutral-800 text-white text-xl font-bold">+</button>
+        {label(<Users className="w-4 h-4 text-money" />, t("인원", "Group size", "人数", "人数"))}
+        <div className="flex items-center gap-4 bg-card border border-border rounded-xl p-2 w-fit">
+          <button type="button" onClick={() => setGroupSize((n) => Math.max(1, n - 1))} className="w-10 h-10 rounded-lg bg-muted text-foreground text-xl font-bold">−</button>
+          <span className="min-w-[3rem] text-center text-foreground font-black text-lg">{groupSize}</span>
+          <button type="button" onClick={() => setGroupSize((n) => Math.min(20, n + 1))} className="w-10 h-10 rounded-lg bg-muted text-foreground text-xl font-bold">+</button>
         </div>
       </section>
 
       {/* 예산 */}
       <section>
-        {label(<Coins className="w-4 h-4 text-green-500" />, t("총 예산", "Total budget", "予算", "总预算"))}
+        {label(<Coins className="w-4 h-4 text-money" />, t("총 예산", "Total budget", "予算", "总预算"))}
         <div className="relative">
           <input
             inputMode="numeric"
@@ -305,9 +305,9 @@ export function ForeignRequestForm({
               setBudget(raw ? Number(raw).toLocaleString("en-US") : "");
             }}
             placeholder={t("예) 600,000", "e.g. 600,000", "例) 600,000", "例) 600,000")}
-            className="w-full h-12 pl-4 pr-9 rounded-xl bg-[#1C1C1E] border border-neutral-800 text-white text-[15px] focus:border-amber-500 outline-none"
+            className="w-full h-12 pl-4 pr-9 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 text-[15px] font-bold pointer-events-none">
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[15px] font-bold pointer-events-none">
             ₩
           </span>
         </div>
@@ -317,7 +317,7 @@ export function ForeignRequestForm({
               key={preset}
               type="button"
               onClick={() => setBudget((budgetAmount() + preset).toLocaleString("en-US"))}
-              className="h-10 px-0 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-[13px] transition-colors"
+              className="h-10 px-0 rounded-lg bg-card border border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-amber-500/50 font-bold text-[13px] transition-colors"
             >
               {`+₩${(preset / 10000).toFixed(0)}0k`}
             </button>
@@ -325,19 +325,19 @@ export function ForeignRequestForm({
           <button
             type="button"
             onClick={() => setBudget("")}
-            className="h-10 px-0 rounded-lg bg-neutral-900 border border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-[13px] transition-colors"
+            className="h-10 px-0 rounded-lg bg-card border border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:border-red-500/50 font-bold text-[13px] transition-colors"
           >
             {t("초기화", "Clear", "クリア", "清除")}
           </button>
         </div>
-        <p className="text-[12px] text-neutral-500 mt-1.5">
+        <p className="text-[12px] text-muted-foreground mt-1.5">
           {t("₩ 기준. 예산에 맞춰 최선의 자리를 잡아드려요", "In ₩. We'll get you the best table for your budget", "₩基準。予算に合わせて最善の席を確保", "以₩计。按预算帮你订最好的位置")}
           {(() => {
             const code = CURRENCY_BY_LANG[lang];
             const amount = budgetAmount();
             if (!code || amount <= 0) return null;
             const converted = krwTo(amount, code);
-            return converted ? <span className="text-neutral-400"> (≈ {converted})</span> : null;
+            return converted ? <span className="text-muted-foreground"> (≈ {converted})</span> : null;
           })()}
         </p>
       </section>
@@ -345,15 +345,15 @@ export function ForeignRequestForm({
       {/* 클럽 (선택) */}
       <section>
         <div className="flex items-center justify-between mb-2">
-          {label(<Search className="w-4 h-4 text-green-500" />, t("가고싶은 클럽", "Clubs you want", "行きたいクラブ", "想去的夜店"))}
-          <span className="text-[12px] text-neutral-500 font-bold">
+          {label(<Search className="w-4 h-4 text-money" />, t("가고싶은 클럽", "Clubs you want", "行きたいクラブ", "想去的夜店"))}
+          <span className="text-[12px] text-muted-foreground font-bold">
             {t("최대 3개 선택 가능", "up to 3", "最大3つ", "最多3家")}
           </span>
         </div>
         {selectedClubIds.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-2">
             {selectedClubIds.map((id) => (
-              <span key={id} className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[13px] font-bold">
+              <span key={id} className="flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-brand-amber text-[13px] font-bold">
                 {clubById[id] ? displayClubName(clubById[id]) : ""}
                 <button type="button" onClick={() => toggleClub(id)}><X className="w-3.5 h-3.5" /></button>
               </span>
@@ -364,7 +364,7 @@ export function ForeignRequestForm({
           value={clubSearch}
           onChange={(e) => setClubSearch(e.target.value)}
           placeholder={t("클럽 선택 또는 검색…", "Select or search clubs…", "クラブを選択・検索…", "选择或搜索夜店…")}
-          className="w-full h-11 px-4 rounded-xl bg-[#1C1C1E] border border-neutral-800 text-white text-[14px] focus:border-amber-500 outline-none"
+          className="w-full h-11 px-4 rounded-xl bg-card border border-border text-foreground text-[14px] focus:border-amber-500 outline-none"
         />
         {isSearching ? (
           // 검색 중: 이름으로 스캔하기 좋게 세로 리스트
@@ -376,17 +376,17 @@ export function ForeignRequestForm({
                   key={c.id}
                   type="button"
                   onClick={() => toggleClub(c.id)}
-                  className={`flex items-center gap-3 p-2 rounded-xl border transition-colors text-left ${on ? "bg-amber-500/10 border-amber-500/40" : "bg-neutral-900 border-neutral-800 hover:border-neutral-700"}`}
+                  className={`flex items-center gap-3 p-2 rounded-xl border transition-colors text-left ${on ? "bg-amber-500/10 border-amber-500/40" : "bg-card border-border hover:border-border"}`}
                 >
-                  <div className="w-10 h-10 rounded-lg bg-neutral-800 overflow-hidden shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {c.thumbnail_url && <img src={c.thumbnail_url} alt={displayClubName(c)} className="w-full h-full object-cover" />}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-bold text-white truncate">{displayClubName(c)}</p>
-                    <p className="text-[11px] text-neutral-500">{areaLabel(c.area, lang)}</p>
+                    <p className="text-[14px] font-bold text-foreground truncate">{displayClubName(c)}</p>
+                    <p className="text-[11px] text-muted-foreground">{areaLabel(c.area, lang)}</p>
                   </div>
-                  {on && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
+                  {on && <Check className="w-4 h-4 text-brand-amber shrink-0" />}
                 </button>
               );
             })}
@@ -418,7 +418,7 @@ export function ForeignRequestForm({
         <button
           type="button"
           onClick={() => setBrowseOpen(true)}
-          className="inline-block mt-2 text-[12px] text-green-400 underline underline-offset-2"
+          className="inline-block mt-2 text-[12px] text-money underline underline-offset-2"
         >
           🗺️ {t("모르겠어요? 클럽 둘러보기", "Not sure? Browse clubs", "分からない？クラブを見る", "不确定？浏览夜店")}
         </button>
@@ -426,13 +426,13 @@ export function ForeignRequestForm({
 
       {/* 클럽 둘러보기 팝업 — /clubs 수준 정렬+필터, 카드 클릭은 선택(toggleClub)으로 */}
       <Sheet open={browseOpen} onOpenChange={setBrowseOpen}>
-        <SheetContent side="bottom" className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
+        <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
           <div className="p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <SheetTitle className="font-black text-[18px] text-white">
+              <SheetTitle className="font-black text-[18px] text-foreground">
                 {t("클럽 둘러보기", "Browse clubs", "クラブを見る", "浏览夜店")}
               </SheetTitle>
-              <span className="text-[12px] text-neutral-500">
+              <span className="text-[12px] text-muted-foreground">
                 {selectedClubIds.length}/{MAX_CLUBS} {t("선택됨", "selected", "選択済み", "已选")}
               </span>
             </div>
@@ -445,7 +445,7 @@ export function ForeignRequestForm({
                   type="button"
                   onClick={() => setBrowseSortKey(k)}
                   className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
-                    browseSortKey === k ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                    browseSortKey === k ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   {k === "recommend"
@@ -469,8 +469,8 @@ export function ForeignRequestForm({
                         onClick={() => setBrowseVenueType((v) => (v === opt.key ? null : opt.key))}
                         className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition-colors ${
                           browseVenueType === opt.key
-                            ? "bg-white text-black"
-                            : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                            ? "bg-inverse text-inverse-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                         }`}
                       >
                         {TAG_LABEL_I18N[opt.key]?.[lang] ?? opt.label}
@@ -487,8 +487,8 @@ export function ForeignRequestForm({
                         onClick={() => setBrowseGenre((v) => (v === opt.key ? null : opt.key))}
                         className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition-colors ${
                           browseGenre === opt.key
-                            ? "bg-white text-black"
-                            : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                            ? "bg-inverse text-inverse-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                         }`}
                       >
                         {TAG_LABEL_I18N[opt.key]?.[lang] ?? opt.label}
@@ -501,12 +501,12 @@ export function ForeignRequestForm({
 
             {/* 지역별 목록 */}
             {browseGroups.length > 0 && (
-              <p className="text-[11px] text-neutral-600">
+              <p className="text-[11px] text-muted-foreground">
                 {t("탭하면 선택 · 꾹 누르면 상세정보", "Tap to select · Long-press for details", "タップで選択・長押しで詳細", "轻触选择 · 长按查看详情")}
               </p>
             )}
             {browseGroups.length === 0 && (
-              <p className="text-center text-neutral-500 py-10 text-[13px]">
+              <p className="text-center text-muted-foreground py-10 text-[13px]">
                 {t("조건에 맞는 클럽이 없습니다", "No clubs match your filters.", "条件に合うクラブがありません。", "没有符合条件的夜店。")}
               </p>
             )}
@@ -514,8 +514,8 @@ export function ForeignRequestForm({
               {browseGroups.map((g) => (
                 <div key={g.area} className="space-y-2">
                   <div className="flex items-baseline gap-2">
-                    <h3 className="text-[14px] font-black text-white">{areaLabel(g.area, lang)}</h3>
-                    <span className="text-[12px] text-neutral-500">{g.items.length}</span>
+                    <h3 className="text-[14px] font-black text-foreground">{areaLabel(g.area, lang)}</h3>
+                    <span className="text-[12px] text-muted-foreground">{g.items.length}</span>
                   </div>
                   {/* key: 정렬/필터 바뀌면 DOM 리마운트 → scrollLeft 리셋. 안 그러면 리스트만 바뀌고
                       가로 스크롤 위치는 브라우저가 그대로 들고 있어서 처음 몇 개가 화면 밖으로 밀려남. */}
@@ -540,7 +540,7 @@ export function ForeignRequestForm({
             <button
               type="button"
               onClick={() => setBrowseOpen(false)}
-              className="w-full py-3.5 rounded-xl bg-white text-black font-black text-[14px]"
+              className="w-full py-3.5 rounded-xl bg-inverse text-inverse-foreground font-black text-[14px]"
             >
               {t("완료", "Done", "完了", "完成")}
             </button>
@@ -550,7 +550,7 @@ export function ForeignRequestForm({
 
       {/* 클럽 상세 (꾹 눌러서 오픈) — Browse 팝업 위에 겹쳐 뜸 */}
       <Sheet open={!!detailClub} onOpenChange={(o) => !o && setDetailClub(null)}>
-        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
+        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
           {detailClub && (
             <>
               <SheetTitle className="sr-only">{detailClub.name}</SheetTitle>
@@ -566,7 +566,7 @@ export function ForeignRequestForm({
                     }}
                     className={`flex items-center justify-center gap-1.5 w-full mt-2 py-3.5 rounded-xl font-black text-[15px] transition-colors ${
                       selectedClubIds.includes(detailClub.id)
-                        ? "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                        ? "bg-muted text-foreground/80 hover:bg-muted"
                         : "bg-amber-500 text-black hover:bg-amber-400"
                     }`}
                   >
@@ -583,14 +583,14 @@ export function ForeignRequestForm({
 
       {/* 연락처 */}
       <section>
-        {label(<MessageCircle className="w-4 h-4 text-green-500" />, t("연락처", "How to reach you", "連絡先", "联系方式"))}
+        {label(<MessageCircle className="w-4 h-4 text-money" />, t("연락처", "How to reach you", "連絡先", "联系方式"))}
         <div className="flex flex-wrap gap-2 mb-2">
           {CONTACT_TYPES.map((ct) => (
             <button
               key={ct}
               type="button"
               onClick={() => setContactType(ct)}
-              className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border ${contactType === ct ? "bg-white text-black border-transparent" : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white"}`}
+              className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border ${contactType === ct ? "bg-inverse text-inverse-foreground border-transparent" : "bg-card text-muted-foreground border-border hover:text-foreground"}`}
             >
               {CONTACT_LABEL[ct]}
             </button>
@@ -600,16 +600,16 @@ export function ForeignRequestForm({
           value={contactValue}
           onChange={(e) => setContactValue(e.target.value)}
           placeholder={contactPlaceholder[contactType]}
-          className="w-full h-12 px-4 rounded-xl bg-[#1C1C1E] border border-neutral-800 text-white text-[15px] focus:border-amber-500 outline-none"
+          className="w-full h-12 px-4 rounded-xl bg-card border border-border text-foreground text-[15px] focus:border-amber-500 outline-none"
         />
         {contactHint[contactType] && (
-          <p className="text-[12px] text-neutral-500 mt-1.5">{contactHint[contactType]}</p>
+          <p className="text-[12px] text-muted-foreground mt-1.5">{contactHint[contactType]}</p>
         )}
       </section>
 
       {/* 선호 언어 (컨시어지가 회신할 언어) */}
       <section>
-        {label(<Languages className="w-4 h-4 text-green-500" />, t("선호 언어", "Preferred language", "希望の言語", "首选语言"))}
+        {label(<Languages className="w-4 h-4 text-money" />, t("선호 언어", "Preferred language", "希望の言語", "首选语言"))}
         <div className="flex flex-wrap gap-2">
           {LANGS.map((l) => (
             <button
@@ -617,7 +617,7 @@ export function ForeignRequestForm({
               type="button"
               onClick={() => setPreferredLang(l.code)}
               className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold transition-all border ${
-                preferredLang === l.code ? "bg-white text-black border-transparent" : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white"
+                preferredLang === l.code ? "bg-inverse text-inverse-foreground border-transparent" : "bg-card text-muted-foreground border-border hover:text-foreground"
               }`}
             >
               {l.label}
@@ -634,7 +634,7 @@ export function ForeignRequestForm({
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
           placeholder={t("예) 생일 파티예요", "e.g. It's a birthday", "例) 誕生日です", "例) 生日派对")}
-          className="w-full px-4 py-3 rounded-xl bg-[#1C1C1E] border border-neutral-800 text-white text-[14px] focus:border-amber-500 outline-none resize-none"
+          className="w-full px-4 py-3 rounded-xl bg-card border border-border text-foreground text-[14px] focus:border-amber-500 outline-none resize-none"
         />
       </section>
 
@@ -646,7 +646,7 @@ export function ForeignRequestForm({
       >
         {loading ? t("전송 중…", "Sending…", "送信中…", "提交中…") : t("요청 보내기", "Send request — we'll connect you", "リクエスト送信", "提交 — 我们帮你连接")}
       </button>
-      <p className="text-center text-[12px] text-neutral-500 -mt-3">
+      <p className="text-center text-[12px] text-muted-foreground -mt-3">
         {t("한국어·인맥 없어도 OK. 우리가 클럽에 연결해드려요.", "No Korean, no connections needed. We connect you.", "韓国語・人脈不要。私たちがつなぎます。", "无需韩语·人脉。我们帮你搞定。")}
       </p>
     </div>
@@ -695,7 +695,7 @@ function ClubCard({
       }}
       className="shrink-0 w-[120px] snap-start text-left active:opacity-70 transition-opacity select-none"
     >
-      <div className={`relative w-[120px] h-[120px] rounded-2xl overflow-hidden bg-neutral-800 border-2 ${selected ? "border-amber-500" : "border-neutral-800"}`}>
+      <div className={`relative w-[120px] h-[120px] rounded-2xl overflow-hidden bg-muted border-2 ${selected ? "border-amber-500" : "border-border"}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         {club.thumbnail_url && <img src={club.thumbnail_url} alt={displayClubName(club)} className="w-full h-full object-cover" />}
         {selected && (
@@ -704,12 +704,12 @@ function ClubCard({
           </div>
         )}
       </div>
-      <p className="text-[13px] font-bold text-white mt-2 truncate">{displayClubName(club)}</p>
+      <p className="text-[13px] font-bold text-foreground mt-2 truncate">{displayClubName(club)}</p>
       {club.google_rating != null && (
-        <p className="text-[12px] text-amber-400">
+        <p className="text-[12px] text-brand-amber">
           ⭐ {club.google_rating.toFixed(1)}
           {club.google_review_count != null && (
-            <span className="text-neutral-500"> · {club.google_review_count.toLocaleString()}</span>
+            <span className="text-muted-foreground"> · {club.google_review_count.toLocaleString()}</span>
           )}
         </p>
       )}

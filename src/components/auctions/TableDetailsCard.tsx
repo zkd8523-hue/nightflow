@@ -51,18 +51,18 @@ export function TableDetailsCard({ includes, notes, floorPlanSlot, titleOverride
   }, [includes]);
 
   return (
-    <Card className="bg-[#1C1C1E] border-neutral-800/50 rounded-2xl px-4 py-3 space-y-2.5">
+    <Card className="bg-card border-border/50 rounded-2xl px-4 py-3 space-y-2.5">
       <div className="space-y-2.5">
         {/* 테이블 구성 (주류 포함) */}
         {(includes.length > 0 || titleOverride) && (
           <div className="space-y-2.5">
             {titleOverride && titleHref ? (
               <Link href={titleHref} className="inline-flex items-center gap-1 group">
-                <h2 className="text-[19px] font-black text-white tracking-tight group-hover:text-amber-300 transition-colors">{titleOverride}</h2>
-                <ChevronRight className="w-4 h-4 text-neutral-500" />
+                <h2 className="text-[19px] font-black text-foreground tracking-tight group-hover:text-brand-amber transition-colors">{titleOverride}</h2>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </Link>
             ) : (
-              <h2 className="text-[19px] font-black text-white tracking-tight">{titleOverride || "테이블 구성"}</h2>
+              <h2 className="text-[19px] font-black text-foreground tracking-tight">{titleOverride || "테이블 구성"}</h2>
             )}
             {liquorItems.length > 0 && (
               <div className="flex flex-wrap gap-1.5 w-full">
@@ -70,7 +70,7 @@ export function TableDetailsCard({ includes, notes, floorPlanSlot, titleOverride
                   <Badge
                     key={item}
                     variant="secondary"
-                    className="bg-amber-500/10 text-amber-400 border-amber-500/30 px-2.5 py-1 font-bold text-[12px] whitespace-normal break-words h-auto"
+                    className="bg-amber-500/10 text-brand-amber border-amber-500/30 px-2.5 py-1 font-bold text-[12px] whitespace-normal break-words h-auto"
                   >
                     {item}
                   </Badge>
@@ -83,7 +83,7 @@ export function TableDetailsCard({ includes, notes, floorPlanSlot, titleOverride
                   <Badge
                     key={item}
                     variant="secondary"
-                    className="bg-neutral-900/50 text-neutral-400 border-neutral-800 px-2.5 py-1 font-bold text-[12px] whitespace-normal break-words h-auto"
+                    className="bg-card/50 text-muted-foreground border-border px-2.5 py-1 font-bold text-[12px] whitespace-normal break-words h-auto"
                   >
                     {item}
                   </Badge>
@@ -95,17 +95,17 @@ export function TableDetailsCard({ includes, notes, floorPlanSlot, titleOverride
 
         {/* 테이블맵 토글 */}
         {floorPlanSlot && (
-          <div className="pt-2.5 border-t border-neutral-800/30">{floorPlanSlot}</div>
+          <div className="pt-2.5 border-t border-border/30">{floorPlanSlot}</div>
         )}
       </div>
 
       {/* 참고 사항 */}
       {notes && (
-        <div className="space-y-1.5 pt-3 border-t border-neutral-800/30">
-          <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">
+        <div className="space-y-1.5 pt-3 border-t border-border/30">
+          <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">
             참고 사항
           </p>
-          <p className="text-[14px] text-neutral-400 font-medium leading-relaxed whitespace-pre-line">
+          <p className="text-[14px] text-muted-foreground font-medium leading-relaxed whitespace-pre-line">
             {notes}
           </p>
         </div>

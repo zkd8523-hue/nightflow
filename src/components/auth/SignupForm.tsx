@@ -584,23 +584,23 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
   if (!authUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-neutral-400">로딩 중...</p>
+        <p className="text-muted-foreground">로딩 중...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] p-4">
-      <Card className={`w-full max-w-md p-8 bg-[#1C1C1E] border border-neutral-700 shadow-2xl ${step === "agree" ? "space-y-6" : "space-y-4"}`}>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className={`w-full max-w-md p-8 bg-card border border-border shadow-2xl ${step === "agree" ? "space-y-6" : "space-y-4"}`}>
         <div className={`text-center ${step === "agree" ? "space-y-1.5" : ""}`}>
-          <h1 className={`font-black text-white tracking-tight ${step === "agree" ? "text-3xl" : "text-xl"}`}>NightFlow</h1>
+          <h1 className={`font-black text-foreground tracking-tight ${step === "agree" ? "text-3xl" : "text-xl"}`}>NightFlow</h1>
           {/* 부제·무료 안내는 첫 스텝(약관 동의)에만 노출. 이후 스텝은 폼 집중을 위해 로고까지 축소. */}
           {step === "agree" && (
             <>
-              <p className="text-[15px] font-bold text-white/90">
+              <p className="text-[15px] font-bold text-foreground">
                 {tt("밤이 더 밝아진다, 나플", "Your night, brighter — NightFlow")}
               </p>
-              <p className="text-[12px] text-neutral-500">
+              <p className="text-[12px] text-muted-foreground">
                 {tt("모든 서비스 무료", "All services free")}
               </p>
             </>
@@ -613,17 +613,17 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               <button
                 type="button"
                 onClick={handleAgreeAll}
-                className="w-full flex items-center gap-3 p-4 rounded-xl bg-neutral-700 border border-neutral-600 hover:bg-neutral-600 transition-colors"
+                className="w-full flex items-center gap-3 p-4 rounded-xl bg-muted border border-border hover:bg-muted transition-colors"
               >
                 <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
                   agreeAll ? "bg-white border-white" : "border-neutral-400"
                 }`}>
                   {agreeAll && <Check className="w-4 h-4 text-black" />}
                 </div>
-                <span className="text-[15px] font-bold text-white">{tt("전체 동의", "Agree to all")}</span>
+                <span className="text-[15px] font-bold text-foreground">{tt("전체 동의", "Agree to all")}</span>
               </button>
 
-              <div className="h-px bg-neutral-700 mx-2" />
+              <div className="h-px bg-muted mx-2" />
 
               {/* "만 19세 이상" 항목 제거: birthday 스텝에서 실제 생년월일로 검증하므로 중복 게이트 → 이탈 유발 */}
               {[
@@ -636,19 +636,19 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                     type="button"
                     onClick={() => set(!state)}
                     className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                      state ? "bg-white border-white" : "border-neutral-500"
+                      state ? "bg-white border-white" : "border-border"
                     }`}
                   >
                     {state && <Check className="w-3 h-3 text-black" />}
                   </button>
-                  <span className="text-[14px] text-neutral-200 flex-1">
+                  <span className="text-[14px] text-foreground/90 flex-1">
                     {label}{" "}
-                    <span className={`text-[11px] ${required ? "text-red-400" : "text-neutral-500"}`}>
+                    <span className={`text-[11px] ${required ? "text-red-400" : "text-muted-foreground"}`}>
                       ({required ? tt("필수", "required") : tt("선택", "optional")})
                     </span>
                   </span>
                   {href && (
-                    <Link href={href} className="text-neutral-500 hover:text-neutral-300 transition-colors">
+                    <Link href={href} className="text-muted-foreground hover:text-foreground/80 transition-colors">
                       <ChevronRight className="w-4 h-4" />
                     </Link>
                   )}
@@ -659,7 +659,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             <Button
               onClick={handleAgreeNext}
               disabled={!requiredMet}
-              className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+              className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
             >
               {tt("다음", "Next")}
             </Button>
@@ -670,7 +670,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 await supabase.auth.signOut();
                 router.push(isForeigner ? `/login?lang=${lang}` : "/login");
               }}
-              className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+              className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> {tt("로그인 화면으로", "Back to login")}
             </button>
@@ -680,8 +680,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "birthday" && (
           <>
             <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-white">{tt("생년월일을 알려주세요", "Your date of birth")}</p>
-              <p className="text-[13px] text-neutral-400">{tt("만 19세 이상만 가입할 수 있어요", "You must be 19 or older to join.")}</p>
+              <p className="text-[18px] font-bold text-foreground">{tt("생년월일을 알려주세요", "Your date of birth")}</p>
+              <p className="text-[13px] text-muted-foreground">{tt("만 19세 이상만 가입할 수 있어요", "You must be 19 or older to join.")}</p>
             </div>
 
             <div className="space-y-3">
@@ -707,7 +707,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               <Button
                 onClick={() => setStep("gender")}
                 disabled={!birthdayTouched || !birthdayValid || !isAdult}
-                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
               >
                 {tt("다음", "Next")}
               </Button>
@@ -716,7 +716,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             <button
               type="button"
               onClick={() => setStep(isForeigner ? "country" : "agree")}
-              className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+              className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
             </button>
@@ -726,7 +726,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "gender" && (
           <>
             <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-white">{tt("성별을 선택해주세요", "Select your gender")}</p>
+              <p className="text-[18px] font-bold text-foreground">{tt("성별을 선택해주세요", "Select your gender")}</p>
             </div>
 
             <div className="space-y-4">
@@ -743,8 +743,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                       onClick={() => setGender(opt.key)}
                       className={`h-14 rounded-xl border text-[15px] font-bold transition-colors ${
                         active
-                          ? "bg-white text-black border-white"
-                          : "bg-neutral-800 text-neutral-300 border-neutral-700 hover:border-neutral-500"
+                          ? "bg-inverse text-inverse-foreground border-white"
+                          : "bg-muted text-foreground/80 border-border hover:border-border"
                       }`}
                     >
                       {tt(opt.ko, opt.en)}
@@ -756,7 +756,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               <Button
                 onClick={() => setStep(isForeigner ? "nickname" : "phone")}
                 disabled={gender === null}
-                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
               >
                 {tt("다음", "Next")}
               </Button>
@@ -768,7 +768,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   setGender(null);
                   setStep(isForeigner ? "nickname" : "phone");
                 }}
-                className="w-full text-center text-[13px] text-neutral-500 hover:text-neutral-300 transition-colors"
+                className="w-full text-center text-[13px] text-muted-foreground hover:text-foreground/80 transition-colors"
               >
                 {tt("선택 안 하고 넘어가기", "Prefer not to say")}
               </button>
@@ -777,7 +777,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             <button
               type="button"
               onClick={() => setStep("birthday")}
-              className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+              className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
             </button>
@@ -787,8 +787,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "phone" && (
           <>
             <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-white">휴대폰 번호로 인증해주세요</p>
-              <p className="text-[13px] text-neutral-400">오퍼 도착 시 알림톡으로 알려드려요</p>
+              <p className="text-[18px] font-bold text-foreground">휴대폰 번호로 인증해주세요</p>
+              <p className="text-[13px] text-muted-foreground">오퍼 도착 시 알림톡으로 알려드려요</p>
             </div>
 
             <div className="space-y-3">
@@ -799,13 +799,13 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 value={formatPhoneDisplay(phoneInput)}
                 onChange={(e) => setPhoneInput(e.target.value.replace(/\D/g, "").slice(0, 11))}
                 placeholder="010-1234-5678"
-                className="w-full h-14 px-4 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-[16px] placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
+                className="w-full h-14 px-4 rounded-xl bg-muted border border-border text-foreground text-[16px] placeholder-neutral-500 focus:outline-none focus:border-white transition-colors"
               />
 
               <Button
                 onClick={handleSendOtp}
                 disabled={!phoneValid || !isAdult || otpSending}
-                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
               >
                 {otpSending ? "발송 중..." : "인증번호 받기"}
               </Button>
@@ -814,7 +814,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
             <button
               type="button"
               onClick={() => setStep("gender")}
-              className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+              className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> 이전
             </button>
@@ -824,8 +824,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "otp" && (
           <>
             <div className="space-y-2 text-center">
-              <p className="text-[18px] font-bold text-white">{formatPhoneDisplay(phoneInput)}</p>
-              <p className="text-[13px] text-neutral-400">6자리 인증번호를 입력하세요</p>
+              <p className="text-[18px] font-bold text-foreground">{formatPhoneDisplay(phoneInput)}</p>
+              <p className="text-[13px] text-muted-foreground">6자리 인증번호를 입력하세요</p>
             </div>
 
             <div className="space-y-3">
@@ -837,12 +837,12 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                 placeholder="______"
                 maxLength={6}
-                className="w-full h-14 px-4 rounded-xl bg-neutral-800 border border-neutral-700 text-white text-center text-[20px] tracking-[0.5em] placeholder-neutral-600 focus:outline-none focus:border-white transition-colors"
+                className="w-full h-14 px-4 rounded-xl bg-muted border border-border text-foreground text-center text-[20px] tracking-[0.5em] placeholder-neutral-600 focus:outline-none focus:border-white transition-colors"
               />
               <Button
                 onClick={handleVerifyOtp}
                 disabled={otpCode.length !== 6 || otpVerifying || loading}
-                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
               >
                 {otpVerifying ? "확인 중..." : "확인"}
               </Button>
@@ -852,7 +852,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               <button
                 type="button"
                 onClick={() => setStep("phone")}
-                className="flex items-center gap-1 text-neutral-500 hover:text-neutral-300 transition-colors"
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground/80 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> 이전
               </button>
@@ -860,7 +860,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 type="button"
                 onClick={handleResendOtp}
                 disabled={resendIn > 0 || otpSending}
-                className="text-neutral-400 hover:text-white transition-colors disabled:text-neutral-600"
+                className="text-muted-foreground hover:text-foreground transition-colors disabled:text-muted-foreground"
               >
                 {resendIn > 0 ? `다시 받기 (${resendIn}s)` : "다시 받기"}
               </button>
@@ -871,8 +871,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "nickname" && (
           <div className="space-y-7">
             <div className="space-y-1.5 text-center">
-              <p className="text-[22px] font-bold text-white tracking-tight">{tt("프로필을 설정해주세요", "Set up your profile")}</p>
-              <p className="text-[13px] text-neutral-500">{tt("언제든지 변경할 수 있습니다", "You can change this anytime")}</p>
+              <p className="text-[22px] font-bold text-foreground tracking-tight">{tt("프로필을 설정해주세요", "Set up your profile")}</p>
+              <p className="text-[13px] text-muted-foreground">{tt("언제든지 변경할 수 있습니다", "You can change this anytime")}</p>
             </div>
 
             {/* 프로필 사진 */}
@@ -880,7 +880,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               <button
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
-                className="relative w-24 h-24 rounded-full overflow-hidden bg-neutral-800 border border-neutral-700 hover:border-neutral-500 transition-colors group"
+                className="relative w-24 h-24 rounded-full overflow-hidden bg-muted border border-border hover:border-border transition-colors group"
               >
                 {profileImagePreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -890,15 +890,15 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-neutral-500">
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">
                     <Camera className="w-8 h-8" strokeWidth={1.5} />
                   </div>
                 )}
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera className="w-5 h-5 text-white" />
+                  <Camera className="w-5 h-5 text-foreground" />
                 </div>
               </button>
-              <p className="text-[12px] text-neutral-500">
+              <p className="text-[12px] text-muted-foreground">
                 {isForeigner
                   ? (profileImageFile ? "Change photo" : "Profile photo · optional")
                   : (profileImageFile ? "사진 변경하기" : "프로필 사진 · 선택")}
@@ -951,11 +951,11 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                       else { setNicknameError(null); setNicknameOk(true); }
                     } finally { setNicknameChecking(false); }
                   }}
-                  className="w-full h-12 px-4 pr-14 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
+                  className="w-full h-12 px-4 pr-14 rounded-xl bg-muted border border-border text-foreground placeholder-neutral-500 text-[15px] font-medium focus:outline-none focus:border-white transition-colors"
                 />
                 {/* 글자수 */}
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <span className="text-[11px] text-neutral-600 tabular-nums">{nicknameInput.length}/16</span>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">{nicknameInput.length}/16</span>
                 </div>
               </div>
 
@@ -963,10 +963,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 <p className="text-[12px] text-red-400 font-medium px-1">{nicknameError}</p>
               )}
               {nicknameOk && !nicknameError && (
-                <p className="text-[12px] text-green-400 font-medium px-1">{tt("사용 가능한 닉네임이에요 ✓", "Nickname available ✓")}</p>
+                <p className="text-[12px] text-money font-medium px-1">{tt("사용 가능한 닉네임이에요 ✓", "Nickname available ✓")}</p>
               )}
               {nicknameChecking && !nicknameError && (
-                <p className="text-[12px] text-neutral-500 px-1">{tt("중복 확인 중...", "Checking...")}</p>
+                <p className="text-[12px] text-muted-foreground px-1">{tt("중복 확인 중...", "Checking...")}</p>
               )}
             </div>
 
@@ -974,14 +974,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               <Button
                 onClick={handleCompleteSignup}
                 disabled={!nicknameOk || loading || nicknameChecking || uploadingImage || (isForeigner && (!birthdayValid || !isAdult))}
-                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
               >
                 {uploadingImage ? tt("업로드 중...", "Uploading...") : loading ? tt("가입 중...", "Creating account...") : tt("가입 완료", "Join NightFlow")}
               </Button>
               <button
                 type="button"
                 onClick={() => setStep(isForeigner ? "gender" : "otp")}
-                className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+                className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
               </button>
@@ -992,8 +992,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
         {step === "country" && (
           <div className="space-y-6">
             <div className="space-y-1 text-center">
-              <p className="text-[22px] font-bold text-white tracking-tight">{tt("", "Where are you from?")}</p>
-              <p className="text-[13px] text-neutral-500">{tt("", "Your flag will appear on your posts")}</p>
+              <p className="text-[22px] font-bold text-foreground tracking-tight">{tt("", "Where are you from?")}</p>
+              <p className="text-[13px] text-muted-foreground">{tt("", "Your flag will appear on your posts")}</p>
             </div>
 
             <div className="relative">
@@ -1013,8 +1013,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   }}
                   onFocus={() => setCountryFocused(true)}
                   onBlur={() => setTimeout(() => setCountryFocused(false), 150)}
-                  className={`w-full h-12 rounded-xl bg-neutral-800 border text-white placeholder-neutral-500 text-[15px] focus:outline-none focus:border-white transition-colors ${
-                    countryCode ? "pl-12 pr-4 border-white" : "px-4 border-neutral-700"
+                  className={`w-full h-12 rounded-xl bg-muted border text-foreground placeholder-neutral-500 text-[15px] focus:outline-none focus:border-white transition-colors ${
+                    countryCode ? "pl-12 pr-4 border-white" : "px-4 border-border"
                   }`}
                 />
               </div>
@@ -1026,7 +1026,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   : sorted;
                 if (results.length === 0) return null;
                 return (
-                  <div className="absolute z-10 w-full mt-1 rounded-xl bg-neutral-800 border border-neutral-700 overflow-hidden max-h-52 overflow-y-auto shadow-xl">
+                  <div className="absolute z-10 w-full mt-1 rounded-xl bg-muted border border-border overflow-hidden max-h-52 overflow-y-auto shadow-xl">
                     {results.map(c => (
                       <button
                         key={c.code}
@@ -1037,10 +1037,10 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                           setCountrySearch(c.name);
                           setCountryFocused(false);
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-neutral-700 transition-colors"
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted transition-colors"
                       >
                         <span className="text-[20px]">{c.code === "OTHER" ? "🌍" : countryFlag(c.code)}</span>
-                        <span className="text-[15px] text-white">{c.name}</span>
+                        <span className="text-[15px] text-foreground">{c.name}</span>
                       </button>
                     ))}
                   </div>
@@ -1052,8 +1052,8 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                 외국인은 카카오 알림톡을 못 써서 이메일이 유일한 알림 채널. */}
             {isForeigner && authUser && !authUser.email && (
               <div className="space-y-1.5">
-                <p className="text-[13px] text-neutral-400">
-                  {tt("", "Email")} <span className="text-neutral-600">{tt("", "— we'll notify you when clubs send offers")}</span>
+                <p className="text-[13px] text-muted-foreground">
+                  {tt("", "Email")} <span className="text-muted-foreground">{tt("", "— we'll notify you when clubs send offers")}</span>
                 </p>
                 <input
                   type="email"
@@ -1063,7 +1063,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                   placeholder="you@example.com"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
-                  className="w-full h-12 rounded-xl bg-neutral-800 border border-neutral-700 text-white placeholder-neutral-500 text-[15px] px-4 focus:outline-none focus:border-white transition-colors"
+                  className="w-full h-12 rounded-xl bg-muted border border-border text-foreground placeholder-neutral-500 text-[15px] px-4 focus:outline-none focus:border-white transition-colors"
                 />
                 {(() => {
                   const sug = suggestEmail(emailInput);
@@ -1072,7 +1072,7 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
                     <button
                       type="button"
                       onClick={() => setEmailInput(sug)}
-                      className="text-[12px] text-amber-400 hover:text-amber-300 transition-colors"
+                      className="text-[12px] text-brand-amber hover:text-brand-amber transition-colors"
                     >
                       {tt("", "Did you mean")} <span className="font-bold underline">{sug}</span>?
                     </button>
@@ -1085,14 +1085,14 @@ export function SignupForm({ referralCode, mdReferrer }: SignupFormProps) {
               <Button
                 onClick={() => setStep("birthday")}
                 disabled={!countryCode || (isForeigner && !!authUser && !authUser.email && !isValidEmailFormat(emailInput))}
-                className="w-full h-12 font-black text-base bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 transition-all"
+                className="w-full h-12 font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground transition-all"
               >
                 {tt("", "Next")} →
               </Button>
               <button
                 type="button"
                 onClick={() => setStep("agree")}
-                className="w-full flex items-center justify-center gap-1 text-sm text-neutral-500 hover:text-neutral-300 transition-colors"
+                className="w-full flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground/80 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" /> {tt("이전", "Back")}
               </button>

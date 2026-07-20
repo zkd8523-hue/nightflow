@@ -38,23 +38,23 @@ export default async function AdminClubMarkersPage({ params }: Props) {
     return (
         <div className="max-w-4xl mx-auto px-6 py-8">
             <div className="flex items-center gap-4 mb-6">
-                <Link href="/admin/clubs" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800">
-                    <ChevronLeft className="w-5 h-5 text-neutral-400" />
+                <Link href="/admin/clubs" className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border">
+                    <ChevronLeft className="w-5 h-5 text-muted-foreground" />
                 </Link>
                 <div>
-                    <h1 className="text-xl font-black text-white">{club.name} — 테이블 설정</h1>
-                    <p className="text-xs text-neutral-500 mt-0.5">{club.area} · {club.address}</p>
+                    <h1 className="text-xl font-black text-foreground">{club.name} — 테이블 설정</h1>
+                    <p className="text-xs text-muted-foreground mt-0.5">{club.area} · {club.address}</p>
                 </div>
             </div>
 
             {!club.floor_plan_url ? (
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-8 text-center space-y-4">
+                <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-4">
                     <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mx-auto">
                         <span className="text-3xl">🗺️</span>
                     </div>
                     <div>
-                        <h3 className="text-white font-bold text-lg">플로어맵 이미지가 필요합니다</h3>
-                        <p className="text-neutral-500 text-sm mt-2">
+                        <h3 className="text-foreground font-bold text-lg">플로어맵 이미지가 필요합니다</h3>
+                        <p className="text-muted-foreground text-sm mt-2">
                             먼저 파트너가 클럽 설정에서 플로어맵 이미지를 업로드해야 합니다.<br />
                             그 후 이 페이지에서 테이블 마커를 배치할 수 있습니다.
                         </p>

@@ -24,7 +24,7 @@ export function ForeignAppCta({ lang }: { lang: Lang }) {
       href={APP_STORE_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-white text-black font-black text-[13px] hover:bg-neutral-200 transition-colors"
+      className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-colors"
     >
       <Apple className="w-4 h-4" /> {t.ios}
     </a>
@@ -34,17 +34,17 @@ export function ForeignAppCta({ lang }: { lang: Lang }) {
       href={playUrl(lang)}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-neutral-800 border border-neutral-700 text-white font-bold text-[13px] hover:bg-neutral-700/60 transition-colors"
+      className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-muted border border-border text-foreground font-bold text-[13px] hover:bg-muted/60 transition-colors"
     >
       <Smartphone className="w-4 h-4" /> {t.android}
     </a>
   );
 
   return (
-    <div className="mx-4 my-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 p-4 space-y-3">
+    <div className="mx-4 my-4 rounded-2xl bg-card border border-border p-4 space-y-3">
       <div>
-        <p className="text-[15px] font-black text-white">{t.title}</p>
-        <p className="text-[12px] text-neutral-500 mt-0.5">{t.sub}</p>
+        <p className="text-[15px] font-black text-foreground">{t.title}</p>
+        <p className="text-[12px] text-muted-foreground mt-0.5">{t.sub}</p>
       </div>
       <div className="flex gap-2">
         {AppStoreBtn}

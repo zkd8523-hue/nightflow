@@ -33,7 +33,7 @@ export const RangeSlider = React.forwardRef<
         className
       )}
     >
-      <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-neutral-800">
+      <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-muted">
         <SliderPrimitive.Range className="absolute h-full bg-white" />
       </SliderPrimitive.Track>
       <SliderPrimitive.Thumb

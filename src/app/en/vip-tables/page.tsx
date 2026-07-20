@@ -114,20 +114,20 @@ export default function EnVipTablesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/en" className="text-[12px] text-neutral-500 hover:text-white">
+          <Link href="/en" className="text-[12px] text-muted-foreground hover:text-foreground">
             ← NightFlow
           </Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">
             Seoul VIP Table Booking
           </h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             The real way to book VIP tables and bottle service at Seoul&apos;s
             top clubs — Gangnam, Hongdae, Itaewon, Apgujeong. No broker, no
             Korean needed, no tourist tax.
@@ -140,16 +140,16 @@ export default function EnVipTablesPage() {
             {TIERS.map((t) => (
               <div
                 key={t.name}
-                className="p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800 space-y-2"
+                className="p-5 rounded-2xl bg-card border border-border space-y-2"
               >
                 <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                  <p className="font-bold text-[15px] text-neutral-100">{t.name}</p>
-                  <p className="font-black text-[14px] text-amber-400 whitespace-nowrap">
+                  <p className="font-bold text-[15px] text-foreground">{t.name}</p>
+                  <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">
                     {t.price}
                   </p>
                 </div>
-                <p className="text-[12px] text-neutral-500">{t.perPerson}</p>
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{t.desc}</p>
+                <p className="text-[12px] text-muted-foreground">{t.perPerson}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{t.desc}</p>
               </div>
             ))}
           </div>
@@ -157,7 +157,7 @@ export default function EnVipTablesPage() {
 
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">How VIP Booking Works</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             Pick your club (or just tell us your budget and vibe) — date,
             group size, budget. We contact the club directly and lock in the
             best table for your budget — real prices, real bottle packages.
@@ -165,7 +165,7 @@ export default function EnVipTablesPage() {
           </p>
           <Link
             href="/en"
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             🍾 Book with NightFlow
           </Link>
@@ -173,11 +173,11 @@ export default function EnVipTablesPage() {
 
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">Browse by District</h2>
-          <ul className="space-y-2 text-[13px] text-neutral-400">
-            <li><Link className="hover:text-white" href="/en/clubs/gangnam">Gangnam VIP tables →</Link></li>
-            <li><Link className="hover:text-white" href="/en/clubs/apgujeong">Apgujeong &amp; Cheongdam VIP lounges →</Link></li>
-            <li><Link className="hover:text-white" href="/en/clubs/hongdae">Hongdae VIP &amp; walk-in tables →</Link></li>
-            <li><Link className="hover:text-white" href="/en/clubs/itaewon">Itaewon international clubs →</Link></li>
+          <ul className="space-y-2 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/en/clubs/gangnam">Gangnam VIP tables →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/clubs/apgujeong">Apgujeong &amp; Cheongdam VIP lounges →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/clubs/hongdae">Hongdae VIP &amp; walk-in tables →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/clubs/itaewon">Itaewon international clubs →</Link></li>
           </ul>
         </section>
 

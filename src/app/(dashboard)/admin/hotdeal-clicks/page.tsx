@@ -174,34 +174,34 @@ export default async function AdminHotdealClicksPage({
   );
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
+    <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
       <div className="max-w-7xl mx-auto px-6 space-y-10">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <Link
                 href="/admin"
-                className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 hover:border-neutral-700 transition-colors"
+                className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border hover:border-border transition-colors"
               >
-                <ChevronLeft className="w-5 h-5 text-neutral-400" />
+                <ChevronLeft className="w-5 h-5 text-muted-foreground" />
               </Link>
-              <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-widest text-[11px]">
+              <div className="flex items-center gap-2 text-muted-foreground font-bold uppercase tracking-widest text-[11px]">
                 <MousePointerClick className="w-3.5 h-3.5" />
                 Guest Sign Clicks
               </div>
             </div>
             <h1 className="text-4xl font-black tracking-tighter">게스트 간판 클릭 현황</h1>
-            <p className="text-neutral-500 font-medium">
+            <p className="text-muted-foreground font-medium">
               클럽 상세에서 인스타/오픈채팅/문의 메시지 복사 버튼이 눌린 횟수 (슬롯 × 주차 단위)
             </p>
           </div>
 
           <form className="flex items-center gap-2">
-            <label className="text-neutral-500 text-[11px] font-bold uppercase tracking-wider">주차</label>
+            <label className="text-muted-foreground text-[11px] font-bold uppercase tracking-wider">주차</label>
             <select
               name="week"
               defaultValue={selectedWeek}
-              className="bg-[#1C1C1E] border border-neutral-800 rounded-lg px-3 py-2 text-white text-sm"
+              className="bg-card border border-border rounded-lg px-3 py-2 text-foreground text-sm"
             >
               {allWeeks.map((w) => (
                 <option key={w} value={w}>
@@ -211,7 +211,7 @@ export default async function AdminHotdealClicksPage({
             </select>
             <button
               type="submit"
-              className="bg-white text-black font-bold text-sm rounded-lg px-4 py-2"
+              className="bg-inverse text-inverse-foreground font-bold text-sm rounded-lg px-4 py-2"
             >
               조회
             </button>
@@ -219,45 +219,45 @@ export default async function AdminHotdealClicksPage({
         </header>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-4">
-            <div className="flex items-center gap-2 text-neutral-500">
+          <Card className="bg-card border-border p-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <MousePointerClick className="w-4 h-4" />
               <span className="text-[11px] font-bold uppercase tracking-wider">총 클릭</span>
             </div>
-            <span className="text-3xl font-black text-white">{totals.total.toLocaleString()}</span>
+            <span className="text-3xl font-black text-foreground">{totals.total.toLocaleString()}</span>
           </Card>
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-4">
+          <Card className="bg-card border-border p-4">
             <div className="flex items-center gap-2 text-sky-400">
               <Users className="w-4 h-4" />
               <span className="text-[11px] font-bold uppercase tracking-wider">유니크 유저</span>
             </div>
             <span className="text-3xl font-black text-sky-300">{totals.uniqueUsers.toLocaleString()}</span>
-            <span className="text-[10px] text-neutral-500 mt-1 block">로그인 유저 기준 디스팅트</span>
+            <span className="text-[10px] text-muted-foreground mt-1 block">로그인 유저 기준 디스팅트</span>
           </Card>
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-4">
+          <Card className="bg-card border-border p-4">
             <div className="flex items-center gap-2 text-pink-400">
               <Instagram className="w-4 h-4" />
               <span className="text-[11px] font-bold uppercase tracking-wider">인스타</span>
             </div>
             <span className="text-3xl font-black text-pink-300">{totals.instagram.toLocaleString()}</span>
           </Card>
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-4">
-            <div className="flex items-center gap-2 text-green-400">
+          <Card className="bg-card border-border p-4">
+            <div className="flex items-center gap-2 text-money">
               <MessageCircle className="w-4 h-4" />
               <span className="text-[11px] font-bold uppercase tracking-wider">오픈채팅</span>
             </div>
-            <span className="text-3xl font-black text-green-300">{totals.openchat.toLocaleString()}</span>
+            <span className="text-3xl font-black text-money">{totals.openchat.toLocaleString()}</span>
           </Card>
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-4">
-            <div className="flex items-center gap-2 text-amber-400">
+          <Card className="bg-card border-border p-4">
+            <div className="flex items-center gap-2 text-brand-amber">
               <Copy className="w-4 h-4" />
               <span className="text-[11px] font-bold uppercase tracking-wider">문의 복사</span>
             </div>
-            <span className="text-3xl font-black text-amber-300">{totals.copy.toLocaleString()}</span>
+            <span className="text-3xl font-black text-brand-amber">{totals.copy.toLocaleString()}</span>
           </Card>
         </div>
 
-        <Card className="bg-[#1C1C1E] border-neutral-800 overflow-hidden">
+        <Card className="bg-card border-border overflow-hidden">
           <HotdealClicksTable
             rows={rows}
             clickersBySlot={clickersSerial}

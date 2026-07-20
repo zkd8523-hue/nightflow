@@ -39,9 +39,9 @@ const HISTORY_SORT_OPTIONS: { key: HistorySortKey; label: string }[] = [
 ];
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; border: string; label: string; pulse?: boolean }> = {
-    won: { bg: "bg-amber-500/10", text: "text-amber-500", border: "border-amber-500/20", label: "연락 대기", pulse: true },
-    confirmed: { bg: "bg-green-500/10", text: "text-green-500", border: "border-green-500/20", label: "거래완료" },
-    cancelled: { bg: "bg-neutral-500/10", text: "text-neutral-500", border: "border-neutral-700/30", label: "취소" },
+    won: { bg: "bg-amber-500/10", text: "text-brand-amber", border: "border-amber-500/20", label: "연락 대기", pulse: true },
+    confirmed: { bg: "bg-green-500/10", text: "text-money", border: "border-green-500/20", label: "거래완료" },
+    cancelled: { bg: "bg-muted/10", text: "text-muted-foreground", border: "border-border/30", label: "취소" },
     instant_active: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20", label: "대화중", pulse: true },
 };
 
@@ -114,12 +114,12 @@ export function TransactionList({ items }: TransactionListProps) {
     }, [sortedHistory]);
 
     return (
-        <div className="max-w-lg mx-auto pb-24 text-white">
+        <div className="max-w-lg mx-auto pb-24 text-foreground">
             <div className="p-6 space-y-6">
                 {/* Header */}
                 <div className="flex items-center gap-4">
-                    <Link href="/md/dashboard" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800">
-                        <ChevronLeft className="w-5 h-5 text-neutral-400" />
+                    <Link href="/md/dashboard" className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border">
+                        <ChevronLeft className="w-5 h-5 text-muted-foreground" />
                     </Link>
                     <h1 className="text-2xl font-black tracking-tight">낙찰 관리</h1>
                 </div>
@@ -127,14 +127,14 @@ export function TransactionList({ items }: TransactionListProps) {
 
                 {/* Tabs */}
                 <Tabs defaultValue="active" className="w-full">
-                    <TabsList className="w-full bg-neutral-900 border border-neutral-800 rounded-xl h-11">
-                        <TabsTrigger value="active" className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black">
+                    <TabsList className="w-full bg-card border border-border rounded-xl h-11">
+                        <TabsTrigger value="active" className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-inverse data-[state=active]:text-inverse-foreground">
                             진행중
                             {activeItems.length > 0 && (
                                 <span className="ml-1.5 text-[11px] font-bold">{activeItems.length}</span>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="history" className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-white data-[state=active]:text-black">
+                        <TabsTrigger value="history" className="flex-1 rounded-lg text-[13px] font-bold data-[state=active]:bg-inverse data-[state=active]:text-inverse-foreground">
                             완료
                             {historyItems.length > 0 && (
                                 <span className="ml-1.5 text-[11px] font-bold">{historyItems.length}</span>
@@ -209,7 +209,7 @@ export function TransactionList({ items }: TransactionListProps) {
                                         ) : (
                                             <button
                                                 onClick={() => setShowOlder(true)}
-                                                className="w-full py-3 flex items-center justify-center gap-1.5 text-[13px] font-bold text-neutral-500 hover:text-neutral-300 bg-neutral-900/50 rounded-xl border border-neutral-800/50 transition-colors"
+                                                className="w-full py-3 flex items-center justify-center gap-1.5 text-[13px] font-bold text-muted-foreground hover:text-foreground/80 bg-card/50 rounded-xl border border-border/50 transition-colors"
                                             >
                                                 이전 거래 {olderCount}건 더보기
                                                 <ChevronDown className="w-4 h-4" />
@@ -224,7 +224,7 @@ export function TransactionList({ items }: TransactionListProps) {
                     </TabsContent>
                 </Tabs>
 
-                <p className="text-[10px] text-neutral-600 text-center px-4 pb-2">
+                <p className="text-[10px] text-muted-foreground text-center px-4 pb-2">
                     낙찰자 개인정보는 방문 확인 목적으로만 사용, 확인 후 즉시 파기해주세요.
                 </p>
             </div>
@@ -247,8 +247,8 @@ function SortChips<T extends string>({ options, selected, onSelect }: {
                     onClick={() => onSelect(opt.key)}
                     className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors border ${
                         selected === opt.key
-                            ? "bg-white text-black border-white"
-                            : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-600"
+                            ? "bg-inverse text-inverse-foreground border-white"
+                            : "bg-card text-muted-foreground border-border hover:border-border"
                     }`}
                 >
                     {opt.label}
@@ -268,7 +268,7 @@ function TransactionCard({ item }: { item: TransactionItem }) {
     const isActive = item.auctionStatus === "won" || isInstantActive;
 
     return (
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 overflow-hidden shadow-xl">
+        <Card className="bg-card border-border/50 overflow-hidden shadow-xl">
             <div className="p-4 space-y-3">
                 {/* Row 1: Status + Club + Price */}
                 <div className="flex justify-between items-start">
@@ -276,10 +276,10 @@ function TransactionCard({ item }: { item: TransactionItem }) {
                         <Badge className={`${config.bg} ${config.text} ${config.border} text-[10px] h-5 shrink-0 ${config.pulse ? "animate-pulse" : ""}`}>
                             {config.label}
                         </Badge>
-                        <h3 className="text-[15px] font-black text-white truncate">{item.clubName}</h3>
+                        <h3 className="text-[15px] font-black text-foreground truncate">{item.clubName}</h3>
                     </div>
                     {item.winningPrice != null && (
-                        <span className="text-[15px] font-black text-green-500 shrink-0 ml-2">
+                        <span className="text-[15px] font-black text-money shrink-0 ml-2">
                             {formatPrice(item.winningPrice)}
                         </span>
                     )}
@@ -287,14 +287,14 @@ function TransactionCard({ item }: { item: TransactionItem }) {
 
                 {/* Row 2: Event date + Winner / Chat count */}
                 <div className="flex items-center justify-between text-[13px]">
-                    <span className="text-neutral-400 font-medium">{formatEventDate(item.eventDate)}</span>
+                    <span className="text-muted-foreground font-medium">{formatEventDate(item.eventDate)}</span>
                     {isInstantActive ? (
                         <span className="text-blue-400 font-bold text-[12px]">
                             💬 {item.chatInterestCount || 0}명이 관심
                         </span>
                     ) : winner ? (
-                        <div className="flex items-center gap-1.5 text-neutral-300">
-                            <User className="w-3 h-3 text-neutral-500" />
+                        <div className="flex items-center gap-1.5 text-foreground/80">
+                            <User className="w-3 h-3 text-muted-foreground" />
                             <span className="font-bold">{winner.display_name || "유저"}</span>
                         </div>
                     ) : null}
@@ -325,10 +325,10 @@ function TransactionCard({ item }: { item: TransactionItem }) {
 
                 {/* Completed status indicator */}
                 {item.auctionStatus === "confirmed" && (
-                    <div className="text-center py-1 text-[12px] font-bold text-green-500/70">거래완료</div>
+                    <div className="text-center py-1 text-[12px] font-bold text-money dark:text-money/70">거래완료</div>
                 )}
                 {item.auctionStatus === "cancelled" && (
-                    <div className="text-center py-1 text-[12px] font-bold text-neutral-500">취소됨</div>
+                    <div className="text-center py-1 text-[12px] font-bold text-muted-foreground">취소됨</div>
                 )}
             </div>
         </Card>
@@ -337,9 +337,9 @@ function TransactionCard({ item }: { item: TransactionItem }) {
 
 function EmptyState({ label }: { label: string }) {
     return (
-        <div className="text-center py-20 bg-neutral-900/30 rounded-3xl border border-dashed border-neutral-800">
-            <Ticket className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
-            <p className="text-neutral-500 font-bold">{label}</p>
+        <div className="text-center py-20 bg-card/30 rounded-3xl border border-dashed border-border">
+            <Ticket className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground font-bold">{label}</p>
         </div>
     );
 }

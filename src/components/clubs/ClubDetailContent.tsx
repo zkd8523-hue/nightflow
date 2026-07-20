@@ -271,9 +271,9 @@ export function ClubDetailContent({
   return (
     <div className="container mx-auto max-w-lg px-4 pt-4 pb-40">
       {/* 클럽 정보 카드 */}
-      <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden mb-6">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden mb-6">
         <div
-          className="relative w-full aspect-[4/3] bg-neutral-900"
+          className="relative w-full aspect-[4/3] bg-card border border-border"
           onDragOver={(e) => { if (!isAdmin) return; e.preventDefault(); setIsDraggingOver(true); }}
           onDragLeave={() => setIsDraggingOver(false)}
           onDrop={(e) => {
@@ -288,7 +288,7 @@ export function ClubDetailContent({
         >
           {isDraggingOver && isAdmin && (
             <div className="absolute inset-0 z-20 bg-amber-500/40 border-2 border-dashed border-amber-400 flex items-center justify-center pointer-events-none">
-              <p className="text-white font-black text-[15px]">여기에 놓으세요</p>
+              <p className="text-foreground font-black text-[15px]">여기에 놓으세요</p>
             </div>
           )}
             {/* 이미지 위 플로팅: 뒤로가기 + 찜. 임베드 모드(지도 모달)에선 뒤로가기 숨김. */}
@@ -298,7 +298,7 @@ export function ClubDetailContent({
                   onClick={() => router.back()}
                   className="pointer-events-auto w-12 h-12 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-colors"
                 >
-                  <ArrowLeft className="w-7 h-7 text-white" />
+                  <ArrowLeft className="w-7 h-7 text-foreground" />
                 </button>
               ) : (
                 <div />
@@ -320,7 +320,7 @@ export function ClubDetailContent({
                 priority
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[12px]">
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[12px]">
                 대표 이미지 없음
               </div>
             )}
@@ -333,7 +333,7 @@ export function ClubDetailContent({
                   disabled={uploadingThumbnail}
                   onChange={handleAdminThumbnailUpload}
                 />
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/70 backdrop-blur-sm text-white text-[11px] font-bold rounded-full hover:bg-black/90 transition-colors">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/70 backdrop-blur-sm text-foreground text-[11px] font-bold rounded-full hover:bg-black/90 transition-colors">
                   {uploadingThumbnail ? (
                     <>
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -406,11 +406,11 @@ export function ClubDetailContent({
             <div className="flex items-baseline gap-2 flex-wrap flex-1 min-w-0">
             {/* H2로 강등 — 실제 H1은 page.tsx의 sr-only로 풍부한 SEO 본문이 됨.
                 네이버 검색최적화 가이드: H1은 페이지당 1개만. */}
-            <h2 className="text-2xl font-black text-white tracking-tight">
+            <h2 className="text-2xl font-black text-foreground tracking-tight">
               {clubName}
             </h2>
             {club.area && (
-              <span className="text-[13px] text-neutral-400">
+              <span className="text-[13px] text-muted-foreground">
                 {club.area}
               </span>
             )}
@@ -464,7 +464,7 @@ export function ClubDetailContent({
 
           {/* 게스트 간판 — 이번 주 차지 MD 정보 (각진 '간판' 스타일 + 밝은 내부 배경으로 배경과 분리) */}
           {guestSignSlot && (
-            <div className="bg-[#2F2F34] border border-amber-500/50 rounded-md overflow-hidden mt-1 shadow-[0_6px_24px_-8px_rgba(245,158,11,0.35)]">
+            <div className="bg-muted border border-amber-500/50 rounded-md overflow-hidden mt-1 shadow-[0_6px_24px_-8px_rgba(245,158,11,0.35)]">
               {/* 헤더: 혜택 앰버 '간판' */}
               {guestSignSlot.today_benefit && (
                 <div className="bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-2 border-b-2 border-amber-600/40">
@@ -486,7 +486,7 @@ export function ClubDetailContent({
                   />
                 )}
                 <div className="flex items-center gap-2.5">
-                  <div className="relative w-11 h-11 rounded-md overflow-hidden bg-neutral-800 shrink-0 ring-1 ring-amber-500/40">
+                  <div className="relative w-11 h-11 rounded-md overflow-hidden bg-muted shrink-0 ring-1 ring-amber-500/40">
                     {guestSignSlot.md.profile_image ? (
                       <Image
                         src={guestSignSlot.md.profile_image}
@@ -496,13 +496,13 @@ export function ClubDetailContent({
                         className="object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white/40 font-black text-lg">
+                      <div className="w-full h-full flex items-center justify-center text-foreground/40 font-black text-lg">
                         {(guestSignSlot.md.display_name ?? "M").charAt(0)}
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                    <p className="text-white font-black text-[15px] truncate leading-tight">
+                    <p className="text-foreground font-black text-[15px] truncate leading-tight">
                       {guestSignSlot.md.display_name ?? "담당 파트너"}
                     </p>
                     <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-black leading-none">
@@ -518,10 +518,10 @@ export function ClubDetailContent({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "instagram")}
-                      className="bg-[#18181B] hover:bg-[#202024] border border-neutral-700 rounded-md px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
+                      className="bg-card hover:bg-muted border border-border rounded-md px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
                     >
                       <Instagram className="w-4 h-4 text-pink-400 flex-shrink-0" />
-                      <span className="text-white text-[12px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
+                      <span className="text-foreground text-[12px] font-bold truncate">@{guestSignSlot.md.instagram}</span>
                     </a>
                   )}
                   {guestSignSlot.md.kakao_open_chat_url && (
@@ -530,10 +530,10 @@ export function ClubDetailContent({
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => trackGuestSignClick(guestSignSlot.slot_id, "openchat")}
-                      className="bg-[#18181B] hover:bg-[#202024] border border-neutral-700 rounded-md px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
+                      className="bg-card hover:bg-muted border border-border rounded-md px-3 py-2.5 flex items-center gap-2 active:scale-95 transition"
                     >
                       <MessageCircle className="w-4 h-4 text-[#FEE500] flex-shrink-0" fill="currentColor" />
-                      <span className="text-white text-[12px] font-bold truncate">오픈채팅</span>
+                      <span className="text-foreground text-[12px] font-bold truncate">오픈채팅</span>
                     </a>
                   )}
                 </div>
@@ -556,9 +556,9 @@ export function ClubDetailContent({
                         toast.error("복사에 실패했어요. 메시지를 길게 눌러 복사해주세요");
                       }
                     }}
-                    className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-md border border-neutral-700 bg-[#18181B] text-[12px] font-bold text-neutral-300 hover:text-white hover:border-neutral-600 active:scale-[0.98] transition"
+                    className="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-md border border-border bg-card text-[12px] font-bold text-foreground/80 hover:text-foreground hover:border-border active:scale-[0.98] transition"
                   >
-                    {guestSignCopied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {guestSignCopied ? <Check className="w-3.5 h-3.5 text-money" /> : <Copy className="w-3.5 h-3.5" />}
                     {guestSignCopied ? "복사됐어요. 붙여넣어 보내세요" : "문의 메시지 복사"}
                   </button>
                 )}
@@ -569,17 +569,17 @@ export function ClubDetailContent({
           {clubAddress && (
             <button
               onClick={() => setIsMapOpen(true)}
-              className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-white transition-colors group w-full text-left"
+              className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-foreground transition-colors group w-full text-left"
             >
               <MapPin className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
               <span className="sr-only">{club.name} 주소: </span>
               <span className="truncate">{clubAddress}</span>
-              <ExternalLink className="w-3 h-3 flex-shrink-0 text-neutral-500 group-hover:text-white" aria-hidden="true" />
+              <ExternalLink className="w-3 h-3 flex-shrink-0 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
             </button>
           )}
 
           {clubOperatingHours && (
-            <div className="flex items-center gap-1.5 text-[12px] text-neutral-400">
+            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <Clock className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
               <span className="sr-only">{club.name} 영업시간: </span>
               <span>{clubOperatingHours}</span>
@@ -587,7 +587,7 @@ export function ClubDetailContent({
           )}
 
           {clubEntryFeeDetail && (
-            <div className="flex items-center gap-1.5 text-[12px] text-neutral-400">
+            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <Ticket className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
               <span className="sr-only">{club.name} 입장료: </span>
               <span>{clubEntryFeeDetail}</span>
@@ -595,7 +595,7 @@ export function ClubDetailContent({
           )}
 
           {clubDresscode && (
-            <div className="flex items-center gap-1.5 text-[12px] text-neutral-400">
+            <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
               <Shirt className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
               <span className="sr-only">{club.name} 드레스코드: </span>
               <span>{clubDresscode}</span>
@@ -607,7 +607,7 @@ export function ClubDetailContent({
               href={`https://instagram.com/${clubInstagram}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-pink-400 transition-colors mt-1"
+              className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-pink-400 transition-colors mt-1"
             >
               <Instagram className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="sr-only">{club.name} 인스타그램: </span>
@@ -620,7 +620,7 @@ export function ClubDetailContent({
               href={club.website_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-[12px] text-neutral-400 hover:text-blue-400 transition-colors mt-1"
+              className="flex items-center gap-1.5 text-[12px] text-muted-foreground hover:text-blue-400 transition-colors mt-1"
             >
               <Globe className="w-3.5 h-3.5" aria-hidden="true" />
               <span className="sr-only">{club.name} 공식 홈페이지: </span>
@@ -644,7 +644,7 @@ export function ClubDetailContent({
             <button
               type="button"
               onClick={() => setPartnerEditorOpen(true)}
-              className="mt-3 inline-flex items-center justify-center gap-1.5 w-full h-10 rounded-lg bg-amber-500/10 border border-amber-500/40 text-amber-300 hover:bg-amber-500/20 active:scale-95 transition text-[13px] font-bold"
+              className="mt-3 inline-flex items-center justify-center gap-1.5 w-full h-10 rounded-lg bg-amber-500/10 border border-amber-500/40 text-brand-amber hover:bg-amber-500/20 active:scale-95 transition text-[13px] font-bold"
             >
               <Pencil className="w-3.5 h-3.5" />
               클럽 정보 수정하기 (해당 클럽 파트너 전용)
@@ -663,7 +663,7 @@ export function ClubDetailContent({
                   }
                   setReportSheetOpen(true);
                 }}
-                className="text-[11px] text-neutral-600 hover:text-amber-400 transition-colors underline decoration-dotted underline-offset-2"
+                className="text-[11px] text-muted-foreground hover:text-brand-amber transition-colors underline decoration-dotted underline-offset-2"
               >
                 정보 수정 요청
               </button>
@@ -736,7 +736,7 @@ export function ClubDetailContent({
       {/* 플로팅 CTA - 깃발 꽂기 (게스트 간판 MD가 없는 클럽에서만 노출) */}
       {showFlagCta && (
         <div
-          className="fixed left-0 right-0 bottom-0 z-40 px-4 pt-8 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] via-[70%] to-transparent pointer-events-none"
+          className="fixed left-0 right-0 bottom-0 z-40 px-4 pt-8 bg-gradient-to-t from-background via-background via-[70%] to-transparent pointer-events-none"
           style={{ paddingBottom: "calc(60px + env(safe-area-inset-bottom) + 12px)" }}
         >
           <div className="max-w-lg mx-auto pointer-events-auto">
@@ -836,22 +836,22 @@ function FeatureIconRow({
   if (cells.length === 0) return null;
 
   return (
-    <div className="border-t border-b border-neutral-800 flex items-stretch divide-x divide-neutral-800">
+    <div className="border-t border-b border-border flex items-stretch divide-x divide-neutral-800">
       {cells.map(({ key, Icon, value, groupLabel }) => {
         const isEmpty = !value;
         const content = (
           <>
             <Icon
-              className={`w-5 h-5 ${isEmpty ? "text-neutral-600" : "text-white"}`}
+              className={`w-5 h-5 ${isEmpty ? "text-muted-foreground" : "text-foreground"}`}
               strokeWidth={1.75}
             />
             <span
               className={`text-[11px] font-bold truncate max-w-full ${
                 isEmpty
                   ? canPartnerEdit
-                    ? "text-amber-300/80"
-                    : "text-neutral-600"
-                  : "text-white"
+                    ? "text-brand-amber dark:text-brand-amber/80"
+                    : "text-muted-foreground"
+                  : "text-foreground"
               }`}
             >
               {isEmpty ? (canPartnerEdit ? `+ ${groupLabel}` : groupLabel) : value}
@@ -863,7 +863,7 @@ function FeatureIconRow({
             key={key}
             type="button"
             onClick={onEdit}
-            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-3 px-2 hover:bg-neutral-900/50 transition-colors"
+            className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1.5 py-3 px-2 hover:bg-card/50 transition-colors"
           >
             {content}
           </button>
@@ -963,7 +963,7 @@ function AdminGuestSignEditor({
   );
 
   return (
-    <div className="space-y-2 bg-neutral-900/60 border border-red-500/30 rounded-xl p-3">
+    <div className="space-y-2 bg-card/60 border border-red-500/30 rounded-xl p-3">
       <p className="text-[10px] text-red-300 font-black">⚙ Admin 모드 — 오늘({dow}) 혜택</p>
       <input
         type="text"
@@ -971,7 +971,7 @@ function AdminGuestSignEditor({
         onChange={(e) => setText(e.target.value)}
         placeholder="예: 입구에서 '나플' 무료입장"
         disabled={saving}
-        className="w-full h-9 rounded-lg bg-neutral-900 border border-neutral-700 px-2.5 text-[12px] text-white placeholder:text-neutral-600"
+        className="w-full h-9 rounded-lg bg-card border border-border px-2.5 text-[12px] text-foreground placeholder:text-muted-foreground"
       />
       <div className="flex flex-wrap gap-1">
         {GUEST_SIGN_BENEFIT_PRESETS.map((p) => {
@@ -984,8 +984,8 @@ function AdminGuestSignEditor({
               onClick={() => toggleBenefit(p.value)}
               className={`h-7 px-2.5 rounded-full text-[11px] font-bold border ${
                 active
-                  ? "bg-amber-500/20 text-amber-300 border-amber-500/50"
-                  : "bg-neutral-900 text-neutral-500 border-neutral-700"
+                  ? "bg-amber-500/20 text-brand-amber border-amber-500/50"
+                  : "bg-card text-muted-foreground border-border"
               }`}
             >
               {p.emoji} {p.label}
@@ -998,10 +998,10 @@ function AdminGuestSignEditor({
             type="button"
             disabled={saving}
             onClick={() => toggleBenefit(c)}
-            className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/50 inline-flex items-center gap-1"
+            className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-brand-amber border border-amber-500/50 inline-flex items-center gap-1"
           >
             {benefitLabel(c).emoji && <span>{benefitLabel(c).emoji}</span>} {c}
-            <span className="text-amber-300/70">×</span>
+            <span className="text-brand-amber dark:text-brand-amber/70">×</span>
           </button>
         ))}
       </div>
@@ -1021,13 +1021,13 @@ function AdminGuestSignEditor({
           placeholder="혜택 직접입력"
           disabled={saving}
           maxLength={20}
-          className="flex-1 h-8 rounded-lg bg-neutral-900 border border-neutral-700 px-2 text-[11px] text-white placeholder:text-neutral-600"
+          className="flex-1 h-8 rounded-lg bg-card border border-border px-2 text-[11px] text-foreground placeholder:text-muted-foreground"
         />
         <button
           type="button"
           onClick={addCustom}
           disabled={saving || !customText.trim()}
-          className="h-8 px-3 rounded-lg bg-neutral-800 text-white text-[11px] font-bold disabled:opacity-50"
+          className="h-8 px-3 rounded-lg bg-muted text-foreground text-[11px] font-bold disabled:opacity-50"
         >
           추가
         </button>
@@ -1037,7 +1037,7 @@ function AdminGuestSignEditor({
           type="button"
           onClick={() => setOpen(false)}
           disabled={saving}
-          className="flex-1 h-9 rounded-lg bg-neutral-800 text-neutral-300 text-[12px] font-bold"
+          className="flex-1 h-9 rounded-lg bg-muted text-foreground/80 text-[12px] font-bold"
         >
           취소
         </button>

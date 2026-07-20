@@ -225,8 +225,8 @@ export default function AdminClubEditPage() {
 
   if (userLoading || loading || !current) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-neutral-500" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -240,21 +240,21 @@ export default function AdminClubEditPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <div className="max-w-2xl mx-auto px-4 py-5">
         {/* 헤더 */}
         <div className="flex items-center gap-3 mb-5">
           <Link
             href="/admin/clubs"
-            className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center"
+            className="w-10 h-10 rounded-full bg-card flex items-center justify-center"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-black text-white truncate">
+            <h1 className="text-lg font-black text-foreground truncate">
               {current.name}
             </h1>
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-[11px] text-muted-foreground">
               {current.area || "지역 미설정"}
               {current.address ? ` · ${current.address}` : ""}
             </p>
@@ -264,7 +264,7 @@ export default function AdminClubEditPage() {
               href={`https://instagram.com/${current.instagram}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center"
+              className="w-10 h-10 rounded-full bg-card flex items-center justify-center"
               aria-label="인스타그램 열기"
             >
               <Instagram className="w-4 h-4 text-pink-400" />
@@ -273,12 +273,12 @@ export default function AdminClubEditPage() {
         </div>
 
         {/* 진행 표시 */}
-        <div className="flex items-center justify-between bg-[#1C1C1E] rounded-2xl px-4 py-3 mb-5">
-          <div className="text-[12px] text-neutral-400">
-            <span className="text-white font-black">{currentIndex + 1}</span>
-            <span className="text-neutral-600"> / {allClubs.length}</span>
+        <div className="flex items-center justify-between bg-card rounded-2xl border border-border px-4 py-3 mb-5">
+          <div className="text-[12px] text-muted-foreground">
+            <span className="text-foreground font-black">{currentIndex + 1}</span>
+            <span className="text-muted-foreground"> / {allClubs.length}</span>
             {missingNow > 0 && (
-              <span className="text-amber-400 font-bold ml-2">
+              <span className="text-brand-amber font-bold ml-2">
                 · 누락 {missingNow}개
               </span>
             )}
@@ -290,10 +290,10 @@ export default function AdminClubEditPage() {
               onClick={() =>
                 prevClub && router.push(`/admin/clubs/${prevClub.id}/edit`)
               }
-              className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center disabled:opacity-30"
+              className="w-8 h-8 rounded-full bg-muted hover:bg-muted flex items-center justify-center disabled:opacity-30"
               aria-label="이전 클럽"
             >
-              <ChevronLeft className="w-4 h-4 text-white" />
+              <ChevronLeft className="w-4 h-4 text-foreground" />
             </button>
             <button
               type="button"
@@ -301,10 +301,10 @@ export default function AdminClubEditPage() {
               onClick={() =>
                 nextClub && router.push(`/admin/clubs/${nextClub.id}/edit`)
               }
-              className="w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center disabled:opacity-30"
+              className="w-8 h-8 rounded-full bg-muted hover:bg-muted flex items-center justify-center disabled:opacity-30"
               aria-label="다음 클럽"
             >
-              <ChevronRight className="w-4 h-4 text-white" />
+              <ChevronRight className="w-4 h-4 text-foreground" />
             </button>
           </div>
         </div>
@@ -317,7 +317,7 @@ export default function AdminClubEditPage() {
             onChange={(e) => setOperatingHours(e.target.value)}
             placeholder="예: 금/토 22:00-05:00"
             disabled={saving}
-            className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+            className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
           />
         </Section>
 
@@ -329,7 +329,7 @@ export default function AdminClubEditPage() {
             onChange={(e) => setEntryFeeDetail(e.target.value)}
             placeholder="예: 남 15,000 / 여 10,000"
             disabled={saving}
-            className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+            className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
           />
         </Section>
 
@@ -341,7 +341,7 @@ export default function AdminClubEditPage() {
             onChange={(e) => setDrinkMenuUrl(e.target.value)}
             placeholder="예: https://drive.google.com/... (이미지/PDF)"
             disabled={saving}
-            className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+            className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
           />
         </Section>
 
@@ -350,7 +350,7 @@ export default function AdminClubEditPage() {
           <div className="space-y-3">
             {CLUB_TAG_GROUPS.map((g) => (
               <div key={g.group}>
-                <div className="text-[11px] text-neutral-500 font-bold mb-1.5 flex items-center gap-1">
+                <div className="text-[11px] text-muted-foreground font-bold mb-1.5 flex items-center gap-1">
                   {g.emoji} {g.label}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -365,8 +365,8 @@ export default function AdminClubEditPage() {
                         disabled={saving}
                         className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors ${
                           active
-                            ? "bg-white text-black"
-                            : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                            ? "bg-inverse text-inverse-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted"
                         }`}
                       >
                         {opt.label}
@@ -385,14 +385,14 @@ export default function AdminClubEditPage() {
             {aliases.map((a) => (
               <span
                 key={a}
-                className="inline-flex items-center gap-1 bg-neutral-800 text-white text-[11px] font-bold px-2 py-1 rounded-full"
+                className="inline-flex items-center gap-1 bg-muted text-foreground text-[11px] font-bold px-2 py-1 rounded-full"
               >
                 {a}
                 <button
                   type="button"
                   onClick={() => removeAlias(a)}
                   disabled={saving}
-                  className="w-4 h-4 inline-flex items-center justify-center rounded-full hover:bg-neutral-700 text-neutral-400 hover:text-white"
+                  className="w-4 h-4 inline-flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
                   aria-label={`${a} 제거`}
                 >
                   ×
@@ -400,7 +400,7 @@ export default function AdminClubEditPage() {
               </span>
             ))}
             {aliases.length === 0 && (
-              <span className="text-[11px] text-neutral-600">
+              <span className="text-[11px] text-muted-foreground">
                 등록된 별칭이 없어요
               </span>
             )}
@@ -420,7 +420,7 @@ export default function AdminClubEditPage() {
               }}
               placeholder="예: 에이스, ace, 에이쓰"
               disabled={saving}
-              className="flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+              className="flex-1 bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
             />
             <button
               type="button"
@@ -435,7 +435,7 @@ export default function AdminClubEditPage() {
       </div>
 
       {/* 저장 바 (sticky) */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#0A0A0A]/95 backdrop-blur border-t border-neutral-800 z-30">
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border z-30">
         <div
           className="max-w-2xl mx-auto px-4 py-3 flex gap-2"
           style={{ paddingBottom: "calc(0.75rem + 3.5rem + env(safe-area-inset-bottom))" }}
@@ -444,7 +444,7 @@ export default function AdminClubEditPage() {
             type="button"
             onClick={() => handleSave(false)}
             disabled={saving}
-            className="flex-1 h-11 rounded-full bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-[14px] flex items-center justify-center gap-2 disabled:opacity-50"
+            className="flex-1 h-11 rounded-full bg-muted hover:bg-muted text-foreground font-bold text-[14px] flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {saving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -479,10 +479,10 @@ function Section({
 }) {
   return (
     <div className="mb-5">
-      <div className="text-[12px] text-neutral-400 font-bold mb-2 flex items-center gap-1.5">
+      <div className="text-[12px] text-muted-foreground font-bold mb-2 flex items-center gap-1.5">
         {title}
         {missing && (
-          <span className="text-amber-400 text-[10px]">· 누락</span>
+          <span className="text-brand-amber text-[10px]">· 누락</span>
         )}
       </div>
       {children}

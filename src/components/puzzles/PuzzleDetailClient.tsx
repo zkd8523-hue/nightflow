@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -131,11 +131,11 @@ function SelectingBanner({ expiresAt, en }: { expiresAt: string; en?: boolean })
   const { remaining, level } = useCountdown(expiresAt);
   const mm = Math.floor(remaining / 60).toString().padStart(2, "0");
   const ss = (remaining % 60).toString().padStart(2, "0");
-  const timerCls = level === "critical" ? "text-red-400" : level === "warning" ? "text-amber-300" : "text-white";
+  const timerCls = level === "critical" ? "text-red-400" : level === "warning" ? "text-brand-amber" : "text-foreground";
   return (
     <section className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-1">
-      <p className="text-[14px] font-bold text-amber-400">{en ? "⏰ Offers have closed" : "⏰ 오퍼가 종료되었습니다"}</p>
-      <p className="text-[12px] text-neutral-300">
+      <p className="text-[14px] font-bold text-brand-amber">{en ? "⏰ Offers have closed" : "⏰ 오퍼가 종료되었습니다"}</p>
+      <p className="text-[12px] text-foreground/80">
         {en ? "You have " : ""}
         <span className={`font-mono font-bold ${timerCls}`}>{mm}:{ss}</span>
         {en ? " left to decide" : " 동안 더 고민할 수 있어요"}
@@ -401,9 +401,9 @@ export function PuzzleDetailClient({
       .select("*, club:clubs(id, name, area, drink_menu_url, drink_menu_urls, drink_menu_updated_at), md:public_user_profiles!puzzle_offers_md_id_fkey(md_deal_count)")
       .eq("puzzle_id", puzzle.id)
       .in("status", ["pending", "accepted"])
-      // 최신 오퍼가 위로 — 방장이 상세를 다시 열었을 때 "새 오퍼 왔네"를 바로 인지하도록.
-      // (클럽 그룹 순서도 이 순서를 따라가므로, 가장 최근 오퍼가 온 클럽이 최상단)
-      .order("created_at", { ascending: false });
+      // 먼저 온 순 고정 — 재방문해도 순서가 안 바뀌어야 오퍼끼리 비교가 가능.
+      // "새 오퍼 인지"는 정렬이 아니라 미열람 NEW 배지로 해결한다.
+      .order("created_at", { ascending: true });
 
     if (!data) { setOffersLoading(false); return; }
     let merged = data as PuzzleOffer[];
@@ -570,6 +570,70 @@ export function PuzzleDetailClient({
       localStorage.setItem(`flag_offers_seen_${puzzle.id}`, String(pendingOffers.length));
     } catch {}
   }, [currentUserId, puzzle.leader_id, puzzle.id, pendingOffers.length]);
+
+  // 미열람 오퍼에 NEW 배지 — 정렬은 그대로 두고(비교 가능성 유지) 표시로만 새 오퍼를 알린다.
+  // 진입 시점의 미열람 집합을 한 번만 계산해 고정 → 보는 도중 배지가 사라지지 않음.
+  const [newOfferIds, setNewOfferIds] = useState<Set<string>>(new Set());
+  const newOffersComputedRef = useRef(false);
+  // 이미 "봤음"으로 기록된 오퍼 id — IntersectionObserver가 채우고 localStorage에 반영
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    // isLeader = 방장 본인 또는 어드민(모니터링) — 오퍼 목록이 보이는 시점과 동일 기준
+    if (!isLeader) return;
+    if (offersLoading || newOffersComputedRef.current) return;
+    newOffersComputedRef.current = true;
+    const key = `flag_offers_seen_ids_${puzzle.id}`;
+    let seen: string[] = [];
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) seen = JSON.parse(raw) as string[];
+    } catch {}
+    const seenSet = new Set(seen);
+    seenIdsRef.current = seenSet;
+    const ids = pendingOffers.map((o) => o.id);
+    setNewOfferIds(new Set(ids.filter((id) => !seenSet.has(id))));
+    // ※ 여기서 "전부 확인함"으로 저장하지 않는다 — 실제로 화면에 보인 것만
+    //   아래 IntersectionObserver가 개별로 기록한다.
+  }, [isLeader, puzzle.id, offersLoading, pendingOffers]);
+
+  // 확인 처리 — 오퍼 카드가 실제로 화면에 보였을 때만 "봤음"으로 기록 (카톡 읽음 처리와 동일 원리).
+  // 스크롤 안 해서 못 본 아래쪽 오퍼는 다음 방문에도 NEW가 유지된다.
+  useEffect(() => {
+    if (!isLeader || offersLoading) return;
+    if (typeof IntersectionObserver === "undefined") return;
+    const key = `flag_offers_seen_ids_${puzzle.id}`;
+    const pendingIds = new Set(pendingOffers.map((o) => o.id));
+    const persist = () => {
+      // 이미 끝난 오퍼 id는 정리하고 현재 진행 중인 것만 보관
+      const merged = [...seenIdsRef.current].filter((id) => pendingIds.has(id));
+      try {
+        localStorage.setItem(key, JSON.stringify(merged));
+      } catch {}
+    };
+    const io = new IntersectionObserver(
+      (entries) => {
+        let changed = false;
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          // 카드가 뷰포트보다 길면 비율이 안 차므로, 보인 높이로 판정
+          const tall = e.boundingClientRect.height > window.innerHeight * 0.8;
+          const enough = tall
+            ? e.intersectionRect.height > window.innerHeight * 0.4
+            : e.intersectionRatio >= 0.4;
+          if (!enough) continue;
+          const id = (e.target as HTMLElement).dataset.offerId;
+          if (!id || seenIdsRef.current.has(id)) continue;
+          seenIdsRef.current.add(id);
+          changed = true;
+          io.unobserve(e.target);
+        }
+        if (changed) persist();
+      },
+      { threshold: [0, 0.4] },
+    );
+    document.querySelectorAll<HTMLElement>("[data-offer-id]").forEach((n) => io.observe(n));
+    return () => io.disconnect();
+  }, [isLeader, offersLoading, pendingOffers, puzzle.id]);
 
   // 비방장용: 본인 오퍼 제외 + public 변환
   // 클럽명은 1개만 공개(맛보기). 나머지는 클럽명 숨김.
@@ -766,7 +830,7 @@ export function PuzzleDetailClient({
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-background">
       {/* 관리자 전용: 일반 유저 화면 미리보기 토글 — 관리자 전용 UI(식별정보/강제철회 등)를 숨기고 유저가 보는 그대로 확인 */}
       {isRealAdmin && (
         <div className="sticky top-0 z-50 bg-blue-600 text-white text-[12px] font-bold px-4 py-2 flex items-center justify-between">
@@ -782,16 +846,16 @@ export function PuzzleDetailClient({
       <div className="max-w-lg mx-auto px-4">
         {/* 헤더 */}
         <div className="flex items-center gap-3 py-5">
-          <Link href={isForeigner ? "/en" : "/?tab=puzzle"} className="text-white">
+          <Link href={isForeigner ? "/en" : "/?tab=puzzle"} className="text-foreground">
             <ChevronLeft className="w-6 h-6" />
           </Link>
-          <h1 className="text-[17px] font-black text-white flex-1">{t(isRecruitingParty ? "조각 상세" : "깃발 상세", "Request detail")}</h1>
+          <h1 className="text-[17px] font-black text-foreground flex-1">{t(isRecruitingParty ? "조각 상세" : "깃발 상세", "Request detail")}</h1>
           {currentUserId === puzzle.leader_id && isOpen && pendingOffers.length === 0 && (
             <Link
               // MD 직통 조각(host_is_md)은 등록과 동일한 AuctionForm 수정 폼으로, 그 외는 유저 조각/깃발 폼으로
               href={puzzle.host_is_md ? `/md/auctions/${puzzle.id}/edit` : `/flags/${puzzle.id}/edit${lq}`}
               aria-label={t(isRecruitingParty ? "조각 수정" : "깃발 수정", "Edit request")}
-              className="w-8 h-8 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+              className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             >
               <Pencil className="w-4 h-4" />
             </Link>
@@ -800,14 +864,14 @@ export function PuzzleDetailClient({
             <span
               className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
                 puzzle.status === "open"
-                  ? "bg-green-500/20 text-green-400"
+                  ? "bg-green-500/20 text-money"
                   : puzzle.status === "selecting"
-                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  ? "bg-amber-500/20 text-brand-amber border border-amber-500/30"
                   : puzzle.status === "accepted"
-                  ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                  ? "bg-amber-500/20 text-brand-amber border border-amber-500/30"
                   : puzzle.status === "matched"
-                  ? "bg-amber-500/20 text-amber-400"
-                  : "bg-neutral-700 text-neutral-400"
+                  ? "bg-amber-500/20 text-brand-amber"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {(isForeigner ? STATUS_LABEL_EN : STATUS_LABEL)[puzzle.status] || puzzle.status}
@@ -835,17 +899,17 @@ export function PuzzleDetailClient({
                   <p className="text-[12px] text-red-200/70 font-bold uppercase tracking-wide">
                     {t("관리자 안내 사유", "Reason from admin")}
                   </p>
-                  <p className="text-[14px] text-white leading-relaxed whitespace-pre-wrap break-keep">
+                  <p className="text-[14px] text-foreground leading-relaxed whitespace-pre-wrap break-keep">
                     {puzzle.cancelled_reason}
                   </p>
                 </>
               ) : (
-                <p className="text-[13px] text-neutral-300 leading-relaxed">
+                <p className="text-[13px] text-foreground/80 leading-relaxed">
                   {t("이 깃발은 더 이상 진행되지 않습니다. 새로운 깃발을 등록해 주세요.", "This request is no longer active. Please make a new one.")}
                 </p>
               )}
               {puzzle.cancelled_at && (
-                <p className="text-[11px] text-neutral-500">
+                <p className="text-[11px] text-muted-foreground">
                   {new Date(puzzle.cancelled_at).toLocaleString(isForeigner ? "en-US" : "ko-KR", {
                     timeZone: "Asia/Seoul",
                     month: "numeric",
@@ -861,7 +925,7 @@ export function PuzzleDetailClient({
           {/* 날짜 헤더 — 상세에서는 한 단계 크게(22px) 위계 강화 */}
           <div className="flex items-center gap-2.5 px-1">
             <div className="w-1.5 h-[20px] bg-amber-500 rounded-full flex-shrink-0" />
-            <h3 className="text-[22px] font-black text-white tracking-tight">
+            <h3 className="text-[22px] font-black text-foreground tracking-tight">
               {formatEventDate(puzzle.event_date, isForeigner)}
             </h3>
             {(() => {
@@ -871,24 +935,24 @@ export function PuzzleDetailClient({
                 <span
                   className={`relative top-[2px] text-[12px] font-bold px-2.5 py-0.5 rounded-full ${
                     isToday
-                      ? "bg-amber-500/20 text-amber-400"
-                      : "bg-neutral-800 text-neutral-400"
+                      ? "bg-amber-500/20 text-brand-amber"
+                      : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {isToday ? t("오늘", "Today") : dday}
                 </span>
               );
             })()}
-            <span className="ml-auto text-[14px] text-neutral-400">{areaLabel(puzzle.area, lang)}</span>
+            <span className="ml-auto text-[14px] text-muted-foreground">{areaLabel(puzzle.area, lang)}</span>
           </div>
 
           {/* 기본 정보 */}
-          <section className="bg-[#1C1C1E] rounded-xl px-5 pt-4 pb-3 space-y-2.5">
+          <section className="bg-card rounded-xl border border-border px-5 pt-4 pb-3 space-y-2.5">
             {/* 제목 + 지역 (맨 위) — 우측에 공유 버튼 */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex flex-wrap items-baseline gap-x-2 min-w-0">
                 {puzzle.notes && (
-                  <p className="text-[22px] font-black text-white leading-snug tracking-tight break-keep">{displayNotes}</p>
+                  <p className="text-[22px] font-black text-foreground leading-snug tracking-tight break-keep">{displayNotes}</p>
                 )}
               </div>
               <button
@@ -901,7 +965,7 @@ export function PuzzleDetailClient({
                     handleShare();
                   }
                 }}
-                className="w-8 h-8 flex items-center justify-center text-neutral-500 hover:text-white transition-colors -mr-1 shrink-0"
+                className="w-8 h-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors -mr-1 shrink-0"
               >
                 <Share2 className="w-4.5 h-4.5" />
               </button>
@@ -915,12 +979,12 @@ export function PuzzleDetailClient({
                     <button
                       type="button"
                       onClick={() => puzzle.leader_id && router.push(`/u/${puzzle.leader_id}`)}
-                      className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2.5 py-1 transition-colors"
+                      className="inline-flex items-center gap-1.5 text-[12px] text-foreground/80 font-bold hover:text-foreground border border-border hover:border-border rounded-full px-2.5 py-1 transition-colors"
                     >
                       {puzzle.leader.profile_image ? (
                         <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-4 h-4 rounded-full object-cover" />
                       ) : (
-                        <div className="w-4 h-4 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
+                        <div className="w-4 h-4 rounded-full bg-muted flex items-center justify-center text-[9px] font-black">
                           {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
                         </div>
                       )}
@@ -941,22 +1005,22 @@ export function PuzzleDetailClient({
                 <>
                   <div className="flex items-center gap-2 flex-wrap">
                     {/* 예산 표시 — 전원 동일하게 1인/현재 (역할 구분 없음) */}
-                    <span className="text-[19px] font-bold text-green-400">
+                    <span className="text-[19px] font-bold text-money">
                       1인 {perPersonBudget.toLocaleString()}원
                     </span>
-                    <span className="text-[13px] text-neutral-500">
+                    <span className="text-[13px] text-muted-foreground">
                       / 현재 {(perPersonBudget * puzzle.current_count).toLocaleString()}원
                     </span>
                     {puzzle.leader && !puzzle.host_is_md && (
                       <button
                         type="button"
                         onClick={() => puzzle.leader_id && router.push(`/u/${puzzle.leader_id}`)}
-                        className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-full px-2.5 py-1 transition-colors"
+                        className="inline-flex items-center gap-1.5 text-[12px] text-foreground/80 font-bold hover:text-foreground border border-border hover:border-border rounded-full px-2.5 py-1 transition-colors"
                       >
                         {puzzle.leader.profile_image ? (
                           <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-4 h-4 rounded-full object-cover" />
                         ) : (
-                          <div className="w-4 h-4 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
+                          <div className="w-4 h-4 rounded-full bg-muted flex items-center justify-center text-[9px] font-black">
                             {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
                           </div>
                         )}
@@ -965,7 +1029,7 @@ export function PuzzleDetailClient({
                     )}
                   </div>
                   {puzzle.leader_comment && (
-                    <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-3 pt-1.5 break-words [overflow-wrap:anywhere]">
+                    <p className="text-[13px] leading-relaxed text-foreground/80 border-l border-border pl-3 pt-1.5 break-words [overflow-wrap:anywhere]">
                       &ldquo;{puzzle.leader_comment}&rdquo;
                     </p>
                   )}
@@ -974,14 +1038,14 @@ export function PuzzleDetailClient({
                 <>
                   {/* 홈 카드 패턴 통일: 예산 + 인원 pill + 음악 한 줄 (닉네임은 카드 하단으로 이동) */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[19px] font-bold text-green-400">
+                    <span className="text-[19px] font-bold text-money">
                       {isForeigner ? `₩${baseBudget.toLocaleString()}` : `예산 ${baseBudget.toLocaleString()}원`}
                     </span>
-                    <span className="relative top-[2px] inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 text-green-400 text-[12px] font-bold">
+                    <span className="relative top-[2px] inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-green-500/10 text-money text-[12px] font-bold">
                       {formatGenderComposition(puzzle.target_male, puzzle.target_female, puzzle.target_count, isForeigner ? "en" : "ko")}
                     </span>
                     {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-medium">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted text-foreground/80 text-[11px] font-medium">
                         {puzzle.music_preference === "hiphop" ? t("힙합", "Hip-hop") : "EDM"}{t(" 선호", " preferred")}
                       </span>
                     )}
@@ -989,7 +1053,7 @@ export function PuzzleDetailClient({
 
                   {/* 방장 덧붙이는 말 — MD 오퍼 코멘트와 동일한 인용 블록 스타일 재사용. 순서: 제목→닉네임→예산/인원→한마디 */}
                   {puzzle.leader_comment && (
-                    <p className="text-[13px] leading-relaxed text-neutral-300 border-l border-neutral-600 pl-3 pt-1.5 break-words [overflow-wrap:anywhere]">
+                    <p className="text-[13px] leading-relaxed text-foreground/80 border-l border-border pl-3 pt-1.5 break-words [overflow-wrap:anywhere]">
                       &ldquo;{puzzle.leader_comment}&rdquo;
                     </p>
                   )}
@@ -1001,7 +1065,7 @@ export function PuzzleDetailClient({
             {isRecruitingParty && (
               <div className="space-y-1.5">
                 {puzzle.current_count >= puzzle.target_count && (
-                  <span className="text-[13px] text-neutral-400">조각 완성!</span>
+                  <span className="text-[13px] text-muted-foreground">조각 완성!</span>
                 )}
                 <div className="flex flex-wrap gap-1.5">
                   {buildPuzzleSlotLayout(puzzle).map((slot, i) => (
@@ -1036,12 +1100,12 @@ export function PuzzleDetailClient({
                 <button
                   type="button"
                   onClick={() => setShowLeaderInfo(true)}
-                  className="inline-flex items-center gap-1.5 text-[12px] text-neutral-300 font-bold hover:text-white border border-neutral-700 hover:border-neutral-500 rounded-md pl-1 pr-2.5 py-1 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-[12px] text-foreground/80 font-bold hover:text-foreground border border-border hover:border-border rounded-md pl-1 pr-2.5 py-1 transition-colors"
                 >
                   {puzzle.leader.profile_image ? (
                     <img src={puzzle.leader.profile_image} alt="" decoding="async" className="w-5 h-5 rounded-full object-cover" />
                   ) : (
-                    <div className="w-5 h-5 rounded-full bg-neutral-700 flex items-center justify-center text-[9px] font-black">
+                    <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-black">
                       {(puzzle.leader.display_name || puzzle.leader.name || "?").substring(0, 1)}
                     </div>
                   )}
@@ -1055,7 +1119,7 @@ export function PuzzleDetailClient({
                 {(() => {
                   const dealCount = puzzle.leader.deal_count_total ?? 0;
                   return dealCount > 0 ? (
-                    <span className="text-[11px] text-neutral-500 font-bold">{isForeigner ? `${dealCount} deals` : `거래 ${dealCount}회`}</span>
+                    <span className="text-[11px] text-muted-foreground font-bold">{isForeigner ? `${dealCount} deals` : `거래 ${dealCount}회`}</span>
                   ) : null;
                 })()}
               </div>
@@ -1064,7 +1128,7 @@ export function PuzzleDetailClient({
 
           {/* 등록일시 — 박스 바깥, 다음 행, 우측 정렬 */}
           <p
-            className="text-[11px] text-neutral-600 text-right px-1"
+            className="text-[11px] text-muted-foreground text-right px-1"
             suppressHydrationWarning
           >
             {formatRelativeTime(puzzle.created_at)}
@@ -1073,9 +1137,9 @@ export function PuzzleDetailClient({
           {/* MD 한마디 — 기본 정보 카드 바로 아래 (MD 직통만). 실제 한마디(md_comment) 있을 때만 노출.
               제목(notes)을 한마디로 재출력하지 않음 — 중복이라 의미 없음 */}
           {isRecruitingParty && puzzle.host_is_md && puzzle.md_comment && (
-            <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl px-5 py-4 space-y-1">
-              <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">파트너의 한마디</p>
-              <p className="text-[14px] text-neutral-200 leading-relaxed whitespace-pre-line">{puzzle.md_comment}</p>
+            <div className="bg-card border border-border/50 rounded-2xl px-5 py-4 space-y-1">
+              <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">파트너의 한마디</p>
+              <p className="text-[14px] text-foreground/90 leading-relaxed whitespace-pre-line">{puzzle.md_comment}</p>
             </div>
           )}
 
@@ -1098,11 +1162,11 @@ export function PuzzleDetailClient({
                         className="w-full flex items-center justify-center gap-2"
                         aria-expanded={floorPlanOpen}
                       >
-                        <h2 className="text-[14px] font-bold text-white">
+                        <h2 className="text-[14px] font-bold text-foreground">
                           {floorPlanOpen ? "테이블맵 닫기" : "테이블맵 보기"}
                         </h2>
                         <ChevronDown
-                          className={`w-4 h-4 text-neutral-500 transition-transform ${floorPlanOpen ? "rotate-180" : ""}`}
+                          className={`w-4 h-4 text-muted-foreground transition-transform ${floorPlanOpen ? "rotate-180" : ""}`}
                         />
                       </button>
                       <FloorPlanViewer
@@ -1119,17 +1183,17 @@ export function PuzzleDetailClient({
               {/* 클럽 위치 미니맵 — AuctionDetail과 동일 (모달 대신 지도앱 링크) */}
               {puzzle.club?.latitude && puzzle.club?.longitude && (
                 <div>
-                  <div className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3">
+                  <div className="bg-card border border-border/50 rounded-2xl p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5 text-neutral-500" />
-                        <h2 className="text-[14px] font-bold text-white">위치</h2>
+                        <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
+                        <h2 className="text-[14px] font-bold text-foreground">위치</h2>
                       </div>
                       <a
                         href={`https://maps.google.com/maps?q=${puzzle.club.latitude},${puzzle.club.longitude}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center justify-center p-2 -m-2 rounded-lg text-[12px] text-neutral-400 font-bold hover:text-white transition-colors active:bg-neutral-800"
+                        className="flex items-center justify-center p-2 -m-2 rounded-lg text-[12px] text-muted-foreground font-bold hover:text-foreground transition-colors active:bg-muted"
                       >
                         지도앱으로 열기 →
                       </a>
@@ -1138,7 +1202,7 @@ export function PuzzleDetailClient({
                       href={`https://maps.google.com/maps?q=${puzzle.club.latitude},${puzzle.club.longitude}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="relative rounded-xl overflow-hidden border border-neutral-800 w-full cursor-pointer block"
+                      className="relative rounded-xl overflow-hidden border border-border w-full cursor-pointer block"
                     >
                       <iframe
                         src={`https://maps.google.com/maps?q=${puzzle.club.latitude},${puzzle.club.longitude}&z=16&output=embed&hl=ko`}
@@ -1158,24 +1222,24 @@ export function PuzzleDetailClient({
           {isAccepted && (
             <section className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-5 space-y-3">
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-amber-400" />
-                <h2 className="text-[15px] font-black text-amber-400">{t("성사됨", "Matched")}</h2>
+                <CheckCircle2 className="w-5 h-5 text-brand-amber" />
+                <h2 className="text-[15px] font-black text-brand-amber">{t("성사됨", "Matched")}</h2>
               </div>
               {acceptedOffer && (
                 <div className="space-y-1">
-                  <p className="text-[14px] font-bold text-white">
+                  <p className="text-[14px] font-bold text-foreground">
                     {(acceptedOffer.club as { name?: string } | null)?.name || t("클럽", "Club")}
                   </p>
                   {/* 방장에게만 상세 정보 표시 */}
                   {isLeader && (
                     <div className="space-y-2 pt-2 border-t border-amber-500/20 mt-2">
-                      <p className="text-[13px] text-neutral-300">
+                      <p className="text-[13px] text-foreground/80">
                         💰 {isForeigner ? `₩${acceptedOffer.proposed_price.toLocaleString()}` : `${acceptedOffer.proposed_price.toLocaleString()}원`}
                       </p>
                       {acceptedOffer.includes.length > 0 && (
                         <div className="flex flex-wrap gap-1 w-full">
                           {acceptedOffer.includes.map((inc) => (
-                            <span key={inc} className="text-[11px] px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 break-words max-w-full">
+                            <span key={inc} className="text-[11px] px-2 py-0.5 rounded-full bg-green-500/20 text-money break-words max-w-full">
                               {isForeigner ? toEnglishInclude(inc) : inc}
                             </span>
                           ))}
@@ -1195,8 +1259,8 @@ export function PuzzleDetailClient({
                   <>
                     <div className="flex items-center gap-3 pt-1 border-t border-amber-500/20">
                       <div className="relative shrink-0">
-                        <div className="relative w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
-                          <span className="absolute inset-0 flex items-center justify-center font-black text-neutral-500 text-[15px]">
+                        <div className="relative w-11 h-11 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden">
+                          <span className="absolute inset-0 flex items-center justify-center font-black text-muted-foreground text-[15px]">
                             {(md.display_name || "M").substring(0, 1)}
                           </span>
                           {md.profile_image && (
@@ -1210,18 +1274,18 @@ export function PuzzleDetailClient({
                             />
                           )}
                         </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1C1C1E] flex items-center justify-center">
-                          <ShieldCheck className="w-2.5 h-2.5 text-white" />
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-card flex items-center justify-center">
+                          <ShieldCheck className="w-2.5 h-2.5 text-foreground" />
                         </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-white font-bold text-[14px] truncate">{md.display_name || t("나이트플로우 파트너", "NightFlow Partner")}</p>
+                          <p className="text-foreground font-bold text-[14px] truncate">{md.display_name || t("나이트플로우 파트너", "NightFlow Partner")}</p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-[11px] text-neutral-500">{t("NightFlow 인증 파트너", "NightFlow verified partner")}</p>
+                          <p className="text-[11px] text-muted-foreground">{t("NightFlow 인증 파트너", "NightFlow verified partner")}</p>
                           {dealCount > 0 && (
-                            <span className="text-[10px] font-bold text-neutral-400">
+                            <span className="text-[10px] font-bold text-muted-foreground">
                               {isForeigner ? `· ${dealCount} deals` : `· 거래 ${dealCount}회`}
                             </span>
                           )}
@@ -1239,7 +1303,7 @@ export function PuzzleDetailClient({
                     {/* 거래 확정 상태 표시 (Migration 147: leader는 알림만 받고 마킹 권한 없음) */}
                     {acceptedOffer.visit_marked_at && (
                       <div className="pt-2 border-t border-amber-500/20">
-                        <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-green-500/15 text-green-400">
+                        <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-green-500/15 text-money">
                           <ShieldCheck className="w-3.5 h-3.5" /> {t("거래 확정됨", "Visit confirmed")}
                         </span>
                       </div>
@@ -1252,7 +1316,7 @@ export function PuzzleDetailClient({
                       if (!showReviewPrompt) return null;
                       return (
                         <div className="pt-3 border-t border-amber-500/20 space-y-2">
-                          <p className="text-[13px] font-bold text-white text-center">
+                          <p className="text-[13px] font-bold text-foreground text-center">
                             {isForeigner
                               ? `How was ${(acceptedOffer.club as { name?: string } | null)?.name || "the club"} last night?`
                               : `어제 ${(acceptedOffer.club as { name?: string } | null)?.name || "클럽"} 어떠셨어요?`}
@@ -1261,7 +1325,7 @@ export function PuzzleDetailClient({
                             <button
                               type="button"
                               onClick={() => toast.success(t("기록되었어요", "Recorded"))}
-                              className="flex-1 h-11 rounded-2xl bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 text-neutral-400 font-bold text-[13px] transition"
+                              className="flex-1 h-11 rounded-2xl bg-card border border-border hover:bg-muted text-muted-foreground font-bold text-[13px] transition"
                             >
                               {t("가지 않았어요", "Didn't go")}
                             </button>
@@ -1278,7 +1342,7 @@ export function PuzzleDetailClient({
                   </>
                 );
               })()}
-              <p className="text-[11px] text-neutral-500">
+              <p className="text-[11px] text-muted-foreground">
                 {isLeader
                   ? puzzle.kakao_open_chat_url
                     ? t(
@@ -1305,8 +1369,8 @@ export function PuzzleDetailClient({
                 <p className="text-[12px] font-bold text-blue-400">작성자 정보 (관리자 전용)</p>
               </div>
               <div className="flex items-center gap-3">
-                <div className="relative w-11 h-11 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
-                  <span className="absolute inset-0 flex items-center justify-center font-black text-neutral-500 text-[15px]">
+                <div className="relative w-11 h-11 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden">
+                  <span className="absolute inset-0 flex items-center justify-center font-black text-muted-foreground text-[15px]">
                     {(leader.display_name || leader.name || "?").substring(0, 1)}
                   </span>
                   {leader.profile_image && (
@@ -1323,54 +1387,54 @@ export function PuzzleDetailClient({
                 <div className="flex-1 min-w-0">
                   <Link
                     href={leader.role === "md" ? `/admin/mds/${leader.id}` : `/admin/users?focus=${leader.id}`}
-                    className="text-[14px] font-bold text-white truncate hover:text-blue-400 hover:underline transition-colors block"
+                    className="text-[14px] font-bold text-foreground truncate hover:text-blue-400 hover:underline transition-colors block"
                   >
                     {leader.display_name || leader.name || "이름 없음"}
                     {leader.role && leader.role !== "user" && (
-                      <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-neutral-700 text-neutral-300 align-middle">{leader.role}</span>
+                      <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-muted text-foreground/80 align-middle">{leader.role}</span>
                     )}
                   </Link>
-                  <p className="text-[11px] text-neutral-500 truncate">
+                  <p className="text-[11px] text-muted-foreground truncate">
                     {leader.name && leader.display_name && leader.name !== leader.display_name ? `본명: ${leader.name} · ` : ""}
                     ID: {leader.id.substring(0, 8)}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2">
-                  <p className="text-neutral-500">전화</p>
-                  <p className="text-white font-mono">{leader.phone || "-"}</p>
+                <div className="bg-card rounded-lg px-3 py-2">
+                  <p className="text-muted-foreground">전화</p>
+                  <p className="text-foreground font-mono">{leader.phone || "-"}</p>
                 </div>
-                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2">
-                  <p className="text-neutral-500">인스타</p>
-                  <p className="text-white font-mono truncate">{leader.instagram || "-"}</p>
+                <div className="bg-card rounded-lg px-3 py-2">
+                  <p className="text-muted-foreground">인스타</p>
+                  <p className="text-foreground font-mono truncate">{leader.instagram || "-"}</p>
                 </div>
-                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2">
-                  <p className="text-neutral-500">스트라이크</p>
-                  <p className={`font-bold ${(leader.strike_count ?? 0) > 0 ? "text-red-400" : "text-white"}`}>
+                <div className="bg-card rounded-lg px-3 py-2">
+                  <p className="text-muted-foreground">스트라이크</p>
+                  <p className={`font-bold ${(leader.strike_count ?? 0) > 0 ? "text-red-400" : "text-foreground"}`}>
                     {leader.strike_count ?? 0}회
                   </p>
                 </div>
-                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2">
-                  <p className="text-neutral-500">상태</p>
-                  <p className={`font-bold ${leader.is_blocked ? "text-red-400" : "text-green-400"}`}>
+                <div className="bg-card rounded-lg px-3 py-2">
+                  <p className="text-muted-foreground">상태</p>
+                  <p className={`font-bold ${leader.is_blocked ? "text-red-400" : "text-money"}`}>
                     {leader.is_blocked ? "차단됨" : "정상"}
                   </p>
                 </div>
-                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2 col-span-2">
-                  <p className="text-neutral-500">SMS·알림톡 수신동의</p>
-                  <p className={`font-bold ${leader.alimtalk_consent ? "text-green-400" : "text-red-400"}`}>
+                <div className="bg-card rounded-lg px-3 py-2 col-span-2">
+                  <p className="text-muted-foreground">SMS·알림톡 수신동의</p>
+                  <p className={`font-bold ${leader.alimtalk_consent ? "text-money" : "text-red-400"}`}>
                     {leader.alimtalk_consent ? "동의함" : "미동의"}
                     {leader.alimtalk_consent && leader.alimtalk_consent_at && (
-                      <span className="ml-1.5 text-[10px] font-normal text-neutral-500">
+                      <span className="ml-1.5 text-[10px] font-normal text-muted-foreground">
                         ({dayjs(leader.alimtalk_consent_at).format("YYYY-MM-DD")})
                       </span>
                     )}
                   </p>
                 </div>
-                <div className="bg-[#1C1C1E] rounded-lg px-3 py-2 col-span-2">
-                  <p className="text-neutral-500">마지막 접속</p>
-                  <p className="text-white font-mono">
+                <div className="bg-card rounded-lg px-3 py-2 col-span-2">
+                  <p className="text-muted-foreground">마지막 접속</p>
+                  <p className="text-foreground font-mono">
                     {leader.last_seen_at
                       ? `${dayjs(leader.last_seen_at).format("YYYY-MM-DD HH:mm")} (${dayjs(leader.last_seen_at).fromNow()})`
                       : "-"}
@@ -1385,7 +1449,7 @@ export function PuzzleDetailClient({
             <section className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 flex items-center justify-between">
               <div>
                 <p className="text-[12px] font-bold text-red-400">관리자 도구</p>
-                <p className="text-[10px] text-neutral-500">깃발 강제 종료 (참여자 알림 + 파트너 슬롯 회복)</p>
+                <p className="text-[10px] text-muted-foreground">깃발 강제 종료 (참여자 알림 + 파트너 슬롯 회복)</p>
               </div>
               <AdminCancelPuzzleButton puzzleId={puzzle.id} />
             </section>
@@ -1396,68 +1460,68 @@ export function PuzzleDetailClient({
             <section className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="text-[16px] leading-none">💬</span>
-                <h2 className="text-[16px] font-bold text-neutral-200">조각 상담 상태</h2>
+                <h2 className="text-[16px] font-bold text-foreground">조각 상담 상태</h2>
               </div>
-              <div className="rounded-2xl border border-neutral-800 bg-[#1C1C1E] p-4 space-y-3">
+              <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
                 {partyMdStatus === null ? (
-                  <p className="text-[13px] text-neutral-500">불러오는 중…</p>
+                  <p className="text-[13px] text-muted-foreground">불러오는 중…</p>
                 ) : (
                   <>
                     {/* 파티 채팅 활성 — MD 초대와 무관하게 항상 */}
-                    <div className="text-[13px] text-neutral-400 space-y-0.5">
+                    <div className="text-[13px] text-muted-foreground space-y-0.5">
                       <p>
-                        💬 파티 채팅 총 <span className="text-white font-bold">{partyMdStatus.chat_total ?? 0}</span>건
-                        {(partyMdStatus.chat_md ?? 0) > 0 && <span className="text-neutral-500"> · MD {partyMdStatus.chat_md}</span>}
+                        💬 파티 채팅 총 <span className="text-foreground font-bold">{partyMdStatus.chat_total ?? 0}</span>건
+                        {(partyMdStatus.chat_md ?? 0) > 0 && <span className="text-muted-foreground"> · MD {partyMdStatus.chat_md}</span>}
                       </p>
                       {partyMdStatus.chat_last_at ? (
                         <p>
-                          마지막: <span className="text-neutral-300 font-medium">{partyMdStatus.chat_last_name ?? "?"}</span>
-                          {partyMdStatus.chat_last_is_md && <span className="text-amber-400"> (MD)</span>}
+                          마지막: <span className="text-foreground/80 font-medium">{partyMdStatus.chat_last_name ?? "?"}</span>
+                          {partyMdStatus.chat_last_is_md && <span className="text-brand-amber"> (MD)</span>}
                           {" · "}
                           <span suppressHydrationWarning>{dayjs(partyMdStatus.chat_last_at).fromNow()}</span>
                         </p>
                       ) : (
-                        <p className="text-neutral-600">아직 대화 없음</p>
+                        <p className="text-muted-foreground">아직 대화 없음</p>
                       )}
                     </div>
 
                     {/* 초대 MD 상담 — 오퍼 선택해 초대됐을 때만 */}
                     {partyMdStatus.invited ? (
-                      <div className="pt-3 border-t border-neutral-800 space-y-2">
+                      <div className="pt-3 border-t border-border space-y-2">
                         <div className="flex items-center justify-between">
-                          <p className="text-[14px] font-bold text-white">{partyMdStatus.md_name}</p>
+                          <p className="text-[14px] font-bold text-foreground">{partyMdStatus.md_name}</p>
                           {(() => {
                             const replied = (partyMdStatus.chat_md ?? 0) > 0;
                             const consented = !!partyMdStatus.consented_at;
                             const label = replied ? "대화중" : consented ? "상담 시작" : "초대만";
                             const cls = replied
-                              ? "bg-green-500/15 text-green-400"
+                              ? "bg-green-500/15 text-money"
                               : consented
-                                ? "bg-amber-500/15 text-amber-400"
-                                : "bg-neutral-700 text-neutral-300";
+                                ? "bg-amber-500/15 text-brand-amber"
+                                : "bg-muted text-foreground/80";
                             return <span className={`text-[12px] px-2.5 py-1 rounded-full font-bold ${cls}`}>{label}</span>;
                           })()}
                         </div>
 
                         {partyMdStatus.offer_id && (
                           <div className="flex items-center gap-2 text-[13px] flex-wrap">
-                            <span className="text-neutral-500">선택 오퍼</span>
-                            <span className="font-bold text-white">{partyMdStatus.offer_club_name ?? "클럽"}</span>
+                            <span className="text-muted-foreground">선택 오퍼</span>
+                            <span className="font-bold text-foreground">{partyMdStatus.offer_club_name ?? "클럽"}</span>
                             {partyMdStatus.offer_price != null && (
-                              <span className="text-green-400 font-bold">{partyMdStatus.offer_price.toLocaleString()}원</span>
+                              <span className="text-money font-bold">{partyMdStatus.offer_price.toLocaleString()}원</span>
                             )}
                             {partyMdStatus.offer_charged && (
-                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 font-bold">과금됨</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold">과금됨</span>
                             )}
                           </div>
                         )}
 
                         <div className="pt-2 mt-1 border-t border-red-500/20 bg-red-500/5 -mx-4 -mb-4 px-4 pb-4 space-y-1">
                           <p className="text-[10px] font-bold text-red-400 uppercase tracking-wide">관리자 전용 — 파트너 식별 정보</p>
-                          <div className="flex items-center gap-3 text-[12px] text-neutral-300 flex-wrap">
+                          <div className="flex items-center gap-3 text-[12px] text-foreground/80 flex-wrap">
                             <span className="inline-flex items-center gap-1">
-                              <User className="w-3 h-3 text-neutral-500" />
-                              <span className="font-bold text-white">{partyMdStatus.md_name}</span>
+                              <User className="w-3 h-3 text-muted-foreground" />
+                              <span className="font-bold text-foreground">{partyMdStatus.md_name}</span>
                             </span>
                             {partyMdStatus.md_instagram ? (
                               <a
@@ -1470,13 +1534,13 @@ export function PuzzleDetailClient({
                                 <span className="font-mono">@{partyMdStatus.md_instagram.replace(/^@/, "")}</span>
                               </a>
                             ) : (
-                              <span className="text-neutral-600 text-[11px]">인스타 미등록</span>
+                              <span className="text-muted-foreground text-[11px]">인스타 미등록</span>
                             )}
                           </div>
                         </div>
                       </div>
                     ) : (
-                      <p className="text-[12px] text-neutral-500">아직 MD 초대 전 — 파티원끼리 상의 중</p>
+                      <p className="text-[12px] text-muted-foreground">아직 MD 초대 전 — 파티원끼리 상의 중</p>
                     )}
                   </>
                 )}
@@ -1490,10 +1554,10 @@ export function PuzzleDetailClient({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-[16px] leading-none">💌</span>
-                <h2 className="text-[16px] font-bold text-neutral-200">
+                <h2 className="text-[16px] font-bold text-foreground">
                   {t("시크릿오퍼", "Secret Offers")}
                   {pendingOffers.length > 0 && !isAccepted && (
-                    <span className="ml-1.5 text-white">{pendingOffers.length}{t("건", "")}</span>
+                    <span className="ml-1.5 text-foreground">{pendingOffers.length}{t("건", "")}</span>
                   )}
                 </h2>
               </div>
@@ -1501,7 +1565,7 @@ export function PuzzleDetailClient({
                 const timeKo = puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시";
                 const timeF = puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h A") : "5 PM";
                 return (
-                  <span className="text-[12px] text-neutral-400 whitespace-nowrap">
+                  <span className="text-[12px] text-muted-foreground whitespace-nowrap">
                     {t(
                       `⏰ 당일 ${timeKo} 마감`,
                       `⏰ Offers close ${timeF} on event day`,
@@ -1512,7 +1576,7 @@ export function PuzzleDetailClient({
                 );
               })() : (
                 (isAccepted || (!offersLoading && pendingOffers.length === 0)) && (
-                  <span className="text-[11px] text-neutral-500">
+                  <span className="text-[11px] text-muted-foreground">
                     {isAccepted ? t("제안 마감", "Offers closed") : t("아직 제안 없음", "No offers yet")}
                   </span>
                 )
@@ -1523,12 +1587,12 @@ export function PuzzleDetailClient({
             {offersLoading && pendingOffers.length === 0 && !isAccepted && (
               <div className="space-y-3" aria-hidden>
                 {[0, 1].map((i) => (
-                  <div key={i} className="bg-[#1C1C1E] rounded-2xl border border-neutral-800 p-4 space-y-2 animate-pulse">
-                    <div className="h-4 w-24 bg-neutral-800 rounded" />
-                    <div className="h-6 w-32 bg-neutral-800 rounded" />
+                  <div key={i} className="bg-card rounded-2xl border border-border p-4 space-y-2 animate-pulse">
+                    <div className="h-4 w-24 bg-muted rounded" />
+                    <div className="h-6 w-32 bg-muted rounded" />
                     <div className="flex gap-1.5">
-                      <div className="h-5 w-16 bg-neutral-800 rounded-full" />
-                      <div className="h-5 w-14 bg-neutral-800 rounded-full" />
+                      <div className="h-5 w-16 bg-muted rounded-full" />
+                      <div className="h-5 w-14 bg-muted rounded-full" />
                     </div>
                   </div>
                 ))}
@@ -1539,12 +1603,12 @@ export function PuzzleDetailClient({
             {isLeader && !isAccepted && pendingOffers.length > 0 && (
               <div className="space-y-3">
                 {/* 방장 전용: 오퍼가 방장에게만 보이는 이유 (비방장 안내와 대칭) */}
-                <details className="group rounded-xl bg-neutral-900/50 border border-neutral-800 overflow-hidden">
-                  <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-amber-400">
+                <details className="group rounded-xl bg-card/50 border border-border overflow-hidden">
+                  <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-brand-amber">
                     ⓘ {t("오퍼는 방장님에게만 공개!", "Offers shown only to you!", "オファーは主催者だけに公開！", "报价仅向队长公开！")}
-                    <span className="ml-auto text-neutral-400 group-open:rotate-180 transition-transform text-[16px] leading-none">▾</span>
+                    <span className="ml-auto text-muted-foreground group-open:rotate-180 transition-transform text-[16px] leading-none">▾</span>
                   </summary>
-                  <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep whitespace-pre-line">
+                  <p className="px-3 pb-3 text-[12px] text-muted-foreground leading-relaxed break-keep whitespace-pre-line">
                     {t(
                       "다른 유저·파트너는 오퍼를 볼 수 없어요.\n클럽과 MD가 서로 눈치보지 않고, 당일 최선의 패키지를 구성합니다.\n최고의 밤을 골라보세요!",
                       "Other users and partners can't see the offers.\nClubs and MDs, without second-guessing each other, build their best package for the day.\nPick your best night!",
@@ -1554,7 +1618,7 @@ export function PuzzleDetailClient({
                   </p>
                 </details>
                 <FeatureGate flag="offer_chat">
-                  <p className="text-[12px] text-neutral-400 px-1">
+                  <p className="text-[12px] text-muted-foreground px-1">
                     {isRecruitingParty
                       ? "💬 채팅에서 파티원과 상의한 뒤, 마음에 드는 파트너에게 예약하세요"
                       : "오퍼를 골라 무료로 상담해보세요"}
@@ -1563,13 +1627,13 @@ export function PuzzleDetailClient({
                 {isRecruitingParty && !isAdmin && (
                   <Link
                     href={`/party/${puzzle.id}`}
-                    className="flex items-center justify-center gap-2 w-full py-3 bg-white text-black font-black text-[14px] rounded-xl hover:bg-neutral-100 transition-colors"
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-inverse text-inverse-foreground font-black text-[14px] rounded-xl hover:opacity-90 transition-colors"
                   >
                     <MessageCircle className="w-4 h-4" />
                     {t("단체채팅 바로가기", "Go to group chat")}
                   </Link>
                 )}
-                <div className="-mx-4 px-4 py-5 divide-y divide-neutral-700 bg-[#100F0E]">
+                <div className="-mx-4 px-4 py-5 divide-y divide-neutral-700 bg-offer-well">
                 {offerGroups.map((group) => {
                   const groupClub = group.club;
                   const groupClubId = group.offers[0]?.club_id;
@@ -1577,29 +1641,35 @@ export function PuzzleDetailClient({
                   return (
                     <div key={group.clubKey} className="space-y-1 py-6 first:pt-0 last:pb-0">
                       {/* 클럽명 그룹 헤더 — 같은 클럽 MD가 여러 명이어도 한 번만 노출 */}
-                      <div className="flex items-baseline justify-between px-1">
+                      <div className="relative flex items-baseline justify-between px-1">
+                        {/* NEW — 클럽명 좌상단, 그룹 테두리에 걸치는 배지 (미열람 오퍼 보유 클럽) */}
+                        {group.offers.some((o) => o.status !== "accepted" && newOfferIds.has(o.id)) && (
+                          <span className="pointer-events-none absolute -top-7 -left-5 z-10 -rotate-12 px-2.5 py-1 rounded-md bg-gradient-to-br from-red-500 to-rose-600 text-white text-[10px] font-black tracking-widest shadow-lg shadow-rose-900/40 select-none">
+                            NEW
+                          </span>
+                        )}
                         {groupClubId ? (
                           <Link
                             href={`/clubs/${groupClubId}`}
-                            className="inline-flex items-baseline gap-0.5 text-[22px] font-black tracking-[-0.03em] leading-none text-white hover:text-amber-200 transition-colors"
+                            className="inline-flex items-baseline gap-0.5 text-[22px] font-black tracking-[-0.03em] leading-none text-foreground hover:text-brand-amber transition-colors"
                           >
                             {groupClub?.name || t("클럽", "Club")}
-                            <ChevronRight className="w-4 h-4 text-neutral-600 self-center" />
+                            <ChevronRight className="w-4 h-4 text-muted-foreground self-center" />
                           </Link>
                         ) : (
-                          <p className="text-[22px] font-black tracking-[-0.03em] leading-none text-white">
+                          <p className="text-[22px] font-black tracking-[-0.03em] leading-none text-foreground">
                             {groupClub?.name || t("클럽", "Club")}
                           </p>
                         )}
                         {groupClub?.area && (
-                          <span className="text-[11px] font-medium tracking-wide text-neutral-300">{areaLabel(groupClub.area, lang)}</span>
+                          <span className="text-[11px] font-medium tracking-wide text-foreground/80">{areaLabel(groupClub.area, lang)}</span>
                         )}
                       </div>
                       {hasDrinkMenu && (
                         <button
                           type="button"
                           onClick={() => setCompareGroupKey(group.clubKey)}
-                          className="block px-1 pt-1 text-[13px] font-semibold text-neutral-200 underline decoration-dotted decoration-neutral-600 underline-offset-4 hover:text-amber-200 hover:decoration-amber-300 transition-colors"
+                          className="block px-1 pt-1 text-[13px] font-semibold text-foreground/90 underline decoration-dotted decoration-neutral-600 underline-offset-4 hover:text-brand-amber hover:decoration-amber-300 transition-colors"
                         >
                           {isForeigner
                             ? t("나플 패키지 vs 정가 비교하기", "Compare NightFlow package vs list price")
@@ -1642,12 +1712,12 @@ export function PuzzleDetailClient({
             {!isLeader && !isAccepted && (
               <div className="space-y-3 -mt-2">
                 {/* 시크릿 오퍼 이유 + 소비자 이득 (왜 비공개인지 궁금증 해소) */}
-                <details className="group rounded-xl bg-neutral-900/50 border border-neutral-800 overflow-hidden">
-                  <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-amber-400">
+                <details className="group rounded-xl bg-card/50 border border-border overflow-hidden">
+                  <summary className="flex items-center gap-1.5 px-3 py-2 cursor-pointer list-none select-none text-[12px] font-bold text-brand-amber">
                     ⓘ {t("오퍼는 방장님에게만 공개!", "Offers shown only to you!", "オファーは主催者だけに公開！", "报价仅向队长公开！")}
-                    <span className="ml-auto text-neutral-400 group-open:rotate-180 transition-transform text-[16px] leading-none">▾</span>
+                    <span className="ml-auto text-muted-foreground group-open:rotate-180 transition-transform text-[16px] leading-none">▾</span>
                   </summary>
-                  <p className="px-3 pb-3 text-[12px] text-neutral-400 leading-relaxed break-keep whitespace-pre-line">
+                  <p className="px-3 pb-3 text-[12px] text-muted-foreground leading-relaxed break-keep whitespace-pre-line">
                     {t(
                       "다른 유저·파트너는 오퍼를 볼 수 없어요.\n클럽과 MD가 서로 눈치보지 않고, 당일 최선의 패키지를 구성합니다.\n최고의 밤을 골라보세요!",
                       "Other users and partners can't see the offers.\nClubs and MDs, without second-guessing each other, build their best package for the day.\nPick your best night!",
@@ -1657,26 +1727,26 @@ export function PuzzleDetailClient({
                   </p>
                 </details>
                 {!offersLoading && pendingOffers.length === 0 && (
-                  <p className="text-[12px] text-neutral-600 text-center py-2">
+                  <p className="text-[12px] text-muted-foreground text-center py-2">
                     {t("오퍼를 기다리고 있어요", "No offers yet")}
                   </p>
                 )}
                 {publicOffers.map((offer, idx) => (
                   <div
                     key={offer.id}
-                    className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
+                    className="bg-card rounded-2xl border border-dashed border-border p-4 space-y-2"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-[14px] font-bold text-amber-300">Offer #{idx + 1}</p>
+                        <p className="text-[14px] font-bold text-brand-amber">Offer #{idx + 1}</p>
                         {offer.club?.name ? (
-                          <span className="inline-block text-[18px] font-black text-white -mt-0.5 blur-sm select-none pointer-events-none">
+                          <span className="inline-block text-[18px] font-black text-foreground -mt-0.5 blur-sm select-none pointer-events-none">
                             {offer.club.name}
                           </span>
                         ) : null}
                       </div>
                       {offer.leader_chat_started_at && (
-                        <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-white text-black font-bold">상담중</span>
+                        <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-inverse text-inverse-foreground font-bold">상담중</span>
                       )}
                     </div>
                     <div className="space-y-1.5 blur-sm select-none pointer-events-none">
@@ -1685,7 +1755,7 @@ export function PuzzleDetailClient({
                           {offer.public.liquorCategories.map((cat) => (
                             <span
                               key={cat}
-                              className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                              className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-brand-amber border border-amber-500/30"
                             >
                               🍾 {isForeigner ? toEnglishInclude(cat) : cat}
                             </span>
@@ -1697,7 +1767,7 @@ export function PuzzleDetailClient({
                           {offer.public.extras.map((ext) => (
                             <span
                               key={ext}
-                              className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800"
+                              className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-card text-muted-foreground border border-border"
                             >
                               {isForeigner ? toEnglishInclude(ext) : ext}
                             </span>
@@ -1713,14 +1783,14 @@ export function PuzzleDetailClient({
                 {hiddenOffers.map((offer, i) => (
                   <div
                     key={offer.id}
-                    className="bg-[#1C1C1E] rounded-2xl border border-dashed border-neutral-700 p-4 space-y-2"
+                    className="bg-card rounded-2xl border border-dashed border-border p-4 space-y-2"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <p className="text-[14px] font-bold text-amber-300">
+                      <p className="text-[14px] font-bold text-brand-amber">
                         Offer #{publicOffers.length + i + 1}
                       </p>
                       {offer.leader_chat_started_at && (
-                        <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-white text-black font-bold">상담중</span>
+                        <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-inverse text-inverse-foreground font-bold">상담중</span>
                       )}
                     </div>
                     <div className="space-y-1.5 blur-sm select-none pointer-events-none">
@@ -1729,7 +1799,7 @@ export function PuzzleDetailClient({
                           {offer.public.liquorCategories.map((cat) => (
                             <span
                               key={cat}
-                              className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                              className="text-[12px] font-bold px-2.5 py-1 rounded-full bg-amber-500/15 text-brand-amber border border-amber-500/30"
                             >
                               🍾 {isForeigner ? toEnglishInclude(cat) : cat}
                             </span>
@@ -1741,7 +1811,7 @@ export function PuzzleDetailClient({
                           {offer.public.extras.map((ext) => (
                             <span
                               key={ext}
-                              className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800"
+                              className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-card text-muted-foreground border border-border"
                             >
                               {isForeigner ? toEnglishInclude(ext) : ext}
                             </span>
@@ -1762,27 +1832,27 @@ export function PuzzleDetailClient({
               <div className={`rounded-2xl border p-4 space-y-3 ${
                 myOffer.status === "accepted"
                   ? "bg-amber-500/10 border-amber-500/30"
-                  : "bg-[#1C1C1E] border-neutral-800"
+                  : "bg-card border-border"
               }`}>
                 {/* 헤더: 내 제안 라벨 + 클럽·지역 / 상태 */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-[11px] font-bold text-neutral-500 mb-0.5">내 제안</p>
-                    <p className="text-[15px] font-black text-white truncate">
+                    <p className="text-[11px] font-bold text-muted-foreground mb-0.5">내 제안</p>
+                    <p className="text-[15px] font-black text-foreground truncate">
                       {(myOffer.club as { name?: string } | null)?.name || "클럽"}
                     </p>
                   </div>
                   {myOffer.status === "accepted" && (
-                    <span className="shrink-0 text-[11px] px-2.5 py-1 rounded-full font-bold bg-amber-500/20 text-amber-400">
+                    <span className="shrink-0 text-[11px] px-2.5 py-1 rounded-full font-bold bg-amber-500/20 text-brand-amber">
                       {OFFER_STATUS_LABEL[myOffer.status]}
                     </span>
                   )}
                 </div>
 
                 {/* 가격 + includes + 코멘트 — 조각은 인원·가격 변동으로 고정가 숨김 */}
-                <div className="space-y-2 pt-2 border-t border-neutral-800/60">
+                <div className="space-y-2 pt-2 border-t border-border/60">
                   {!isRecruitingParty && (
-                    <p className="text-[16px] font-black text-green-400">
+                    <p className="text-[16px] font-black text-money">
                       {myOffer.proposed_price.toLocaleString()}원
                     </p>
                   )}
@@ -1801,7 +1871,7 @@ export function PuzzleDetailClient({
                         {extras.length > 0 && (
                           <div className="flex flex-wrap gap-1">
                             {extras.map((inc: string) => (
-                              <span key={inc} className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-500 border border-neutral-800">
+                              <span key={inc} className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-card text-muted-foreground border border-border">
                                 {isForeigner ? toEnglishInclude(inc) : inc}
                               </span>
                             ))}
@@ -1823,7 +1893,7 @@ export function PuzzleDetailClient({
                   <FeatureGate flag="offer_chat">
                     <Link
                       href={`/messages/${myOffer.id}`}
-                      className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-neutral-700 bg-transparent text-neutral-200 hover:bg-neutral-800 font-bold text-[13px]"
+                      className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-border bg-transparent text-foreground hover:bg-muted font-bold text-[13px]"
                     >
                       <MessageCircle className="w-4 h-4" />
                       채팅 바로가기
@@ -1837,7 +1907,7 @@ export function PuzzleDetailClient({
                       disabled={actionLoading}
                       variant="outline"
                       size="sm"
-                      className="h-8 border-neutral-700 bg-transparent text-neutral-300 hover:bg-neutral-800 font-bold text-[12px] rounded-lg"
+                      className="h-8 border-border bg-transparent text-foreground/80 hover:bg-muted font-bold text-[12px] rounded-lg"
                     >
                       수정
                     </Button>
@@ -1846,7 +1916,7 @@ export function PuzzleDetailClient({
                       disabled={actionLoading}
                       variant="outline"
                       size="sm"
-                      className="h-8 border-neutral-700 bg-transparent text-neutral-400 hover:bg-neutral-800 font-bold text-[12px] rounded-lg"
+                      className="h-8 border-border bg-transparent text-muted-foreground hover:bg-muted font-bold text-[12px] rounded-lg"
                     >
                       <Undo2 className="w-3.5 h-3.5 mr-1.5" />
                       제안 철회
@@ -1865,12 +1935,12 @@ export function PuzzleDetailClient({
                 <button
                   type="button"
                   onClick={() => setShowMatchedShowcase(true)}
-                  className="block w-full mb-2 text-center text-[13px] font-bold text-white hover:text-neutral-300 active:opacity-70 transition-colors"
+                  className="block w-full mb-2 text-center text-[13px] font-bold text-foreground hover:text-foreground/80 active:opacity-70 transition-colors"
                 >
                   {t("어떤 오퍼 받았는지 구경하기 👈", "See what offers came in 👈")}
                 </button>
               )}
-              <p className="text-[14.5px] text-neutral-200 font-semibold mb-1.5">
+              <p className="text-[14.5px] text-foreground/90 font-semibold mb-1.5">
                 {t("최고의 테이블을 잡으세요.", "Land the best table.")}
               </p>
               <Link
@@ -1879,7 +1949,7 @@ export function PuzzleDetailClient({
               >
                 {t("⛳ 나도 깃발꽂기", "⛳ Plant a flag")}
               </Link>
-              <p className="text-[10px] text-neutral-500">
+              <p className="text-[10px] text-muted-foreground">
                 {t("모든 서비스 무료", "All services free")}
               </p>
             </div>
@@ -1898,8 +1968,8 @@ export function PuzzleDetailClient({
             return (
           <section className="space-y-3">
             <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-neutral-400" />
-              <h2 className="text-[14px] font-bold text-neutral-300">파티원</h2>
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <h2 className="text-[14px] font-bold text-foreground/80">파티원</h2>
             </div>
             <div className="space-y-2">
               {partyMembers.map((member) => {
@@ -1908,7 +1978,7 @@ export function PuzzleDetailClient({
                 return (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between bg-[#1C1C1E] rounded-xl px-4 py-3"
+                    className="flex items-center justify-between bg-card rounded-xl border border-border px-4 py-3"
                   >
                     <div className="flex items-center gap-3">
                       {member.user?.profile_image ? (
@@ -1920,12 +1990,12 @@ export function PuzzleDetailClient({
                           className="w-9 h-9 rounded-full object-cover"
                         />
                       ) : (
-                        <div className="w-9 h-9 rounded-full bg-neutral-700 flex items-center justify-center text-[14px] font-bold text-white">
+                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-[14px] font-bold text-foreground">
                           {member.user?.name?.[0] || "?"}
                         </div>
                       )}
                       <div>
-                        <p className="text-[14px] font-bold text-white flex items-center gap-1.5">
+                        <p className="text-[14px] font-bold text-foreground flex items-center gap-1.5">
                           {isAdmin ? (
                             <Link
                               href={`/admin/users?focus=${member.user_id}`}
@@ -1936,22 +2006,22 @@ export function PuzzleDetailClient({
                           ) : (
                             <Link
                               href={`/u/${member.user_id}`}
-                              className="hover:text-white/80 hover:underline transition-colors"
+                              className="hover:text-foreground/80 hover:underline transition-colors"
                             >
                               {member.user?.display_name || member.user?.name || "알 수 없음"}
                             </Link>
                           )}
                           {isLeaderMember && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-brand-amber">
                               대표자
                             </span>
                           )}
                           {isMe && !isLeaderMember && (
-                            <span className="text-[10px] text-neutral-500">나</span>
+                            <span className="text-[10px] text-muted-foreground">나</span>
                           )}
                         </p>
                         {member.guest_count > 0 && (
-                          <p className="text-[11px] text-neutral-500">+{member.guest_count}명 동행</p>
+                          <p className="text-[11px] text-muted-foreground">+{member.guest_count}명 동행</p>
                         )}
                       </div>
                     </div>
@@ -1988,7 +2058,7 @@ export function PuzzleDetailClient({
 
           {/* 미참여 유저 파티 합류 버튼: 파티원 모집 ON 일 때만 — 스티키 고정 */}
           {!isMember && !isLeader && !isMd && isOpen && currentUserId && isRecruitingParty && (
-            <div className="fixed bottom-16 left-0 right-0 z-30 max-w-lg mx-auto px-4 pb-3 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent">
+            <div className="fixed bottom-16 left-0 right-0 z-30 max-w-lg mx-auto px-4 pb-3 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent">
               <Button
                 onClick={() => setShowJoin(true)}
                 className="w-full h-13 bg-amber-500 hover:bg-amber-400 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98] shadow-lg"
@@ -2003,7 +2073,7 @@ export function PuzzleDetailClient({
             <button
               type="button"
               onClick={handleLeave}
-              className="w-full h-11 text-[13px] font-bold text-neutral-500 hover:text-red-400 transition-colors"
+              className="w-full h-11 text-[13px] font-bold text-muted-foreground hover:text-red-400 transition-colors"
             >
               조각에서 나가기
             </button>
@@ -2018,7 +2088,7 @@ export function PuzzleDetailClient({
               <div className="max-w-lg mx-auto space-y-2 pointer-events-auto">
                 {/* 외국인 깃발 안내 (Migration 343 Escrow 결제 트리거) */}
                 {puzzle.leader?.country_code && puzzle.leader.country_code !== "KR" && (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[12px] text-amber-300 leading-relaxed backdrop-blur">
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-[12px] text-brand-amber leading-relaxed backdrop-blur">
                     💳 <strong>{t(isRecruitingParty ? "외국인 조각" : "외국인 깃발", isRecruitingParty ? "International Share" : "International Flag")}</strong> — {t("매칭 시 사용자가 즉시 선결제, 방문 확정 후 정산 (NightFlow 9% 차감 후 송금)", "Prepaid instantly on match, settled after the visit is confirmed (9% NightFlow fee deducted)")}
                   </div>
                 )}
@@ -2036,7 +2106,7 @@ export function PuzzleDetailClient({
               본인 조각 등록으로 유도 (MD에게 자연스러운 액션) */}
           {isMd && isRecruitingParty && puzzle.host_is_md && !isLeader && (
             <div className="text-center space-y-1">
-              <p className="text-[13px] text-neutral-400 mb-1.5">
+              <p className="text-[13px] text-muted-foreground mb-1.5">
                 {t("나플에서 조각을 관리할 수 있어요.", "Manage your shares on NightFlow.")}
               </p>
               <Link
@@ -2045,14 +2115,14 @@ export function PuzzleDetailClient({
               >
                 {t("🧩 나도 조각올리기", "🧩 Post my share")}
               </Link>
-              <p className="text-[10px] text-neutral-500">{t("무료 서비스", "Free service")}</p>
+              <p className="text-[10px] text-muted-foreground">{t("무료 서비스", "Free service")}</p>
             </div>
           )}
 
 
           {/* 로그인 유도: 파티원 모집 ON 일 때만 — 스티키 고정 */}
           {!currentUserId && isOpen && isRecruitingParty && (
-            <div className="fixed bottom-16 left-0 right-0 z-30 max-w-lg mx-auto px-4 pb-3 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent">
+            <div className="fixed bottom-16 left-0 right-0 z-30 max-w-lg mx-auto px-4 pb-3 pt-3 bg-gradient-to-t from-background via-background/95 to-transparent">
               <Link href={`/login?redirect=${encodeURIComponent(`/flags/${puzzle.id}`)}`}>
                 <Button className="w-full h-12 bg-amber-500 hover:bg-amber-400 text-black font-black text-[14px] rounded-2xl shadow-lg">
                   로그인하고 조각 참가하기
@@ -2186,23 +2256,23 @@ export function PuzzleDetailClient({
           onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}
         >
           <div
-            className={`relative w-full max-w-sm rounded-3xl bg-[#1C1C1E] border border-neutral-800 p-6 text-center ${
+            className={`relative w-full max-w-sm rounded-3xl bg-card border border-border p-6 text-center ${
               reviewClub && !isForeigner ? "pb-14" : ""
             }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-white font-black text-xl mb-2">
+            <h3 className="text-foreground font-black text-xl mb-2">
               {isForeigner ? "Your flag is up! 🎉" : "깃발 등록 완료! 🎉"}
             </h3>
-            <p className="text-neutral-400 text-[13px] leading-relaxed">
+            <p className="text-muted-foreground text-[13px] leading-relaxed">
               {isForeigner
                 ? "Offers close at 8pm today. You have 60 more minutes to review."
                 : "오퍼는 당일 8시 마감되고, 60분간 더 검토할 수 있어요."}
             </p>
             {reviewClub && !isForeigner ? (
-              <div className="mt-6 pt-5 border-t border-neutral-800">
-                <p className="text-[15px] text-white font-bold leading-snug mb-4">
-                  <span className="text-amber-300">{reviewClub.name}</span>
+              <div className="mt-6 pt-5 border-t border-border">
+                <p className="text-[15px] text-foreground font-bold leading-snug mb-4">
+                  <span className="text-brand-amber">{reviewClub.name}</span>
                   {objParticle(reviewClub.name)} 5자로 표현해보세요!
                 </p>
                 <Link
@@ -2214,7 +2284,7 @@ export function PuzzleDetailClient({
                 </Link>
                 <button
                   onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}
-                  className="absolute bottom-5 right-6 text-[13px] text-neutral-500 font-medium hover:text-neutral-300"
+                  className="absolute bottom-5 right-6 text-[13px] text-muted-foreground font-medium hover:text-foreground/80"
                 >
                   다음에
                 </button>
@@ -2222,7 +2292,7 @@ export function PuzzleDetailClient({
             ) : (
               <Button
                 onClick={() => { setShowCreatedInfo(false); router.replace(`/flags/${puzzle.id}${lq}`); }}
-                className="w-full h-12 rounded-xl font-black text-[15px] bg-white hover:bg-neutral-200 text-black mt-6"
+                className="w-full h-12 rounded-xl font-black text-[15px] bg-inverse hover:opacity-90 text-inverse-foreground mt-6"
               >
                 {isForeigner ? "Got it" : "확인"}
               </Button>

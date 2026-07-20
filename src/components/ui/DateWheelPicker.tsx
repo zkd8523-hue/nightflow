@@ -145,8 +145,8 @@ function WheelColumn({ items, selected, onSelect, format, ariaLabel }: WheelColu
             className={cn(
               "flex items-center justify-center snap-center tabular-nums cursor-pointer select-none transition-all",
               isSel
-                ? "text-white text-[22px] font-bold"
-                : "text-neutral-500 text-[18px] font-medium"
+                ? "text-foreground text-[22px] font-bold"
+                : "text-muted-foreground text-[18px] font-medium"
             )}
             style={{ height: ITEM_HEIGHT, scrollSnapAlign: "center" }}
           >
@@ -219,7 +219,7 @@ export function DateWheelPicker({
   return (
     <div
       className={cn(
-        "relative flex w-full rounded-2xl bg-[#1C1C1E] px-2 py-1",
+        "relative flex w-full rounded-2xl bg-card px-2 py-1",
         className
       )}
     >
@@ -231,11 +231,11 @@ export function DateWheelPicker({
       />
       {/* 위/아래 페이드 그라데이션 */}
       <div
-        className="pointer-events-none absolute inset-x-0 top-1 h-12 bg-gradient-to-b from-[#1C1C1E] to-transparent z-10 rounded-t-2xl"
+        className="pointer-events-none absolute inset-x-0 top-1 h-12 bg-gradient-to-b from-card to-transparent z-10 rounded-t-2xl"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-1 h-12 bg-gradient-to-t from-[#1C1C1E] to-transparent z-10 rounded-b-2xl"
+        className="pointer-events-none absolute inset-x-0 bottom-1 h-12 bg-gradient-to-t from-card to-transparent z-10 rounded-b-2xl"
         aria-hidden
       />
 

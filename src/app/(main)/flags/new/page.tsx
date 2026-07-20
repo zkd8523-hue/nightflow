@@ -128,14 +128,14 @@ export default async function PuzzleNewPage({
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <div className="max-w-lg mx-auto px-4 py-6">
         {/* 외국인은 글로벌 헤더가 숨겨지므로 폼 자체에 외국인 홈(/en, /ja, /zh) 복귀 링크 제공 */}
         {isForeigner && (
           <Link
             href={foreignHome}
             aria-label={t("뒤로", "Back", "戻る", "返回")}
-            className="inline-flex items-center gap-1 -ml-1 mb-4 px-2 py-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+            className="inline-flex items-center gap-1 -ml-1 mb-4 px-2 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
             <span className="text-[14px] font-bold">{t("뒤로", "Back", "戻る", "返回")}</span>
@@ -145,7 +145,7 @@ export default async function PuzzleNewPage({
         {/* 외국인만 헤더 유지(자체 chrome이라 타이틀 필요). 한국인은 게이트/폼이 헤더 역할 */}
         {isForeigner && (
           <div className="mb-8">
-            <h1 className="text-2xl font-black text-white tracking-tight">
+            <h1 className="text-2xl font-black text-foreground tracking-tight">
               {t(
                 "🚩 깃발",
                 "Pick your club",
@@ -153,7 +153,7 @@ export default async function PuzzleNewPage({
                 "选择夜店"
               )}
             </h1>
-            <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">
+            <p className="text-muted-foreground text-sm font-medium mt-0.5 break-keep">
               {t(
                 "클럽 골라주면 우리가 연결해드려요",
                 "Pick your clubs — we'll get you in",

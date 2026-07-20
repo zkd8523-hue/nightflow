@@ -203,13 +203,13 @@ export function ClubBenefitSection() {
   return (
     <section className="space-y-2">
       <div className="flex items-baseline justify-between px-1">
-        <h2 className="text-[18px] font-black text-white flex items-center gap-1.5 tracking-tight">
+        <h2 className="text-[18px] font-black text-foreground flex items-center gap-1.5 tracking-tight">
           <span className="text-[18px]">🥂</span>
           오늘 어디갈래?
         </h2>
         <Link
           href="/clubs?view=list"
-          className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
+          className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
         >
           더보기
           <ChevronRight className="w-3 h-3" />
@@ -227,24 +227,22 @@ export function ClubBenefitSection() {
             href={`/clubs/${item.club_id}`}
             className="flex-shrink-0 w-[44%] max-w-[180px] snap-start snap-always active:scale-[0.98] transition-transform"
           >
-            {/* 혜택 띠 (이미지 위 별도 영역) */}
-            {item.benefit_text && (
-              <div className="bg-amber-500 px-2.5 pt-1.5 pb-1 rounded-t-md border-b border-black/20">
-                <span
-                  className="block whitespace-pre-line text-black text-[13px] tracking-tight text-center leading-[1.1] line-clamp-2"
-                  style={{ fontFamily: "var(--font-display-kr)" }}
-                >
-                  {item.benefit_text}
-                </span>
-              </div>
-            )}
+            {/* 혜택 띠 + 이미지를 하나의 테두리로 감싸 카드 경계를 명확히 함 (라이트에서 흰 로고가 배경과 붙어 보이는 문제 방지) */}
+            <div className="rounded-md border border-border overflow-hidden">
+              {/* 혜택 띠 (이미지 위 별도 영역) */}
+              {item.benefit_text && (
+                <div className="bg-amber-500 px-2.5 pt-1.5 pb-1 border-b border-black/20">
+                  <span
+                    className="block whitespace-pre-line text-black text-[13px] tracking-tight text-center leading-[1.1] line-clamp-2"
+                    style={{ fontFamily: "var(--font-display-kr)" }}
+                  >
+                    {item.benefit_text}
+                  </span>
+                </div>
+              )}
 
-            {/* 이미지 */}
-            <div
-              className={`relative w-full aspect-[4/3] overflow-hidden bg-neutral-900 ${
-                item.benefit_text ? "rounded-b-md" : "rounded-md"
-              }`}
-            >
+              {/* 이미지 */}
+              <div className="relative w-full aspect-[4/3] bg-card">
               {item.club_thumbnail ? (
                 <Image
                   src={item.club_thumbnail}
@@ -255,16 +253,17 @@ export function ClubBenefitSection() {
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-[28px] font-black text-white/30">
+                <div className="w-full h-full flex items-center justify-center text-[28px] font-black text-foreground/30">
                   {item.club_name.charAt(0)}
                 </div>
               )}
+              </div>
             </div>
 
             {/* 텍스트 */}
             <div className="mt-2 px-0.5 space-y-0.5">
               <div className="flex items-center gap-1.5 min-w-0">
-                <p className="text-white font-bold text-[13px] truncate leading-tight min-w-0">
+                <p className="text-foreground font-bold text-[13px] truncate leading-tight min-w-0">
                   {item.club_name}
                 </p>
                 {item.fav_count > 0 && (
@@ -274,7 +273,7 @@ export function ClubBenefitSection() {
                   </span>
                 )}
               </div>
-              <p className="text-[11px] text-neutral-500">
+              <p className="text-[11px] text-muted-foreground">
                 {item.club_area ?? "기타"}
               </p>
               {item.benefit_tags.length > 0 && (
@@ -284,7 +283,7 @@ export function ClubBenefitSection() {
                     return (
                       <span
                         key={tag}
-                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[9px] font-black leading-none"
+                        className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-brand-amber border border-amber-500/30 text-[9px] font-black leading-none"
                       >
                         {emoji && <span>{emoji}</span>}
                         {label}

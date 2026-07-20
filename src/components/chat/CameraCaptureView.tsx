@@ -358,7 +358,7 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] bg-black flex flex-col select-none"
+      className="fixed inset-0 z-[100] bg-background flex flex-col select-none"
       style={{
         WebkitUserSelect: "none",
         userSelect: "none",
@@ -382,8 +382,8 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
         {error && (
           <div className="absolute inset-0 flex items-center justify-center p-6 bg-black/80">
             <div className="text-center max-w-xs">
-              <p className="text-white text-[14px] font-bold">{error}</p>
-              <p className="text-neutral-400 text-[12px] mt-2">
+              <p className="text-foreground text-[14px] font-bold">{error}</p>
+              <p className="text-muted-foreground text-[12px] mt-2">
                 카메라 권한을 허용해주세요.
               </p>
               <button
@@ -392,7 +392,7 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
                   setError(null);
                   setRetryTick((t) => t + 1);
                 }}
-                className="mt-4 px-5 py-2.5 rounded-full bg-white text-black text-[13px] font-black active:scale-95 transition-transform"
+                className="mt-4 px-5 py-2.5 rounded-full bg-inverse text-inverse-foreground text-[13px] font-black active:scale-95 transition-transform"
               >
                 다시 시도
               </button>
@@ -405,7 +405,7 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="pointer-events-auto w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white active:scale-90 transition-transform"
+            className="pointer-events-auto w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-foreground active:scale-90 transition-transform"
             aria-label="닫기"
           >
             <X className="w-5 h-5" />
@@ -422,7 +422,7 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
               setFacing((f) => (f === "environment" ? "user" : "environment"))
             }
             disabled={recording || !!error}
-            className="pointer-events-auto w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-white disabled:opacity-30 active:scale-90 transition-transform"
+            className="pointer-events-auto w-10 h-10 rounded-full bg-black/50 backdrop-blur flex items-center justify-center text-foreground disabled:opacity-30 active:scale-90 transition-transform"
             aria-label="카메라 전환"
           >
             <RotateCcw className="w-5 h-5" />
@@ -432,7 +432,7 @@ export function WebCameraCaptureView({ open, onClose, onCapture }: Props) {
         {/* 하단 안내 */}
         {!error && (
           <div className="absolute bottom-32 inset-x-0 text-center pointer-events-none">
-            <p className="text-white/90 text-[12px] font-bold drop-shadow-lg">
+            <p className="text-foreground text-[12px] font-bold drop-shadow-lg">
               {recording
                 ? "손을 떼면 녹화가 정지됩니다"
                 : "탭=사진 · 꾹 누르면 동영상 (최대 12초)"}

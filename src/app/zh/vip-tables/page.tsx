@@ -76,13 +76,13 @@ export default function ZhVipTablesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/zh" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/zh" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">首尔 VIP 包间预订</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             预订首尔顶级夜店 VIP 包间和瓶装服务 — 江南、弘大、梨泰院、狎鸥亭。无中介，无需韩语，无游客加价。
           </p>
         </header>
@@ -90,33 +90,33 @@ export default function ZhVipTablesPage() {
           <h2 className="text-[20px] font-black">首尔 VIP 包间级别</h2>
           <div className="space-y-3">
             {TIERS.map((t) => (
-              <div key={t.name} className="p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800 space-y-2">
+              <div key={t.name} className="p-5 rounded-2xl bg-card border border-border space-y-2">
                 <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                  <p className="font-bold text-[15px] text-neutral-100">{t.name}</p>
-                  <p className="font-black text-[14px] text-amber-400 whitespace-nowrap">{t.price}</p>
+                  <p className="font-bold text-[15px] text-foreground">{t.name}</p>
+                  <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">{t.price}</p>
                 </div>
-                <p className="text-[12px] text-neutral-500">{t.perPerson}</p>
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{t.desc}</p>
+                <p className="text-[12px] text-muted-foreground">{t.perPerson}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{t.desc}</p>
               </div>
             ))}
           </div>
         </section>
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">VIP 预订流程</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             选好想去的夜店（或者只告诉我们喜好），填写日期、人数和预算。NightFlow 直接联系夜店，为您锁定预算内最好的桌位 — 真实价格，真实瓶装套餐。到场后直接入场。
           </p>
-          <Link href="/zh" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">
+          <Link href="/zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 通过 NightFlow 预订
           </Link>
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">按地区浏览</h2>
-          <ul className="space-y-2 text-[13px] text-neutral-400">
-            <li><Link className="hover:text-white" href="/zh/clubs/gangnam">江南 VIP 包间 →</Link></li>
-            <li><Link className="hover:text-white" href="/zh/clubs/apgujeong">狎鸥亭 &amp; 清潭 VIP 包间 →</Link></li>
-            <li><Link className="hover:text-white" href="/zh/clubs/hongdae">弘大 VIP &amp; walk-in 包间 →</Link></li>
-            <li><Link className="hover:text-white" href="/zh/clubs/itaewon">梨泰院国际化夜店 →</Link></li>
+          <ul className="space-y-2 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/zh/clubs/gangnam">江南 VIP 包间 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh/clubs/apgujeong">狎鸥亭 &amp; 清潭 VIP 包间 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh/clubs/hongdae">弘大 VIP &amp; walk-in 包间 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh/clubs/itaewon">梨泰院国际化夜店 →</Link></li>
           </ul>
         </section>
         <section className="text-center pt-4">

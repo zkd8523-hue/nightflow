@@ -289,7 +289,7 @@ export function NotificationSettings() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-border border-t-white rounded-full animate-spin" />
       </div>
     );
   }
@@ -298,18 +298,99 @@ export function NotificationSettings() {
 
   return (
     <>
-      {/* Section: 앱 푸시 알림 (카테고리 토글 + 마스터 토글) */}
-      <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
+      {/* Section: 야간알림 수신 (옵트인) — 사용자 요청으로 최상단 배치 */}
+      <div className="bg-card rounded-2xl border border-border p-5 mb-4">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-white shrink-0" />
-            <h2 className="text-[15px] font-bold text-white">앱 푸시 알림</h2>
+            <Moon className="w-4 h-4 text-blue-400 shrink-0" />
+            <h2 className="text-[15px] font-bold text-foreground">야간 알림 받기</h2>
+          </div>
+          <button
+            onClick={() => {
+              const next = !nightEnabled;
+              if (next) {
+                setQuietStart(22);
+                setQuietEnd(4);
+              }
+              setNightEnabled(next);
+            }}
+            className={`w-12 h-7 rounded-full relative transition-colors shrink-0 ${
+              nightEnabled ? "bg-green-500" : "bg-muted"
+            }`}
+          >
+            <div
+              className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-transform ${
+                nightEnabled ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+        <p className="text-[11px] text-muted-foreground mb-4 ml-6">
+          켜두면 지정한 시간대 야간 핫딜 알림을 받아요 (알림톡은 영향 없음)
+        </p>
+
+        {nightEnabled ? (
+          <div className="space-y-3 mb-4">
+            <div>
+              <p className="text-[12px] text-muted-foreground mb-2">받을 요일</p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { key: 'everyday', label: '매일' },
+                  { key: 'weekends', label: '주말만 (금/토)' },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => setQuietScope(opt.key)}
+                    className={`py-2 rounded-lg text-[13px] font-bold transition-colors ${
+                      quietScope === opt.key
+                        ? 'bg-inverse text-inverse-foreground'
+                        : 'bg-muted text-muted-foreground border border-border'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-[11px] text-brand-amber dark:text-brand-amber/90 leading-snug">
+              🔥 {quietScope === 'weekends' ? '금/토' : '매일'} 밤 10시 ~ 새벽 4시 야간 핫딜 알림을 받아요
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-xl bg-muted/60 border border-border p-3 mb-4">
+            <p className="text-[12px] text-foreground/80 font-bold leading-relaxed">
+              야간 시간대 알림이 꺼져있어요
+            </p>
+            <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">
+              클럽 테이블 특가는 보통 밤 10시 ~ 새벽 4시에 풀려요. 켜두면 핫딜을 놓치지 않아요.
+            </p>
+          </div>
+        )}
+
+        {quietDirty && (
+          <button
+            onClick={handleSaveQuietHours}
+            disabled={savingQuiet}
+            className="w-full bg-inverse text-inverse-foreground font-black py-3 rounded-xl text-[14px] disabled:opacity-50"
+          >
+            {savingQuiet ? "저장 중..." : "야간알림 설정 저장"}
+          </button>
+        )}
+      </div>
+
+      {/* Section: 앱 푸시 알림 (카테고리 토글 + 마스터 토글) */}
+      <div className="bg-card rounded-2xl border border-border p-5 mb-4">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-foreground shrink-0" />
+            <h2 className="text-[15px] font-bold text-foreground">앱 푸시 알림</h2>
           </div>
           <button
             onClick={handleToggleMasterPush}
             disabled={savingMaster}
             className={`w-12 h-7 rounded-full relative transition-colors shrink-0 ${
-              masterPushOn ? "bg-green-500" : "bg-neutral-700"
+              masterPushOn ? "bg-green-500" : "bg-muted"
             } ${savingMaster ? "opacity-50" : ""}`}
           >
             <div
@@ -319,7 +400,7 @@ export function NotificationSettings() {
             />
           </button>
         </div>
-        <p className="text-[11px] text-neutral-500 mb-4 ml-6">
+        <p className="text-[11px] text-muted-foreground mb-4 ml-6">
           카카오톡 알림톡과 별도예요
         </p>
 
@@ -331,8 +412,8 @@ export function NotificationSettings() {
               <div key={cat.key}>
                 <div className="flex items-start justify-between py-2.5">
                   <div className={`flex-1 pr-3 ${enabled ? "" : "opacity-60"}`}>
-                    <p className="text-[14px] text-white font-bold">{cat.label}</p>
-                    <p className="text-[11px] text-neutral-500 leading-snug">
+                    <p className="text-[14px] text-foreground font-bold">{cat.label}</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">
                       {cat.desc}
                     </p>
                   </div>
@@ -340,7 +421,7 @@ export function NotificationSettings() {
                     onClick={() => handleTogglePushCategory(cat.key)}
                     disabled={saving}
                     className={`w-12 h-7 rounded-full relative transition-colors shrink-0 ${
-                      enabled ? "bg-green-500" : "bg-neutral-700"
+                      enabled ? "bg-green-500" : "bg-muted"
                     } ${saving ? "opacity-50" : ""}`}
                   >
                     <div
@@ -364,8 +445,8 @@ export function NotificationSettings() {
                         onClick={toggleAll}
                         className={`px-3 py-1.5 rounded-full text-[12px] font-bold border transition-colors ${
                           allSelected
-                            ? "bg-white text-black border-white"
-                            : "bg-transparent text-neutral-400 border-neutral-700 hover:border-neutral-500"
+                            ? "bg-inverse text-inverse-foreground border-white"
+                            : "bg-transparent text-muted-foreground border-border hover:border-border"
                         }`}
                       >
                         전체
@@ -379,8 +460,8 @@ export function NotificationSettings() {
                             onClick={() => toggleArea(area)}
                             className={`px-3 py-1.5 rounded-full text-[12px] font-bold border transition-colors ${
                               selected
-                                ? "bg-white text-black border-white"
-                                : "bg-transparent text-neutral-400 border-neutral-700 hover:border-neutral-500"
+                                ? "bg-inverse text-inverse-foreground border-white"
+                                : "bg-transparent text-muted-foreground border-border hover:border-border"
                             }`}
                           >
                             {area}
@@ -392,7 +473,7 @@ export function NotificationSettings() {
                       <button
                         onClick={handleSaveAreas}
                         disabled={savingAreas}
-                        className="w-full bg-white text-black font-black py-2.5 rounded-lg text-[13px] disabled:opacity-50"
+                        className="w-full bg-inverse text-inverse-foreground font-black py-2.5 rounded-lg text-[13px] disabled:opacity-50"
                       >
                         {savingAreas ? "저장 중..." : "지역 저장"}
                       </button>
@@ -405,102 +486,21 @@ export function NotificationSettings() {
         </div>
       </div>
 
-      {/* Section: 야간알림 수신 (옵트인) */}
-      <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <Moon className="w-4 h-4 text-blue-400 shrink-0" />
-            <h2 className="text-[15px] font-bold text-white">야간 알림 받기</h2>
-          </div>
-          <button
-            onClick={() => {
-              const next = !nightEnabled;
-              if (next) {
-                setQuietStart(22);
-                setQuietEnd(4);
-              }
-              setNightEnabled(next);
-            }}
-            className={`w-12 h-7 rounded-full relative transition-colors shrink-0 ${
-              nightEnabled ? "bg-green-500" : "bg-neutral-700"
-            }`}
-          >
-            <div
-              className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-transform ${
-                nightEnabled ? "translate-x-6" : "translate-x-1"
-              }`}
-            />
-          </button>
-        </div>
-        <p className="text-[11px] text-neutral-500 mb-4 ml-6">
-          켜두면 지정한 시간대 야간 핫딜 알림을 받아요 (알림톡은 영향 없음)
-        </p>
-
-        {nightEnabled ? (
-          <div className="space-y-3 mb-4">
-            <div>
-              <p className="text-[12px] text-neutral-500 mb-2">받을 요일</p>
-              <div className="grid grid-cols-2 gap-2">
-                {([
-                  { key: 'everyday', label: '매일' },
-                  { key: 'weekends', label: '주말만 (금/토)' },
-                ] as const).map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => setQuietScope(opt.key)}
-                    className={`py-2 rounded-lg text-[13px] font-bold transition-colors ${
-                      quietScope === opt.key
-                        ? 'bg-white text-black'
-                        : 'bg-neutral-800 text-neutral-400 border border-neutral-700'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <p className="text-[11px] text-amber-300/90 leading-snug">
-              🔥 {quietScope === 'weekends' ? '금/토' : '매일'} 밤 10시 ~ 새벽 4시 야간 핫딜 알림을 받아요
-            </p>
-          </div>
-        ) : (
-          <div className="rounded-xl bg-neutral-800/60 border border-neutral-700 p-3 mb-4">
-            <p className="text-[12px] text-neutral-300 font-bold leading-relaxed">
-              야간 시간대 알림이 꺼져있어요
-            </p>
-            <p className="text-[11px] text-neutral-500 leading-relaxed mt-1">
-              클럽 테이블 특가는 보통 밤 10시 ~ 새벽 4시에 풀려요. 켜두면 핫딜을 놓치지 않아요.
-            </p>
-          </div>
-        )}
-
-        {quietDirty && (
-          <button
-            onClick={handleSaveQuietHours}
-            disabled={savingQuiet}
-            className="w-full bg-white text-black font-black py-3 rounded-xl text-[14px] disabled:opacity-50"
-          >
-            {savingQuiet ? "저장 중..." : "야간알림 설정 저장"}
-          </button>
-        )}
-      </div>
-
       {/* Section: 카카오 알림톡 */}
-      <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-        <h2 className="text-[15px] font-bold text-white mb-1">카카오 알림톡</h2>
-        <p className="text-[11px] text-neutral-500 mb-4">
+      <div className="bg-card rounded-2xl border border-border p-5 mb-4">
+        <h2 className="text-[15px] font-bold text-foreground mb-1">카카오 알림톡</h2>
+        <p className="text-[11px] text-muted-foreground mb-4">
           낙찰·노쇼 등 거래 안내가 알림톡으로 발송돼요. 정보성이라 별도 수신 거부는 없어요.
         </p>
 
         <div className="space-y-4">
           {/* 전화번호 (본인인증된 값 읽기 전용) */}
           <div className="flex items-center gap-3">
-            <Phone className="w-4 h-4 text-neutral-500 shrink-0" />
+            <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
             <div className="flex-1">
-              <p className="text-[11px] text-neutral-500">전화번호</p>
+              <p className="text-[11px] text-muted-foreground">전화번호</p>
               <div className="flex items-center justify-between">
-                <p className="text-[14px] text-white font-bold">
+                <p className="text-[14px] text-foreground font-bold">
                   {user.phone || "—"}
                 </p>
                 <span className="text-[11px] text-emerald-400 font-bold flex items-center gap-1">
@@ -514,12 +514,12 @@ export function NotificationSettings() {
       </div>
 
       {/* Section: 거래·법적 통지 안내 */}
-      <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
+      <div className="bg-card rounded-2xl border border-border p-5 mb-4">
         <div className="flex items-start gap-3">
           <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
           <div>
-            <p className="text-[14px] text-white font-bold mb-1">거래·법적 안내</p>
-            <p className="text-[12px] text-neutral-400 leading-relaxed">
+            <p className="text-[14px] text-foreground font-bold mb-1">거래·법적 안내</p>
+            <p className="text-[12px] text-muted-foreground leading-relaxed">
               낙찰 확정, 노쇼 통지, 본인인증 등 거래·법적 안내는
               수신 동의 및 방해금지 설정과 무관하게 발송됩니다.
             </p>
@@ -528,12 +528,12 @@ export function NotificationSettings() {
       </div>
 
       {/* Section: 경매 알림 안내 */}
-      <div className="bg-[#1C1C1E] rounded-2xl p-5">
+      <div className="bg-card rounded-2xl border border-border p-5">
         <div className="flex items-start gap-3">
-          <Info className="w-4 h-4 text-neutral-500 shrink-0 mt-0.5" />
+          <Info className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
           <div>
-            <p className="text-[14px] text-white font-bold mb-1">개별 경매 알림</p>
-            <p className="text-[13px] text-neutral-400 leading-relaxed">
+            <p className="text-[14px] text-foreground font-bold mb-1">개별 경매 알림</p>
+            <p className="text-[13px] text-muted-foreground leading-relaxed">
               개별 경매 알림은 경매 상세 페이지에서 🔔 아이콘을 눌러 설정할 수 있습니다
             </p>
           </div>

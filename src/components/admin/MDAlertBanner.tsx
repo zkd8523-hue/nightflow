@@ -27,15 +27,15 @@ export function MDAlertBanner({ mds, onMDClick }: Props) {
         className="w-full px-4 py-3 flex items-center justify-between"
       >
         <div className="flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-amber-500" />
-          <span className="font-bold text-white">
+          <AlertCircle className="w-5 h-5 text-brand-amber" />
+          <span className="font-bold text-foreground">
             주의가 필요한 파트너 {alertMDs.length}명
           </span>
         </div>
         {isExpanded ? (
-          <ChevronUp className="w-5 h-5 text-neutral-400" />
+          <ChevronUp className="w-5 h-5 text-muted-foreground" />
         ) : (
-          <ChevronDown className="w-5 h-5 text-neutral-400" />
+          <ChevronDown className="w-5 h-5 text-muted-foreground" />
         )}
       </button>
 
@@ -64,13 +64,13 @@ export function MDAlertBanner({ mds, onMDClick }: Props) {
                     className={`w-2 h-2 rounded-full ${isCritical ? "bg-red-500" : "bg-amber-500"}`}
                   />
                   <div className="text-left">
-                    <div className="font-bold text-white">{md.name} 파트너</div>
-                    <div className="text-sm text-neutral-400">
+                    <div className="font-bold text-foreground">{md.name} 파트너</div>
+                    <div className="text-sm text-muted-foreground">
                       {Array.isArray(md.area) ? md.area.join(", ") : md.area || "미지정"} · {reason}
                     </div>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-neutral-600" />
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
               </button>
             );
           })}

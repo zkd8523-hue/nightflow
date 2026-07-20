@@ -78,7 +78,7 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
         aria-label="클럽 상세"
       >
         <div
-          className="relative w-full h-[92vh] bg-[#0A0A0A] overflow-hidden rounded-t-2xl flex flex-col"
+          className="relative w-full h-[92vh] bg-background overflow-hidden rounded-t-2xl flex flex-col"
           onClick={(e) => e.stopPropagation()}
           style={{
             transform: `translateY(${dragY}px)`,
@@ -93,14 +93,14 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
             onTouchEnd={onDragEnd}
             onTouchCancel={onDragEnd}
           >
-            <div className="w-10 h-1 rounded-full bg-neutral-700" />
+            <div className="w-10 h-1 rounded-full bg-muted" />
           </div>
           {/* 클럽 이미지 좌상단 floating 뒤로가기 */}
           <BackButton onClose={onClose} />
           <iframe
             src={`/clubs/${clubId}?embedded=1`}
             title="클럽 상세"
-            className="flex-1 w-full border-0 bg-[#0A0A0A]"
+            className="flex-1 w-full border-0 bg-background"
           />
         </div>
       </div>
@@ -111,7 +111,7 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
       <div className="hidden md:block">
         {/* 우측 사이드 패널 — 전체 높이를 덮어 검색바가 패널 위로 겹치지 않게 */}
         <aside
-          className="fixed top-0 right-0 h-screen w-full max-w-[480px] lg:max-w-[560px] z-[200] bg-[#0A0A0A] border-l border-neutral-900 shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 overflow-hidden"
+          className="fixed top-0 right-0 h-screen w-full max-w-[480px] lg:max-w-[560px] z-[200] bg-background border-l border-border shadow-2xl flex flex-col animate-in slide-in-from-right duration-200 overflow-hidden"
           role="dialog"
           aria-modal="false"
           aria-label="클럽 상세"
@@ -121,7 +121,7 @@ export function ClubDetailSheet({ clubId, onClose }: Props) {
           <iframe
             src={`/clubs/${clubId}?embedded=1`}
             title="클럽 상세"
-            className="flex-1 w-full border-0 bg-[#0A0A0A]"
+            className="flex-1 w-full border-0 bg-background"
           />
         </aside>
       </div>
@@ -136,7 +136,7 @@ function BackButton({ onClose }: { onClose: () => void }) {
       type="button"
       onClick={onClose}
       aria-label="뒤로가기"
-      className="absolute top-3 left-3 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white hover:bg-black/70 active:scale-95 transition"
+      className="absolute top-3 left-3 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-foreground hover:bg-black/70 active:scale-95 transition"
     >
       <ChevronLeft className="w-6 h-6" strokeWidth={2.5} />
     </button>

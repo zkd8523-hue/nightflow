@@ -68,7 +68,7 @@ export function ContactCardMessage({ content }: { content: string }) {
           href: `tel:${value}`,
           icon: Phone,
           iconBg: "bg-green-500/15",
-          iconColor: "text-green-400",
+          iconColor: "text-money",
           caption: "전화",
           title: formatPhone(value),
           cta: "전화",
@@ -98,7 +98,7 @@ export function ContactCardMessage({ content }: { content: string }) {
       href={config.href}
       target={config.external ? "_blank" : undefined}
       rel={config.external ? "noopener noreferrer" : undefined}
-      className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-neutral-900 border border-neutral-800 active:bg-neutral-800 transition-colors min-w-[220px]"
+      className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-card border border-border active:bg-muted transition-colors min-w-[220px]"
     >
       <div className="flex items-center gap-3 min-w-0">
         <div className={`w-9 h-9 rounded-full ${config.iconBg} flex items-center justify-center flex-shrink-0`}>
@@ -106,12 +106,12 @@ export function ContactCardMessage({ content }: { content: string }) {
         </div>
         <div className="min-w-0">
           {config.caption && (
-            <p className="text-[11px] font-bold text-neutral-500 uppercase">{config.caption}</p>
+            <p className="text-[11px] font-bold text-muted-foreground uppercase">{config.caption}</p>
           )}
-          <p className="text-[14px] font-bold text-white truncate">{config.title}</p>
+          <p className="text-[14px] font-bold text-foreground truncate">{config.title}</p>
         </div>
       </div>
-      <ChevronRight className="w-4 h-4 text-white flex-shrink-0" />
+      <ChevronRight className="w-4 h-4 text-foreground flex-shrink-0" />
     </a>
   );
 }

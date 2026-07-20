@@ -106,42 +106,42 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
       {/* ============================================ */}
       {/* Section 1: 이탈 지점 TOP 10 (막대 그래프) */}
       {/* ============================================ */}
-      <section className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-6">
+      <section className="bg-card border border-border rounded-2xl p-6">
         <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
           <div className="flex items-center gap-2">
             <TrendingDown className="w-5 h-5 text-red-400" />
             <h2 className="text-xl font-black tracking-tight">이탈 지점 TOP 10</h2>
-            <span className="text-xs text-neutral-500 font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               (세션의 마지막 이벤트 기준)
             </span>
           </div>
           {hotspots.length > 0 && (
-            <span className="text-xs text-neutral-400">
-              총 <b className="text-white">{hotspots.reduce((sum, h) => sum + h.session_count, 0)}</b>개 세션
+            <span className="text-xs text-muted-foreground">
+              총 <b className="text-foreground">{hotspots.reduce((sum, h) => sum + h.session_count, 0)}</b>개 세션
             </span>
           )}
         </div>
         {hotspots.length === 0 ? (
-          <p className="text-neutral-500 text-sm py-8 text-center">최근 7일 데이터가 없습니다.</p>
+          <p className="text-muted-foreground text-sm py-8 text-center">최근 7일 데이터가 없습니다.</p>
         ) : (
           <div className="space-y-3">
             {hotspots.map((h, idx) => (
               <div key={h.last_event} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-neutral-500 font-bold w-6 shrink-0">
+                    <span className="text-muted-foreground font-bold w-6 shrink-0">
                       {idx + 1}.
                     </span>
-                    <span className="text-white font-bold truncate" title={h.last_event}>
+                    <span className="text-foreground font-bold truncate" title={h.last_event}>
                       {labelEvent(h.last_event)}
                     </span>
-                    <span className="text-[10px] text-neutral-600 shrink-0 font-mono">
+                    <span className="text-[10px] text-muted-foreground shrink-0 font-mono">
                       {h.last_event}
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-neutral-400 shrink-0">
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground shrink-0">
                     <span>
-                      <b className="text-white">{h.session_count}</b>세션
+                      <b className="text-foreground">{h.session_count}</b>세션
                     </span>
                     <span>{h.unique_users}명</span>
                     <span className="font-bold text-red-400 w-12 text-right">
@@ -149,13 +149,13 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                     </span>
                   </div>
                 </div>
-                <div className="h-2 bg-neutral-900 rounded-full overflow-hidden">
+                <div className="h-2 bg-card rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-red-500 to-red-400 rounded-full transition-all"
                     style={{ width: `${(h.session_count / maxHotspot) * 100}%` }}
                   />
                 </div>
-                <div className="flex gap-4 text-[10px] text-neutral-500 ml-8">
+                <div className="flex gap-4 text-[10px] text-muted-foreground ml-8">
                   <span>평균 {Math.round(h.avg_duration_sec)}초</span>
                   <span>평균 {h.avg_event_count}개 이벤트</span>
                 </div>
@@ -168,28 +168,28 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
       {/* ============================================ */}
       {/* Section 2: 회원가입 퍼널 시각화 */}
       {/* ============================================ */}
-      <section className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-6">
+      <section className="bg-card border border-border rounded-2xl p-6">
         <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
           <div className="flex items-center gap-2">
             <Target className="w-5 h-5 text-emerald-400" />
             <h2 className="text-xl font-black tracking-tight">회원가입 퍼널</h2>
-            <span className="text-xs text-neutral-500 font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               (세션 단위)
             </span>
           </div>
           {funnel && funnel.step1_start > 0 && (
-            <span className="text-xs text-neutral-400">
-              표본 <b className="text-white">{funnel.step1_start}</b>개 세션
+            <span className="text-xs text-muted-foreground">
+              표본 <b className="text-foreground">{funnel.step1_start}</b>개 세션
             </span>
           )}
         </div>
         {funnel && funnel.step1_start > 0 && funnel.step1_start < 30 && (
-          <p className="text-[11px] text-amber-500 mb-4 flex items-center gap-1">
+          <p className="text-[11px] text-brand-amber mb-4 flex items-center gap-1">
             ⚠️ 표본이 적어 통계적 유의성 낮음 (30개 이상 권장)
           </p>
         )}
         {!funnel || funnel.step1_start === 0 ? (
-          <p className="text-neutral-500 text-sm py-8 text-center">최근 7일 회원가입 시도가 없습니다.</p>
+          <p className="text-muted-foreground text-sm py-8 text-center">최근 7일 회원가입 시도가 없습니다.</p>
         ) : (
           <div className="space-y-4">
             {[
@@ -205,10 +205,10 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
               return (
                 <div key={step.label} className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-white">{step.label}</span>
+                    <span className="font-bold text-foreground">{step.label}</span>
                     <div className="flex items-center gap-3">
-                      <span className="text-neutral-400 text-sm">
-                        <b className="text-white text-lg">{step.value}</b> 세션
+                      <span className="text-muted-foreground text-sm">
+                        <b className="text-foreground text-lg">{step.value}</b> 세션
                       </span>
                       {step.rate !== null && (
                         <span
@@ -221,7 +221,7 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                       )}
                     </div>
                   </div>
-                  <div className="h-6 bg-neutral-900 rounded-lg overflow-hidden">
+                  <div className="h-6 bg-card rounded-lg overflow-hidden">
                     <div
                       className={`h-full rounded-lg transition-all flex items-center justify-end pr-2 ${
                         step.isFirst
@@ -240,7 +240,7 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                     </div>
                   </div>
                   {idx < 3 && step.rate !== null && (
-                    <p className="text-[11px] text-neutral-500 flex items-center gap-1">
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                       <ArrowRight className="w-3 h-3" />
                       이 단계에서 <b className="text-red-400">{100 - (step.rate ?? 0)}%</b> 이탈
                     </p>
@@ -248,8 +248,8 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                 </div>
               );
             })}
-            <div className="mt-4 pt-4 border-t border-neutral-800 flex items-center justify-between">
-              <span className="text-neutral-500 text-sm">전체 전환률</span>
+            <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
+              <span className="text-muted-foreground text-sm">전체 전환률</span>
               <span className="text-2xl font-black text-emerald-400">
                 {funnel.overall_rate ?? 0}%
               </span>
@@ -261,28 +261,28 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
       {/* ============================================ */}
       {/* Section 3: UTM 소스별 유입 품질 */}
       {/* ============================================ */}
-      <section className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-6">
+      <section className="bg-card border border-border rounded-2xl p-6">
         <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-blue-400" />
             <h2 className="text-xl font-black tracking-tight">유입 채널 품질</h2>
-            <span className="text-xs text-neutral-500 font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               (UTM source별)
             </span>
           </div>
           {acquisition.length > 0 && (
-            <span className="text-xs text-neutral-400">
-              총 <b className="text-white">{acquisition.reduce((sum, a) => sum + a.session_count, 0)}</b>개 세션
+            <span className="text-xs text-muted-foreground">
+              총 <b className="text-foreground">{acquisition.reduce((sum, a) => sum + a.session_count, 0)}</b>개 세션
             </span>
           )}
         </div>
         {acquisition.length === 0 ? (
-          <p className="text-neutral-500 text-sm py-8 text-center">최근 7일 세션 데이터가 없습니다.</p>
+          <p className="text-muted-foreground text-sm py-8 text-center">최근 7일 세션 데이터가 없습니다.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-800 text-left text-[11px] font-bold text-neutral-500 uppercase tracking-tight">
+                <tr className="border-b border-border text-left text-[11px] font-bold text-muted-foreground uppercase tracking-tight">
                   <th className="p-3">Source</th>
                   <th className="p-3 text-right">세션</th>
                   <th className="p-3 text-right">유니크</th>
@@ -296,12 +296,12 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                 {acquisition.map((a) => (
                   <tr
                     key={a.source}
-                    className="border-b border-neutral-900 hover:bg-neutral-900/50 transition-colors"
+                    className="border-b border-border hover:bg-card/50 transition-colors"
                   >
-                    <td className="p-3 font-bold text-white">{a.source}</td>
+                    <td className="p-3 font-bold text-foreground">{a.source}</td>
                     <td className="p-3 text-right font-bold">{a.session_count}</td>
-                    <td className="p-3 text-right text-neutral-400">{a.unique_users}</td>
-                    <td className="p-3 text-right text-neutral-400">
+                    <td className="p-3 text-right text-muted-foreground">{a.unique_users}</td>
+                    <td className="p-3 text-right text-muted-foreground">
                       {Math.floor((a.avg_duration_sec ?? 0) / 60)}:
                       {String((a.avg_duration_sec ?? 0) % 60).padStart(2, "0")}
                     </td>
@@ -311,7 +311,7 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                           (a.bounce_rate ?? 0) > 50
                             ? "text-red-400"
                             : (a.bounce_rate ?? 0) > 30
-                            ? "text-amber-400"
+                            ? "text-brand-amber"
                             : "text-emerald-400"
                         }`}
                       >
@@ -328,7 +328,7 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                 ))}
               </tbody>
             </table>
-            <p className="text-[11px] text-neutral-500 mt-3">
+            <p className="text-[11px] text-muted-foreground mt-3">
               💡 Bounce = 이벤트 1개짜리 세션 (즉시 이탈). 낮을수록 좋음. 로그인률·깃발률은 세션 대비 전환 %.
             </p>
           </div>
@@ -338,23 +338,23 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
       {/* ============================================ */}
       {/* Section 4: 언어별 이탈 지점 */}
       {/* ============================================ */}
-      <section className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-6">
+      <section className="bg-card border border-border rounded-2xl p-6">
         <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
           <div className="flex items-center gap-2">
-            <Globe2 className="w-5 h-5 text-amber-400" />
+            <Globe2 className="w-5 h-5 text-brand-amber" />
             <h2 className="text-xl font-black tracking-tight">언어별 이탈 지점</h2>
-            <span className="text-xs text-neutral-500 font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               (외국인 트랙 진단)
             </span>
           </div>
           {Object.keys(langGroups).length > 0 && (
-            <span className="text-xs text-neutral-400">
-              총 <b className="text-white">{Object.values(langGroups).reduce((sum, rows) => sum + (rows[0]?.total_sessions ?? 0), 0)}</b>개 세션
+            <span className="text-xs text-muted-foreground">
+              총 <b className="text-foreground">{Object.values(langGroups).reduce((sum, rows) => sum + (rows[0]?.total_sessions ?? 0), 0)}</b>개 세션
             </span>
           )}
         </div>
         {Object.keys(langGroups).length === 0 ? (
-          <p className="text-neutral-500 text-sm py-8 text-center">최근 7일 데이터가 없습니다.</p>
+          <p className="text-muted-foreground text-sm py-8 text-center">최근 7일 데이터가 없습니다.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {Object.entries(langGroups).map(([lang, rows]) => {
@@ -362,14 +362,14 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
               return (
                 <div
                   key={lang}
-                  className="bg-neutral-900/50 border border-neutral-800 rounded-xl p-4"
+                  className="bg-card/50 border border-border rounded-xl p-4"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className="font-black text-white">
+                    <span className="font-black text-foreground">
                       {LANG_LABELS[lang] || lang}
                     </span>
-                    <span className="text-xs text-neutral-500">
-                      총 <b className="text-white">{totalSessions}</b> 세션
+                    <span className="text-xs text-muted-foreground">
+                      총 <b className="text-foreground">{totalSessions}</b> 세션
                     </span>
                   </div>
                   <div className="space-y-2">
@@ -377,18 +377,18 @@ export function InsightsClient({ hotspots, funnel, acquisition, byLang }: Props)
                       <div key={`${r.last_event}-${idx}`} className="space-y-0.5">
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-1 min-w-0 flex-1">
-                            <span className="text-neutral-500 shrink-0">
+                            <span className="text-muted-foreground shrink-0">
                               {idx + 1}.
                             </span>
-                            <span className="text-white truncate">
+                            <span className="text-foreground truncate">
                               {labelEvent(r.last_event)}
                             </span>
                           </div>
-                          <span className="text-amber-400 font-bold shrink-0">
+                          <span className="text-brand-amber font-bold shrink-0">
                             {r.pct}%
                           </span>
                         </div>
-                        <div className="h-1 bg-neutral-800 rounded-full overflow-hidden ml-4">
+                        <div className="h-1 bg-muted rounded-full overflow-hidden ml-4">
                           <div
                             className="h-full bg-amber-500 rounded-full"
                             style={{ width: `${r.pct}%` }}

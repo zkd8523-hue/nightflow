@@ -57,73 +57,73 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-auto max-h-[92vh] bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pt-6 pb-7 gap-0"
+        className="h-auto max-h-[92vh] bg-background border-border rounded-t-3xl px-5 pt-6 pb-7 gap-0"
       >
         <SheetHeader className="text-left p-0 gap-0 mb-3">
-          <SheetTitle className="text-white text-[21px] font-black tracking-tight leading-tight">
-            <span className="text-amber-400 text-[26px]">클럽 예약</span> 나플에서는 이렇게! ⛳
+          <SheetTitle className="text-foreground text-[21px] font-black tracking-tight leading-tight">
+            <span className="text-brand-amber text-[26px]">클럽 예약</span> 나플에서는 이렇게! ⛳
           </SheetTitle>
         </SheetHeader>
 
         {/* ① 깃발 꽂기 — 실제 PuzzleCard 스타일 */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-white font-bold">1. 조건 등록</span>
+          <span className="text-[14px] text-foreground font-bold">1. 조건 등록</span>
         </p>
-        <div className="bg-[#1C1C1E] rounded-2xl p-3 relative">
+        <div className="bg-card rounded-2xl border border-border p-3 relative">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-[15px] font-black text-white break-keep">7/12(토) 홍대</p>
+            <p className="text-[15px] font-black text-foreground break-keep">7/12(토) 홍대</p>
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <span className="text-[19px] font-black text-green-400 tracking-tight">예산 500,000원</span>
-            <span className="text-[11px] font-bold text-neutral-300 bg-neutral-800 rounded-full px-2 py-0.5">4명</span>
+            <span className="text-[19px] font-black text-money tracking-tight">예산 500,000원</span>
+            <span className="text-[11px] font-bold text-foreground/80 bg-muted rounded-full px-2 py-0.5">4명</span>
           </div>
         </div>
 
         <div className="flex justify-center py-1">
-          <ArrowDown className="w-5 h-5 text-amber-500" />
+          <ArrowDown className="w-5 h-5 text-brand-amber" />
         </div>
 
         {/* ② 시크릿 오퍼 — 실제 RecentMatchShowcaseSheet 스타일 */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-white font-bold">2. 시크릿오퍼 받기</span>
+          <span className="text-[14px] text-foreground font-bold">2. 시크릿오퍼 받기</span>
           <button
             type="button"
             onClick={() => setSecretInfoOpen(true)}
-            className="inline-flex items-center align-middle ml-1.5 gap-0.5 text-[11.5px] font-bold text-amber-400 underline underline-offset-2 decoration-amber-400/50 hover:text-amber-300"
+            className="inline-flex items-center align-middle ml-1.5 gap-0.5 text-[11.5px] font-bold text-brand-amber underline underline-offset-2 decoration-amber-400/50 hover:text-brand-amber"
           >
             시크릿오퍼란?
             <Info className="w-3 h-3" />
           </button>
         </p>
-        <div className="bg-[#1C1C1E] rounded-2xl p-3 space-y-2">
+        <div className="bg-card rounded-2xl border border-border p-3 space-y-2">
           <div className="flex flex-wrap gap-1.5">
             {["퍼레이드", "전광판", "믹서 무한", "생일 이벤트 지원"].map((ext) => (
               <span
                 key={ext}
-                className="text-[11.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                className="text-[11.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-brand-amber border border-amber-500/30"
               >
                 {ext}
               </span>
             ))}
           </div>
-          <p className="text-[12px] text-neutral-300 italic leading-snug">
+          <p className="text-[12px] text-foreground/80 italic leading-snug">
             &ldquo;홍대에서 1등이 되게 해드리겠습니다&rdquo;
           </p>
           {/* 강조 문구 (실제 쇼케이스 하드코딩 문구 재사용) */}
-          <p className="text-[12.5px] font-black text-amber-200 leading-snug break-keep pt-1 border-t border-neutral-800 mt-1">
-            🎉 당일 예약보다 <span className="text-amber-300">30만원치 더</span> 받았어요
+          <p className="text-[12.5px] font-black text-brand-amber leading-snug break-keep pt-1 border-t border-border mt-1">
+            🎉 당일 예약보다 <span className="text-brand-amber">30만원치 더</span> 받았어요
           </p>
         </div>
 
         <div className="flex justify-center py-1">
-          <ArrowDown className="w-5 h-5 text-amber-500" />
+          <ArrowDown className="w-5 h-5 text-brand-amber" />
         </div>
 
         {/* ③ 채팅 상담 — 마음에 드는 오퍼와 바로 대화 */}
         <p className="mb-1.5">
-          <span className="text-[14px] text-white font-bold">3. 채팅 상담</span>
+          <span className="text-[14px] text-foreground font-bold">3. 채팅 상담</span>
         </p>
-        <div className="bg-[#1C1C1E] rounded-2xl p-3 space-y-1.5">
+        <div className="bg-card rounded-2xl border border-border p-3 space-y-1.5">
           <div className="flex justify-start">
             <span className="bg-neutral-300 text-neutral-900 text-[13px] font-bold rounded-2xl rounded-tl-sm px-3 py-1.5 max-w-[82%]">
               예약 가능할까요?
@@ -156,10 +156,10 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
     <Sheet open={secretInfoOpen} onOpenChange={setSecretInfoOpen}>
       <SheetContent
         side="bottom"
-        className="h-auto bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pt-6 pb-8 gap-0"
+        className="h-auto bg-background border-border rounded-t-3xl px-5 pt-6 pb-8 gap-0"
       >
         <SheetHeader className="text-left p-0 gap-0 mb-4">
-          <SheetTitle className="text-white text-[19px] font-black tracking-tight">
+          <SheetTitle className="text-foreground text-[19px] font-black tracking-tight">
             💌 시크릿오퍼
           </SheetTitle>
         </SheetHeader>
@@ -170,9 +170,9 @@ export function FlagOnboardingSheet({ autoShow }: { autoShow: boolean }) {
             "당일 워크인보다 좋은 혜택들 중에서 비교",
             "나에게 맞는 옵션을 골라보세요!",
           ].map((point) => (
-            <div key={point} className="flex items-start gap-2 bg-[#1C1C1E] rounded-xl px-3.5 py-2.5">
-              <span className="text-amber-400 font-black text-[13px] mt-0.5">→</span>
-              <span className="text-[13.5px] text-neutral-200 font-medium break-keep">{point}</span>
+            <div key={point} className="flex items-start gap-2 bg-card rounded-xl border border-border px-3.5 py-2.5">
+              <span className="text-brand-amber font-black text-[13px] mt-0.5">→</span>
+              <span className="text-[13.5px] text-foreground/90 font-medium break-keep">{point}</span>
             </div>
           ))}
         </div>

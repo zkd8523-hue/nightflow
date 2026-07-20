@@ -44,27 +44,27 @@ export default async function SetupAdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-8">
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-card border border-border rounded-2xl p-8">
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">🛠️</div>
-          <h1 className="text-3xl font-black text-white mb-2">Admin 설정</h1>
-          <p className="text-neutral-500">
+          <h1 className="text-3xl font-black text-foreground mb-2">Admin 설정</h1>
+          <p className="text-muted-foreground">
             {adminCount && adminCount > 0
               ? "⚠️ 이미 Admin 계정이 존재합니다"
               : "버튼을 눌러 Admin이 되세요"}
           </p>
         </div>
 
-        <div className="bg-[#0A0A0A] border border-neutral-800 rounded-xl p-4 mb-6">
-          <p className="text-sm text-neutral-500 mb-2">현재 로그인:</p>
-          <p className="font-bold text-white">{currentUser?.name || "알 수 없음"}</p>
-          <p className="text-sm text-neutral-500">{authUser.email || currentUser?.phone}</p>
-          <p className="text-xs text-neutral-600 mt-2">현재 권한: {currentUser?.role || "user"}</p>
+        <div className="bg-background border border-border rounded-xl p-4 mb-6">
+          <p className="text-sm text-muted-foreground mb-2">현재 로그인:</p>
+          <p className="font-bold text-foreground">{currentUser?.name || "알 수 없음"}</p>
+          <p className="text-sm text-muted-foreground">{authUser.email || currentUser?.phone}</p>
+          <p className="text-xs text-muted-foreground mt-2">현재 권한: {currentUser?.role || "user"}</p>
         </div>
 
         {adminCount && adminCount > 0 && (
-          <p className="text-sm text-amber-500 mb-4 text-center">
+          <p className="text-sm text-brand-amber mb-4 text-center">
             기존 Admin 계정이 {adminCount}개 존재합니다.
             아래 버튼을 누르면 이 계정도 Admin이 됩니다.
           </p>
@@ -73,11 +73,11 @@ export default async function SetupAdminPage() {
         <form action={makeAdmin}>
           <Button
             type="submit"
-            className="w-full bg-white text-black font-black rounded-full hover:bg-neutral-200 transition-colors"
+            className="w-full bg-inverse text-inverse-foreground font-black rounded-full hover:opacity-90 transition-colors"
           >
             나를 Admin으로 만들기
           </Button>
-          <p className="text-xs text-neutral-600 text-center mt-4">
+          <p className="text-xs text-muted-foreground text-center mt-4">
             ⚠️ 개발 환경 전용 기능입니다
           </p>
         </form>

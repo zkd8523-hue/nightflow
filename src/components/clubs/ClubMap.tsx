@@ -316,10 +316,10 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
       el.innerHTML = `
         <div class="px-2.5 py-1 rounded-full shadow-lg text-[11px] font-black whitespace-nowrap ${
           isSelected
-            ? "bg-white text-black ring-2 ring-amber-400 scale-110"
+            ? "bg-inverse text-inverse-foreground ring-2 ring-amber-400 scale-110"
             : hasHotdeal
-            ? "bg-amber-500 text-black ring-1 ring-amber-300"
-            : "bg-amber-500 text-black"
+            ? "bg-amber-500 text-inverse-foreground ring-1 ring-amber-300"
+            : "bg-amber-500 text-inverse-foreground"
         }">
           ${fireBadge}${escapeHtml(c.name)}
         </div>
@@ -399,7 +399,7 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-neutral-900 z-10">
+    <div className="fixed inset-0 overflow-hidden bg-card z-10">
       <div
         ref={mapRef}
         data-no-pull-refresh="strict"
@@ -409,26 +409,26 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
 
       {status === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-xs text-neutral-500">지도 불러오는 중…</p>
+          <p className="text-xs text-muted-foreground">지도 불러오는 중…</p>
         </div>
       )}
       {/* SDK 로드 실패(예: 로컬 키 미설정) — 지도 자리에 안내만, 시트/카드 UI는 계속 동작 */}
       {status === "error" && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-6">
           <div className="space-y-2 text-center">
-            <MapPin className="w-8 h-8 text-neutral-700 mx-auto" />
-            <p className="text-sm text-neutral-500">지도를 불러올 수 없어요</p>
-            <p className="text-[11px] text-neutral-700">아래 목록은 정상 동작합니다</p>
+            <MapPin className="w-8 h-8 text-muted-foreground mx-auto" />
+            <p className="text-sm text-muted-foreground">지도를 불러올 수 없어요</p>
+            <p className="text-[11px] text-muted-foreground">아래 목록은 정상 동작합니다</p>
             {errorMsg && <p className="text-[10px] text-neutral-800">{errorMsg}</p>}
           </div>
         </div>
       )}
       {withCoords.length === 0 && status === "ready" && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-6">
-          <p className="text-sm text-neutral-400 text-center">
+          <p className="text-sm text-muted-foreground text-center">
             지도에 표시할 클럽이 아직 없어요
             <br />
-            <span className="text-[11px] text-neutral-600">주소 등록된 클럽부터 자동 표시됩니다</span>
+            <span className="text-[11px] text-muted-foreground">주소 등록된 클럽부터 자동 표시됩니다</span>
           </p>
         </div>
       )}
@@ -444,9 +444,9 @@ export function ClubMap({ clubs, activeCountMap, hotdealMap = {}, initialCenter,
           className="absolute right-3 w-11 h-11 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-neutral-100 active:scale-95 transition-all disabled:opacity-60 z-30"
         >
           {locating ? (
-            <Loader2 className="w-5 h-5 text-neutral-700 animate-spin" />
+            <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
           ) : (
-            <LocateFixed className="w-5 h-5 text-neutral-700" />
+            <LocateFixed className="w-5 h-5 text-muted-foreground" />
           )}
         </button>
       )}

@@ -100,7 +100,7 @@ export function CancellationSurveySheet({ isOtherSheetOpen }: { isOtherSheetOpen
     <Sheet open={open} onOpenChange={() => {}}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl bg-[#1C1C1E] border-neutral-700 pb-10 overflow-hidden"
+        className="rounded-t-3xl bg-card border-border pb-10 overflow-hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
         showCloseButton={false}
@@ -109,17 +109,17 @@ export function CancellationSurveySheet({ isOtherSheetOpen }: { isOtherSheetOpen
           /* 제출 완료 — 감사 정적 화면 */
           <div className="py-14 flex flex-col items-center justify-center text-center min-h-[280px]">
             <p className="text-[40px] mb-3">🎉</p>
-            <p className="text-[24px] font-black text-white mb-2">감사합니다</p>
-            <p className="text-[14px] text-neutral-400">소중한 의견 잘 받았어요</p>
-            <p className="text-[13px] text-amber-400 font-bold mt-3">곧 더 좋은 서비스로 보답할게요</p>
+            <p className="text-[24px] font-black text-foreground mb-2">감사합니다</p>
+            <p className="text-[14px] text-muted-foreground">소중한 의견 잘 받았어요</p>
+            <p className="text-[13px] text-brand-amber font-bold mt-3">곧 더 좋은 서비스로 보답할게요</p>
           </div>
         ) : (
           <div className="space-y-5 pt-2">
             {/* 헤더 — 위계: 슬픈 이모지 / 제목 크게 / 부제 작게·흐리게 */}
             <div className="space-y-1.5 text-center">
               <p className="text-[40px] leading-none mb-1">🥲</p>
-              <p className="text-[20px] font-black text-white leading-snug">지난번 깃발이 매치 실패했어요.</p>
-              <p className="text-[13px] text-neutral-400">
+              <p className="text-[20px] font-black text-foreground leading-snug">지난번 깃발이 매치 실패했어요.</p>
+              <p className="text-[13px] text-muted-foreground">
                 서비스 향상을 위해 이유를 알려주시겠어요?
               </p>
             </div>
@@ -136,8 +136,8 @@ export function CancellationSurveySheet({ isOtherSheetOpen }: { isOtherSheetOpen
                     disabled={submitting}
                     className={`w-full text-left px-4 py-3.5 rounded-2xl text-[15px] font-bold transition-all border active:scale-[0.98] disabled:opacity-40 ${
                       active
-                        ? "bg-white text-black border-white"
-                        : "bg-transparent text-neutral-500 border-neutral-800"
+                        ? "bg-inverse text-inverse-foreground border-white"
+                        : "bg-transparent text-muted-foreground border-border"
                     }`}
                   >
                     {label}
@@ -152,8 +152,8 @@ export function CancellationSurveySheet({ isOtherSheetOpen }: { isOtherSheetOpen
                   disabled={submitting}
                   className={`w-full text-left px-4 py-3.5 rounded-2xl text-[15px] font-bold transition-all border active:scale-[0.98] disabled:opacity-40 ${
                     detailReason === "other"
-                      ? "bg-white text-black border-white"
-                      : "bg-transparent text-neutral-500 border-neutral-800"
+                      ? "bg-inverse text-inverse-foreground border-white"
+                      : "bg-transparent text-muted-foreground border-border"
                   }`}
                 >
                   직접 입력
@@ -169,7 +169,7 @@ export function CancellationSurveySheet({ isOtherSheetOpen }: { isOtherSheetOpen
                     onChange={(e) => setText(e.target.value.slice(0, 300))}
                     placeholder={detail.placeholder}
                     rows={3}
-                    className="w-full bg-neutral-900 border border-amber-500/60 rounded-2xl px-4 py-3 text-[14px] text-white placeholder-neutral-500 resize-none outline-none focus:border-amber-500 transition-colors"
+                    className="w-full bg-card border border-amber-500/60 rounded-2xl px-4 py-3 text-[14px] text-foreground placeholder-neutral-500 resize-none outline-none focus:border-amber-500 transition-colors"
                   />
                   <button
                     onClick={() => submitSurvey(detailReason, text.trim() || null)}
@@ -186,7 +186,7 @@ export function CancellationSurveySheet({ isOtherSheetOpen }: { isOtherSheetOpen
                 <button
                   onClick={handleSkip}
                   disabled={submitting}
-                  className="w-full text-left px-4 py-3.5 rounded-2xl text-[15px] font-bold transition-all border bg-neutral-900 text-neutral-200 border-neutral-700 active:scale-[0.98] disabled:opacity-40"
+                  className="w-full text-left px-4 py-3.5 rounded-2xl text-[15px] font-bold transition-all border bg-card text-foreground border-border active:scale-[0.98] disabled:opacity-40"
                 >
                   넘어가기
                 </button>

@@ -106,25 +106,25 @@ export default function AdminSearchMissesPage() {
 
   if (userLoading || !user) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-neutral-500" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="flex items-center gap-3 mb-6">
           <Link
             href="/admin/clubs"
-            className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800"
+            className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border"
           >
-            <ChevronLeft className="w-5 h-5 text-white" />
+            <ChevronLeft className="w-5 h-5 text-foreground" />
           </Link>
           <div>
-            <h1 className="text-xl font-black text-white">검색 실패 로그</h1>
-            <p className="text-[11px] text-neutral-500">
+            <h1 className="text-xl font-black text-foreground">검색 실패 로그</h1>
+            <p className="text-[11px] text-muted-foreground">
               결과가 없었던 검색어. 클릭해서 클럽 별칭으로 등록하세요.
             </p>
           </div>
@@ -136,8 +136,8 @@ export default function AdminSearchMissesPage() {
             onClick={() => setOnlyUnresolved(true)}
             className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
               onlyUnresolved
-                ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                ? "bg-inverse text-inverse-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted"
             }`}
           >
             미해결만
@@ -147,8 +147,8 @@ export default function AdminSearchMissesPage() {
             onClick={() => setOnlyUnresolved(false)}
             className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
               !onlyUnresolved
-                ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                ? "bg-inverse text-inverse-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted"
             }`}
           >
             전체
@@ -157,12 +157,12 @@ export default function AdminSearchMissesPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-6 h-6 animate-spin text-neutral-500" />
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
         ) : misses.length === 0 ? (
           <div className="text-center py-12 space-y-2">
-            <Search className="w-8 h-8 text-neutral-700 mx-auto" />
-            <p className="text-[13px] text-neutral-500">
+            <Search className="w-8 h-8 text-muted-foreground mx-auto" />
+            <p className="text-[13px] text-muted-foreground">
               {onlyUnresolved ? "미해결 검색 실패가 없어요" : "검색 실패 기록이 없어요"}
             </p>
           </div>
@@ -175,22 +175,22 @@ export default function AdminSearchMissesPage() {
               return (
                 <li
                   key={m.normalized_query}
-                  className="bg-[#1C1C1E] rounded-2xl p-4 space-y-3"
+                  className="bg-card rounded-2xl border border-border p-4 space-y-3"
                 >
                   <div className="flex items-baseline justify-between gap-3">
-                    <p className="text-white font-black text-[15px] truncate">
+                    <p className="text-foreground font-black text-[15px] truncate">
                       {m.sample_query}
                     </p>
-                    <span className="text-amber-400 text-[12px] font-bold flex-shrink-0">
+                    <span className="text-brand-amber text-[12px] font-bold flex-shrink-0">
                       {m.miss_count}회
                     </span>
                   </div>
-                  <p className="text-[10px] text-neutral-600">
+                  <p className="text-[10px] text-muted-foreground">
                     마지막: {new Date(m.last_seen).toLocaleString("ko-KR")}
                   </p>
 
                   {resolvedClub ? (
-                    <div className="text-[12px] text-green-400">
+                    <div className="text-[12px] text-money">
                       ✅ "{resolvedClub.name}" 별칭으로 등록됨
                     </div>
                   ) : (
@@ -233,7 +233,7 @@ function ResolveControl({
         value={clubId}
         onChange={(e) => setClubId(e.target.value)}
         disabled={disabled}
-        className="flex-1 bg-neutral-900 border border-neutral-700 rounded-lg px-3 py-2 text-[13px] text-white focus:outline-none focus:border-amber-500/50"
+        className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-[13px] text-foreground focus:outline-none focus:border-amber-500/50"
       >
         <option value="">클럽 선택...</option>
         {clubs.map((c) => (

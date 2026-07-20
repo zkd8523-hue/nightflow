@@ -64,28 +64,28 @@ export default function ZhGuestsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/zh" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/zh" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">首尔夜店 Guest List</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             跳过首尔顶级夜店的入场费。来自真实 MD 的每周 guest 优惠 — 免费入场、折扣入场、免费饮品券。无需韩语，无中介。
           </p>
         </header>
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">什么是首尔夜店 Guest List？</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             韩国夜店 MD（推广员）运营每周 guest list — 通常在特定时间前免费或折扣入场。本地人用这种方式避开 ₩20,000–30,000 入场费。难点：传统上需要通过 Instagram 或 KakaoTalk 联系韩国 MD。
           </p>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             NightFlow 将江南、弘大、梨泰院夜店每周的 guest 优惠汇集一处 — 中文界面，一键复制粘贴消息发给各 MD。
           </p>
         </section>
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">您可获得什么</h2>
-          <ul className="space-y-2 text-[13px] text-neutral-300">
+          <ul className="space-y-2 text-[13px] text-foreground/80">
             <li>• 特定时间前免费入场（通常到午夜 12 点）</li>
             <li>• 免费时段后入场费折扣</li>
             <li>• 部分夜店免费饮品券</li>
@@ -95,7 +95,7 @@ export default function ZhGuestsPage() {
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">如何使用首尔 Guest List</h2>
-          <ol className="space-y-2 text-[13px] text-neutral-300 list-decimal pl-5">
+          <ol className="space-y-2 text-[13px] text-foreground/80 list-decimal pl-5">
             <li>在 NightFlow 浏览每周 guest 优惠</li>
             <li>挑选夜店 — 江南、弘大或梨泰院</li>
             <li>点击"复制消息" — 预写好的中文/英文请求</li>
@@ -105,7 +105,7 @@ export default function ZhGuestsPage() {
           </ol>
         </section>
         <section className="text-center pt-4 space-y-3">
-          <Link href="/zh/clubs" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">
+          <Link href="/zh/clubs" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             查看本周 guest 优惠 →
           </Link>
           <Link href="/zh/faq" className="text-[12px] text-blue-400 hover:underline">查看 FAQ →</Link>

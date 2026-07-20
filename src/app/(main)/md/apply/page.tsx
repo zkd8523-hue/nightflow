@@ -27,7 +27,7 @@ export default async function MDApplyPage() {
     // pending 상태: 심사 중 / 인증코드 입력 UI
     if (userData.md_status === "pending") {
         return (
-            <div className="min-h-screen bg-[#0A0A0A] pt-20 pb-24 px-4">
+            <div className="min-h-screen bg-background pt-20 pb-24 px-4">
                 <div className="max-w-lg mx-auto">
                     <MDPendingStatus user={userData} />
                 </div>
@@ -38,21 +38,21 @@ export default async function MDApplyPage() {
     // rejected 상태: 재신청 안내 + 폼
     // 신규 신청 또는 재신청
     return (
-        <div className="min-h-screen bg-[#0A0A0A] pt-20 pb-24 px-4">
+        <div className="min-h-screen bg-background pt-20 pb-24 px-4">
             <div className="max-w-lg mx-auto">
                 <div className="space-y-10">
                     {userData.md_status === "rejected" && (
                         <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4">
                             <p className="text-red-400 text-[13px] font-bold">이전 신청이 반려되었습니다.</p>
                             {userData.md_rejection_reason && (
-                                <p className="text-neutral-400 text-[12px] mt-1">사유: {userData.md_rejection_reason}</p>
+                                <p className="text-muted-foreground text-[12px] mt-1">사유: {userData.md_rejection_reason}</p>
                             )}
-                            <p className="text-neutral-500 text-[12px] mt-2">아래에서 다시 신청할 수 있습니다.</p>
+                            <p className="text-muted-foreground text-[12px] mt-2">아래에서 다시 신청할 수 있습니다.</p>
                         </div>
                     )}
                     <div className="space-y-4">
-                        <Badge className="bg-white/10 text-white/60 font-medium px-3 py-1 border border-white/10">파트너 등록</Badge>
-                        <h1 className="font-bold text-white tracking-tight leading-snug">
+                        <Badge className="bg-white/10 text-foreground/60 font-medium px-3 py-1 border border-white/10">파트너 등록</Badge>
+                        <h1 className="font-bold text-foreground tracking-tight leading-snug">
                             <span className="block text-2xl md:text-3xl">마케팅부터 고객관리까지</span>
                             <span className="block text-3xl md:text-4xl">오늘부턴 나플 하나로 끝!</span>
                         </h1>

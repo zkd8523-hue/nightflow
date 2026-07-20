@@ -32,19 +32,19 @@ const STATUS_CONFIG: Record<
   active: {
     label: "진행중",
     dot: "bg-green-500 animate-pulse",
-    text: "text-green-500",
+    text: "text-money",
   },
-  scheduled: { label: "예정", dot: "bg-amber-500", text: "text-amber-500" },
-  won: { label: "낙찰", dot: "bg-green-500", text: "text-green-500" },
+  scheduled: { label: "예정", dot: "bg-amber-500", text: "text-brand-amber" },
+  won: { label: "낙찰", dot: "bg-green-500", text: "text-money" },
   confirmed: {
     label: "방문 확인",
     dot: "bg-green-500",
-    text: "text-green-500",
+    text: "text-money",
   },
-  unsold: { label: "유찰", dot: "bg-neutral-600", text: "text-neutral-500" },
+  unsold: { label: "유찰", dot: "bg-muted", text: "text-muted-foreground" },
   cancelled: { label: "취소", dot: "bg-red-500", text: "text-red-500" },
-  draft: { label: "초안", dot: "bg-neutral-700", text: "text-neutral-600" },
-  expired: { label: "만료", dot: "bg-neutral-600", text: "text-neutral-500" },
+  draft: { label: "초안", dot: "bg-muted", text: "text-muted-foreground" },
+  expired: { label: "만료", dot: "bg-muted", text: "text-muted-foreground" },
 };
 
 function getEventTime(auction: AuctionActivity): string {
@@ -139,11 +139,11 @@ export function MDActivityTimeline({ mdId }: { mdId: string }) {
       <div className="space-y-4 py-2">
         {[1, 2, 3].map((i) => (
           <div key={i} className="flex gap-3 animate-pulse">
-            <div className="w-2.5 h-2.5 rounded-full bg-neutral-800 mt-1.5 shrink-0" />
+            <div className="w-2.5 h-2.5 rounded-full bg-muted mt-1.5 shrink-0" />
             <div className="flex-1 space-y-2">
-              <div className="h-3 bg-neutral-800 rounded w-20" />
-              <div className="h-4 bg-neutral-800 rounded w-40" />
-              <div className="h-3 bg-neutral-800 rounded w-32" />
+              <div className="h-3 bg-muted rounded w-20" />
+              <div className="h-4 bg-muted rounded w-40" />
+              <div className="h-3 bg-muted rounded w-32" />
             </div>
           </div>
         ))}
@@ -153,7 +153,7 @@ export function MDActivityTimeline({ mdId }: { mdId: string }) {
 
   if (auctions.length === 0) {
     return (
-      <div className="py-6 text-center text-neutral-600 text-sm">
+      <div className="py-6 text-center text-muted-foreground text-sm">
         최근 활동이 없습니다
       </div>
     );
@@ -173,25 +173,25 @@ export function MDActivityTimeline({ mdId }: { mdId: string }) {
                 className={`w-2.5 h-2.5 rounded-full mt-1.5 ${config.dot}`}
               />
               {!isLast && (
-                <div className="w-px flex-1 bg-neutral-800 my-1" />
+                <div className="w-px flex-1 bg-muted my-1" />
               )}
             </div>
 
             {/* Content */}
             <div className={`pb-4 flex-1 ${isLast ? "" : ""}`}>
-              <div className="text-[11px] text-neutral-600 mb-0.5">
+              <div className="text-[11px] text-muted-foreground mb-0.5">
                 {getEventTime(auction)}
               </div>
-              <div className="text-sm text-white font-medium">
+              <div className="text-sm text-foreground font-medium">
                 {auction.clubs?.name || "클럽 미지정"}
                 {auction.table_type && (
-                  <span className="text-neutral-500">
+                  <span className="text-muted-foreground">
                     {" "}
                     · {auction.table_type}
                   </span>
                 )}
               </div>
-              <div className="text-xs text-neutral-400 mt-0.5">
+              <div className="text-xs text-muted-foreground mt-0.5">
                 {getEventDescription(auction)}
                 <span className={`ml-2 font-bold ${config.text}`}>
                   {config.label}

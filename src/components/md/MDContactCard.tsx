@@ -78,13 +78,13 @@ export function MDContactCard({ user }: Props) {
 
   return (
     <div className="px-4 mt-3">
-      <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
+      <div className="bg-card border border-border rounded-2xl p-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-[13px] font-bold text-white">내 연락처</span>
+          <span className="text-[13px] font-bold text-foreground">내 연락처</span>
           {!editing ? (
             <button
               onClick={startEdit}
-              className="flex items-center gap-1 text-[12px] font-bold text-neutral-400 hover:text-white transition-colors"
+              className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground hover:text-foreground transition-colors"
             >
               <Pencil className="w-3 h-3" />
               {igHandle || openChatUrl ? "수정" : "등록"}
@@ -94,14 +94,14 @@ export function MDContactCard({ user }: Props) {
               <button
                 onClick={() => setEditing(false)}
                 disabled={saving}
-                className="text-[12px] font-bold text-neutral-500 hover:text-neutral-300 transition-colors disabled:opacity-50"
+                className="text-[12px] font-bold text-muted-foreground hover:text-foreground/80 transition-colors disabled:opacity-50"
               >
                 취소
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="text-[12px] font-bold text-amber-400 hover:text-amber-300 transition-colors disabled:opacity-50"
+                className="text-[12px] font-bold text-brand-amber hover:text-brand-amber transition-colors disabled:opacity-50"
               >
                 {saving ? "저장 중..." : "저장"}
               </button>
@@ -113,12 +113,12 @@ export function MDContactCard({ user }: Props) {
           <div className="space-y-3">
             {/* 인스타그램 */}
             <div>
-              <label className="flex items-center gap-1.5 text-[11px] font-bold text-neutral-500 mb-1.5">
+              <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1.5">
                 <Instagram className="w-3.5 h-3.5" />
                 인스타그램 *
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 text-[14px]">@</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px]">@</span>
                 <input
                   type="text"
                   value={instagram.replace(/^@/, "")}
@@ -127,7 +127,7 @@ export function MDContactCard({ user }: Props) {
                   }
                   maxLength={30}
                   placeholder="your_instagram_id"
-                  className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl pl-7 pr-3 py-2.5 text-[14px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600 font-mono"
+                  className="w-full bg-background border border-border rounded-xl pl-7 pr-3 py-2.5 text-[14px] text-foreground placeholder-neutral-600 focus:outline-none focus:border-border font-mono"
                 />
               </div>
             </div>
@@ -135,7 +135,7 @@ export function MDContactCard({ user }: Props) {
             {/* 오픈채팅 */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="flex items-center gap-1.5 text-[11px] font-bold text-neutral-500">
+                <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground">
                   <MessageCircle className="w-3.5 h-3.5" />
                   카카오 오픈채팅
                 </label>
@@ -146,9 +146,9 @@ export function MDContactCard({ user }: Props) {
                 value={kakaoUrl}
                 onChange={(e) => setKakaoUrl(e.target.value)}
                 placeholder="https://open.kakao.com/o/..."
-                className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600 font-mono"
+                className="w-full bg-background border border-border rounded-xl px-3 py-2.5 text-[13px] text-foreground placeholder-neutral-600 focus:outline-none focus:border-border font-mono"
               />
-              <p className="mt-1.5 text-[11px] text-neutral-600 leading-relaxed">
+              <p className="mt-1.5 text-[11px] text-muted-foreground leading-relaxed">
                 고객에게 연락 수단으로 표시됩니다. 방을 만든 뒤 링크를 붙여넣어 주세요.
               </p>
             </div>
@@ -161,16 +161,16 @@ export function MDContactCard({ user }: Props) {
                 href={igUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-neutral-800 hover:bg-neutral-700 transition-colors text-[13px] font-bold text-white"
+                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-muted hover:bg-muted transition-colors text-[13px] font-bold text-foreground"
               >
                 <Instagram className="w-4 h-4 text-pink-400" />
                 <span className="truncate">@{igHandle}</span>
-                <ExternalLink className="w-3 h-3 text-neutral-500 shrink-0" />
+                <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
               </a>
             ) : (
               <button
                 onClick={startEdit}
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl border border-dashed border-neutral-700 hover:border-neutral-600 transition-colors text-[13px] font-bold text-neutral-500"
+                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl border border-dashed border-border hover:border-border transition-colors text-[13px] font-bold text-muted-foreground"
               >
                 <Instagram className="w-4 h-4" />
                 인스타 등록
@@ -183,16 +183,16 @@ export function MDContactCard({ user }: Props) {
                 href={openChatUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-neutral-800 hover:bg-neutral-700 transition-colors text-[13px] font-bold text-white"
+                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl bg-muted hover:bg-muted transition-colors text-[13px] font-bold text-foreground"
               >
                 <MessageCircle className="w-4 h-4 text-[#FEE500]" />
                 <span>오픈채팅 등록됨</span>
-                <ExternalLink className="w-3 h-3 text-neutral-500 shrink-0" />
+                <ExternalLink className="w-3 h-3 text-muted-foreground shrink-0" />
               </a>
             ) : (
               <button
                 onClick={startEdit}
-                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl border border-dashed border-neutral-700 hover:border-neutral-600 transition-colors text-[13px] font-bold text-neutral-500"
+                className="flex-1 flex items-center justify-center gap-1.5 h-10 rounded-xl border border-dashed border-border hover:border-border transition-colors text-[13px] font-bold text-muted-foreground"
               >
                 <MessageCircle className="w-4 h-4" />
                 오픈채팅 등록

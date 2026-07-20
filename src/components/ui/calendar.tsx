@@ -23,49 +23,49 @@ export function Calendar({
     <DayPicker
       locale={ko}
       showOutsideDays={showOutsideDays}
-      className={cn("p-1 text-white relative", className)}
+      className={cn("p-1 text-foreground relative", className)}
       classNames={{
         months: "flex flex-col gap-2",
         month: "flex flex-col gap-3",
         month_caption: "flex justify-center items-center h-9 relative",
-        caption_label: "text-sm font-bold text-white",
+        caption_label: "text-sm font-bold text-foreground",
         nav: "flex items-center justify-between absolute inset-x-0 top-0 h-9 px-1 z-10",
         button_previous: cn(
           "inline-flex items-center justify-center w-8 h-8 rounded-lg",
-          "bg-neutral-900 border border-neutral-800 text-neutral-300",
-          "hover:bg-neutral-800 hover:text-white transition-colors",
+          "bg-card border border-border text-foreground/80",
+          "hover:bg-muted hover:text-foreground transition-colors",
           "disabled:opacity-30 disabled:cursor-not-allowed"
         ),
         button_next: cn(
           "inline-flex items-center justify-center w-8 h-8 rounded-lg",
-          "bg-neutral-900 border border-neutral-800 text-neutral-300",
-          "hover:bg-neutral-800 hover:text-white transition-colors",
+          "bg-card border border-border text-foreground/80",
+          "hover:bg-muted hover:text-foreground transition-colors",
           "disabled:opacity-30 disabled:cursor-not-allowed"
         ),
         month_grid: "border-collapse mx-auto",
         weekdays: "flex",
         weekday:
-          "text-neutral-500 font-bold text-[11px] w-10 text-center pb-1 uppercase",
+          "text-muted-foreground font-bold text-[11px] w-10 text-center pb-1 uppercase",
         week: "flex mt-1",
         day: "w-10 h-10 p-0 text-center",
         day_button: cn(
           "w-10 h-10 flex items-center justify-center rounded-lg",
-          "text-sm font-medium text-white",
-          "hover:bg-neutral-800 transition-colors",
+          "text-sm font-medium text-foreground",
+          "hover:bg-muted transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
         ),
         today: "",
         selected: "",
-        outside: "text-neutral-600",
-        disabled: "text-neutral-700 opacity-40 pointer-events-none",
+        outside: "text-muted-foreground",
+        disabled: "text-muted-foreground opacity-40 pointer-events-none",
         hidden: "invisible",
         ...classNames,
       }}
       modifiersClassNames={{
         selected:
-          "[&>button]:bg-white [&>button]:text-black [&>button]:font-black [&>button]:hover:bg-neutral-100",
+          "[&>button]:bg-inverse [&>button]:text-inverse-foreground [&>button]:font-black [&>button]:hover:opacity-90",
         today:
-          "[&>button]:ring-1 [&>button]:ring-green-500/60 [&>button]:text-green-400",
+          "[&>button]:ring-1 [&>button]:ring-green-500/60 [&>button]:text-money",
       }}
       components={{
         Chevron: ({ orientation, className: chevronClassName, ...rest }) => {

@@ -94,27 +94,27 @@ export default function RecoverAccountPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-border border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-4">
         {/* 메인 카드 */}
-        <Card className="bg-[#1C1C1E] border-neutral-800 p-6 gap-0 space-y-5 text-center">
+        <Card className="bg-card border-border p-6 gap-0 space-y-5 text-center">
           <div className="w-16 h-16 mx-auto bg-amber-500/10 rounded-full flex items-center justify-center">
-            <Clock className="w-8 h-8 text-amber-400" />
+            <Clock className="w-8 h-8 text-brand-amber" />
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-xl font-black text-white">
+            <h1 className="text-xl font-black text-foreground">
               탈퇴 처리된 계정입니다
             </h1>
             {userName && (
-              <p className="text-[14px] text-neutral-400 font-bold">
+              <p className="text-[14px] text-muted-foreground font-bold">
                 {userName}님, 다시 돌아오셨군요
               </p>
             )}
@@ -127,17 +127,17 @@ export default function RecoverAccountPage() {
                 <p className="text-lg font-black text-red-400">
                   복구 기간이 만료되었습니다
                 </p>
-                <p className="text-[12px] text-neutral-500 font-medium">
+                <p className="text-[12px] text-muted-foreground font-medium">
                   데이터가 곧 영구 삭제됩니다
                 </p>
               </>
             ) : (
               <>
-                <p className="text-3xl font-black text-amber-400">
+                <p className="text-3xl font-black text-brand-amber">
                   {daysRemaining}
                   <span className="text-base font-bold">일 남음</span>
                 </p>
-                <p className="text-[12px] text-neutral-500 font-medium">
+                <p className="text-[12px] text-muted-foreground font-medium">
                   {purgeDate}에 영구 삭제 예정
                 </p>
               </>
@@ -155,7 +155,7 @@ export default function RecoverAccountPage() {
           </Button>
 
           {/* 안내 텍스트 */}
-          <p className="text-[12px] text-neutral-500 font-medium leading-relaxed">
+          <p className="text-[12px] text-muted-foreground font-medium leading-relaxed">
             {isExpired ? (
               "복구 가능 기간(30일)이 지났습니다. 새 계정으로 가입해주세요."
             ) : (
@@ -172,7 +172,7 @@ export default function RecoverAccountPage() {
         <div className="text-center space-y-3">
           <button
             onClick={handleSignOut}
-            className="text-[12px] text-neutral-600 hover:text-neutral-400 transition-colors font-medium"
+            className="text-[12px] text-muted-foreground hover:text-muted-foreground transition-colors font-medium"
           >
             로그아웃
           </button>

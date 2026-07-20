@@ -78,7 +78,7 @@ export default async function AdminReviewsPage() {
   const topMax = sortedWords[0]?.[1] || 1;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
+    <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
       <div className="max-w-7xl mx-auto px-6 space-y-10">
 
         {/* Header */}
@@ -86,86 +86,86 @@ export default async function AdminReviewsPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 hover:border-neutral-700 transition-colors"
+              className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border hover:border-border transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 text-neutral-400" />
+              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
             </Link>
-            <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-widest text-[11px]">
+            <div className="flex items-center gap-2 text-muted-foreground font-bold uppercase tracking-widest text-[11px]">
               <MessageSquare className="w-3.5 h-3.5" />
               Word Cloud Reviews
             </div>
           </div>
           <div>
             <h1 className="text-4xl font-black tracking-tighter">5자리뷰 현황</h1>
-            <p className="text-neutral-500 font-medium mt-1">클럽 상세 페이지의 워드클라우드 리뷰 현황</p>
+            <p className="text-muted-foreground font-medium mt-1">클럽 상세 페이지의 워드클라우드 리뷰 현황</p>
           </div>
         </header>
 
         {/* 요약 통계 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-5">
+          <Card className="bg-card border-border p-5">
             <div className="flex items-center gap-2 text-pink-400 mb-3">
               <Users className="w-4 h-4" />
               <span className="text-[10px] font-bold uppercase tracking-widest">참여자 수</span>
             </div>
-            <p className="text-3xl font-black text-white">{totalEntries.toLocaleString()}</p>
-            <p className="text-xs text-neutral-500 mt-1">명 (누적)</p>
+            <p className="text-3xl font-black text-foreground">{totalEntries.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">명 (누적)</p>
           </Card>
 
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-5 shadow-[0_0_24px_rgba(236,72,153,0.12)]">
+          <Card className="bg-card border-border p-5 shadow-[0_0_24px_rgba(236,72,153,0.12)]">
             <div className="flex items-center gap-2 text-pink-400 mb-3">
               <MessageSquare className="w-4 h-4" />
               <span className="text-[10px] font-bold uppercase tracking-widest">총 단어 수</span>
             </div>
-            <p className="text-3xl font-black text-white">{totalWords.toLocaleString()}</p>
-            <p className="text-xs text-neutral-500 mt-1">개 (누적)</p>
+            <p className="text-3xl font-black text-foreground">{totalWords.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">개 (누적)</p>
           </Card>
 
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-5">
-            <div className="flex items-center gap-2 text-green-400 mb-3">
+          <Card className="bg-card border-border p-5">
+            <div className="flex items-center gap-2 text-money mb-3">
               <TrendingUp className="w-4 h-4" />
               <span className="text-[10px] font-bold uppercase tracking-widest">최근 7일</span>
             </div>
-            <p className="text-3xl font-black text-white">{recentCount}</p>
-            <p className="text-xs text-neutral-500 mt-1">건</p>
+            <p className="text-3xl font-black text-foreground">{recentCount}</p>
+            <p className="text-xs text-muted-foreground mt-1">건</p>
           </Card>
 
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-5">
+          <Card className="bg-card border-border p-5">
             <div className="flex items-center gap-2 text-purple-400 mb-3">
               <Hash className="w-4 h-4" />
               <span className="text-[10px] font-bold uppercase tracking-widest">고유 단어</span>
             </div>
-            <p className="text-3xl font-black text-white">{uniqueWordCount.toLocaleString()}</p>
-            <p className="text-xs text-neutral-500 mt-1">종</p>
+            <p className="text-3xl font-black text-foreground">{uniqueWordCount.toLocaleString()}</p>
+            <p className="text-xs text-muted-foreground mt-1">종</p>
           </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* 인기 단어 TOP 20 */}
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-6">
+          <Card className="bg-card border-border p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-black">인기 단어 TOP 20</h2>
-              <span className="text-xs text-neutral-500">전 클럽 합산</span>
+              <span className="text-xs text-muted-foreground">전 클럽 합산</span>
             </div>
             {sortedWords.length === 0 ? (
-              <p className="text-neutral-500 text-sm">아직 데이터가 없어요</p>
+              <p className="text-muted-foreground text-sm">아직 데이터가 없어요</p>
             ) : (
               <div className="space-y-2.5">
                 {sortedWords.slice(0, 20).map(([word, count], idx) => (
                   <div key={word} className="flex items-center gap-3">
                     <span className={`w-6 text-center text-sm font-black shrink-0 ${
-                      idx === 0 ? "text-pink-400" : idx === 1 ? "text-neutral-300" : idx === 2 ? "text-amber-700" : "text-neutral-700"
+                      idx === 0 ? "text-pink-400" : idx === 1 ? "text-foreground/80" : idx === 2 ? "text-brand-amber" : "text-muted-foreground"
                     }`}>
                       {idx + 1}
                     </span>
-                    <span className="w-16 text-sm font-bold text-white truncate shrink-0">{word}</span>
-                    <div className="flex-1 h-5 bg-neutral-900 rounded-full overflow-hidden">
+                    <span className="w-16 text-sm font-bold text-foreground truncate shrink-0">{word}</span>
+                    <div className="flex-1 h-5 bg-card rounded-full overflow-hidden">
                       <div
                         className="h-full bg-pink-500 rounded-full"
                         style={{ width: `${(count / topMax) * 100}%` }}
                       />
                     </div>
-                    <span className="w-8 text-right text-sm font-black text-white shrink-0">{count}</span>
+                    <span className="w-8 text-right text-sm font-black text-foreground shrink-0">{count}</span>
                   </div>
                 ))}
               </div>
@@ -173,13 +173,13 @@ export default async function AdminReviewsPage() {
           </Card>
 
           {/* 클럽별 리뷰 순위 */}
-          <Card className="bg-[#1C1C1E] border-neutral-800 p-6">
+          <Card className="bg-card border-border p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-black">클럽별 리뷰 순위</h2>
-              <span className="text-xs text-neutral-500">참여자 수 기준</span>
+              <span className="text-xs text-muted-foreground">참여자 수 기준</span>
             </div>
             {clubRanking.length === 0 ? (
-              <p className="text-neutral-500 text-sm">아직 데이터가 없어요</p>
+              <p className="text-muted-foreground text-sm">아직 데이터가 없어요</p>
             ) : (
               <div className="space-y-3">
                 {clubRanking.map((club, idx) => {
@@ -190,13 +190,13 @@ export default async function AdminReviewsPage() {
                   return (
                     <div key={club.name} className="flex items-start gap-3">
                       <span className={`w-6 text-center text-sm font-black shrink-0 mt-0.5 ${
-                        idx === 0 ? "text-pink-400" : idx === 1 ? "text-neutral-300" : idx === 2 ? "text-amber-700" : "text-neutral-700"
+                        idx === 0 ? "text-pink-400" : idx === 1 ? "text-foreground/80" : idx === 2 ? "text-brand-amber" : "text-muted-foreground"
                       }`}>
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-bold text-white truncate">{club.name}</span>
+                          <span className="text-sm font-bold text-foreground truncate">{club.name}</span>
                           <span className="text-sm font-black text-pink-400 shrink-0">{club.entries}명</span>
                         </div>
                         {topClubWords.length > 0 && (
@@ -218,19 +218,19 @@ export default async function AdminReviewsPage() {
         </div>
 
         {/* 최근 제출 목록 */}
-        <Card className="bg-[#1C1C1E] border-neutral-800 p-6">
+        <Card className="bg-card border-border p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-black">최근 제출</h2>
-            <span className="text-xs text-neutral-500">최신 {Math.min(allRows.length, 500)}건</span>
+            <span className="text-xs text-muted-foreground">최신 {Math.min(allRows.length, 500)}건</span>
           </div>
 
           {allRows.length === 0 ? (
-            <p className="text-neutral-500 text-sm">아직 리뷰가 없어요</p>
+            <p className="text-muted-foreground text-sm">아직 리뷰가 없어요</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-800 text-neutral-500 text-xs">
+                  <tr className="border-b border-border text-muted-foreground text-xs">
                     <th className="text-left py-3 pr-4 font-semibold">클럽</th>
                     <th className="text-left py-3 pr-4 font-semibold">작성자</th>
                     <th className="text-left py-3 pr-4 font-semibold">단어</th>
@@ -242,21 +242,21 @@ export default async function AdminReviewsPage() {
                     const club = row.club as unknown as { id: string; name: string } | null;
                     const author = row.author as { display_name?: string } | null;
                     return (
-                      <tr key={row.id} className="hover:bg-neutral-800/30 transition-colors">
+                      <tr key={row.id} className="hover:bg-muted/30 transition-colors">
                         <td className="py-2.5 pr-4">
                           {club ? (
                             <Link
                               href={`/clubs/${club.id}`}
-                              className="font-semibold text-white hover:text-pink-400 transition-colors"
+                              className="font-semibold text-foreground hover:text-pink-400 transition-colors"
                             >
                               {club.name}
                             </Link>
                           ) : (
-                            <span className="text-neutral-600">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </td>
                         <td className="py-2.5 pr-4">
-                          <span className="text-neutral-400">{author?.display_name || "—"}</span>
+                          <span className="text-muted-foreground">{author?.display_name || "—"}</span>
                         </td>
                         <td className="py-2.5 pr-4">
                           <div className="flex gap-1.5 flex-wrap">
@@ -270,7 +270,7 @@ export default async function AdminReviewsPage() {
                             ))}
                           </div>
                         </td>
-                        <td className="py-2.5 text-neutral-500 whitespace-nowrap text-xs">
+                        <td className="py-2.5 text-muted-foreground whitespace-nowrap text-xs">
                           {dayjs(row.created_at).fromNow()}
                         </td>
                       </tr>

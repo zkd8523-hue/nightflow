@@ -122,20 +122,20 @@ export default async function MDShareSlotsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <div className="max-w-lg mx-auto px-4 py-5 space-y-6">
         {missingOpenChat && (
           <Link
             href="/profile"
             className="block bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4"
           >
-            <p className="text-[13px] font-bold text-amber-400">
+            <p className="text-[13px] font-bold text-brand-amber">
               ⚠️ 조각을 올리려면 먼저 오픈채팅을 등록해주세요
             </p>
-            <p className="text-[12px] text-neutral-400 mt-1 leading-relaxed">
+            <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
               유저는 오픈채팅으로 안내받아요. 등록 전까지는 조각이 자동으로 올라가지 않아요.
             </p>
-            <p className="text-[12px] font-bold text-white mt-2">프로필 설정하러 가기 →</p>
+            <p className="text-[12px] font-bold text-foreground mt-2">프로필 설정하러 가기 →</p>
           </Link>
         )}
 
@@ -162,13 +162,13 @@ export default async function MDShareSlotsPage() {
 
         {/* 선점 중인 클럽별 옵션 + 요일표 */}
         {myClaimedClubIds.map((cid) => (
-          <div key={cid} className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-4 space-y-5">
+          <div key={cid} className="bg-card border border-amber-500/30 rounded-2xl p-4 space-y-5">
             <ShareOptionManager
               clubId={cid}
               options={options.filter((o) => o.club_id === cid)}
               floorPlanUrl={clubFloorPlan(cid)}
             />
-            <div className="border-t border-neutral-800" />
+            <div className="border-t border-border" />
             <ShareWeekdayPlanBoard
               clubId={cid}
               options={options.filter((o) => o.club_id === cid)}

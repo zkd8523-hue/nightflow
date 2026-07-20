@@ -195,13 +195,13 @@ export function HotdealHomeSection() {
   return (
     <section className="space-y-2">
       <div className="flex items-baseline justify-between px-1">
-        <h2 className="text-[20px] font-black text-white flex items-center gap-0.5 tracking-tight">
+        <h2 className="text-[20px] font-black text-foreground flex items-center gap-0.5 tracking-tight">
           <span className="text-[20px]">🔥</span>
           Hot Deal Tonight
         </h2>
         <Link
           href="/hotdeal"
-          className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
+          className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
         >
           더보기
           <ChevronRight className="w-3 h-3" />
@@ -223,7 +223,7 @@ export function HotdealHomeSection() {
               className="flex-shrink-0 w-[44%] max-w-[180px] snap-start snap-always active:scale-[0.98] transition-transform"
             >
               {/* 이미지 */}
-              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-neutral-900">
+              <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden bg-card border border-border">
                 {item.club_thumbnail ? (
                   <Image
                     src={item.club_thumbnail}
@@ -234,7 +234,7 @@ export function HotdealHomeSection() {
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-[28px] font-black text-white/30">
+                  <div className="w-full h-full flex items-center justify-center text-[28px] font-black text-foreground/30">
                     {item.club_name.charAt(0)}
                   </div>
                 )}
@@ -242,13 +242,13 @@ export function HotdealHomeSection() {
                   <>
                     {/* 상단 검정 띠: FOMO 카피 */}
                     <div className="absolute top-0 inset-x-0 bg-black/70 backdrop-blur-sm px-2 py-1 flex items-center justify-center">
-                      <span className="text-white text-[10px] font-black tracking-tight">선착순 마감</span>
+                      <span className="text-foreground text-[10px] font-black tracking-tight">선착순 마감</span>
                     </div>
                     {/* 하단 그라데이션 + 남은 시간 */}
                     {item.hotdeal_ends_at && (
                       <>
-                        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/80 to-transparent" />
-                        <div className="absolute bottom-1.5 left-2 inline-flex items-center gap-1 text-amber-300 text-[11px] font-black drop-shadow">
+                        <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background/80 to-transparent" />
+                        <div className="absolute bottom-1.5 left-2 inline-flex items-center gap-1 text-brand-amber text-[11px] font-black drop-shadow">
                           <Clock className="w-3 h-3" />
                           {formatCountdownShort(item.hotdeal_ends_at, now)} 남음
                         </div>
@@ -261,7 +261,7 @@ export function HotdealHomeSection() {
               {/* 텍스트 */}
               <div className="mt-2 px-0.5 space-y-0.5">
                 <div className="flex items-center gap-1.5 min-w-0">
-                  <p className="text-white font-bold text-[13px] truncate leading-tight">
+                  <p className="text-foreground font-bold text-[13px] truncate leading-tight">
                     {item.club_name}
                   </p>
                   {zoneLabel && (
@@ -270,7 +270,7 @@ export function HotdealHomeSection() {
                     </span>
                   )}
                 </div>
-                <p className="text-neutral-500 text-[11px]">
+                <p className="text-muted-foreground text-[11px]">
                   {item.club_area ?? "기타"}
                 </p>
                 {item.hotdeal_price != null && (
@@ -280,12 +280,12 @@ export function HotdealHomeSection() {
                         <span className="text-[11px] font-black text-red-400">
                           {Math.round((1 - item.hotdeal_price / item.hotdeal_original_price) * 100)}%
                         </span>
-                        <span className="text-[11px] text-neutral-500 line-through">
+                        <span className="text-[11px] text-muted-foreground line-through">
                           {item.hotdeal_original_price.toLocaleString()}원
                         </span>
                       </div>
                     )}
-                    <span className="text-[15px] font-black text-white">
+                    <span className="text-[15px] font-black text-foreground">
                       {item.hotdeal_price.toLocaleString()}원
                     </span>
                   </div>

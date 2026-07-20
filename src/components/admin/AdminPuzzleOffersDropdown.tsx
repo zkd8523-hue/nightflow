@@ -63,11 +63,11 @@ const OFFER_STATUS_LABEL: Record<string, string> = {
 };
 
 const OFFER_STATUS_COLOR: Record<string, string> = {
-  pending: "bg-green-500/20 text-green-400",
-  accepted: "bg-amber-500/30 text-amber-300 border border-amber-500/40",
-  rejected: "bg-neutral-700 text-neutral-400",
-  withdrawn: "bg-neutral-700 text-neutral-500",
-  expired: "bg-neutral-700 text-neutral-500",
+  pending: "bg-green-500/20 text-money",
+  accepted: "bg-amber-500/30 text-brand-amber border border-amber-500/40",
+  rejected: "bg-muted text-muted-foreground",
+  withdrawn: "bg-muted text-muted-foreground",
+  expired: "bg-muted text-muted-foreground",
 };
 
 const TERMINAL_OFFER_STATUSES = new Set(["rejected", "withdrawn", "expired"]);
@@ -75,11 +75,11 @@ const TERMINAL_OFFER_STATUSES = new Set(["rejected", "withdrawn", "expired"]);
 function formatVisitBadge(o: OfferData): { label: string; cls: string } | null {
   if (o.status !== "accepted") return null;
   if (o.visit_result === "visited") {
-    return { label: "✅ 방문 완료", cls: "bg-green-500/20 text-green-400" };
+    return { label: "✅ 방문 완료", cls: "bg-green-500/20 text-money" };
   }
   if (o.visit_result === "noshow") {
     return o.strike_applied_at
-      ? { label: "⚫ 노쇼 처리됨", cls: "bg-neutral-700 text-neutral-300" }
+      ? { label: "⚫ 노쇼 처리됨", cls: "bg-muted text-foreground/80" }
       : { label: "🔴 노쇼 신고", cls: "bg-red-500/20 text-red-400" };
   }
   return { label: "🟡 결과 대기", cls: "bg-yellow-500/15 text-yellow-400" };
@@ -91,8 +91,8 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
   if (offers.length === 0) {
     return (
       <div className="space-y-2">
-        <p className="text-[12px] font-bold text-neutral-500">제안 0건</p>
-        <p className="text-[12px] text-neutral-700 italic">아직 제안 없음</p>
+        <p className="text-[12px] font-bold text-muted-foreground">제안 0건</p>
+        <p className="text-[12px] text-muted-foreground italic">아직 제안 없음</p>
       </div>
     );
   }
@@ -103,11 +103,11 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between py-1 group"
       >
-        <p className="text-[12px] font-bold text-neutral-400 group-hover:text-white transition-colors">
+        <p className="text-[12px] font-bold text-muted-foreground group-hover:text-foreground transition-colors">
           제안 {offers.length}건
         </p>
         <ChevronDown
-          className={`w-4 h-4 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
         />
       </button>
 
@@ -124,19 +124,19 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
                 isAccepted
                   ? "bg-amber-500/10 border-amber-500/40"
                   : isTerminal
-                  ? "bg-neutral-900/30 border-neutral-800/60 opacity-60"
-                  : "bg-neutral-900/50 border-neutral-800"
+                  ? "bg-card/30 border-border/60 opacity-60"
+                  : "bg-card/50 border-border"
               }`}
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className={`text-[14px] font-black ${isTerminal ? "text-neutral-400 line-through" : "text-white"}`}>
+                  <p className={`text-[14px] font-black ${isTerminal ? "text-muted-foreground line-through" : "text-foreground"}`}>
                     {offer.club?.name || "클럽 미상"}
                     {offer.club?.area && (
-                      <span className="text-neutral-500 font-medium"> · {offer.club.area}</span>
+                      <span className="text-muted-foreground font-medium"> · {offer.club.area}</span>
                     )}
                   </p>
-                  <p className="text-[11px] text-neutral-500">
+                  <p className="text-[11px] text-muted-foreground">
                     {offer.table_type}
                     {offer.created_at && ` · 제안 ${new Date(offer.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
                   </p>
@@ -144,7 +144,7 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
                 <div className="flex flex-col items-end gap-1 shrink-0">
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      OFFER_STATUS_COLOR[offer.status] || "bg-neutral-700 text-neutral-400"
+                      OFFER_STATUS_COLOR[offer.status] || "bg-muted text-muted-foreground"
                     }`}
                   >
                     {OFFER_STATUS_LABEL[offer.status] || offer.status}
@@ -157,7 +157,7 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
                 </div>
               </div>
 
-              <p className={`text-[15px] font-black ${isTerminal ? "text-neutral-500 line-through" : "text-green-400"}`}>
+              <p className={`text-[15px] font-black ${isTerminal ? "text-muted-foreground line-through" : "text-money"}`}>
                 {offer.proposed_price.toLocaleString()}원
               </p>
 
@@ -166,7 +166,7 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
                   {offer.includes.map((inc) => (
                     <span
                       key={inc}
-                      className="text-[10px] px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400 border border-neutral-700 break-words max-w-full"
+                      className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border break-words max-w-full"
                     >
                       {inc}
                     </span>
@@ -175,10 +175,10 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
               )}
 
               {offer.comment && (
-                <p className="text-[11px] text-neutral-400 italic">"{offer.comment}"</p>
+                <p className="text-[11px] text-muted-foreground italic">"{offer.comment}"</p>
               )}
 
-              <div className="pt-1 border-t border-neutral-800/60 flex justify-end gap-2">
+              <div className="pt-1 border-t border-border/60 flex justify-end gap-2">
                 {offer.status === "pending" && (
                   <AdminWithdrawOfferButton offerId={offer.id} />
                 )}
@@ -186,20 +186,20 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
               </div>
 
               {offer.md?.display_name && (
-                <div className="flex items-center justify-between gap-2 pt-1 border-t border-neutral-800/60 flex-wrap">
+                <div className="flex items-center justify-between gap-2 pt-1 border-t border-border/60 flex-wrap">
                   <div className="flex items-center gap-1.5">
                     {offer.md.id ? (
                       <Link
                         href={`/admin/mds/${offer.md.id}`}
-                        className="text-[11px] text-white font-bold underline decoration-neutral-600 underline-offset-2 hover:decoration-white transition-colors"
+                        className="text-[11px] text-foreground font-bold underline decoration-neutral-600 underline-offset-2 hover:decoration-white transition-colors"
                       >
                         {offer.md.display_name}
                       </Link>
                     ) : (
-                      <p className="text-[11px] text-neutral-300 font-bold">{offer.md.display_name}</p>
+                      <p className="text-[11px] text-foreground/80 font-bold">{offer.md.display_name}</p>
                     )}
                     {offer.md.md_deal_count != null && offer.md.md_deal_count >= 3 && (
-                      <span className="flex items-center gap-0.5 text-[10px] text-neutral-500">
+                      <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
                         {offer.md.md_deal_count >= 30 ? (
                           <Flame className="w-3 h-3 text-orange-500" />
                         ) : (
@@ -235,7 +235,7 @@ export function AdminPuzzleOffersDropdown({ offers }: Props) {
                     {offer.md.phone && (
                       <a
                         href={`tel:${offer.md.phone}`}
-                        className="flex items-center gap-1 px-2 py-1 rounded-md bg-neutral-800 border border-neutral-700 text-neutral-300 text-[10px] font-bold hover:bg-neutral-700 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted border border-border text-foreground/80 text-[10px] font-bold hover:bg-muted transition-colors"
                       >
                         <Phone className="w-3 h-3" />
                         {formatPhone(offer.md.phone)}

@@ -413,7 +413,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-neutral-950 to-neutral-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-card p-4">
       <Card className="w-full max-w-md p-8 space-y-5 relative">
         <div className="absolute top-4 left-4 z-10">
           <BackButton fallbackHref={isForeigner ? `/${lang}` : "/"} />
@@ -433,11 +433,11 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
             }}
           >
             <span className="block text-2xl font-bold">NightFlow</span>
-            <span className="block text-sm font-medium text-neutral-300">
+            <span className="block text-sm font-medium text-foreground/80">
               {tt("밤이 더 밝아진다, 나플", "VIP access to Seoul's best clubs")}
             </span>
           </h1>
-          <div className="flex items-center justify-center text-[11px] text-neutral-500 font-normal whitespace-nowrap">
+          <div className="flex items-center justify-center text-[11px] text-muted-foreground font-normal whitespace-nowrap">
             {tt("모든 서비스 무료", "Free to join")}
           </div>
         </div>
@@ -445,7 +445,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
         {/* 세션 만료 안내 */}
         {redirectPath !== "/" && (
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
-            <p className="text-[13px] text-amber-400 font-bold">
+            <p className="text-[13px] text-brand-amber font-bold">
               {tt(
                 "로그인 후 이용할 수 있습니다.",
                 "Sign in to continue.",
@@ -460,8 +460,8 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
             raw user_events에서 외국인 유저 로그인 페이지 도달 후 0% 진행 확인됨.
             로그인 후 얻는 것을 명확히 제시해 이탈 감소 목표. */}
         {isForeigner && (
-          <div className="bg-neutral-800/50 border border-neutral-700 rounded-xl p-4 space-y-2.5">
-            <p className="text-[14px] text-white font-black">
+          <div className="bg-muted/50 border border-border rounded-xl p-4 space-y-2.5">
+            <p className="text-[14px] text-foreground font-black">
               🌟 {tt(
                 "",
                 "The easiest way to book Seoul clubs",
@@ -470,7 +470,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
               )}
             </p>
             <ul className="space-y-1.5">
-              <li className="text-[13px] text-neutral-300 flex items-start gap-2">
+              <li className="text-[13px] text-foreground/80 flex items-start gap-2">
                 <span className="text-emerald-400 shrink-0">✓</span>
                 <span>{tt(
                   "",
@@ -479,7 +479,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
                   "我们直接为您预订夜店",
                 )}</span>
               </li>
-              <li className="text-[13px] text-neutral-300 flex items-start gap-2">
+              <li className="text-[13px] text-foreground/80 flex items-start gap-2">
                 <span className="text-emerald-400 shrink-0">✓</span>
                 <span>{tt(
                   "",
@@ -488,7 +488,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
                   "无预付款、无手续费",
                 )}</span>
               </li>
-              <li className="text-[13px] text-neutral-300 flex items-start gap-2">
+              <li className="text-[13px] text-foreground/80 flex items-start gap-2">
                 <span className="text-emerald-400 shrink-0">✓</span>
                 <span>{tt(
                   "",
@@ -514,7 +514,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-2.5">
             <div className="flex items-center gap-2">
               <span className="text-[18px]">📱</span>
-              <p className="text-[14px] font-black text-amber-300">
+              <p className="text-[14px] font-black text-brand-amber">
                 {tt(
                   "Safari에서 열어주세요",
                   "Open in Safari",
@@ -524,7 +524,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
                 )}
               </p>
             </div>
-            <p className="text-[12px] text-amber-200/90 leading-relaxed">
+            <p className="text-[12px] text-brand-amber dark:text-brand-amber/90 leading-relaxed">
               {tt(
                 "인스타·페북·라인 브라우저에서는 로그인이 안 돼요.",
                 "Login is blocked in Instagram/Facebook/Line browsers.",
@@ -533,8 +533,8 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
                 "無法在 Instagram/Facebook/Line 瀏覽器中登入。",
               )}
             </p>
-            <div className="flex items-center gap-2 pt-1 text-[12px] text-neutral-300">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 font-black text-white">1</span>
+            <div className="flex items-center gap-2 pt-1 text-[12px] text-foreground/80">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted font-black text-foreground">1</span>
               <span>
                 {tt(
                   "우측 상단",
@@ -543,11 +543,11 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
                   "点击右上角",
                   "點擊右上角",
                 )}{" "}
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-neutral-800 border border-neutral-600 font-black text-white text-[13px]">⋯</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-md bg-muted border border-border font-black text-foreground text-[13px]">⋯</span>
               </span>
             </div>
-            <div className="flex items-center gap-2 text-[12px] text-neutral-300">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-neutral-800 font-black text-white">2</span>
+            <div className="flex items-center gap-2 text-[12px] text-foreground/80">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted font-black text-foreground">2</span>
               <span>
                 {tt(
                   '"Safari에서 열기" 선택',
@@ -570,11 +570,11 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
                   window.location.href =
                     `intent://nightflow.kr${path}#Intent;scheme=https;package=com.android.chrome;end`;
                 }}
-                className="w-full h-12 bg-white text-black hover:bg-neutral-100 cursor-pointer"
+                className="w-full h-12 bg-inverse text-inverse-foreground hover:opacity-90 cursor-pointer"
               >
                 🌐 Chrome으로 열고 로그인하기
               </Button>
-              <p className="text-xs text-center text-neutral-500 leading-relaxed">
+              <p className="text-xs text-center text-muted-foreground leading-relaxed">
                 인스타그램 인앱에서는 로그인이 동작하지 않습니다.<br />
                 Chrome에서 열어 카카오/구글로 로그인해보세요!
               </p>
@@ -585,7 +585,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
                 <Button
                   onClick={() => handleAppleLogin()}
                   disabled={loading}
-                  className="w-full h-12 bg-black text-white border border-neutral-700 hover:bg-neutral-900 cursor-pointer"
+                  className="w-full h-12 bg-background text-foreground border border-border hover:bg-card cursor-pointer"
                 >
                   <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
                     <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
@@ -599,7 +599,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
               <Button
                 onClick={() => handleGoogleLogin()}
                 disabled={loading}
-                className="w-full h-12 bg-white text-black border border-neutral-300 hover:bg-neutral-100 cursor-pointer"
+                className="w-full h-12 bg-inverse text-inverse-foreground border border-neutral-300 hover:opacity-90 cursor-pointer"
               >
                 <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -625,7 +625,7 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
             </>
           )}
 
-          <p className="text-xs text-center text-neutral-500">
+          <p className="text-xs text-center text-muted-foreground">
             {isForeigner ? (
               <>
                 {tt("", "By signing in, you agree to our")}{" "}
@@ -648,8 +648,8 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
 
         {/* 개발용 테스트 로그인 */}
         {(isTestLoginEnabled || showDevLogin) && (
-          <div className="border-t border-neutral-800 pt-4 space-y-3">
-            <p className="text-xs text-amber-500 text-center font-bold">
+          <div className="border-t border-border pt-4 space-y-3">
+            <p className="text-xs text-brand-amber text-center font-bold">
               Test Login (auto-creates account if missing)
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -671,25 +671,25 @@ export function LoginClient({ lang, redirectPath, authErrorCode }: LoginClientPr
             >
               🌍 EN — Foreigner signup test
             </Button>
-            <p className="text-[10px] text-neutral-500 text-center">
-              Password: <code className="text-neutral-400">{TEST_PASSWORD}</code> · or enter manually
+            <p className="text-[10px] text-muted-foreground text-center">
+              Password: <code className="text-muted-foreground">{TEST_PASSWORD}</code> · or enter manually
             </p>
-            <p className="text-[10px] text-amber-400/80 text-center leading-relaxed">
-              회원가입 시 전화번호는 <code className="text-amber-300">010-0000-0000</code> 입력 → 인증번호 <code className="text-amber-300">000000</code> 자동 통과
+            <p className="text-[10px] text-brand-amber dark:text-brand-amber/80 text-center leading-relaxed">
+              회원가입 시 전화번호는 <code className="text-brand-amber">010-0000-0000</code> 입력 → 인증번호 <code className="text-brand-amber">000000</code> 자동 통과
             </p>
             <Input
               type="email"
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-10 bg-neutral-900 border-neutral-800 text-white"
+              className="h-10 bg-card border-border text-foreground"
             />
             <Input
               type="password"
               placeholder="Password (6+ chars)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="h-10 bg-neutral-900 border-neutral-800 text-white"
+              className="h-10 bg-card border-border text-foreground"
             />
             {devError && (
               <p className="text-xs text-red-500">{devError}</p>

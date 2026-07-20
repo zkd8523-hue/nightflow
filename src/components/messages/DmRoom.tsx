@@ -55,19 +55,19 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
 
   if (!currentUserId) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-neutral-400 text-[14px]">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-muted-foreground text-[14px]">
         로그인이 필요해요
-        <button onClick={onRequireLogin} className="px-4 py-2 rounded-full bg-white text-black text-[13px] font-black">
+        <button onClick={onRequireLogin} className="px-4 py-2 rounded-full bg-inverse text-inverse-foreground text-[13px] font-black">
           로그인
         </button>
       </div>
     );
   }
   if (loading) {
-    return <div className="py-16 text-center text-neutral-500 text-[13px]">불러오는 중...</div>;
+    return <div className="py-16 text-center text-muted-foreground text-[13px]">불러오는 중...</div>;
   }
   if (!thread) {
-    return <div className="py-16 text-center text-neutral-500 text-[13px]">대화를 찾을 수 없어요</div>;
+    return <div className="py-16 text-center text-muted-foreground text-[13px]">대화를 찾을 수 없어요</div>;
   }
 
   const name = thread.counterpart?.display_name ?? "상대";
@@ -99,25 +99,25 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
   }
 
   return (
-    <div className="max-w-lg mx-auto min-h-dvh bg-[#0A0A0A] flex flex-col">
+    <div className="max-w-lg mx-auto min-h-dvh bg-background flex flex-col">
       {/* 헤더 */}
       <div
-        className="sticky top-0 z-30 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-neutral-800 flex items-center gap-2 px-3 py-3"
+        className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border flex items-center gap-2 px-3 py-3"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)" }}
       >
-        <button onClick={() => router.back()} aria-label="뒤로" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-900">
-          <ArrowLeft className="w-5 h-5 text-white" />
+        <button onClick={() => router.back()} aria-label="뒤로" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-card">
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-neutral-800 shrink-0">
+        <div className="relative w-8 h-8 rounded-full overflow-hidden bg-muted shrink-0">
           {thread.counterpart?.profile_image ? (
             <Image src={thread.counterpart.profile_image} alt="" fill sizes="32px" className="object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/60 text-[12px] font-black">
+            <div className="w-full h-full flex items-center justify-center text-foreground/60 text-[12px] font-black">
               {name.charAt(0)}
             </div>
           )}
         </div>
-        <span className="text-white text-[15px] font-black truncate">{name}</span>
+        <span className="text-foreground text-[15px] font-black truncate">{name}</span>
       </div>
 
       {/* 메시지 */}
@@ -137,7 +137,7 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
             <Fragment key={m.id}>
               {showDate && (
                 <div className="flex justify-center my-3">
-                  <span className="text-[11px] text-neutral-400 bg-neutral-800/70 rounded-full px-3 py-1">
+                  <span className="text-[11px] text-muted-foreground bg-muted/70 rounded-full px-3 py-1">
                     {formatDateDivider(d)}
                   </span>
                 </div>
@@ -151,7 +151,7 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
                     className={`px-3 py-2 rounded-2xl select-none ${
                       mine
                         ? "bg-amber-400 text-black rounded-br-md"
-                        : "bg-[#1C1C1E] text-white rounded-bl-md"
+                        : "bg-card text-white rounded-bl-md"
                     }`}
                   >
                     {m.reply_to && (
@@ -159,7 +159,7 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
                         className={`mb-1 pl-2 border-l-2 text-[12px] truncate ${
                           mine
                             ? "border-black/30 text-black/60"
-                            : "border-neutral-600 text-neutral-400"
+                            : "border-border text-muted-foreground"
                         }`}
                       >
                         {messages.find((x) => x.id === m.reply_to)?.content ??
@@ -176,7 +176,7 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
                   </SwipeToReply>
                   <div className="flex flex-col items-end justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
                     {showTime && (
-                      <span className="text-[10px] text-neutral-500 whitespace-nowrap">
+                      <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                         {formatTime(d)}
                       </span>
                     )}
@@ -191,21 +191,21 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
 
       {/* 입력 — 수락 게이트 없이 항상 노출 (Migration 470) */}
       <div
-          className="sticky bottom-0 bg-[#0A0A0A] border-t border-neutral-800"
+          className="sticky bottom-0 bg-background border-t border-border"
           style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         >
           {replyTarget && (
             <div className="flex items-center gap-2 px-3 pt-3">
               <div className="flex-1 min-w-0 pl-2 border-l-2 border-amber-400">
-                <p className="text-[11px] font-bold text-amber-400">답글</p>
-                <p className="text-[12px] text-neutral-400 truncate">
+                <p className="text-[11px] font-bold text-brand-amber">답글</p>
+                <p className="text-[12px] text-muted-foreground truncate">
                   {replyTarget.content || "사진"}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setReplyTarget(null)}
-                className="w-6 h-6 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400 shrink-0"
+                className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-muted-foreground shrink-0"
                 aria-label="답글 취소"
               >
                 <X className="w-3.5 h-3.5" />
@@ -215,7 +215,7 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
           {media.length > 0 && (
             <div className="flex gap-2 px-3 pt-3 overflow-x-auto">
               {media.map((m, i) => (
-                <div key={i} className="relative w-14 h-14 rounded-lg overflow-hidden bg-neutral-900">
+                <div key={i} className="relative w-14 h-14 rounded-lg overflow-hidden bg-card">
                   {m.type === "image" ? (
                     <Image src={m.url} alt="" fill className="object-cover" sizes="56px" />
                   ) : (
@@ -225,7 +225,7 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
                     onClick={() => setMedia((prev) => prev.filter((_, idx) => idx !== i))}
                     className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 grid place-items-center"
                   >
-                    <X className="w-2.5 h-2.5 text-white" />
+                    <X className="w-2.5 h-2.5 text-foreground" />
                   </button>
                 </div>
               ))}
@@ -245,12 +245,12 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
             }}
             rows={1}
             placeholder="메시지 보내기"
-            className="flex-1 min-w-0 resize-none bg-[#1C1C1E] text-white text-[14px] rounded-2xl px-4 py-2.5 outline-none placeholder:text-neutral-600 max-h-28"
+            className="flex-1 min-w-0 resize-none bg-card text-foreground text-[14px] rounded-2xl border border-border px-4 py-2.5 outline-none placeholder:text-muted-foreground max-h-28"
           />
           <button
             onClick={handleSend}
             disabled={input.trim().length === 0 && media.length === 0}
-            className="p-2.5 rounded-full bg-white text-black shrink-0 disabled:opacity-30"
+            className="p-2.5 rounded-full bg-inverse text-inverse-foreground shrink-0 disabled:opacity-30"
             aria-label="전송"
           >
             <Send className="w-4 h-4" />

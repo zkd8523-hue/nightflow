@@ -11,7 +11,7 @@ interface Props {
 }
 
 const TIER_PILL: Record<DealTier, string> = {
-    vip: "bg-amber-500/15 text-amber-400 border border-amber-500/30",
+    vip: "bg-amber-500/15 text-brand-amber border border-amber-500/30",
     vvip: "bg-cyan-500/15 text-cyan-300 border border-cyan-400/40",
     president: "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-black border border-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.4)]",
 };

@@ -49,8 +49,8 @@ function Chip({
       onClick={onClick}
       className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
         active
-          ? "bg-white text-black"
-          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+          ? "bg-inverse text-inverse-foreground"
+          : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >
       {label}
@@ -104,7 +104,7 @@ export function ClubFilterChips({ value, onChange }: Props) {
             <button
               type="button"
               onClick={() => onChange({ areas: [], genres: [], venueTypes: [] })}
-              className="text-[10px] text-neutral-500 hover:text-white flex-shrink-0 ml-auto pl-2 underline underline-offset-2"
+              className="text-[10px] text-muted-foreground hover:text-foreground flex-shrink-0 ml-auto pl-2 underline underline-offset-2"
             >
               초기화
             </button>

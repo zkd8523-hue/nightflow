@@ -34,41 +34,41 @@ export default function JaVipTablesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/ja" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/ja" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">ソウルVIPルーム予約</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">ソウルのトップクラブでVIPルームとボトルサービスを予約 — 江南・弘大・梨泰院・狎鴎亭。ブローカーなし、韓国語不要、観光客税なし。</p>
+          <p className="text-[14px] text-muted-foreground leading-relaxed">ソウルのトップクラブでVIPルームとボトルサービスを予約 — 江南・弘大・梨泰院・狎鴎亭。ブローカーなし、韓国語不要、観光客税なし。</p>
         </header>
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">ソウルVIPルームのレベル</h2>
           <div className="space-y-3">
             {TIERS.map((t) => (
-              <div key={t.name} className="p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800 space-y-2">
+              <div key={t.name} className="p-5 rounded-2xl bg-card border border-border space-y-2">
                 <div className="flex items-baseline justify-between gap-2 flex-wrap">
-                  <p className="font-bold text-[15px] text-neutral-100">{t.name}</p>
-                  <p className="font-black text-[14px] text-amber-400 whitespace-nowrap">{t.price}</p>
+                  <p className="font-bold text-[15px] text-foreground">{t.name}</p>
+                  <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">{t.price}</p>
                 </div>
-                <p className="text-[12px] text-neutral-500">{t.perPerson}</p>
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{t.desc}</p>
+                <p className="text-[12px] text-muted-foreground">{t.perPerson}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{t.desc}</p>
               </div>
             ))}
           </div>
         </section>
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">VIP予約の流れ</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">行きたいクラブを選ぶ（または雰囲気だけ伝える）— 日付・人数・予算と一緒に。NightFlowが直接クラブに連絡し、予算内で一番良い席を確保 — 本物の価格、本物のボトルセット。到着して直接入場。</p>
-          <Link href="/ja" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">🍾 NightFlowで予約する</Link>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">行きたいクラブを選ぶ（または雰囲気だけ伝える）— 日付・人数・予算と一緒に。NightFlowが直接クラブに連絡し、予算内で一番良い席を確保 — 本物の価格、本物のボトルセット。到着して直接入場。</p>
+          <Link href="/ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">エリア別</h2>
-          <ul className="space-y-2 text-[13px] text-neutral-400">
-            <li><Link className="hover:text-white" href="/ja/clubs/gangnam">江南VIPルーム →</Link></li>
-            <li><Link className="hover:text-white" href="/ja/clubs/apgujeong">狎鴎亭 &amp; 清潭VIPラウンジ →</Link></li>
-            <li><Link className="hover:text-white" href="/ja/clubs/hongdae">弘大VIP &amp; ウォークインルーム →</Link></li>
-            <li><Link className="hover:text-white" href="/ja/clubs/itaewon">梨泰院国際クラブ →</Link></li>
+          <ul className="space-y-2 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/ja/clubs/gangnam">江南VIPルーム →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/clubs/apgujeong">狎鴎亭 &amp; 清潭VIPラウンジ →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/clubs/hongdae">弘大VIP &amp; ウォークインルーム →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/clubs/itaewon">梨泰院国際クラブ →</Link></li>
           </ul>
         </section>
         <section className="text-center pt-4"><Link href="/ja/faq" className="text-[12px] text-blue-400 hover:underline">FAQを見る →</Link></section>

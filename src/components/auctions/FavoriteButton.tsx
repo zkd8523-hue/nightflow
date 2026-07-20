@@ -27,7 +27,7 @@ export function FavoriteButton({ clubId, variant = "default" }: FavoriteButtonPr
       >
         <Heart
           className={`w-7 h-7 transition-colors ${
-            favorited ? "text-red-500 fill-red-500" : "text-white"
+            favorited ? "text-red-500 fill-red-500" : "text-foreground"
           }`}
         />
       </button>
@@ -44,12 +44,12 @@ export function FavoriteButton({ clubId, variant = "default" }: FavoriteButtonPr
       className="shrink-0 min-w-[44px] min-h-[44px] inline-flex items-center justify-center -m-2"
       title={favorited ? "찜 해제" : "클럽 찜하기"}
     >
-      <span className="w-7 h-7 inline-flex items-center justify-center rounded-full bg-neutral-800/80 border border-neutral-700/50 hover:border-neutral-500 active:bg-neutral-700/80 transition-colors">
+      <span className="w-7 h-7 inline-flex items-center justify-center rounded-full bg-muted/80 border border-border/50 hover:border-border active:bg-muted/80 transition-colors">
         <Heart
           className={`w-3.5 h-3.5 transition-colors ${
             favorited
               ? "text-red-500 fill-red-500"
-              : "text-neutral-400"
+              : "text-muted-foreground"
           }`}
         />
       </span>

@@ -46,16 +46,16 @@ interface AdminClubsListProps {
 function ImagePreview({ url, label, onPreview }: { url: string | null | undefined; label: string; onPreview: (url: string) => void }) {
   if (!url) {
     return (
-      <div className="h-20 bg-neutral-900 rounded-xl border border-dashed border-neutral-800 flex items-center justify-center">
-        <span className="text-xs text-neutral-600 italic">{label} 미첨부</span>
+      <div className="h-20 bg-card rounded-xl border border-dashed border-border flex items-center justify-center">
+        <span className="text-xs text-muted-foreground italic">{label} 미첨부</span>
       </div>
     );
   }
   return (
-    <button onClick={() => onPreview(url)} className="relative rounded-xl overflow-hidden border border-neutral-800 group w-full">
+    <button onClick={() => onPreview(url)} className="relative rounded-xl overflow-hidden border border-border group w-full">
       <img src={url} alt={label} className="w-full h-20 object-cover" loading="lazy" />
       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-        <Eye className="w-5 h-5 text-white" />
+        <Eye className="w-5 h-5 text-foreground" />
       </div>
     </button>
   );
@@ -96,21 +96,21 @@ function SimilarClubsHint({ club }: { club: Club }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [club.id]);
 
-  if (candidates === null) return <p className="text-xs text-neutral-600">닮은 클럽 확인 중...</p>;
+  if (candidates === null) return <p className="text-xs text-muted-foreground">닮은 클럽 확인 중...</p>;
   if (candidates.length === 0) return <p className="text-xs text-emerald-500">✓ 닮은 기존 클럽 없음 — 새 클럽으로 보임</p>;
 
   return (
     <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 space-y-1.5">
       <p className="text-xs font-bold text-red-400">⚠️ 닮은 기존 클럽 {candidates.length}개 — 중복일 수 있어요</p>
       {candidates.slice(0, 5).map((c) => (
-        <div key={c.id} className="text-xs text-neutral-300 flex items-center justify-between gap-2">
+        <div key={c.id} className="text-xs text-foreground/80 flex items-center justify-between gap-2">
           <span>
-            {c.name} <span className="text-neutral-500">({c.area || "지역?"})</span>
+            {c.name} <span className="text-muted-foreground">({c.area || "지역?"})</span>
             {" · "}
-            <span className="text-amber-400">{c.reason}</span>
-            {c.distance_m != null && <span className="text-neutral-500"> · {c.distance_m}m</span>}
+            <span className="text-brand-amber">{c.reason}</span>
+            {c.distance_m != null && <span className="text-muted-foreground"> · {c.distance_m}m</span>}
           </span>
-          <span className="text-neutral-500 shrink-0">파트너{c.partner_count}</span>
+          <span className="text-muted-foreground shrink-0">파트너{c.partner_count}</span>
         </div>
       ))}
     </div>
@@ -409,20 +409,20 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
     const isDeleted = !!club.deleted_at;
 
     return (
-      <Card key={club.id} className="bg-[#1C1C1E] border-neutral-800/50 overflow-hidden">
+      <Card key={club.id} className="bg-card border-border/50 overflow-hidden">
         <div className="p-4">
           <div className="flex justify-between items-start mb-2">
             <div>
-              <h3 className="text-white font-bold">
+              <h3 className="text-foreground font-bold">
                 {club.name}
-                <span className="text-neutral-500 text-xs ml-2">{club.area}</span>
-                <span className="text-neutral-500 text-xs ml-2 font-normal">· 파트너 {clubMdLists[club.id]?.length ?? 0}명</span>
+                <span className="text-muted-foreground text-xs ml-2">{club.area}</span>
+                <span className="text-muted-foreground text-xs ml-2 font-normal">· 파트너 {clubMdLists[club.id]?.length ?? 0}명</span>
               </h3>
-              <p className="text-xs text-neutral-500 mt-1">{club.address}</p>
+              <p className="text-xs text-muted-foreground mt-1">{club.address}</p>
               {isDeleted && (
                 <p className="text-xs text-red-400 mt-1.5">
                   {dayjs(club.deleted_at).format("YYYY-MM-DD HH:mm")} 삭제됨
-                  <span className="text-neutral-600 ml-1">({dayjs(club.deleted_at).fromNow()})</span>
+                  <span className="text-muted-foreground ml-1">({dayjs(club.deleted_at).fromNow()})</span>
                 </p>
               )}
             </div>
@@ -430,7 +430,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-neutral-500 hover:text-emerald-400 hover:bg-emerald-500/10"
+                className="text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10"
                 onClick={() => handleRestore(club.id)}
                 title="복구"
               >
@@ -441,7 +441,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10"
+                  className="text-muted-foreground hover:text-blue-400 hover:bg-blue-500/10"
                   onClick={() => openRename(club)}
                   title="정보 수정 (이름·주소)"
                 >
@@ -450,7 +450,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-neutral-500 hover:text-amber-400 hover:bg-amber-500/10"
+                  className="text-muted-foreground hover:text-brand-amber hover:bg-amber-500/10"
                   onClick={() => setMergeSource(club)}
                   title="병합"
                 >
@@ -459,7 +459,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-neutral-500 hover:text-red-400 hover:bg-red-500/10"
+                  className="text-muted-foreground hover:text-red-400 hover:bg-red-500/10"
                   onClick={() => handleDelete(club.id)}
                   title="삭제"
                 >
@@ -475,7 +475,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                 <Link
                   key={md.id}
                   href={`/admin/mds/${md.id}`}
-                  className="text-xs px-2 py-0.5 rounded font-medium text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
+                  className="text-xs px-2 py-0.5 rounded font-medium text-brand-amber bg-amber-500/10 hover:bg-amber-500/20 transition-colors"
                 >
                   {md.name}
                 </Link>
@@ -487,7 +487,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
           {primaryMd && (
             <button
               onClick={() => toggleExpand(club.id)}
-              className="mt-3 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-bold"
+              className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground/80 transition-colors font-bold"
             >
               {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               파트너 상세 정보 {isExpanded ? "접기" : "보기"}
@@ -495,14 +495,14 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
           )}
 
           {isExpanded && primaryMd && (
-            <div className="mt-4 pt-4 border-t border-neutral-800/30">
+            <div className="mt-4 pt-4 border-t border-border/30">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-neutral-900/50 rounded-2xl p-4 border border-neutral-800/30 space-y-3">
-                  <div className="flex items-center gap-2 text-[10px] text-neutral-500 font-bold uppercase tracking-wider">
+                <div className="bg-card/50 rounded-2xl p-4 border border-border/30 space-y-3">
+                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
                     <Building2 className="w-3.5 h-3.5" /> MD Profile
                   </div>
                   <div className="flex items-center gap-3">
-                    <div className="relative w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-sm font-black text-neutral-400 shrink-0 overflow-hidden">
+                    <div className="relative w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center text-sm font-black text-muted-foreground shrink-0 overflow-hidden">
                       <span className="absolute inset-0 flex items-center justify-center">
                         {primaryMd?.name?.substring(0, 1)}
                       </span>
@@ -515,19 +515,19 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                         />
                       )}
                     </div>
-                    <p className="text-sm font-black text-white">{primaryMd?.name}</p>
+                    <p className="text-sm font-black text-foreground">{primaryMd?.name}</p>
                   </div>
                   <div className="space-y-1.5">
                     {primaryMd?.area && (
-                      <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <MapPin className="w-3 h-3 shrink-0" /> {Array.isArray(primaryMd.area) ? primaryMd.area.join(", ") : primaryMd.area}
                       </div>
                     )}
                     {primaryMd?.created_at && (
-                      <div className="flex items-center gap-1.5 text-xs text-neutral-400">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Calendar className="w-3 h-3 shrink-0" />
                         가입 {dayjs(primaryMd?.created_at).format("YYYY-MM-DD")}
-                        <span className="text-neutral-600">({dayjs(primaryMd?.created_at).fromNow()})</span>
+                        <span className="text-muted-foreground">({dayjs(primaryMd?.created_at).fromNow()})</span>
                       </div>
                     )}
                     {primaryMd?.instagram ? (
@@ -535,55 +535,55 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                         href={`https://instagram.com/${primaryMd?.instagram}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-colors"
+                        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
                       >
                         <Instagram className="w-3 h-3 shrink-0" /> @{primaryMd?.instagram}
                         <ExternalLink className="w-2.5 h-2.5" />
                       </a>
                     ) : (
-                      <div className="flex items-center gap-1.5 text-xs text-neutral-600">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Instagram className="w-3 h-3 shrink-0" /> 미등록
                       </div>
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <p className="text-[10px] text-neutral-600 font-bold">명함 사진</p>
+                    <p className="text-[10px] text-muted-foreground font-bold">명함 사진</p>
                     <ImagePreview url={primaryMd?.business_card_url} label="명함" onPreview={setPreviewImage} />
                   </div>
                 </div>
 
-                <div className="bg-neutral-900/50 rounded-2xl p-4 border border-neutral-800/30 space-y-3">
-                  <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Performance</div>
+                <div className="bg-card/50 rounded-2xl p-4 border border-border/30 space-y-3">
+                  <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Performance</div>
                   {hs ? (
                     <>
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="text-2xl font-black text-white">{hs.health_score !== null ? hs.health_score : "—"}</div>
-                          <div className="text-xs text-neutral-500">Health Score</div>
+                          <div className="text-2xl font-black text-foreground">{hs.health_score !== null ? hs.health_score : "—"}</div>
+                          <div className="text-xs text-muted-foreground">Health Score</div>
                         </div>
                         <div className="text-right">
-                          <div className="text-sm font-bold text-neutral-300">{getGradeLabel(hs.grade)}</div>
+                          <div className="text-sm font-bold text-foreground/80">{getGradeLabel(hs.grade)}</div>
                           {healthStatus && <MDHealthBadge status={healthStatus} />}
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-neutral-800/50 rounded-xl p-2.5 text-center">
-                          <div className="text-xs text-neutral-500 mb-0.5">총 경매</div>
-                          <div className="text-sm font-bold text-white">{hs.total_auctions}건</div>
+                        <div className="bg-muted/50 rounded-xl p-2.5 text-center">
+                          <div className="text-xs text-muted-foreground mb-0.5">총 경매</div>
+                          <div className="text-sm font-bold text-foreground">{hs.total_auctions}건</div>
                         </div>
-                        <div className="bg-neutral-800/50 rounded-xl p-2.5 text-center">
-                          <div className="text-xs text-neutral-500 mb-0.5">낙찰</div>
-                          <div className="text-sm font-bold text-white">{hs.won_auctions}건</div>
+                        <div className="bg-muted/50 rounded-xl p-2.5 text-center">
+                          <div className="text-xs text-muted-foreground mb-0.5">낙찰</div>
+                          <div className="text-sm font-bold text-foreground">{hs.won_auctions}건</div>
                         </div>
-                        <div className="bg-neutral-800/50 rounded-xl p-2.5 text-center">
-                          <div className="text-xs text-neutral-500 mb-0.5">낙찰률</div>
-                          <div className={`text-sm font-bold ${hs.sell_through_rate >= 60 ? "text-green-500" : hs.sell_through_rate >= 40 ? "text-amber-500" : hs.total_auctions > 0 ? "text-red-500" : "text-neutral-600"}`}>
+                        <div className="bg-muted/50 rounded-xl p-2.5 text-center">
+                          <div className="text-xs text-muted-foreground mb-0.5">낙찰률</div>
+                          <div className={`text-sm font-bold ${hs.sell_through_rate >= 60 ? "text-money" : hs.sell_through_rate >= 40 ? "text-brand-amber" : hs.total_auctions > 0 ? "text-red-500" : "text-muted-foreground"}`}>
                             {hs.total_auctions > 0 ? `${hs.sell_through_rate}%` : "—"}
                           </div>
                         </div>
-                        <div className="bg-neutral-800/50 rounded-xl p-2.5 text-center">
-                          <div className="text-xs text-neutral-500 mb-0.5">노쇼</div>
-                          <div className={`text-sm font-bold ${hs.noshow_count > 0 ? "text-red-500" : "text-neutral-600"}`}>{hs.noshow_count}건</div>
+                        <div className="bg-muted/50 rounded-xl p-2.5 text-center">
+                          <div className="text-xs text-muted-foreground mb-0.5">노쇼</div>
+                          <div className={`text-sm font-bold ${hs.noshow_count > 0 ? "text-red-500" : "text-muted-foreground"}`}>{hs.noshow_count}건</div>
                         </div>
                       </div>
                       {(hs.flag_consecutive_noshow || hs.flag_dormant) && (
@@ -595,14 +595,14 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                     </>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-6 text-center">
-                      <div className="text-neutral-600 text-sm font-bold">신규 파트너</div>
-                      <div className="text-neutral-700 text-xs mt-1">경매 실적 없음</div>
+                      <div className="text-muted-foreground text-sm font-bold">신규 파트너</div>
+                      <div className="text-muted-foreground text-xs mt-1">경매 실적 없음</div>
                     </div>
                   )}
                 </div>
               </div>
               {primaryMdId && (
-                <Link href={`/admin/mds/${primaryMdId}`} className="mt-3 flex items-center gap-1.5 text-xs font-bold text-neutral-400 hover:text-white transition-colors">
+                <Link href={`/admin/mds/${primaryMdId}`} className="mt-3 flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors">
                   파트너 상세 보기 <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               )}
@@ -614,15 +614,15 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
   };
 
   const renderPendingCard = (club: Club) => (
-    <Card key={club.id} className="bg-[#1C1C1E] border-amber-500/20 overflow-hidden">
+    <Card key={club.id} className="bg-card border-amber-500/20 overflow-hidden">
       <div className="p-4 space-y-3">
         <div>
-          <h3 className="text-white font-bold">
+          <h3 className="text-foreground font-bold">
             {club.name}
-            <span className="text-neutral-500 text-xs ml-2">{club.area}</span>
+            <span className="text-muted-foreground text-xs ml-2">{club.area}</span>
           </h3>
-          <p className="text-xs text-neutral-500 mt-1">{club.address}</p>
-          <p className="text-xs text-neutral-600 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">{club.address}</p>
+          <p className="text-xs text-muted-foreground mt-1">
             신청 {dayjs(club.created_at).format("YYYY-MM-DD HH:mm")}
             <span className="ml-1">({dayjs(club.created_at).fromNow()})</span>
           </p>
@@ -647,7 +647,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
           <Button
             variant="ghost"
             size="icon"
-            className="text-neutral-500 hover:text-amber-400 hover:bg-amber-500/10"
+            className="text-muted-foreground hover:text-brand-amber hover:bg-amber-500/10"
             onClick={() => setMergeSource(club)}
             title="기존 클럽으로 병합"
           >
@@ -671,8 +671,8 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
             onClick={() => setSortMode(opt.v)}
             className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
               sortMode === opt.v
-                ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:text-neutral-300"
+                ? "bg-amber-500/15 text-brand-amber border border-amber-500/30"
+                : "bg-card text-muted-foreground border border-border hover:text-foreground/80"
             }`}
           >
             {opt.label}
@@ -680,8 +680,8 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
         ))}
       </div>
       <Tabs defaultValue={pendingClubs.length > 0 ? "pending" : "active"}>
-        <TabsList className="grid w-full grid-cols-3 bg-[#1C1C1E] border border-neutral-800/50">
-          <TabsTrigger value="pending" className="data-[state=active]:text-amber-400">
+        <TabsList className="grid w-full grid-cols-3 bg-card border border-border/50">
+          <TabsTrigger value="pending" className="data-[state=active]:text-brand-amber">
             심사 대기 ({pendingClubs.length})
           </TabsTrigger>
           <TabsTrigger value="active">활성 ({activeClubs.length})</TabsTrigger>
@@ -690,8 +690,8 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
 
         <TabsContent value="pending" className="space-y-3 mt-4">
           {pendingClubs.length === 0 ? (
-            <Card className="bg-[#1C1C1E] border-neutral-800/50 p-6 text-center">
-              <p className="text-neutral-500 text-sm">심사 대기 중인 클럽이 없습니다</p>
+            <Card className="bg-card border-border/50 p-6 text-center">
+              <p className="text-muted-foreground text-sm">심사 대기 중인 클럽이 없습니다</p>
             </Card>
           ) : (
             pendingClubs.map(renderPendingCard)
@@ -700,8 +700,8 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
 
         <TabsContent value="active" className="space-y-3 mt-4">
           {activeClubs.length === 0 ? (
-            <Card className="bg-[#1C1C1E] border-neutral-800/50 p-6 text-center">
-              <p className="text-neutral-500 text-sm">등록된 클럽이 없습니다</p>
+            <Card className="bg-card border-border/50 p-6 text-center">
+              <p className="text-muted-foreground text-sm">등록된 클럽이 없습니다</p>
             </Card>
           ) : (
             activeClubs.map(renderClubCard)
@@ -710,8 +710,8 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
 
         <TabsContent value="deleted" className="space-y-3 mt-4">
           {deletedClubs.length === 0 ? (
-            <Card className="bg-[#1C1C1E] border-neutral-800/50 p-6 text-center">
-              <p className="text-neutral-500 text-sm">삭제된 클럽이 없습니다</p>
+            <Card className="bg-card border-border/50 p-6 text-center">
+              <p className="text-muted-foreground text-sm">삭제된 클럽이 없습니다</p>
             </Card>
           ) : (
             deletedClubs.map(renderClubCard)
@@ -720,7 +720,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
       </Tabs>
 
       <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-        <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-2xl p-2">
+        <DialogContent className="bg-card border-border max-w-2xl p-2">
           {previewImage && <img src={previewImage} alt="미리보기" className="w-full h-auto rounded-lg" />}
         </DialogContent>
       </Dialog>
@@ -732,34 +732,34 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
       />
 
       <Dialog open={!!renameTarget} onOpenChange={(open) => !open && setRenameTarget(null)}>
-        <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-md max-h-[90vh] flex flex-col p-0">
+        <DialogContent className="bg-card border-border max-w-md max-h-[90vh] flex flex-col p-0">
           <DialogHeader className="px-6 pt-6 pb-3 flex-shrink-0">
-            <DialogTitle className="text-white flex items-center gap-2">
+            <DialogTitle className="text-foreground flex items-center gap-2">
               <Pencil className="w-4 h-4 text-blue-400" /> 클럽 정보 수정
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 px-6 overflow-y-auto flex-1">
             <div>
-              <label className="text-xs text-neutral-500 mb-1 block">클럽명</label>
+              <label className="text-xs text-muted-foreground mb-1 block">클럽명</label>
               <input
                 type="text"
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
                 placeholder="클럽명"
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500/50"
                 autoFocus
                 disabled={renameSaving}
               />
             </div>
             <div>
-              <label className="text-xs text-neutral-500 mb-1 block">주소</label>
+              <label className="text-xs text-muted-foreground mb-1 block">주소</label>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={renameAddress}
                   onChange={(e) => setRenameAddress(e.target.value)}
                   placeholder="도로명 주소"
-                  className="flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                  className="flex-1 bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500/50"
                   disabled={renameSaving}
                 />
                 <Button
@@ -767,62 +767,62 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                   variant="ghost"
                   onClick={() => setAddressSearchOpen(true)}
                   disabled={renameSaving}
-                  className="bg-neutral-800 hover:bg-neutral-700 text-white px-3"
+                  className="bg-muted hover:bg-muted text-foreground px-3"
                   title="주소 검색 (좌표 자동 갱신)"
                 >
                   <Search className="w-4 h-4" />
                 </Button>
               </div>
-              <p className="text-[10px] text-neutral-600 mt-1">
+              <p className="text-[10px] text-muted-foreground mt-1">
                 직접 수정하면 좌표(위도/경도)는 유지됩니다. 좌표까지 갱신하려면 우측 검색 버튼을 사용하세요.
               </p>
             </div>
             <div>
-              <label className="text-xs text-neutral-500 mb-1 block">상세 주소 (선택)</label>
+              <label className="text-xs text-muted-foreground mb-1 block">상세 주소 (선택)</label>
               <input
                 type="text"
                 value={renameAddressDetail}
                 onChange={(e) => setRenameAddressDetail(e.target.value)}
                 placeholder="층, 호수 등"
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500/50"
                 disabled={renameSaving}
               />
             </div>
             <div>
-              <label className="text-xs text-neutral-500 mb-1 block">공식 인스타그램 (선택)</label>
+              <label className="text-xs text-muted-foreground mb-1 block">공식 인스타그램 (선택)</label>
               <input
                 type="text"
                 value={renameInstagram}
                 onChange={(e) => setRenameInstagram(e.target.value)}
                 placeholder="핸들 또는 URL (예: clubaceseoul_official)"
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500/50"
                 disabled={renameSaving}
               />
-              <p className="text-[10px] text-neutral-600 mt-1">
+              <p className="text-[10px] text-muted-foreground mt-1">
                 @, URL 입력해도 자동으로 핸들만 추출됩니다
               </p>
             </div>
 
             <div>
-              <label className="text-xs text-neutral-500 mb-1 block">영업시간</label>
+              <label className="text-xs text-muted-foreground mb-1 block">영업시간</label>
               <input
                 type="text"
                 value={renameOperatingHours}
                 onChange={(e) => setRenameOperatingHours(e.target.value)}
                 placeholder="예: 금/토 22:00-05:00"
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-blue-500/50"
                 disabled={renameSaving}
               />
             </div>
 
             <div>
-              <label className="text-xs text-neutral-500 mb-2 block">
+              <label className="text-xs text-muted-foreground mb-2 block">
                 태그 (필터/특징)
               </label>
               <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
                 {CLUB_TAG_GROUPS.map((g) => (
                   <div key={g.group}>
-                    <div className="text-[10px] text-neutral-600 mb-1">
+                    <div className="text-[10px] text-muted-foreground mb-1">
                       {g.emoji} {g.label}
                       {g.isFilter && (
                         <span className="ml-1 text-blue-400">(필터)</span>
@@ -840,8 +840,8 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                             disabled={renameSaving}
                             className={`text-[11px] font-bold px-2.5 py-1 rounded-full transition-colors ${
                               active
-                                ? "bg-white text-black"
-                                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                                ? "bg-inverse text-inverse-foreground"
+                                : "bg-muted text-muted-foreground hover:bg-muted"
                             }`}
                           >
                             {opt.label}
@@ -855,18 +855,18 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
             </div>
 
             <div>
-              <label className="text-xs text-neutral-500 mb-1 block flex items-center gap-1.5">
-                <Wine className="w-3.5 h-3.5 text-amber-400" />
+              <label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1.5">
+                <Wine className="w-3.5 h-3.5 text-brand-amber" />
                 가격표
               </label>
               {renameDrinkMenuUrl ? (
                 <div className="space-y-2">
-                  <div className="relative rounded-xl overflow-hidden border border-neutral-800">
+                  <div className="relative rounded-xl overflow-hidden border border-border">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={renameDrinkMenuUrl}
                       alt="가격표"
-                      className="w-full max-h-48 object-contain bg-neutral-950"
+                      className="w-full max-h-48 object-contain bg-background"
                     />
                   </div>
                   <div className="flex gap-2">
@@ -882,7 +882,7 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                           e.target.value = "";
                         }}
                       />
-                      <div className="text-center text-xs font-bold bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg py-2">
+                      <div className="text-center text-xs font-bold bg-muted hover:bg-muted text-foreground rounded-lg py-2">
                         {drinkMenuUploading ? "업로드 중..." : "교체"}
                       </div>
                     </label>
@@ -909,23 +909,23 @@ export function AdminClubsList({ initialClubs, authUserId, healthScores, clubMdL
                       e.target.value = "";
                     }}
                   />
-                  <div className="h-20 bg-neutral-900 rounded-xl border border-dashed border-neutral-700 flex items-center justify-center text-xs text-neutral-500 hover:border-amber-500/40 hover:text-amber-400 transition-colors">
+                  <div className="h-20 bg-card rounded-xl border border-dashed border-border flex items-center justify-center text-xs text-muted-foreground hover:border-amber-500/40 hover:text-brand-amber transition-colors">
                     {drinkMenuUploading ? "업로드 중..." : "가격표 이미지 업로드"}
                   </div>
                 </label>
               )}
-              <p className="text-[10px] text-neutral-600 mt-1">
+              <p className="text-[10px] text-muted-foreground mt-1">
                 인스타에 올라간 메뉴 이미지를 그대로 올리세요
               </p>
             </div>
           </div>
 
-          <div className="flex gap-2 px-6 py-4 border-t border-neutral-800 flex-shrink-0 bg-[#1C1C1E]">
+          <div className="flex gap-2 px-6 py-4 border-t border-border flex-shrink-0 bg-card">
             <Button
               variant="ghost"
               onClick={() => setRenameTarget(null)}
               disabled={renameSaving}
-              className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-white"
+              className="flex-1 bg-muted hover:bg-muted text-foreground"
             >
               취소
             </Button>

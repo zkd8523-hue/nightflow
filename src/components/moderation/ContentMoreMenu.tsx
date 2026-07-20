@@ -205,8 +205,8 @@ export function ContentMoreMenu({
         aria-label="더보기"
         className="flex items-center gap-1.5 py-3 group mx-auto"
       >
-        <MoreHorizontal className="w-4 h-4 text-neutral-600 group-hover:text-neutral-400 transition-colors" />
-        <span className="text-[11px] text-neutral-600 font-medium group-hover:text-neutral-400 transition-colors">
+        <MoreHorizontal className="w-4 h-4 text-muted-foreground group-hover:text-muted-foreground transition-colors" />
+        <span className="text-[11px] text-muted-foreground font-medium group-hover:text-muted-foreground transition-colors">
           신고·차단
         </span>
       </button>
@@ -220,13 +220,13 @@ export function ContentMoreMenu({
       >
         <SheetContent
           side="bottom"
-          className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-8 max-h-[90vh] overflow-y-auto"
+          className="bg-card border-border rounded-t-3xl pb-8 max-h-[90vh] overflow-y-auto"
         >
           {step === "menu" && (
             <>
               <SheetHeader className="pb-2 text-left">
-                <SheetTitle className="text-white text-[16px]">더보기</SheetTitle>
-                <SheetDescription className="text-neutral-500 text-[12px] mt-1">
+                <SheetTitle className="text-foreground text-[16px]">더보기</SheetTitle>
+                <SheetDescription className="text-muted-foreground text-[12px] mt-1">
                   부적절한 콘텐츠는 관리자가 24시간 내 검토합니다
                 </SheetDescription>
               </SheetHeader>
@@ -236,46 +236,46 @@ export function ContentMoreMenu({
                   onClick={() => {
                     setStep("report");
                   }}
-                  className="w-full flex items-center justify-between p-4 rounded-xl border border-neutral-800 bg-[#0A0A0A] hover:border-neutral-700 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-border bg-background hover:border-border transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center">
-                      <AlertTriangle className="w-5 h-5 text-amber-400" />
+                      <AlertTriangle className="w-5 h-5 text-brand-amber" />
                     </div>
                     <div>
-                      <p className="text-[14px] font-bold text-white">
+                      <p className="text-[14px] font-bold text-foreground">
                         이 {contentLabel} 신고
                       </p>
-                      <p className="text-[12px] text-neutral-500 mt-0.5">
+                      <p className="text-[12px] text-muted-foreground mt-0.5">
                         허위·사기·부적절 내용 신고
                       </p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-neutral-600" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </button>
 
                 <button
                   onClick={() => {
                     setStep("block");
                   }}
-                  className="w-full flex items-center justify-between p-4 rounded-xl border border-neutral-800 bg-[#0A0A0A] hover:border-neutral-700 transition-colors text-left"
+                  className="w-full flex items-center justify-between p-4 rounded-xl border border-border bg-background hover:border-border transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center">
                       <Ban className="w-5 h-5 text-red-400" />
                     </div>
                     <div>
-                      <p className="text-[14px] font-bold text-white">
+                      <p className="text-[14px] font-bold text-foreground">
                         {isBlocked ? "차단 해제" : `${targetLabel} 차단`}
                       </p>
-                      <p className="text-[12px] text-neutral-500 mt-0.5">
+                      <p className="text-[12px] text-muted-foreground mt-0.5">
                         {isBlocked
                           ? "다시 게시글을 볼 수 있습니다"
                           : "이 사용자의 모든 게시글이 즉시 사라집니다"}
                       </p>
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-neutral-600" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
 
@@ -283,7 +283,7 @@ export function ContentMoreMenu({
                 <Button
                   variant="outline"
                   onClick={closeAll}
-                  className="w-full h-12 rounded-xl border-neutral-800 text-neutral-400 font-bold"
+                  className="w-full h-12 rounded-xl border-border text-muted-foreground font-bold"
                 >
                   취소
                 </Button>
@@ -300,14 +300,14 @@ export function ContentMoreMenu({
                     setReason("");
                     setMemo("");
                   }}
-                  className="text-[12px] text-neutral-500 hover:text-white mb-2 flex items-center gap-1"
+                  className="text-[12px] text-muted-foreground hover:text-foreground mb-2 flex items-center gap-1"
                 >
                   ← 뒤로
                 </button>
-                <SheetTitle className="text-white text-[16px]">
+                <SheetTitle className="text-foreground text-[16px]">
                   {contentLabel} 신고
                 </SheetTitle>
-                <SheetDescription className="text-neutral-500 text-[12px] mt-1">
+                <SheetDescription className="text-muted-foreground text-[12px] mt-1">
                   신고 사유를 선택해주세요
                 </SheetDescription>
               </SheetHeader>
@@ -321,17 +321,17 @@ export function ContentMoreMenu({
                       className={`w-full text-left p-3.5 rounded-xl border transition-colors ${
                         reason === r.value
                           ? "border-red-500/50 bg-red-500/10"
-                          : "border-neutral-800 bg-[#0A0A0A] hover:border-neutral-700"
+                          : "border-border bg-background hover:border-border"
                       }`}
                     >
                       <p
                         className={`text-[14px] font-bold ${
-                          reason === r.value ? "text-red-400" : "text-white"
+                          reason === r.value ? "text-red-400" : "text-foreground"
                         }`}
                       >
                         {r.label}
                       </p>
-                      <p className="text-[12px] text-neutral-500 mt-0.5">{r.desc}</p>
+                      <p className="text-[12px] text-muted-foreground mt-0.5">{r.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -344,7 +344,7 @@ export function ContentMoreMenu({
                       ? "신고 사유를 입력해주세요 (필수)"
                       : "추가 설명 (선택)"
                   }
-                  className="w-full h-20 bg-[#0A0A0A] border border-neutral-800 rounded-xl p-3 text-[13px] text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
+                  className="w-full h-20 bg-background border border-border rounded-xl p-3 text-[13px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-border"
                   maxLength={500}
                 />
 
@@ -356,7 +356,7 @@ export function ContentMoreMenu({
                       setReason("");
                       setMemo("");
                     }}
-                    className="h-12 rounded-xl border-neutral-800 text-neutral-400 font-bold"
+                    className="h-12 rounded-xl border-border text-muted-foreground font-bold"
                   >
                     뒤로
                   </Button>
@@ -383,14 +383,14 @@ export function ContentMoreMenu({
                     setReason("");
                     setMemo("");
                   }}
-                  className="text-[12px] text-neutral-500 hover:text-white mb-2 flex items-center gap-1"
+                  className="text-[12px] text-muted-foreground hover:text-foreground mb-2 flex items-center gap-1"
                 >
                   ← 뒤로
                 </button>
-                <SheetTitle className="text-white text-[16px]">
+                <SheetTitle className="text-foreground text-[16px]">
                   {isBlocked ? "차단 해제하시겠습니까?" : `${targetLabel} 차단하기`}
                 </SheetTitle>
-                <SheetDescription className="text-neutral-400 text-[13px] mt-1">
+                <SheetDescription className="text-muted-foreground text-[13px] mt-1">
                   {isBlocked
                     ? "이 사용자의 게시글이 다시 표시됩니다."
                     : "차단 사유가 관리자에게 전달되어 24시간 내 검토됩니다. 차단 즉시 이 사용자의 모든 게시글이 피드에서 사라집니다."}
@@ -407,17 +407,17 @@ export function ContentMoreMenu({
                         className={`w-full text-left p-3.5 rounded-xl border transition-colors ${
                           reason === r.value
                             ? "border-red-500/50 bg-red-500/10"
-                            : "border-neutral-800 bg-[#0A0A0A] hover:border-neutral-700"
+                            : "border-border bg-background hover:border-border"
                         }`}
                       >
                         <p
                           className={`text-[14px] font-bold ${
-                            reason === r.value ? "text-red-400" : "text-white"
+                            reason === r.value ? "text-red-400" : "text-foreground"
                           }`}
                         >
                           {r.label}
                         </p>
-                        <p className="text-[12px] text-neutral-500 mt-0.5">
+                        <p className="text-[12px] text-muted-foreground mt-0.5">
                           {r.desc}
                         </p>
                       </button>
@@ -432,7 +432,7 @@ export function ContentMoreMenu({
                         ? "차단 사유를 입력해주세요 (필수)"
                         : "추가 설명 (선택)"
                     }
-                    className="w-full h-20 bg-[#0A0A0A] border border-neutral-800 rounded-xl p-3 text-[13px] text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
+                    className="w-full h-20 bg-background border border-border rounded-xl p-3 text-[13px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-border"
                     maxLength={500}
                   />
                 </div>
@@ -446,7 +446,7 @@ export function ContentMoreMenu({
                     setReason("");
                     setMemo("");
                   }}
-                  className="h-12 rounded-xl border-neutral-800 text-neutral-400 font-bold"
+                  className="h-12 rounded-xl border-border text-muted-foreground font-bold"
                 >
                   뒤로
                 </Button>
@@ -459,7 +459,7 @@ export function ContentMoreMenu({
                   }
                   className={`h-12 rounded-xl font-black text-base text-white disabled:opacity-40 ${
                     isBlocked
-                      ? "bg-neutral-700 hover:bg-neutral-600"
+                      ? "bg-muted hover:bg-muted"
                       : "bg-red-500 hover:bg-red-600"
                   }`}
                 >

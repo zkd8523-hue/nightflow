@@ -148,14 +148,14 @@ export function BidMonitor() {
       {/* 헤더 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl font-black text-white">실시간 입찰 피드</h2>
+          <h2 className="text-xl font-black text-foreground">실시간 입찰 피드</h2>
           <div className="flex items-center gap-1.5">
             <div
               className={`w-2 h-2 rounded-full ${
-                isConnected ? "bg-green-500 animate-pulse" : "bg-neutral-600"
+                isConnected ? "bg-green-500 animate-pulse" : "bg-muted"
               }`}
             />
-            <span className="text-[11px] text-neutral-500 font-bold">
+            <span className="text-[11px] text-muted-foreground font-bold">
               {isConnected ? "LIVE" : "연결중..."}
             </span>
           </div>
@@ -164,28 +164,28 @@ export function BidMonitor() {
 
       {/* 통계 */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5">
-          <p className="text-neutral-500 text-sm font-bold mb-1">오늘 입찰</p>
-          <p className="text-3xl font-black text-white">{todayBids.length}건</p>
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <p className="text-muted-foreground text-sm font-bold mb-1">오늘 입찰</p>
+          <p className="text-3xl font-black text-foreground">{todayBids.length}건</p>
         </div>
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5">
-          <p className="text-neutral-500 text-sm font-bold mb-1">고유 입찰자</p>
-          <p className="text-3xl font-black text-white">{uniqueBidders}명</p>
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <p className="text-muted-foreground text-sm font-bold mb-1">고유 입찰자</p>
+          <p className="text-3xl font-black text-foreground">{uniqueBidders}명</p>
         </div>
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5">
-          <p className="text-neutral-500 text-sm font-bold mb-1">경고</p>
-          <p className="text-3xl font-black text-amber-500">{suspiciousCount}건</p>
+        <div className="bg-card border border-border rounded-2xl p-5">
+          <p className="text-muted-foreground text-sm font-bold mb-1">경고</p>
+          <p className="text-3xl font-black text-brand-amber">{suspiciousCount}건</p>
         </div>
       </div>
 
       {/* 입찰 피드 */}
-      <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
         <div className="max-h-[600px] overflow-y-auto divide-y divide-neutral-800/50">
           {bidFeed.length === 0 ? (
             <div className="py-24 text-center">
-              <Radio className="w-8 h-8 text-neutral-700 mx-auto mb-3" />
-              <p className="text-neutral-600 font-bold">입찰 내역이 없습니다</p>
-              <p className="text-neutral-700 text-sm mt-1">
+              <Radio className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground font-bold">입찰 내역이 없습니다</p>
+              <p className="text-muted-foreground text-sm mt-1">
                 새로운 입찰이 들어오면 여기에 표시됩니다
               </p>
             </div>
@@ -196,30 +196,30 @@ export function BidMonitor() {
                 className={`flex items-center justify-between p-4 transition-all ${
                   item.suspicious
                     ? "bg-amber-500/5"
-                    : "hover:bg-neutral-900/50"
+                    : "hover:bg-card/50"
                 }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className="text-[11px] text-neutral-600 font-mono w-16 shrink-0">
+                  <div className="text-[11px] text-muted-foreground font-mono w-16 shrink-0">
                     {dayjs(item.bid_at).format("HH:mm:ss")}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-white">
+                    <p className="text-sm font-bold text-foreground">
                       {item.club_name || "알 수 없음"}
                     </p>
-                    <p className="text-xs text-neutral-500">
+                    <p className="text-xs text-muted-foreground">
                       {item.bidder_name || "익명"}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   {item.suspicious && (
-                    <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20 text-[10px] font-bold">
+                    <Badge className="bg-amber-500/10 text-brand-amber border-amber-500/20 text-[10px] font-bold">
                       <AlertTriangle className="w-3 h-3 mr-1" />
                       주의
                     </Badge>
                   )}
-                  <span className="font-black text-green-500 text-sm">
+                  <span className="font-black text-money text-sm">
                     {formatPrice(item.bid_amount)}
                   </span>
                 </div>

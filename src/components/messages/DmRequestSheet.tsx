@@ -74,15 +74,15 @@ export function DmRequestSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 pb-6"
+        className="bg-background border-border rounded-t-3xl p-0 pb-6"
       >
         <SheetHeader className="px-4 pt-4 pb-2">
-          <SheetTitle className="text-white text-[16px] text-left">
+          <SheetTitle className="text-foreground text-[16px] text-left">
             {recipientName ? `${recipientName}님에게 메시지` : "메시지 보내기"}
           </SheetTitle>
         </SheetHeader>
         <div className="px-4 space-y-3">
-          <p className="text-[12px] text-neutral-400 leading-relaxed">
+          <p className="text-[12px] text-muted-foreground leading-relaxed">
             바로 1:1 대화가 시작돼요. 첫 메시지로 자연스럽게 말 걸어보세요.
           </p>
           <textarea
@@ -90,13 +90,13 @@ export function DmRequestSheet({
             onChange={(e) => setText(e.target.value)}
             placeholder="저도 갈래요! 지금 어디세요?"
             rows={3}
-            className="w-full bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-3 py-2.5 text-white text-[15px] placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600 resize-none"
+            className="w-full bg-card border border-border rounded-2xl px-3 py-2.5 text-foreground text-[15px] placeholder:text-muted-foreground focus:outline-none focus:border-border resize-none"
           />
           <button
             type="button"
             onClick={submit}
             disabled={sending || !text.trim()}
-            className="w-full py-3 rounded-full bg-amber-500 text-black text-[15px] font-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
+            className="w-full py-3 rounded-full bg-amber-500 text-black text-[15px] font-black disabled:bg-muted disabled:text-muted-foreground transition-colors"
           >
             {sending ? "보내는 중..." : "보내기"}
           </button>

@@ -156,7 +156,7 @@ export function ShotCarousel({
   const otherGroups = userGroups.filter((g) => g.key !== "me");
 
   return (
-    <div className="px-3 pt-1 pb-1 border-b border-neutral-900 bg-[#0A0A0A]">
+    <div className="px-3 pt-1 pb-1 border-b border-border bg-background">
       <div className="flex items-center justify-between gap-2 mb-0.5 px-1">
         <div className="flex items-center gap-1.5 shrink-0">
           <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />
@@ -186,12 +186,12 @@ export function ShotCarousel({
                 {myGroup ? (
                   <ShotThumb shot={myGroup.rep} isMine isViewed={myGroup.allViewed} size={size} />
                 ) : (
-                  <div className="rounded-full p-[2px] bg-neutral-700" style={{ width: size, height: size }}>
-                    <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0A0A0A]">
+                  <div className="rounded-full p-[2px] bg-muted" style={{ width: size, height: size }}>
+                    <div className="relative w-full h-full rounded-full overflow-hidden bg-card border-2 border-background">
                       {currentUserProfile?.profile_image ? (
                         <Image src={currentUserProfile.profile_image} alt="" fill sizes={`${size}px`} className="object-cover" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white/40 text-[18px] font-black">
+                        <div className="w-full h-full flex items-center justify-center text-foreground/40 text-[18px] font-black">
                           {(currentUserProfile?.display_name ?? "나").charAt(0)}
                         </div>
                       )}
@@ -203,13 +203,13 @@ export function ShotCarousel({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onComposeClick?.(); }}
-                className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-amber-500 ring-2 ring-[#0A0A0A] flex items-center justify-center active:scale-90 transition-transform"
+                className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-amber-500 ring-2 ring-background flex items-center justify-center active:scale-90 transition-transform"
                 aria-label="LIVE 올리기"
               >
                 <Plus className="w-3 h-3 text-black" strokeWidth={3} />
               </button>
             </div>
-            <span className="text-[10px] truncate w-full text-center font-bold text-neutral-400">
+            <span className="text-[10px] truncate w-full text-center font-bold text-muted-foreground">
               {myGroup ? "내 라이브" : " "}
             </span>
           </div>
@@ -237,7 +237,7 @@ export function ShotCarousel({
               />
               <span
                 className={`text-[10px] truncate w-full text-center font-bold ${
-                  group.allViewed ? "text-neutral-600" : "text-neutral-300"
+                  group.allViewed ? "text-muted-foreground" : "text-foreground/80"
                 }`}
               >
                 {shot.club?.name ??
@@ -253,7 +253,7 @@ export function ShotCarousel({
           Array.from({ length: 3 }).map((_, i) => (
             <div
               key={`skel-${i}`}
-              className="shrink-0 rounded-full bg-neutral-900 animate-pulse"
+              className="shrink-0 rounded-full bg-card animate-pulse"
               style={{ width: size, height: size }}
             />
           ))}
@@ -293,7 +293,7 @@ function ShotThumb({
   // LIVE(클럽 지정)는 red-amber, 일반은 인스타 스토리 그라데이션, 본 SHOT은 회색
   const isLive = shot.club_id !== null;
   const ringClass = isViewed
-    ? "bg-neutral-700"
+    ? "bg-muted"
     : isLive
       ? "bg-gradient-to-br from-red-500 via-pink-500 to-amber-500"
       : isMine
@@ -301,7 +301,7 @@ function ShotThumb({
         : "bg-gradient-to-br from-[#A78BFA] to-[#C084FC]";
   return (
     <div className={`relative rounded-full p-[2px] ${ringClass}`} style={{ width: size, height: size }}>
-      <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0A0A0A]">
+      <div className="relative w-full h-full rounded-full overflow-hidden bg-card border-2 border-background">
         {shot.media_type === "image" ? (
           <Image
             src={shot.media_url}
@@ -325,7 +325,7 @@ function ShotThumb({
               controlsList="nodownload nofullscreen noremoteplayback"
             />
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white text-[9px]">
+              <div className="w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-foreground text-[9px]">
                 ▶
               </div>
             </div>

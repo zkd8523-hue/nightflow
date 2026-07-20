@@ -113,7 +113,7 @@ export default function ZhFaqPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
@@ -124,13 +124,13 @@ export default function ZhFaqPage() {
       />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/zh" className="text-[12px] text-neutral-500 hover:text-white">
+          <Link href="/zh" className="text-[12px] text-muted-foreground hover:text-foreground">
             ← NightFlow
           </Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">
             首尔夜店预订 FAQ
           </h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             关于首尔夜生活的真实解答，专为中国游客整理。价格、着装、VIP 包间、中介问题 — 您第一次在首尔玩之前应该知道的一切。
           </p>
         </header>
@@ -139,18 +139,18 @@ export default function ZhFaqPage() {
           {FAQS.map((f, i) => (
             <details
               key={i}
-              className="group rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden"
+              className="group rounded-2xl bg-card border border-border overflow-hidden"
             >
               <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer list-none select-none">
-                <span className="font-bold text-[15px] text-neutral-100 leading-snug">
+                <span className="font-bold text-[15px] text-foreground leading-snug">
                   {f.q}
                 </span>
-                <span className="text-neutral-500 transition-transform group-open:rotate-180 shrink-0">
+                <span className="text-muted-foreground transition-transform group-open:rotate-180 shrink-0">
                   ▾
                 </span>
               </summary>
               <div className="px-5 pb-5">
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{f.a}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{f.a}</p>
               </div>
             </details>
           ))}
@@ -159,11 +159,11 @@ export default function ZhFaqPage() {
         <section className="space-y-3 pt-4 text-center">
           <Link
             href="/zh"
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             🍾 通过 NightFlow 预订
           </Link>
-          <p className="text-[12px] text-neutral-600">
+          <p className="text-[12px] text-muted-foreground">
             19+ · 携带护照 · 无预订费
           </p>
         </section>

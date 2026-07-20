@@ -176,10 +176,10 @@ export function NotifySubscribeButton({ auctionId, compact = false }: NotifySubs
           disabled={loading || initialLoading}
           className={`w-9 h-9 rounded-full flex items-center justify-center transition-all active:scale-[0.95] ${
             initialLoading
-              ? "bg-neutral-800 text-neutral-400 border border-neutral-700"
+              ? "bg-muted text-muted-foreground border border-border"
               : isSubscribed
-                ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-400 border border-neutral-700"
+                ? "bg-inverse text-inverse-foreground"
+                : "bg-muted text-muted-foreground border border-border"
           }`}
           title={isSubscribed ? "알림 해제" : "경매 시작 알림받기"}
         >
@@ -195,8 +195,8 @@ export function NotifySubscribeButton({ auctionId, compact = false }: NotifySubs
           disabled={loading || initialLoading}
           className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all active:scale-[0.98] ${
             isSubscribed
-              ? "bg-neutral-800 border border-neutral-700 text-white"
-              : "bg-neutral-900 border border-neutral-800 text-neutral-400"
+              ? "bg-muted border border-border text-foreground"
+              : "bg-card border border-border text-muted-foreground"
           }`}
         >
           {loading || initialLoading ? (
@@ -219,20 +219,20 @@ export function NotifySubscribeButton({ auctionId, compact = false }: NotifySubs
       <Sheet open={showPhoneSheet} onOpenChange={setShowPhoneSheet}>
         <SheetContent
           side="bottom"
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl"
+          className="h-auto bg-card border-border rounded-t-3xl"
         >
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">
+            <SheetTitle className="text-foreground font-black text-xl">
               알림톡 수신 설정
             </SheetTitle>
-            <SheetDescription className="text-neutral-400">
+            <SheetDescription className="text-muted-foreground">
               경매 시작 시 카카오 알림톡으로 알려드립니다
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-4 mt-6">
             <div className="space-y-2">
-              <label className="text-sm text-neutral-400 font-bold">
+              <label className="text-sm text-muted-foreground font-bold">
                 휴대폰 번호
               </label>
               <Input
@@ -240,7 +240,7 @@ export function NotifySubscribeButton({ auctionId, compact = false }: NotifySubs
                 placeholder="01012345678"
                 value={phoneInput}
                 onChange={(e) => setPhoneInput(e.target.value)}
-                className="bg-neutral-900/80 border-neutral-800 h-12 text-white font-bold"
+                className="bg-card/80 border-border h-12 text-foreground font-bold"
               />
             </div>
 
@@ -249,9 +249,9 @@ export function NotifySubscribeButton({ auctionId, compact = false }: NotifySubs
                 type="checkbox"
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
-                className="mt-1 w-5 h-5 rounded border-neutral-700 bg-neutral-900 accent-neutral-400"
+                className="mt-1 w-5 h-5 rounded border-border bg-card accent-neutral-400"
               />
-              <span className="text-sm text-neutral-400 leading-relaxed">
+              <span className="text-sm text-muted-foreground leading-relaxed">
                 카카오 알림톡 수신에 동의합니다. 경매 시작, 낙찰 등
                 거래 관련 알림이 발송됩니다.
               </span>
@@ -261,14 +261,14 @@ export function NotifySubscribeButton({ auctionId, compact = false }: NotifySubs
               <Button
                 variant="outline"
                 onClick={() => setShowPhoneSheet(false)}
-                className="h-14 rounded-2xl border-neutral-800 text-neutral-400 font-bold"
+                className="h-14 rounded-2xl border-border text-muted-foreground font-bold"
               >
                 취소
               </Button>
               <Button
                 onClick={handlePhoneSubmit}
                 disabled={loading || !consent || !phoneInput}
-                className="h-14 rounded-2xl font-black text-lg bg-white hover:bg-neutral-200 text-black"
+                className="h-14 rounded-2xl font-black text-lg bg-inverse hover:opacity-90 text-inverse-foreground"
               >
                 {loading ? "처리 중..." : "확인"}
               </Button>

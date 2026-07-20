@@ -74,11 +74,11 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
 
     const getTrustLevelColor = (level: string) => {
         switch (level) {
-            case "vip": return "text-amber-400 bg-amber-500/10 border-amber-500/30";
-            case "normal": return "text-neutral-300 bg-neutral-500/10 border-neutral-500/30";
+            case "vip": return "text-brand-amber bg-amber-500/10 border-amber-500/30";
+            case "normal": return "text-foreground/80 bg-muted/10 border-border/30";
             case "caution": return "text-yellow-400 bg-yellow-500/10 border-yellow-500/30";
             case "blocked": return "text-red-400 bg-red-500/10 border-red-500/30";
-            default: return "text-neutral-500 bg-neutral-800/50 border-neutral-700";
+            default: return "text-muted-foreground bg-muted/50 border-border";
         }
     };
 
@@ -105,16 +105,16 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
     return (
         <div className="space-y-4 pb-20">
             {/* 탭 */}
-            <div className="flex gap-2 bg-neutral-900 border border-neutral-800/50 rounded-xl p-1">
+            <div className="flex gap-2 bg-card border border-border/50 rounded-xl p-1">
                 <button
                     onClick={() => setActiveTab("vip")}
-                    className={`flex-1 h-10 rounded-lg text-sm font-bold transition-colors ${activeTab === "vip" ? "bg-[#1C1C1E] text-white" : "text-neutral-500"}`}
+                    className={`flex-1 h-10 rounded-lg text-sm font-bold transition-colors ${activeTab === "vip" ? "bg-card text-foreground" : "text-muted-foreground"}`}
                 >
                     ⭐ VIP ({vipList.length}명)
                 </button>
                 <button
                     onClick={() => setActiveTab("bidders")}
-                    className={`flex-1 h-10 rounded-lg text-sm font-bold transition-colors ${activeTab === "bidders" ? "bg-[#1C1C1E] text-white" : "text-neutral-500"}`}
+                    className={`flex-1 h-10 rounded-lg text-sm font-bold transition-colors ${activeTab === "bidders" ? "bg-card text-foreground" : "text-muted-foreground"}`}
                 >
                     🏆 입찰자 랭킹
                 </button>
@@ -122,40 +122,40 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
 
             {/* 검색 */}
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="이름으로 검색..."
-                    className="pl-9 bg-[#1C1C1E] border-neutral-800 h-11 text-white"
+                    className="pl-9 bg-card border-border h-11 text-foreground"
                 />
             </div>
 
             {activeTab === "vip" ? (
                 <div className="space-y-3">
                     {filteredVips.length === 0 ? (
-                        <div className="py-16 text-center space-y-3 bg-[#1C1C1E]/30 rounded-3xl border border-dashed border-neutral-800/50">
-                            <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto">
-                                <Star className="w-8 h-8 text-neutral-700" />
+                        <div className="py-16 text-center space-y-3 bg-card/30 rounded-3xl border border-dashed border-border/50">
+                            <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto">
+                                <Star className="w-8 h-8 text-muted-foreground" />
                             </div>
-                            <p className="text-neutral-500 text-sm font-medium">
+                            <p className="text-muted-foreground text-sm font-medium">
                                 {searchQuery ? "검색 결과가 없습니다" : "VIP 고객이 없습니다"}
                             </p>
-                            <p className="text-neutral-600 text-xs px-8">
+                            <p className="text-muted-foreground text-xs px-8">
                                 입찰자 랭킹 탭에서 단골 고객을 VIP로 지정하세요
                             </p>
                         </div>
                     ) : (
                         filteredVips.map((vip) => (
-                            <Card key={vip.id} className="bg-[#1C1C1E] border-neutral-800/50 p-4 flex justify-between items-center">
+                            <Card key={vip.id} className="bg-card border-border/50 p-4 flex justify-between items-center">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center font-black text-amber-500">
+                                    <div className="w-10 h-10 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center font-black text-brand-amber">
                                         {vip.user?.display_name?.substring(0, 1) || "?"}
                                     </div>
                                     <div>
-                                        <p className="text-white font-bold text-sm">{vip.user?.display_name || "알 수 없음"}</p>
+                                        <p className="text-foreground font-bold text-sm">{vip.user?.display_name || "알 수 없음"}</p>
                                         {vip.note && (
-                                            <p className="text-xs text-neutral-500 mt-0.5">{vip.note}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">{vip.note}</p>
                                         )}
                                     </div>
                                 </div>
@@ -163,7 +163,7 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => handleRemoveVip(vip.id, vip.user?.display_name)}
-                                    className="text-amber-500 hover:text-neutral-400 hover:bg-neutral-800"
+                                    className="text-brand-amber hover:text-muted-foreground hover:bg-muted"
                                 >
                                     <StarOff className="w-4 h-4" />
                                 </Button>
@@ -174,33 +174,33 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
             ) : (
                 <div className="space-y-3">
                     {filteredBidders.length === 0 ? (
-                        <div className="py-16 text-center space-y-3 bg-[#1C1C1E]/30 rounded-3xl border border-dashed border-neutral-800/50">
-                            <TrendingUp className="w-8 h-8 text-neutral-700 mx-auto" />
-                            <p className="text-neutral-500 text-sm">경매 입찰 데이터가 없습니다</p>
+                        <div className="py-16 text-center space-y-3 bg-card/30 rounded-3xl border border-dashed border-border/50">
+                            <TrendingUp className="w-8 h-8 text-muted-foreground mx-auto" />
+                            <p className="text-muted-foreground text-sm">경매 입찰 데이터가 없습니다</p>
                         </div>
                     ) : (
                         filteredBidders.map((score, idx) => (
-                            <Card key={score.id} className="bg-[#1C1C1E] border-neutral-800/50 p-4">
+                            <Card key={score.id} className="bg-card border-border/50 p-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-xs font-black text-neutral-400">
+                                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-black text-muted-foreground">
                                             #{idx + 1}
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-2">
-                                                <p className="text-white font-bold text-sm">{score.display_name}</p>
+                                                <p className="text-foreground font-bold text-sm">{score.display_name}</p>
                                                 <Badge className={`text-[10px] px-1.5 py-0 border ${getTrustLevelColor(score.trust_level)}`}>
                                                     {getTrustLevelLabel(score.trust_level)}
                                                 </Badge>
                                             </div>
                                             <div className="flex gap-3 mt-1">
-                                                <span className="text-[11px] text-neutral-500">
+                                                <span className="text-[11px] text-muted-foreground">
                                                     입찰 {score.total_bids}회
                                                 </span>
-                                                <span className="text-[11px] text-green-500">
+                                                <span className="text-[11px] text-money">
                                                     낙찰 {score.won_bids}건
                                                 </span>
-                                                <span className="text-[11px] text-neutral-500">
+                                                <span className="text-[11px] text-muted-foreground">
                                                     방문완료 {score.confirmed_visits}회
                                                 </span>
                                             </div>
@@ -212,8 +212,8 @@ export function VIPDashboard({ mdId, initialVipList, trustScores }: VIPDashboard
                                         onClick={() => handleAddVip(score.id, score.display_name)}
                                         disabled={vipUserIds.has(score.id)}
                                         className={vipUserIds.has(score.id)
-                                            ? "text-amber-500"
-                                            : "text-neutral-500 hover:text-amber-500 hover:bg-amber-500/10"
+                                            ? "text-brand-amber"
+                                            : "text-muted-foreground hover:text-brand-amber hover:bg-amber-500/10"
                                         }
                                     >
                                         <Star className={`w-4 h-4 ${vipUserIds.has(score.id) ? "fill-amber-500" : ""}`} />

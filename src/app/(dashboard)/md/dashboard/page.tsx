@@ -75,9 +75,9 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
 
     if (!userData) {
         return (
-            <div className="p-20 text-white bg-[#0A0A0A] min-h-screen text-center">
+            <div className="p-20 text-foreground bg-background min-h-screen text-center">
                 <h2 className="text-xl font-bold mb-4">로그인이 필요하거나 권한이 없습니다.</h2>
-                <p className="text-neutral-500">파트너 계정으로 로그인해주세요.</p>
+                <p className="text-muted-foreground">파트너 계정으로 로그인해주세요.</p>
             </div>
         );
     }
@@ -306,7 +306,7 @@ export default async function MDDashboardPage({ searchParams }: { searchParams: 
     ] : (auctions || []) as unknown as Auction[];
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A]">
+        <div className="min-h-screen bg-background">
             <MDDashboard
                 user={userData}
                 initialSection={initialSection}

@@ -115,25 +115,25 @@ export function AcceptedPuzzleVisitCard({ offer, onUpdate }: Props) {
         }
     };
 
-    const borderColor = done ? "border-neutral-800/30 opacity-60" : "border-amber-500/20";
+    const borderColor = done ? "border-border/30 opacity-60" : "border-amber-500/20";
 
     return (
-        <div className={`bg-[#1C1C1E] rounded-2xl p-4 border transition-all ${borderColor}`}>
+        <div className={`bg-card rounded-2xl p-4 border transition-all ${borderColor}`}>
             <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-black text-white">{eventDate}</span>
+                        <span className="text-sm font-black text-foreground">{eventDate}</span>
                         {localOffer.puzzle?.area && (
-                            <span className="text-xs text-neutral-500 font-bold">· {localOffer.puzzle.area}</span>
+                            <span className="text-xs text-muted-foreground font-bold">· {localOffer.puzzle.area}</span>
                         )}
                         {localOffer.club?.name && (
-                            <span className="text-xs text-neutral-500 font-bold">· {localOffer.club.name}</span>
+                            <span className="text-xs text-muted-foreground font-bold">· {localOffer.club.name}</span>
                         )}
                     </div>
-                    <div className="text-xs text-neutral-400">
+                    <div className="text-xs text-muted-foreground">
                         {localOffer.table_type && <span>{localOffer.table_type} · </span>}
-                        <span className="text-green-400 font-bold">{formatPrice(localOffer.proposed_price)}</span>
-                        <span className="text-neutral-600"> · 방장 {leaderName}</span>
+                        <span className="text-money font-bold">{formatPrice(localOffer.proposed_price)}</span>
+                        <span className="text-muted-foreground"> · 방장 {leaderName}</span>
                     </div>
                 </div>
             </div>
@@ -151,7 +151,7 @@ export function AcceptedPuzzleVisitCard({ offer, onUpdate }: Props) {
                     <button
                         onClick={handleNoshow}
                         disabled={loading}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-neutral-800 hover:bg-red-500/15 text-neutral-400 hover:text-red-400 border border-neutral-700 hover:border-red-500/30 font-black text-xs rounded-xl transition-colors disabled:opacity-40"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-muted hover:bg-red-500/15 text-muted-foreground hover:text-red-400 border border-border hover:border-red-500/30 font-black text-xs rounded-xl transition-colors disabled:opacity-40"
                         title="연락 못받았어요"
                     >
                         <PhoneOff className="w-3.5 h-3.5" />
@@ -162,7 +162,7 @@ export function AcceptedPuzzleVisitCard({ offer, onUpdate }: Props) {
 
             {done && localOffer.visit_result === "visited" && (
                 <div className="mt-3">
-                    <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-green-500/15 text-green-400">
+                    <span className="inline-flex items-center gap-1 text-xs font-black px-2.5 py-1 rounded-full bg-green-500/15 text-money">
                         <ShieldCheck className="w-3.5 h-3.5" /> 거래 확정
                     </span>
                 </div>

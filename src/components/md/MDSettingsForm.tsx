@@ -97,11 +97,11 @@ export function MDSettingsForm({ user }: { user: User }) {
         <header className="pt-3 pb-5 flex items-center gap-4">
           <Link
             href="/md/dashboard"
-            className="p-2 -ml-2 rounded-xl hover:bg-neutral-800/50 transition-colors"
+            className="p-2 -ml-2 rounded-xl hover:bg-muted/50 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
-          <h1 className="text-xl font-black text-white tracking-tight">프로필 설정</h1>
+          <h1 className="text-xl font-black text-foreground tracking-tight">프로필 설정</h1>
         </header>
       </div>
 
@@ -112,18 +112,18 @@ export function MDSettingsForm({ user }: { user: User }) {
       >
         {/* 연락처 정보 */}
         <div className="space-y-4">
-          <h3 className="text-white font-bold flex items-center gap-2">
-            <Smartphone className="w-4 h-4 text-neutral-500" />
+          <h3 className="text-foreground font-bold flex items-center gap-2">
+            <Smartphone className="w-4 h-4 text-muted-foreground" />
             연락처 정보
           </h3>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label className="text-neutral-500 text-xs font-bold uppercase">이름</Label>
+              <Label className="text-muted-foreground text-xs font-bold uppercase">이름</Label>
               <Input
                 {...form.register("name")}
                 placeholder="홍길동"
-                className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
+                className="bg-card border-border text-foreground h-12 focus:ring-white"
               />
               {form.formState.errors.name && (
                 <p className="text-red-500 text-[10px] font-bold">
@@ -132,7 +132,7 @@ export function MDSettingsForm({ user }: { user: User }) {
               )}
             </div>
             <div className="space-y-2">
-              <Label className="text-neutral-500 text-xs font-bold uppercase">연락처</Label>
+              <Label className="text-muted-foreground text-xs font-bold uppercase">연락처</Label>
               <Input
                 {...form.register("phone", {
                   onChange: (e) => {
@@ -148,7 +148,7 @@ export function MDSettingsForm({ user }: { user: User }) {
                 })}
                 inputMode="tel"
                 placeholder="010-0000-0000"
-                className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
+                className="bg-card border-border text-foreground h-12 focus:ring-white"
               />
               {form.formState.errors.phone && (
                 <p className="text-red-500 text-[10px] font-bold">
@@ -160,12 +160,12 @@ export function MDSettingsForm({ user }: { user: User }) {
 
           {/* Instagram */}
           <div className="space-y-2">
-            <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
+            <Label className="text-muted-foreground text-xs font-bold uppercase flex items-center gap-1.5">
               <Instagram className="w-3.5 h-3.5" />
               인스타그램 아이디 *
             </Label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600 font-bold">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">
                 @
               </span>
               <Input
@@ -177,7 +177,7 @@ export function MDSettingsForm({ user }: { user: User }) {
                   },
                 })}
                 placeholder="your_instagram_id"
-                className="bg-neutral-900 border-neutral-800 text-white h-12 pl-8 font-mono focus:ring-white"
+                className="bg-card border-border text-foreground h-12 pl-8 font-mono focus:ring-white"
               />
             </div>
             {form.formState.errors.instagram && (
@@ -189,7 +189,7 @@ export function MDSettingsForm({ user }: { user: User }) {
 
           {/* 선호 연락 수단 */}
           <div className="space-y-3">
-            <Label className="text-neutral-500 text-xs font-bold uppercase">
+            <Label className="text-muted-foreground text-xs font-bold uppercase">
               고객에게 표시할 연락 수단 (필수, 최소 1개)
             </Label>
             <div className="flex flex-wrap gap-2">
@@ -212,10 +212,10 @@ export function MDSettingsForm({ user }: { user: User }) {
                     }}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all ${
                       isDisabled
-                        ? "bg-neutral-900 text-neutral-700 cursor-not-allowed"
+                        ? "bg-card text-muted-foreground cursor-not-allowed"
                         : isSelected
-                          ? "bg-white text-black"
-                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                          ? "bg-inverse text-inverse-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted"
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -224,7 +224,7 @@ export function MDSettingsForm({ user }: { user: User }) {
                 );
               })}
             </div>
-            <p className="text-neutral-600 text-[10px]">
+            <p className="text-muted-foreground text-[10px]">
               {preferredMethods.length === 0
                 ? "최소 1개는 선택해야 저장할 수 있어요"
                 : "선택한 수단만 고객에게 표시됩니다"}
@@ -233,16 +233,16 @@ export function MDSettingsForm({ user }: { user: User }) {
 
           {/* Kakao Open Chat */}
           <div className="space-y-2">
-            <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
+            <Label className="text-muted-foreground text-xs font-bold uppercase flex items-center gap-1.5">
               <MessageCircle className="w-3.5 h-3.5" />
               카카오톡 오픈채팅 (선택)
             </Label>
             <Input
               {...form.register("kakao_open_chat_url")}
               placeholder="https://open.kakao.com/o/..."
-              className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
+              className="bg-card border-border text-foreground h-12 font-mono text-sm focus:ring-white"
             />
-            <p className="text-neutral-600 text-[10px]">고객에게 추가 연락 수단으로 표시됩니다</p>
+            <p className="text-muted-foreground text-[10px]">고객에게 추가 연락 수단으로 표시됩니다</p>
             {form.formState.errors.kakao_open_chat_url && (
               <p className="text-red-500 text-[10px] font-bold">
                 {form.formState.errors.kakao_open_chat_url?.message?.toString()}
@@ -254,7 +254,7 @@ export function MDSettingsForm({ user }: { user: User }) {
 
       {/* Fixed Bottom CTA */}
       <div
-        className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-40"
+        className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/80 to-transparent z-40"
         style={{ paddingBottom: "calc(1rem + 3.5rem + env(safe-area-inset-bottom))" }}
       >
         <div className="max-w-lg mx-auto">
@@ -262,7 +262,7 @@ export function MDSettingsForm({ user }: { user: User }) {
             type="submit"
             form="md-settings-form"
             disabled={loading || !isDirty}
-            className="w-full h-14 bg-white text-black font-black text-lg hover:bg-neutral-200 rounded-2xl flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full h-14 bg-inverse text-inverse-foreground font-black text-lg hover:opacity-90 rounded-2xl flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? (
               "저장 중..."

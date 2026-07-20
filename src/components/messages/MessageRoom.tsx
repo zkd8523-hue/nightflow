@@ -490,11 +490,11 @@ export function MessageRoom({
   const shownMessages = messages.filter((m) => !m.is_deleted);
 
   return (
-    <div className="max-w-lg mx-auto min-h-dvh bg-[#0A0A0A] flex flex-col">
+    <div className="max-w-lg mx-auto min-h-dvh bg-background flex flex-col">
       {/* 헤더 + 오퍼 요약 (고정) */}
-      <div className="sticky top-0 z-30 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-neutral-800">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
         <header className="flex items-center gap-3 px-3 py-3">
-          <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-neutral-300">
+          <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-foreground/80">
             <ArrowLeft className="w-5 h-5" />
           </button>
           {/* 상대 프로필 탭 → 공개 프로필 페이지로 이동 */}
@@ -502,31 +502,31 @@ export function MessageRoom({
             onClick={() => router.push(`/u/${counterpart.id}`)}
             className="flex items-center gap-3 min-w-0 flex-1 text-left"
           >
-            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-neutral-800 shrink-0">
+            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-muted shrink-0">
               {counterpart.profile_image ? (
                 <Image src={counterpart.profile_image} alt="" fill className="object-cover" sizes="32px" />
               ) : (
-                <div className="w-full h-full grid place-items-center text-[12px] font-bold text-neutral-400">
+                <div className="w-full h-full grid place-items-center text-[12px] font-bold text-muted-foreground">
                   {(counterpart.display_name ?? "?").slice(0, 1)}
                 </div>
               )}
             </div>
             <div className="min-w-0">
-              <p className="text-[14px] font-bold text-white truncate">
+              <p className="text-[14px] font-bold text-foreground truncate">
                 {counterpart.display_name ?? (isMd ? "방장" : "파트너")}
               </p>
-              <p className="text-[11px] text-neutral-500 truncate">{isMd ? "방장" : "파트너"}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{isMd ? "방장" : "파트너"}</p>
             </div>
           </button>
         </header>
         {/* 깃발+오퍼 요약 바 (당근 상품바 스타일) — 탭하면 깃발 상세로 */}
         <Link
           href={`/flags/${puzzleId}`}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#141416] border-t border-neutral-800/70 active:bg-neutral-900"
+          className="flex items-center gap-2 px-4 py-2.5 bg-background border-t border-border/70 active:bg-card"
         >
           <div className="flex-1 min-w-0">
             {/* 위: 조각 — 날짜 · 지역 · 인당가 / 현재인원 · 깃발 — 날짜 · 인원 · 금액 */}
-            <p className="text-[13px] font-bold text-white truncate">
+            <p className="text-[13px] font-bold text-foreground truncate">
               {puzzleInfo.isRecruitingParty
                 ? [puzzleInfo.dateLabel, puzzleInfo.area, `인당 ${puzzleInfo.perPerson.toLocaleString()}원 / 현재 ${puzzleInfo.currentCount}명`]
                     .filter(Boolean)
@@ -536,24 +536,24 @@ export function MessageRoom({
                     .join(" · ")}
             </p>
             {/* 아래: 오퍼 내용 */}
-            <p className="text-[12px] text-neutral-400 truncate">
+            <p className="text-[12px] text-muted-foreground truncate">
               {[offerSummary.clubName, offerSummary.includes.join(", ") || null]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
           </div>
-          <ChevronRight className="w-4 h-4 text-neutral-500 shrink-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
         </Link>
         {/* 매칭 완료 배너: 양쪽 모두 노출. 수락 버튼은 방장 전용(수락 주체) */}
         {accepted ? (
-          <div className="px-4 py-2 border-t border-neutral-800/70 text-center text-[11px] text-neutral-500">
+          <div className="px-4 py-2 border-t border-border/70 text-center text-[11px] text-muted-foreground">
             ✓ 매칭 완료 · 예약을 확정하세요
           </div>
         ) : myRole === "leader" && (puzzleStatus === "open" || puzzleStatus === "selecting") && counterpartReplied ? (
           <button
             onClick={handleAcceptOffer}
             disabled={accepting}
-            className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white/95 hover:bg-white text-black font-black text-[13px] border-t border-neutral-800/70 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-inverse/95 hover:bg-inverse text-inverse-foreground font-black text-[13px] border-t border-border/70 disabled:opacity-50"
           >
             <CheckCircle2 className="w-4 h-4" />
             {accepting ? "수락 중…" : "이 오퍼 수락하기"}
@@ -564,9 +564,9 @@ export function MessageRoom({
       {/* 메시지 리스트 */}
       <div className="flex-1 px-4 py-4 space-y-3 overflow-y-auto">
         {loading ? (
-          <p className="text-center text-[13px] text-neutral-600 mt-10">불러오는 중…</p>
+          <p className="text-center text-[13px] text-muted-foreground mt-10">불러오는 중…</p>
         ) : shownMessages.length === 0 ? (
-          <p className="text-center text-[13px] text-neutral-600 mt-10">
+          <p className="text-center text-[13px] text-muted-foreground mt-10">
             {isMd
               ? accepted
                 ? "매칭됐어요! 먼저 인사를 보내보세요"
@@ -592,7 +592,7 @@ export function MessageRoom({
               <Fragment key={m.id}>
                 {showDate && (
                   <div className="flex justify-center my-3">
-                    <span className="text-[11px] text-neutral-400 bg-neutral-800/70 rounded-full px-3 py-1">
+                    <span className="text-[11px] text-muted-foreground bg-muted/70 rounded-full px-3 py-1">
                       {formatDateDivider(d)}
                     </span>
                   </div>
@@ -618,8 +618,8 @@ export function MessageRoom({
                           ? "select-none"
                           : `px-3 py-2 rounded-2xl select-none ${
                               mine
-                                ? "bg-white text-black rounded-br-md"
-                                : "bg-[#1C1C1E] text-white rounded-bl-md"
+                                ? "bg-inverse text-inverse-foreground rounded-br-md"
+                                : "bg-card text-foreground rounded-bl-md"
                             }`
                       }
                     >
@@ -629,11 +629,11 @@ export function MessageRoom({
                           <button
                             onClick={handleUnlockContact}
                             disabled={unlockingContact}
-                            className="flex flex-col items-start gap-0.5 rounded-2xl rounded-bl-md bg-[#1C1C1E] border border-amber-500/40 px-4 py-3 text-left active:bg-neutral-800 disabled:opacity-60"
+                            className="flex flex-col items-start gap-0.5 rounded-2xl rounded-bl-md bg-card border border-amber-500/40 px-4 py-3 text-left active:bg-muted disabled:opacity-60"
                           >
-                            <span className="text-[13px] font-bold text-amber-300">🔒 유저가 연락처를 남겼어요</span>
-                            <span className="text-[12px] text-neutral-400">열람 시 15크레딧이 차감돼요</span>
-                            <span className="mt-1 text-[13px] font-black text-white">
+                            <span className="text-[13px] font-bold text-brand-amber">🔒 유저가 연락처를 남겼어요</span>
+                            <span className="text-[12px] text-muted-foreground">열람 시 15크레딧이 차감돼요</span>
+                            <span className="mt-1 text-[13px] font-black text-foreground">
                               {unlockingContact ? "여는 중…" : "열람하기 →"}
                             </span>
                           </button>
@@ -652,13 +652,13 @@ export function MessageRoom({
                     {/* 카톡식: "1"(안읽음) + 시간 — 보낸 메시지 안쪽 */}
                     <div className="flex flex-col items-end justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
                       {unreadByOther && (
-                        <span className="text-[11px] font-bold text-amber-400">1</span>
+                        <span className="text-[11px] font-bold text-brand-amber">1</span>
                       )}
                       {m.edited_at && (
-                        <span className="text-[10px] text-neutral-600 whitespace-nowrap">수정됨</span>
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">수정됨</span>
                       )}
                       {showTime && (
-                        <span className="text-[10px] text-neutral-500 whitespace-nowrap">
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                           {formatTime(d)}
                         </span>
                       )}
@@ -675,30 +675,30 @@ export function MessageRoom({
       {/* 입력창 / 상태 안내 */}
       {readOnly ? (
         offerClosed ? (
-          <div className="px-4 py-4 border-t border-neutral-800 flex items-center justify-center gap-3 text-[13px]">
-            <span className="text-neutral-500">종료된 대화예요. 삭제하시겠어요?</span>
+          <div className="px-4 py-4 border-t border-border flex items-center justify-center gap-3 text-[13px]">
+            <span className="text-muted-foreground">종료된 대화예요. 삭제하시겠어요?</span>
             <button onClick={handleDeleteChat} className="font-bold text-red-400 hover:text-red-300 transition-colors">
               삭제
             </button>
           </div>
         ) : (
-          <div className="px-4 py-4 border-t border-neutral-800 text-center text-[13px] text-neutral-500">
+          <div className="px-4 py-4 border-t border-border text-center text-[13px] text-muted-foreground">
             종료된 {puzzleInfo.isRecruitingParty ? "조각" : "깃발"}이에요. 대화를 더 보낼 수 없어요.
           </div>
         )
       ) : mdBlocked ? (
-        <div className="px-4 py-4 border-t border-neutral-800 text-center text-[13px] text-neutral-500">
+        <div className="px-4 py-4 border-t border-border text-center text-[13px] text-muted-foreground">
           방장이 먼저 대화를 시작하면 답장할 수 있어요.
         </div>
       ) : (
-        <div className="sticky bottom-0 bg-[#0A0A0A] border-t border-neutral-800" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="sticky bottom-0 bg-background border-t border-border" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           {/* 연락처 남기기(유저·MD) / 주소 보내기(MD) */}
           {(contactOptions.length > 0 || (isMd && offerSummary.clubName)) && (
             <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
               {contactOptions.length > 0 && (
                 <button
                   onClick={() => setContactPickerOpen(true)}
-                  className="shrink-0 flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-[13px] font-bold text-neutral-200 whitespace-nowrap active:bg-neutral-800"
+                  className="shrink-0 flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-bold text-foreground whitespace-nowrap active:bg-muted"
                 >
                   <IdCard className="w-3.5 h-3.5" />
                   {isMd ? "연락처 보내기" : "연락처 남기기"}
@@ -711,7 +711,7 @@ export function MessageRoom({
                       encodeContactCard("address", `${offerSummary.clubName}||${offerSummary.clubAddress ?? ""}`)
                     )
                   }
-                  className="shrink-0 flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-[13px] font-bold text-neutral-200 whitespace-nowrap active:bg-neutral-800"
+                  className="shrink-0 flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] font-bold text-foreground whitespace-nowrap active:bg-muted"
                 >
                   <MapPin className="w-3.5 h-3.5" />
                   주소 보내기
@@ -727,7 +727,7 @@ export function MessageRoom({
                   key={p}
                   onClick={() => handleSend(p)}
                   disabled={sending}
-                  className="shrink-0 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-[13px] text-neutral-200 whitespace-nowrap active:bg-neutral-800 disabled:opacity-40"
+                  className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] text-foreground/90 whitespace-nowrap active:bg-muted disabled:opacity-40"
                 >
                   {p}
                 </button>
@@ -735,14 +735,14 @@ export function MessageRoom({
             </div>
           )}
           {mdFirstReply && (
-            <p className="px-4 pt-2 text-[12px] text-amber-400 font-bold text-center">
+            <p className="px-4 pt-2 text-[12px] text-brand-amber font-bold text-center">
               ⚡ 답장하면 15크레딧이 차감돼요 (이 대화 1회만)
             </p>
           )}
           {media.length > 0 && (
             <div className="flex gap-2 px-4 pt-3">
               {media.map((m, i) => (
-                <div key={i} className="relative w-14 h-14 rounded-lg overflow-hidden bg-neutral-900">
+                <div key={i} className="relative w-14 h-14 rounded-lg overflow-hidden bg-card">
                   {m.type === "image" ? (
                     <Image src={m.url} alt="" fill className="object-cover" sizes="56px" />
                   ) : (
@@ -752,7 +752,7 @@ export function MessageRoom({
                     onClick={() => setMedia((prev) => prev.filter((_, idx) => idx !== i))}
                     className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 grid place-items-center"
                   >
-                    <X className="w-2.5 h-2.5 text-white" />
+                    <X className="w-2.5 h-2.5 text-foreground" />
                   </button>
                 </div>
               ))}
@@ -760,8 +760,8 @@ export function MessageRoom({
           )}
           {editingId && (
             <div className="flex items-center justify-between px-4 pt-2.5 pb-0.5">
-              <span className="text-[12px] font-bold text-amber-400">메시지 수정 중</span>
-              <button onClick={cancelEdit} className="text-[12px] text-neutral-500 hover:text-neutral-300">
+              <span className="text-[12px] font-bold text-brand-amber">메시지 수정 중</span>
+              <button onClick={cancelEdit} className="text-[12px] text-muted-foreground hover:text-foreground/80">
                 취소
               </button>
             </div>
@@ -770,7 +770,7 @@ export function MessageRoom({
             {!editingId && (
               <button
                 onClick={() => fileRef.current?.click()}
-                className="p-2 text-neutral-400 shrink-0"
+                className="p-2 text-muted-foreground shrink-0"
                 aria-label="사진 첨부"
               >
                 <ImageIcon className="w-5 h-5" />
@@ -790,12 +790,12 @@ export function MessageRoom({
               }}
               rows={1}
               placeholder={editingId ? "메시지 수정…" : "메시지 보내기"}
-              className="flex-1 min-w-0 resize-none bg-[#1C1C1E] text-white text-[14px] rounded-2xl px-4 py-2.5 outline-none placeholder:text-neutral-600 max-h-28"
+              className="flex-1 min-w-0 resize-none bg-card text-foreground text-[14px] rounded-2xl border border-border px-4 py-2.5 outline-none placeholder:text-muted-foreground max-h-28"
             />
             <button
               onClick={() => handleSend()}
               disabled={sending || (input.trim().length === 0 && media.length === 0)}
-              className="p-2.5 rounded-full bg-white text-black shrink-0 disabled:opacity-30"
+              className="p-2.5 rounded-full bg-inverse text-inverse-foreground shrink-0 disabled:opacity-30"
               aria-label="전송"
             >
               <Send className="w-4 h-4" />
@@ -815,11 +815,11 @@ export function MessageRoom({
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
               {!isMd && (
-                <div className="px-5 pt-4 pb-2.5 border-b border-neutral-800/60">
-                  <p className="text-[15px] font-black text-white">연락처 남기기</p>
-                  <p className="text-[12px] text-neutral-500 mt-0.5">다른 연락수단을 선호하시다면, 바로 남겨주세요</p>
+                <div className="px-5 pt-4 pb-2.5 border-b border-border/60">
+                  <p className="text-[15px] font-black text-foreground">연락처 남기기</p>
+                  <p className="text-[12px] text-muted-foreground mt-0.5">다른 연락수단을 선호하시다면, 바로 남겨주세요</p>
                 </div>
               )}
               {contactOptions.map((opt, i) => {
@@ -828,18 +828,18 @@ export function MessageRoom({
                   <button
                     key={opt.method}
                     onClick={() => (opt.registered ? sendContactCard(opt.method, opt.value) : openRegister(opt.method as "dm" | "kakao"))}
-                    className={`w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-white hover:bg-neutral-800/40 ${
-                      i < contactOptions.length - 1 ? "border-b border-neutral-800/60" : ""
+                    className={`w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-foreground hover:bg-muted/40 ${
+                      i < contactOptions.length - 1 ? "border-b border-border/60" : ""
                     }`}
                   >
-                    <Icon className="w-5 h-5 text-neutral-400 shrink-0" />
+                    <Icon className="w-5 h-5 text-muted-foreground shrink-0" />
                     <span className="flex-1 text-left">{opt.label}</span>
                     {opt.registered ? (
-                      <span className="text-[13px] text-neutral-500 font-medium truncate max-w-[45%]">
+                      <span className="text-[13px] text-muted-foreground font-medium truncate max-w-[45%]">
                         {opt.method === "dm" ? `@${opt.value}` : opt.method === "phone" ? opt.value : "보내기"}
                       </span>
                     ) : (
-                      <span className="text-[13px] text-amber-400 font-bold shrink-0">등록하고 보내기 →</span>
+                      <span className="text-[13px] text-brand-amber font-bold shrink-0">등록하고 보내기 →</span>
                     )}
                   </button>
                 );
@@ -847,7 +847,7 @@ export function MessageRoom({
             </div>
             <button
               onClick={() => setContactPickerOpen(false)}
-              className="w-full bg-[#1C1C1E] rounded-2xl px-5 py-4 text-[15px] font-black text-white hover:bg-neutral-800/40"
+              className="w-full bg-card rounded-2xl border border-border px-5 py-4 text-[15px] font-black text-foreground hover:bg-muted/40"
             >
               취소
             </button>
@@ -866,13 +866,13 @@ export function MessageRoom({
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-[#1C1C1E] rounded-2xl p-5 space-y-4">
-              <p className="text-[15px] font-black text-white">
+            <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+              <p className="text-[15px] font-black text-foreground">
                 {registerMethod === "dm" ? "인스타그램 아이디" : "카카오 오픈채팅 링크"}
               </p>
               {registerMethod === "dm" ? (
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-[14px]">@</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-[14px]">@</span>
                   <input
                     type="text"
                     value={registerValue}
@@ -880,7 +880,7 @@ export function MessageRoom({
                     maxLength={30}
                     placeholder="your_instagram_id"
                     autoFocus
-                    className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-7 pr-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-blue-500 font-mono"
+                    className="w-full bg-muted border border-border rounded-lg pl-7 pr-3 py-2.5 text-[14px] text-foreground focus:outline-none focus:border-blue-500 font-mono"
                   />
                 </div>
               ) : (
@@ -890,7 +890,7 @@ export function MessageRoom({
                   onChange={(e) => setRegisterValue(e.target.value)}
                   placeholder="https://open.kakao.com/..."
                   autoFocus
-                  className="w-full bg-neutral-800 border border-neutral-700 rounded-lg px-3 py-2.5 text-[14px] text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-muted border border-border rounded-lg px-3 py-2.5 text-[14px] text-foreground focus:outline-none focus:border-blue-500"
                 />
               )}
               <label className="flex items-start gap-2.5 cursor-pointer">
@@ -901,21 +901,21 @@ export function MessageRoom({
                   className="mt-0.5 w-4 h-4 accent-white"
                 />
                 <span>
-                  <span className="block text-[13px] text-white font-bold">내 프로필에도 표시하기</span>
-                  <span className="block text-[11px] text-neutral-500">꺼두면 이 대화에서만 공유돼요</span>
+                  <span className="block text-[13px] text-foreground font-bold">내 프로필에도 표시하기</span>
+                  <span className="block text-[11px] text-muted-foreground">꺼두면 이 대화에서만 공유돼요</span>
                 </span>
               </label>
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => setRegisterMethod(null)}
-                  className="flex-1 h-11 rounded-xl border border-neutral-700 text-neutral-300 font-bold text-[14px] hover:bg-neutral-800"
+                  className="flex-1 h-11 rounded-xl border border-border text-foreground/80 font-bold text-[14px] hover:bg-muted"
                 >
                   취소
                 </button>
                 <button
                   onClick={saveAndSendContact}
                   disabled={savingContact || !registerValue.trim()}
-                  className="flex-1 h-11 rounded-xl bg-white text-black font-black text-[14px] hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="flex-1 h-11 rounded-xl bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {savingContact ? "저장 중..." : "저장하고 보내기"}
                 </button>
@@ -936,19 +936,19 @@ export function MessageRoom({
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.75rem)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
               {!!menuMsg.content && (
                 <button
                   onClick={() => startEditMessage(menuMsg)}
-                  className="w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-white hover:bg-neutral-800/40 border-b border-neutral-800/60"
+                  className="w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-foreground hover:bg-muted/40 border-b border-border/60"
                 >
-                  <Pencil className="w-5 h-5 text-neutral-400" />
+                  <Pencil className="w-5 h-5 text-muted-foreground" />
                   수정
                 </button>
               )}
               <button
                 onClick={() => handleDeleteMessage(menuMsg.id)}
-                className="w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-red-400 hover:bg-neutral-800/40"
+                className="w-full flex items-center gap-3 px-5 py-4 text-[15px] font-bold text-red-400 hover:bg-muted/40"
               >
                 <Trash2 className="w-5 h-5" />
                 삭제
@@ -956,7 +956,7 @@ export function MessageRoom({
             </div>
             <button
               onClick={() => setMenuMsg(null)}
-              className="w-full bg-[#1C1C1E] rounded-2xl px-5 py-4 text-[15px] font-black text-white hover:bg-neutral-800/40"
+              className="w-full bg-card rounded-2xl border border-border px-5 py-4 text-[15px] font-black text-foreground hover:bg-muted/40"
             >
               취소
             </button>
@@ -989,18 +989,18 @@ export function MessageRoom({
               className="absolute inset-0 bg-black/60"
               onClick={() => { if (!gateSending) router.back(); }}
             />
-            <div className="relative w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 pb-8 space-y-5 animate-in slide-in-from-bottom-4 duration-200"
+            <div className="relative w-full max-w-lg bg-card rounded-t-3xl p-6 pb-8 space-y-5 animate-in slide-in-from-bottom-4 duration-200"
               style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 2rem)" }}>
               <div className="space-y-2 text-center">
                 <div className="text-[36px]">💬</div>
-                <h2 className="text-[19px] font-black text-white tracking-tight break-keep">{title}</h2>
-                <p className="text-[14px] text-neutral-400 leading-relaxed break-keep">{body}</p>
+                <h2 className="text-[19px] font-black text-foreground tracking-tight break-keep">{title}</h2>
+                <p className="text-[14px] text-muted-foreground leading-relaxed break-keep">{body}</p>
               </div>
               {blocked ? (
                 <button
                   type="button"
                   onClick={() => router.back()}
-                  className="w-full h-13 py-3.5 rounded-2xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 active:scale-[0.99] transition-all"
+                  className="w-full h-13 py-3.5 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px] hover:opacity-90 active:scale-[0.99] transition-all"
                 >
                   뒤로
                 </button>
@@ -1010,7 +1010,7 @@ export function MessageRoom({
                     type="button"
                     onClick={confirmGate}
                     disabled={gateSending}
-                    className="w-full h-13 py-3.5 rounded-2xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 active:scale-[0.99] transition-all disabled:opacity-60"
+                    className="w-full h-13 py-3.5 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px] hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60"
                   >
                     {gateSending ? "시작하는 중…" : cta}
                   </button>
@@ -1018,7 +1018,7 @@ export function MessageRoom({
                     type="button"
                     onClick={() => { if (!gateSending) router.back(); }}
                     disabled={gateSending}
-                    className="w-full h-12 py-3 rounded-2xl bg-neutral-800 text-neutral-300 font-bold text-[14px] hover:bg-neutral-700/60 active:scale-[0.99] transition-all disabled:opacity-60"
+                    className="w-full h-12 py-3 rounded-2xl bg-muted text-foreground/80 font-bold text-[14px] hover:bg-muted/60 active:scale-[0.99] transition-all disabled:opacity-60"
                   >
                     취소
                   </button>

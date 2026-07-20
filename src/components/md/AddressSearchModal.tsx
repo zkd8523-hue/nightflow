@@ -154,16 +154,16 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-end">
-      <div className="w-full bg-[#0A0A0A] rounded-t-3xl border border-neutral-800/50 max-h-[90vh] min-h-[70vh] overflow-hidden flex flex-col">
+      <div className="w-full bg-background rounded-t-3xl border border-border/50 max-h-[90vh] min-h-[70vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-neutral-800/50 flex items-center justify-between sticky top-0 bg-[#0A0A0A] z-20">
+        <div className="px-6 py-4 border-b border-border/50 flex items-center justify-between sticky top-0 bg-background z-20">
           <div className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-green-500" />
-            <h2 className="font-black text-white">주소 검색</h2>
+            <MapPin className="w-5 h-5 text-money" />
+            <h2 className="font-black text-foreground">주소 검색</h2>
           </div>
           <button
             onClick={onClose}
-            className="text-neutral-500 hover:text-white p-1"
+            className="text-muted-foreground hover:text-foreground p-1"
             aria-label="Close"
           >
             <X className="w-6 h-6" />
@@ -171,7 +171,7 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
         </div>
 
         {/* Search Bar */}
-        <div className="px-4 py-4 border-b border-neutral-800/50 bg-[#0A0A0A] sticky top-[60px] z-10">
+        <div className="px-4 py-4 border-b border-border/50 bg-background sticky top-[60px] z-10">
           <div className="flex gap-2">
             <Input
               value={searchQuery}
@@ -181,12 +181,12 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
               }}
               placeholder="주소, 건물명, 장소명 검색"
               autoFocus
-              className="bg-[#1C1C1E] border-neutral-800 h-11 text-white placeholder-neutral-600 rounded-lg flex-1"
+              className="bg-card border-border h-11 text-foreground placeholder-neutral-600 rounded-lg flex-1"
             />
             <button
               onClick={handleSearch}
               disabled={isSearching}
-              className="px-4 h-11 rounded-lg bg-green-500 text-black hover:bg-green-400 disabled:bg-neutral-700 font-bold transition-all flex items-center gap-1"
+              className="px-4 h-11 rounded-lg bg-green-500 text-black hover:bg-green-400 disabled:bg-muted font-bold transition-all flex items-center gap-1"
             >
               {isSearching ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -202,31 +202,31 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
         <div className="flex-1 overflow-hidden flex flex-col">
           {isGeocoding ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 py-12">
-              <Loader2 className="w-8 h-8 text-green-500 animate-spin" />
-              <p className="text-neutral-400 text-sm">주소를 저장하는 중...</p>
+              <Loader2 className="w-8 h-8 text-money animate-spin" />
+              <p className="text-muted-foreground text-sm">주소를 저장하는 중...</p>
             </div>
           ) : searchResults.length > 0 ? (
             <div className="flex flex-col">
               {/* Map — 검색 결과 있을 때만 렌더링 */}
               <div
                 ref={mapContainerRef}
-                className="w-full bg-neutral-900 transition-[height] duration-300"
+                className="w-full bg-card transition-[height] duration-300"
                 style={{ height: mapVisible ? "200px" : "0px", overflow: "hidden" }}
               />
 
               {/* Results List */}
-              <div className="flex-1 overflow-y-auto max-h-[300px] border-t border-neutral-800/50">
+              <div className="flex-1 overflow-y-auto max-h-[300px] border-t border-border/50">
                 {searchResults.map((result, index) => (
                   <button
                     key={index}
                     onClick={() => handleSelectAddress(result)}
-                    className="w-full px-4 py-3 border-b border-neutral-800/50 text-left hover:bg-neutral-900/50 transition-colors flex items-start gap-3 border-l-2 border-l-transparent hover:border-l-green-500"
+                    className="w-full px-4 py-3 border-b border-border/50 text-left hover:bg-card/50 transition-colors flex items-start gap-3 border-l-2 border-l-transparent hover:border-l-green-500"
                   >
-                    <MapPin className="w-4 h-4 text-neutral-500 mt-0.5 flex-shrink-0" />
+                    <MapPin className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-white text-sm font-bold break-words">{result.address}</p>
+                      <p className="text-foreground text-sm font-bold break-words">{result.address}</p>
                       {result.roadAddress && result.roadAddress !== result.address && (
-                        <p className="text-neutral-500 text-xs mt-1">{result.roadAddress}</p>
+                        <p className="text-muted-foreground text-xs mt-1">{result.roadAddress}</p>
                       )}
                     </div>
                   </button>
@@ -236,12 +236,12 @@ export function AddressSearchModal({ isOpen, onClose, onSelectAddress }: Address
           ) : (
             /* 검색 전 안내 — 지도 없이 깔끔하게 */
             <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12 px-6">
-              <div className="w-12 h-12 bg-neutral-800 rounded-2xl flex items-center justify-center">
-                <Search className="w-6 h-6 text-neutral-500" />
+              <div className="w-12 h-12 bg-muted rounded-2xl flex items-center justify-center">
+                <Search className="w-6 h-6 text-muted-foreground" />
               </div>
               <div className="text-center space-y-1">
-                <p className="text-neutral-400 text-sm font-bold">주소 또는 장소명을 검색해주세요</p>
-                <p className="text-neutral-600 text-xs">예: 강남역, 서울시 강남구 테헤란로, 옥타곤</p>
+                <p className="text-muted-foreground text-sm font-bold">주소 또는 장소명을 검색해주세요</p>
+                <p className="text-muted-foreground text-xs">예: 강남역, 서울시 강남구 테헤란로, 옥타곤</p>
               </div>
             </div>
           )}

@@ -397,7 +397,7 @@ export function PartyChatRoom({
       <div className={`mt-1.5 rounded-xl border px-3 py-2 max-w-[240px] ${mine ? "border-black/15 bg-black/5" : "border-white/15 bg-white/5"}`}>
         <p className="text-[13px] font-bold truncate">{o?.club_name ?? "공유된 오퍼"}</p>
         {o && (
-          <p className={`text-[13px] font-black mt-0.5 ${mine ? "text-green-600" : "text-green-400"}`}>
+          <p className={`text-[13px] font-black mt-0.5 ${mine ? "text-money" : "text-money"}`}>
             ₩{o.proposed_price.toLocaleString()}
             {o.table_type && <span className="ml-1.5 text-[11px] font-medium opacity-70">{o.table_type}</span>}
           </p>
@@ -420,8 +420,8 @@ export function PartyChatRoom({
             onClick={() => toggleReaction(m.id, e)}
             className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] leading-none border transition-colors ${
               rx.mine.has(e)
-                ? "bg-white/15 border-white/30 text-white"
-                : "bg-neutral-800 border-transparent text-neutral-300"
+                ? "bg-white/15 border-white/30 text-foreground"
+                : "bg-muted border-transparent text-foreground/80"
             }`}
           >
             <span>{e}</span>
@@ -448,7 +448,7 @@ export function PartyChatRoom({
     if (!club) return content;
     return (
       <>
-        <span className="font-black text-neutral-200">{club}</span>
+        <span className="font-black text-foreground">{club}</span>
         {content.slice(club.length)}
       </>
     );
@@ -465,24 +465,24 @@ export function PartyChatRoom({
   };
 
   return (
-    <div className="max-w-lg mx-auto min-h-dvh bg-[#0A0A0A] flex flex-col">
+    <div className="max-w-lg mx-auto min-h-dvh bg-background flex flex-col">
       {/* 헤더 (고정) */}
-      <div className="sticky top-0 z-30 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-neutral-800">
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
         <header className="flex items-center gap-2 px-3 py-3">
-          <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-neutral-300">
+          <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-foreground/80">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-bold text-white truncate">
-              조각 채팅방 <span className="text-neutral-500 font-medium">{memberCount}</span>
+            <p className="text-[15px] font-bold text-foreground truncate">
+              조각 채팅방 <span className="text-muted-foreground font-medium">{memberCount}</span>
             </p>
-            <p className="text-[11px] text-neutral-500 truncate">
+            <p className="text-[11px] text-muted-foreground truncate">
               {[partyInfo.dateLabel, partyInfo.area].filter(Boolean).join(" · ")}
             </p>
           </div>
           <button
             onClick={() => setDrawerOpen(true)}
-            className="flex items-center gap-1 p-1.5 text-neutral-300"
+            className="flex items-center gap-1 p-1.5 text-foreground/80"
             aria-label="참여자 보기"
           >
             <Users className="w-5 h-5" />
@@ -491,50 +491,50 @@ export function PartyChatRoom({
         {/* 조각 요약 바 — 탭하면 조각 상세로 */}
         <Link
           href={`/flags/${puzzleId}`}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#141416] border-t border-neutral-800/70 active:bg-neutral-900"
+          className="flex items-center gap-2 px-4 py-2.5 bg-background border-t border-border/70 active:bg-card"
         >
           <div className="flex-1 min-w-0">
-            <p className="text-[13px] font-bold text-white truncate">
+            <p className="text-[13px] font-bold text-foreground truncate">
               {[partyInfo.dateLabel, partyInfo.area, participants.find((p) => p.is_leader && p.is_md)?.club_name, `인당 ${partyInfo.perPerson.toLocaleString()}원`]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
-            <p className="text-[12px] text-neutral-400 truncate">
+            <p className="text-[12px] text-muted-foreground truncate">
               현재 {partyInfo.currentCount}/{partyInfo.targetCount}명 모임
             </p>
           </div>
-          <ChevronRight className="w-4 h-4 text-neutral-500 shrink-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
         </Link>
 
         {/* 받은 오퍼 드롭다운 — 멤버 좋아요/싫어요, 방장이 MD 초대. MD에겐 비노출(시크릿오퍼 유지) */}
         {offers.length > 0 && !isMd && (
-          <div className="border-t border-neutral-800/70 bg-[#0F0F11]">
+          <div className="border-t border-border/70 bg-background">
             <button
               onClick={() => setOffersOpen((v) => !v)}
               className="flex items-center justify-between w-full px-4 py-2.5"
             >
-              <span className="text-[13px] font-bold text-white">
-                받은 오퍼 <span className="text-amber-400">{offers.length}</span>건
-                <span className="ml-2 text-[11px] font-medium text-neutral-500">
+              <span className="text-[13px] font-bold text-foreground">
+                받은 오퍼 <span className="text-brand-amber">{offers.length}</span>건
+                <span className="ml-2 text-[11px] font-medium text-muted-foreground">
                   마음에 드는 오퍼에 투표해보세요
                 </span>
               </span>
-              <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${offersOpen ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${offersOpen ? "rotate-180" : ""}`} />
             </button>
             {offersOpen && (
               <ul className="max-h-[40vh] overflow-y-auto px-3 pb-3 space-y-2">
                 {sortedOffers.map((o) => (
                   <li
                     key={o.offer_id}
-                    className={`rounded-xl p-3 border ${o.is_invited ? "border-amber-500/40 bg-amber-500/5" : "border-neutral-800 bg-neutral-900/50"}`}
+                    className={`rounded-xl p-3 border ${o.is_invited ? "border-amber-500/40 bg-amber-500/5" : "border-border bg-card/50"}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-[14px] font-bold text-white truncate">
+                        <p className="text-[14px] font-bold text-foreground truncate">
                           {o.club_id ? (
                             <Link
                               href={`/clubs/${o.club_id}`}
-                              className="hover:text-amber-300 hover:underline"
+                              className="hover:text-brand-amber hover:underline"
                             >
                               {o.club_name ?? "클럽"}
                             </Link>
@@ -542,45 +542,45 @@ export function PartyChatRoom({
                             o.club_name ?? "클럽"
                           )}
                           {o.is_invited && (
-                            <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold align-middle">
+                            <span className="ml-1.5 text-[11px] px-1.5 py-0.5 rounded-full bg-amber-500/20 text-brand-amber font-bold align-middle">
                               초대됨
                             </span>
                           )}
                         </p>
-                        <p className="text-[13px] text-green-400 font-black mt-0.5">
+                        <p className="text-[13px] text-money font-black mt-0.5">
                           ₩{o.proposed_price.toLocaleString()}
-                          {o.table_type && <span className="ml-1.5 text-[11px] text-neutral-500 font-medium">{o.table_type}</span>}
+                          {o.table_type && <span className="ml-1.5 text-[11px] text-muted-foreground font-medium">{o.table_type}</span>}
                         </p>
                       </div>
                     </div>
                     {o.comment && (
-                      <p className="text-[12px] text-neutral-400 mt-1.5 leading-relaxed whitespace-pre-wrap break-words">
+                      <p className="text-[12px] text-muted-foreground mt-1.5 leading-relaxed whitespace-pre-wrap break-words">
                         {o.comment}
                       </p>
                     )}
                     {o.includes?.length > 0 && (
-                      <p className="text-[11px] text-neutral-500 mt-1 truncate">
+                      <p className="text-[11px] text-muted-foreground mt-1 truncate">
                         {o.includes.join(" · ")}
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-2.5">
                       <button
                         onClick={() => vote(o.offer_id, "like")}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-bold transition-colors ${o.my_vote === "like" ? "bg-green-500/20 text-green-400" : "bg-neutral-800 text-neutral-400"}`}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-bold transition-colors ${o.my_vote === "like" ? "bg-green-500/20 text-money" : "bg-muted text-muted-foreground"}`}
                       >
                         <ThumbsUp className="w-3.5 h-3.5" />
                         {o.like_count > 0 && o.like_count}
                       </button>
                       <button
                         onClick={() => vote(o.offer_id, "dislike")}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-bold transition-colors ${o.my_vote === "dislike" ? "bg-red-500/20 text-red-400" : "bg-neutral-800 text-neutral-400"}`}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-bold transition-colors ${o.my_vote === "dislike" ? "bg-red-500/20 text-red-400" : "bg-muted text-muted-foreground"}`}
                       >
                         <ThumbsDown className="w-3.5 h-3.5" />
                         {o.dislike_count > 0 && o.dislike_count}
                       </button>
                       <button
                         onClick={() => handleShareOffer(o.offer_id)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-300 hover:text-white text-[12px] font-bold"
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-foreground/80 hover:text-foreground text-[12px] font-bold"
                         aria-label="채팅에 언급"
                       >
                         <AtSign className="w-3.5 h-3.5" />
@@ -591,19 +591,19 @@ export function PartyChatRoom({
                           <button
                             onClick={handleReleaseMd}
                             disabled={releasing}
-                            className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full bg-neutral-800 text-neutral-300 hover:text-red-400 text-[12px] font-bold disabled:opacity-50"
+                            className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full bg-muted text-foreground/80 hover:text-red-400 text-[12px] font-bold disabled:opacity-50"
                           >
                             {releasing ? "내보내는 중…" : "내보내기"}
                           </button>
                         ) : someInvited ? (
-                          <span className="ml-auto text-[12px] text-neutral-600 px-2 py-1">
+                          <span className="ml-auto text-[12px] text-muted-foreground px-2 py-1">
                             다른 파트너 상담 중
                           </span>
                         ) : (
                           <button
                             onClick={() => handleInvite(o.offer_id)}
                             disabled={invitingId === o.offer_id}
-                            className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full bg-white text-black text-[12px] font-black disabled:opacity-50"
+                            className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full bg-inverse text-inverse-foreground text-[12px] font-black disabled:opacity-50"
                           >
                             <UserPlus className="w-3.5 h-3.5" />
                             {invitingId === o.offer_id ? "초대 중…" : "초대"}
@@ -622,9 +622,9 @@ export function PartyChatRoom({
       {/* 메시지 리스트 */}
       <div className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
         {loading ? (
-          <p className="text-center text-[13px] text-neutral-600 mt-10">불러오는 중…</p>
+          <p className="text-center text-[13px] text-muted-foreground mt-10">불러오는 중…</p>
         ) : shownMessages.length === 0 ? (
-          <p className="text-center text-[13px] text-neutral-600 mt-10">
+          <p className="text-center text-[13px] text-muted-foreground mt-10">
             단체채팅이 열렸어요. 첫 인사를 건네보세요 👋
           </p>
         ) : (
@@ -639,13 +639,13 @@ export function PartyChatRoom({
                 <Fragment key={m.id}>
                   {showDate && (
                     <div className="flex justify-center my-3">
-                      <span className="text-[11px] text-neutral-400 bg-neutral-800/70 rounded-full px-3 py-1">
+                      <span className="text-[11px] text-muted-foreground bg-muted/70 rounded-full px-3 py-1">
                         {formatDateDivider(d)}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-center my-1">
-                    <span className="text-[11px] text-neutral-500 bg-neutral-900/60 rounded-full px-3 py-1">
+                    <span className="text-[11px] text-muted-foreground bg-card/60 rounded-full px-3 py-1">
                       {renderSystemContent(m.content)}
                     </span>
                   </div>
@@ -674,7 +674,7 @@ export function PartyChatRoom({
               <Fragment key={m.id}>
                 {showDate && (
                   <div className="flex justify-center my-3">
-                    <span className="text-[11px] text-neutral-400 bg-neutral-800/70 rounded-full px-3 py-1">
+                    <span className="text-[11px] text-muted-foreground bg-muted/70 rounded-full px-3 py-1">
                       {formatDateDivider(d)}
                     </span>
                   </div>
@@ -686,14 +686,14 @@ export function PartyChatRoom({
                         <div className="hidden group-hover:flex items-center gap-0.5 self-center shrink-0">
                           <button
                             onClick={() => setReplyTarget(m)}
-                            className="p-1 text-neutral-500 hover:text-white"
+                            className="p-1 text-muted-foreground hover:text-foreground"
                             aria-label="답글"
                           >
                             <CornerDownRight className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setMenuMsg(m)}
-                            className="p-1 text-neutral-500 hover:text-white"
+                            className="p-1 text-muted-foreground hover:text-foreground"
                             aria-label="반응"
                           >
                             <SmilePlus className="w-4 h-4" />
@@ -727,10 +727,10 @@ export function PartyChatRoom({
                         {(unread > 0 || showTime) && (
                           <div className="flex flex-col items-end justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
                             {unread > 0 && (
-                              <span className="text-[11px] font-bold text-amber-400">{unread}</span>
+                              <span className="text-[11px] font-bold text-brand-amber">{unread}</span>
                             )}
                             {showTime && (
-                              <span className="text-[10px] text-neutral-500 whitespace-nowrap">
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                                 {formatTime(d)}
                               </span>
                             )}
@@ -747,13 +747,13 @@ export function PartyChatRoom({
                       <button
                         type="button"
                         onClick={() => m.sender_id && router.push(`/u/${m.sender_id}`)}
-                        className="relative w-8 h-8 rounded-full overflow-hidden bg-neutral-800 shrink-0 mt-4"
+                        className="relative w-8 h-8 rounded-full overflow-hidden bg-muted shrink-0 mt-4"
                         aria-label={`${senderName} 프로필 보기`}
                       >
                         {m.sender?.profile_image ? (
                           <Image src={m.sender.profile_image} alt="" fill className="object-cover" sizes="32px" />
                         ) : (
-                          <div className="w-full h-full grid place-items-center text-[12px] font-bold text-neutral-400">
+                          <div className="w-full h-full grid place-items-center text-[12px] font-bold text-muted-foreground">
                             {senderName.slice(0, 1)}
                           </div>
                         )}
@@ -763,7 +763,7 @@ export function PartyChatRoom({
                     )}
                     <div className="min-w-0 flex flex-col items-start">
                       {firstOfGroup && (
-                        <span className="text-[12px] text-neutral-400 mb-0.5 ml-0.5">{senderName}</span>
+                        <span className="text-[12px] text-muted-foreground mb-0.5 ml-0.5">{senderName}</span>
                       )}
                       <div className="flex items-end gap-1.5 max-w-full group">
                         <SwipeToReply isMine={false} onReply={() => setReplyTarget(m)} onMoveCancel={cancelPress}>
@@ -776,7 +776,7 @@ export function PartyChatRoom({
                           onPointerDown={() => startPress(m)}
                           onPointerUp={cancelPress}
                           onPointerLeave={cancelPress}
-                          className="px-3 py-2 rounded-2xl bg-[#1C1C1E] text-white rounded-bl-md select-none"
+                          className="px-3 py-2 rounded-2xl bg-card text-foreground rounded-bl-md select-none"
                         >
                           {renderQuoted(m)}
                           {/* 사진 → 텍스트 순서 (와글·DM과 동일) */}
@@ -794,10 +794,10 @@ export function PartyChatRoom({
                         {(unread > 0 || showTime) && (
                           <div className="flex flex-col items-start justify-end shrink-0 mb-0.5 gap-0.5 leading-none">
                             {unread > 0 && (
-                              <span className="text-[11px] font-bold text-amber-400">{unread}</span>
+                              <span className="text-[11px] font-bold text-brand-amber">{unread}</span>
                             )}
                             {showTime && (
-                              <span className="text-[10px] text-neutral-500 whitespace-nowrap">
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                                 {formatTime(d)}
                               </span>
                             )}
@@ -806,14 +806,14 @@ export function PartyChatRoom({
                         <div className="hidden group-hover:flex items-center gap-0.5 self-center shrink-0">
                           <button
                             onClick={() => setReplyTarget(m)}
-                            className="p-1 text-neutral-500 hover:text-white"
+                            className="p-1 text-muted-foreground hover:text-foreground"
                             aria-label="답글"
                           >
                             <CornerDownRight className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => setMenuMsg(m)}
-                            className="p-1 text-neutral-500 hover:text-white"
+                            className="p-1 text-muted-foreground hover:text-foreground"
                             aria-label="반응"
                           >
                             <SmilePlus className="w-4 h-4" />
@@ -833,27 +833,27 @@ export function PartyChatRoom({
 
       {/* 입력창 / 상태 안내 */}
       {removed ? (
-        <div className="px-4 py-4 border-t border-neutral-800 text-center text-[13px] text-neutral-500">
+        <div className="px-4 py-4 border-t border-border text-center text-[13px] text-muted-foreground">
           이 조각에서 나가게 되어 더 이상 대화할 수 없어요.
         </div>
       ) : readOnly ? (
-        <div className="px-4 py-4 border-t border-neutral-800 text-center text-[13px] text-neutral-500">
+        <div className="px-4 py-4 border-t border-border text-center text-[13px] text-muted-foreground">
           종료된 조각이에요. 대화를 더 보낼 수 없어요.
         </div>
       ) : (
-        <div className="sticky bottom-0 bg-[#0A0A0A] border-t border-neutral-800" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="sticky bottom-0 bg-background border-t border-border" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
           {/* 답장 대상 미리보기 */}
           {replyTarget && (
             <div className="flex items-center gap-2 px-4 pt-2.5">
               <div className="flex-1 min-w-0 pl-2 border-l-2 border-white/30">
-                <p className="text-[11px] font-bold text-neutral-300 truncate">
+                <p className="text-[11px] font-bold text-foreground/80 truncate">
                   {replyTarget.sender_id === me.id ? "나" : replyTarget.sender?.display_name ?? "멤버"}에게 답장
                 </p>
-                <p className="text-[11px] text-neutral-500 truncate">
+                <p className="text-[11px] text-muted-foreground truncate">
                   {replyTarget.content || (replyTarget.media?.length ? "사진" : "")}
                 </p>
               </div>
-              <button onClick={() => setReplyTarget(null)} className="p-1 text-neutral-500 shrink-0">
+              <button onClick={() => setReplyTarget(null)} className="p-1 text-muted-foreground shrink-0">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -866,7 +866,7 @@ export function PartyChatRoom({
                   key={p}
                   onClick={() => handleSend(p)}
                   disabled={sending}
-                  className="shrink-0 rounded-full border border-neutral-700 bg-neutral-900 px-3 py-1.5 text-[13px] text-neutral-200 whitespace-nowrap active:bg-neutral-800 disabled:opacity-40"
+                  className="shrink-0 rounded-full border border-border bg-card px-3 py-1.5 text-[13px] text-foreground/90 whitespace-nowrap active:bg-muted disabled:opacity-40"
                 >
                   {p}
                 </button>
@@ -876,7 +876,7 @@ export function PartyChatRoom({
           {media.length > 0 && (
             <div className="flex gap-2 px-4 pt-3">
               {media.map((m, i) => (
-                <div key={i} className="relative w-14 h-14 rounded-lg overflow-hidden bg-neutral-900">
+                <div key={i} className="relative w-14 h-14 rounded-lg overflow-hidden bg-card">
                   {m.type === "image" ? (
                     <Image src={m.url} alt="" fill className="object-cover" sizes="56px" />
                   ) : (
@@ -886,7 +886,7 @@ export function PartyChatRoom({
                     onClick={() => setMedia((prev) => prev.filter((_, idx) => idx !== i))}
                     className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/70 grid place-items-center"
                   >
-                    <X className="w-2.5 h-2.5 text-white" />
+                    <X className="w-2.5 h-2.5 text-foreground" />
                   </button>
                 </div>
               ))}
@@ -906,12 +906,12 @@ export function PartyChatRoom({
               }}
               rows={1}
               placeholder="메시지 보내기"
-              className="flex-1 min-w-0 resize-none bg-[#1C1C1E] text-white text-[14px] rounded-2xl px-4 py-2.5 outline-none placeholder:text-neutral-600 max-h-28"
+              className="flex-1 min-w-0 resize-none bg-card text-foreground text-[14px] rounded-2xl border border-border px-4 py-2.5 outline-none placeholder:text-muted-foreground max-h-28"
             />
             <button
               onClick={() => handleSend()}
               disabled={sending || (input.trim().length === 0 && media.length === 0)}
-              className="p-2.5 rounded-full bg-white text-black shrink-0 disabled:opacity-30"
+              className="p-2.5 rounded-full bg-inverse text-inverse-foreground shrink-0 disabled:opacity-30"
               aria-label="전송"
             >
               <Send className="w-4 h-4" />
@@ -927,13 +927,13 @@ export function PartyChatRoom({
           onClick={() => setDrawerOpen(false)}
         >
           <div
-            className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl overflow-hidden"
+            className="w-full max-w-lg bg-card rounded-t-3xl overflow-hidden"
             style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 pt-4 pb-2">
-              <p className="text-[15px] font-black text-white">참여자 {memberCount}</p>
-              <button onClick={() => setDrawerOpen(false)} className="p-1 text-neutral-400">
+              <p className="text-[15px] font-black text-foreground">참여자 {memberCount}</p>
+              <button onClick={() => setDrawerOpen(false)} className="p-1 text-muted-foreground">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -944,32 +944,32 @@ export function PartyChatRoom({
                 <li key={p.id} className="flex items-center gap-1 px-1">
                   <Link
                     href={`/u/${p.id}`}
-                    className="flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-neutral-800/60 min-w-0 flex-1"
+                    className="flex items-center gap-3 px-2 py-2.5 rounded-xl active:bg-muted/60 min-w-0 flex-1"
                   >
-                    <div className="relative w-9 h-9 rounded-full overflow-hidden bg-neutral-800 shrink-0">
+                    <div className="relative w-9 h-9 rounded-full overflow-hidden bg-muted shrink-0">
                       {p.profile_image ? (
                         <Image src={p.profile_image} alt="" fill className="object-cover" sizes="36px" />
                       ) : (
-                        <div className="w-full h-full grid place-items-center text-[13px] font-bold text-neutral-400">
+                        <div className="w-full h-full grid place-items-center text-[13px] font-bold text-muted-foreground">
                           {(p.display_name ?? "?").slice(0, 1)}
                         </div>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[14px] font-bold text-white truncate">
+                      <p className="text-[14px] font-bold text-foreground truncate">
                         {p.display_name ?? "멤버"}
-                        {p.id === me.id && <span className="ml-1 text-[11px] text-amber-400">나</span>}
+                        {p.id === me.id && <span className="ml-1 text-[11px] text-brand-amber">나</span>}
                       </p>
                       {p.is_md && p.club_name && (
-                        <p className="text-[11px] text-green-400 font-medium truncate">{p.club_name}</p>
+                        <p className="text-[11px] text-money font-medium truncate">{p.club_name}</p>
                       )}
                       {p.guest_count > 0 && (
-                        <p className="text-[11px] text-neutral-500">+{p.guest_count}명 동행</p>
+                        <p className="text-[11px] text-muted-foreground">+{p.guest_count}명 동행</p>
                       )}
                     </div>
                   </Link>
                   {p.is_leader ? (
-                    <span className={`shrink-0 mr-2 text-[11px] px-2 py-0.5 rounded-full font-bold ${p.is_md ? "bg-blue-500/15 text-blue-400" : "bg-amber-500/15 text-amber-400"}`}>
+                    <span className={`shrink-0 mr-2 text-[11px] px-2 py-0.5 rounded-full font-bold ${p.is_md ? "bg-blue-500/15 text-blue-400" : "bg-amber-500/15 text-brand-amber"}`}>
                       {p.is_md ? "파트너" : "방장"}
                     </span>
                   ) : p.is_md ? (
@@ -979,7 +979,7 @@ export function PartyChatRoom({
                   ) : canKick ? (
                     <button
                       onClick={() => { setKickReason(""); setKickTarget(p); }}
-                      className="shrink-0 mr-2 text-[12px] px-2.5 py-1 rounded-full text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                      className="shrink-0 mr-2 text-[12px] px-2.5 py-1 rounded-full text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
                     >
                       내보내기
                     </button>
@@ -999,21 +999,21 @@ export function PartyChatRoom({
           onClick={() => !kicking && setKickTarget(null)}
         >
           <div
-            className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-5 space-y-4"
+            className="w-full max-w-lg bg-card rounded-t-3xl p-5 space-y-4"
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="space-y-1.5">
-              <p className="text-[16px] font-black text-white">
+              <p className="text-[16px] font-black text-foreground">
                 {kickTarget.display_name ?? "멤버"}님을 내보낼까요?
               </p>
-              <p className="text-[13px] text-neutral-400 leading-relaxed">
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
                 내보내면 이 조각과 단체채팅에서 나가게 되고, <br />
                 다시 합류할 수 없어요.
               </p>
             </div>
             <div className="space-y-1.5">
-              <label className="text-[12px] text-neutral-500">
+              <label className="text-[12px] text-muted-foreground">
                 한마디 (선택) · 상대에게만 전달돼요
               </label>
               <textarea
@@ -1022,14 +1022,14 @@ export function PartyChatRoom({
                 rows={2}
                 maxLength={100}
                 placeholder="예: 인원이 맞지 않아 부득이하게 조정했어요"
-                className="w-full resize-none bg-neutral-900 text-white text-[14px] rounded-xl px-3.5 py-2.5 outline-none placeholder:text-neutral-600"
+                className="w-full resize-none bg-card text-foreground text-[14px] rounded-xl border border-border px-3.5 py-2.5 outline-none placeholder:text-muted-foreground"
               />
             </div>
             <div className="flex gap-2">
               <button
                 onClick={() => setKickTarget(null)}
                 disabled={kicking}
-                className="flex-1 py-3 rounded-xl bg-neutral-800 text-white font-bold text-[14px] disabled:opacity-50"
+                className="flex-1 py-3 rounded-xl bg-muted text-foreground font-bold text-[14px] disabled:opacity-50"
               >
                 취소
               </button>
@@ -1057,7 +1057,7 @@ export function PartyChatRoom({
             onClick={(e) => e.stopPropagation()}
           >
             {/* 이모지 반응 */}
-            <div className="flex items-center justify-around bg-[#1C1C1E] rounded-2xl px-2 py-3">
+            <div className="flex items-center justify-around bg-card rounded-2xl border border-border px-2 py-3">
               {CHAT_REACTION_EMOJIS.map((e) => {
                 const mine = summaries.get(menuMsg.id)?.mine.has(e);
                 return (
@@ -1074,16 +1074,16 @@ export function PartyChatRoom({
             {/* 답글 */}
             <button
               onClick={() => { setReplyTarget(menuMsg); setMenuMsg(null); }}
-              className="w-full flex items-center gap-3 bg-[#1C1C1E] rounded-2xl px-5 py-4 text-[15px] font-bold text-white hover:bg-neutral-800/40"
+              className="w-full flex items-center gap-3 bg-card rounded-2xl border border-border px-5 py-4 text-[15px] font-bold text-foreground hover:bg-muted/40"
             >
-              <CornerDownRight className="w-5 h-5 text-neutral-400" />
+              <CornerDownRight className="w-5 h-5 text-muted-foreground" />
               답글
             </button>
             {/* 본인 메시지 삭제 */}
             {menuMsg.sender_id === me.id && (
               <button
                 onClick={() => handleDeleteMessage(menuMsg)}
-                className="w-full flex items-center gap-3 bg-[#1C1C1E] rounded-2xl px-5 py-4 text-[15px] font-bold text-red-400 hover:bg-neutral-800/40"
+                className="w-full flex items-center gap-3 bg-card rounded-2xl border border-border px-5 py-4 text-[15px] font-bold text-red-400 hover:bg-muted/40"
               >
                 <Trash2 className="w-5 h-5" />
                 삭제
@@ -1091,7 +1091,7 @@ export function PartyChatRoom({
             )}
             <button
               onClick={() => setMenuMsg(null)}
-              className="w-full bg-[#1C1C1E] rounded-2xl px-5 py-4 text-[15px] font-black text-white hover:bg-neutral-800/40"
+              className="w-full bg-card rounded-2xl border border-border px-5 py-4 text-[15px] font-black text-foreground hover:bg-muted/40"
             >
               취소
             </button>
@@ -1103,14 +1103,14 @@ export function PartyChatRoom({
       {showConsentGate && (
         <div className="fixed inset-0 z-[80] bg-black/80 flex items-end justify-center">
           <div
-            className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 space-y-5"
+            className="w-full max-w-lg bg-card rounded-t-3xl p-6 space-y-5"
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
           >
             <div className="space-y-2 text-center">
               <div className="text-[34px] leading-none">🤝</div>
-              <p className="text-[19px] font-black text-white">상담을 시작할까요?</p>
-              <p className="text-[14px] text-neutral-300">
-                수락 시 <span className="text-amber-400 font-bold">{PARTY_MATCH_CREDIT_COST}크레딧</span>이 소모돼요
+              <p className="text-[19px] font-black text-foreground">상담을 시작할까요?</p>
+              <p className="text-[14px] text-foreground/80">
+                수락 시 <span className="text-brand-amber font-bold">{PARTY_MATCH_CREDIT_COST}크레딧</span>이 소모돼요
               </p>
             </div>
 
@@ -1118,14 +1118,14 @@ export function PartyChatRoom({
               <button
                 onClick={handleStartConsult}
                 disabled={consentBusy}
-                className="w-full py-4 rounded-2xl bg-white text-black font-black text-[16px] disabled:opacity-50 active:scale-[0.98] transition-all"
+                className="w-full py-4 rounded-2xl bg-inverse text-inverse-foreground font-black text-[16px] disabled:opacity-50 active:scale-[0.98] transition-all"
               >
                 {consentBusy ? "처리 중…" : "상담 시작"}
               </button>
               <button
                 onClick={() => setDeclineConfirm(true)}
                 disabled={consentBusy}
-                className="w-full py-3 rounded-2xl text-[14px] text-neutral-400 hover:text-red-400 font-bold disabled:opacity-50 transition-colors"
+                className="w-full py-3 rounded-2xl text-[14px] text-muted-foreground hover:text-red-400 font-bold disabled:opacity-50 transition-colors"
               >
                 거절 (오퍼 철회)
               </button>
@@ -1138,12 +1138,12 @@ export function PartyChatRoom({
       {declineConfirm && (
         <div className="fixed inset-0 z-[90] bg-black/80 flex items-end justify-center">
           <div
-            className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 space-y-5"
+            className="w-full max-w-lg bg-card rounded-t-3xl p-6 space-y-5"
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
           >
             <div className="space-y-2 text-center">
-              <p className="text-[19px] font-black text-white">정말 거절할까요?</p>
-              <p className="text-[14px] text-neutral-300">거절 시 오퍼가 철회됩니다.</p>
+              <p className="text-[19px] font-black text-foreground">정말 거절할까요?</p>
+              <p className="text-[14px] text-foreground/80">거절 시 오퍼가 철회됩니다.</p>
             </div>
             <div className="space-y-2">
               <button
@@ -1156,7 +1156,7 @@ export function PartyChatRoom({
               <button
                 onClick={() => setDeclineConfirm(false)}
                 disabled={consentBusy}
-                className="w-full py-3 rounded-2xl text-[14px] text-neutral-400 hover:text-white font-bold disabled:opacity-50 transition-colors"
+                className="w-full py-3 rounded-2xl text-[14px] text-muted-foreground hover:text-foreground font-bold disabled:opacity-50 transition-colors"
               >
                 돌아가기
               </button>

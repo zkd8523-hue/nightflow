@@ -38,8 +38,8 @@ function formatDate(iso: string | null): string {
 
 const TYPE_META: Record<string, { label: string; cls: string; Icon: typeof Instagram }> = {
   instagram: { label: "인스타", cls: "text-pink-300 bg-pink-500/10", Icon: Instagram },
-  openchat: { label: "오픈채팅", cls: "text-green-300 bg-green-500/10", Icon: MessageCircle },
-  copy_message: { label: "문의복사", cls: "text-amber-300 bg-amber-500/10", Icon: Copy },
+  openchat: { label: "오픈채팅", cls: "text-money bg-green-500/10", Icon: MessageCircle },
+  copy_message: { label: "문의복사", cls: "text-brand-amber bg-amber-500/10", Icon: Copy },
 };
 
 export function HotdealClicksTable({ rows, clickersBySlot, anonBySlot }: Props) {
@@ -52,7 +52,7 @@ export function HotdealClicksTable({ rows, clickersBySlot, anonBySlot }: Props) 
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-neutral-900 text-neutral-500 text-[11px] uppercase tracking-wider">
+        <thead className="bg-card text-muted-foreground text-[11px] uppercase tracking-wider">
           <tr>
             <th className="text-left px-4 py-3 font-bold">클럽</th>
             <th className="text-left px-4 py-3 font-bold">지역</th>
@@ -68,7 +68,7 @@ export function HotdealClicksTable({ rows, clickersBySlot, anonBySlot }: Props) 
         <tbody className="divide-y divide-neutral-800">
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={9} className="text-center py-12 text-neutral-500">
+              <td colSpan={9} className="text-center py-12 text-muted-foreground">
                 해당 주차에 등록된 게스트 간판이 없습니다.
               </td>
             </tr>
@@ -83,15 +83,15 @@ export function HotdealClicksTable({ rows, clickersBySlot, anonBySlot }: Props) 
                   <tr
                     key={r.slot_id}
                     onClick={() => hasDetail && toggle(r.slot_id)}
-                    className={`hover:bg-neutral-900/50 ${hasDetail ? "cursor-pointer" : ""}`}
+                    className={`hover:bg-card/50 ${hasDetail ? "cursor-pointer" : ""}`}
                   >
-                    <td className="px-4 py-3 font-bold text-white">
+                    <td className="px-4 py-3 font-bold text-foreground">
                       <span className="inline-flex items-center gap-1.5">
                         {hasDetail ? (
                           isOpen ? (
-                            <ChevronDown className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                           ) : (
-                            <ChevronRight className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                           )
                         ) : (
                           <span className="w-3.5 shrink-0" />
@@ -99,23 +99,23 @@ export function HotdealClicksTable({ rows, clickersBySlot, anonBySlot }: Props) 
                         {r.club_name ?? "-"}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-neutral-400">{r.club_area ?? "-"}</td>
-                    <td className="px-4 py-3 text-neutral-300">
+                    <td className="px-4 py-3 text-muted-foreground">{r.club_area ?? "-"}</td>
+                    <td className="px-4 py-3 text-foreground/80">
                       {r.md_name ?? "-"}
                       {r.md_instagram && (
-                        <span className="text-neutral-500 text-[11px] ml-1">@{r.md_instagram}</span>
+                        <span className="text-muted-foreground text-[11px] ml-1">@{r.md_instagram}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right font-bold text-pink-300">
                       {Number(r.instagram_clicks || 0).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-green-300">
+                    <td className="px-4 py-3 text-right font-bold text-money">
                       {Number(r.openchat_clicks || 0).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold text-amber-300">
+                    <td className="px-4 py-3 text-right font-bold text-brand-amber">
                       {Number(r.copy_message_clicks || 0).toLocaleString()}
                     </td>
-                    <td className="px-4 py-3 text-right font-black text-white">
+                    <td className="px-4 py-3 text-right font-black text-foreground">
                       {Number(r.total_clicks || 0).toLocaleString()}
                     </td>
                     <td
@@ -124,22 +124,22 @@ export function HotdealClicksTable({ rows, clickersBySlot, anonBySlot }: Props) 
                     >
                       {Number(r.unique_users || 0).toLocaleString()}
                       {Number(r.unique_clickers || 0) > Number(r.unique_users || 0) && (
-                        <span className="text-neutral-500 text-[10px] ml-0.5">+익명</span>
+                        <span className="text-muted-foreground text-[10px] ml-0.5">+익명</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right text-neutral-500 text-[11px]">
+                    <td className="px-4 py-3 text-right text-muted-foreground text-[11px]">
                       {formatDate(r.last_clicked_at)}
                     </td>
                   </tr>
                   {isOpen && (
-                    <tr key={`${r.slot_id}-detail`} className="bg-neutral-950/60">
+                    <tr key={`${r.slot_id}-detail`} className="bg-background/60">
                       <td colSpan={9} className="px-6 py-4">
                         <div className="space-y-2">
-                          <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider">
+                          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                             클릭한 유저 ({clickers.length}명{anon > 0 ? ` + 비로그인 ${anon}` : ""})
                           </p>
                           {clickers.length === 0 ? (
-                            <p className="text-[12px] text-neutral-600">
+                            <p className="text-[12px] text-muted-foreground">
                               로그인 유저 클릭이 없습니다 (비로그인 {anon}건).
                             </p>
                           ) : (
@@ -147,12 +147,12 @@ export function HotdealClicksTable({ rows, clickersBySlot, anonBySlot }: Props) 
                               {clickers.map((c) => (
                                 <div
                                   key={c.userId}
-                                  className="flex items-center gap-3 bg-neutral-900 rounded-lg px-3 py-2"
+                                  className="flex items-center gap-3 bg-card rounded-lg px-3 py-2"
                                 >
                                   <div className="flex-1 min-w-0">
-                                    <span className="text-[13px] font-bold text-white">{c.name}</span>
+                                    <span className="text-[13px] font-bold text-foreground">{c.name}</span>
                                     {c.instagram && (
-                                      <span className="text-neutral-500 text-[11px] ml-1.5">
+                                      <span className="text-muted-foreground text-[11px] ml-1.5">
                                         @{c.instagram}
                                       </span>
                                     )}
@@ -173,7 +173,7 @@ export function HotdealClicksTable({ rows, clickersBySlot, anonBySlot }: Props) 
                                       );
                                     })}
                                   </div>
-                                  <span className="text-neutral-600 text-[10px] shrink-0 w-20 text-right">
+                                  <span className="text-muted-foreground text-[10px] shrink-0 w-20 text-right">
                                     {formatDate(c.lastClickedAt)}
                                   </span>
                                 </div>

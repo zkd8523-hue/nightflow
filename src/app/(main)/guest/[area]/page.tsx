@@ -212,10 +212,10 @@ export default async function GuestAreaPage({ params }: PageProps) {
       />
       {/* SEO H1 */}
       <header className="mb-6 space-y-2">
-        <h1 className="text-2xl font-black text-white tracking-tight">
+        <h1 className="text-2xl font-black text-foreground tracking-tight">
           {area} 클럽 게스트
         </h1>
-        <p className="text-sm text-neutral-400 leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed">
           {area} 클럽 무료입장·게스트 명단·이번 주 게스트 간판 정보
         </p>
       </header>
@@ -240,9 +240,9 @@ export default async function GuestAreaPage({ params }: PageProps) {
       {/* 게스트 간판 있는 클럽 */}
       {clubsWithGuest.length > 0 && (
         <section className="space-y-3 mb-8">
-          <h2 className="text-base font-bold text-white">
+          <h2 className="text-base font-bold text-foreground">
             이번 주 {area} 게스트 간판
-            <span className="text-neutral-500 text-sm font-normal ml-2">
+            <span className="text-muted-foreground text-sm font-normal ml-2">
               ({clubsWithGuest.length}곳)
             </span>
           </h2>
@@ -257,10 +257,10 @@ export default async function GuestAreaPage({ params }: PageProps) {
                 <li key={c.id}>
                   <Link
                     href={`/clubs/${c.id}`}
-                    className="block bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden hover:bg-neutral-900 transition-colors"
+                    className="block bg-card border border-border rounded-2xl overflow-hidden hover:bg-card transition-colors"
                   >
                     <div className="flex gap-3 p-3">
-                      <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-neutral-900">
+                      <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-card">
                         {c.thumbnail_url ? (
                           <Image
                             src={c.thumbnail_url}
@@ -271,7 +271,7 @@ export default async function GuestAreaPage({ params }: PageProps) {
                           />
                         ) : (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-neutral-700 text-lg font-black">
+                            <span className="text-muted-foreground text-lg font-black">
                               {display.charAt(0)}
                             </span>
                           </div>
@@ -279,26 +279,26 @@ export default async function GuestAreaPage({ params }: PageProps) {
                         {favCount > 0 && (
                           <div className="absolute bottom-1 right-1 flex items-center gap-0.5 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded-full">
                             <Heart className="w-2.5 h-2.5 fill-red-500 text-red-500" />
-                            <span className="text-white text-[9px] font-bold">
+                            <span className="text-foreground text-[9px] font-bold">
                               {formatCount(favCount)}
                             </span>
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
-                        <p className="text-white font-bold text-[15px] truncate">
+                        <p className="text-foreground font-bold text-[15px] truncate">
                           {area} {display}
                         </p>
-                        <p className="text-neutral-500 text-[11px] truncate">
+                        <p className="text-muted-foreground text-[11px] truncate">
                           {c.name}
                         </p>
                         <ul className="space-y-0.5 mt-1">
                           {entries.slice(0, 3).map((e) => (
                             <li
                               key={e.dow}
-                              className="text-[11px] text-neutral-300 truncate"
+                              className="text-[11px] text-foreground/80 truncate"
                             >
-                              <span className="text-amber-400 font-bold">
+                              <span className="text-brand-amber font-bold">
                                 {DOW_LABELS[e.dow]}
                               </span>{" "}
                               {e.text}
@@ -318,13 +318,13 @@ export default async function GuestAreaPage({ params }: PageProps) {
       {/* 게스트 간판 없는 클럽 (영구 콘텐츠) */}
       {clubsWithoutGuest.length > 0 && (
         <section className="space-y-3 mb-8">
-          <h2 className="text-base font-bold text-white">
+          <h2 className="text-base font-bold text-foreground">
             {area} 클럽
-            <span className="text-neutral-500 text-sm font-normal ml-2">
+            <span className="text-muted-foreground text-sm font-normal ml-2">
               ({clubsWithoutGuest.length}곳)
             </span>
           </h2>
-          <p className="text-[12px] text-neutral-500 leading-relaxed">
+          <p className="text-[12px] text-muted-foreground leading-relaxed">
             이번 주 게스트 간판이 등록되지 않은 {area} 클럽. 클럽을 클릭해
             상세 정보를 확인하세요.
           </p>
@@ -338,9 +338,9 @@ export default async function GuestAreaPage({ params }: PageProps) {
                 <li key={c.id}>
                   <Link
                     href={`/clubs/${c.id}`}
-                    className="block bg-[#1C1C1E] border border-neutral-800 rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors"
+                    className="block bg-card border border-border rounded-xl overflow-hidden hover:bg-card transition-colors"
                   >
-                    <div className="relative w-full aspect-[4/3] bg-neutral-900">
+                    <div className="relative w-full aspect-[4/3] bg-card border border-border">
                       {c.thumbnail_url ? (
                         <Image
                           src={c.thumbnail_url}
@@ -351,7 +351,7 @@ export default async function GuestAreaPage({ params }: PageProps) {
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-neutral-700 text-2xl font-black">
+                          <span className="text-muted-foreground text-2xl font-black">
                             {display.charAt(0)}
                           </span>
                         </div>
@@ -359,17 +359,17 @@ export default async function GuestAreaPage({ params }: PageProps) {
                       {favCount > 0 && (
                         <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-full">
                           <Heart className="w-3 h-3 fill-red-500 text-red-500" />
-                          <span className="text-white text-[11px] font-bold">
+                          <span className="text-foreground text-[11px] font-bold">
                             {formatCount(favCount)}
                           </span>
                         </div>
                       )}
                     </div>
                     <div className="px-3 py-2">
-                      <p className="text-white font-bold text-sm truncate">
+                      <p className="text-foreground font-bold text-sm truncate">
                         {display}
                       </p>
-                      <p className="text-neutral-500 text-[10px] mt-0.5 truncate">
+                      <p className="text-muted-foreground text-[10px] mt-0.5 truncate">
                         {c.name}
                       </p>
                     </div>
@@ -386,7 +386,7 @@ export default async function GuestAreaPage({ params }: PageProps) {
         <Link href="/">
           <Button
             variant="ghost"
-            className="w-full bg-neutral-900 text-white font-bold rounded-2xl h-12 hover:bg-neutral-800"
+            className="w-full bg-card text-foreground font-bold rounded-2xl border border-border h-12 hover:bg-muted"
           >
             {area} 클럽 더 보기
             <ArrowRight className="w-4 h-4 ml-1" />

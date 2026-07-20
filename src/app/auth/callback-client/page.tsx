@@ -46,7 +46,7 @@ function CallbackClient() {
   }, [params, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] text-white">
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
       <p className="text-sm">로그인 처리 중...</p>
     </div>
   );
@@ -54,7 +54,7 @@ function CallbackClient() {
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0A0A0A]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <CallbackClient />
     </Suspense>
   );

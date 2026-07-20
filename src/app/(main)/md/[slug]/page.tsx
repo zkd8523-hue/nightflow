@@ -80,30 +80,30 @@ export default async function MDPublicProfilePage({
     const displayName = (mdUser as { display_name?: string | null }).display_name ?? mdUser.name ?? "파트너";
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] pb-20">
+        <div className="min-h-screen bg-background pb-20">
             {/* Profile Header */}
-            <div className="bg-gradient-to-b from-neutral-900 to-[#0A0A0A] pt-14 pb-10 px-6 text-center">
+            <div className="bg-gradient-to-b from-neutral-900 to-background pt-14 pb-10 px-6 text-center">
                 <ProfileAvatar
                     src={mdUser.profile_image}
                     alt={displayName}
-                    fallback={<User className="w-10 h-10 text-neutral-600" />}
-                    className="w-24 h-24 bg-neutral-800 rounded-full mx-auto mb-5 border-4 border-[#1C1C1E] shadow-2xl"
+                    fallback={<User className="w-10 h-10 text-muted-foreground" />}
+                    className="w-24 h-24 bg-muted rounded-full mx-auto mb-5 border-4 border-card shadow-2xl"
                 />
 
                 <div className="space-y-1.5">
                     <div className="flex items-center justify-center gap-2">
-                        <h1 className="text-[22px] font-black text-white tracking-tight">{displayName} 파트너</h1>
+                        <h1 className="text-[22px] font-black text-foreground tracking-tight">{displayName} 파트너</h1>
                         <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30 font-black px-2 py-0.5 h-auto text-[10px] tracking-wider">
                             <ShieldCheck className="w-3 h-3 mr-0.5" /> 인증
                         </Badge>
                     </div>
-                    <p className="text-neutral-500 text-[12px] font-medium">NightFlow 공식 파트너</p>
+                    <p className="text-muted-foreground text-[12px] font-medium">NightFlow 공식 파트너</p>
                     {instagram && (
                         <a
                             href={`https://instagram.com/${instagram}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-neutral-400 text-[12px] font-medium inline-flex items-center gap-1 hover:text-amber-300 transition-colors"
+                            className="text-muted-foreground text-[12px] font-medium inline-flex items-center gap-1 hover:text-brand-amber transition-colors"
                         >
                             <Instagram className="w-3.5 h-3.5" />
                             @{instagram}
@@ -113,20 +113,20 @@ export default async function MDPublicProfilePage({
 
                 {/* 지표 3종: 거래 / 평점 / 진행 중 */}
                 <div className="mt-6 grid grid-cols-3 gap-2 max-w-sm mx-auto">
-                    <div className="bg-[#1C1C1E] px-3 py-3 rounded-2xl border border-neutral-800/50">
-                        <p className="text-[10px] text-neutral-500 font-bold tracking-wider mb-1">거래</p>
-                        <p className="text-[18px] font-black text-white tabular-nums">{dealCount}<span className="text-[12px] text-neutral-500 font-bold">건</span></p>
+                    <div className="bg-card px-3 py-3 rounded-2xl border border-border/50">
+                        <p className="text-[10px] text-muted-foreground font-bold tracking-wider mb-1">거래</p>
+                        <p className="text-[18px] font-black text-foreground tabular-nums">{dealCount}<span className="text-[12px] text-muted-foreground font-bold">건</span></p>
                     </div>
-                    <div className="bg-[#1C1C1E] px-3 py-3 rounded-2xl border border-neutral-800/50">
-                        <p className="text-[10px] text-neutral-500 font-bold tracking-wider mb-1">평점</p>
-                        <p className="text-[18px] font-black text-amber-300 tabular-nums inline-flex items-baseline gap-0.5">
+                    <div className="bg-card px-3 py-3 rounded-2xl border border-border/50">
+                        <p className="text-[10px] text-muted-foreground font-bold tracking-wider mb-1">평점</p>
+                        <p className="text-[18px] font-black text-brand-amber tabular-nums inline-flex items-baseline gap-0.5">
                             {reviewCount > 0 ? avgRating.toFixed(1) : "-"}
-                            {reviewCount > 0 && <Star className="w-3 h-3 fill-amber-300 text-amber-300 self-center" />}
+                            {reviewCount > 0 && <Star className="w-3 h-3 fill-amber-300 text-brand-amber self-center" />}
                         </p>
                     </div>
-                    <div className="bg-[#1C1C1E] px-3 py-3 rounded-2xl border border-neutral-800/50">
-                        <p className="text-[10px] text-neutral-500 font-bold tracking-wider mb-1">진행 중</p>
-                        <p className="text-[18px] font-black text-white tabular-nums">{auctions?.length || 0}<span className="text-[12px] text-neutral-500 font-bold">건</span></p>
+                    <div className="bg-card px-3 py-3 rounded-2xl border border-border/50">
+                        <p className="text-[10px] text-muted-foreground font-bold tracking-wider mb-1">진행 중</p>
+                        <p className="text-[18px] font-black text-foreground tabular-nums">{auctions?.length || 0}<span className="text-[12px] text-muted-foreground font-bold">건</span></p>
                     </div>
                 </div>
             </div>
@@ -136,20 +136,20 @@ export default async function MDPublicProfilePage({
                 {clubs.length > 0 && (
                     <section className="space-y-3">
                         <div className="flex items-center gap-2 px-1">
-                            <Building2 className="w-4 h-4 text-neutral-400" />
-                            <h2 className="text-[14px] font-bold text-neutral-300">활동 클럽</h2>
-                            <span className="text-[11px] text-neutral-500">{clubs.length}곳</span>
+                            <Building2 className="w-4 h-4 text-muted-foreground" />
+                            <h2 className="text-[14px] font-bold text-foreground/80">활동 클럽</h2>
+                            <span className="text-[11px] text-muted-foreground">{clubs.length}곳</span>
                         </div>
                         <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-2 px-2">
                             {clubs.map((club) => (
                                 <Link
                                     key={club.id}
                                     href={`/clubs/${club.id}`}
-                                    className="flex-shrink-0 bg-[#1C1C1E] border border-neutral-800/60 rounded-xl px-3 py-2 hover:border-amber-500/30 transition-colors"
+                                    className="flex-shrink-0 bg-card border border-border/60 rounded-xl px-3 py-2 hover:border-amber-500/30 transition-colors"
                                 >
-                                    <p className="text-[13px] font-bold text-white">{club.name}</p>
+                                    <p className="text-[13px] font-bold text-foreground">{club.name}</p>
                                     {club.area && (
-                                        <p className="text-[10.5px] text-neutral-500 font-medium mt-0.5">{club.area}</p>
+                                        <p className="text-[10.5px] text-muted-foreground font-medium mt-0.5">{club.area}</p>
                                     )}
                                 </Link>
                             ))}
@@ -160,55 +160,55 @@ export default async function MDPublicProfilePage({
                 {/* 리뷰 섹션 */}
                 <section className="space-y-3">
                     <div className="flex items-center gap-2 px-1">
-                        <Star className="w-4 h-4 text-neutral-400" />
-                        <h2 className="text-[14px] font-bold text-neutral-300">리뷰</h2>
+                        <Star className="w-4 h-4 text-muted-foreground" />
+                        <h2 className="text-[14px] font-bold text-foreground/80">리뷰</h2>
                         {reviewList.length > 0 && (
-                            <span className="text-[11px] text-neutral-500">{reviewList.length}건</span>
+                            <span className="text-[11px] text-muted-foreground">{reviewList.length}건</span>
                         )}
                     </div>
                     {reviewList.length === 0 ? (
-                        <div className="py-10 text-center bg-[#1C1C1E]/40 rounded-2xl border border-dashed border-neutral-800/50">
-                            <p className="text-[13px] text-neutral-500 font-medium">아직 작성된 리뷰가 없어요</p>
-                            <p className="text-[11px] text-neutral-600 mt-1">첫 매치 후 리뷰가 누적되면 표시돼요</p>
+                        <div className="py-10 text-center bg-card/40 rounded-2xl border border-dashed border-border/50">
+                            <p className="text-[13px] text-muted-foreground font-medium">아직 작성된 리뷰가 없어요</p>
+                            <p className="text-[11px] text-muted-foreground mt-1">첫 매치 후 리뷰가 누적되면 표시돼요</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
                             {reviewList.map((r) => (
-                                <div key={r.id} className="bg-[#1C1C1E] rounded-2xl p-4 space-y-2">
+                                <div key={r.id} className="bg-card rounded-2xl border border-border p-4 space-y-2">
                                     <div className="flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-1">
                                             {[1, 2, 3, 4, 5].map((n) => (
                                                 <Star
                                                     key={n}
-                                                    className={`w-3.5 h-3.5 ${n <= r.rating ? "fill-amber-400 text-amber-400" : "fill-transparent text-neutral-700"}`}
+                                                    className={`w-3.5 h-3.5 ${n <= r.rating ? "fill-amber-400 text-brand-amber" : "fill-transparent text-muted-foreground"}`}
                                                     strokeWidth={1.5}
                                                 />
                                             ))}
                                         </div>
-                                        <span className="text-[10.5px] text-neutral-600 font-medium">
+                                        <span className="text-[10.5px] text-muted-foreground font-medium">
                                             {new Date(r.created_at).toLocaleDateString("ko-KR", { year: "2-digit", month: "numeric", day: "numeric" })}
                                         </span>
                                     </div>
                                     {r.tags && r.tags.length > 0 && (
                                         <div className="flex flex-wrap gap-1">
                                             {r.tags.map((t) => (
-                                                <span key={t} className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                                                <span key={t} className="text-[10.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-brand-amber border border-amber-500/20">
                                                     {t}
                                                 </span>
                                             ))}
                                         </div>
                                     )}
                                     {r.comment && (
-                                        <p className="text-[13px] text-neutral-200 leading-snug break-keep whitespace-pre-line">
+                                        <p className="text-[13px] text-foreground/90 leading-snug break-keep whitespace-pre-line">
                                             {r.comment}
                                         </p>
                                     )}
                                     <div className="flex items-center justify-between gap-2 pt-1">
-                                        <p className="text-[11px] text-neutral-500 font-medium truncate">
+                                        <p className="text-[11px] text-muted-foreground font-medium truncate">
                                             {r.reviewer_display_name || "익명"}
                                         </p>
                                         {r.club_name && (
-                                            <p className="text-[11px] text-neutral-600 font-medium truncate">{r.club_name}</p>
+                                            <p className="text-[11px] text-muted-foreground font-medium truncate">{r.club_name}</p>
                                         )}
                                     </div>
                                 </div>
@@ -220,8 +220,8 @@ export default async function MDPublicProfilePage({
                 {/* 진행 중인 경매 */}
                 <section className="space-y-3">
                     <div className="flex items-center justify-between px-1">
-                        <h2 className="text-[14px] font-bold text-neutral-300">진행 중인 경매</h2>
-                        <span className="text-[11px] text-neutral-500">최신순</span>
+                        <h2 className="text-[14px] font-bold text-foreground/80">진행 중인 경매</h2>
+                        <span className="text-[11px] text-muted-foreground">최신순</span>
                     </div>
                     {auctions && auctions.length > 0 ? (
                         <div className="space-y-4">
@@ -230,8 +230,8 @@ export default async function MDPublicProfilePage({
                             ))}
                         </div>
                     ) : (
-                        <div className="py-10 text-center bg-[#1C1C1E]/30 rounded-2xl border border-dashed border-neutral-800/50">
-                            <p className="text-[13px] text-neutral-500 font-medium">진행 중인 경매가 없어요</p>
+                        <div className="py-10 text-center bg-card/30 rounded-2xl border border-dashed border-border/50">
+                            <p className="text-[13px] text-muted-foreground font-medium">진행 중인 경매가 없어요</p>
                         </div>
                     )}
                 </section>

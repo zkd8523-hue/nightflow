@@ -185,21 +185,21 @@ export function ShareCreatedSheet({
   return createPortal(
     <div className="fixed inset-0 z-[70] bg-black/60 flex items-end justify-center" onClick={dismiss}>
       <div
-        className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 space-y-5"
+        className="w-full max-w-lg bg-card rounded-t-3xl p-6 space-y-5"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">
           <div className="space-y-1.5">
-            <p className="text-[20px] font-black text-white">
+            <p className="text-[20px] font-black text-foreground">
               {mode === "created" ? "🧩 조각 등록 성공!" : "🧩 조각 공유하기"}
             </p>
-            <p className="text-[14px] text-neutral-300 leading-relaxed">
-              <span className="text-green-400 font-bold">링크를 공유</span>해서
+            <p className="text-[14px] text-foreground/80 leading-relaxed">
+              <span className="text-money font-bold">링크를 공유</span>해서
               <br />파티원을 빠르게 모아보세요.
             </p>
           </div>
-          <button onClick={dismiss} className="p-1 -mr-1 text-neutral-500">
+          <button onClick={dismiss} className="p-1 -mr-1 text-muted-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -217,14 +217,14 @@ export function ShareCreatedSheet({
           <button
             onClick={copyLink}
             disabled={copying}
-            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-neutral-800 text-neutral-200 font-bold text-[14px] disabled:opacity-50"
+            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-xl bg-muted text-foreground font-bold text-[14px] disabled:opacity-50"
           >
             <Link2 className="w-4 h-4" />
             링크 복사
           </button>
           <button
             onClick={dismiss}
-            className="flex-1 py-3 rounded-xl bg-neutral-800 text-neutral-400 font-bold text-[14px]"
+            className="flex-1 py-3 rounded-xl bg-muted text-muted-foreground font-bold text-[14px]"
           >
             {mode === "created" ? "나중에" : "닫기"}
           </button>

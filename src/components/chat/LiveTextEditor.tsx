@@ -42,14 +42,14 @@ export function LiveTextEditor({ initial, onDone, onCancel, onDelete }: Props) {
         <button
           type="button"
           onClick={onCancel}
-          className="text-white/80 text-[15px] font-bold"
+          className="text-foreground/80 text-[15px] font-bold"
         >
           취소
         </button>
         <button
           type="button"
           onClick={handleDone}
-          className="flex items-center gap-1 text-white text-[15px] font-black"
+          className="flex items-center gap-1 text-foreground text-[15px] font-black"
         >
           <Check className="w-5 h-5" />
           완료
@@ -66,7 +66,7 @@ export function LiveTextEditor({ initial, onDone, onCancel, onDelete }: Props) {
           placeholder="텍스트 입력"
           rows={2}
           maxLength={100}
-          className="w-full bg-transparent text-center resize-none focus:outline-none placeholder:text-white/40 font-black leading-tight"
+          className="w-full bg-transparent text-center resize-none focus:outline-none placeholder:text-foreground/40 font-black leading-tight"
           style={{
             color,
             fontSize: `${28 * fontScale}px`,
@@ -79,7 +79,7 @@ export function LiveTextEditor({ initial, onDone, onCancel, onDelete }: Props) {
       <div className="p-4 pb-8 space-y-4">
         {/* 크기 */}
         <div className="flex items-center gap-3">
-          <span className="text-white/60 text-[11px] w-8">작게</span>
+          <span className="text-foreground/60 text-[11px] w-8">작게</span>
           <input
             type="range"
             min={0.5}
@@ -89,7 +89,7 @@ export function LiveTextEditor({ initial, onDone, onCancel, onDelete }: Props) {
             onChange={(e) => setFontScale(parseFloat(e.target.value))}
             className="flex-1 accent-white"
           />
-          <span className="text-white/60 text-[11px] w-8 text-right">크게</span>
+          <span className="text-foreground/60 text-[11px] w-8 text-right">크게</span>
         </div>
 
         {/* 색상 */}

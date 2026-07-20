@@ -28,17 +28,17 @@ export default function ZhSeoulNightlifePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/zh" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/zh" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">首尔夜生活指南</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">外国游客该去哪里、订哪里、如何真正享受首尔夜生活。无中介费，无需韩语。</p>
+          <p className="text-[14px] text-muted-foreground leading-relaxed">外国游客该去哪里、订哪里、如何真正享受首尔夜生活。无中介费，无需韩语。</p>
         </header>
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">按地区浏览首尔夜生活</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">首尔夜生活不是单一的 — 是四个地区四种不同氛围、人群和价格的夜生活。</p>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">首尔夜生活不是单一的 — 是四个地区四种不同氛围、人群和价格的夜生活。</p>
           <div className="space-y-3">
             {[
               { name: "江南", vibe: "高端 EDM、时尚人群、VIP 包间文化、₩750K+ 包间", link: "/zh/clubs/gangnam" },
@@ -46,16 +46,16 @@ export default function ZhSeoulNightlifePage() {
               { name: "梨泰院", vibe: "国际化、英语友好、House 和电子音乐", link: "/zh/clubs/itaewon" },
               { name: "狎鸥亭 & 清潭", vibe: "高端 VIP 包间、香槟服务、₩2M+ 包间", link: "/zh/clubs/apgujeong" },
             ].map((d) => (
-              <Link key={d.name} href={d.link} className="block p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-neutral-600 transition-colors">
-                <p className="font-bold text-[15px] text-neutral-100 mb-1">{d.name}</p>
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{d.vibe}</p>
+              <Link key={d.name} href={d.link} className="block p-5 rounded-2xl bg-card border border-border hover:border-border transition-colors">
+                <p className="font-bold text-[15px] text-foreground mb-1">{d.name}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{d.vibe}</p>
               </Link>
             ))}
           </div>
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">首尔夜晚费用</h2>
-          <ul className="space-y-2 text-[13px] text-neutral-300">
+          <ul className="space-y-2 text-[13px] text-foreground/80">
             <li>• Walk-in 普通: 每人 ₩30,000–80,000</li>
             <li>• 弘大 VIP 包间 (6 人): 每人 ₩50,000–100,000</li>
             <li>• 江南主 VIP (4–6 人): 每人 ₩150,000–300,000</li>
@@ -65,16 +65,16 @@ export default function ZhSeoulNightlifePage() {
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">无需韩语如何预订</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">选好想去的夜店(或者只告诉我们预算和喜好)，填写日期、人数和预算。NightFlow 会直接联系夜店，为您锁定预算内最好的桌位 — 中文沟通，真实价格。到场后直接付款给夜店。</p>
-          <Link href="/zh" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors">🍾 通过 NightFlow 预订</Link>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">选好想去的夜店(或者只告诉我们预算和喜好)，填写日期、人数和预算。NightFlow 会直接联系夜店，为您锁定预算内最好的桌位 — 中文沟通，真实价格。到场后直接付款给夜店。</p>
+          <Link href="/zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">🍾 通过 NightFlow 预订</Link>
         </section>
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">更多指南</h2>
-          <ul className="space-y-1 text-[13px] text-neutral-400">
-            <li><Link className="hover:text-white" href="/zh/vip-tables">首尔 VIP 包间预订 →</Link></li>
-            <li><Link className="hover:text-white" href="/zh/guests">首尔夜店 Guest List →</Link></li>
-            <li><Link className="hover:text-white" href="/zh/kpop-clubs">首尔 K-POP 夜店 →</Link></li>
-            <li><Link className="hover:text-white" href="/zh/faq">首尔夜店 FAQ →</Link></li>
+          <ul className="space-y-1 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/zh/vip-tables">首尔 VIP 包间预订 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh/guests">首尔夜店 Guest List →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh/kpop-clubs">首尔 K-POP 夜店 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh/faq">首尔夜店 FAQ →</Link></li>
           </ul>
         </section>
       </div>

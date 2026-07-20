@@ -490,12 +490,12 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
   };
 
   return (
-    <div className={embedded ? "" : "min-h-screen bg-[#0A0A0A] pb-24"}>
+    <div className={embedded ? "" : "min-h-screen bg-background pb-24"}>
       <div className={embedded ? "" : "max-w-lg mx-auto px-4 py-5"}>
         {!embedded && (
           <Link
             href="/md/dashboard"
-            className="inline-flex items-center gap-1 text-neutral-500 text-sm font-bold hover:text-white transition-colors mb-3"
+            className="inline-flex items-center gap-1 text-muted-foreground text-sm font-bold hover:text-foreground transition-colors mb-3"
           >
             <ChevronLeft className="w-4 h-4" />
             대시보드
@@ -505,10 +505,10 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
         {!embedded && (
           <>
             <div className="flex items-center gap-2 mb-2">
-              <Flame className="w-5 h-5 text-amber-400" />
-              <h1 className="text-2xl font-black text-white tracking-tight">Hot Deal 등록</h1>
+              <Flame className="w-5 h-5 text-brand-amber" />
+              <h1 className="text-2xl font-black text-foreground tracking-tight">Hot Deal 등록</h1>
             </div>
-            <p className="text-[12px] text-neutral-500 mb-4 leading-relaxed">
+            <p className="text-[12px] text-muted-foreground mb-4 leading-relaxed">
               당일 특가 패키지로 매출을 올려보세요!
             </p>
           </>
@@ -528,36 +528,36 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
         {/* 이용방법 가이드 (폼 안 열렸을 때만) — 조각·게스트 간판과 동일 패턴 */}
         {!showForm && (
           showGuide ? (
-            <div className="relative bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 mb-5 space-y-3">
+            <div className="relative bg-card border border-border rounded-2xl p-4 mb-5 space-y-3">
               <button
                 type="button"
                 onClick={dismissGuide}
                 aria-label="가이드 닫기"
-                className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors"
+                className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
-              <p className="text-[13px] text-white font-black">이용방법</p>
+              <p className="text-[13px] text-foreground font-black">이용방법</p>
               <div className="space-y-2.5">
                 <div className="flex items-start gap-2.5">
                   <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
                   <div className="flex-1">
-                    <p className="text-[12.5px] text-white font-bold leading-snug">오늘의 스페셜 패키지 등록</p>
-                    <p className="text-[11px] text-neutral-500 leading-snug">우리 클럽만의 구성으로 오늘 밤 손님을 모아요</p>
+                    <p className="text-[12.5px] text-foreground font-bold leading-snug">오늘의 스페셜 패키지 등록</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">우리 클럽만의 구성으로 오늘 밤 손님을 모아요</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5">
                   <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
                   <div className="flex-1">
-                    <p className="text-[12.5px] text-white font-bold leading-snug">홈 최상단 노출</p>
-                    <p className="text-[11px] text-neutral-500 leading-snug">유저가 앱 열자마자 보는 자리에 강조돼요</p>
+                    <p className="text-[12.5px] text-foreground font-bold leading-snug">홈 최상단 노출</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">유저가 앱 열자마자 보는 자리에 강조돼요</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2.5">
                   <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">3</div>
                   <div className="flex-1">
-                    <p className="text-[12.5px] text-white font-bold leading-snug">상세에서 인스타·연락처로 직접 문의</p>
-                    <p className="text-[11px] text-neutral-500 leading-snug">선착순 마감으로 빠르게 채워보세요</p>
+                    <p className="text-[12.5px] text-foreground font-bold leading-snug">상세에서 인스타·연락처로 직접 문의</p>
+                    <p className="text-[11px] text-muted-foreground leading-snug">선착순 마감으로 빠르게 채워보세요</p>
                   </div>
                 </div>
               </div>
@@ -565,7 +565,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
               <button
                 type="button"
                 onClick={() => setPreviewOpen(true)}
-                className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
+                className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-brand-amber text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
               >
                 👀 미리보기
               </button>
@@ -574,7 +574,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
             <button
               type="button"
               onClick={() => setShowGuide(true)}
-              className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-1 mb-5"
+              className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-1 mb-5"
             >
               <span className="text-[12px]">ⓘ</span>
               이용방법
@@ -585,11 +585,11 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
         {showForm && (
           <div className="mb-6 space-y-6">
             <div className="flex items-baseline justify-between">
-              <p className="text-[13px] text-white font-bold">{editingId ? "핫딜 수정" : "새 핫딜 등록"}</p>
+              <p className="text-[13px] text-foreground font-bold">{editingId ? "핫딜 수정" : "새 핫딜 등록"}</p>
               <button
                 type="button"
                 onClick={() => { setShowForm(false); resetForm(); }}
-                className="text-[11px] text-neutral-500 hover:text-white"
+                className="text-[11px] text-muted-foreground hover:text-foreground"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -602,10 +602,10 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="border-neutral-700 text-neutral-400 hover:text-white hover:border-amber-500 gap-1.5 text-xs"
+                  className="border-border text-muted-foreground hover:text-foreground hover:border-amber-500 gap-1.5 text-xs"
                   onClick={() => setShowTemplateSelector(true)}
                 >
-                  <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+                  <Bookmark className="w-3.5 h-3.5 text-brand-amber" />
                   템플릿에서 생성
                 </Button>
               </div>
@@ -613,17 +613,17 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
 
             {/* 1. 클럽 선택 */}
             <section className="space-y-4">
-              <div className="flex items-center gap-2 text-white font-bold mb-2">
-                <Building2 className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                <Building2 className="w-4 h-4 text-money" />
                 <span>클럽 선택</span>
               </div>
-              <div className="bg-[#1C1C1E] border border-neutral-800 rounded-xl overflow-hidden">
+              <div className="bg-card border border-border rounded-xl overflow-hidden">
                 <div className="relative h-12">
                   <div className="absolute inset-0 px-4 flex items-center justify-between pointer-events-none">
-                    <span className={`text-sm font-medium truncate ${selectedClub ? "text-white" : "text-neutral-500"}`}>
+                    <span className={`text-sm font-medium truncate ${selectedClub ? "text-foreground" : "text-muted-foreground"}`}>
                       {selectedClub ? `${selectedClub.name}${selectedClub.area ? ` (${selectedClub.area})` : ""}` : "클럽을 선택하세요"}
                     </span>
-                    <ChevronDown className="w-4 h-4 text-neutral-500 shrink-0 ml-2" />
+                    <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 ml-2" />
                   </div>
                   <select
                     value={clubId}
@@ -641,7 +641,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                 </div>
               </div>
               {clubId && (
-                <p className="text-[11px] text-neutral-500">
+                <p className="text-[11px] text-muted-foreground">
                   이 클럽의 활성 핫딜 {clubActiveCount}/5 (자리당 1개)
                 </p>
               )}
@@ -650,15 +650,15 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
             {/* 2. 테이블 위치 */}
             <section className="space-y-4">
               <div className="flex items-center gap-2 mb-2">
-                <MapPin className="w-4 h-4 text-green-500" />
-                <span className="text-white font-bold">테이블 위치</span>
+                <MapPin className="w-4 h-4 text-money" />
+                <span className="text-foreground font-bold">테이블 위치</span>
               </div>
-              <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
                 {selectedClub?.floor_plan_url && !floorPlanExpanded && (
                   <button
                     type="button"
                     onClick={() => setFloorPlanExpanded(true)}
-                    className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-green-400 transition-colors py-1"
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-money transition-colors py-1"
                   >
                     <span>등록된 플로어맵</span>
                     <ChevronDown className="w-3 h-3" />
@@ -669,13 +669,13 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                     <button
                       type="button"
                       onClick={() => setFloorPlanExpanded(false)}
-                      className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-green-400 transition-colors py-1"
+                      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-money transition-colors py-1"
                     >
-                      <MapPin className="w-3.5 h-3.5 text-green-500" />
+                      <MapPin className="w-3.5 h-3.5 text-money" />
                       <span>플로어맵 닫기</span>
                       <ChevronDown className="w-3 h-3 rotate-180" />
                     </button>
-                    <div className="rounded-xl overflow-hidden border border-neutral-800 bg-neutral-900">
+                    <div className="rounded-xl overflow-hidden border border-border bg-card">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={selectedClub.floor_plan_url}
@@ -700,7 +700,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                       type="button"
                       onClick={() => floorPlanInputRef.current?.click()}
                       disabled={floorPlanUploading}
-                      className="w-full flex items-center justify-center gap-2 p-4 border border-dashed border-neutral-700 rounded-xl text-neutral-400 hover:border-green-500/50 hover:text-green-400 transition-colors"
+                      className="w-full flex items-center justify-center gap-2 p-4 border border-dashed border-border rounded-xl text-muted-foreground hover:border-green-500/50 hover:text-money transition-colors"
                     >
                       {floorPlanUploading
                         ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -713,10 +713,10 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                   </>
                 )}
                 <div className="space-y-2">
-                  <p className="text-[11px] text-neutral-400 font-bold">
+                  <p className="text-[11px] text-muted-foreground font-bold">
                     자리 등급 <span className="text-red-400">*</span>
                   </p>
-                  <p className="text-[10px] text-neutral-500">
+                  <p className="text-[10px] text-muted-foreground">
                     같은 클럽에서 자리당 활성 핫딜은 1개만 등록할 수 있어요
                   </p>
                   <div className="flex flex-wrap gap-1.5">
@@ -739,8 +739,8 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                             active
                               ? "bg-amber-500 border-amber-500 text-black"
                               : occupied
-                              ? "bg-neutral-900/50 border-neutral-800 text-neutral-600 line-through"
-                              : "bg-neutral-900 border-neutral-700 text-neutral-300 hover:border-amber-500/60"
+                              ? "bg-card/50 border-border text-muted-foreground line-through"
+                              : "bg-card border-border text-foreground/80 hover:border-amber-500/60"
                           }`}
                         >
                           {opt.label}
@@ -756,20 +756,20 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                   onChange={(e) => setTableInfo(e.target.value)}
                   placeholder="자리 번호 (선택) — 예) A3, B~C열"
                   disabled={busy}
-                  className="w-full bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3 text-white text-sm placeholder:text-neutral-600"
+                  className="w-full bg-card border border-border h-11 rounded-lg px-3 text-foreground text-sm placeholder:text-muted-foreground"
                 />
               </div>
             </section>
 
             {/* 3. 주류 + 테이블 구성 */}
             <section className="space-y-3">
-              <div className="flex items-center gap-2 text-white font-bold">
-                <Wine className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-2 text-foreground font-bold">
+                <Wine className="w-4 h-4 text-money" />
                 <span>포함 주류 · 테이블 구성</span>
               </div>
-              <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden divide-y divide-neutral-800">
+              <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-neutral-800">
                 <div className="p-4 space-y-3">
-                  <p className="text-[11px] text-neutral-400 font-bold">포함 주류</p>
+                  <p className="text-[11px] text-muted-foreground font-bold">포함 주류</p>
                   <LiquorSelector
                     selected={includes}
                     onSelect={setIncludes}
@@ -778,7 +778,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                   />
                 </div>
                 <div className="p-4 space-y-3">
-                  <p className="text-[11px] text-neutral-400 font-bold">테이블 구성</p>
+                  <p className="text-[11px] text-muted-foreground font-bold">테이블 구성</p>
                   <TableFeatureSelector
                     selected={tableFeatures}
                     onSelect={setTableFeatures}
@@ -791,23 +791,23 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
             {/* 5. 상세 설명 */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-white font-bold">
-                  <Flame className="w-4 h-4 text-amber-400" />
+                <div className="flex items-center gap-2 text-foreground font-bold">
+                  <Flame className="w-4 h-4 text-brand-amber" />
                   <span>상세 설명</span>
-                  <span className="text-[11px] text-neutral-500 font-medium">선택</span>
+                  <span className="text-[11px] text-muted-foreground font-medium">선택</span>
                 </div>
-                <span className={`text-[11px] font-bold ${description.length > 90 ? "text-red-400" : "text-neutral-600"}`}>
+                <span className={`text-[11px] font-bold ${description.length > 90 ? "text-red-400" : "text-muted-foreground"}`}>
                   {description.length}/100
                 </span>
               </div>
-              <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
+              <div className="bg-card border border-border rounded-2xl p-4">
                 <textarea
                   value={description}
                   onChange={(e) => { if (e.target.value.length <= 100) setDescription(e.target.value); }}
                   rows={1}
                   placeholder="예: 오늘 자리 좋아요, 11시 전 입장 추천"
                   disabled={busy}
-                  className="w-full bg-transparent text-white text-sm placeholder:text-neutral-600 resize-none focus:outline-none"
+                  className="w-full bg-transparent text-foreground text-sm placeholder:text-muted-foreground resize-none focus:outline-none"
                   style={{ fieldSizing: "content" } as React.CSSProperties}
                 />
               </div>
@@ -815,14 +815,14 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
 
             {/* 5. 가격 */}
             <section className="space-y-4">
-              <div className="flex items-center gap-2 text-white font-bold mb-2">
-                <span className="text-green-500 font-black text-base leading-none">₩</span>
+              <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                <span className="text-money font-black text-base leading-none">₩</span>
                 <span>가격</span>
               </div>
-              <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-3">
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-[11px] text-neutral-400 font-bold mb-1.5">정가 (만원)</p>
+                    <p className="text-[11px] text-muted-foreground font-bold mb-1.5">정가 (만원)</p>
                     <div className="relative">
                       <input
                         type="text"
@@ -831,13 +831,13 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                         onChange={(e) => setOriginalPrice(e.target.value.replace(/[^0-9]/g, ""))}
                         placeholder="30"
                         disabled={busy}
-                        className="w-full bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3 pr-12 text-white text-sm placeholder:text-neutral-600"
+                        className="w-full bg-card border border-border h-11 rounded-lg px-3 pr-12 text-foreground text-sm placeholder:text-muted-foreground"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-neutral-500 font-bold">만원</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground font-bold">만원</span>
                     </div>
                   </div>
                   <div>
-                    <p className="text-[11px] text-amber-400 font-bold mb-1.5">특가 (만원) *</p>
+                    <p className="text-[11px] text-brand-amber font-bold mb-1.5">특가 (만원) *</p>
                     <div className="relative">
                       <input
                         type="text"
@@ -846,25 +846,25 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                         onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))}
                         placeholder="20"
                         disabled={busy}
-                        className="w-full bg-neutral-900 border border-amber-500/50 h-11 rounded-lg px-3 pr-12 text-white text-sm placeholder:text-neutral-600"
+                        className="w-full bg-card border border-amber-500/50 h-11 rounded-lg px-3 pr-12 text-foreground text-sm placeholder:text-muted-foreground"
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-amber-400 font-bold">만원</span>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-brand-amber font-bold">만원</span>
                     </div>
                   </div>
                 </div>
-                <p className="text-[11px] text-neutral-500 leading-relaxed">
-                  💡 인스타 공식 주대의 <span className="text-amber-400 font-bold">80~90% 수준</span>으로 올려 빠르게 판매해보세요!
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  💡 인스타 공식 주대의 <span className="text-brand-amber font-bold">80~90% 수준</span>으로 올려 빠르게 판매해보세요!
                 </p>
               </div>
             </section>
 
             {/* 6. 종료 시각 */}
             <section className="space-y-4">
-              <div className="flex items-center gap-2 text-white font-bold mb-2">
-                <CalendarClock className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                <CalendarClock className="w-4 h-4 text-money" />
                 <span>종료 시각</span>
               </div>
-              <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-2">
+              <div className="bg-card border border-border rounded-2xl p-5 space-y-2">
                 <DateTimeSheet
                   mode="date-2"
                   dateOptions={endDateConfig.options}
@@ -873,7 +873,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                   label="종료 시각"
                   placeholder="종료 시각을 선택하세요"
                 />
-                <p className="text-[10px] text-neutral-600">이 시각이 지나면 카드가 자동으로 만료돼요</p>
+                <p className="text-[10px] text-muted-foreground">이 시각이 지나면 카드가 자동으로 만료돼요</p>
               </div>
             </section>
 
@@ -893,17 +893,17 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
         {/* 내 핫딜 목록 (폼 열려있을 땐 숨김) */}
         {!showForm && (
         <div className="space-y-2">
-          <p className="text-[12px] text-neutral-500 font-bold px-1">내 핫딜</p>
+          <p className="text-[12px] text-muted-foreground font-bold px-1">내 핫딜</p>
           {visibleHotdeals.length === 0 ? (
-            <div className="bg-[#1C1C1E] rounded-2xl px-4 py-8 text-center">
-              <p className="text-[13px] text-neutral-400">등록한 핫딜이 없어요</p>
+            <div className="bg-card rounded-2xl border border-border px-4 py-8 text-center">
+              <p className="text-[13px] text-muted-foreground">등록한 핫딜이 없어요</p>
             </div>
           ) : (
             <div className="space-y-2">
               {visibleHotdeals.map((h) => (
-                <div key={h.id} className="bg-[#1C1C1E] rounded-2xl p-3 flex items-center gap-3">
+                <div key={h.id} className="bg-card rounded-2xl border border-border p-3 flex items-center gap-3">
                   {h.thumbnail_url || h.club?.thumbnail_url ? (
-                    <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-neutral-900 shrink-0">
+                    <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-card shrink-0">
                       <Image
                         src={h.thumbnail_url || h.club!.thumbnail_url!}
                         alt={h.title}
@@ -913,36 +913,36 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                       />
                     </div>
                   ) : (
-                    <div className="w-14 h-14 rounded-xl bg-neutral-900 flex items-center justify-center text-[16px] font-black text-white/60 shrink-0">
+                    <div className="w-14 h-14 rounded-xl bg-card flex items-center justify-center text-[16px] font-black text-foreground/60 shrink-0">
                       {h.club?.name?.charAt(0) ?? "?"}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-[13px] font-black truncate">{h.title}</p>
-                    <p className="text-[10px] text-neutral-500 truncate mt-0.5">
+                    <p className="text-foreground text-[13px] font-black truncate">{h.title}</p>
+                    <p className="text-[10px] text-muted-foreground truncate mt-0.5">
                       {h.club?.name}
                       {h.nearest_station && <> · {h.nearest_station}역 도보 {h.walk_minutes}분</>}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       {h.price != null && (
-                        <span className="text-[12px] font-black text-green-400">
+                        <span className="text-[12px] font-black text-money">
                           {h.price.toLocaleString()}원
                         </span>
                       )}
                       {h.original_price && h.price && h.original_price > h.price && (
-                        <span className="text-[10px] text-neutral-600 line-through">
+                        <span className="text-[10px] text-muted-foreground line-through">
                           {h.original_price.toLocaleString()}원
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-neutral-500 inline-flex items-center gap-0.5 mt-0.5">
-                      <Clock className="w-2.5 h-2.5 text-amber-400" />
-                      <span className="text-amber-400">
+                    <p className="text-[10px] text-muted-foreground inline-flex items-center gap-0.5 mt-0.5">
+                      <Clock className="w-2.5 h-2.5 text-brand-amber" />
+                      <span className="text-brand-amber">
                         {new Date(h.ends_at).toLocaleString("ko-KR", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                       </span>
                       <span className="ml-1.5 font-bold">
-                        {h.status === "active" && <span className="text-green-400">진행 중</span>}
-                        {h.status === "expired" && <span className="text-neutral-500">만료</span>}
+                        {h.status === "active" && <span className="text-money">진행 중</span>}
+                        {h.status === "expired" && <span className="text-muted-foreground">만료</span>}
                         {h.status === "cancelled" && <span className="text-red-400">종료</span>}
                       </span>
                     </p>
@@ -953,7 +953,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                         type="button"
                         onClick={() => handleStartEdit(h)}
                         disabled={busy}
-                        className="px-2.5 py-1.5 rounded-full bg-neutral-700 hover:bg-neutral-600 text-white text-[11px] font-bold"
+                        className="px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted text-foreground text-[11px] font-bold"
                       >
                         수정
                       </button>
@@ -961,7 +961,7 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
                         type="button"
                         onClick={() => handleCancel(h.id)}
                         disabled={busy}
-                        className="px-2.5 py-1.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[11px] font-bold"
+                        className="px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted text-foreground/80 text-[11px] font-bold"
                       >
                         종료
                       </button>
@@ -1033,19 +1033,19 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
             }
           }
         }}>
-          <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+          <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-10">
             <SheetHeader className="text-left pb-2">
-              <div className="inline-flex items-center gap-1.5 text-green-400 text-[12px] font-black mb-1">
+              <div className="inline-flex items-center gap-1.5 text-money text-[12px] font-black mb-1">
                 <span>✓</span>
                 <span>핫딜이 등록됐어요</span>
               </div>
-              <SheetTitle className="text-white text-lg">템플릿으로 저장할까요?</SheetTitle>
+              <SheetTitle className="text-foreground text-lg">템플릿으로 저장할까요?</SheetTitle>
             </SheetHeader>
-            <p className="text-neutral-400 text-sm mb-4">
+            <p className="text-muted-foreground text-sm mb-4">
               다음 등록 시 한 번에 불러올 수 있어요 (최대 5개)
             </p>
-            <div className="bg-neutral-900 rounded-xl p-3 mb-4">
-              <p className="text-amber-400 font-bold text-sm">
+            <div className="bg-card rounded-xl border border-border p-3 mb-4">
+              <p className="text-brand-amber font-bold text-sm">
                 {[
                   lastCreatedSnapshot.price ? `${Math.round(lastCreatedSnapshot.price / 10000)}만원` : "",
                   lastCreatedSnapshot.liquor_includes?.[0] || "",
@@ -1056,14 +1056,14 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
             <div className="flex gap-3">
               <Button
                 variant="outline"
-                className="flex-1 border-neutral-700 text-neutral-400 hover:text-white"
+                className="flex-1 border-border text-muted-foreground hover:text-foreground"
                 onClick={() => { setShowTemplateSavePrompt(false); setLastCreatedSnapshot(null); }}
                 disabled={templateSaving}
               >
                 건너뛰기
               </Button>
               <Button
-                className="flex-1 bg-white text-black hover:bg-neutral-100 font-bold"
+                className="flex-1 bg-inverse text-inverse-foreground hover:opacity-90 font-bold"
                 disabled={templateSaving}
                 onClick={async () => {
                   if (!lastCreatedSnapshot) return;

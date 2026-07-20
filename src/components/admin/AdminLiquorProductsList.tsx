@@ -155,7 +155,7 @@ export function AdminLiquorProductsList({ initialProducts }: AdminLiquorProducts
 
   return (
     <div className="space-y-4">
-      <Button onClick={openCreate} className="w-full bg-white text-black font-black rounded-full">
+      <Button onClick={openCreate} className="w-full bg-inverse text-inverse-foreground font-black rounded-full">
         <Plus className="w-4 h-4 mr-1" /> 주류 추가
       </Button>
 
@@ -163,22 +163,22 @@ export function AdminLiquorProductsList({ initialProducts }: AdminLiquorProducts
         {products.map((p) => (
           <div
             key={p.id}
-            className="flex items-center gap-3 rounded-2xl border border-neutral-800 bg-[#1C1C1E] p-3"
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3"
           >
             {p.image_url ? (
-              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-neutral-900 shrink-0">
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-card shrink-0">
                 <Image src={p.image_url} alt={p.name} fill className="object-cover" sizes="48px" />
               </div>
             ) : (
-              <div className="w-12 h-12 rounded-xl bg-neutral-900 shrink-0 flex items-center justify-center text-lg">
+              <div className="w-12 h-12 rounded-xl bg-card shrink-0 flex items-center justify-center text-lg">
                 🍾
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-bold text-white truncate">
-                {p.name} {!p.is_active && <span className="text-neutral-600">(비활성)</span>}
+              <p className="text-[14px] font-bold text-foreground truncate">
+                {p.name} {!p.is_active && <span className="text-muted-foreground">(비활성)</span>}
               </p>
-              <p className="text-[12px] text-neutral-500">
+              <p className="text-[12px] text-muted-foreground">
                 {LIQUOR_CATEGORIES.find((c) => c.key === p.category)?.label ?? p.category}
                 {formatPriceBucket(p.price_min, p.price_max) && ` · ${formatPriceBucket(p.price_min, p.price_max)}`}
               </p>
@@ -186,28 +186,28 @@ export function AdminLiquorProductsList({ initialProducts }: AdminLiquorProducts
             <button
               type="button"
               onClick={() => openEdit(p)}
-              className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center shrink-0"
+              className="w-8 h-8 rounded-full bg-card flex items-center justify-center shrink-0"
             >
-              <Pencil className="w-3.5 h-3.5 text-neutral-400" />
+              <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
             </button>
             <button
               type="button"
               onClick={() => handleDelete(p)}
-              className="w-8 h-8 rounded-full bg-neutral-900 flex items-center justify-center shrink-0"
+              className="w-8 h-8 rounded-full bg-card flex items-center justify-center shrink-0"
             >
               <Trash2 className="w-3.5 h-3.5 text-red-400" />
             </button>
           </div>
         ))}
         {products.length === 0 && (
-          <p className="text-center text-[13px] text-neutral-500 py-8">등록된 주류가 없습니다</p>
+          <p className="text-center text-[13px] text-muted-foreground py-8">등록된 주류가 없습니다</p>
         )}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-md">
+        <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">{editing ? "주류 수정" : "주류 추가"}</DialogTitle>
+            <DialogTitle className="text-foreground">{editing ? "주류 수정" : "주류 추가"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Input
@@ -285,10 +285,10 @@ export function AdminLiquorProductsList({ initialProducts }: AdminLiquorProducts
                 type="file"
                 accept="image/*"
                 onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-                className="text-[12px] text-neutral-400"
+                className="text-[12px] text-muted-foreground"
               />
             </div>
-            <label className="flex items-center gap-2 text-[13px] text-neutral-400">
+            <label className="flex items-center gap-2 text-[13px] text-muted-foreground">
               <input
                 type="checkbox"
                 checked={form.is_active}

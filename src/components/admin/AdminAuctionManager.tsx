@@ -63,12 +63,12 @@ interface AdminAuctionManagerProps {
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   active: { label: "진행중", className: "bg-red-500/10 text-red-500 border-red-500/20" },
   scheduled: { label: "예정", className: "bg-blue-500/10 text-blue-500 border-blue-500/20" },
-  won: { label: "낙찰", className: "bg-amber-500/10 text-amber-500 border-amber-500/20" },
-  confirmed: { label: "확인완료", className: "bg-green-500/10 text-green-500 border-green-500/20" },
-  unsold: { label: "유찰", className: "bg-neutral-500/10 text-neutral-500 border-neutral-500/20" },
-  cancelled: { label: "취소", className: "bg-neutral-500/10 text-neutral-500 border-neutral-500/20" },
+  won: { label: "낙찰", className: "bg-amber-500/10 text-brand-amber border-amber-500/20" },
+  confirmed: { label: "확인완료", className: "bg-green-500/10 text-money border-green-500/20" },
+  unsold: { label: "유찰", className: "bg-muted/10 text-muted-foreground border-border/20" },
+  cancelled: { label: "취소", className: "bg-muted/10 text-muted-foreground border-border/20" },
   draft: { label: "초안", className: "bg-purple-500/10 text-purple-500 border-purple-500/20" },
-  expired: { label: "마감", className: "bg-neutral-500/10 text-neutral-500 border-neutral-500/20" },
+  expired: { label: "마감", className: "bg-muted/10 text-muted-foreground border-border/20" },
 };
 
 /** DB status가 아닌 실제 시간 기반 표시용 status 반환 */
@@ -114,7 +114,7 @@ function AuctionTable({
 
   if (auctions.length === 0) {
     return (
-      <div className="py-24 text-center text-neutral-600 bg-neutral-900/10 rounded-3xl border border-dashed border-neutral-800">
+      <div className="py-24 text-center text-muted-foreground bg-card/10 rounded-3xl border border-dashed border-border">
         해당하는 경매가 없습니다
       </div>
     );
@@ -132,17 +132,17 @@ function AuctionTable({
       {Array.from(grouped.entries()).map(([date, items]) => (
         <div key={date} className="space-y-3">
           <div className="flex items-center gap-3 px-2">
-            <CalendarClock className="w-3.5 h-3.5 text-neutral-500" />
-            <span className="text-[13px] font-bold text-neutral-400">
+            <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
+            <span className="text-[13px] font-bold text-muted-foreground">
               {dayjs(date).locale("ko").format("M/D(ddd)")}
             </span>
-            <span className="text-[11px] text-neutral-600 font-medium">
+            <span className="text-[11px] text-muted-foreground font-medium">
               {items.length}건
             </span>
-            <div className="flex-1 h-px bg-neutral-800/50" />
+            <div className="flex-1 h-px bg-muted/50" />
           </div>
 
-          <div className="grid grid-cols-12 px-6 py-2 text-[10px] text-neutral-500 font-black uppercase tracking-widest border-b border-neutral-800">
+          <div className="grid grid-cols-12 px-6 py-2 text-[10px] text-muted-foreground font-black uppercase tracking-widest border-b border-border">
             <div className="col-span-4">Auction / Partner</div>
             <div className="col-span-2 text-center">Status</div>
             <div className="col-span-2 text-right">Price / Bids</div>
@@ -160,17 +160,17 @@ function AuctionTable({
             return (
               <Card
                 key={a.id}
-                className="bg-[#1C1C1E] border-neutral-800/50 hover:border-neutral-700 transition-all p-5 cursor-pointer"
+                className="bg-card border-border/50 hover:border-border transition-all p-5 cursor-pointer"
                 onClick={() => router.push(`/auctions/${a.id}`)}
               >
                 <div className="grid grid-cols-12 items-center gap-4">
                   <div className="col-span-4 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-neutral-600">
+                    <div className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center font-black text-muted-foreground">
                       {a.club?.name?.substring(0, 1) || "C"}
                     </div>
                     <div>
-                      <p className="text-white font-bold">{a.club?.name || "-"}</p>
-                      <p className="text-[12px] text-neutral-500 font-medium">
+                      <p className="text-foreground font-bold">{a.club?.name || "-"}</p>
+                      <p className="text-[12px] text-muted-foreground font-medium">
                         파트너: {a.md?.name || "-"}
                       </p>
                     </div>
@@ -183,13 +183,13 @@ function AuctionTable({
                       {statusCfg.label}
                     </Badge>
                     {a.status === "cancelled" && a.cancel_type && (
-                      <span className="text-[9px] text-neutral-600 font-medium">
+                      <span className="text-[9px] text-muted-foreground font-medium">
                         {a.cancel_type === "mutual" ? "합의취소" : a.cancel_type === "noshow_md" ? "노쇼" : a.cancel_type}
                       </span>
                     )}
                     {a.status === "cancelled" && a.cancel_reason && (
                       <span
-                        className="text-[9px] text-neutral-500 font-medium max-w-[80px] text-center line-clamp-2 leading-tight"
+                        className="text-[9px] text-muted-foreground font-medium max-w-[80px] text-center line-clamp-2 leading-tight"
                         title={a.cancel_reason}
                       >
                         "{a.cancel_reason}"
@@ -198,14 +198,14 @@ function AuctionTable({
                   </div>
 
                   <div className="col-span-2 text-right">
-                    <p className="text-white font-black">
+                    <p className="text-foreground font-black">
                       {formatPrice(a.current_bid || a.start_price)}
                     </p>
-                    <p className="text-[11px] text-neutral-500 font-bold">{a.bid_count} Bids</p>
+                    <p className="text-[11px] text-muted-foreground font-bold">{a.bid_count} Bids</p>
                     {/* Migration 269: 조각 참여 클릭 — 외부 영업 vs 플랫폼 자체 모집 판별용 */}
                     <p
                       className={`text-[10px] font-bold mt-0.5 ${
-                        (a.click_total ?? 0) > 0 ? "text-amber-400/80" : "text-neutral-600"
+                        (a.click_total ?? 0) > 0 ? "text-brand-amber dark:text-brand-amber/80" : "text-muted-foreground"
                       }`}
                       title={`총 클릭 ${a.click_total ?? 0} · 성공 ${a.click_success ?? 0} · 유니크 ${a.click_unique ?? 0}`}
                     >
@@ -214,10 +214,10 @@ function AuctionTable({
                   </div>
 
                   <div className="col-span-2 text-right">
-                    <p className="text-[12px] text-neutral-400 font-bold">
+                    <p className="text-[12px] text-muted-foreground font-bold">
                       {dayjs(a.event_date).locale("ko").format("M/D (ddd)")}
                     </p>
-                    <p className="text-[10px] text-neutral-600 font-medium uppercase">
+                    <p className="text-[10px] text-muted-foreground font-medium uppercase">
                       {a.club?.area || "-"}
                     </p>
                   </div>
@@ -246,7 +246,7 @@ function AuctionTable({
                       </Button>
                     )}
                     {!canCancel && !canDelete && (
-                      <span className="text-neutral-600 text-xs">-</span>
+                      <span className="text-muted-foreground text-xs">-</span>
                     )}
                   </div>
                 </div>
@@ -359,18 +359,18 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
       {/* 검색 + 정렬 */}
       <div className="flex gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             placeholder="클럽명, 파트너명, 경매 제목 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-[#1C1C1E] border-neutral-800 text-white"
+            className="pl-10 bg-card border-border text-foreground"
           />
         </div>
         <Button
           variant="outline"
           onClick={() => setSortAsc(!sortAsc)}
-          className="h-10 px-4 bg-[#1C1C1E] border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700 text-xs font-bold"
+          className="h-10 px-4 bg-card border-border text-muted-foreground hover:text-foreground hover:border-border text-xs font-bold"
         >
           <ArrowUpDown className="w-4 h-4 mr-2" />
           {sortAsc ? "가까운 날짜순" : "최신순"}
@@ -379,24 +379,24 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
 
       {/* 3탭 */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="w-full bg-neutral-900 border border-neutral-800/50 h-12 p-1 rounded-xl">
+        <TabsList className="w-full bg-card border border-border/50 h-12 p-1 rounded-xl">
           <TabsTrigger
             value="scheduled"
-            className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white"
+            className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground"
           >
             <Clock className="w-4 h-4 mr-2" />
             예정 ({tabCounts.scheduled})
           </TabsTrigger>
           <TabsTrigger
             value="active"
-            className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white"
+            className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground"
           >
             <span className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse" />
             진행중 ({tabCounts.active})
           </TabsTrigger>
           <TabsTrigger
             value="ended"
-            className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white"
+            className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground"
           >
             <CheckCircle2 className="w-4 h-4 mr-2" />
             종료 ({tabCounts.ended})
@@ -430,44 +430,44 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
       <Sheet open={!!cancelTarget} onOpenChange={(open) => !open && setCancelTarget(null)}>
         <SheetContent
           side="bottom"
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl"
+          className="h-auto bg-card border-border rounded-t-3xl"
         >
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">경매 강제 취소</SheetTitle>
-            <SheetDescription className="text-neutral-400">
+            <SheetTitle className="text-foreground font-black text-xl">경매 강제 취소</SheetTitle>
+            <SheetDescription className="text-muted-foreground">
               이 경매를 강제로 취소합니다
             </SheetDescription>
           </SheetHeader>
           {cancelTarget && (
             <div className="space-y-4 mt-6">
-              <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
+              <div className="bg-card/50 rounded-2xl p-4 space-y-3 border border-border/50">
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">클럽</span>
-                  <span className="font-bold text-white">{cancelTarget.club?.name}</span>
+                  <span className="text-muted-foreground text-sm font-bold">클럽</span>
+                  <span className="font-bold text-foreground">{cancelTarget.club?.name}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">파트너</span>
-                  <span className="font-bold text-white">{cancelTarget.md?.name}</span>
+                  <span className="text-muted-foreground text-sm font-bold">파트너</span>
+                  <span className="font-bold text-foreground">{cancelTarget.md?.name}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">현재가</span>
-                  <span className="font-black text-xl text-green-500">
+                  <span className="text-muted-foreground text-sm font-bold">현재가</span>
+                  <span className="font-black text-xl text-money">
                     {formatPrice(cancelTarget.current_bid || cancelTarget.start_price)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">입찰 수</span>
-                  <span className="font-bold text-white">{cancelTarget.bid_count}건</span>
+                  <span className="text-muted-foreground text-sm font-bold">입찰 수</span>
+                  <span className="font-bold text-foreground">{cancelTarget.bid_count}건</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <p className="text-sm font-bold text-neutral-400">취소 사유</p>
+                <p className="text-sm font-bold text-muted-foreground">취소 사유</p>
                 <Textarea
                   placeholder="취소 사유를 입력해주세요..."
                   value={cancelReason}
                   onChange={(e) => setCancelReason(e.target.value)}
-                  className="bg-neutral-900 border-neutral-800 text-white min-h-[80px]"
+                  className="bg-card border-border text-foreground min-h-[80px]"
                 />
               </div>
 
@@ -479,7 +479,7 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
                 <Button
                   variant="outline"
                   onClick={() => setCancelTarget(null)}
-                  className="h-14 rounded-2xl border-neutral-800 text-neutral-400 font-bold"
+                  className="h-14 rounded-2xl border-border text-muted-foreground font-bold"
                 >
                   닫기
                 </Button>
@@ -504,34 +504,34 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
       <Sheet open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <SheetContent
           side="bottom"
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl"
+          className="h-auto bg-card border-border rounded-t-3xl"
         >
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">경매 삭제</SheetTitle>
-            <SheetDescription className="text-neutral-400">
+            <SheetTitle className="text-foreground font-black text-xl">경매 삭제</SheetTitle>
+            <SheetDescription className="text-muted-foreground">
               경매를 영구 삭제합니다
             </SheetDescription>
           </SheetHeader>
           {deleteTarget && (
             <div className="space-y-4 mt-6">
-              <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
+              <div className="bg-card/50 rounded-2xl p-4 space-y-3 border border-border/50">
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">클럽</span>
-                  <span className="font-bold text-white">{deleteTarget.club?.name || "-"}</span>
+                  <span className="text-muted-foreground text-sm font-bold">클럽</span>
+                  <span className="font-bold text-foreground">{deleteTarget.club?.name || "-"}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">파트너</span>
-                  <span className="font-bold text-white">{deleteTarget.md?.name || "-"}</span>
+                  <span className="text-muted-foreground text-sm font-bold">파트너</span>
+                  <span className="font-bold text-foreground">{deleteTarget.md?.name || "-"}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">상태</span>
-                  <span className="font-bold text-white">
+                  <span className="text-muted-foreground text-sm font-bold">상태</span>
+                  <span className="font-bold text-foreground">
                     {STATUS_CONFIG[deleteTarget.status]?.label || deleteTarget.status}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm font-bold">입찰 수</span>
-                  <span className={`font-black ${deleteTarget.bid_count > 0 ? "text-red-400" : "text-white"}`}>
+                  <span className="text-muted-foreground text-sm font-bold">입찰 수</span>
+                  <span className={`font-black ${deleteTarget.bid_count > 0 ? "text-red-400" : "text-foreground"}`}>
                     {deleteTarget.bid_count}건
                   </span>
                 </div>
@@ -553,7 +553,7 @@ export function AdminAuctionManager({ auctions }: AdminAuctionManagerProps) {
                 <Button
                   variant="outline"
                   onClick={() => setDeleteTarget(null)}
-                  className="h-14 rounded-2xl border-neutral-800 text-neutral-400 font-bold"
+                  className="h-14 rounded-2xl border-border text-muted-foreground font-bold"
                 >
                   닫기
                 </Button>

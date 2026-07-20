@@ -61,7 +61,7 @@ const faqJsonLd = {
 
 export default function FAQPage() {
     return (
-        <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-start pt-20 px-4 pb-20">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-20 px-4 pb-20">
             <script
                 type="application/ld+json"
                 dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
@@ -69,33 +69,33 @@ export default function FAQPage() {
             <div className="max-w-3xl w-full space-y-8">
                 <div className="flex items-center gap-4 mb-8">
                     <Link href="/">
-                        <Button variant="ghost" size="icon" className="rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400">
+                        <Button variant="ghost" size="icon" className="rounded-full bg-card border border-border text-muted-foreground">
                             <ArrowLeft className="w-5 h-5" />
                         </Button>
                     </Link>
-                    <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                    <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
                         <HelpCircle className="w-6 h-6 text-blue-500" />
                         자주 묻는 질문 (FAQ)
                     </h1>
                 </div>
 
                 {/* 일반 사용자 FAQ */}
-                <section className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-8 space-y-6">
+                <section className="bg-card border border-border rounded-3xl p-8 space-y-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
                             <User className="w-5 h-5 text-blue-500" />
                         </div>
-                        <h2 className="text-xl font-black text-white">일반 사용자</h2>
+                        <h2 className="text-xl font-black text-foreground">일반 사용자</h2>
                     </div>
 
                     <Accordion type="single" collapsible className="space-y-3">
-                        <AccordionItem value="item-0" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="item-0" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 나플이 뭔가요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>
-                                    <strong className="text-white">나플</strong>은 <strong className="text-white">나이트플로우(NightFlow)</strong>의 줄임말입니다.
+                                    <strong className="text-foreground">나플</strong>은 <strong className="text-foreground">나이트플로우(NightFlow)</strong>의 줄임말입니다.
                                 </p>
                                 <p className="mt-2">
                                     강남·홍대 클럽 파트너가 잔여 테이블을 올리면, 회원들이 입찰로 가격을 정해서 예약하는 서비스예요.
@@ -104,15 +104,15 @@ export default function FAQPage() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="item-0a" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="item-0a" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 퍼즐(클럽 조각)이 뭔가요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>
-                                    <strong className="text-white">퍼즐</strong>은 나이트플로우의 일행 모집 기능입니다.
-                                    흔히 <strong className="text-white">"클럽 조각"</strong>,{" "}
-                                    <strong className="text-white">"클럽 합석"</strong>이라고 부르는 그 기능이에요.
+                                    <strong className="text-foreground">퍼즐</strong>은 나이트플로우의 일행 모집 기능입니다.
+                                    흔히 <strong className="text-foreground">"클럽 조각"</strong>,{" "}
+                                    <strong className="text-foreground">"클럽 합석"</strong>이라고 부르는 그 기능이에요.
                                 </p>
                                 <p className="mt-2">
                                     인원이 부족할 때 같은 클럽에 갈 일행을 모집하거나, 다른 사람이
@@ -122,18 +122,18 @@ export default function FAQPage() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="item-0b" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="item-0b" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 클럽 게스트 / 무료입장이 뭔가요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>
-                                    <strong className="text-white">클럽 게스트</strong>는 클럽 파트너가 운영하는 게스트 명단에
-                                    등록되어 <strong className="text-white">무료입장</strong> 또는 할인 입장이 가능한
+                                    <strong className="text-foreground">클럽 게스트</strong>는 클럽 파트너가 운영하는 게스트 명단에
+                                    등록되어 <strong className="text-foreground">무료입장</strong> 또는 할인 입장이 가능한
                                     방식입니다.
                                 </p>
                                 <p className="mt-2">
-                                    나플의 <strong className="text-white">게스트 간판</strong>은 매주 월요일
+                                    나플의 <strong className="text-foreground">게스트 간판</strong>은 매주 월요일
                                     오후 6시에 갱신됩니다. 각 클럽 × 요일별로 게스트 입장 혜택
                                     (여성 무료, 프리드링크, 신청곡 등)이 다르게 적용됩니다.
                                 </p>
@@ -145,11 +145,11 @@ export default function FAQPage() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="item-0c" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="item-0c" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 게스트 명단은 어떻게 등록하나요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>
                                     원하는 클럽의 게스트 간판을 운영하는 파트너에게 직접 연락하면
                                     게스트 명단에 올려줍니다.
@@ -163,84 +163,84 @@ export default function FAQPage() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="item-0d" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="item-0d" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 클럽 부킹이 뭔가요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>
-                                    <strong className="text-white">클럽 부킹</strong>은 전통적인 한국 클럽 문화로
+                                    <strong className="text-foreground">클럽 부킹</strong>은 전통적인 한국 클럽 문화로
                                     파트너가 테이블에 합석할 사람을 안내해주는 방식을 말합니다.
                                 </p>
                                 <p className="mt-2">
-                                    나플에서는 부킹 대신 <strong className="text-white">테이블 경매</strong>,{" "}
-                                    <strong className="text-white">조각(합석)</strong>,{" "}
-                                    <strong className="text-white">게스트 간판</strong> 등 더 투명한 방식으로
+                                    나플에서는 부킹 대신 <strong className="text-foreground">테이블 경매</strong>,{" "}
+                                    <strong className="text-foreground">조각(합석)</strong>,{" "}
+                                    <strong className="text-foreground">게스트 간판</strong> 등 더 투명한 방식으로
                                     같은 목적(테이블·일행 매칭)을 해결합니다.
                                 </p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="item-0e" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="item-0e" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 여성무료는 어떻게 받나요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>
-                                    <strong className="text-white">여성무료</strong>는 클럽이 특정 요일·시간대에
+                                    <strong className="text-foreground">여성무료</strong>는 클럽이 특정 요일·시간대에
                                     여성 게스트에게 무료입장을 제공하는 혜택입니다.
                                 </p>
                                 <p className="mt-2">
-                                    나플의 <strong className="text-white">게스트 간판</strong>에서 해당 클럽이
+                                    나플의 <strong className="text-foreground">게스트 간판</strong>에서 해당 클럽이
                                     여성 무료를 운영하는 요일을 확인하고, 표시된 파트너에게 인스타 DM
                                     또는 카카오톡 오픈채팅으로 게스트 명단 등록을 요청하면 됩니다.
                                 </p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="item-6" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="item-6" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 클럽 입장은 어떻게 하나요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>1. 예약된 날짜와 시간에 클럽에 방문합니다.</p>
-                                <p>2. 입구에서 파트너 또는 직원에게 <span className="text-green-500 font-bold">예약자 이름과 전화번호</span>를 알려주세요.</p>
+                                <p>2. 입구에서 파트너 또는 직원에게 <span className="text-money font-bold">예약자 이름과 전화번호</span>를 알려주세요.</p>
                                 <p>3. 파트너가 예약을 확인하고 테이블로 안내합니다.</p>
                                 <p>4. 포함된 서비스(주류, 안주 등)를 확인하세요.</p>
-                                <p className="mt-3 text-amber-500">💡 추가 주문은 현장에서 별도 결제됩니다.</p>
+                                <p className="mt-3 text-brand-amber">💡 추가 주문은 현장에서 별도 결제됩니다.</p>
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>
                 </section>
 
                 {/* MD FAQ */}
-                <section className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-8 space-y-6">
+                <section className="bg-card border border-border rounded-3xl p-8 space-y-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                            <Store className="w-5 h-5 text-green-500" />
+                            <Store className="w-5 h-5 text-money" />
                         </div>
-                        <h2 className="text-xl font-black text-white">파트너 (마케팅 담당자)</h2>
+                        <h2 className="text-xl font-black text-foreground">파트너 (마케팅 담당자)</h2>
                     </div>
 
                     <Accordion type="single" collapsible className="space-y-3">
-                        <AccordionItem value="md-1" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="md-1" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 파트너가 되려면 어떻게 해야 하나요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>1. 카카오톡으로 회원가입 시 "파트너로 가입하기"를 선택합니다.</p>
                                 <p>2. 소속 클럽, 활동 지역, 은행 계좌 정보를 입력합니다.</p>
                                 <p>3. 관리자 승인 대기 (영업일 기준 1-2일 소요)</p>
                                 <p>4. 승인 완료 시 카카오톡 알림톡으로 안내됩니다.</p>
-                                <p className="mt-3 text-green-500 font-bold">💡 클럽과 정식 계약이 체결된 파트너만 승인됩니다.</p>
+                                <p className="mt-3 text-money font-bold">💡 클럽과 정식 계약이 체결된 파트너만 승인됩니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="md-2" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="md-2" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 조각은 어떻게 등록하나요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>1. 파트너 대시보드 → "조각 등록하기" 클릭</p>
                                 <p>2. 클럽, 테이블 타입, 인원, 포함 서비스, 이벤트 날짜를 입력합니다.</p>
                                 <p>3. 인당 가격을 설정합니다.</p>
@@ -249,112 +249,112 @@ export default function FAQPage() {
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="md-3" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="md-3" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 수수료는 얼마인가요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p className="font-bold text-white mb-2">플랫폼 수수료:</p>
-                                <p>• <span className="text-green-500 font-bold">베타 기간:</span> 수수료 0% (무료)</p>
-                                <p>• <span className="text-neutral-400">정식 오픈 후:</span> 별도 공지 예정</p>
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
+                                <p className="font-bold text-foreground mb-2">플랫폼 수수료:</p>
+                                <p>• <span className="text-money font-bold">베타 기간:</span> 수수료 0% (무료)</p>
+                                <p>• <span className="text-muted-foreground">정식 오픈 후:</span> 별도 공지 예정</p>
 
-                                <p className="mt-3 text-neutral-400">예시: 낙찰가 20만원인 경우</p>
+                                <p className="mt-3 text-muted-foreground">예시: 낙찰가 20만원인 경우</p>
                                 <p>• 플랫폼 수수료: 0원 (0%)</p>
                                 <p>• 파트너 정산 금액: 200,000원 (전액)</p>
 
-                                <p className="mt-3 text-green-500">베타 기간 동안 파트너 수수료가 무료입니다!</p>
+                                <p className="mt-3 text-money">베타 기간 동안 파트너 수수료가 무료입니다!</p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="md-4" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="md-4" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 정산은 언제 되나요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>NightFlow는 결제를 중개하지 않으므로 별도 정산 과정이 없습니다. 낙찰자가 파트너에게 직접 결제합니다.</p>
 
-                                <p className="mt-3 font-bold text-white">매출 확인:</p>
+                                <p className="mt-3 font-bold text-foreground">매출 확인:</p>
                                 <p>• 파트너 대시보드에서 낙찰 내역을 실시간으로 확인할 수 있습니다.</p>
                                 <p>• 낙찰자가 파트너에게 연락 → 현장 방문 확인 순으로 거래가 완료됩니다.</p>
 
-                                <p className="mt-3 text-amber-500">💡 파트너 대시보드 → 매출/정산에서 거래 현황을 확인할 수 있습니다.</p>
+                                <p className="mt-3 text-brand-amber">💡 파트너 대시보드 → 매출/정산에서 거래 현황을 확인할 수 있습니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="md-5" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="md-5" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 VIP 고객 관리는 어떻게 하나요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>1. 파트너 대시보드 → "VIP 고객" 메뉴 접근</p>
                                 <p>2. 경매 상세 페이지에서 입찰자를 클릭하면 신뢰도 프로필이 표시됩니다.</p>
                                 <p>3. "VIP 등록" 버튼을 누르고 메모를 추가합니다.</p>
                                 <p>4. VIP 고객은 입찰 목록에 ⭐ 배지로 표시됩니다.</p>
 
-                                <p className="mt-3 font-bold text-white">신뢰도 지표:</p>
+                                <p className="mt-3 font-bold text-foreground">신뢰도 지표:</p>
                                 <p>• 총 입찰 횟수</p>
                                 <p>• 낙찰률 (%)</p>
                                 <p>• 평균 입찰 금액</p>
                                 <p>• 방문 완료 횟수</p>
                                 <p>• 노쇼 횟수</p>
 
-                                <p className="mt-3 text-green-500">💡 VIP 고객에게 우선 연락하거나 특별 혜택을 제공할 수 있습니다.</p>
+                                <p className="mt-3 text-money">💡 VIP 고객에게 우선 연락하거나 특별 혜택을 제공할 수 있습니다.</p>
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>
                 </section>
 
                 {/* 기술/보안 FAQ */}
-                <section className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-8 space-y-6">
+                <section className="bg-card border border-border rounded-3xl p-8 space-y-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
                             <Shield className="w-5 h-5 text-purple-500" />
                         </div>
-                        <h2 className="text-xl font-black text-white">기술 및 보안</h2>
+                        <h2 className="text-xl font-black text-foreground">기술 및 보안</h2>
                     </div>
 
                     <Accordion type="single" collapsible className="space-y-3">
-                        <AccordionItem value="tech-1" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="tech-1" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 회원가입은 어떻게 하나요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>NightFlow는 카카오톡 간편 로그인만 지원합니다.</p>
                                 <p className="mt-2">1. "카카오로 시작하기" 버튼 클릭</p>
                                 <p>2. 카카오 계정으로 로그인</p>
                                 <p>3. 이름, 전화번호 입력 (본인 확인용)</p>
                                 <p>4. 가입 완료!</p>
 
-                                <p className="mt-3 text-green-500">💡 별도 비밀번호 설정이 필요 없어 편리합니다.</p>
+                                <p className="mt-3 text-money">💡 별도 비밀번호 설정이 필요 없어 편리합니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="tech-3" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="tech-3" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 개인정보는 안전한가요?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
-                                <p className="font-bold text-white mb-2">개인정보 보호 조치:</p>
-                                <p>• <span className="text-green-500 font-bold">암호화:</span> AES-256, TLS 1.3 적용</p>
-                                <p>• <span className="text-green-500 font-bold">접근 제어:</span> 최소 권한 원칙</p>
-                                <p>• <span className="text-green-500 font-bold">로그 기록:</span> 모든 접근 기록 보관</p>
-                                <p>• <span className="text-green-500 font-bold">정기 감사:</span> 보안 취약점 점검</p>
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
+                                <p className="font-bold text-foreground mb-2">개인정보 보호 조치:</p>
+                                <p>• <span className="text-money font-bold">암호화:</span> AES-256, TLS 1.3 적용</p>
+                                <p>• <span className="text-money font-bold">접근 제어:</span> 최소 권한 원칙</p>
+                                <p>• <span className="text-money font-bold">로그 기록:</span> 모든 접근 기록 보관</p>
+                                <p>• <span className="text-money font-bold">정기 감사:</span> 보안 취약점 점검</p>
 
-                                <p className="mt-3 text-neutral-400">개인정보처리방침은 <Link href="/privacy" className="text-green-500 underline">여기</Link>에서 확인할 수 있습니다.</p>
+                                <p className="mt-3 text-muted-foreground">개인정보처리방침은 <Link href="/privacy" className="text-money underline">여기</Link>에서 확인할 수 있습니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="tech-4" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="tech-4" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 계정을 탈퇴하려면?
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>1. 마이페이지 → 설정 → 계정 관리</p>
                                 <p>2. "회원 탈퇴" 클릭</p>
                                 <p>3. 탈퇴 사유 선택 (선택사항)</p>
                                 <p>4. "탈퇴하기" 확인</p>
 
-                                <p className="mt-3 text-amber-500 font-bold">⚠️ 주의사항:</p>
+                                <p className="mt-3 text-brand-amber font-bold">⚠️ 주의사항:</p>
                                 <p>• 진행 중인 거래나 정산이 있으면 완료 후 탈퇴 가능</p>
                                 <p>• 탈퇴 시 개인정보는 즉시 삭제 (법령 보관 의무 제외)</p>
                                 <p>• 재가입 시 이전 노쇼 기록은 승계되지 않음</p>
@@ -364,68 +364,68 @@ export default function FAQPage() {
                 </section>
 
                 {/* 문제 발생 시 */}
-                <section className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-8 space-y-6">
+                <section className="bg-card border border-border rounded-3xl p-8 space-y-6">
                     <div className="flex items-center gap-3 mb-4">
                         <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
                             <AlertTriangle className="w-5 h-5 text-red-500" />
                         </div>
-                        <h2 className="text-xl font-black text-white">문제 발생 시</h2>
+                        <h2 className="text-xl font-black text-foreground">문제 발생 시</h2>
                     </div>
 
                     <Accordion type="single" collapsible className="space-y-3">
-                        <AccordionItem value="dispute-1" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="dispute-1" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 파트너가 연락을 받지 않아요
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>낙찰 후 파트너가 응답하지 않는 경우:</p>
                                 <p className="mt-2">1. 경매 상세 페이지 하단의 <span className="text-red-400 font-bold">"파트너가 답하지 않아요"</span> 버튼을 눌러주세요.</p>
-                                <p>2. 신고 접수 시 연락 타이머가 <span className="text-green-400 font-bold">15분 연장</span>되고, 파트너에게 긴급 알림이 전송됩니다.</p>
-                                <p>3. 연장된 시간 내에도 연락이 되지 않으면 낙찰이 자동 취소되며, <span className="text-amber-400 font-bold">귀하에게는 패널티가 부과되지 않습니다.</span></p>
-                                <p className="mt-2 text-neutral-500">해당 파트너에게는 운영팀에서 별도 조치합니다.</p>
+                                <p>2. 신고 접수 시 연락 타이머가 <span className="text-money font-bold">15분 연장</span>되고, 파트너에게 긴급 알림이 전송됩니다.</p>
+                                <p>3. 연장된 시간 내에도 연락이 되지 않으면 낙찰이 자동 취소되며, <span className="text-brand-amber font-bold">귀하에게는 패널티가 부과되지 않습니다.</span></p>
+                                <p className="mt-2 text-muted-foreground">해당 파트너에게는 운영팀에서 별도 조치합니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="dispute-2" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="dispute-2" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 현장에서 테이블/서비스가 달라요
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>경매에 표시된 내용과 현장 서비스가 다른 경우:</p>
-                                <p className="mt-2">1. <span className="text-white font-bold">현장에서 먼저 파트너에게 직접 확인</span>해주세요. 대부분의 경우 즉시 해결됩니다.</p>
+                                <p className="mt-2">1. <span className="text-foreground font-bold">현장에서 먼저 파트너에게 직접 확인</span>해주세요. 대부분의 경우 즉시 해결됩니다.</p>
                                 <p>2. 해결되지 않으면 고객센터로 연락해주세요.</p>
                                 <p className="pl-4 mt-1 text-sm">- 이메일: <span className="text-blue-400">maddawids@gmail.com</span></p>
                                 <p className="pl-4 text-sm">- 전화: <span className="text-blue-400">070-5236-4647</span></p>
-                                <p className="mt-2">3. 운영팀이 파트너와 사실 확인 후 <span className="text-green-400 font-bold">24시간 내</span> 조치 결과를 안내드립니다.</p>
-                                <p className="mt-2 text-amber-500 font-bold">신고 내역은 해당 파트너의 신뢰도 평가에 반영됩니다.</p>
+                                <p className="mt-2">3. 운영팀이 파트너와 사실 확인 후 <span className="text-money font-bold">24시간 내</span> 조치 결과를 안내드립니다.</p>
+                                <p className="mt-2 text-brand-amber font-bold">신고 내역은 해당 파트너의 신뢰도 평가에 반영됩니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="dispute-3" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="dispute-3" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 금액 관련 분쟁이 발생했어요
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>NightFlow는 결제를 중개하지 않으므로, 금액 관련 분쟁은 파트너와 직접 해결이 원칙입니다.</p>
-                                <p className="mt-2 text-white font-bold">그러나 다음 경우 운영팀이 개입합니다:</p>
+                                <p className="mt-2 text-foreground font-bold">그러나 다음 경우 운영팀이 개입합니다:</p>
                                 <p className="pl-4 mt-1">- 경매 표시 금액과 현장 요구 금액이 다른 경우</p>
                                 <p className="pl-4">- 파트너가 추가 비용을 부당하게 요구하는 경우</p>
                                 <p className="pl-4">- 서비스 미제공 등 명백한 피해가 발생한 경우</p>
-                                <p className="mt-3">고객센터로 <span className="text-white font-bold">상황 설명 + 증빙(채팅 캡처 등)</span>을 보내주시면 확인 후 조치합니다.</p>
+                                <p className="mt-3">고객센터로 <span className="text-foreground font-bold">상황 설명 + 증빙(채팅 캡처 등)</span>을 보내주시면 확인 후 조치합니다.</p>
                             </AccordionContent>
                         </AccordionItem>
 
-                        <AccordionItem value="dispute-4" className="border border-neutral-800 rounded-xl px-6 bg-neutral-900/30">
-                            <AccordionTrigger className="text-white font-bold hover:no-underline">
+                        <AccordionItem value="dispute-4" className="border border-border rounded-xl px-6 bg-card/30">
+                            <AccordionTrigger className="text-foreground font-bold hover:no-underline">
                                 부적절한 파트너를 신고하고 싶어요
                             </AccordionTrigger>
-                            <AccordionContent className="text-neutral-400 leading-relaxed">
+                            <AccordionContent className="text-muted-foreground leading-relaxed">
                                 <p>다음과 같은 경우 파트너를 신고할 수 있습니다:</p>
                                 <p className="pl-4 mt-2">- 반복적 미응답 또는 무단 취소</p>
                                 <p className="pl-4">- 허위 조각 등록 (존재하지 않는 테이블 등)</p>
                                 <p className="pl-4">- 불친절하거나 부적절한 언행</p>
                                 <p className="pl-4">- 플랫폼 외 결제 강요</p>
-                                <p className="mt-3">고객센터(maddawids@gmail.com)로 신고해주시면 <span className="text-white font-bold">운영팀이 조사 후 경고, 활동 정지, 영구 차단</span> 등의 조치를 취합니다.</p>
+                                <p className="mt-3">고객센터(maddawids@gmail.com)로 신고해주시면 <span className="text-foreground font-bold">운영팀이 조사 후 경고, 활동 정지, 영구 차단</span> 등의 조치를 취합니다.</p>
                             </AccordionContent>
                         </AccordionItem>
                     </Accordion>
@@ -434,16 +434,16 @@ export default function FAQPage() {
                 {/* 고객센터 안내 */}
                 <section className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 rounded-3xl p-8 text-center space-y-4">
                     <Phone className="w-12 h-12 text-blue-500 mx-auto" />
-                    <h3 className="text-xl font-black text-white">
+                    <h3 className="text-xl font-black text-foreground">
                         더 궁금한 점이 있으신가요?
                     </h3>
-                    <p className="text-neutral-400">
+                    <p className="text-muted-foreground">
                         FAQ에서 답변을 찾지 못하셨다면 고객센터로 문의해주세요.
                         <br />
                         평일 10:00-18:00, 영업일 기준 24시간 내 답변드립니다.
                     </p>
                     <div className="flex flex-col gap-2 text-sm">
-                        <p className="text-neutral-300">
+                        <p className="text-foreground/80">
                             📸 인스타 DM:{" "}
                             <a
                                 href="https://www.instagram.com/nightflow.kr"
@@ -454,10 +454,10 @@ export default function FAQPage() {
                                 @nightflow.kr
                             </a>
                         </p>
-                        <p className="text-neutral-300">
+                        <p className="text-foreground/80">
                             📧 이메일: <span className="text-blue-500 font-bold">maddawids@gmail.com</span>
                         </p>
-                        <p className="text-neutral-300">
+                        <p className="text-foreground/80">
                             📞 전화: <span className="text-blue-500 font-bold">070-5236-4647</span>
                         </p>
                     </div>
@@ -465,7 +465,7 @@ export default function FAQPage() {
 
                 <div className="text-center pt-8">
                     <Link href="/">
-                        <Button variant="link" className="text-neutral-500 hover:text-white transition-colors">
+                        <Button variant="link" className="text-muted-foreground hover:text-foreground transition-colors">
                             홈으로 돌아가기
                         </Button>
                     </Link>

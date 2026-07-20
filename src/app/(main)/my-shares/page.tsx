@@ -46,25 +46,25 @@ export default function MySharesPage() {
 
   if (loading || userLoading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-24">
+    <div className="min-h-screen bg-background pb-24">
       <div className="max-w-lg mx-auto px-4 pt-6">
         <div className="flex items-center gap-2 mb-6">
-          <Users className="w-5 h-5 text-amber-400" />
-          <h1 className="text-xl font-bold text-white">내 조각 참여</h1>
+          <Users className="w-5 h-5 text-brand-amber" />
+          <h1 className="text-xl font-bold text-foreground">내 조각 참여</h1>
         </div>
 
         {auctions.length === 0 ? (
           <div className="text-center py-16">
-            <Users className="w-12 h-12 text-neutral-700 mx-auto mb-4" />
-            <p className="text-neutral-500 text-sm">참여 중인 조각 매물이 없습니다.</p>
-            <p className="text-neutral-600 text-xs mt-1">메인 화면에서 조각 매물을 찾아보세요.</p>
+            <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground text-sm">참여 중인 조각 매물이 없습니다.</p>
+            <p className="text-muted-foreground text-xs mt-1">메인 화면에서 조각 매물을 찾아보세요.</p>
           </div>
         ) : (
           <div className="space-y-3">

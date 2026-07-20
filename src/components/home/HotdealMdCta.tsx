@@ -50,26 +50,26 @@ export function HotdealMdCta() {
         className={`w-full flex items-center gap-2 rounded-2xl px-4 py-3 active:scale-[0.99] transition-transform text-left ${
           isEmpty
             ? "bg-amber-500/15 border border-amber-500/40"
-            : "bg-[#1C1C1E] border border-neutral-800"
+            : "bg-card border border-border"
         }`}
       >
         {isEmpty ? (
-          <ArrowUp className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
+          <ArrowUp className="w-4 h-4 text-brand-amber shrink-0 animate-bounce" />
         ) : (
-          <TrendingUp className="w-4 h-4 text-amber-400 shrink-0" />
+          <TrendingUp className="w-4 h-4 text-brand-amber shrink-0" />
         )}
-        <p className={`text-[12.5px] font-bold leading-snug flex-1 ${isEmpty ? "text-amber-50" : "text-white"}`}>
+        <p className={`text-[12.5px] font-bold leading-snug flex-1 ${isEmpty ? "text-foreground dark:text-amber-50" : "text-foreground"}`}>
           {isEmpty ? (
             <>
-              아직도 테이블이 비었다면, <span className="text-amber-400">핫딜</span>로 채워봐요!
+              아직도 테이블이 비었다면, <span className="text-brand-amber">핫딜</span>로 채워봐요!
             </>
           ) : (
             <>
-              <span className="text-amber-400">당일 특가 패키지</span>로 매출을 올려보세요!
+              <span className="text-brand-amber">당일 특가 패키지</span>로 매출을 올려보세요!
             </>
           )}
         </p>
-        <ChevronRight className={`w-4 h-4 shrink-0 ${isEmpty ? "text-amber-400" : "text-neutral-500"}`} />
+        <ChevronRight className={`w-4 h-4 shrink-0 ${isEmpty ? "text-brand-amber" : "text-muted-foreground"}`} />
       </button>
       <HotdealPreviewSheet open={sheetOpen} onOpenChange={setSheetOpen} />
     </>

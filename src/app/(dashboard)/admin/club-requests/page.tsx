@@ -65,16 +65,16 @@ export default async function AdminClubRequestsPage() {
   const ranked = [...freq.values()].sort((a, b) => b.count - a.count || (b.latest > a.latest ? 1 : -1));
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto max-w-2xl px-4 py-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <Link href="/admin" className="p-2 -ml-2 hover:bg-neutral-800 rounded-xl transition-colors">
-            <ChevronLeft className="w-5 h-5 text-neutral-400" />
+          <Link href="/admin" className="p-2 -ml-2 hover:bg-muted rounded-xl transition-colors">
+            <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
           <div>
             <h1 className="text-xl font-black tracking-tight">클럽 요청 (영업 리드)</h1>
-            <p className="text-[12px] text-neutral-500 mt-0.5">
+            <p className="text-[12px] text-muted-foreground mt-0.5">
               유저가 직접 요청한 클럽 · 총 {rows.length}건 · 고유 {ranked.length}개
             </p>
           </div>
@@ -82,34 +82,34 @@ export default async function AdminClubRequestsPage() {
 
         {/* 상위 요청 클럽 — 영업 우선순위 */}
         {ranked.length > 0 && (
-          <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 mb-6">
+          <Card className="bg-card border-border/50 p-4 mb-6">
             <div className="flex items-center gap-2 mb-3">
-              <TrendingUp className="w-4 h-4 text-amber-400" />
-              <h2 className="text-[13px] font-black text-white">요청 많은 클럽 TOP 10</h2>
+              <TrendingUp className="w-4 h-4 text-brand-amber" />
+              <h2 className="text-[13px] font-black text-foreground">요청 많은 클럽 TOP 10</h2>
             </div>
             {ranked.slice(0, 10).length === 0 ? (
-              <p className="text-[12px] text-neutral-500">아직 요청이 없습니다</p>
+              <p className="text-[12px] text-muted-foreground">아직 요청이 없습니다</p>
             ) : (
               <div className="space-y-2">
                 {ranked.slice(0, 10).map((r, i) => (
                   <div
                     key={r.display}
-                    className="flex items-center justify-between gap-3 py-2 border-b border-neutral-800 last:border-0"
+                    className="flex items-center justify-between gap-3 py-2 border-b border-border last:border-0"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-[11px] font-black text-neutral-500 w-5 tabular-nums">
+                      <span className="text-[11px] font-black text-muted-foreground w-5 tabular-nums">
                         {i + 1}
                       </span>
                       <div className="min-w-0">
-                        <p className="text-[14px] font-bold text-white truncate">{r.display}</p>
+                        <p className="text-[14px] font-bold text-foreground truncate">{r.display}</p>
                         {r.areas.size > 0 && (
-                          <p className="text-[11px] text-neutral-500 truncate">
+                          <p className="text-[11px] text-muted-foreground truncate">
                             {[...r.areas].join(", ")}
                           </p>
                         )}
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-black shrink-0">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 text-brand-amber text-[11px] font-black shrink-0">
                       {r.count}건
                     </span>
                   </div>
@@ -122,21 +122,21 @@ export default async function AdminClubRequestsPage() {
         {/* 전체 요청 목록 */}
         {rows.length === 0 ? (
           <div className="text-center py-16 space-y-3">
-            <Sparkles className="w-10 h-10 text-neutral-700 mx-auto" />
-            <p className="text-[15px] font-bold text-neutral-400">아직 클럽 요청이 없습니다</p>
-            <p className="text-[12px] text-neutral-600">
+            <Sparkles className="w-10 h-10 text-muted-foreground mx-auto" />
+            <p className="text-[15px] font-bold text-muted-foreground">아직 클럽 요청이 없습니다</p>
+            <p className="text-[12px] text-muted-foreground">
               조각 리스트에서 유저가 클럽을 요청하면 여기에 표시돼요
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            <h2 className="text-[13px] font-black text-neutral-300 px-1">최근 요청 (최신순)</h2>
+            <h2 className="text-[13px] font-black text-foreground/80 px-1">최근 요청 (최신순)</h2>
             {rows.map((r) => (
-              <Card key={r.id} className="bg-[#1C1C1E] border-neutral-800/50 p-4">
+              <Card key={r.id} className="bg-card border-border/50 p-4">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="min-w-0">
-                    <h3 className="text-[15px] font-black text-white truncate">{r.club_name}</h3>
-                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-neutral-500">
+                    <h3 className="text-[15px] font-black text-foreground truncate">{r.club_name}</h3>
+                    <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
                       {r.area && (
                         <>
                           <span>{r.area}</span>
@@ -150,7 +150,7 @@ export default async function AdminClubRequestsPage() {
                       </span>
                     </div>
                   </div>
-                  <span className="text-[11px] text-neutral-600 whitespace-nowrap">
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
                     {new Date(r.created_at).toLocaleString("ko-KR", {
                       month: "2-digit",
                       day: "2-digit",
@@ -160,7 +160,7 @@ export default async function AdminClubRequestsPage() {
                   </span>
                 </div>
                 {r.note && (
-                  <p className="text-[12.5px] text-neutral-400 leading-relaxed mt-2 whitespace-pre-wrap break-words">
+                  <p className="text-[12.5px] text-muted-foreground leading-relaxed mt-2 whitespace-pre-wrap break-words">
                     {r.note}
                   </p>
                 )}

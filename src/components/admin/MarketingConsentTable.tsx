@@ -94,7 +94,7 @@ export function MarketingConsentTable({ users }: { users: UserRow[] }) {
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <Card className="bg-[#1C1C1E] border-neutral-800 p-4 flex flex-col md:flex-row gap-3 md:items-center justify-between">
+      <Card className="bg-card border-border p-4 flex flex-col md:flex-row gap-3 md:items-center justify-between">
         <div className="flex flex-wrap gap-2">
           {([
             ["sendable", "발송가능"],
@@ -107,15 +107,15 @@ export function MarketingConsentTable({ users }: { users: UserRow[] }) {
               onClick={() => setFilter(key)}
               className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
                 filter === key
-                  ? "bg-white text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:text-white"
+                  ? "bg-inverse text-inverse-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
               {label}
             </button>
           ))}
 
-          <div className="w-px h-5 bg-neutral-700 mx-1 self-center" />
+          <div className="w-px h-5 bg-muted mx-1 self-center" />
 
           {([
             ["user_only", "유저만"],
@@ -128,9 +128,9 @@ export function MarketingConsentTable({ users }: { users: UserRow[] }) {
               className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors border ${
                 roleFilter === key
                   ? key === "md_only"
-                    ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                    : "bg-white text-black border-white"
-                  : "bg-neutral-800 text-neutral-500 border-transparent hover:text-white"
+                    ? "bg-amber-500/20 text-brand-amber border-amber-500/40"
+                    : "bg-inverse text-inverse-foreground border-white"
+                  : "bg-muted text-muted-foreground border-transparent hover:text-foreground"
               }`}
             >
               {label}
@@ -140,16 +140,16 @@ export function MarketingConsentTable({ users }: { users: UserRow[] }) {
 
         <div className="flex gap-2 items-center">
           <div className="relative">
-            <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="이름·번호 검색"
-              className="pl-9 pr-3 py-2 rounded-lg bg-neutral-900 border border-neutral-700 text-white text-[13px] placeholder-neutral-600 focus:outline-none focus:border-white w-44"
+              className="pl-9 pr-3 py-2 rounded-lg bg-card border border-border text-foreground text-[13px] placeholder-neutral-600 focus:outline-none focus:border-white w-44"
             />
           </div>
-          <Button onClick={copyPhones} variant="outline" className="border-neutral-700 text-white hover:bg-neutral-800 gap-1.5">
+          <Button onClick={copyPhones} variant="outline" className="border-border text-foreground hover:bg-muted gap-1.5">
             <Copy className="w-4 h-4" /> 번호복사
           </Button>
           <Button onClick={downloadCsv} className="bg-amber-500 text-black hover:bg-amber-400 font-black gap-1.5">
@@ -158,15 +158,15 @@ export function MarketingConsentTable({ users }: { users: UserRow[] }) {
         </div>
       </Card>
 
-      <div className="text-[13px] text-neutral-500">
+      <div className="text-[13px] text-muted-foreground">
         {filtered.length.toLocaleString()}명 표시
       </div>
 
       {/* Table */}
-      <Card className="bg-[#1C1C1E] border-neutral-800 overflow-hidden">
+      <Card className="bg-card border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
-            <thead className="bg-neutral-900 text-neutral-500 text-[11px] uppercase tracking-wider">
+            <thead className="bg-card text-muted-foreground text-[11px] uppercase tracking-wider">
               <tr>
                 <th className="text-left px-4 py-3 font-bold">닉네임</th>
                 <th className="text-left px-4 py-3 font-bold">전화번호</th>
@@ -178,27 +178,27 @@ export function MarketingConsentTable({ users }: { users: UserRow[] }) {
             </thead>
             <tbody className="divide-y divide-neutral-800">
               {filtered.map((u) => (
-                <tr key={u.id} className="hover:bg-neutral-900/50">
-                  <td className="px-4 py-3 font-medium text-white">
-                    {u.display_name || <span className="text-neutral-600">-</span>}
-                    {u.role === "md" && <span className="ml-2 text-[10px] text-amber-400 font-bold">파트너</span>}
+                <tr key={u.id} className="hover:bg-card/50">
+                  <td className="px-4 py-3 font-medium text-foreground">
+                    {u.display_name || <span className="text-muted-foreground">-</span>}
+                    {u.role === "md" && <span className="ml-2 text-[10px] text-brand-amber font-bold">파트너</span>}
                   </td>
-                  <td className="px-4 py-3 font-mono text-neutral-300">{formatPhone(u.phone)}</td>
+                  <td className="px-4 py-3 font-mono text-foreground/80">{formatPhone(u.phone)}</td>
                   <td className="px-4 py-3">
                     {u.alimtalk_consent ? (
-                      <span className="inline-flex items-center gap-1 text-green-400 font-bold">
+                      <span className="inline-flex items-center gap-1 text-money font-bold">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Y
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-neutral-600">
+                      <span className="inline-flex items-center gap-1 text-muted-foreground">
                         <XCircle className="w-3.5 h-3.5" /> N
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-neutral-400">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {u.alimtalk_consent_at ? dayjs(u.alimtalk_consent_at).format("YY.MM.DD") : "-"}
                   </td>
-                  <td className="px-4 py-3 text-neutral-400">
+                  <td className="px-4 py-3 text-muted-foreground">
                     {dayjs(u.created_at).format("YY.MM.DD")}
                   </td>
                   <td className="px-4 py-3">
@@ -207,14 +207,14 @@ export function MarketingConsentTable({ users }: { users: UserRow[] }) {
                         <Ban className="w-3 h-3" /> 차단
                       </span>
                     ) : (
-                      <span className="text-neutral-500 text-[11px]">정상</span>
+                      <span className="text-muted-foreground text-[11px]">정상</span>
                     )}
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-12 text-center text-neutral-600">
+                  <td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
                     조건에 맞는 유저가 없습니다
                   </td>
                 </tr>

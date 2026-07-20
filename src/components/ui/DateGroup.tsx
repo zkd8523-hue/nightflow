@@ -40,16 +40,16 @@ export function DateGroup({ date, children, showCount = false, label: customLabe
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2.5 px-1 py-1">
         <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px]" />
-        <h3 className="text-[16px] font-black text-white tracking-tight">{label}</h3>
+        <h3 className="text-[16px] font-black text-foreground tracking-tight">{label}</h3>
         {dday && (
           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[5px] ${
-            dday === "오늘" ? "bg-red-500/20 text-red-400" : "bg-neutral-800 text-neutral-400"
+            dday === "오늘" ? "bg-red-500/20 text-red-400" : "bg-muted text-muted-foreground"
           }`}>
             {dday}
           </span>
         )}
         {count !== null && !dday && (
-          <span className="text-[11px] text-neutral-500 font-medium">{count}건</span>
+          <span className="text-[11px] text-muted-foreground font-medium">{count}건</span>
         )}
       </div>
       <div className="flex flex-col gap-7">

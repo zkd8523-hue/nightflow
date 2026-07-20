@@ -119,36 +119,36 @@ export default function AdminPuzzleNoshowReportsPage() {
 
   if (userLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-border border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-2xl px-4 py-6">
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
-          <h1 className="text-xl font-black text-white">연락 미수신 신고</h1>
+          <h1 className="text-xl font-black text-foreground">연락 미수신 신고</h1>
           {reports.length > 0 && (
-            <span className="text-[13px] text-neutral-500">{reports.length}건 대기</span>
+            <span className="text-[13px] text-muted-foreground">{reports.length}건 대기</span>
           )}
         </div>
 
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 mb-5 text-[12px] text-amber-300 leading-relaxed">
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 mb-5 text-[12px] text-brand-amber leading-relaxed">
           파트너가 오퍼 수락 후 방장과 연락이 닿지 않았다고 표시한 건입니다. 인용 시 방장에게 스트라이크가 적용되며,
           방장은 <Link href="/admin/appeals" className="underline">이의제기 페이지</Link>에서 다툴 수 있어요.
         </div>
 
         {reports.length === 0 ? (
-          <div className="py-20 text-center text-neutral-500 text-[14px]">
-            <CheckCircle2 className="w-10 h-10 text-green-500/60 mx-auto mb-3" />
+          <div className="py-20 text-center text-muted-foreground text-[14px]">
+            <CheckCircle2 className="w-10 h-10 text-money dark:text-money/60 mx-auto mb-3" />
             대기 중인 신고가 없습니다.
           </div>
         ) : (
@@ -162,32 +162,32 @@ export default function AdminPuzzleNoshowReportsPage() {
               const mdName = r.md_display_name || r.md_name || "파트너";
               const leaderStrikes = r.leader_strike_count ?? 0;
               return (
-                <div key={r.id} className="bg-[#1C1C1E] rounded-2xl p-4 border border-red-500/20 space-y-3">
+                <div key={r.id} className="bg-card rounded-2xl p-4 border border-red-500/20 space-y-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 text-[12px] text-neutral-400 font-bold flex-wrap">
+                      <div className="flex items-center gap-2 text-[12px] text-muted-foreground font-bold flex-wrap">
                         <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
                         <span>{eventDate}</span>
                         {r.puzzle_area && <span>· {r.puzzle_area}</span>}
                         {r.club_name && <span>· {r.club_name}</span>}
                       </div>
-                      <div className="mt-1.5 text-[13px] text-white">
+                      <div className="mt-1.5 text-[13px] text-foreground">
                         <span className="font-bold text-red-400">{mdName}</span>
-                        <span className="text-neutral-500"> 가 </span>
+                        <span className="text-muted-foreground"> 가 </span>
                         <span className="font-bold">{leaderName}</span>
-                        <span className="text-neutral-500"> 와 연락 미수신 신고</span>
+                        <span className="text-muted-foreground"> 와 연락 미수신 신고</span>
                       </div>
-                      <div className="mt-0.5 text-[11px] text-neutral-500">
+                      <div className="mt-0.5 text-[11px] text-muted-foreground">
                         제안가 {r.proposed_price.toLocaleString()}원 · 신고 {markedAt}
                         {leaderStrikes > 0 && (
-                          <span className="ml-2 text-amber-400 font-bold">방장 스트라이크 {leaderStrikes}</span>
+                          <span className="ml-2 text-brand-amber font-bold">방장 스트라이크 {leaderStrikes}</span>
                         )}
                       </div>
                     </div>
                     {r.puzzle_id && (
                       <Link
                         href={`/flags/${r.puzzle_id}`}
-                        className="shrink-0 inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white transition-colors"
+                        className="shrink-0 inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                       >
                         퍼즐 <ExternalLink className="w-3 h-3" />
                       </Link>
@@ -206,7 +206,7 @@ export default function AdminPuzzleNoshowReportsPage() {
                     <button
                       onClick={() => handleDismiss(r.id)}
                       disabled={processing === r.id}
-                      className="px-3 py-2 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 font-black text-[12px] rounded-xl transition-colors disabled:opacity-40 flex items-center gap-1"
+                      className="px-3 py-2 bg-muted hover:bg-muted text-foreground/80 font-black text-[12px] rounded-xl transition-colors disabled:opacity-40 flex items-center gap-1"
                     >
                       <XCircle className="w-3.5 h-3.5" />
                       기각

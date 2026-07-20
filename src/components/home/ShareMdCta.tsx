@@ -47,13 +47,13 @@ export function ShareMdCta() {
     return (
       <Link
         href="/md/dashboard?section=share"
-        className="flex items-center gap-2 rounded-2xl px-4 py-3 bg-[#1C1C1E] border border-neutral-800 active:scale-[0.99] transition-transform"
+        className="flex items-center gap-2 rounded-2xl px-4 py-3 bg-card border border-border active:scale-[0.99] transition-transform"
       >
-        <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-        <p className="text-[12.5px] font-bold leading-snug flex-1 text-white">
-          <span className="text-amber-400">내 조각</span> 세팅하기
+        <Sparkles className="w-4 h-4 text-brand-amber shrink-0" />
+        <p className="text-[12.5px] font-bold leading-snug flex-1 text-foreground">
+          <span className="text-brand-amber">내 조각</span> 세팅하기
         </p>
-        <ChevronRight className="w-4 h-4 shrink-0 text-neutral-500" />
+        <ChevronRight className="w-4 h-4 shrink-0 text-muted-foreground" />
       </Link>
     );
   }
@@ -65,11 +65,11 @@ export function ShareMdCta() {
         onClick={() => setPreviewOpen(true)}
         className="w-full flex items-center gap-2 rounded-2xl px-4 py-3 bg-amber-500/20 border border-amber-500/70 active:scale-[0.99] transition-transform text-left"
       >
-        <ArrowUp className="w-4 h-4 text-amber-400 shrink-0 animate-bounce" />
-        <p className="text-[12.5px] font-bold leading-snug flex-1 text-amber-50">
-          클럽당 1명만 <span className="text-amber-400">조각</span>을 올릴 수 있어요. <span className="text-amber-200/60 font-medium">(선착순 마감)</span>
+        <ArrowUp className="w-4 h-4 text-brand-amber shrink-0 animate-bounce" />
+        <p className="text-[12.5px] font-bold leading-snug flex-1 text-foreground dark:text-amber-50">
+          클럽당 1명만 <span className="text-brand-amber">조각</span>을 올릴 수 있어요. <span className="text-brand-amber dark:text-brand-amber/60 font-medium">(선착순 마감)</span>
         </p>
-        <ChevronRight className="w-4 h-4 shrink-0 text-amber-400" />
+        <ChevronRight className="w-4 h-4 shrink-0 text-brand-amber" />
       </button>
       <SharePreviewSheet open={previewOpen} onOpenChange={setPreviewOpen} />
     </>

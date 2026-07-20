@@ -114,8 +114,8 @@ export function DateFilterCalendar({ eventDates, value, onChange, maxDate, range
           onClick={() => onChange("all")}
           className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
             value === "all"
-              ? "bg-white text-black"
-              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+              ? "bg-inverse text-inverse-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
           전체
@@ -134,8 +134,8 @@ export function DateFilterCalendar({ eventDates, value, onChange, maxDate, range
               onClick={() => onChange(active ? "all" : key)}
               className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                 active
-                  ? "bg-white text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  ? "bg-inverse text-inverse-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               {CHIP_LABELS[key]}
@@ -167,19 +167,19 @@ export function DateFilterCalendar({ eventDates, value, onChange, maxDate, range
         }}
         classNames={{
           day: "w-10 h-10 p-0 text-center relative",
-          weekday: "text-neutral-500 font-bold text-[11px] w-10 text-center pb-1 uppercase [&:nth-child(6)]:text-red-400 [&:last-child]:text-red-400",
+          weekday: "text-muted-foreground font-bold text-[11px] w-10 text-center pb-1 uppercase [&:nth-child(6)]:text-red-400 [&:last-child]:text-red-400",
         }}
         modifiersClassNames={{
           past: "opacity-15 pointer-events-none",
           beyondMax: "opacity-15 pointer-events-none",
-          chipSelected: "[&>button]:bg-white [&>button]:text-black [&>button]:font-black",
+          chipSelected: "[&>button]:bg-inverse [&>button]:text-inverse-foreground [&>button]:font-black",
           weekend: "[&>button]:text-red-400",
-          range_start: "[&>button]:bg-white! [&>button]:text-black [&>button]:font-black [&>button]:rounded-r-none [&>button]:transition-none",
-          range_end: "[&>button]:bg-white! [&>button]:text-black [&>button]:font-black [&>button]:rounded-l-none [&>button]:transition-none",
-          range_middle: "[&>button]:bg-white/15! [&>button]:text-white [&>button]:rounded-none [&>button]:transition-none",
-          pendingStart: "[&>button]:bg-white! [&>button]:text-black [&>button]:font-black [&>button]:rounded-lg! [&>button]:transition-none",
+          range_start: "[&>button]:bg-inverse! [&>button]:text-inverse-foreground [&>button]:font-black [&>button]:rounded-r-none [&>button]:transition-none",
+          range_end: "[&>button]:bg-inverse! [&>button]:text-inverse-foreground [&>button]:font-black [&>button]:rounded-l-none [&>button]:transition-none",
+          range_middle: "[&>button]:bg-white/15! [&>button]:text-foreground [&>button]:rounded-none [&>button]:transition-none",
+          pendingStart: "[&>button]:bg-inverse! [&>button]:text-inverse-foreground [&>button]:font-black [&>button]:rounded-lg! [&>button]:transition-none",
           today:
-            "before:content-['오늘'] before:absolute before:top-0.5 before:left-1/2 before:-translate-x-1/2 before:text-[7px] before:text-neutral-400 before:font-bold before:whitespace-nowrap before:leading-none",
+            "before:content-['오늘'] before:absolute before:top-0.5 before:left-1/2 before:-translate-x-1/2 before:text-[7px] before:text-muted-foreground before:font-bold before:whitespace-nowrap before:leading-none",
           hasAuction:
             "after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-amber-500 after:rounded-full after:content-['']",
         }}
@@ -219,17 +219,17 @@ export function DateFilterCalendar({ eventDates, value, onChange, maxDate, range
         }}
         classNames={{
           day: "w-10 h-10 p-0 text-center relative",
-          weekday: "text-neutral-500 font-bold text-[11px] w-10 text-center pb-1 uppercase [&:nth-child(6)]:text-red-400 [&:last-child]:text-red-400",
+          weekday: "text-muted-foreground font-bold text-[11px] w-10 text-center pb-1 uppercase [&:nth-child(6)]:text-red-400 [&:last-child]:text-red-400",
         }}
         modifiersClassNames={{
           past: "opacity-15 pointer-events-none",
           beyondMax: "opacity-15 pointer-events-none",
-          chipSelected: "[&>button]:bg-white [&>button]:text-black [&>button]:font-black",
+          chipSelected: "[&>button]:bg-inverse [&>button]:text-inverse-foreground [&>button]:font-black",
           weekend: "[&>button]:text-red-400",
           selected:
-            "[&>button]:bg-white [&>button]:text-black [&>button]:font-black [&>button]:hover:bg-neutral-100",
+            "[&>button]:bg-inverse [&>button]:text-inverse-foreground [&>button]:font-black [&>button]:hover:opacity-90",
           today:
-            "before:content-['오늘'] before:absolute before:top-0.5 before:left-1/2 before:-translate-x-1/2 before:text-[7px] before:text-neutral-400 before:font-bold before:whitespace-nowrap before:leading-none",
+            "before:content-['오늘'] before:absolute before:top-0.5 before:left-1/2 before:-translate-x-1/2 before:text-[7px] before:text-muted-foreground before:font-bold before:whitespace-nowrap before:leading-none",
           hasAuction:
             "after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:bg-amber-500 after:rounded-full after:content-['']",
         }}

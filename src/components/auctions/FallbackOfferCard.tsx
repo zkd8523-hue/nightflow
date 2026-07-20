@@ -42,8 +42,8 @@ export function FallbackOfferCard({ auction, onAccepted, onDeclined }: FallbackO
   const urgencyColor = level === "critical"
     ? "text-red-400"
     : level === "warning"
-    ? "text-amber-400"
-    : "text-green-400";
+    ? "text-brand-amber"
+    : "text-money";
 
   const handleAccept = async () => {
     setLoading("accept");
@@ -85,16 +85,16 @@ export function FallbackOfferCard({ auction, onAccepted, onDeclined }: FallbackO
 
   if (isExpired) {
     return (
-      <Card className="bg-[#1C1C1E] border-neutral-800 overflow-hidden">
+      <Card className="bg-card border-border overflow-hidden">
         <div className="p-5 space-y-3">
-          <Badge className="bg-neutral-800 text-neutral-500 border-neutral-700 text-xs font-bold">
+          <Badge className="bg-muted text-muted-foreground border-border text-xs font-bold">
             제안 만료
           </Badge>
-          <p className="text-neutral-500 text-sm font-medium">
+          <p className="text-muted-foreground text-sm font-medium">
             차순위 낙찰 제안이 만료되었습니다. 패널티는 없습니다.
           </p>
           <Link href={`/auctions/${auction.id}`}>
-            <Button variant="ghost" size="sm" className="text-neutral-500 hover:text-white w-full">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground w-full">
               경매 보기 <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </Link>
@@ -104,11 +104,11 @@ export function FallbackOfferCard({ auction, onAccepted, onDeclined }: FallbackO
   }
 
   return (
-    <Card className="bg-[#1C1C1E] border-amber-500/40 overflow-hidden shadow-lg shadow-amber-500/5">
+    <Card className="bg-card border-amber-500/40 overflow-hidden shadow-lg shadow-amber-500/5">
       <div className="p-5 space-y-4">
         {/* 헤더 */}
         <div className="flex items-start justify-between gap-2">
-          <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 font-black text-xs px-2.5 py-1 flex items-center gap-1.5">
+          <Badge className="bg-amber-500/20 text-brand-amber border-amber-500/30 font-black text-xs px-2.5 py-1 flex items-center gap-1.5">
             <Trophy className="w-3.5 h-3.5" />
             차순위 낙찰 제안
           </Badge>
@@ -123,10 +123,10 @@ export function FallbackOfferCard({ auction, onAccepted, onDeclined }: FallbackO
 
         {/* 클럽 정보 */}
         <div className="space-y-1.5">
-          <h2 className="text-xl font-black text-amber-400 tracking-tight">
+          <h2 className="text-xl font-black text-brand-amber tracking-tight">
             {auction.club?.name}
           </h2>
-          <div className="flex items-center gap-2 text-xs text-neutral-500 font-bold">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
             <MapPin className="w-3 h-3" /> {auction.club?.area}
             <span>·</span>
             <Calendar className="w-3 h-3" /> {formatEventDate(auction.event_date)}
@@ -140,27 +140,27 @@ export function FallbackOfferCard({ auction, onAccepted, onDeclined }: FallbackO
         </div>
 
         {/* 가격 */}
-        <div className="bg-neutral-900/60 rounded-2xl p-4 border border-neutral-800/50">
+        <div className="bg-card/60 rounded-2xl p-4 border border-border/50">
           <div className="flex justify-between items-center">
-            <span className="text-neutral-500 text-sm font-bold">제안 금액</span>
-            <span className="text-2xl font-black text-white">{formatPrice(price)}</span>
+            <span className="text-muted-foreground text-sm font-bold">제안 금액</span>
+            <span className="text-2xl font-black text-foreground">{formatPrice(price)}</span>
           </div>
-          <p className="text-[11px] text-neutral-600 font-medium text-right mt-1">
+          <p className="text-[11px] text-muted-foreground font-medium text-right mt-1">
             이전 낙찰자의 예약이 취소되었습니다
           </p>
         </div>
 
         {/* 안내 */}
-        <p className="text-[11px] text-neutral-500 leading-relaxed text-center">
+        <p className="text-[11px] text-muted-foreground leading-relaxed text-center">
           수락 시 파트너 연락 타이머가 시작됩니다.{"\n"}
-          거절하거나 시간이 지나도 <span className="text-white font-bold">패널티 없습니다.</span>
+          거절하거나 시간이 지나도 <span className="text-foreground font-bold">패널티 없습니다.</span>
         </p>
 
         {/* 버튼 */}
         <div className="flex gap-2">
           <Button
             variant="outline"
-            className="flex-1 h-11 border-neutral-700 text-neutral-400 hover:bg-neutral-800 hover:text-white font-bold rounded-xl"
+            className="flex-1 h-11 border-border text-muted-foreground hover:bg-muted hover:text-foreground font-bold rounded-xl"
             onClick={handleDecline}
             disabled={!!loading}
           >
@@ -176,7 +176,7 @@ export function FallbackOfferCard({ auction, onAccepted, onDeclined }: FallbackO
         </div>
 
         <Link href={`/auctions/${auction.id}`} className="block">
-          <Button variant="ghost" size="sm" className="w-full text-neutral-600 hover:text-neutral-400 text-xs">
+          <Button variant="ghost" size="sm" className="w-full text-muted-foreground hover:text-muted-foreground text-xs">
             경매 상세 보기 <ChevronRight className="w-3.5 h-3.5 ml-1" />
           </Button>
         </Link>

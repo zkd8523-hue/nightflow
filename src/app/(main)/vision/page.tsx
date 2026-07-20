@@ -19,13 +19,13 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
     return (
-        <div className="relative min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center px-6 py-12">
+        <div className="relative min-h-screen bg-background flex flex-col items-center justify-center px-6 py-12">
 
             {/* 뒤로가기 (좌상단 고정) */}
             <Link
                 href="/"
                 aria-label="홈으로 돌아가기"
-                className="absolute top-5 left-5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-neutral-500 hover:bg-white/5 hover:text-white transition-colors"
+                className="absolute top-5 left-5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
             >
                 <ArrowLeft className="w-5 h-5" />
             </Link>
@@ -34,7 +34,7 @@ export default function AboutPage() {
 
                 {/* 아이콘 */}
                 <div className="flex justify-center">
-                    <Sparkles className="w-10 h-10 text-amber-500" />
+                    <Sparkles className="w-10 h-10 text-brand-amber" />
                 </div>
 
                 {/* 매니페스토 */}
@@ -42,15 +42,15 @@ export default function AboutPage() {
                     <h1 className="sr-only">
                         나플 - 밤을 더 아름답게 만든다 (나이트플로우 매니페스토)
                     </h1>
-                    <p aria-hidden="true" className="text-[22px] font-black text-white leading-snug tracking-tight whitespace-nowrap">
+                    <p aria-hidden="true" className="text-[22px] font-black text-foreground leading-snug tracking-tight whitespace-nowrap">
                         “밤을 더 아름답게 만든다.”
                     </p>
                     <div className="-mt-3 h-[2px] w-8 bg-amber-500 mx-auto rounded-full" />
-                    <p className="text-[16px] leading-[1.9] text-neutral-300 break-keep">
+                    <p className="text-[16px] leading-[1.9] text-foreground/80 break-keep">
                         음악이 있고, 웃음이 있고, 추억이 있는 밤.<br />
                         책임이 있고, 자유가 있고, 내일을 위한 밤.
                     </p>
-                    <p className="-mt-2 text-[17px] leading-[1.5] text-neutral-300 break-keep">
+                    <p className="-mt-2 text-[17px] leading-[1.5] text-foreground/80 break-keep">
                         그 밤을 위해 우리는 움직입니다.
                     </p>
                 </div>
@@ -59,13 +59,13 @@ export default function AboutPage() {
                 <div className="pt-8 space-y-3">
                     <Link
                         href="/"
-                        className="group flex flex-col items-center gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 px-5 py-5 hover:border-amber-500/50 hover:bg-neutral-900 transition-colors"
+                        className="group flex flex-col items-center gap-3 rounded-2xl border border-border bg-background px-5 py-5 hover:border-amber-500/50 hover:bg-card transition-colors"
                     >
                         <div className="text-center">
-                            <p className="text-[13px] text-neutral-500 leading-tight">
+                            <p className="text-[13px] text-muted-foreground leading-tight">
                                 전국 클럽지도 · 예약 · 조각 · 게스트
                             </p>
-                            <p className="text-[15px] font-black text-white leading-tight mt-1">
+                            <p className="text-[15px] font-black text-foreground leading-tight mt-1">
                                 한눈에 보러가기
                             </p>
                         </div>
@@ -82,7 +82,7 @@ export default function AboutPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         aria-label="나이트플로우 인스타그램"
-                        className="flex h-11 w-11 items-center justify-center rounded-full border border-neutral-700 text-neutral-400 hover:border-white hover:text-white transition-colors"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-muted-foreground hover:border-white hover:text-foreground transition-colors"
                     >
                         <Instagram className="w-5 h-5" />
                     </a>

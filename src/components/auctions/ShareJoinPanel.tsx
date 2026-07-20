@@ -278,7 +278,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
   return (
     <>
       {/* 좌석 현황 */}
-      <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
+      <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex flex-wrap gap-1.5">
             {slotLayout.map((slot, i) => (
@@ -289,35 +289,35 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
             <span className={`flex items-center gap-0.5 text-xs font-bold px-2.5 py-1 rounded-full flex-shrink-0 ${
               seatsLeft === 1
                 ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                : "bg-amber-500/20 text-brand-amber border border-amber-500/30"
             }`}>
               <Zap className="w-3 h-3 fill-current" />
               라스트 {seatsLeft}자리!
             </span>
           )}
           {isFull && (
-            <span className="text-xs font-bold text-neutral-500 bg-neutral-800 px-2.5 py-1 rounded-full flex-shrink-0">마감</span>
+            <span className="text-xs font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded-full flex-shrink-0">마감</span>
           )}
         </div>
 
         {/* 성비 안내 */}
         {hasGenderSlot && (
-          <p className="text-[11px] text-neutral-500">성비 목표 외 인원도 파트너 승인 시 참여 가능해요.</p>
+          <p className="text-[11px] text-muted-foreground">성비 목표 외 인원도 파트너 승인 시 참여 가능해요.</p>
         )}
 
         {/* 인당 가격 */}
         <div className="flex items-baseline gap-1">
-          <span className="text-2xl font-bold text-white">
+          <span className="text-2xl font-bold text-foreground">
             {formatNumber(auction.price_per_seat ?? 0)}원
           </span>
-          <span className="text-sm text-neutral-500">/ 1인</span>
+          <span className="text-sm text-muted-foreground">/ 1인</span>
         </div>
 
         {/* CTA + 인원 세팅 */}
         {hasClaim ? (
           <div className="space-y-2">
             <Button
-              className="w-full h-12 rounded-2xl font-bold text-base bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25"
+              className="w-full h-12 rounded-2xl font-bold text-base bg-amber-500/15 text-brand-amber border border-amber-500/30 hover:bg-amber-500/25"
               onClick={() => setSuccessSheet(true)}
             >
               <ExternalLink className="w-4 h-4 mr-2" />
@@ -325,7 +325,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
             </Button>
             <Button
               variant="ghost"
-              className="w-full h-10 text-neutral-500 hover:text-neutral-300 text-sm"
+              className="w-full h-10 text-muted-foreground hover:text-foreground/80 text-sm"
               disabled={cancelLoading}
               onClick={handleCancel}
             >
@@ -336,15 +336,15 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
         ) : isOpen && !isFull && !currentUserId ? (
           <Button
             onClick={() => router.push(loginHref)}
-            className="w-full h-12 rounded-2xl font-black text-base bg-white text-black hover:bg-neutral-100 transition-all active:scale-[0.98]"
+            className="w-full h-12 rounded-2xl font-black text-base bg-inverse text-inverse-foreground hover:opacity-90 transition-all active:scale-[0.98]"
           >
             로그인하고 참여하기
           </Button>
         ) : isOpen && !isFull ? (
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[13px] font-semibold text-neutral-300">함께 갈 인원</span>
-              <span className="text-[11px] text-neutral-500">본인 포함 · 최대 {Math.min(3, seatsLeft)}명</span>
+              <span className="text-[13px] font-semibold text-foreground/80">함께 갈 인원</span>
+              <span className="text-[11px] text-muted-foreground">본인 포함 · 최대 {Math.min(3, seatsLeft)}명</span>
             </div>
             <div className="flex gap-2">
               <div className="flex-1 grid grid-cols-3 gap-1">
@@ -359,10 +359,10 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
                       onClick={() => setPartySize(n)}
                       className={`h-12 rounded-2xl border text-sm font-bold transition-all ${
                         disabled
-                          ? "bg-neutral-900 border-neutral-800 text-neutral-700 cursor-not-allowed"
+                          ? "bg-card border-border text-muted-foreground cursor-not-allowed"
                           : active
-                            ? "bg-white border-white text-black"
-                            : "bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-neutral-500"
+                            ? "bg-inverse border-white text-inverse-foreground"
+                            : "bg-muted border-border text-foreground/80 hover:border-border"
                       }`}
                     >
                       {n}명
@@ -371,7 +371,7 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
                 })}
               </div>
               <Button
-                className={`flex-1 h-12 rounded-2xl font-bold text-base text-black transition-all ${isMd ? "bg-white hover:bg-neutral-100" : "bg-amber-500 hover:bg-amber-400"}`}
+                className={`flex-1 h-12 rounded-2xl font-bold text-base text-inverse-foreground transition-all ${isMd ? "bg-inverse hover:opacity-90" : "bg-amber-500 hover:bg-amber-400"}`}
                 disabled={loading}
                 onClick={handleJoin}
               >
@@ -381,31 +381,31 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
           </div>
         ) : (
           <Button
-            className="w-full h-12 rounded-2xl font-bold text-base bg-neutral-800 text-neutral-500 cursor-not-allowed transition-all"
+            className="w-full h-12 rounded-2xl font-bold text-base bg-muted text-muted-foreground cursor-not-allowed transition-all"
             disabled
           >
             {isFull ? "마감" : "참여 불가"}
           </Button>
         )}
 
-        <p className="text-xs text-neutral-600 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           결제 없이 오픈채팅에서 파트너가 안내합니다
         </p>
       </div>
 
       {/* 참여 완료 시트 */}
       <Sheet open={successSheet} onOpenChange={setSuccessSheet}>
-        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-10">
           <SheetHeader className="text-left pb-4">
-            <SheetTitle className="text-white text-lg">참여 완료!</SheetTitle>
+            <SheetTitle className="text-foreground text-lg">참여 완료!</SheetTitle>
           </SheetHeader>
           <div className="space-y-4">
-            <p className="text-neutral-400 text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               파트너의 오픈채팅방에 참여해서 최종 안내를 받으세요.
               현장에서 인당 {formatNumber(auction.price_per_seat ?? 0)}원을 파트너에게 직접 전달합니다.
               {partySize > 1 && (
                 <>
-                  {" "}일행 포함 <span className="text-white font-bold">{partySize}명</span>으로 신청했어요.
+                  {" "}일행 포함 <span className="text-foreground font-bold">{partySize}명</span>으로 신청했어요.
                 </>
               )}
             </p>
@@ -428,11 +428,11 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
 
       {/* 성별 게이트 (참여 전 1회) */}
       <Sheet open={genderSheetOpen} onOpenChange={setGenderSheetOpen}>
-        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-10">
           <SheetHeader className="text-left pb-4">
-            <SheetTitle className="text-white text-lg">조각 매치를 위해 성별을 알려주세요</SheetTitle>
+            <SheetTitle className="text-foreground text-lg">조각 매치를 위해 성별을 알려주세요</SheetTitle>
           </SheetHeader>
-          <p className="text-[12px] text-neutral-500 mb-4">한 번 설정하면 변경할 수 없어요</p>
+          <p className="text-[12px] text-muted-foreground mb-4">한 번 설정하면 변경할 수 없어요</p>
           <div className="grid grid-cols-2 gap-3 pb-2">
             {([
               { value: "male", label: "남자", emoji: "🧑" },
@@ -442,12 +442,12 @@ export function ShareJoinPanel({ auction, currentUserId, onShareClick, isMd }: S
                 key={value}
                 type="button"
                 onClick={() => handleSaveMyGender(value)}
-                className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all bg-neutral-800 border-neutral-700 ${
+                className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all bg-muted border-border ${
                   value === "female" ? "hover:border-pink-500 hover:bg-pink-500/10" : "hover:border-green-500 hover:bg-green-500/10"
                 }`}
               >
                 <span className="text-2xl">{emoji}</span>
-                <span className="text-[15px] font-bold text-white">{label}</span>
+                <span className="text-[15px] font-bold text-foreground">{label}</span>
               </button>
             ))}
           </div>

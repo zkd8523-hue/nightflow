@@ -79,7 +79,7 @@ export default async function InsightsPage() {
   const byLang: DropoffByLang[] = (langRes.data as DropoffByLang[]) || [];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
+    <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
       <div className="max-w-7xl mx-auto px-6 space-y-10">
         {/* Header */}
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -87,48 +87,48 @@ export default async function InsightsPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/admin"
-                className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 hover:border-neutral-700 transition-colors"
+                className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border hover:border-border transition-colors"
               >
-                <ChevronLeft className="w-5 h-5 text-neutral-400" />
+                <ChevronLeft className="w-5 h-5 text-muted-foreground" />
               </Link>
-              <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-widest text-[11px]">
+              <div className="flex items-center gap-2 text-muted-foreground font-bold uppercase tracking-widest text-[11px]">
                 <BarChart3 className="w-3.5 h-3.5" />
                 Funnel Insights
               </div>
             </div>
             <h1 className="text-4xl font-black tracking-tighter">이탈·전환 인사이트</h1>
-            <p className="text-neutral-500 font-medium">최근 7일 기준 · user_events 집계</p>
+            <p className="text-muted-foreground font-medium">최근 7일 기준 · user_events 집계</p>
           </div>
         </header>
 
         {/* Section Icons Legend */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 flex items-center gap-3">
+          <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
             <TrendingDown className="w-5 h-5 text-red-400" />
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-tight text-neutral-500">이탈 지점</p>
-              <p className="text-sm font-bold text-white">TOP 10</p>
+              <p className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">이탈 지점</p>
+              <p className="text-sm font-bold text-foreground">TOP 10</p>
             </div>
           </div>
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 flex items-center gap-3">
+          <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
             <Target className="w-5 h-5 text-emerald-400" />
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-tight text-neutral-500">회원가입</p>
-              <p className="text-sm font-bold text-white">4단계 퍼널</p>
+              <p className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">회원가입</p>
+              <p className="text-sm font-bold text-foreground">4단계 퍼널</p>
             </div>
           </div>
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 flex items-center gap-3">
+          <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
             <BarChart3 className="w-5 h-5 text-blue-400" />
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-tight text-neutral-500">유입 채널</p>
-              <p className="text-sm font-bold text-white">UTM 품질</p>
+              <p className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">유입 채널</p>
+              <p className="text-sm font-bold text-foreground">UTM 품질</p>
             </div>
           </div>
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 flex items-center gap-3">
-            <Globe2 className="w-5 h-5 text-amber-400" />
+          <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
+            <Globe2 className="w-5 h-5 text-brand-amber" />
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-tight text-neutral-500">언어별</p>
-              <p className="text-sm font-bold text-white">외국인 트랙</p>
+              <p className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">언어별</p>
+              <p className="text-sm font-bold text-foreground">외국인 트랙</p>
             </div>
           </div>
         </div>

@@ -28,17 +28,17 @@ export default function JaSeoulNightlifePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/ja" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/ja" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">ソウルナイトライフガイド</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">日本人旅行者がどこへ行き、何を予約し、ソウルナイトライフを本当に楽しむ方法。ブローカー手数料なし、韓国語不要。</p>
+          <p className="text-[14px] text-muted-foreground leading-relaxed">日本人旅行者がどこへ行き、何を予約し、ソウルナイトライフを本当に楽しむ方法。ブローカー手数料なし、韓国語不要。</p>
         </header>
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">エリア別ソウルナイトライフ</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">ソウルナイトライフは一つではない — 4つのエリアで4つの異なる雰囲気・客層・価格があります。</p>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">ソウルナイトライフは一つではない — 4つのエリアで4つの異なる雰囲気・客層・価格があります。</p>
           <div className="space-y-3">
             {[
               { name: "江南", vibe: "高級EDM、洗練された客層、VIPルーム文化、₩750K+ルーム", link: "/ja/clubs/gangnam" },
@@ -46,16 +46,16 @@ export default function JaSeoulNightlifePage() {
               { name: "梨泰院", vibe: "国際的、英語フレンドリー、ハウスと電子音楽", link: "/ja/clubs/itaewon" },
               { name: "狎鴎亭 & 清潭", vibe: "高級VIPラウンジ、シャンパンサービス、₩2M+ルーム", link: "/ja/clubs/apgujeong" },
             ].map((d) => (
-              <Link key={d.name} href={d.link} className="block p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-neutral-600 transition-colors">
-                <p className="font-bold text-[15px] text-neutral-100 mb-1">{d.name}</p>
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{d.vibe}</p>
+              <Link key={d.name} href={d.link} className="block p-5 rounded-2xl bg-card border border-border hover:border-border transition-colors">
+                <p className="font-bold text-[15px] text-foreground mb-1">{d.name}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{d.vibe}</p>
               </Link>
             ))}
           </div>
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">ソウルの夜の費用</h2>
-          <ul className="space-y-2 text-[13px] text-neutral-300">
+          <ul className="space-y-2 text-[13px] text-foreground/80">
             <li>• ウォークインカジュアル: 一人 ₩30,000–80,000</li>
             <li>• 弘大VIPルーム (6人): 一人 ₩50,000–100,000</li>
             <li>• 江南メインVIP (4–6人): 一人 ₩150,000–300,000</li>
@@ -65,16 +65,16 @@ export default function JaSeoulNightlifePage() {
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">韓国語不要で予約する方法</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">行きたいソウルクラブを選んでください、または雰囲気だけ伝えてください — 日付・人数・予算と一緒に。NightFlowが直接クラブに連絡し、予算内で一番良い席を確保します。到着後、直接入場。</p>
-          <Link href="/ja" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors">🍾 NightFlowで予約する</Link>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">行きたいソウルクラブを選んでください、または雰囲気だけ伝えてください — 日付・人数・予算と一緒に。NightFlowが直接クラブに連絡し、予算内で一番良い席を確保します。到着後、直接入場。</p>
+          <Link href="/ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
         </section>
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">関連ガイド</h2>
-          <ul className="space-y-1 text-[13px] text-neutral-400">
-            <li><Link className="hover:text-white" href="/ja/vip-tables">ソウルVIPルーム予約 →</Link></li>
-            <li><Link className="hover:text-white" href="/ja/guests">ソウルクラブ ゲストリスト →</Link></li>
-            <li><Link className="hover:text-white" href="/ja/kpop-clubs">ソウルK-POPクラブ →</Link></li>
-            <li><Link className="hover:text-white" href="/ja/faq">ソウルクラブ FAQ →</Link></li>
+          <ul className="space-y-1 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/ja/vip-tables">ソウルVIPルーム予約 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/guests">ソウルクラブ ゲストリスト →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/kpop-clubs">ソウルK-POPクラブ →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/faq">ソウルクラブ FAQ →</Link></li>
           </ul>
         </section>
       </div>

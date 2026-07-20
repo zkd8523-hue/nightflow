@@ -144,13 +144,13 @@ export function HomeShareCarousel({
     // 지역 필터로 비었을 땐 "이 지역엔 없음" + 필터 해제 유도
     if (isAreaFiltered) {
       return (
-        <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center -mx-4">
-          <p className="text-[14px] text-neutral-400 font-bold">이 지역엔 조각이 없어요</p>
+        <div className="bg-card rounded-3xl border border-border p-6 text-center -mx-4">
+          <p className="text-[14px] text-muted-foreground font-bold">이 지역엔 조각이 없어요</p>
           {onClearAreaFilter && (
             <button
               type="button"
               onClick={onClearAreaFilter}
-              className="mt-3 inline-flex items-center gap-1 px-4 py-2 rounded-full bg-neutral-800 hover:bg-neutral-700 text-white text-[13px] font-bold transition"
+              className="mt-3 inline-flex items-center gap-1 px-4 py-2 rounded-full bg-muted hover:bg-muted text-foreground text-[13px] font-bold transition"
             >
               전체 지역 보기
             </button>
@@ -161,10 +161,10 @@ export function HomeShareCarousel({
     const isMdOrAdmin = userRole === "md" || userRole === "admin";
     if (isMdOrAdmin) {
       return (
-        <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
+        <div className="bg-card rounded-3xl border border-border p-6 text-center space-y-3 -mx-4">
           <div className="space-y-0.5">
-            <p className="text-[13px] text-neutral-400 font-medium">아직 조각이 없어요</p>
-            <p className="text-[15px] text-white font-bold">지금이 제일 먼저 노출될 타이밍!</p>
+            <p className="text-[13px] text-muted-foreground font-medium">아직 조각이 없어요</p>
+            <p className="text-[15px] text-foreground font-bold">지금이 제일 먼저 노출될 타이밍!</p>
           </div>
           <Link
             href="/md/dashboard?section=share"
@@ -177,10 +177,10 @@ export function HomeShareCarousel({
     }
     // 유저: MD 선점 카드 UI를 차용 → 조각 올리기 진입점으로 전환
     return (
-      <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
+      <div className="bg-card rounded-3xl border border-border p-6 text-center space-y-3 -mx-4">
         <div className="space-y-1">
-          <p className="text-[13px] text-white font-bold">파티원과 함께 놀아요!</p>
-          <p className="text-[11px] text-neutral-500">조각이 모이면 클럽에서 테이블을 제안해요</p>
+          <p className="text-[13px] text-foreground font-bold">파티원과 함께 놀아요!</p>
+          <p className="text-[11px] text-muted-foreground">조각이 모이면 클럽에서 테이블을 제안해요</p>
         </div>
         {newShareHref && (
           <Link
@@ -201,9 +201,9 @@ export function HomeShareCarousel({
     <div className="space-y-3">
       {/* 조각 카드 (홈은 날짜 필터 없이 이번 주 전체) */}
       {filtered.length === 0 ? (
-        <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center -mx-4">
-          <p className="text-[14px] text-neutral-400 font-bold">이번 주 조각이 없어요</p>
-          <p className="text-[11px] text-neutral-600 mt-1">조금만 기다려주세요</p>
+        <div className="bg-card rounded-3xl border border-border p-6 text-center -mx-4">
+          <p className="text-[14px] text-muted-foreground font-bold">이번 주 조각이 없어요</p>
+          <p className="text-[11px] text-muted-foreground mt-1">조금만 기다려주세요</p>
         </div>
       ) : (
         <div
@@ -239,11 +239,11 @@ export function HomeShareCarousel({
               aria-label="조각 더보기"
             >
               <div className="text-center w-full mt-8">
-                <div className="inline-flex items-center gap-1 text-[15px] font-black text-neutral-300 group-hover:text-white transition-colors">
+                <div className="inline-flex items-center gap-1 text-[15px] font-black text-foreground/80 group-hover:text-foreground transition-colors">
                   더보기
                   <ChevronRight className="w-4 h-4" />
                 </div>
-                <p className="text-[11px] text-neutral-500 mt-1">{filtered.length}개 보러가기</p>
+                <p className="text-[11px] text-muted-foreground mt-1">{filtered.length}개 보러가기</p>
               </div>
             </Link>
           )}

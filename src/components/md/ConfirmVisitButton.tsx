@@ -165,7 +165,7 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
                         onClick={() => setShowFallbackSheet(true)}
                         disabled={loading}
                         variant="outline"
-                        className="w-full h-10 border-neutral-700 bg-neutral-900 text-neutral-400 font-bold hover:bg-neutral-800 rounded-xl flex items-center justify-center gap-1.5 text-[13px]"
+                        className="w-full h-10 border-border bg-card text-muted-foreground font-bold hover:bg-muted rounded-xl flex items-center justify-center gap-1.5 text-[13px]"
                     >
                         차순위 넘기기
                         <ChevronRight className="w-3.5 h-3.5" />
@@ -173,9 +173,9 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
 
                     {/* 차순위 넘기기 이유 선택 Sheet */}
                     <Sheet open={showFallbackSheet} onOpenChange={setShowFallbackSheet}>
-                        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+                        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-10">
                             <SheetHeader className="mb-4">
-                                <SheetTitle className="text-white text-base font-bold">차순위로 넘기는 이유를 선택해주세요</SheetTitle>
+                                <SheetTitle className="text-foreground text-base font-bold">차순위로 넘기는 이유를 선택해주세요</SheetTitle>
                             </SheetHeader>
                             <div className="space-y-3">
                                 {/* 노쇼 */}
@@ -188,11 +188,11 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
                                             <AlertTriangle className="w-4 h-4 text-red-400" />
                                         </div>
                                         <div className="text-left">
-                                            <p className="text-white font-bold text-sm">노쇼</p>
-                                            <p className="text-neutral-500 text-xs">연락을 받지 못했습니다</p>
+                                            <p className="text-foreground font-bold text-sm">노쇼</p>
+                                            <p className="text-muted-foreground text-xs">연락을 받지 못했습니다</p>
                                         </div>
                                     </div>
-                                    <ChevronRight className="w-4 h-4 text-neutral-600" />
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                 </button>
 
                                 {/* 합의 취소 */}
@@ -202,14 +202,14 @@ export function ConfirmVisitButton({ auctionId, auctionStatus = "won" }: Confirm
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center">
-                                            <Handshake className="w-4 h-4 text-amber-400" />
+                                            <Handshake className="w-4 h-4 text-brand-amber" />
                                         </div>
                                         <div className="text-left">
-                                            <p className="text-white font-bold text-sm">합의 취소</p>
-                                            <p className="text-neutral-500 text-xs">고객과 협의했습니다 · 패널티 없음</p>
+                                            <p className="text-foreground font-bold text-sm">합의 취소</p>
+                                            <p className="text-muted-foreground text-xs">고객과 협의했습니다 · 패널티 없음</p>
                                         </div>
                                     </div>
-                                    <ChevronRight className="w-4 h-4 text-neutral-600" />
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
                                 </button>
                             </div>
                         </SheetContent>

@@ -36,12 +36,12 @@ export function ClubStrip({ clubs: initialClubs }: ClubStripProps) {
   return (
     <section className="mb-1">
       <div className="flex items-center justify-between mb-3 px-1">
-        <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest">
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
           이런 스팟 어때?
         </span>
         <Link
           href="/clubs"
-          className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
+          className="text-[11px] text-muted-foreground hover:text-foreground/80 transition-colors"
         >
           전체 {clubs.length}개 →
         </Link>
@@ -53,7 +53,7 @@ export function ClubStrip({ clubs: initialClubs }: ClubStripProps) {
             href={`/clubs/${club.id}`}
             className="flex flex-col items-center gap-1.5 shrink-0 group"
           >
-            <div className="w-14 h-14 rounded-full overflow-hidden bg-neutral-800 border border-neutral-800 group-hover:border-neutral-600 transition-colors">
+            <div className="w-14 h-14 rounded-full overflow-hidden bg-muted border border-border group-hover:border-border transition-colors">
               {club.thumbnail_url ? (
                 <Image
                   src={club.thumbnail_url}
@@ -64,12 +64,12 @@ export function ClubStrip({ clubs: initialClubs }: ClubStripProps) {
                   loading="lazy"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-white font-black text-xl">
+                <div className="w-full h-full flex items-center justify-center text-foreground font-black text-xl">
                   {club.name[0]}
                 </div>
               )}
             </div>
-            <span className="text-[11px] text-neutral-500 font-medium text-center w-16 truncate group-hover:text-neutral-300 transition-colors">
+            <span className="text-[11px] text-muted-foreground font-medium text-center w-16 truncate group-hover:text-foreground/80 transition-colors">
               {club.name}
             </span>
           </Link>

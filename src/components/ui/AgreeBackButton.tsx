@@ -31,7 +31,7 @@ export function AgreeBackButton({
   return (
     <Button
       onClick={handleClick}
-      className="w-full h-14 bg-white text-black hover:bg-neutral-200 font-black text-base rounded-2xl"
+      className="w-full h-14 bg-inverse text-inverse-foreground hover:opacity-90 font-black text-base rounded-2xl"
     >
       <Check className="w-5 h-5 mr-2" />
       {label}

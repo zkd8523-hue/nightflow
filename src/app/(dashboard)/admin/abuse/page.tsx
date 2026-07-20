@@ -158,11 +158,11 @@ export default async function AdminAbusePage() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-20 text-white">
+    <div className="min-h-screen bg-background pb-20 text-foreground">
       <div className="max-w-3xl mx-auto px-4">
         {/* 헤더 */}
         <div className="flex items-center gap-3 py-5">
-          <Link href="/admin" className="text-white">
+          <Link href="/admin" className="text-foreground">
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <ShieldAlert className="w-5 h-5 text-red-400" />
@@ -171,21 +171,21 @@ export default async function AdminAbusePage() {
 
         {/* 요약 */}
         <div className="grid grid-cols-3 gap-3 mb-5">
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-xl px-4 py-3">
-            <p className="text-[11px] text-neutral-500 font-bold">깃발 게시 유저</p>
-            <p className="text-[18px] font-black text-white mt-0.5">{totalLeaders}명</p>
+          <div className="bg-card border border-border rounded-xl px-4 py-3">
+            <p className="text-[11px] text-muted-foreground font-bold">깃발 게시 유저</p>
+            <p className="text-[18px] font-black text-foreground mt-0.5">{totalLeaders}명</p>
           </div>
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-xl px-4 py-3">
-            <p className="text-[11px] text-neutral-500 font-bold">3건+ 수락 0</p>
+          <div className="bg-card border border-border rounded-xl px-4 py-3">
+            <p className="text-[11px] text-muted-foreground font-bold">3건+ 수락 0</p>
             <p className="text-[18px] font-black text-red-400 mt-0.5">{zeroAccept}명</p>
           </div>
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-xl px-4 py-3">
-            <p className="text-[11px] text-neutral-500 font-bold">동일 파트너 ×2+</p>
+          <div className="bg-card border border-border rounded-xl px-4 py-3">
+            <p className="text-[11px] text-muted-foreground font-bold">동일 파트너 ×2+</p>
             <p className="text-[18px] font-black text-red-400 mt-0.5">{repeatedMd}명</p>
           </div>
         </div>
 
-        <p className="text-[11px] text-neutral-500 mb-3">
+        <p className="text-[11px] text-muted-foreground mb-3">
           최근 깃발 게시일 내림차순. 클릭 시 게시글 목록 펼침.
         </p>
 

@@ -91,24 +91,24 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
 
   return (
     <Dialog open={!!source} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-md">
+      <DialogContent className="bg-card border-border max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
-            <GitMerge className="w-4 h-4 text-amber-400" /> 클럽 병합
+          <DialogTitle className="text-foreground flex items-center gap-2">
+            <GitMerge className="w-4 h-4 text-brand-amber" /> 클럽 병합
           </DialogTitle>
         </DialogHeader>
 
         {source && (
           <div className="space-y-4">
             {/* Source 정보 + 영향 범위 */}
-            <div className="bg-neutral-900 rounded-xl p-3 border border-neutral-800">
-              <p className="text-xs text-neutral-500 mb-1">병합할 클럽 (사라짐)</p>
-              <p className="text-base text-white font-bold">
-                {source.name} <span className="text-neutral-500 text-xs ml-1">{source.area}</span>
+            <div className="bg-card rounded-xl p-3 border border-border">
+              <p className="text-xs text-muted-foreground mb-1">병합할 클럽 (사라짐)</p>
+              <p className="text-base text-foreground font-bold">
+                {source.name} <span className="text-muted-foreground text-xs ml-1">{source.area}</span>
               </p>
               {preview && (
-                <p className="text-xs text-neutral-500 mt-2">
-                  경매 <span className="text-amber-400 font-bold">{preview.auction_count}건</span>, 파트너 <span className="text-amber-400 font-bold">{preview.md_count}명</span>이 대표 클럽으로 이전됩니다
+                <p className="text-xs text-muted-foreground mt-2">
+                  경매 <span className="text-brand-amber font-bold">{preview.auction_count}건</span>, 파트너 <span className="text-brand-amber font-bold">{preview.md_count}명</span>이 대표 클럽으로 이전됩니다
                 </p>
               )}
             </div>
@@ -116,31 +116,31 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
             {/* 대표 클럽 검색/선택 */}
             {!target ? (
               <div className="space-y-2">
-                <p className="text-xs text-neutral-500">대표 클럽 검색</p>
+                <p className="text-xs text-muted-foreground">대표 클럽 검색</p>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <input
                     type="text"
                     value={search}
                     onChange={(e) => searchClubs(e.target.value)}
                     placeholder="클럽명 검색..."
-                    className="w-full bg-neutral-900 border border-neutral-700 rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                    className="w-full bg-card border border-border rounded-xl pl-8 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
                     autoFocus
                   />
                 </div>
                 {results.length > 0 && (
-                  <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
+                  <div className="bg-card border border-border rounded-xl overflow-hidden max-h-60 overflow-y-auto">
                     {results.map((c) => (
                       <button
                         key={c.id}
                         onClick={() => setTarget(c)}
-                        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-neutral-800 transition-colors text-left"
+                        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-muted transition-colors text-left"
                       >
-                        <span className="text-sm text-white font-bold">
+                        <span className="text-sm text-foreground font-bold">
                           {c.name}
-                          <span className="text-xs text-neutral-500 font-normal ml-1.5">(파트너 {c.md_count}명)</span>
+                          <span className="text-xs text-muted-foreground font-normal ml-1.5">(파트너 {c.md_count}명)</span>
                         </span>
-                        <span className="text-xs text-neutral-500">{c.area}</span>
+                        <span className="text-xs text-muted-foreground">{c.area}</span>
                       </button>
                     ))}
                   </div>
@@ -148,12 +148,12 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
               </div>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs text-neutral-500">대표 클럽 (이쪽으로 합쳐짐)</p>
+                <p className="text-xs text-muted-foreground">대표 클럽 (이쪽으로 합쳐짐)</p>
                 <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/20 rounded-xl px-3 py-2.5">
-                  <span className="text-sm text-amber-300 font-bold flex-1">
-                    {target.name} <span className="text-neutral-500 text-xs ml-1">{target.area}</span>
+                  <span className="text-sm text-brand-amber font-bold flex-1">
+                    {target.name} <span className="text-muted-foreground text-xs ml-1">{target.area}</span>
                   </span>
-                  <button onClick={() => setTarget(null)} className="text-neutral-500 hover:text-neutral-300">
+                  <button onClick={() => setTarget(null)} className="text-muted-foreground hover:text-foreground/80">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -176,7 +176,7 @@ export function MergeClubDialog({ source, onClose, onMerged }: MergeClubDialogPr
                 variant="ghost"
                 onClick={onClose}
                 disabled={loading}
-                className="flex-1 bg-neutral-800 hover:bg-neutral-700 text-white"
+                className="flex-1 bg-muted hover:bg-muted text-foreground"
               >
                 취소
               </Button>

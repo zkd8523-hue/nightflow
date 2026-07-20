@@ -41,7 +41,7 @@ export function ShareHistoryList({ mdId }: ShareHistoryListProps) {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-bold text-neutral-400 flex items-center gap-1.5">
+      <h3 className="text-sm font-bold text-muted-foreground flex items-center gap-1.5">
         <Users className="w-4 h-4" />
         조각 운영 이력
       </h3>
@@ -60,15 +60,15 @@ export function ShareHistoryList({ mdId }: ShareHistoryListProps) {
             : "";
 
           return (
-            <div key={auction.id} className="text-xs text-neutral-500 bg-neutral-900 rounded-lg px-3 py-2">
-              <span className="text-neutral-300 font-medium">{dateStr}</span>
+            <div key={auction.id} className="text-xs text-muted-foreground bg-card rounded-lg px-3 py-2">
+              <span className="text-foreground/80 font-medium">{dateStr}</span>
               {" · "}
               <span>{auction.club?.name}</span>
               {alcohol && <span> · {alcohol}</span>}
               {" · "}
-              <span className="text-amber-400 font-semibold">
+              <span className="text-brand-amber font-semibold">
                 {priceStr} {nfFilled}/{total}
-                {external > 0 && <span className="text-neutral-400"> +{external}(외부)</span>}
+                {external > 0 && <span className="text-muted-foreground"> +{external}(외부)</span>}
               </span>
             </div>
           );

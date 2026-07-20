@@ -104,14 +104,14 @@ export function ChatContentText({ content, clubTags, className }: Props) {
           }
           // fallback
           return (
-            <span key={i} className="text-neutral-500">
+            <span key={i} className="text-muted-foreground">
               {t.raw}
             </span>
           );
         }
         // 자유 해시태그
         return (
-          <span key={i} className="text-neutral-500">
+          <span key={i} className="text-muted-foreground">
             {t.raw}
           </span>
         );

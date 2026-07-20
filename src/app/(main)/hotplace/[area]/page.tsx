@@ -255,10 +255,10 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
 
       {/* 시각 헤더 */}
       <header className="mb-5 space-y-1">
-        <h1 className="text-2xl font-black text-white tracking-tight">
+        <h1 className="text-2xl font-black text-foreground tracking-tight">
           {area} 핫플 지도
         </h1>
-        <p className="text-sm text-neutral-400 leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed">
           {area} 클럽 {areaClubs.length}곳의 위치·정보를 한눈에. 게스트·무료입장·테이블 가격 비교
         </p>
       </header>
@@ -282,7 +282,7 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
 
       {/* 카카오맵 */}
       <section className="mb-6">
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
           <ClubMap
             clubs={mappedClubs}
             activeCountMap={activeCountMap}
@@ -297,9 +297,9 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
       {/* 클럽 카드 리스트 */}
       {areaClubs.length > 0 && (
         <section className="space-y-3 mb-8">
-          <h2 className="text-base font-bold text-white">
+          <h2 className="text-base font-bold text-foreground">
             {area} 핫플 클럽
-            <span className="text-neutral-500 text-sm font-normal ml-2">
+            <span className="text-muted-foreground text-sm font-normal ml-2">
               ({areaClubs.length}곳)
             </span>
           </h2>
@@ -314,11 +314,11 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
                 <li key={c.id}>
                   <Link
                     href={`/clubs/${c.id}`}
-                    className={`block bg-[#1C1C1E] border rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors ${
-                      hasGuestSign ? "border-amber-500/40" : "border-neutral-800"
+                    className={`block bg-card border rounded-xl overflow-hidden hover:bg-card transition-colors ${
+                      hasGuestSign ? "border-amber-500/40" : "border-border"
                     }`}
                   >
-                    <div className="relative w-full aspect-[4/3] bg-neutral-900">
+                    <div className="relative w-full aspect-[4/3] bg-card border border-border">
                       {c.thumbnail_url ? (
                         <Image
                           src={c.thumbnail_url}
@@ -330,7 +330,7 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-neutral-700 text-2xl font-black">
+                          <span className="text-muted-foreground text-2xl font-black">
                             {display.charAt(0)}
                           </span>
                         </div>
@@ -343,17 +343,17 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
                       {favCount > 0 && (
                         <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-full">
                           <Heart className="w-3 h-3 fill-red-500 text-red-500" />
-                          <span className="text-white text-[11px] font-bold">
+                          <span className="text-foreground text-[11px] font-bold">
                             {formatCount(favCount)}
                           </span>
                         </div>
                       )}
                     </div>
                     <div className="px-3 py-2">
-                      <p className="text-white font-bold text-sm truncate">
+                      <p className="text-foreground font-bold text-sm truncate">
                         {display}
                       </p>
-                      <p className="text-neutral-500 text-[10px] mt-0.5 truncate">
+                      <p className="text-muted-foreground text-[10px] mt-0.5 truncate">
                         {c.name}
                       </p>
                     </div>
@@ -370,7 +370,7 @@ export default async function HotplaceAreaPage({ params }: PageProps) {
         <Link href="/clubs">
           <Button
             variant="ghost"
-            className="w-full bg-neutral-900 text-white font-bold rounded-2xl h-12 hover:bg-neutral-800"
+            className="w-full bg-card text-foreground font-bold rounded-2xl border border-border h-12 hover:bg-muted"
           >
             <MapPin className="w-4 h-4 mr-1" />
             전국 클럽 가이드로 가기

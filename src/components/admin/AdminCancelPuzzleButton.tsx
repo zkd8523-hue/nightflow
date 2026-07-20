@@ -71,20 +71,20 @@ export function AdminCancelPuzzleButton({ puzzleId }: { puzzleId: string }) {
       </button>
 
       <Dialog open={open} onOpenChange={(v) => { if (!loading) { setOpen(v); if (!v) setReason(""); } }}>
-        <DialogContent className="bg-[#1C1C1E] border-neutral-700 text-white max-w-sm">
+        <DialogContent className="bg-card border-border text-foreground max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-[16px] font-black text-white">
+            <DialogTitle className="text-[16px] font-black text-foreground">
               깃발 강제 취소
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3 py-1">
-            <p className="text-[13px] text-neutral-400">
+            <p className="text-[13px] text-muted-foreground">
               참여자 전원에게 알림이 발송됩니다.
             </p>
             <div className="space-y-1.5">
-              <label className="text-[12px] font-bold text-neutral-300">
-                취소 사유 <span className="text-neutral-500 font-normal">(선택)</span>
+              <label className="text-[12px] font-bold text-foreground/80">
+                취소 사유 <span className="text-muted-foreground font-normal">(선택)</span>
               </label>
               <textarea
                 value={reason}
@@ -92,9 +92,9 @@ export function AdminCancelPuzzleButton({ puzzleId }: { puzzleId: string }) {
                 placeholder="예) 공연 취소로 인해 해당 날짜 영업이 중단됩니다."
                 rows={3}
                 maxLength={200}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-500 transition-colors"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-border transition-colors"
               />
-              <p className="text-[11px] text-neutral-600 text-right">
+              <p className="text-[11px] text-muted-foreground text-right">
                 {reason.length}/200
               </p>
             </div>
@@ -109,7 +109,7 @@ export function AdminCancelPuzzleButton({ puzzleId }: { puzzleId: string }) {
             <button
               onClick={() => { setOpen(false); setReason(""); }}
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl bg-neutral-800 text-neutral-300 text-[13px] font-bold hover:bg-neutral-700 transition-all disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-xl bg-muted text-foreground/80 text-[13px] font-bold hover:bg-muted transition-all disabled:opacity-50"
             >
               취소
             </button>

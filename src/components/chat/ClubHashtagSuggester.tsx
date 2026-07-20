@@ -22,13 +22,13 @@ export function ClubHashtagSuggester({ query, open, onSelect }: Props) {
   if (!loading && results.length === 0) return null;
 
   return (
-    <div className="rounded-2xl bg-[#1C1C1E] border border-neutral-700 shadow-2xl overflow-hidden">
-      <div className="px-3 py-2 text-[11px] text-neutral-500 border-b border-neutral-800">
+    <div className="rounded-2xl bg-card border border-border shadow-2xl overflow-hidden">
+      <div className="px-3 py-2 text-[11px] text-muted-foreground border-b border-border">
         #{query} 으로 시작하는 클럽
       </div>
       <div className="max-h-64 overflow-y-auto">
         {loading && results.length === 0 ? (
-          <div className="py-4 text-center text-[12px] text-neutral-500">
+          <div className="py-4 text-center text-[12px] text-muted-foreground">
             검색 중...
           </div>
         ) : (
@@ -41,9 +41,9 @@ export function ClubHashtagSuggester({ query, open, onSelect }: Props) {
                 e.preventDefault();
               }}
               onClick={() => onSelect(c)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-neutral-800/60 transition-colors text-left"
+              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-muted/60 transition-colors text-left"
             >
-              <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-neutral-800 shrink-0">
+              <div className="relative w-8 h-8 rounded-lg overflow-hidden bg-muted shrink-0">
                 {c.thumbnail_url ? (
                   <Image
                     src={c.thumbnail_url}
@@ -53,20 +53,20 @@ export function ClubHashtagSuggester({ query, open, onSelect }: Props) {
                     className="object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/40 text-[10px] font-black">
+                  <div className="w-full h-full flex items-center justify-center text-foreground/40 text-[10px] font-black">
                     {c.name.charAt(0)}
                   </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[13px] font-bold text-white truncate">
+                <div className="text-[13px] font-bold text-foreground truncate">
                   {c.name}
                 </div>
                 {c.area && (
-                  <div className="text-[10px] text-neutral-500">{c.area}</div>
+                  <div className="text-[10px] text-muted-foreground">{c.area}</div>
                 )}
               </div>
-              <div className="text-[10px] text-amber-400 font-bold shrink-0">#</div>
+              <div className="text-[10px] text-brand-amber font-bold shrink-0">#</div>
             </button>
           ))
         )}

@@ -193,7 +193,7 @@ export function PhoneVerificationField({
 
   return (
     <div className="space-y-2">
-      <Label className="text-neutral-500 text-xs font-bold uppercase">휴대폰 번호 *</Label>
+      <Label className="text-muted-foreground text-xs font-bold uppercase">휴대폰 번호 *</Label>
 
       <div className="flex gap-2">
         <Input
@@ -204,13 +204,13 @@ export function PhoneVerificationField({
           placeholder="01012345678"
           maxLength={11}
           readOnly={verified}
-          className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono focus:ring-white flex-1"
+          className="bg-card border-border text-foreground h-12 font-mono focus:ring-white flex-1"
         />
         <Button
           type="button"
           onClick={handleSend}
           disabled={sending || verified || value.length < 10}
-          className="h-12 px-4 bg-white text-black font-bold hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-12 px-4 bg-inverse text-inverse-foreground font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : verified ? <Check className="w-4 h-4" /> : otpVisible ? "재발송" : "인증번호 받기"}
         </Button>
@@ -226,10 +226,10 @@ export function PhoneVerificationField({
               inputMode="numeric"
               placeholder="6자리 인증번호"
               maxLength={6}
-              className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono focus:ring-white pr-16"
+              className="bg-card border-border text-foreground h-12 font-mono focus:ring-white pr-16"
             />
             {!expired && expiresAt && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-amber-400 text-[12px] font-mono font-bold tabular-nums">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-amber text-[12px] font-mono font-bold tabular-nums">
                 {formatRemaining(remaining)}
               </span>
             )}
@@ -238,7 +238,7 @@ export function PhoneVerificationField({
             type="button"
             onClick={handleVerify}
             disabled={verifying || expired || code.length !== 6}
-            className="h-12 px-4 bg-white text-black font-bold hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-12 px-4 bg-inverse text-inverse-foreground font-bold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {verifying ? <Loader2 className="w-4 h-4 animate-spin" /> : "확인"}
           </Button>
@@ -253,7 +253,7 @@ export function PhoneVerificationField({
       )}
 
       {!verified && !otpVisible && (
-        <p className="text-neutral-600 text-[10px]">SMS로 6자리 인증번호가 발송됩니다. 가입 시 입력한 번호와 달라도 됩니다.</p>
+        <p className="text-muted-foreground text-[10px]">SMS로 6자리 인증번호가 발송됩니다. 가입 시 입력한 번호와 달라도 됩니다.</p>
       )}
 
       {expired && (

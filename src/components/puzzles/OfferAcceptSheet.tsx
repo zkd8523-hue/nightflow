@@ -77,24 +77,24 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, l
     <Sheet open={open} onOpenChange={(v) => { if (!v && !submitting) onClose(); }}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl bg-[#1C1C1E] border-t border-neutral-800 px-5 pb-10 max-h-[90vh] overflow-y-auto"
+        className="rounded-t-3xl bg-card border-t border-border px-5 pb-10 max-h-[90vh] overflow-y-auto"
       >
         {step === "confirm" ? (
           <div className="flex flex-col gap-5 pt-2">
             <div>
-              <SheetTitle className="text-white font-black text-[18px] flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <SheetTitle className="text-foreground font-black text-[18px] flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-money" />
                 {offerChatOn
                   ? t("즉시 수락하시겠어요?", "Accept now?")
                   : t("제안을 수락하시겠어요?", "Accept this offer?")}
               </SheetTitle>
-              <SheetDescription className="text-neutral-400 text-[13px] mt-1.5 leading-relaxed">
+              <SheetDescription className="text-muted-foreground text-[13px] mt-1.5 leading-relaxed">
                 {isForeigner ? (
-                  <>Accepting reveals the <strong className="text-white">club host&apos;s name and contact</strong>.</>
+                  <>Accepting reveals the <strong className="text-foreground">club host&apos;s name and contact</strong>.</>
                 ) : offerChatOn ? (
-                  <>채팅으로 먼저 상담해볼 수도 있어요.<br />수락하면 <strong className="text-white">파트너의 연락처</strong>를 안내해드려요.</>
+                  <>채팅으로 먼저 상담해볼 수도 있어요.<br />수락하면 <strong className="text-foreground">파트너의 연락처</strong>를 안내해드려요.</>
                 ) : (
-                  <>수락하면 <strong className="text-white">파트너의 닉네임과 연락처</strong>가 공개됩니다.</>
+                  <>수락하면 <strong className="text-foreground">파트너의 닉네임과 연락처</strong>가 공개됩니다.</>
                 )}
               </SheetDescription>
             </div>
@@ -102,7 +102,7 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, l
             <Button
               onClick={handleAccept}
               disabled={submitting}
-              className="w-full h-14 bg-white text-black font-black text-base rounded-2xl hover:bg-neutral-200 disabled:bg-neutral-800 disabled:text-neutral-600"
+              className="w-full h-14 bg-inverse text-inverse-foreground font-black text-base rounded-2xl hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground"
             >
               {submitting ? t("수락 중...", "Accepting...") : t("수락하기", "Accept")}
             </Button>
@@ -110,11 +110,11 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, l
         ) : (
           <div className="flex flex-col gap-5 pt-2">
             <div>
-              <SheetTitle className="text-white font-black text-[20px] flex items-center gap-2">
-                <PartyPopper className="w-5 h-5 text-amber-400" />
+              <SheetTitle className="text-foreground font-black text-[20px] flex items-center gap-2">
+                <PartyPopper className="w-5 h-5 text-brand-amber" />
                 {t("수락 완료!", "Accepted!")}
               </SheetTitle>
-              <SheetDescription className="text-neutral-400 text-[13px] mt-1.5 leading-relaxed whitespace-pre-line">
+              <SheetDescription className="text-muted-foreground text-[13px] mt-1.5 leading-relaxed whitespace-pre-line">
                 {t("아래 버튼으로 메세지 복사하고\n원하는 연락수단에 붙여넣으면 끝!", "Copy the message below and paste it into your preferred contact method.")}
               </SheetDescription>
             </div>
@@ -126,7 +126,7 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, l
 
             {/* MD 연락 수단 카드 — 수락 직후 공개 */}
             <div className="space-y-2.5">
-              <p className="text-[11px] font-bold text-neutral-500 uppercase tracking-wide">
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">
                 {isForeigner ? `${md.display_name} — contact` : `${md.display_name} 파트너 연락 수단`}
               </p>
               <MDContactCard md={md} lang={lang} />
@@ -134,7 +134,7 @@ export function OfferAcceptSheet({ open, onClose, md, puzzle, offer, onAccept, l
 
             <Button
               onClick={onClose}
-              className="w-full h-14 bg-white text-black font-black text-base rounded-2xl hover:bg-neutral-200"
+              className="w-full h-14 bg-inverse text-inverse-foreground font-black text-base rounded-2xl hover:opacity-90"
             >
               {t("닫기", "Close")}
             </Button>

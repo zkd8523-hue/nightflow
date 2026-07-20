@@ -117,36 +117,36 @@ export function ReportMDButton({
       <Sheet open={showSheet} onOpenChange={setShowSheet}>
         <SheetContent
           side="bottom"
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl"
+          className="h-auto bg-card border-border rounded-t-3xl"
         >
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">
+            <SheetTitle className="text-foreground font-black text-xl">
               파트너가 답하지 않나요?
             </SheetTitle>
-            <SheetDescription className="text-neutral-400">
+            <SheetDescription className="text-muted-foreground">
               연락을 시도했지만 응답이 없으면 알려주세요.
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-4 mt-6">
-            <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
-              <p className="text-neutral-300 text-[13px] font-bold">
+            <div className="bg-card/50 rounded-2xl p-4 space-y-3 border border-border/50">
+              <p className="text-foreground/80 text-[13px] font-bold">
                 접수 시 다음이 적용됩니다:
               </p>
-              <ul className="text-[12px] text-neutral-400 space-y-2 ml-1 font-medium">
+              <ul className="text-[12px] text-muted-foreground space-y-2 ml-1 font-medium">
                 <li className="flex items-start gap-2">
-                  <Clock className="w-3.5 h-3.5 text-green-500 mt-0.5 shrink-0" />
+                  <Clock className="w-3.5 h-3.5 text-money mt-0.5 shrink-0" />
                   <span>
                     연락 타이머가{" "}
-                    <span className="text-green-400 font-bold">15분 연장</span>
+                    <span className="text-money font-bold">15분 연장</span>
                     됩니다
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <MessageCircle className="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0" />
+                  <MessageCircle className="w-3.5 h-3.5 text-brand-amber mt-0.5 shrink-0" />
                   <span>
                     파트너에게{" "}
-                    <span className="text-amber-400 font-bold">긴급 알림</span>
+                    <span className="text-brand-amber font-bold">긴급 알림</span>
                     이 전송됩니다
                   </span>
                 </li>
@@ -154,7 +154,7 @@ export function ReportMDButton({
             </div>
 
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-              <p className="text-[13px] text-amber-400 font-bold">
+              <p className="text-[13px] text-brand-amber font-bold">
                 제공된 연락 수단(DM/전화)으로 먼저 연락을 시도하셨나요?
               </p>
             </div>
@@ -163,7 +163,7 @@ export function ReportMDButton({
               <Button
                 variant="outline"
                 onClick={() => setShowSheet(false)}
-                className="h-14 rounded-2xl border-neutral-800 text-neutral-400 font-bold"
+                className="h-14 rounded-2xl border-border text-muted-foreground font-bold"
               >
                 취소
               </Button>

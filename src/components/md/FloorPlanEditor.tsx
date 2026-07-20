@@ -52,8 +52,8 @@ export function FloorPlanEditor({
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center gap-2 text-white font-bold mb-2">
-        <MapPin className="w-4 h-4 text-amber-500" />
+      <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+        <MapPin className="w-4 h-4 text-brand-amber" />
         <span>플로어맵</span>
       </div>
 
@@ -66,7 +66,7 @@ export function FloorPlanEditor({
       />
 
       {!floorPlanUrl ? (
-        <div className="bg-[#1C1C1E] border border-dashed border-neutral-700 rounded-2xl p-6">
+        <div className="bg-card border border-dashed border-border rounded-2xl p-6">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -77,17 +77,17 @@ export function FloorPlanEditor({
               <div className="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
             ) : (
               <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                <Upload className="w-6 h-6 text-amber-500" />
+                <Upload className="w-6 h-6 text-brand-amber" />
               </div>
             )}
             <div className="text-center">
-              <p className="text-sm text-white font-bold">
+              <p className="text-sm text-foreground font-bold">
                 {uploading ? "업로드 중..." : "플로어맵 이미지 업로드"}
               </p>
-              <p className="text-[11px] text-neutral-500 mt-1">
+              <p className="text-[11px] text-muted-foreground mt-1">
                 클럽 평면도를 업로드해주세요
               </p>
-              <p className="text-[10px] text-neutral-600 mt-0.5">
+              <p className="text-[10px] text-muted-foreground mt-0.5">
                 5MB 이하 · JPG, PNG
               </p>
             </div>
@@ -95,7 +95,7 @@ export function FloorPlanEditor({
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="relative rounded-xl overflow-hidden border-2 border-neutral-800">
+          <div className="relative rounded-xl overflow-hidden border-2 border-border">
             <img
               src={floorPlanUrl}
               alt="클럽 플로어맵"
@@ -109,7 +109,7 @@ export function FloorPlanEditor({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="flex-1 h-9 rounded-lg text-xs font-bold bg-[#1C1C1E] text-neutral-400 border border-neutral-800 hover:border-neutral-600 hover:text-white flex items-center justify-center gap-1.5 transition-colors"
+              className="flex-1 h-9 rounded-lg text-xs font-bold bg-card text-muted-foreground border border-border hover:border-border hover:text-foreground flex items-center justify-center gap-1.5 transition-colors"
             >
               <Upload className="w-3.5 h-3.5" />
               이미지 변경
@@ -118,7 +118,7 @@ export function FloorPlanEditor({
             <button
               type="button"
               onClick={removeFloorPlan}
-              className="h-9 px-4 rounded-lg text-xs font-bold bg-[#1C1C1E] text-red-400 border border-neutral-800 hover:border-red-500/50 flex items-center gap-1.5 transition-colors"
+              className="h-9 px-4 rounded-lg text-xs font-bold bg-card text-red-400 border border-border hover:border-red-500/50 flex items-center gap-1.5 transition-colors"
             >
               <Trash2 className="w-3.5 h-3.5" />
               삭제

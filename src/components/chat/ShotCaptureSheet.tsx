@@ -351,13 +351,13 @@ export function ShotCaptureSheet({
         side="bottom"
         // 세로 스크롤이 페이지 pull-to-refresh를 발동시키지 않도록 원천차단
         data-no-pull-refresh="strict"
-        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[90vh] flex flex-col"
+        className="bg-background border-border rounded-t-3xl p-0 pb-6 max-h-[90vh] flex flex-col"
       >
-        <SheetHeader className="px-4 pt-4 pb-3 border-b border-neutral-800 shrink-0">
-          <SheetTitle className="text-white text-[16px] text-left flex items-center gap-2">
+        <SheetHeader className="px-4 pt-4 pb-3 border-b border-border shrink-0">
+          <SheetTitle className="text-foreground text-[16px] text-left flex items-center gap-2">
             <Zap className="w-4 h-4 fill-red-400 text-red-400" />
             LIVE 올리기
-            <span className="text-[11px] font-normal text-neutral-500">
+            <span className="text-[11px] font-normal text-muted-foreground">
               · 12시간 후 사라져요
             </span>
           </SheetTitle>
@@ -373,34 +373,34 @@ export function ShotCaptureSheet({
             disabled={!!presetClub}
             className={`w-full flex items-center gap-2 p-3 rounded-2xl border text-left disabled:opacity-80 ${
               selectedClub
-                ? "bg-neutral-800/60 border-neutral-600"
-                : "bg-[#1C1C1E] border-neutral-800"
+                ? "bg-muted/60 border-border"
+                : "bg-card border-border"
             }`}
           >
-            <MapPin className={`w-4 h-4 shrink-0 ${selectedClub ? "text-white" : "text-neutral-500"}`} />
+            <MapPin className={`w-4 h-4 shrink-0 ${selectedClub ? "text-foreground" : "text-muted-foreground"}`} />
             <div className="flex-1 min-w-0">
               {selectedClub ? (
                 <>
-                  <div className="text-[13px] font-black text-white truncate">
+                  <div className="text-[13px] font-black text-foreground truncate">
                     {selectedClub.name}
                   </div>
-                  <div className="text-[10px] text-neutral-500">
+                  <div className="text-[10px] text-muted-foreground">
                     {presetClub ? "이 클럽에 게시" : "탭해서 변경"}
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="text-[13px] font-black text-white">
-                    클럽 선택하기 <span className="text-neutral-500 text-[11px] font-normal">(선택)</span>
+                  <div className="text-[13px] font-black text-foreground">
+                    클럽 선택하기 <span className="text-muted-foreground text-[11px] font-normal">(선택)</span>
                   </div>
-                  <div className="text-[10px] text-neutral-500">
+                  <div className="text-[10px] text-muted-foreground">
                     가까운 클럽 추천
                   </div>
                 </>
               )}
             </div>
             {!presetClub && (
-              <ChevronRight className="w-4 h-4 text-neutral-600" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
             )}
           </button>
 
@@ -409,11 +409,11 @@ export function ShotCaptureSheet({
             <button
               type="button"
               onClick={launchCamera}
-              className="w-full flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-neutral-700 bg-[#1C1C1E] text-neutral-300 hover:border-red-500 hover:text-red-400 transition-colors"
+              className="w-full flex flex-col items-center justify-center gap-2 aspect-square rounded-2xl border-2 border-dashed border-border bg-card text-foreground/80 hover:border-red-500 hover:text-red-400 transition-colors"
             >
               <Camera className="w-10 h-10" />
               <span className="text-[15px] font-bold">카메라로 촬영</span>
-              <span className="text-[11px] text-neutral-500">
+              <span className="text-[11px] text-muted-foreground">
                 {canUseLiveCamera() ? "탭=사진 · 꾹=영상(12초)" : "사진 촬영"}
               </span>
             </button>
@@ -532,41 +532,41 @@ function ClubPickerSheet({
         onOpenAutoFocus={(e) => e.preventDefault()}
         // 리스트 세로 스크롤이 페이지 pull-to-refresh를 발동시키지 않도록 원천차단
         data-no-pull-refresh="strict"
-        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[85vh] flex flex-col"
+        className="bg-background border-border rounded-t-3xl p-0 pb-6 max-h-[85vh] flex flex-col"
       >
         <SheetHeader className="px-4 pt-4 pb-3 shrink-0">
-          <SheetTitle className="text-white text-[16px] text-left flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-neutral-400" />
+          <SheetTitle className="text-foreground text-[16px] text-left flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-muted-foreground" />
             클럽 선택
-            <span className="text-[11px] font-normal text-neutral-500">· 가까운 순</span>
+            <span className="text-[11px] font-normal text-muted-foreground">· 가까운 순</span>
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto border-t border-neutral-800">
+        <div className="flex-1 overflow-y-auto border-t border-border">
           {loading || searching ? (
-            <div className="p-6 text-center text-neutral-500 text-[13px]">
+            <div className="p-6 text-center text-muted-foreground text-[13px]">
               {searching ? "검색 중..." : "주변 클럽 찾는 중..."}
             </div>
           ) : list.length === 0 ? (
-            <div className="p-6 text-center text-neutral-500 text-[13px] leading-relaxed">
+            <div className="p-6 text-center text-muted-foreground text-[13px] leading-relaxed">
               {isSearchMode ? (
                 "검색 결과가 없어요"
               ) : geoError ? (
                 <>
-                  <span className="text-amber-400">{geoError}</span>
+                  <span className="text-brand-amber">{geoError}</span>
                   <br />
                   {onRetryLocation && (
                     <button
                       type="button"
                       onClick={onRetryLocation}
-                      className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white text-black text-[13px] font-black active:scale-95 transition"
+                      className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-inverse text-inverse-foreground text-[13px] font-black active:scale-95 transition"
                     >
                       <MapPin className="w-3.5 h-3.5" />
                       위치 다시 시도
                     </button>
                   )}
                   <br />
-                  <span className="mt-2 inline-block text-neutral-500">
+                  <span className="mt-2 inline-block text-muted-foreground">
                     또는 아래에서 클럽명을 검색하세요
                   </span>
                 </>
@@ -574,7 +574,7 @@ function ClubPickerSheet({
                 <>
                   주변 클럽을 못 찾았어요.
                   <br />
-                  <span className="text-neutral-400">아래에서 클럽명을 검색해보세요</span>
+                  <span className="text-muted-foreground">아래에서 클럽명을 검색해보세요</span>
                 </>
               )}
             </div>
@@ -591,7 +591,7 @@ function ClubPickerSheet({
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="text-[14px] font-black text-white truncate">
+                          <span className="text-[14px] font-black text-foreground truncate">
                             {c.name}
                           </span>
                           {myClubIds?.has(c.id) && (
@@ -600,7 +600,7 @@ function ClubPickerSheet({
                             </span>
                           )}
                         </div>
-                        <div className="text-[11px] text-neutral-500">
+                        <div className="text-[11px] text-muted-foreground">
                           {c.area}
                           {c.distance_km >= 0 && (
                             <>
@@ -612,7 +612,7 @@ function ClubPickerSheet({
                           )}
                         </div>
                       </div>
-                      {selected && <Check className="w-5 h-5 text-white shrink-0" />}
+                      {selected && <Check className="w-5 h-5 text-foreground shrink-0" />}
                     </button>
                   </li>
                 );
@@ -622,20 +622,20 @@ function ClubPickerSheet({
         </div>
 
         {/* 검색 바 (리스트 아래 — 주변 클럽 우선, 없으면 검색) */}
-        <div className="px-4 py-3 shrink-0 border-t border-neutral-800">
-          <div className="flex items-center gap-2 bg-[#1C1C1E] border border-neutral-800 rounded-xl px-3 py-2.5">
-            <Search className="w-4 h-4 text-neutral-500 shrink-0" />
+        <div className="px-4 py-3 shrink-0 border-t border-border">
+          <div className="flex items-center gap-2 bg-card border border-border rounded-xl px-3 py-2.5">
+            <Search className="w-4 h-4 text-muted-foreground shrink-0" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="검색하기"
               // text-[16px]: iOS 사파리는 16px 미만 input 포커스 시 자동 확대 → 검색창 밀림. 16px로 차단.
-              className="flex-1 bg-transparent text-white text-[16px] placeholder:text-neutral-600 focus:outline-none"
+              className="flex-1 bg-transparent text-foreground text-[16px] placeholder:text-muted-foreground focus:outline-none"
             />
             {query && (
               <button type="button" onClick={() => setQuery("")} aria-label="지우기">
-                <X className="w-4 h-4 text-neutral-500" />
+                <X className="w-4 h-4 text-muted-foreground" />
               </button>
             )}
           </div>

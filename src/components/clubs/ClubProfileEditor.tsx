@@ -502,7 +502,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
             reset();
             setOpen(true);
           }}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-[#1C1C1E] hover:bg-neutral-900 border border-dashed border-neutral-700 rounded-xl text-[12px] font-bold text-neutral-300 hover:text-white transition-colors"
+          className="w-full flex items-center justify-center gap-1.5 py-2.5 bg-card hover:bg-card border border-dashed border-border rounded-xl text-[12px] font-bold text-foreground/80 hover:text-foreground transition-colors"
         >
           <Pencil className="w-3.5 h-3.5" />
           {isPartnerMode ? "클럽 정보 편집" : "클럽 프로필 편집 (admin)"}
@@ -518,14 +518,14 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
       >
         <SheetContent
           side="bottom"
-          className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl max-w-lg mx-auto p-0 max-h-[90vh] flex flex-col"
+          className="bg-background border-border rounded-t-3xl max-w-lg mx-auto p-0 max-h-[90vh] flex flex-col"
         >
-          <SheetHeader className="px-5 pt-5 pb-3 border-b border-neutral-800">
-            <SheetTitle className="text-white text-[16px] font-black flex items-center gap-2">
-              <Pencil className="w-4 h-4 text-amber-400" />
+          <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
+            <SheetTitle className="text-foreground text-[16px] font-black flex items-center gap-2">
+              <Pencil className="w-4 h-4 text-brand-amber" />
               {isPartnerMode ? "클럽 정보 편집" : "클럽 프로필 편집"}
             </SheetTitle>
-            <p className="text-[11px] text-neutral-500 text-left">
+            <p className="text-[11px] text-muted-foreground text-left">
               {isPartnerMode
                 ? "영업시간·드레스코드와 음악·연령대·입장료·흡연 태그를 직접 수정할 수 있어요. 변경은 즉시 반영돼요."
                 : "체크한 태그는 클럽 상세 페이지·카드에 노출돼요. 여러 개 선택 가능."}
@@ -536,35 +536,35 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
             {!isPartnerMode && (
             <>
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2">클럽명</div>
+              <div className="text-[12px] text-muted-foreground font-bold mb-2">클럽명</div>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 disabled={saving}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
               />
             </div>
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2">영어 표시명 (외국어 페이지용)</div>
+              <div className="text-[12px] text-muted-foreground font-bold mb-2">영어 표시명 (외국어 페이지용)</div>
               <input
                 type="text"
                 value={nameEn}
                 onChange={(e) => setNameEn(e.target.value)}
                 placeholder="예: Color Apgu (비워두면 클럽명 그대로 노출)"
                 disabled={saving}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
               />
             </div>
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2">주소</div>
+              <div className="text-[12px] text-muted-foreground font-bold mb-2">주소</div>
               <input
                 type="text"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder="예: 강남구 도산대로 539 B1"
                 disabled={saving}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
               />
             </div>
             </>
@@ -572,71 +572,71 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
 
             {/* 영업시간 — admin & partner 모두 편집 가능 */}
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2">영업시간</div>
+              <div className="text-[12px] text-muted-foreground font-bold mb-2">영업시간</div>
               <input
                 type="text"
                 value={operatingHours}
                 onChange={(e) => setOperatingHours(e.target.value)}
                 placeholder="예: 금/토 22:00-05:00"
                 disabled={saving}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
               />
             </div>
 
             {/* 드레스코드 — admin & partner 모두 자유 텍스트 */}
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2">드레스코드</div>
+              <div className="text-[12px] text-muted-foreground font-bold mb-2">드레스코드</div>
               <input
                 type="text"
                 value={dresscode}
                 onChange={(e) => setDresscode(e.target.value)}
                 placeholder="예: 캐주얼 OK, 슬리퍼 X"
                 disabled={saving}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
               />
-              <p className="text-[10px] text-neutral-600 mt-1">자유롭게 한 줄로 작성해주세요</p>
+              <p className="text-[10px] text-muted-foreground mt-1">자유롭게 한 줄로 작성해주세요</p>
             </div>
 
             {!isPartnerMode && (
             <>
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2">입장료 상세</div>
+              <div className="text-[12px] text-muted-foreground font-bold mb-2">입장료 상세</div>
               <input
                 type="text"
                 value={entryFeeDetail}
                 onChange={(e) => setEntryFeeDetail(e.target.value)}
                 placeholder="예: 남 15,000 / 여 10,000"
                 disabled={saving}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
               />
-              <p className="text-[10px] text-neutral-600 mt-1">남녀별·요일별 차등 있으면 자유롭게 입력</p>
+              <p className="text-[10px] text-muted-foreground mt-1">남녀별·요일별 차등 있으면 자유롭게 입력</p>
             </div>
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2">공식 인스타그램</div>
+              <div className="text-[12px] text-muted-foreground font-bold mb-2">공식 인스타그램</div>
               <input
                 type="text"
                 value={instagram}
                 onChange={(e) => setInstagram(e.target.value)}
                 placeholder="핸들 또는 URL (예: coreseoul)"
                 disabled={saving}
-                className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
               />
-              <p className="text-[10px] text-neutral-600 mt-1">@, URL 입력해도 자동으로 핸들만 추출됨</p>
+              <p className="text-[10px] text-muted-foreground mt-1">@, URL 입력해도 자동으로 핸들만 추출됨</p>
             </div>
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2">검색 별칭</div>
+              <div className="text-[12px] text-muted-foreground font-bold mb-2">검색 별칭</div>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {aliases.map((a) => (
                   <span
                     key={a}
-                    className="inline-flex items-center gap-1 bg-neutral-800 text-white text-[11px] font-bold px-2 py-1 rounded-full"
+                    className="inline-flex items-center gap-1 bg-muted text-foreground text-[11px] font-bold px-2 py-1 rounded-full"
                   >
                     {a}
                     <button
                       type="button"
                       onClick={() => removeAlias(a)}
                       disabled={saving}
-                      className="w-4 h-4 inline-flex items-center justify-center rounded-full hover:bg-neutral-700 text-neutral-400 hover:text-white"
+                      className="w-4 h-4 inline-flex items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
                       aria-label={`${a} 제거`}
                     >
                       ×
@@ -644,7 +644,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                   </span>
                 ))}
                 {aliases.length === 0 && (
-                  <span className="text-[11px] text-neutral-600">등록된 별칭이 없어요</span>
+                  <span className="text-[11px] text-muted-foreground">등록된 별칭이 없어요</span>
                 )}
               </div>
               <div className="flex gap-2">
@@ -662,7 +662,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                   }}
                   placeholder="예: 에이스, ace, club ace"
                   disabled={saving}
-                  className="flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                  className="flex-1 bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
                 />
                 <button
                   type="button"
@@ -673,7 +673,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                   추가
                 </button>
               </div>
-              <p className="text-[10px] text-neutral-600 mt-1">
+              <p className="text-[10px] text-muted-foreground mt-1">
                 자주 잘못 검색되는 표기를 등록해두면 그 검색어로도 노출돼요 (Enter·쉼표로 추가)
               </p>
             </div>
@@ -682,9 +682,9 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
 
             {/* 가격표 사진 (여러 장) — admin & partner 모두 편집 가능. 클럽 상세에서 슬라이드로 노출됨 */}
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2 flex items-center gap-1.5">
-                <Wine className="w-3.5 h-3.5 text-amber-400" /> 가격표 사진
-                <span className="text-[10px] text-neutral-600 font-medium">
+              <div className="text-[12px] text-muted-foreground font-bold mb-2 flex items-center gap-1.5">
+                <Wine className="w-3.5 h-3.5 text-brand-amber" /> 가격표 사진
+                <span className="text-[10px] text-muted-foreground font-medium">
                   ({drinkMenuUrls.length}/{MAX_DRINK_MENUS})
                 </span>
               </div>
@@ -711,14 +711,14 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                 </DndContext>
               )}
               {drinkMenuUrls.length < MAX_DRINK_MENUS && (
-                <label className={`flex items-center justify-center gap-2 w-full h-20 border border-dashed border-neutral-700 rounded-xl text-[12px] font-bold text-neutral-400 hover:border-amber-500/50 hover:text-amber-300 hover:bg-amber-500/5 transition-colors ${(saving || drinkMenuUploading) ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
+                <label className={`flex items-center justify-center gap-2 w-full h-20 border border-dashed border-border rounded-xl text-[12px] font-bold text-muted-foreground hover:border-amber-500/50 hover:text-brand-amber hover:bg-amber-500/5 transition-colors ${(saving || drinkMenuUploading) ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
                   {drinkMenuUploading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" /> 업로드 중…
                     </>
                   ) : (
                     <>
-                      <Wine className="w-4 h-4 text-amber-400" />
+                      <Wine className="w-4 h-4 text-brand-amber" />
                       {drinkMenuUrls.length === 0 ? "가격표 사진 업로드" : "사진 추가"}
                     </>
                   )}
@@ -737,14 +737,14 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                   />
                 </label>
               )}
-              <p className="text-[10px] text-neutral-600 mt-1">메뉴판·가격표 사진을 여러 장 등록할 수 있어요 (최대 {MAX_DRINK_MENUS}장). 드래그로 순서 변경</p>
+              <p className="text-[10px] text-muted-foreground mt-1">메뉴판·가격표 사진을 여러 장 등록할 수 있어요 (최대 {MAX_DRINK_MENUS}장). 드래그로 순서 변경</p>
             </div>
 
             {/* 테이블맵 사진 (여러 장) — admin & partner 모두 편집 가능. 클럽 상세에서 슬라이드로 노출됨 */}
             <div>
-              <div className="text-[12px] text-neutral-400 font-bold mb-2 flex items-center gap-1.5">
-                <LayoutGrid className="w-3.5 h-3.5 text-amber-400" /> 테이블맵 사진
-                <span className="text-[10px] text-neutral-600 font-medium">
+              <div className="text-[12px] text-muted-foreground font-bold mb-2 flex items-center gap-1.5">
+                <LayoutGrid className="w-3.5 h-3.5 text-brand-amber" /> 테이블맵 사진
+                <span className="text-[10px] text-muted-foreground font-medium">
                   ({floorPlanUrls.length}/{MAX_FLOOR_PLANS})
                 </span>
               </div>
@@ -771,14 +771,14 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                 </DndContext>
               )}
               {floorPlanUrls.length < MAX_FLOOR_PLANS && (
-                <label className={`flex items-center justify-center gap-2 w-full h-20 border border-dashed border-neutral-700 rounded-xl text-[12px] font-bold text-neutral-400 hover:border-amber-500/50 hover:text-amber-300 hover:bg-amber-500/5 transition-colors ${(saving || floorPlanUploading) ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
+                <label className={`flex items-center justify-center gap-2 w-full h-20 border border-dashed border-border rounded-xl text-[12px] font-bold text-muted-foreground hover:border-amber-500/50 hover:text-brand-amber hover:bg-amber-500/5 transition-colors ${(saving || floorPlanUploading) ? "opacity-50 pointer-events-none" : "cursor-pointer"}`}>
                   {floorPlanUploading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" /> 업로드 중…
                     </>
                   ) : (
                     <>
-                      <LayoutGrid className="w-4 h-4 text-amber-400" />
+                      <LayoutGrid className="w-4 h-4 text-brand-amber" />
                       {floorPlanUrls.length === 0 ? "테이블맵 사진 업로드" : "사진 추가"}
                     </>
                   )}
@@ -797,12 +797,12 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                   />
                 </label>
               )}
-              <p className="text-[10px] text-neutral-600 mt-1">클럽 테이블 배치도·평면도 사진을 여러 장 등록할 수 있어요 (최대 {MAX_FLOOR_PLANS}장). 드래그로 순서 변경</p>
+              <p className="text-[10px] text-muted-foreground mt-1">클럽 테이블 배치도·평면도 사진을 여러 장 등록할 수 있어요 (최대 {MAX_FLOOR_PLANS}장). 드래그로 순서 변경</p>
             </div>
 
             {CLUB_TAG_GROUPS.map((g) => (
               <div key={g.group}>
-                <div className="text-[12px] text-neutral-400 font-bold mb-2 flex items-center gap-1.5">
+                <div className="text-[12px] text-muted-foreground font-bold mb-2 flex items-center gap-1.5">
                   {g.emoji} {g.label}
                   {g.isFilter && (
                     <span className="text-[10px] text-blue-400 font-medium">
@@ -822,8 +822,8 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                         disabled={saving}
                         className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors ${
                           active
-                            ? "bg-white text-black"
-                            : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                            ? "bg-inverse text-inverse-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted"
                         }`}
                       >
                         {opt.label}
@@ -835,12 +835,12 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
             ))}
           </div>
 
-          <div className="px-5 pt-3 pb-5 border-t border-neutral-800 flex gap-2 bg-[#0A0A0A]">
+          <div className="px-5 pt-3 pb-5 border-t border-border flex gap-2 bg-background">
             <button
               type="button"
               onClick={() => setOpen(false)}
               disabled={saving}
-              className="flex-1 h-11 rounded-full bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-[14px]"
+              className="flex-1 h-11 rounded-full bg-muted hover:bg-muted text-foreground font-bold text-[14px]"
             >
               취소
             </button>
@@ -874,7 +874,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
               setLightboxIdx(null);
             }}
             aria-label="닫기"
-            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+            className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-card/80 backdrop-blur-sm hover:bg-muted text-foreground"
           >
             <X className="w-5 h-5" strokeWidth={2.5} />
           </button>
@@ -888,7 +888,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                 setLightboxIdx(Math.max(0, lightboxIdx - 1));
               }}
               aria-label="이전 사진"
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-card/80 backdrop-blur-sm hover:bg-muted text-foreground"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
@@ -903,7 +903,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
                 setLightboxIdx(Math.min(lightboxUrls.length - 1, lightboxIdx + 1));
               }}
               aria-label="다음 사진"
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-card/80 backdrop-blur-sm hover:bg-muted text-foreground"
             >
               <ChevronRight className="w-6 h-6" />
             </button>
@@ -911,7 +911,7 @@ export function ClubProfileEditor({ clubId, initialTags, initialName, initialNam
 
           {/* 카운터 */}
           {lightboxUrls.length > 1 && (
-            <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-sm text-white text-[12px] font-bold">
+            <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm text-foreground text-[12px] font-bold">
               {lightboxIdx + 1} / {lightboxUrls.length}
             </div>
           )}
@@ -989,7 +989,7 @@ function SortableDrinkMenuItem({
       onClick={handleClick}
       role="button"
       tabIndex={0}
-      className={`relative aspect-square bg-neutral-900 border border-amber-500/30 rounded-lg overflow-hidden group ${
+      className={`relative aspect-square bg-card border border-amber-500/30 rounded-lg overflow-hidden group ${
         disabled ? "cursor-default" : "cursor-grab active:cursor-grabbing"
       } touch-none`}
     >
@@ -1002,8 +1002,8 @@ function SortableDrinkMenuItem({
         draggable={false}
       />
       {/* 순서 + grip 핸들 (좌상단) */}
-      <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-black/70 text-white text-[10px] font-black rounded px-1.5 py-0.5">
-        <GripVertical className="w-2.5 h-2.5 text-neutral-400" />
+      <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-black/70 text-foreground text-[10px] font-black rounded px-1.5 py-0.5">
+        <GripVertical className="w-2.5 h-2.5 text-muted-foreground" />
         {index + 1}
       </div>
       {/* 삭제 (드래그·클릭과 분리) */}

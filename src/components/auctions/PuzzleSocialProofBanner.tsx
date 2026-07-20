@@ -9,16 +9,16 @@ const AVG_OFFERS_1H = 2.7;
 export function PuzzleSocialProofBanner() {
   return (
     <div className="flex flex-col gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500/30 via-orange-500/15 to-amber-500/5 border border-amber-500/40 rounded-xl mt-3 mb-4">
-      <p className="flex items-center gap-1.5 text-[11.5px] text-neutral-100 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+      <p className="flex items-center gap-1.5 text-[11.5px] text-foreground/90 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
         <span className="text-sm leading-none flex-shrink-0">🔥</span>
         <span>
-          지난 2주 동안 깃발 <span className="text-amber-400 font-bold">{PUZZLE_COUNT}개</span>, 오퍼 <span className="text-amber-400 font-bold">{OFFER_COUNT}개</span>
+          지난 2주 동안 깃발 <span className="text-brand-amber font-bold">{PUZZLE_COUNT}개</span>, 오퍼 <span className="text-brand-amber font-bold">{OFFER_COUNT}개</span>
         </span>
       </p>
-      <p className="flex items-center gap-1.5 text-[11.5px] text-neutral-100 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+      <p className="flex items-center gap-1.5 text-[11.5px] text-foreground/90 leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
         <span className="text-sm leading-none flex-shrink-0">⚡</span>
         <span>
-          등록 <span className="text-amber-400 font-bold">1시간</span> 안에 평균 <span className="text-amber-400 font-bold">{AVG_OFFERS_1H}개</span> 오퍼 도착
+          등록 <span className="text-brand-amber font-bold">1시간</span> 안에 평균 <span className="text-brand-amber font-bold">{AVG_OFFERS_1H}개</span> 오퍼 도착
         </span>
       </p>
     </div>

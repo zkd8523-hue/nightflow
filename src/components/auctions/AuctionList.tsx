@@ -68,12 +68,12 @@ const SHARE_SEAT_CHIPS: { value: SeatFilter; label: string }[] = [
 function ShareFilterRow({ label, chips, value, onChange }: { label: string; chips: { value: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
     <div data-no-pull-refresh className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x touch-pan-y touch-pan-y">
-      <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">{label}</span>
+      <span className="text-[11px] font-bold text-muted-foreground whitespace-nowrap flex-shrink-0">{label}</span>
       {chips.map((chip) => {
         const active = chip.value === value;
         return (
           <button key={chip.value} onClick={() => onChange(chip.value)}
-            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${active ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-all ${active ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
             {chip.label}
           </button>
         );
@@ -316,9 +316,9 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             type="button"
             onClick={onBack}
             aria-label="뒤로가기"
-            className="w-8 h-11 -ml-1.5 rounded-lg flex items-center justify-center hover:bg-neutral-800/50 transition-colors flex-shrink-0"
+            className="w-8 h-11 -ml-1.5 rounded-lg flex items-center justify-center hover:bg-muted/50 transition-colors flex-shrink-0"
           >
-            <ArrowLeft className="w-4 h-4 text-white" />
+            <ArrowLeft className="w-4 h-4 text-foreground" />
           </button>
         )}
         <div data-no-pull-refresh className="overflow-x-auto scrollbar-hide flex-1 min-w-0 touch-pan-x touch-pan-y touch-pan-y">
@@ -327,7 +327,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               onClick={() => setTab("puzzle")}
               className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "puzzle"
                 ? "bg-amber-500 text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                : "bg-muted text-muted-foreground hover:bg-muted hover:text-white"
                 }`}
             >
               <span className="text-[18px] leading-none">🚩</span> 깃발
@@ -338,7 +338,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 onClick={() => setTab("share")}
                 className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "share"
                   ? "bg-amber-500 text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted hover:text-white"
                   }`}
               >
                 <span className="text-[16px] leading-none">🧩</span> 조각
@@ -350,7 +350,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 onClick={() => setTab("today")}
                 className={`text-[13px] font-bold px-3 py-2.5 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 flex items-center gap-1 ${tab === "today"
                   ? "bg-amber-500 text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  : "bg-muted text-muted-foreground hover:bg-muted hover:text-white"
                   }`}
               >
                 🔥 오늘특가 {todayAuctions.length > 0 && `(${todayAuctions.length})`}
@@ -386,8 +386,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 onClick={() => onAreaChipChange?.(null)}
                 className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                   areaForChips === null
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                    ? "bg-inverse text-inverse-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 전체
@@ -398,8 +398,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   onClick={() => onAreaChipChange?.(areaForChips === area ? null : area)}
                   className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                     areaForChips === area
-                      ? "bg-white text-black"
-                      : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                      ? "bg-inverse text-inverse-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {area}
@@ -409,8 +409,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 onClick={() => onAreaChipChange?.(areaForChips === "다른지역" ? null : "다른지역")}
                 className={`text-[12px] font-bold px-2.5 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                   areaForChips === "다른지역"
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                    ? "bg-inverse text-inverse-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 다른지역
@@ -425,7 +425,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             <div className="relative flex-shrink-0">
               <button
                 onClick={() => setPuzzleFilterOpen(true)}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white transition-colors"
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-muted text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                 aria-label="필터"
               >
                 <SlidersHorizontal className="w-4 h-4" />
@@ -440,7 +440,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               {hasAdvanceFilter && (
                 <button
                   onClick={resetAdvanceFilters}
-                  className="text-[11px] font-bold text-neutral-400 hover:text-white transition-colors px-2"
+                  className="text-[11px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2"
                 >
                   초기화
                 </button>
@@ -450,8 +450,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   onClick={() => setFilterSheetOpen(true)}
                   className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                     hasAdvanceFilter
-                      ? "bg-white text-black"
-                      : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                      ? "bg-inverse text-inverse-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   <SlidersHorizontal className="w-4 h-4" />
@@ -474,22 +474,22 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               {userRole === "md" ? (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <p className="text-[15px] font-bold text-neutral-300">테이블이 비었나요?</p>
-                    <p className="text-[12px] text-neutral-500 leading-relaxed">
+                    <p className="text-[15px] font-bold text-foreground/80">테이블이 비었나요?</p>
+                    <p className="text-[12px] text-muted-foreground leading-relaxed">
                       지금 당장 수익으로 전환해보세요!
                     </p>
                   </div>
                   <a
                     href="/md/auctions/new"
-                    className="inline-block px-6 py-2.5 bg-white text-black text-[13px] font-black rounded-full"
+                    className="inline-block px-6 py-2.5 bg-inverse text-inverse-foreground text-[13px] font-black rounded-full"
                   >
                     10초 만에 오늘특가 등록하기
                   </a>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <p className="text-[15px] font-bold text-neutral-300">오늘특가가 곧 올라옵니다</p>
-                  <p className="text-[12px] text-neutral-500 leading-relaxed">
+                  <p className="text-[15px] font-bold text-foreground/80">오늘특가가 곧 올라옵니다</p>
+                  <p className="text-[12px] text-muted-foreground leading-relaxed">
                     파트너가 오늘 특가를 올리면
                     <br />
                     빠르게 잡을 수 있어요.
@@ -513,13 +513,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {/* 얼리버드 필터 Sheet */}
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-        <SheetContent side="bottom" showCloseButton={false} className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
+        <SheetContent side="bottom" showCloseButton={false} className="bg-card border-border rounded-t-3xl px-5 pb-10">
           <SheetHeader className="pt-2 pb-4">
-            <SheetTitle className="text-white font-black text-lg text-left">필터</SheetTitle>
+            <SheetTitle className="text-foreground font-black text-lg text-left">필터</SheetTitle>
           </SheetHeader>
           <div className="space-y-5">
             <div className="space-y-2">
-              <p className="text-[12px] font-bold text-neutral-400 px-1">날짜</p>
+              <p className="text-[12px] font-bold text-muted-foreground px-1">날짜</p>
               <DateFilterCalendar
                 eventDates={availableEventDates}
                 value={dateFilter}
@@ -535,7 +535,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 disabled={!hasActiveFilter}
                 className={`text-[12px] font-bold transition-colors ${
                   hasActiveFilter
-                    ? "text-neutral-400 hover:text-white"
+                    ? "text-muted-foreground hover:text-foreground"
                     : "text-transparent pointer-events-none"
                 }`}
               >
@@ -556,7 +556,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
             ) : (
               <button
                 onClick={() => setFilterSheetOpen(false)}
-                className="w-full h-16 bg-white text-black font-black text-[14px] rounded-2xl"
+                className="w-full h-16 bg-inverse text-inverse-foreground font-black text-[14px] rounded-2xl"
               >
                 {advanceAuctions.length}건 보기
               </button>
@@ -567,13 +567,13 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
 
       {/* 조각 날짜 선택 캘린더 — 홈 캐러셀과 동일 (하단 Sheet, 단일 선택) */}
       <Sheet open={shareCalendarOpen} onOpenChange={setShareCalendarOpen}>
-        <SheetContent side="bottom" showCloseButton={false} className="bg-[#0A0A0A] border-t border-neutral-800 rounded-t-3xl px-4 pt-5 pb-8 max-w-lg mx-auto">
-          <SheetTitle className="text-white text-[16px] font-black text-center mb-3">조각 날짜 선택</SheetTitle>
+        <SheetContent side="bottom" showCloseButton={false} className="bg-background border-t border-border rounded-t-3xl px-4 pt-5 pb-8 max-w-lg mx-auto">
+          <SheetTitle className="text-foreground text-[16px] font-black text-center mb-3">조각 날짜 선택</SheetTitle>
           <button
             type="button"
             onClick={() => { setShareSelectedDate("all"); setShareCalendarOpen(false); }}
             className={`mx-auto inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-[13px] font-bold active:scale-95 transition ${
-              shareSelectedDate === "all" ? "bg-white text-black" : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700 hover:text-white"
+              shareSelectedDate === "all" ? "bg-inverse text-inverse-foreground" : "bg-muted text-foreground/80 hover:bg-muted hover:text-foreground"
             }`}
           >
             <CalendarDays className="w-4 h-4" />
@@ -596,7 +596,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               }}
             />
           </div>
-          <p className="text-[11px] text-neutral-500 text-center mt-2">조각이 있는 날짜만 선택할 수 있어요</p>
+          <p className="text-[11px] text-muted-foreground text-center mt-2">조각이 있는 날짜만 선택할 수 있어요</p>
         </SheetContent>
       </Sheet>
 
@@ -606,8 +606,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           {advanceAuctionsAll.length === 0 ? (
             <div className="text-center pt-8 pb-16 space-y-6">
               <div className="space-y-2">
-                <p className="text-[15px] font-bold text-neutral-300">아직 등록된 얼리버드 경매가 없어요</p>
-                <p className="text-[12px] text-neutral-500 leading-relaxed">
+                <p className="text-[15px] font-bold text-foreground/80">아직 등록된 얼리버드 경매가 없어요</p>
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
                   주말 인기 클럽은 미리 경매가 열립니다.
                   <br />
                   자주 확인하면 좋은 자리를 선점할 수 있어요.
@@ -617,14 +617,14 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
           ) : advanceAuctions.length === 0 ? (
             <div className="text-center pt-8 pb-16 space-y-4">
               <div className="space-y-2">
-                <p className="text-[15px] font-bold text-neutral-300">선택한 조건에 맞는 경매가 없어요</p>
-                <p className="text-[12px] text-neutral-500 leading-relaxed">
+                <p className="text-[15px] font-bold text-foreground/80">선택한 조건에 맞는 경매가 없어요</p>
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
                   필터를 조정해보세요.
                 </p>
               </div>
               <button
                 onClick={resetAdvanceFilters}
-                className="inline-block px-5 py-2 bg-white text-black text-[13px] font-black rounded-full"
+                className="inline-block px-5 py-2 bg-inverse text-inverse-foreground text-[13px] font-black rounded-full"
               >
                 필터 초기화
               </button>
@@ -662,14 +662,14 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   {SHARE_NBI_CHIPS.map(({ value, label }) => (
                     <button key={value}
                       onClick={() => setShareNbi(v => v === value ? "all" : value as NbiFilter)}
-                      className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${shareNbi === value ? "bg-white text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                      className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${shareNbi === value ? "bg-inverse text-inverse-foreground" : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"}`}>
                       {label}
                     </button>
                   ))}
                 </div>
                 {userRole && ["md", "admin"].includes(userRole) && (
                   <button onClick={() => setMyShareOnly(v => !v)}
-                    className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${myShareOnly ? "bg-green-500 text-black" : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"}`}>
+                    className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${myShareOnly ? "bg-green-500 text-black" : "bg-muted text-muted-foreground hover:bg-muted hover:text-white"}`}>
                     내 조각
                   </button>
                 )}
@@ -679,17 +679,17 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                 <button
                   type="button"
                   onClick={() => setShareCalendarOpen(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-800 text-white text-[13px] font-bold hover:bg-neutral-700 active:scale-95 transition"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-muted text-foreground text-[13px] font-bold hover:bg-muted active:scale-95 transition"
                 >
-                  <CalendarDays className="w-4 h-4 text-neutral-300" />
+                  <CalendarDays className="w-4 h-4 text-foreground/80" />
                   <span>{shareTriggerLabel(shareSelectedDate, shareTodayISO)}</span>
-                  <ChevronDown className="w-4 h-4 text-neutral-400" />
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
                 </button>
                 {shareSelectedDate !== "all" && (
                   <button
                     type="button"
                     onClick={() => setShareSelectedDate("all")}
-                    className="px-2.5 py-1 rounded-full bg-neutral-800 text-neutral-500 text-[11px] font-bold hover:bg-neutral-700 hover:text-white active:scale-95 transition"
+                    className="px-2.5 py-1 rounded-full bg-muted text-muted-foreground text-[11px] font-bold hover:bg-muted hover:text-foreground active:scale-95 transition"
                   >
                     초기화
                   </button>
@@ -706,10 +706,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               {userRole && ["md", "admin"].includes(userRole) ? (
                 <>
                   <div className="space-y-0.5">
-                    <p className="text-neutral-400 text-[13px] font-medium leading-tight break-keep">
+                    <p className="text-muted-foreground text-[13px] font-medium leading-tight break-keep">
                       아직 조각이 없어요
                     </p>
-                    <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
+                    <p className="text-foreground text-[16px] font-black leading-tight tracking-tight break-keep">
                       지금이 제일 먼저 노출될 타이밍!
                     </p>
                   </div>
@@ -723,10 +723,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               ) : (
                 <>
                   <div className="space-y-1.5">
-                    <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
+                    <p className="text-foreground text-[16px] font-black leading-tight tracking-tight break-keep">
                       아직 등록된 조각이 없어요
                     </p>
-                    <p className="text-neutral-500 text-[12.5px] font-medium leading-relaxed break-keep">
+                    <p className="text-muted-foreground text-[12.5px] font-medium leading-relaxed break-keep">
                       먼저 조각을 올려서 인원을 모아보세요
                     </p>
                   </div>
@@ -747,10 +747,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               {userRole && ["md", "admin"].includes(userRole) ? (
                 <>
                   <div className="space-y-0.5">
-                    <p className="text-neutral-400 text-[13px] font-medium leading-tight break-keep">
+                    <p className="text-muted-foreground text-[13px] font-medium leading-tight break-keep">
                       아직 조각이 없어요
                     </p>
-                    <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
+                    <p className="text-foreground text-[16px] font-black leading-tight tracking-tight break-keep">
                       지금이 제일 먼저 노출될 타이밍!
                     </p>
                   </div>
@@ -764,10 +764,10 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               ) : (
                 <>
                   <div className="space-y-1.5">
-                    <p className="text-white text-[16px] font-black leading-tight tracking-tight break-keep">
+                    <p className="text-foreground text-[16px] font-black leading-tight tracking-tight break-keep">
                       아직 등록된 조각이 없어요
                     </p>
-                    <p className="text-neutral-500 text-[12.5px] font-medium leading-relaxed break-keep">
+                    <p className="text-muted-foreground text-[12.5px] font-medium leading-relaxed break-keep">
                       먼저 조각을 올려서 인원을 모아보세요
                     </p>
                   </div>
@@ -781,7 +781,7 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
               )}
               {(shareNbi !== "all" || shareSeat !== "all" || shareSelectedDate !== "all") && (
                 <button onClick={() => { setShareNbi("all"); setShareSeat("all"); setShareSelectedDate("all"); }}
-                  className="text-[12px] font-bold text-neutral-500 hover:text-white transition-colors">필터 초기화</button>
+                  className="text-[12px] font-bold text-muted-foreground hover:text-foreground transition-colors">필터 초기화</button>
               )}
             </div>
           ) : (
@@ -820,8 +820,8 @@ export function AuctionList({ activeAuctions: initialAuctions, puzzles = [], puz
                   <div key={date}>
                     <div className="flex items-center gap-2.5 px-1 pt-1 pb-0 mb-1.5">
                       <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
-                      <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>
+                      <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">{dateLabel}</h3>
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-brand-amber" : "bg-muted text-muted-foreground"}`}>
                         {dday}
                       </span>
                     </div>

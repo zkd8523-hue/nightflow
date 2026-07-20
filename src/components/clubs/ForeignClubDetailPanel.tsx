@@ -86,18 +86,18 @@ export function ForeignClubDetailPanel({
       )}
       <div className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-2">
-          <p className="font-black text-[20px] text-white leading-tight">{name}</p>
-          <span className="shrink-0 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400">
+          <p className="font-black text-[20px] text-foreground leading-tight">{name}</p>
+          <span className="shrink-0 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-muted text-muted-foreground">
             {areaI18n(club.area, lang)}
           </span>
         </div>
 
         {club.google_rating != null && (
           <a href={googleUrl} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-[13px] text-amber-400 hover:text-amber-300 transition-colors">
+            className="inline-flex items-center gap-1.5 text-[13px] text-brand-amber hover:text-brand-amber transition-colors">
             ⭐ {club.google_rating.toFixed(1)}
             {club.google_review_count != null && (
-              <span className="text-neutral-500">· {club.google_review_count.toLocaleString()} {googleReviewsLabel} →</span>
+              <span className="text-muted-foreground">· {club.google_review_count.toLocaleString()} {googleReviewsLabel} →</span>
             )}
           </a>
         )}
@@ -108,22 +108,22 @@ export function ForeignClubDetailPanel({
             {club.google_reviews.map((r, i) => (
               <div
                 key={i}
-                className="shrink-0 w-[220px] snap-start rounded-xl bg-neutral-900 border border-neutral-800 p-3 space-y-1.5"
+                className="shrink-0 w-[220px] snap-start rounded-xl bg-card border border-border p-3 space-y-1.5"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[12px] font-bold text-amber-400">
+                  <span className="text-[12px] font-bold text-brand-amber">
                     {"★".repeat(Math.round(r.rating ?? 0))}
-                    <span className="text-neutral-700">{"★".repeat(5 - Math.round(r.rating ?? 0))}</span>
+                    <span className="text-muted-foreground">{"★".repeat(5 - Math.round(r.rating ?? 0))}</span>
                   </span>
                   {r.relative_time && (
-                    <span className="text-[10px] text-neutral-600 shrink-0">{r.relative_time}</span>
+                    <span className="text-[10px] text-muted-foreground shrink-0">{r.relative_time}</span>
                   )}
                 </div>
                 {r.text && (
-                  <p className="text-[12px] text-neutral-300 leading-relaxed line-clamp-5">{r.text}</p>
+                  <p className="text-[12px] text-foreground/80 leading-relaxed line-clamp-5">{r.text}</p>
                 )}
                 {r.author_name && (
-                  <p className="text-[11px] text-neutral-600 truncate">— {r.author_name}, {googleLabel}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">— {r.author_name}, {googleLabel}</p>
                 )}
               </div>
             ))}
@@ -136,21 +136,21 @@ export function ForeignClubDetailPanel({
             href={getGoogleReviewsUrl({ name: club.name, address: club.address, area: club.area }, lang)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-[13px] text-neutral-400 hover:text-white transition-colors group"
+            className="flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors group"
           >
             <MapPin className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
             <span className="truncate">{club.address}</span>
-            <ExternalLink className="w-3 h-3 shrink-0 text-neutral-500 group-hover:text-white" aria-hidden="true" />
+            <ExternalLink className="w-3 h-3 shrink-0 text-muted-foreground group-hover:text-foreground" aria-hidden="true" />
           </a>
         )}
         {club.entry_fee_detail && (
-          <p className="text-[13px] text-neutral-400">🎟️ {translateClubMeta(club.entry_fee_detail, lang)}</p>
+          <p className="text-[13px] text-muted-foreground">🎟️ {translateClubMeta(club.entry_fee_detail, lang)}</p>
         )}
         {club.operating_hours && (
-          <p className="text-[13px] text-neutral-400">🕐 {translateClubMeta(club.operating_hours, lang)}</p>
+          <p className="text-[13px] text-muted-foreground">🕐 {translateClubMeta(club.operating_hours, lang)}</p>
         )}
         {club.dresscode && (
-          <p className="text-[13px] text-neutral-400">👗 {translateClubMeta(club.dresscode, lang)}</p>
+          <p className="text-[13px] text-muted-foreground">👗 {translateClubMeta(club.dresscode, lang)}</p>
         )}
         {/* 특성 배지 — 타입·음악장르·흡연. 외국인이 취향 맞는 클럽 고르는 핵심 정보. */}
         {clubFeatureLabels(club.tags, lang).length > 0 && (
@@ -158,7 +158,7 @@ export function ForeignClubDetailPanel({
             {clubFeatureLabels(club.tags, lang).map((label) => (
               <span
                 key={label}
-                className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300"
+                className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted text-foreground/80"
               >
                 {label}
               </span>
@@ -193,7 +193,7 @@ export function ForeignClubDetailPanel({
             href={googleUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-neutral-800 border border-neutral-700 text-[14px] font-bold text-neutral-200 hover:bg-neutral-700/60 transition-colors"
+            className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-muted border border-border text-[14px] font-bold text-foreground hover:bg-muted/60 transition-colors"
           >
             🔍 {searchReviewsLabel}
           </a>

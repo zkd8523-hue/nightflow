@@ -44,12 +44,12 @@ export default async function ShareNewPage() {
   if (profile?.role === "md") redirect("/");
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <div className="max-w-lg mx-auto p-6">
         {/* 헤더 */}
         <div className="mb-8">
-          <h1 className="text-2xl font-black text-white tracking-tight">🧩 조각</h1>
-          <p className="text-neutral-500 text-sm font-medium mt-0.5 break-keep">
+          <h1 className="text-2xl font-black text-foreground tracking-tight">🧩 조각</h1>
+          <p className="text-muted-foreground text-sm font-medium mt-0.5 break-keep">
             파티원을 모아 테이블을 예약해요
           </p>
         </div>

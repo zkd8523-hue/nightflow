@@ -118,17 +118,17 @@ export function BlockUserButton({
         <button
           onClick={() => setOpen(true)}
           aria-label="사용자 차단"
-          className="p-2 rounded-full hover:bg-neutral-800 transition-colors"
+          className="p-2 rounded-full hover:bg-muted transition-colors"
         >
-          <Ban className="w-4 h-4 text-neutral-500" />
+          <Ban className="w-4 h-4 text-muted-foreground" />
         </button>
       ) : (
         <button
           onClick={() => setOpen(true)}
           className="flex items-center gap-1.5 py-3 group mx-auto"
         >
-          <Ban className="w-3 h-3 text-neutral-600 group-hover:text-neutral-400 transition-colors" />
-          <span className="text-[11px] text-neutral-600 font-medium group-hover:text-neutral-400 transition-colors">
+          <Ban className="w-3 h-3 text-muted-foreground group-hover:text-muted-foreground transition-colors" />
+          <span className="text-[11px] text-muted-foreground font-medium group-hover:text-muted-foreground transition-colors">
             {isBlocked ? "차단 해제" : "이 사용자 차단"}
           </span>
         </button>
@@ -143,13 +143,13 @@ export function BlockUserButton({
       >
         <SheetContent
           side="bottom"
-          className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-8 max-h-[90vh] overflow-y-auto"
+          className="bg-card border-border rounded-t-3xl pb-8 max-h-[90vh] overflow-y-auto"
         >
           <SheetHeader className="pb-2 text-left">
-            <SheetTitle className="text-white text-[16px]">
+            <SheetTitle className="text-foreground text-[16px]">
               {isBlocked ? "차단 해제하시겠습니까?" : `${label} 차단하기`}
             </SheetTitle>
-            <SheetDescription className="text-neutral-400 text-[13px] mt-1">
+            <SheetDescription className="text-muted-foreground text-[13px] mt-1">
               {isBlocked
                 ? "이 사용자의 게시글이 다시 표시됩니다."
                 : "차단 사유가 관리자에게 전달되어 24시간 내 검토됩니다. 차단 즉시 이 사용자의 모든 게시글이 피드에서 사라집니다."}
@@ -166,17 +166,17 @@ export function BlockUserButton({
                     className={`w-full text-left p-3.5 rounded-xl border transition-colors ${
                       reason === r.value
                         ? "border-red-500/50 bg-red-500/10"
-                        : "border-neutral-800 bg-[#0A0A0A] hover:border-neutral-700"
+                        : "border-border bg-background hover:border-border"
                     }`}
                   >
                     <p
                       className={`text-[14px] font-bold ${
-                        reason === r.value ? "text-red-400" : "text-white"
+                        reason === r.value ? "text-red-400" : "text-foreground"
                       }`}
                     >
                       {r.label}
                     </p>
-                    <p className="text-[12px] text-neutral-500 mt-0.5">{r.desc}</p>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">{r.desc}</p>
                   </button>
                 ))}
               </div>
@@ -189,7 +189,7 @@ export function BlockUserButton({
                     ? "차단 사유를 입력해주세요 (필수)"
                     : "추가 설명 (선택)"
                 }
-                className="w-full h-20 bg-[#0A0A0A] border border-neutral-800 rounded-xl p-3 text-[13px] text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
+                className="w-full h-20 bg-background border border-border rounded-xl p-3 text-[13px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-border"
                 maxLength={500}
               />
             </div>
@@ -202,7 +202,7 @@ export function BlockUserButton({
                 setOpen(false);
                 resetForm();
               }}
-              className="h-12 rounded-xl border-neutral-800 text-neutral-400 font-bold"
+              className="h-12 rounded-xl border-border text-muted-foreground font-bold"
             >
               취소
             </Button>
@@ -211,7 +211,7 @@ export function BlockUserButton({
               disabled={submitDisabled}
               className={`h-12 rounded-xl font-black text-base text-white disabled:opacity-40 ${
                 isBlocked
-                  ? "bg-neutral-700 hover:bg-neutral-600"
+                  ? "bg-muted hover:bg-muted"
                   : "bg-red-500 hover:bg-red-600"
               }`}
             >

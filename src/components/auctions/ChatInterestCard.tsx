@@ -26,15 +26,15 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   },
   confirmed: {
     label: "거래 완료",
-    className: "bg-green-500/10 text-green-500 border-green-500/20",
+    className: "bg-green-500/10 text-money border-green-500/20",
   },
   unsold: {
     label: "판매 종료",
-    className: "bg-neutral-800 text-neutral-500 border-neutral-700",
+    className: "bg-muted text-muted-foreground border-border",
   },
   cancelled: {
     label: "취소",
-    className: "bg-neutral-800 text-neutral-500 border-neutral-700",
+    className: "bg-muted text-muted-foreground border-border",
   },
 };
 
@@ -48,7 +48,7 @@ function CompactTimer({ endTime }: { endTime: string }) {
           ? "bg-red-500/20 border-red-500/50"
           : level === "warning"
             ? "bg-amber-500/10 border-amber-500/30"
-            : "bg-neutral-800 border-neutral-700"
+            : "bg-muted border-border"
       }`}
     >
       <span
@@ -58,7 +58,7 @@ function CompactTimer({ endTime }: { endTime: string }) {
       />
       <span
         className={`text-[11px] font-mono font-bold tabular-nums ${
-          level === "critical" ? "text-red-400" : level === "warning" ? "text-amber-400" : "text-neutral-300"
+          level === "critical" ? "text-red-400" : level === "warning" ? "text-brand-amber" : "text-foreground/80"
         }`}
       >
         {formatCountdown(remaining)}
@@ -81,7 +81,7 @@ export function ChatInterestCard({ interest, isEnded, onDismiss }: ChatInterestC
   const badge = STATUS_BADGE[badgeKey];
 
   return (
-    <Card className="bg-[#1C1C1E] border-neutral-800 p-5 hover:border-neutral-700 transition-all">
+    <Card className="bg-card border-border p-5 hover:border-border transition-all">
       <div className="space-y-4">
         {/* Header: Badge + Timer/Dismiss */}
         <div className="flex justify-between items-center">
@@ -94,7 +94,7 @@ export function ChatInterestCard({ interest, isEnded, onDismiss }: ChatInterestC
           <div className="flex items-center gap-2">
             {active && <CompactTimer endTime={endTime} />}
             {!active && (
-              <span className="text-[11px] text-neutral-600 font-bold">
+              <span className="text-[11px] text-muted-foreground font-bold">
                 {formatTime(interest.created_at)}
               </span>
             )}
@@ -105,7 +105,7 @@ export function ChatInterestCard({ interest, isEnded, onDismiss }: ChatInterestC
                   e.stopPropagation();
                   onDismiss(interest.auction_id);
                 }}
-                className="p-1 rounded-md hover:bg-neutral-800 transition-colors text-neutral-600 hover:text-neutral-400"
+                className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-muted-foreground"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -115,7 +115,7 @@ export function ChatInterestCard({ interest, isEnded, onDismiss }: ChatInterestC
 
         {/* Club Info */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg overflow-hidden relative flex-shrink-0 bg-neutral-900">
+          <div className="w-10 h-10 rounded-lg overflow-hidden relative flex-shrink-0 bg-card">
             <AuctionImage
               auctionThumbnail={auction.thumbnail_url}
               clubThumbnail={auction.club?.thumbnail_url}
@@ -125,17 +125,17 @@ export function ChatInterestCard({ interest, isEnded, onDismiss }: ChatInterestC
             />
           </div>
           <div>
-            <h2 className="text-white font-bold leading-tight">{auction.club?.name}</h2>
-            <p className="text-xs text-neutral-500">{auction.club?.area}</p>
+            <h2 className="text-foreground font-bold leading-tight">{auction.club?.name}</h2>
+            <p className="text-xs text-muted-foreground">{auction.club?.area}</p>
           </div>
         </div>
 
         {/* Price */}
-        <div className="bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
-          <p className="text-[10px] text-neutral-500 font-bold uppercase mb-1">
+        <div className="bg-card/50 rounded-xl p-3 border border-border/30">
+          <p className="text-[10px] text-muted-foreground font-bold uppercase mb-1">
             판매가
           </p>
-          <p className="text-lg font-black text-white">
+          <p className="text-lg font-black text-foreground">
             {formatPrice(auction.start_price)}
           </p>
         </div>
@@ -145,8 +145,8 @@ export function ChatInterestCard({ interest, isEnded, onDismiss }: ChatInterestC
           <Button
             className={`w-full h-11 font-black text-sm rounded-xl flex items-center justify-center gap-1 ${
               active
-                ? "bg-white text-black hover:bg-neutral-200"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                ? "bg-inverse text-inverse-foreground hover:opacity-90"
+                : "bg-muted text-muted-foreground hover:bg-muted"
             }`}
           >
             상세보기

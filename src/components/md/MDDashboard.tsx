@@ -15,15 +15,15 @@ import dynamic from "next/dynamic";
 // next/dynamic 으로 분리 — MD 대시보드 진입 시 초기 번들에서 제외, 토글 시점에 로드.
 const HotdealNowManager = dynamic(
   () => import("./HotdealNowManager").then((m) => m.HotdealNowManager),
-  { loading: () => <div className="animate-pulse bg-neutral-800/50 h-40 rounded-xl" /> }
+  { loading: () => <div className="animate-pulse bg-muted/50 h-40 rounded-xl" /> }
 );
 const HotdealSlotBoard = dynamic(
   () => import("./HotdealSlotBoard").then((m) => m.HotdealSlotBoard),
-  { loading: () => <div className="animate-pulse bg-neutral-800/50 h-40 rounded-xl" /> }
+  { loading: () => <div className="animate-pulse bg-muted/50 h-40 rounded-xl" /> }
 );
 const ShareSlotBoard = dynamic(
   () => import("./ShareSlotBoard").then((m) => m.ShareSlotBoard),
-  { loading: () => <div className="animate-pulse bg-neutral-800/50 h-40 rounded-xl" /> }
+  { loading: () => <div className="animate-pulse bg-muted/50 h-40 rounded-xl" /> }
 );
 import type { Auction, User, Club, PuzzleOffer, DailyHotdeal, HotdealBenefitsByDow, ShareOption, ShareWeekdayPlan } from "@/types/database";
 import { ShareOptionManager } from "@/components/md/ShareOptionManager";
@@ -399,18 +399,18 @@ export function MDDashboard({
                 className="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
                 style={{ top: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
             >
-                <ChevronLeft className="w-5 h-5 text-white" />
+                <ChevronLeft className="w-5 h-5 text-foreground" />
             </Link>
 
             {/* Header Profile Section */}
-            <div className="pl-14 pr-6 pt-5 pb-4 space-y-4 text-white">
+            <div className="pl-14 pr-6 pt-5 pb-4 space-y-4 text-foreground">
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                         <h1 className="text-xl font-black tracking-tight">{user.display_name || user.name} 파트너님</h1>
-                        <p className="text-neutral-500 text-[13px] font-medium">오늘밤도 파이팅이에요!</p>
+                        <p className="text-muted-foreground text-[13px] font-medium">오늘밤도 파이팅이에요!</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Link href="/profile" className="flex items-center gap-1.5 text-neutral-500 hover:text-white transition-colors">
+                        <Link href="/profile" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
                             <Settings className="w-4 h-4" />
                             <span className="text-[12px] font-bold">프로필 설정</span>
                         </Link>
@@ -447,20 +447,20 @@ export function MDDashboard({
             <div className="px-4 pb-2">
                 {clubs.length === 0 ? (
                     <Link href="/md/clubs">
-                        <div className="flex items-center gap-2 px-4 py-3 bg-[#1C1C1E] border border-dashed border-neutral-700 rounded-2xl">
-                            <MapPin className="w-4 h-4 text-neutral-500 shrink-0" />
-                            <span className="text-[13px] text-neutral-500 font-medium">클럽을 등록해주세요</span>
-                            <Plus className="w-4 h-4 text-neutral-600 ml-auto" />
+                        <div className="flex items-center gap-2 px-4 py-3 bg-card border border-dashed border-border rounded-2xl">
+                            <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                            <span className="text-[13px] text-muted-foreground font-medium">클럽을 등록해주세요</span>
+                            <Plus className="w-4 h-4 text-muted-foreground ml-auto" />
                         </div>
                     </Link>
                 ) : clubs.length === 1 ? (
-                    <div className="flex items-center gap-2 px-4 py-3 bg-[#1C1C1E] border border-neutral-800 rounded-2xl">
-                        <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
-                        <span className="text-[14px] font-bold text-white truncate">{clubs[0].name}</span>
-                        <span className="text-neutral-600 text-[13px]">&middot;</span>
-                        <span className="text-[13px] text-neutral-400">{clubs[0].area}</span>
+                    <div className="flex items-center gap-2 px-4 py-3 bg-card border border-border rounded-2xl">
+                        <MapPin className="w-4 h-4 text-brand-amber shrink-0" />
+                        <span className="text-[14px] font-bold text-foreground truncate">{clubs[0].name}</span>
+                        <span className="text-muted-foreground text-[13px]">&middot;</span>
+                        <span className="text-[13px] text-muted-foreground">{clubs[0].area}</span>
                         <Link href="/md/clubs" className="ml-auto">
-                            <Button variant="ghost" className="h-7 px-2 text-[11px] font-bold text-neutral-500 hover:text-white rounded-lg">
+                            <Button variant="ghost" className="h-7 px-2 text-[11px] font-bold text-muted-foreground hover:text-foreground rounded-lg">
                                 관리
                             </Button>
                         </Link>
@@ -468,21 +468,21 @@ export function MDDashboard({
                 ) : (
                     <button
                         onClick={() => setClubSheetOpen(true)}
-                        className="w-full flex items-center gap-2 px-4 py-3 bg-[#1C1C1E] border border-neutral-800 rounded-2xl hover:border-neutral-700 transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-4 py-3 bg-card border border-border rounded-2xl hover:border-border transition-colors text-left"
                     >
-                        <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
+                        <MapPin className="w-4 h-4 text-brand-amber shrink-0" />
                         {activeClub ? (
                             <>
-                                <span className="text-[14px] font-bold text-white truncate">{activeClub.name}</span>
-                                <span className="text-neutral-600 text-[13px]">&middot;</span>
-                                <span className="text-[13px] text-neutral-400">{activeClub.area}</span>
+                                <span className="text-[14px] font-bold text-foreground truncate">{activeClub.name}</span>
+                                <span className="text-muted-foreground text-[13px]">&middot;</span>
+                                <span className="text-[13px] text-muted-foreground">{activeClub.area}</span>
                             </>
                         ) : (
-                            <span className="text-[13px] text-neutral-500">클럽을 선택해주세요</span>
+                            <span className="text-[13px] text-muted-foreground">클럽을 선택해주세요</span>
                         )}
                         <div className="flex items-center gap-1 ml-auto shrink-0">
-                            {defaultClubId && <span className="text-[11px] text-neutral-600 font-medium">기본 클럽</span>}
-                            <ChevronDown className="w-4 h-4 text-neutral-500" />
+                            {defaultClubId && <span className="text-[11px] text-muted-foreground font-medium">기본 클럽</span>}
+                            <ChevronDown className="w-4 h-4 text-muted-foreground" />
                         </div>
                     </button>
                 )}
@@ -500,12 +500,12 @@ export function MDDashboard({
                         setHotdealInlineOpen(false);
                         setShareInlineOpen(false);
                     }}
-                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
-                        guestSignInlineOpen ? "border-amber-500" : "border-neutral-700"
+                    className={`w-full flex flex-row items-center justify-center gap-1.5 h-14 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                        guestSignInlineOpen ? "border-amber-500" : "border-border"
                     }`}
                 >
                     <span className="text-[18px] leading-none">🎫</span>
-                    <span className="text-[12px] font-black text-white">게스트 간판</span>
+                    <span className="text-[12px] font-black text-foreground">게스트 간판</span>
                 </button>
             </div>
             {/* 조각 | 핫딜 — 반반 */}
@@ -519,12 +519,12 @@ export function MDDashboard({
                         setGuestSignInlineOpen(false);
                         setHotdealInlineOpen(false);
                     }}
-                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
-                        shareInlineOpen ? "border-green-500" : "border-neutral-700"
+                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                        shareInlineOpen ? "border-green-500" : "border-border"
                     }`}
                 >
                     <span className="text-[20px] leading-none">🧩</span>
-                    <span className="text-[12px] font-black text-white">조각</span>
+                    <span className="text-[12px] font-black text-foreground">조각</span>
                 </button>
                 <button
                     type="button"
@@ -535,19 +535,19 @@ export function MDDashboard({
                         setGuestSignInlineOpen(false);
                         setShareInlineOpen(false);
                     }}
-                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-[#1C1C1E] border rounded-2xl hover:bg-neutral-800 active:scale-95 transition-all ${
-                        hotdealInlineOpen ? "border-amber-500" : "border-neutral-700"
+                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                        hotdealInlineOpen ? "border-amber-500" : "border-border"
                     }`}
                 >
                     <span className="text-[20px] leading-none">🔥</span>
-                    <span className="text-[12px] font-black text-white">핫딜</span>
+                    <span className="text-[12px] font-black text-foreground">핫딜</span>
                 </button>
             </div>
 
             {/* Hot Deal 인라인 등록 영역 */}
             {hotdealInlineOpen && (
                 <div className="px-4 mt-3">
-                    <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-4">
+                    <div className="bg-card border border-amber-500/30 rounded-2xl p-4">
                         <HotdealNowManager
                             clubs={hotdealClubs}
                             initialMyHotdeals={initialMyHotdeals}
@@ -560,7 +560,7 @@ export function MDDashboard({
             {/* 게스트 간판 인라인 영역 */}
             {guestSignInlineOpen && guestSignThisWeekISO && guestSignNextWeekISO && (
                 <div className="px-2 mt-3">
-                    <div className="bg-[#1C1C1E] border border-amber-500/30 rounded-2xl p-3">
+                    <div className="bg-card border border-amber-500/30 rounded-2xl p-3">
                         <HotdealSlotBoard
                             currentUserId={user.id}
                             isAdmin={user.role === "admin"}
@@ -578,7 +578,7 @@ export function MDDashboard({
             {/* 조각 인라인 영역 — 새 조각 등록 + 내 조각 목록 (핫딜과 동일 패턴) */}
             {shareInlineOpen && (
                 <div className="px-4 mt-3">
-                    <div className="bg-[#1C1C1E] border border-green-500/30 rounded-2xl p-4 space-y-4">
+                    <div className="bg-card border border-green-500/30 rounded-2xl p-4 space-y-4">
                         {/* 새 조각 등록 */}
                         <Link
                             href="/md/auctions/new"
@@ -589,24 +589,24 @@ export function MDDashboard({
 
                         {/* 내 조각 */}
                         <div className="space-y-2">
-                            <p className="text-[13px] font-black text-white px-1">내 조각</p>
+                            <p className="text-[13px] font-black text-foreground px-1">내 조각</p>
                             {myShares.length === 0 ? (
-                                <p className="text-center text-neutral-500 text-[13px] py-6">등록한 조각이 없어요</p>
+                                <p className="text-center text-muted-foreground text-[13px] py-6">등록한 조각이 없어요</p>
                             ) : (
                                 myShares.map((s) => {
                                     const committed = shareCounts[s.id] ?? s.current_count;
                                     const delta = shareDeltas[s.id] ?? 0;
                                     const cnt = Math.max(1, Math.min(s.target_count, committed + delta));
                                     return (
-                                        <div key={s.id} className="bg-neutral-900 rounded-xl px-4 py-3 space-y-2">
+                                        <div key={s.id} className="bg-card rounded-xl border border-border px-4 py-3 space-y-2">
                                             <div className="flex items-center justify-between gap-2">
                                                 <Link href={`/flags/${s.id}`} className="flex-1 min-w-0">
-                                                    <p className="text-[14px] font-bold text-white truncate">{s.notes || `${s.area} 조각`}</p>
+                                                    <p className="text-[14px] font-bold text-foreground truncate">{s.notes || `${s.area} 조각`}</p>
                                                 </Link>
                                                 <div className="flex items-center gap-1 shrink-0">
                                                     <Link
                                                         href={`/md/auctions/${s.id}/edit`}
-                                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+                                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                                                         aria-label="수정"
                                                     >
                                                         <Pencil className="w-3.5 h-3.5" />
@@ -615,7 +615,7 @@ export function MDDashboard({
                                                         type="button"
                                                         disabled={shareDeleting === s.id}
                                                         onClick={() => deleteShare(s.id, s.status)}
-                                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-400 hover:text-red-400 hover:bg-neutral-800 transition-colors disabled:opacity-40"
+                                                        className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-red-400 hover:bg-muted transition-colors disabled:opacity-40"
                                                         aria-label="삭제"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
@@ -623,15 +623,15 @@ export function MDDashboard({
                                                 </div>
                                             </div>
                                             {/* 인원 수정 (외부 인원 +/-, 누적 후 적용) — 오른쪽에 현재/목표 인원 */}
-                                            <div className="flex items-center gap-2 pt-2 border-t border-neutral-800/60">
-                                                <span className="text-[11px] text-neutral-500 font-bold">인원 수정</span>
-                                                <button type="button" disabled={shareSaving === s.id || cnt <= 1} onClick={() => setShareDeltas((m) => ({ ...m, [s.id]: (m[s.id] ?? 0) - 1 }))} className="w-6 h-6 rounded-full bg-neutral-700 hover:bg-neutral-600 flex items-center justify-center disabled:opacity-30 transition-colors"><Minus className="w-3 h-3 text-white" /></button>
-                                                <span className="text-[13px] font-black text-white tabular-nums w-5 text-center">{cnt}</span>
-                                                <button type="button" disabled={shareSaving === s.id || cnt >= s.target_count} onClick={() => setShareDeltas((m) => ({ ...m, [s.id]: (m[s.id] ?? 0) + 1 }))} className="w-6 h-6 rounded-full bg-neutral-700 hover:bg-neutral-600 flex items-center justify-center disabled:opacity-30 transition-colors"><Plus className="w-3 h-3 text-white" /></button>
+                                            <div className="flex items-center gap-2 pt-2 border-t border-border/60">
+                                                <span className="text-[11px] text-muted-foreground font-bold">인원 수정</span>
+                                                <button type="button" disabled={shareSaving === s.id || cnt <= 1} onClick={() => setShareDeltas((m) => ({ ...m, [s.id]: (m[s.id] ?? 0) - 1 }))} className="w-6 h-6 rounded-full bg-muted hover:bg-muted flex items-center justify-center disabled:opacity-30 transition-colors"><Minus className="w-3 h-3 text-foreground" /></button>
+                                                <span className="text-[13px] font-black text-foreground tabular-nums w-5 text-center">{cnt}</span>
+                                                <button type="button" disabled={shareSaving === s.id || cnt >= s.target_count} onClick={() => setShareDeltas((m) => ({ ...m, [s.id]: (m[s.id] ?? 0) + 1 }))} className="w-6 h-6 rounded-full bg-muted hover:bg-muted flex items-center justify-center disabled:opacity-30 transition-colors"><Plus className="w-3 h-3 text-foreground" /></button>
                                                 {delta !== 0 && (
-                                                    <button type="button" disabled={shareSaving === s.id} onClick={() => applyShare(s.id)} className="px-3 h-6 rounded-full bg-white text-black text-[11px] font-black active:scale-95 transition disabled:opacity-50">{shareSaving === s.id ? "저장중" : "적용"}</button>
+                                                    <button type="button" disabled={shareSaving === s.id} onClick={() => applyShare(s.id)} className="px-3 h-6 rounded-full bg-inverse text-inverse-foreground text-[11px] font-black active:scale-95 transition disabled:opacity-50">{shareSaving === s.id ? "저장중" : "적용"}</button>
                                                 )}
-                                                <span className="ml-auto text-[12px] text-neutral-400 font-bold tabular-nums">{cnt}/{s.target_count}명</span>
+                                                <span className="ml-auto text-[12px] text-muted-foreground font-bold tabular-nums">{cnt}/{s.target_count}명</span>
                                             </div>
                                         </div>
                                     );
@@ -644,15 +644,15 @@ export function MDDashboard({
 
             {/* 내 오퍼 (받은 오퍼) — 위 조각 등록과 구분 */}
             <div className="px-4 mt-5">
-                <p className="text-[13px] font-black text-neutral-400 mb-2 px-1">내 오퍼</p>
+                <p className="text-[13px] font-black text-muted-foreground mb-2 px-1">내 오퍼</p>
                 <Tabs value={activePuzzleTab} onValueChange={(v) => setActivePuzzleTab(v as "flag" | "share")} className="w-full">
                     <div className="flex items-center gap-2">
-                        <TabsList className="flex-1 bg-neutral-900 border border-neutral-800/50 h-11 p-1 rounded-xl">
-                            <TabsTrigger value="flag" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
-                                ⛳ 깃발 {flagOffers.length > 0 && <span className="ml-0.5 text-amber-400">{flagOffers.length}</span>}
+                        <TabsList className="flex-1 bg-card border border-border/50 h-11 p-1 rounded-xl">
+                            <TabsTrigger value="flag" className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]">
+                                ⛳ 깃발 {flagOffers.length > 0 && <span className="ml-0.5 text-brand-amber">{flagOffers.length}</span>}
                             </TabsTrigger>
-                            <TabsTrigger value="share" className="flex-1 rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white transition-colors hover:text-neutral-200 text-[13px]">
-                                🧩 조각 {shareOffers.length > 0 && <span className="ml-0.5 text-green-400">{shareOffers.length}</span>}
+                            <TabsTrigger value="share" className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]">
+                                🧩 조각 {shareOffers.length > 0 && <span className="ml-0.5 text-money">{shareOffers.length}</span>}
                             </TabsTrigger>
                         </TabsList>
 
@@ -708,7 +708,7 @@ export function MDDashboard({
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 px-1">
                                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                                            <span className="text-xs font-black text-amber-400 uppercase tracking-wider">
+                                            <span className="text-xs font-black text-brand-amber uppercase tracking-wider">
                                                 거래 확정 ({pendingVisit.length})
                                             </span>
                                         </div>
@@ -730,7 +730,7 @@ export function MDDashboard({
                                                 }}
                                             />
                                         ))}
-                                        <div className="border-b border-neutral-800/40 my-1" />
+                                        <div className="border-b border-border/40 my-1" />
                                     </div>
                                 );
                             })()}
@@ -754,7 +754,7 @@ export function MDDashboard({
                                     })();
 
                                     return (
-                                        <Card key={offer.id} className={`overflow-hidden bg-[#1C1C1E] border-neutral-800/50 hover:border-neutral-700 transition-all p-3 cursor-pointer active:scale-[0.98] ${
+                                        <Card key={offer.id} className={`overflow-hidden bg-card border-border/50 hover:border-border transition-all p-3 cursor-pointer active:scale-[0.98] ${
                                             isAccepted ? "border-green-500/30" : ""
                                         }`}>
                                             <Link href={`/flags/${p.id}`} className="block">
@@ -763,10 +763,10 @@ export function MDDashboard({
                                                         <div className="flex items-center gap-1.5 mb-1">
                                                             <span className={`text-[9px] font-bold px-1.5 py-0.5 inline-flex items-center rounded-full whitespace-nowrap ${
                                                                 isAccepted
-                                                                    ? "bg-green-500/20 text-green-400"
+                                                                    ? "bg-green-500/20 text-money"
                                                                     : chatStarted
                                                                         ? (mdReplied ? "bg-blue-500/20 text-blue-400" : "bg-red-500/20 text-red-400")
-                                                                        : "bg-amber-500/20 text-amber-400"
+                                                                        : "bg-amber-500/20 text-brand-amber"
                                                             }`}>
                                                                 {isAccepted
                                                                     ? "매치됨"
@@ -775,7 +775,7 @@ export function MDDashboard({
                                                                         : "대기중"}
                                                             </span>
                                                         </div>
-                                                        <h3 className="font-black text-[18px] text-white truncate leading-tight">
+                                                        <h3 className="font-black text-[18px] text-foreground truncate leading-tight">
                                                             {p.area} · {eventDateStr}
                                                         </h3>
                                                     </div>
@@ -784,19 +784,19 @@ export function MDDashboard({
                                                 {/* 제안 상세 — 조각은 인원·가격 변동이라 주류/구성 무의미 → 숨김 */}
                                                 {!isShare && (
                                                 <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                                    <span className="text-[11px] font-bold text-neutral-300 bg-neutral-800 px-2 py-0.5 rounded">{offer.table_type}</span>
+                                                    <span className="text-[11px] font-bold text-foreground/80 bg-muted px-2 py-0.5 rounded">{offer.table_type}</span>
                                                     {offer.includes?.slice(0, 3).map((item: string) => (
                                                         <span key={item} className="text-[11px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">{item}</span>
                                                     ))}
                                                     {offer.includes?.length > 3 && (
-                                                        <span className="text-[11px] text-neutral-500">+{offer.includes.length - 3}</span>
+                                                        <span className="text-[11px] text-muted-foreground">+{offer.includes.length - 3}</span>
                                                     )}
                                                 </div>
                                                 )}
                                             </Link>
 
                                             {/* Footer */}
-                                            <div className="mt-2 pt-2 border-t border-neutral-800/60 flex items-center justify-end">
+                                            <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-end">
                                                 {isAccepted ? (
                                                     <FeatureGate
                                                         flag="offer_chat"
@@ -816,7 +816,7 @@ export function MDDashboard({
                                                         <Link
                                                             href={`/messages/${offer.id}`}
                                                             onClick={(e) => e.stopPropagation()}
-                                                            className="h-8 px-3 rounded-lg bg-white text-black font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-neutral-200 transition-colors"
+                                                            className="h-8 px-3 rounded-lg bg-inverse text-inverse-foreground font-black text-[13px] inline-flex items-center gap-1.5 hover:opacity-90 transition-colors"
                                                         >
                                                             <MessageCircle className="w-3.5 h-3.5" />
                                                             채팅
@@ -826,7 +826,7 @@ export function MDDashboard({
                                                     <Link
                                                         href={`/messages/${offer.id}`}
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="h-8 px-3 rounded-lg bg-white text-black font-black text-[13px] inline-flex items-center gap-1.5 hover:bg-neutral-200 transition-colors"
+                                                        className="h-8 px-3 rounded-lg bg-inverse text-inverse-foreground font-black text-[13px] inline-flex items-center gap-1.5 hover:opacity-90 transition-colors"
                                                     >
                                                         <MessageCircle className="w-3.5 h-3.5" />
                                                         채팅방으로 이동
@@ -860,18 +860,18 @@ export function MDDashboard({
                                     );
                                 })
                             ) : tabOffers.length === 0 ? (
-                                <div className="py-16 text-center space-y-4 bg-[#1C1C1E]/30 rounded-3xl border border-dashed border-neutral-800/50">
-                                    <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto text-3xl">
+                                <div className="py-16 text-center space-y-4 bg-card/30 rounded-3xl border border-dashed border-border/50">
+                                    <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto text-3xl">
                                         📨
                                     </div>
-                                    <p className="text-neutral-500 font-medium text-sm">{activePuzzleTab === "share" ? "보낸 조각 오퍼가 없습니다" : "보낸 깃발 오퍼가 없습니다"}</p>
-                                    <p className="text-neutral-600 text-xs px-10 leading-relaxed">
+                                    <p className="text-muted-foreground font-medium text-sm">{activePuzzleTab === "share" ? "보낸 조각 오퍼가 없습니다" : "보낸 깃발 오퍼가 없습니다"}</p>
+                                    <p className="text-muted-foreground text-xs px-10 leading-relaxed">
                                         {activePuzzleTab === "share"
                                             ? <>홈 조각 탭에서 유저들이 올린 조각을 확인하고<br/>오퍼를 보내보세요</>
                                             : <>홈에서 유저들이 꽂은 깃발을 확인하고<br/>제안을 보내보세요</>}
                                     </p>
                                     <Link href={activePuzzleTab === "share" ? "/?tab=share" : "/?tab=puzzle"}>
-                                        <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">
+                                        <Button className="rounded-full bg-inverse text-inverse-foreground font-black hover:opacity-90 h-10 px-6 mt-2">
                                             <span className="mr-1">{activePuzzleTab === "share" ? "🧩" : "⛳"}</span>
                                             둘러보기
                                         </Button>
@@ -885,7 +885,7 @@ export function MDDashboard({
             </div>
 
             {/* Secondary Content: Stats */}
-            <div className="px-6 py-6 space-y-4 text-white">
+            <div className="px-6 py-6 space-y-4 text-foreground">
                 {/* 크레딧 — 보유/충전 동선만 노출 (성과 통계는 제거) */}
                 <Link
                     href="/md/credits"
@@ -893,12 +893,12 @@ export function MDDashboard({
                 >
                     <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center w-9 h-9 rounded-full bg-amber-500/15">
-                            <Coins className="w-4 h-4 text-amber-400" />
+                            <Coins className="w-4 h-4 text-brand-amber" />
                         </div>
                         <div className="space-y-0.5">
-                            <span className="block text-[10px] font-bold uppercase tracking-wider text-neutral-500">보유 크레딧</span>
-                            <p className={`text-[22px] font-black leading-none ${mdCredits !== null && mdCredits < 30 ? "text-red-400" : "text-amber-400"}`}>
-                                {mdCredits ?? "—"}<span className="text-[12px] text-neutral-500 ml-0.5">크레딧</span>
+                            <span className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground">보유 크레딧</span>
+                            <p className={`text-[22px] font-black leading-none ${mdCredits !== null && mdCredits < 30 ? "text-red-400" : "text-brand-amber"}`}>
+                                {mdCredits ?? "—"}<span className="text-[12px] text-muted-foreground ml-0.5">크레딧</span>
                             </p>
                         </div>
                     </div>
@@ -910,9 +910,9 @@ export function MDDashboard({
 
             {/* Club Selector Sheet (복수 클럽용) */}
             <Sheet open={clubSheetOpen} onOpenChange={setClubSheetOpen}>
-                <SheetContent side="bottom" className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl max-h-[60vh]">
+                <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-h-[60vh]">
                     <SheetHeader className="pb-4">
-                        <SheetTitle className="text-white font-black text-lg">내 클럽 목록</SheetTitle>
+                        <SheetTitle className="text-foreground font-black text-lg">내 클럽 목록</SheetTitle>
                     </SheetHeader>
                     <div className="space-y-2 overflow-y-auto pb-6">
                         {clubs.map((club) => {
@@ -927,20 +927,20 @@ export function MDDashboard({
                                     className={`w-full flex items-center gap-3 p-4 rounded-xl transition-colors text-left ${
                                         isDefault
                                             ? "bg-amber-500/10 border border-amber-500/20"
-                                            : "bg-[#1C1C1E] border border-neutral-800 hover:border-neutral-700"
+                                            : "bg-card border border-border hover:border-border"
                                     }`}
                                 >
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="text-[15px] font-bold text-white truncate">{club.name}</h4>
-                                        <p className="text-xs text-neutral-500 flex items-center gap-1 mt-1">
+                                        <h4 className="text-[15px] font-bold text-foreground truncate">{club.name}</h4>
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                                             <MapPin className="w-3 h-3" />
                                             {club.area}
                                         </p>
                                     </div>
                                     {isDefault && (
                                         <div className="flex items-center gap-1 shrink-0">
-                                            <span className="text-[11px] text-amber-500 font-medium">기본 클럽</span>
-                                            <CheckCircle className="w-5 h-5 text-amber-500" />
+                                            <span className="text-[11px] text-brand-amber font-medium">기본 클럽</span>
+                                            <CheckCircle className="w-5 h-5 text-brand-amber" />
                                         </div>
                                     )}
                                 </button>
@@ -949,7 +949,7 @@ export function MDDashboard({
                         <Link
                             href="/md/clubs"
                             onClick={() => setClubSheetOpen(false)}
-                            className="flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold text-neutral-500 hover:text-neutral-300 transition-colors"
+                            className="flex items-center justify-center gap-1.5 py-3 text-[13px] font-bold text-muted-foreground hover:text-foreground/80 transition-colors"
                         >
                             <Settings className="w-3.5 h-3.5" />
                             클럽 관리
@@ -972,7 +972,7 @@ export function MDDashboard({
             <Sheet open={hotdealSheetOpen} onOpenChange={setHotdealSheetOpen}>
                 <SheetContent
                     side="bottom"
-                    className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl !h-[92vh] !max-h-[92vh] !gap-0 !p-0 !flex !flex-col"
+                    className="bg-background border-border rounded-t-3xl !h-[92vh] !max-h-[92vh] !gap-0 !p-0 !flex !flex-col"
                     showCloseButton
                 >
                     <SheetHeader className="sr-only">
@@ -992,7 +992,7 @@ export function MDDashboard({
             <Sheet open={guestSignSheetOpen} onOpenChange={setGuestSignSheetOpen}>
                 <SheetContent
                     side="bottom"
-                    className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl !h-[92vh] !max-h-[92vh] !gap-0 !p-0 !flex !flex-col"
+                    className="bg-background border-border rounded-t-3xl !h-[92vh] !max-h-[92vh] !gap-0 !p-0 !flex !flex-col"
                     showCloseButton
                 >
                     <SheetHeader className="sr-only">
@@ -1109,8 +1109,8 @@ function CompletedSection({ auctions, onDelete, clubFavCounts = {} }: { auctions
                     className="absolute left-2 top-1/2 -translate-y-1/2 z-10"
                 >
                     {selectedIds.has(auction.id)
-                        ? <CheckSquare className="w-5 h-5 text-white" />
-                        : <Square className="w-5 h-5 text-neutral-600" />
+                        ? <CheckSquare className="w-5 h-5 text-foreground" />
+                        : <Square className="w-5 h-5 text-muted-foreground" />
                     }
                 </button>
             )}
@@ -1124,9 +1124,9 @@ function CompletedSection({ auctions, onDelete, clubFavCounts = {} }: { auctions
         <>
             {/* 구분선 */}
             <div className="flex items-center gap-3 pt-2">
-                <div className="flex-1 h-px bg-neutral-800" />
-                <span className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider">종료 {auctions.length}건</span>
-                <div className="flex-1 h-px bg-neutral-800" />
+                <div className="flex-1 h-px bg-muted" />
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">종료 {auctions.length}건</span>
+                <div className="flex-1 h-px bg-muted" />
             </div>
 
             {/* 필터 칩 + 선택 모드 토글 */}
@@ -1134,21 +1134,21 @@ function CompletedSection({ auctions, onDelete, clubFavCounts = {} }: { auctions
                 <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide flex-1">
                     {([
                         { key: "all" as const, label: "전체", count: auctions.length, color: "" },
-                        { key: "done" as const, label: "✅ 판매완료", count: doneCount, color: "text-green-400" },
-                        { key: "none" as const, label: "유찰", count: noneCount, color: "text-neutral-500" },
+                        { key: "done" as const, label: "✅ 판매완료", count: doneCount, color: "text-money" },
+                        { key: "none" as const, label: "유찰", count: noneCount, color: "text-muted-foreground" },
                     ]).map(chip => (
                         <button
                             key={chip.key}
                             onClick={() => setStatusFilter(chip.key)}
                             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors border ${
                                 statusFilter === chip.key
-                                    ? "bg-white text-black border-white"
-                                    : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:border-neutral-600"
+                                    ? "bg-inverse text-inverse-foreground border-white"
+                                    : "bg-card text-muted-foreground border-border hover:border-border"
                             }`}
                         >
                             <span className={statusFilter === chip.key ? "" : chip.color}>{chip.label}</span>
                             {chip.count > 0 && (
-                                <span className={`ml-1 ${statusFilter === chip.key ? "text-neutral-500" : "text-neutral-600"}`}>
+                                <span className={`ml-1 ${statusFilter === chip.key ? "text-muted-foreground" : "text-muted-foreground"}`}>
                                     {chip.count}
                                 </span>
                             )}
@@ -1160,7 +1160,7 @@ function CompletedSection({ auctions, onDelete, clubFavCounts = {} }: { auctions
                     className={`flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] font-bold border transition-colors ${
                         selectMode
                             ? "bg-red-500/20 border-red-500/50 text-red-400"
-                            : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-600"
+                            : "bg-card border-border text-muted-foreground hover:border-border"
                     }`}
                 >
                     {selectMode ? "취소" : "선택"}
@@ -1169,14 +1169,14 @@ function CompletedSection({ auctions, onDelete, clubFavCounts = {} }: { auctions
 
             {/* 선택 모드 액션 바 */}
             {selectMode && (
-                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-2.5">
+                <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-2.5">
                     <button
                         onClick={() => toggleSelectAll(filtered.map(a => a.id))}
-                        className="flex items-center gap-2 text-[13px] font-bold text-neutral-300"
+                        className="flex items-center gap-2 text-[13px] font-bold text-foreground/80"
                     >
                         {filtered.every(a => selectedIds.has(a.id))
-                            ? <CheckSquare className="w-4 h-4 text-white" />
-                            : <Square className="w-4 h-4 text-neutral-500" />
+                            ? <CheckSquare className="w-4 h-4 text-foreground" />
+                            : <Square className="w-4 h-4 text-muted-foreground" />
                         }
                         전체선택
                     </button>
@@ -1209,7 +1209,7 @@ function CompletedSection({ auctions, onDelete, clubFavCounts = {} }: { auctions
                         ) : (
                             <button
                                 onClick={() => setShowOlder(true)}
-                                className="w-full py-3 flex items-center justify-center gap-1.5 text-[13px] font-bold text-neutral-500 hover:text-neutral-300 bg-neutral-900/50 rounded-xl border border-neutral-800/50 transition-colors"
+                                className="w-full py-3 flex items-center justify-center gap-1.5 text-[13px] font-bold text-muted-foreground hover:text-foreground/80 bg-card/50 rounded-xl border border-border/50 transition-colors"
                             >
                                 이전 경매 {olderCount}건 더보기
                                 <ChevronDown className="w-4 h-4" />
@@ -1219,7 +1219,7 @@ function CompletedSection({ auctions, onDelete, clubFavCounts = {} }: { auctions
                 </>
             ) : (
                 <div className="py-8 text-center">
-                    <p className="text-neutral-600 text-sm">
+                    <p className="text-muted-foreground text-sm">
                         {statusFilter === "done" ? "완료된 경매가 없습니다."
                             : statusFilter === "none" ? "유찰된 경매가 없습니다."
                                 : "종료된 경매가 없습니다."}
@@ -1232,18 +1232,18 @@ function CompletedSection({ auctions, onDelete, clubFavCounts = {} }: { auctions
 
 function EmptyState({ label, description }: { label: string, description?: React.ReactNode }) {
     return (
-        <div className="py-16 text-center space-y-4 bg-[#1C1C1E]/30 rounded-3xl border border-dashed border-neutral-800/50">
-            <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto">
-                <TrendingUp className="w-8 h-8 text-neutral-700" />
+        <div className="py-16 text-center space-y-4 bg-card/30 rounded-3xl border border-dashed border-border/50">
+            <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto">
+                <TrendingUp className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-neutral-500 font-medium text-sm">{label}</p>
-            <p className="text-neutral-600 text-xs px-10 leading-relaxed">
+            <p className="text-muted-foreground font-medium text-sm">{label}</p>
+            <p className="text-muted-foreground text-xs px-10 leading-relaxed">
                 {description || (
                     <>번거로운 홍보 없이 등록만으로 수많은 유저들에게<br/>파트너님의 상품을 알려보세요</>
                 )}
             </p>
             <Link href="/md/auctions/new">
-                <Button className="rounded-full bg-white text-black font-black hover:bg-neutral-200 h-10 px-6 mt-2">
+                <Button className="rounded-full bg-inverse text-inverse-foreground font-black hover:opacity-90 h-10 px-6 mt-2">
                     <Plus className="w-4 h-4 mr-1" />
                     조각 등록하기
                 </Button>

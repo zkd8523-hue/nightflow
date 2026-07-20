@@ -183,8 +183,8 @@ export function PublicProfileView({
     <div
       className={
         embedded
-          ? "bg-[#0A0A0A] text-white"
-          : "min-h-screen bg-[#0A0A0A] text-white max-w-lg mx-auto pb-12"
+          ? "bg-background text-foreground"
+          : "min-h-screen bg-background text-foreground max-w-lg mx-auto pb-12"
       }
     >
       {/* 상단: 뒤로가기 — MY 탭에 끼워 넣을 땐 그 페이지 헤더가 대신한다 */}
@@ -193,15 +193,16 @@ export function PublicProfileView({
           <button
             onClick={() => router.back()}
             aria-label="뒤로가기"
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-neutral-900 transition-colors"
+            className="w-9 h-9 rounded-full flex items-center justify-center text-foreground hover:bg-card transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
         </div>
       )}
 
-      {/* 상단: 사진 + 이름 (인스타 스타일 가로 배치) */}
+      {/* 상단: 사진 + 이름 (인스타 스타일 가로 배치) — 명함처럼 카드로 감싸 페이지 배경과 구분 */}
       <div className="px-4 mt-2">
+        <div className="bg-card border border-border rounded-3xl p-4">
         <div className="flex items-start gap-4 pt-1">
           {/* 원형 프로필 (본인이면 클릭해서 사진 변경) */}
           {isMe ? (
@@ -213,7 +214,7 @@ export function PublicProfileView({
               className="relative w-24 h-24 shrink-0 active:scale-95 transition-transform disabled:opacity-60"
             >
               {/* 원형 이미지 영역 (여기에만 overflow-hidden) */}
-              <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-800 ring-2 ring-neutral-700">
+              <div className="relative w-full h-full rounded-full overflow-hidden bg-muted ring-2 ring-border">
                 {profileImage ? (
                   <Image
                     src={profileImage}
@@ -223,24 +224,24 @@ export function PublicProfileView({
                     className="object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/60 text-4xl font-black">
+                  <div className="w-full h-full flex items-center justify-center text-foreground/60 text-4xl font-black">
                     {displayName.charAt(0)}
                   </div>
                 )}
                 {/* 업로드 중 오버레이 */}
                 {uploadingImage && (
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[11px] font-bold text-white">
+                  <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[11px] font-bold text-foreground">
                     업로드 중...
                   </span>
                 )}
               </div>
               {/* 카메라 배지 (원 밖에서 잘리지 않도록 버튼 기준 배치) */}
-              <span className="absolute right-0.5 bottom-0.5 w-7 h-7 rounded-full bg-white flex items-center justify-center text-black ring-2 ring-[#0A0A0A]">
+              <span className="absolute right-0.5 bottom-0.5 w-7 h-7 rounded-full bg-inverse flex items-center justify-center text-inverse-foreground ring-2 ring-background">
                 <Camera className="w-3.5 h-3.5" />
               </span>
             </button>
           ) : (
-            <div className="relative w-24 h-24 rounded-full overflow-hidden bg-neutral-800 shrink-0 ring-2 ring-neutral-700">
+            <div className="relative w-24 h-24 rounded-full overflow-hidden bg-muted shrink-0 ring-2 ring-border">
               {profileImage ? (
                 <Image
                   src={profileImage}
@@ -250,7 +251,7 @@ export function PublicProfileView({
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/60 text-4xl font-black">
+                <div className="w-full h-full flex items-center justify-center text-foreground/60 text-4xl font-black">
                   {displayName.charAt(0)}
                 </div>
               )}
@@ -286,12 +287,12 @@ export function PublicProfileView({
                     aria-label="NightFlow 공식 파트너 인증 정보 보기"
                     aria-expanded={verifyOpen}
                   >
-                    <BadgeCheck className="w-5 h-5 text-amber-400" />
+                    <BadgeCheck className="w-5 h-5 text-brand-amber" />
                   </button>
                   {verifyOpen && (
                     <div
                       role="tooltip"
-                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 shadow-lg whitespace-nowrap text-[12px] font-bold text-amber-400 z-50"
+                      className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 rounded-lg bg-card border border-border shadow-lg whitespace-nowrap text-[12px] font-bold text-brand-amber z-50"
                     >
                       <span className="flex items-center gap-1">
                         <BadgeCheck className="w-3.5 h-3.5" />
@@ -308,11 +309,11 @@ export function PublicProfileView({
             </div>
             {/* MD 소속 클럽 한 줄 라벨 */}
             {profile.md_status === "approved" && partnerClubs.length > 0 && (
-              <p className="text-[13px] text-amber-400/80 mt-1 truncate font-bold">
+              <p className="text-[13px] text-brand-amber dark:text-brand-amber/80 mt-1 truncate font-bold">
                 {partnerClubs.map((c, i) => (
                   <span key={c.id}>
                     {i > 0 && " · "}
-                    <Link href={`/clubs/${c.id}`} className="hover:text-amber-300 hover:underline">
+                    <Link href={`/clubs/${c.id}`} className="hover:text-brand-amber hover:underline">
                       {c.name}
                     </Link>
                   </span>
@@ -327,12 +328,12 @@ export function PublicProfileView({
                     href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[13px] text-neutral-500 truncate hover:text-neutral-300 active:opacity-70 transition-colors"
+                    className="text-[13px] text-muted-foreground truncate hover:text-foreground/80 active:opacity-70 transition-colors"
                   >
                     @{profile.md_unique_slug}
                   </a>
                 ) : (
-                  <p className="text-[13px] text-neutral-500 truncate">
+                  <p className="text-[13px] text-muted-foreground truncate">
                     @{profile.md_unique_slug}
                   </p>
                 )}
@@ -341,13 +342,13 @@ export function PublicProfileView({
 
             {/* 자기소개 (사진 옆 영역, 3행 제한) */}
             {bio ? (
-              <p className="mt-1.5 text-[13px] font-semibold leading-[1.45] whitespace-pre-wrap break-words line-clamp-3 text-white">
+              <p className="mt-1.5 text-[13px] font-semibold leading-[1.45] whitespace-pre-wrap break-words line-clamp-3 text-foreground">
                 {bio}
               </p>
             ) : isMe ? (
               <button
                 onClick={() => setEditSection("bio")}
-                className="mt-1.5 text-[12px] text-neutral-500 hover:text-neutral-300"
+                className="mt-1.5 text-[12px] text-muted-foreground hover:text-foreground/80"
               >
                 자기소개를 추가해보세요
               </button>
@@ -359,7 +360,7 @@ export function PublicProfileView({
         {isMe && (
           <button
             onClick={() => setEditSection("all")}
-            className="mt-4 w-full h-9 rounded-lg bg-neutral-900 border border-neutral-800 text-[14px] font-bold hover:bg-neutral-800 transition-colors flex items-center justify-center gap-1.5"
+            className="mt-4 w-full h-9 rounded-lg bg-muted text-[14px] font-bold hover:bg-muted/70 transition-colors flex items-center justify-center gap-1.5"
           >
             <Pencil className="w-3.5 h-3.5" />
             프로필 편집
@@ -370,7 +371,7 @@ export function PublicProfileView({
         <div className="mt-5 grid grid-cols-2 gap-4">
             {/* 좋아하는 음악 */}
             <div>
-              <div className="flex items-center gap-1 text-[12px] font-bold text-neutral-400 mb-1.5">
+              <div className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground mb-1.5">
                 <Music className="w-3.5 h-3.5" />
                 <span>음악</span>
               </div>
@@ -382,7 +383,7 @@ export function PublicProfileView({
                     return (
                       <span
                         key={code}
-                        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-neutral-900 text-neutral-200"
+                        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-muted text-foreground"
                       >
                         <span>{g.emoji}</span>
                         <span>{g.label}</span>
@@ -393,7 +394,7 @@ export function PublicProfileView({
               ) : isMe ? (
                 <button
                   onClick={() => setEditSection("music")}
-                  className="text-[12px] text-neutral-500 hover:text-neutral-300"
+                  className="text-[12px] text-muted-foreground hover:text-foreground/80"
                 >
                   추가하기
                 </button>
@@ -402,7 +403,7 @@ export function PublicProfileView({
 
             {/* 자주 가는 곳 */}
             <div>
-              <div className="flex items-center gap-1 text-[12px] font-bold text-neutral-400 mb-1.5">
+              <div className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground mb-1.5">
                 <MapPin className="w-3.5 h-3.5" />
                 <span>자주 가는 곳</span>
               </div>
@@ -411,7 +412,7 @@ export function PublicProfileView({
                   {areas.map((area) => (
                     <span
                       key={area}
-                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-neutral-900 text-neutral-200"
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-muted text-foreground"
                     >
                       {area}
                     </span>
@@ -420,7 +421,7 @@ export function PublicProfileView({
               ) : isMe ? (
                 <button
                   onClick={() => setEditSection("area")}
-                  className="text-[12px] text-neutral-500 hover:text-neutral-300"
+                  className="text-[12px] text-muted-foreground hover:text-foreground/80"
                 >
                   추가하기
                 </button>
@@ -431,14 +432,14 @@ export function PublicProfileView({
         {/* 연락처 (유저 opt-in 공개 — contact_public). MD는 상단 핸들로 노출됨 */}
         {!profile.md_unique_slug && profile.contact_public && (profile.instagram || profile.kakao_open_chat_url) && (
           <div className="mt-5">
-            <div className="text-[13px] font-bold text-neutral-400 mb-2">연락처</div>
+            <div className="text-[13px] font-bold text-muted-foreground mb-2">연락처</div>
             <div className="flex flex-wrap gap-2">
               {profile.instagram && (
                 <a
                   href={`https://instagram.com/${profile.instagram.replace(/^@/, "")}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-[13px] font-bold text-neutral-200 hover:bg-neutral-800"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-[13px] font-bold text-foreground hover:bg-muted/60"
                 >
                   <Instagram className="w-3.5 h-3.5 text-pink-400" />@{profile.instagram.replace(/^@/, "")}
                 </a>
@@ -448,7 +449,7 @@ export function PublicProfileView({
                   href={profile.kakao_open_chat_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full border border-neutral-800 bg-neutral-900 px-3 py-1.5 text-[13px] font-bold text-neutral-200 hover:bg-neutral-800"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1.5 text-[13px] font-bold text-foreground hover:bg-muted/60"
                 >
                   💬 카카오 오픈채팅
                 </a>
@@ -459,7 +460,7 @@ export function PublicProfileView({
 
         {/* 좋아하는 클럽 (값 없어도 뼈대는 항상 노출) */}
         <div className="mt-5">
-            <div className="text-[13px] font-bold text-neutral-400 mb-2">
+            <div className="text-[13px] font-bold text-muted-foreground mb-2">
               선호 클럽
             </div>
             {hasPinnedClubs ? (
@@ -471,7 +472,7 @@ export function PublicProfileView({
                       href={`/clubs/${fc.club.id}`}
                       className="block group"
                     >
-                      <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-900">
+                      <div className="relative aspect-square rounded-xl overflow-hidden bg-muted border border-border">
                         {fc.club.thumbnail_url ? (
                           <Image
                             src={fc.club.thumbnail_url}
@@ -481,15 +482,15 @@ export function PublicProfileView({
                             className="object-cover group-active:opacity-70 transition-opacity"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-white/40 text-xl font-black">
+                          <div className="w-full h-full flex items-center justify-center text-foreground/40 text-xl font-black">
                             {fc.club.name.charAt(0)}
                           </div>
                         )}
                       </div>
-                      <div className="mt-1.5 text-[12px] font-bold text-white truncate">
+                      <div className="mt-1.5 text-[12px] font-bold text-foreground truncate">
                         {fc.club.name}
                       </div>
-                      <div className="text-[11px] text-neutral-500 truncate">
+                      <div className="text-[11px] text-muted-foreground truncate">
                         {fc.club.area}
                       </div>
                     </Link>
@@ -499,31 +500,32 @@ export function PublicProfileView({
             ) : isMe ? (
               <button
                 onClick={() => setEditSection("club")}
-                className="text-[13px] text-neutral-500 hover:text-neutral-300"
+                className="text-[13px] text-muted-foreground hover:text-foreground/80"
               >
                 선호 클럽을 추가해보세요
               </button>
             ) : null}
         </div>
+        </div>
       </div>
 
       {/* 구분선 */}
-      <div className="mt-8 border-t border-neutral-900" />
+      <div className="mt-8 border-t border-border" />
 
       {/* 남의 프로필 → 채팅하기 / 차단 (채팅 프로필 팝업과 동일한 액션) */}
       {!isMe && (
-        <div className="mt-6 flex items-stretch rounded-2xl overflow-hidden bg-[#1C1C1E] border border-neutral-800 mx-4">
+        <div className="mt-6 flex items-stretch rounded-2xl overflow-hidden bg-card border border-border mx-4">
           <button
             type="button"
             onClick={handleOpenDm}
             disabled={openingDm}
-            className="flex-1 flex items-center justify-center gap-1.5 py-3.5 text-white text-[14px] font-black active:bg-white/5 disabled:text-neutral-600"
+            className="flex-1 flex items-center justify-center gap-1.5 py-3.5 text-foreground text-[14px] font-black active:bg-white/5 disabled:text-muted-foreground"
           >
             <MessageCircle className="w-4 h-4" />
             {openingDm ? "여는 중..." : "1:1 채팅"}
           </button>
-          <div className="w-px bg-neutral-800" />
-          <div className="flex-1 flex items-center justify-center [&_button]:py-3.5 [&_span]:text-[14px] [&_span]:font-black [&_span]:text-neutral-400 [&_svg]:w-4 [&_svg]:h-4">
+          <div className="w-px bg-muted" />
+          <div className="flex-1 flex items-center justify-center [&_button]:py-3.5 [&_span]:text-[14px] [&_span]:font-black [&_span]:text-muted-foreground [&_svg]:w-4 [&_svg]:h-4">
             <BlockUserButton
               targetUserId={profile.id}
               targetDisplayName={displayName}

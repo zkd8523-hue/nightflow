@@ -35,41 +35,41 @@ export default function JaKpopClubsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/ja" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/ja" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">ソウルのK-POPクラブ</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">K-POPファンが実際にソウルで行く場所。アイドルヒットを一晩中流すナイトクラブの正直なガイド — 弘大、江南、本物の価格、日本語フレンドリーな場所。</p>
+          <p className="text-[14px] text-muted-foreground leading-relaxed">K-POPファンが実際にソウルで行く場所。アイドルヒットを一晩中流すナイトクラブの正直なガイド — 弘大、江南、本物の価格、日本語フレンドリーな場所。</p>
         </header>
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">ソウルトップK-POPクラブ</h2>
           <div className="space-y-3">
             {KPOP_VENUES.map((v) => (
-              <div key={v.name} className="p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800 space-y-2">
+              <div key={v.name} className="p-5 rounded-2xl bg-card border border-border space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-bold text-[15px] text-neutral-100">{v.name}</p>
-                  <p className="text-[12px] text-neutral-500">{v.district}</p>
+                  <p className="font-bold text-[15px] text-foreground">{v.name}</p>
+                  <p className="text-[12px] text-muted-foreground">{v.district}</p>
                 </div>
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{v.vibe}</p>
-                <p className="text-[12px] text-amber-400">最適: {v.bestFor}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{v.vibe}</p>
+                <p className="text-[12px] text-brand-amber">最適: {v.bestFor}</p>
               </div>
             ))}
           </div>
         </section>
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">K-POP観光客向け予約のヒント</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">ほとんどのK-POP観光客は弘大NB2に直行。可能ですが、週末は90分待ちもあります。入場保証とテーブル予約を希望する場合、NightFlowで予約すれば弘大K-POPクラブに直接連絡し、日本語で席を確保します。</p>
-          <Link href="/ja" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">🍾 NightFlowで予約する</Link>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">ほとんどのK-POP観光客は弘大NB2に直行。可能ですが、週末は90分待ちもあります。入場保証とテーブル予約を希望する場合、NightFlowで予約すれば弘大K-POPクラブに直接連絡し、日本語で席を確保します。</p>
+          <Link href="/ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">🍾 NightFlowで予約する</Link>
         </section>
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">関連ガイド</h2>
-          <ul className="space-y-1 text-[13px] text-neutral-400">
-            <li><Link className="hover:text-white" href="/ja/clubs/hongdae">弘大クラブ — 完全ガイド →</Link></li>
-            <li><Link className="hover:text-white" href="/ja/clubs/gangnam">江南クラブ — 完全ガイド →</Link></li>
-            <li><Link className="hover:text-white" href="/ja/vip-tables">ソウルVIPルーム予約 →</Link></li>
-            <li><Link className="hover:text-white" href="/ja/faq">ソウルクラブ FAQ →</Link></li>
+          <ul className="space-y-1 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/ja/clubs/hongdae">弘大クラブ — 完全ガイド →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/clubs/gangnam">江南クラブ — 完全ガイド →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/vip-tables">ソウルVIPルーム予約 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/ja/faq">ソウルクラブ FAQ →</Link></li>
           </ul>
         </section>
       </div>

@@ -43,7 +43,7 @@ export function ChatImageViewer({ items, index, onClose }: Props) {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] bg-black flex flex-col"
+      className="fixed inset-0 z-[120] bg-background flex flex-col"
       onClick={onClose}
       role="dialog"
     >
@@ -56,12 +56,12 @@ export function ChatImageViewer({ items, index, onClose }: Props) {
           type="button"
           onClick={onClose}
           aria-label="닫기"
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white active:bg-white/10"
+          className="w-9 h-9 rounded-full flex items-center justify-center text-foreground active:bg-white/10"
         >
           <X className="w-5 h-5" />
         </button>
         {items.length > 1 && (
-          <span className="text-[13px] font-bold text-white/70">
+          <span className="text-[13px] font-bold text-foreground/70">
             {i + 1} / {items.length}
           </span>
         )}
@@ -103,7 +103,7 @@ export function ChatImageViewer({ items, index, onClose }: Props) {
             onClick={() => setI((v) => Math.max(0, v - 1))}
             disabled={i === 0}
             aria-label="이전"
-            className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-white disabled:opacity-30"
+            className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-foreground disabled:opacity-30"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -112,7 +112,7 @@ export function ChatImageViewer({ items, index, onClose }: Props) {
             onClick={() => setI((v) => Math.min(items.length - 1, v + 1))}
             disabled={i === items.length - 1}
             aria-label="다음"
-            className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-white disabled:opacity-30"
+            className="w-11 h-11 rounded-full bg-white/10 flex items-center justify-center text-foreground disabled:opacity-30"
           >
             <ChevronRight className="w-5 h-5" />
           </button>

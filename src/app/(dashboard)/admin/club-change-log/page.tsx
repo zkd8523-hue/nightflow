@@ -65,20 +65,20 @@ export default async function AdminClubChangeLogPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <div className="max-w-3xl mx-auto p-5">
         <Link
           href="/admin"
-          className="inline-flex items-center gap-1 text-neutral-500 text-sm font-bold hover:text-white transition-colors mb-3"
+          className="inline-flex items-center gap-1 text-muted-foreground text-sm font-bold hover:text-foreground transition-colors mb-3"
         >
           <ChevronLeft className="w-4 h-4" />
           관리자 홈
         </Link>
         <div className="flex items-center gap-2 mb-2">
-          <History className="w-5 h-5 text-amber-400" />
-          <h1 className="text-2xl font-black text-white tracking-tight">클럽 변경 이력</h1>
+          <History className="w-5 h-5 text-brand-amber" />
+          <h1 className="text-2xl font-black text-foreground tracking-tight">클럽 변경 이력</h1>
         </div>
-        <p className="text-[12px] text-neutral-500 mb-5">
+        <p className="text-[12px] text-muted-foreground mb-5">
           파트너와 admin이 변경한 태그·영업시간 이력. 필요 시 롤백 가능.
         </p>
 

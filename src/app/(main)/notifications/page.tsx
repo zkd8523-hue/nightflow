@@ -68,51 +68,51 @@ const MD_TYPES: InAppNotificationType[] = [
 function getNotificationIcon(type: InAppNotification["type"]) {
   switch (type) {
     case "md_approved":
-      return <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />;
+      return <CheckCircle2 className="w-5 h-5 text-money shrink-0" />;
     case "md_rejected":
       return <XCircle className="w-5 h-5 text-red-500 shrink-0" />;
     case "outbid":
-      return <Gavel className="w-5 h-5 text-amber-500 shrink-0" />;
+      return <Gavel className="w-5 h-5 text-brand-amber shrink-0" />;
     case "auction_won":
-      return <Trophy className="w-5 h-5 text-green-500 shrink-0" />;
+      return <Trophy className="w-5 h-5 text-money shrink-0" />;
     case "fallback_won":
-      return <Trophy className="w-5 h-5 text-amber-500 shrink-0" />;
+      return <Trophy className="w-5 h-5 text-brand-amber shrink-0" />;
     case "contact_deadline_warning":
-      return <Clock className="w-5 h-5 text-amber-500 shrink-0" />;
+      return <Clock className="w-5 h-5 text-brand-amber shrink-0" />;
     case "noshow_penalty":
       return <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />;
     case "contact_expired_no_fault":
       return <Clock className="w-5 h-5 text-blue-500 shrink-0" />;
     case "contact_expired_user_attempted":
-      return <Clock className="w-5 h-5 text-amber-500 shrink-0" />;
+      return <Clock className="w-5 h-5 text-brand-amber shrink-0" />;
     case "cancellation_confirmed":
-      return <XCircle className="w-5 h-5 text-neutral-400 shrink-0" />;
+      return <XCircle className="w-5 h-5 text-muted-foreground shrink-0" />;
     case "md_winner_cancelled":
-      return <XCircle className="w-5 h-5 text-amber-500 shrink-0" />;
+      return <XCircle className="w-5 h-5 text-brand-amber shrink-0" />;
     case "md_winner_noshow":
-      return <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0" />;
+      return <AlertTriangle className="w-5 h-5 text-brand-amber shrink-0" />;
     case "md_new_bid":
-      return <TrendingUp className="w-5 h-5 text-green-500 shrink-0" />;
+      return <TrendingUp className="w-5 h-5 text-money shrink-0" />;
     case "md_grade_change":
       return <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />;
     case "puzzle_offer_received":
-      return <Building2 className="w-5 h-5 text-amber-500 shrink-0" />;
+      return <Building2 className="w-5 h-5 text-brand-amber shrink-0" />;
     case "puzzle_offer_accepted":
-      return <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />;
+      return <CheckCircle2 className="w-5 h-5 text-money shrink-0" />;
     case "puzzle_offer_rejected":
       return <XCircle className="w-5 h-5 text-red-500 shrink-0" />;
     case "puzzle_leader_changed":
       return <TrendingUp className="w-5 h-5 text-blue-500 shrink-0" />;
     case "puzzle_seat_adjusted":
-      return <Users className="w-5 h-5 text-amber-500 shrink-0" />;
+      return <Users className="w-5 h-5 text-brand-amber shrink-0" />;
     case "puzzle_cancelled":
-      return <XCircle className="w-5 h-5 text-neutral-400 shrink-0" />;
+      return <XCircle className="w-5 h-5 text-muted-foreground shrink-0" />;
     case "puzzle_member_joined":
-      return <Users className="w-5 h-5 text-green-500 shrink-0" />;
+      return <Users className="w-5 h-5 text-money shrink-0" />;
     case "puzzle_promoted_to_flag":
-      return <CheckCircle2 className="w-5 h-5 text-amber-500 shrink-0" />;
+      return <CheckCircle2 className="w-5 h-5 text-brand-amber shrink-0" />;
     default:
-      return <Bell className="w-5 h-5 text-neutral-500 shrink-0" />;
+      return <Bell className="w-5 h-5 text-muted-foreground shrink-0" />;
   }
 }
 
@@ -276,8 +276,8 @@ export default function NotificationsPage() {
 
   if (userLoading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-border border-t-white rounded-full animate-spin" />
       </div>
     );
   }
@@ -288,18 +288,18 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-lg px-4 py-6">
         {/* 헤더 */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.back()}
-              className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
             >
-              <ArrowLeft className="w-5 h-5 text-neutral-400" />
+              <ArrowLeft className="w-5 h-5 text-muted-foreground" />
             </button>
-            <h1 className="text-xl font-black text-white">알림</h1>
+            <h1 className="text-xl font-black text-foreground">알림</h1>
             {unreadCount > 0 && (
               <span className="text-[12px] font-bold text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
                 {unreadCount}
@@ -308,10 +308,10 @@ export default function NotificationsPage() {
           </div>
           <button
             onClick={() => router.push("/settings/notifications")}
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
             aria-label="알림 설정"
           >
-            <Settings className="w-5 h-5 text-neutral-500" />
+            <Settings className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
@@ -323,8 +323,8 @@ export default function NotificationsPage() {
               onClick={() => setFilter(tab.key)}
               className={`px-4 py-2 rounded-full text-[13px] font-bold transition-colors ${
                 filter === tab.key
-                  ? "bg-white text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:text-neutral-200"
+                  ? "bg-inverse text-inverse-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.label}
@@ -338,7 +338,7 @@ export default function NotificationsPage() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllAsRead}
-                className="text-[12px] text-neutral-500 hover:text-neutral-300 transition-colors font-bold"
+                className="text-[12px] text-muted-foreground hover:text-foreground/80 transition-colors font-bold"
               >
                 모두 읽음
               </button>
@@ -356,13 +356,13 @@ export default function NotificationsPage() {
         {/* 알림 목록 */}
         {isLoading && notifications.length === 0 ? (
           <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-border border-t-white rounded-full animate-spin" />
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <Bell className="w-12 h-12 text-neutral-700 mb-4" />
-            <p className="text-[15px] text-neutral-500 font-bold">알림이 없습니다</p>
-            <p className="text-[13px] text-neutral-600 mt-1">
+            <Bell className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-[15px] text-muted-foreground font-bold">알림이 없습니다</p>
+            <p className="text-[13px] text-muted-foreground mt-1">
               경매 활동 시 알림이 여기에 표시됩니다
             </p>
           </div>
@@ -374,8 +374,8 @@ export default function NotificationsPage() {
                 onClick={() => handleNotificationClick(notification)}
                 className={`w-full flex items-start gap-3 p-4 rounded-2xl text-left transition-colors ${
                   notification.is_read
-                    ? "opacity-60 hover:opacity-80 hover:bg-neutral-800/30"
-                    : "bg-[#1C1C1E] hover:bg-neutral-800/80"
+                    ? "opacity-60 hover:opacity-80 hover:bg-muted/30"
+                    : "bg-card hover:bg-muted/80"
                 }`}
               >
                 <div className="mt-0.5">
@@ -383,21 +383,21 @@ export default function NotificationsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-[14px] font-bold text-neutral-200 truncate">
+                    <p className="text-[14px] font-bold text-foreground truncate">
                       {notification.title}
                     </p>
                     {!notification.is_read && (
                       <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />
                     )}
                   </div>
-                  <p className="text-[13px] text-neutral-400 mt-1 line-clamp-2">
+                  <p className="text-[13px] text-muted-foreground mt-1 line-clamp-2">
                     {notification.message}
                   </p>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[11px] text-neutral-600">
+                    <span className="text-[11px] text-muted-foreground">
                       {timeAgo(notification.created_at)}
                     </span>
-                    <span className="text-[11px] text-neutral-700">
+                    <span className="text-[11px] text-muted-foreground">
                       {formatDate(notification.created_at)}
                     </span>
                   </div>
@@ -410,7 +410,7 @@ export default function NotificationsPage() {
               <button
                 onClick={handleLoadMore}
                 disabled={isLoading}
-                className="w-full py-4 text-[13px] text-neutral-500 hover:text-neutral-300 font-bold transition-colors disabled:opacity-50"
+                className="w-full py-4 text-[13px] text-muted-foreground hover:text-foreground/80 font-bold transition-colors disabled:opacity-50"
               >
                 {isLoading ? "불러오는 중..." : "이전 알림 더 보기"}
               </button>

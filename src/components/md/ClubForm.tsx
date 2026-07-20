@@ -236,23 +236,23 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
 
         {/* 1. Basic Info */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-white font-bold mb-2">
+          <div className="flex items-center gap-2 text-foreground font-bold mb-2">
             <Store className="w-4 h-4 text-purple-500" />
             <span>기본 정보</span>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-neutral-400 text-xs font-bold uppercase">클럽 이름 *</Label>
+            <Label className="text-muted-foreground text-xs font-bold uppercase">클럽 이름 *</Label>
             <Input
               {...register("name")}
               placeholder="예: OCTAGON"
-              className="bg-[#1C1C1E] border-neutral-800 h-12 text-white placeholder-neutral-600 rounded-xl"
+              className="bg-card border-border h-12 text-foreground placeholder-neutral-600 rounded-xl"
             />
             {errors.name && <p className="text-red-500 text-xs">{String(errors.name?.message || "")}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label className="text-neutral-400 text-xs font-bold uppercase">지역 *</Label>
+            <Label className="text-muted-foreground text-xs font-bold uppercase">지역 *</Label>
             <div className="flex flex-wrap gap-2">
               {mainAreas.map((area) => (
                 <button
@@ -260,8 +260,8 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
                   type="button"
                   onClick={() => { setValue("area", area); setShowOtherCities(false); }}
                   className={`px-4 py-2 rounded-full border text-sm font-bold transition-all ${selectedArea === area
-                      ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                      : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
+                      ? "bg-inverse text-inverse-foreground border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                      : "bg-card text-muted-foreground border-border hover:border-border"
                     }`}
                 >
                   {area}
@@ -271,8 +271,8 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
                 type="button"
                 onClick={() => setShowOtherCities(!showOtherCities)}
                 className={`px-4 py-2 rounded-full border text-sm font-bold transition-all ${(otherCities as readonly string[]).includes(selectedArea) || showOtherCities
-                    ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                    : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
+                    ? "bg-inverse text-inverse-foreground border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                    : "bg-card text-muted-foreground border-border hover:border-border"
                   }`}
               >
                 다른 지역 {(otherCities as readonly string[]).includes(selectedArea) && `(${selectedArea})`}
@@ -286,8 +286,8 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
                     type="button"
                     onClick={() => { setValue("area", city); setShowOtherCities(false); }}
                     className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${selectedArea === city
-                        ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                        : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
+                        ? "bg-inverse text-inverse-foreground border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                        : "bg-card text-muted-foreground border-border hover:border-border"
                       }`}
                   >
                     {city}
@@ -302,22 +302,22 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
 
         {/* 2. Location */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-white font-bold mb-2">
-            <MapPin className="w-4 h-4 text-green-500" />
+          <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+            <MapPin className="w-4 h-4 text-money" />
             <span>위치 정보 *</span>
           </div>
 
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
+          <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
             {currentAddress ? (
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0 space-y-2">
-                    <p className="text-white text-sm font-bold break-words">{currentAddress}</p>
+                    <p className="text-foreground text-sm font-bold break-words">{currentAddress}</p>
                     {hasCoordinates && (
                       <div className="flex items-center gap-1.5">
-                        <Map className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                        <span className="text-green-400 text-xs font-bold">위치 확인됨</span>
-                        <span className="text-green-500/50 text-[10px]">
+                        <Map className="w-3.5 h-3.5 text-money flex-shrink-0" />
+                        <span className="text-money text-xs font-bold">위치 확인됨</span>
+                        <span className="text-money dark:text-money/50 text-[10px]">
                           {watch("latitude")?.toFixed(4)}, {watch("longitude")?.toFixed(4)}
                         </span>
                       </div>
@@ -326,7 +326,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
                   <button
                     type="button"
                     onClick={() => setIsAddressModalOpen(true)}
-                    className="text-green-500 text-xs font-bold hover:text-green-400 transition-colors flex-shrink-0 pt-0.5"
+                    className="text-money text-xs font-bold hover:text-money transition-colors flex-shrink-0 pt-0.5"
                   >
                     변경
                   </button>
@@ -346,11 +346,11 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
             {errors.address && <p className="text-red-500 text-xs">{String(errors.address?.message || "")}</p>}
 
             <div className="space-y-2">
-              <Label className="text-neutral-400 text-xs font-bold uppercase">상세 주소</Label>
+              <Label className="text-muted-foreground text-xs font-bold uppercase">상세 주소</Label>
               <Input
                 {...register("address_detail")}
                 placeholder="동, 층, 호수 등 (예: B2층)"
-                className="bg-neutral-900 border-neutral-800 h-11 text-white placeholder-neutral-600 rounded-lg text-sm"
+                className="bg-card border-border h-11 text-foreground placeholder-neutral-600 rounded-lg text-sm"
               />
             </div>
           </div>
@@ -358,11 +358,11 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
 
         {/* 3. Image (MD 본인의 대표이미지) */}
         <section className="space-y-4">
-          <div className="flex items-center gap-2 text-white font-bold mb-1">
+          <div className="flex items-center gap-2 text-foreground font-bold mb-1">
             <ImageIcon className="w-4 h-4 text-blue-500" />
             <span>내 대표이미지</span>
           </div>
-          <p className="text-[11px] text-neutral-500 -mt-1 leading-relaxed">
+          <p className="text-[11px] text-muted-foreground -mt-1 leading-relaxed">
             같은 클럽이라도 파트너마다 자유롭게 설정할 수 있어요. 경매·조각 등록 시 기본 이미지로 사용됩니다.
           </p>
 
@@ -375,7 +375,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
           />
 
           {!thumbnailPreview ? (
-            <div className="bg-[#1C1C1E] border border-dashed border-neutral-700 rounded-2xl p-5">
+            <div className="bg-card border border-dashed border-border rounded-2xl p-5">
               <button
                 type="button"
                 onClick={() => thumbnailInputRef.current?.click()}
@@ -390,10 +390,10 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
                   </div>
                 )}
                 <div className="text-center">
-                  <p className="text-sm text-white font-bold">
+                  <p className="text-sm text-foreground font-bold">
                     {thumbnailUploading ? "업로드 중..." : "대표이미지 업로드"}
                   </p>
-                  <p className="text-[11px] text-neutral-500 mt-1">
+                  <p className="text-[11px] text-muted-foreground mt-1">
                     5MB 이하 · JPG, PNG, WebP · 선택사항
                   </p>
                 </div>
@@ -401,7 +401,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="relative rounded-xl overflow-hidden border-2 border-neutral-800">
+              <div className="relative rounded-xl overflow-hidden border-2 border-border">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={thumbnailPreview}
@@ -414,7 +414,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
                   type="button"
                   onClick={() => thumbnailInputRef.current?.click()}
                   disabled={thumbnailUploading}
-                  className="flex-1 h-9 rounded-lg text-xs font-bold bg-[#1C1C1E] text-neutral-400 border border-neutral-800 hover:border-neutral-600 hover:text-white flex items-center justify-center gap-1.5 transition-colors"
+                  className="flex-1 h-9 rounded-lg text-xs font-bold bg-card text-muted-foreground border border-border hover:border-border hover:text-foreground flex items-center justify-center gap-1.5 transition-colors"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   이미지 변경
@@ -422,7 +422,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
                 <button
                   type="button"
                   onClick={removeThumbnail}
-                  className="h-9 px-4 rounded-lg text-xs font-bold bg-[#1C1C1E] text-red-400 border border-neutral-800 hover:border-red-500/50 flex items-center gap-1.5 transition-colors"
+                  className="h-9 px-4 rounded-lg text-xs font-bold bg-card text-red-400 border border-border hover:border-red-500/50 flex items-center gap-1.5 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   삭제
@@ -466,7 +466,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
 
       {/* Floating Submit Button */}
       <div
-        className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/80 to-transparent z-40"
+        className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-background via-background/80 to-transparent z-40"
         style={{ paddingBottom: "calc(1rem + 3.5rem + env(safe-area-inset-bottom))" }}
       >
         <div className="max-w-lg mx-auto">
@@ -474,7 +474,7 @@ export function ClubForm({ mdId, initialData, initialPartnerThumbnailUrl }: Club
             type="submit"
             onClick={handleSubmit(onSubmit)}
             disabled={isSubmitting || (!isApproved && currentAddress && !hasCoordinates)}
-            className="w-full h-14 rounded-2xl bg-white text-black font-black text-base hover:bg-neutral-200 disabled:bg-neutral-700 disabled:text-neutral-500 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            className="w-full h-14 rounded-2xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <>

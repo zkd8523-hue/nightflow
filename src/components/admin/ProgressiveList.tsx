@@ -52,7 +52,7 @@ export function ProgressiveList({
           <button
             type="button"
             onClick={() => setVisible((v) => Math.min(v + step, items.length))}
-            className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-neutral-800 text-neutral-300 border border-neutral-700 hover:bg-neutral-700 transition-colors"
+            className="w-full py-2.5 rounded-lg text-[13px] font-bold bg-muted text-foreground/80 border border-border hover:bg-muted transition-colors"
           >
             더보기 ({items.length - visible}건 남음)
           </button>

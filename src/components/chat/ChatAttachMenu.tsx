@@ -135,7 +135,7 @@ export function ChatAttachMenu({ onFiles, onLocation, onSharePuzzle, disabled }:
         onClick={() => setOpen((v) => !v)}
         disabled={disabled}
         aria-label={open ? "첨부 닫기" : "첨부"}
-        className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors disabled:opacity-40"
+        className="w-9 h-9 shrink-0 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-40"
       >
         {open ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
       </button>
@@ -148,19 +148,19 @@ export function ChatAttachMenu({ onFiles, onLocation, onSharePuzzle, disabled }:
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute bottom-full left-2 mb-2 z-40 flex gap-1.5 rounded-2xl border border-neutral-800 bg-[#1C1C1E] p-2 shadow-xl">
+          <div className="absolute bottom-full left-2 mb-2 z-40 flex gap-1.5 rounded-2xl border border-border bg-card p-2 shadow-xl">
             {ITEMS.map(({ key, icon: Icon, label, onClick }) => (
               <button
                 key={key}
                 type="button"
                 onClick={onClick}
                 disabled={key === "location" && locating}
-                className="w-16 flex flex-col items-center gap-1 py-2 rounded-xl hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                className="w-16 flex flex-col items-center gap-1 py-2 rounded-xl hover:bg-muted transition-colors disabled:opacity-50"
               >
-                <span className="w-9 h-9 rounded-full bg-neutral-800 flex items-center justify-center">
-                  <Icon className="w-4 h-4 text-white" />
+                <span className="w-9 h-9 rounded-full bg-muted flex items-center justify-center">
+                  <Icon className="w-4 h-4 text-foreground" />
                 </span>
-                <span className="text-[11px] font-bold text-neutral-300">
+                <span className="text-[11px] font-bold text-foreground/80">
                   {label}
                 </span>
               </button>

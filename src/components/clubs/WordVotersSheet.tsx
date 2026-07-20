@@ -102,14 +102,14 @@ export function WordVotersSheet({
       <SheetContent
         side="bottom"
         showCloseButton={false}
-        className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl max-w-lg mx-auto max-h-[75vh] p-0"
+        className="bg-card border-border rounded-t-3xl max-w-lg mx-auto max-h-[75vh] p-0"
       >
-        <SheetHeader className="px-5 pt-5 pb-3 border-b border-neutral-800">
-          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-neutral-700" />
-          <SheetTitle className="text-white text-[17px] font-black text-center">
+        <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
+          <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-muted" />
+          <SheetTitle className="text-foreground text-[17px] font-black text-center">
             <span className="text-pink-400">{label}</span>
           </SheetTitle>
-          <p className="text-[13px] text-neutral-500 text-center">
+          <p className="text-[13px] text-muted-foreground text-center">
             {authorIds.length}명이 이 단어를 남겼어요
           </p>
           {onToggleLike && (
@@ -120,7 +120,7 @@ export function WordVotersSheet({
                 className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[14px] font-bold transition-colors active:scale-95 disabled:opacity-60 ${
                   liked
                     ? "bg-pink-500/15 text-pink-400"
-                    : "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                    : "bg-muted text-foreground/80 hover:bg-muted"
                 }`}
                 aria-pressed={liked}
               >
@@ -136,11 +136,11 @@ export function WordVotersSheet({
 
         <div className="overflow-y-auto px-3 pb-6 pt-1">
           {loading ? (
-            <p className="py-8 text-center text-[13px] text-neutral-600">
+            <p className="py-8 text-center text-[13px] text-muted-foreground">
               불러오는 중...
             </p>
           ) : voters.length === 0 ? (
-            <p className="py-8 text-center text-[13px] text-neutral-600">
+            <p className="py-8 text-center text-[13px] text-muted-foreground">
               표시할 프로필이 없어요
             </p>
           ) : (
@@ -152,7 +152,7 @@ export function WordVotersSheet({
                   <li key={v.id}>
                     <button
                       onClick={() => goProfile(v.id)}
-                      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition-colors hover:bg-neutral-800/70 active:bg-neutral-800"
+                      className="flex w-full items-center gap-3 rounded-2xl px-2 py-2.5 text-left transition-colors hover:bg-muted/70 active:bg-muted"
                     >
                       {v.profile_image ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -162,12 +162,12 @@ export function WordVotersSheet({
                           className="h-10 w-10 shrink-0 rounded-full object-cover"
                         />
                       ) : (
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-neutral-700 text-[15px] font-bold text-neutral-300">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted text-[15px] font-bold text-foreground/80">
                           {name.charAt(0)}
                         </span>
                       )}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[15px] font-bold text-white">
+                        <span className="block truncate text-[15px] font-bold text-foreground">
                           {name}
                           {isMe && (
                             <span className="ml-1.5 text-[11px] font-bold text-pink-400">
@@ -176,7 +176,7 @@ export function WordVotersSheet({
                           )}
                         </span>
                       </span>
-                      <ChevronRight className="h-4 w-4 shrink-0 text-neutral-600" />
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     </button>
                   </li>
                 );

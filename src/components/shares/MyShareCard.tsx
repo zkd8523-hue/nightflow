@@ -71,42 +71,42 @@ export function MyShareCard({ auction, onCancelled }: MyShareCardProps) {
   };
 
   return (
-    <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-3">
+    <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-bold text-white text-base">{club?.name}</h3>
-          <p className="text-xs text-neutral-500 mt-0.5">
+          <h3 className="font-bold text-foreground text-base">{club?.name}</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
             {auction.main_alcohol ? `${auction.main_alcohol} · ` : ""}
             마감 {auction.share_deadline ? dayjs(auction.share_deadline).format("M/D HH:mm") : "-"}
           </p>
         </div>
         <div className="text-right">
-          <div className="text-sm font-bold text-white">
+          <div className="text-sm font-bold text-foreground">
             {formatNumber(auction.price_per_seat ?? 0)}원
-            <span className="text-neutral-500 font-normal text-xs"> /인</span>
+            <span className="text-muted-foreground font-normal text-xs"> /인</span>
           </div>
         </div>
       </div>
 
       {/* 좌석 진행 */}
       <div className="flex items-center gap-2">
-        <Users className="w-3.5 h-3.5 text-neutral-400" />
-        <span className="text-xs text-neutral-400">{totalFilled}/{totalSeats}명</span>
-        <div className="flex-1 h-1 bg-neutral-800 rounded-full overflow-hidden">
+        <Users className="w-3.5 h-3.5 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">{totalFilled}/{totalSeats}명</span>
+        <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full ${isFull ? "bg-amber-500" : "bg-white"}`}
             style={{ width: `${totalSeats > 0 ? Math.min(100, (totalFilled / totalSeats) * 100) : 0}%` }}
           />
         </div>
-        {isExpired && <span className="text-xs text-neutral-500">마감</span>}
-        {isFull && !isExpired && <span className="text-xs text-amber-400 font-bold">만석</span>}
+        {isExpired && <span className="text-xs text-muted-foreground">마감</span>}
+        {isFull && !isExpired && <span className="text-xs text-brand-amber font-bold">만석</span>}
       </div>
 
       {/* 액션 */}
       <div className="flex gap-2">
         <Button
           size="sm"
-          className="flex-1 h-9 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 text-xs font-bold"
+          className="flex-1 h-9 rounded-xl bg-amber-500/15 text-brand-amber border border-amber-500/30 hover:bg-amber-500/25 text-xs font-bold"
           onClick={handleOpenChat}
         >
           <ExternalLink className="w-3.5 h-3.5 mr-1" />
@@ -116,7 +116,7 @@ export function MyShareCard({ auction, onCancelled }: MyShareCardProps) {
           <Button
             size="sm"
             variant="ghost"
-            className="h-9 px-3 text-neutral-600 hover:text-red-400 rounded-xl"
+            className="h-9 px-3 text-muted-foreground hover:text-red-400 rounded-xl"
             disabled={cancelLoading}
             onClick={handleCancel}
           >

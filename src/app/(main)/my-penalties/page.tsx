@@ -36,8 +36,8 @@ const PENALTY_LABEL: Record<PenaltyAction, string> = {
 };
 
 const APPEAL_STATUS_LABEL: Record<AppealStatus, { label: string; className: string }> = {
-  pending: { label: "검토 중", className: "text-amber-400 bg-amber-400/10" },
-  accepted: { label: "이의제기 인용 ✓", className: "text-green-400 bg-green-400/10" },
+  pending: { label: "검토 중", className: "text-brand-amber bg-amber-400/10" },
+  accepted: { label: "이의제기 인용 ✓", className: "text-money bg-green-400/10" },
   rejected: { label: "이의제기 기각", className: "text-red-400 bg-red-400/10" },
 };
 
@@ -177,67 +177,67 @@ export default function MyPenaltiesPage() {
 
   if (userLoading || loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-lg px-4 py-6">
         {/* 헤더 */}
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
-          <h1 className="text-xl font-black text-white">패널티 내역</h1>
+          <h1 className="text-xl font-black text-foreground">패널티 내역</h1>
         </div>
 
         {/* 현재 제재 상태 */}
         {(isBlocked || isBanned) ? (
           <div className={`rounded-2xl p-4 mb-6 ${isBlocked ? "bg-red-500/10 border border-red-500/20" : "bg-amber-500/10 border border-amber-500/20"}`}>
             <div className="flex items-center gap-2 mb-1">
-              <ShieldAlert className={`w-4 h-4 ${isBlocked ? "text-red-400" : "text-amber-400"}`} />
-              <span className={`text-[13px] font-bold ${isBlocked ? "text-red-400" : "text-amber-400"}`}>
+              <ShieldAlert className={`w-4 h-4 ${isBlocked ? "text-red-400" : "text-brand-amber"}`} />
+              <span className={`text-[13px] font-bold ${isBlocked ? "text-red-400" : "text-brand-amber"}`}>
                 {isBlocked ? "계정이 영구 정지되었습니다" : "이용이 일시 정지되었습니다"}
               </span>
             </div>
             {isBanned && !isBlocked && (
-              <p className="text-[12px] text-neutral-400 ml-6">
+              <p className="text-[12px] text-muted-foreground ml-6">
                 정지 해제: {dayjs(user?.blocked_until).format("YYYY년 M월 D일 HH:mm")}
               </p>
             )}
             <div className="flex items-center gap-3 mt-2 ml-6">
-              <span className="text-[12px] text-neutral-500">
+              <span className="text-[12px] text-muted-foreground">
                 스트라이크 <span className="text-red-400 font-bold">{user?.strike_count || 0}</span>회
               </span>
               {(user?.warning_count || 0) > 0 && (
-                <span className="text-[12px] text-neutral-500">
-                  경고 <span className="text-amber-400 font-bold">{user?.warning_count}</span>/3
+                <span className="text-[12px] text-muted-foreground">
+                  경고 <span className="text-brand-amber font-bold">{user?.warning_count}</span>/3
                 </span>
               )}
             </div>
           </div>
         ) : (
-          <div className="bg-[#1C1C1E] rounded-2xl p-4 mb-6">
+          <div className="bg-card rounded-2xl border border-border p-4 mb-6">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-green-500" />
-              <span className="text-[13px] font-bold text-green-400">정상 이용 중</span>
+              <CheckCircle2 className="w-4 h-4 text-money" />
+              <span className="text-[13px] font-bold text-money">정상 이용 중</span>
             </div>
             {((user?.strike_count || 0) > 0 || (user?.warning_count || 0) > 0) && (
               <div className="flex items-center gap-3 mt-2 ml-6">
                 {(user?.strike_count || 0) > 0 && (
-                  <span className="text-[12px] text-neutral-500">
-                    스트라이크 <span className="text-amber-400 font-bold">{user?.strike_count}</span>회 누적
+                  <span className="text-[12px] text-muted-foreground">
+                    스트라이크 <span className="text-brand-amber font-bold">{user?.strike_count}</span>회 누적
                   </span>
                 )}
                 {(user?.warning_count || 0) > 0 && (
-                  <span className="text-[12px] text-neutral-500">
-                    경고 <span className="text-amber-400 font-bold">{user?.warning_count}</span>/3
+                  <span className="text-[12px] text-muted-foreground">
+                    경고 <span className="text-brand-amber font-bold">{user?.warning_count}</span>/3
                   </span>
                 )}
               </div>
@@ -246,14 +246,14 @@ export default function MyPenaltiesPage() {
         )}
 
         {/* 노쇼 이력 */}
-        <h2 className="text-[13px] font-bold text-neutral-400 mb-3 uppercase tracking-wider">
+        <h2 className="text-[13px] font-bold text-muted-foreground mb-3 uppercase tracking-wider">
           노쇼 이력
         </h2>
 
         {histories.length === 0 ? (
-          <div className="bg-[#1C1C1E] rounded-2xl p-8 text-center">
-            <AlertTriangle className="w-8 h-8 text-neutral-600 mx-auto mb-3" />
-            <p className="text-[14px] text-neutral-400">노쇼 이력이 없습니다</p>
+          <div className="bg-card rounded-2xl border border-border p-8 text-center">
+            <AlertTriangle className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+            <p className="text-[14px] text-muted-foreground">노쇼 이력이 없습니다</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -268,15 +268,15 @@ export default function MyPenaltiesPage() {
         )}
 
         {/* 고객센터 안내 */}
-        <div className="mt-6 p-4 bg-[#1C1C1E] rounded-2xl">
-          <p className="text-[12px] text-neutral-500 leading-relaxed">
+        <div className="mt-6 p-4 bg-card rounded-2xl border border-border">
+          <p className="text-[12px] text-muted-foreground leading-relaxed">
             Migration 108 이전 노쇼 이력은 목록에 표시되지 않습니다.
             이전 이력에 대한 이의제기는{" "}
             <a
               href="http://pf.kakao.com/_nightflow"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-amber-400 underline"
+              className="text-brand-amber underline"
             >
               카카오 채널 고객센터
             </a>
@@ -292,46 +292,46 @@ export default function MyPenaltiesPage() {
       >
         <SheetContent
           side="bottom"
-          className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-6 pb-10"
+          className="bg-card border-t border-border rounded-t-3xl px-6 pb-10"
         >
           <SheetHeader className="mb-4">
-            <SheetTitle className="text-white text-left text-[17px] font-black">
+            <SheetTitle className="text-foreground text-left text-[17px] font-black">
               이의제기 제출
             </SheetTitle>
           </SheetHeader>
 
           <div className="space-y-4">
             <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-              <p className="text-[12px] text-amber-400 leading-relaxed">
+              <p className="text-[12px] text-brand-amber leading-relaxed">
                 이의제기는 노쇼 이력 1건당 1회만 제출 가능합니다.
                 허위 이의제기 시 추가 패널티가 부과될 수 있습니다.
               </p>
             </div>
 
             <div>
-              <label className="text-[13px] text-neutral-400 font-bold mb-2 block">
-                이의제기 사유 <span className="text-neutral-600">(최소 20자)</span>
+              <label className="text-[13px] text-muted-foreground font-bold mb-2 block">
+                이의제기 사유 <span className="text-muted-foreground">(최소 20자)</span>
               </label>
               <textarea
                 value={appealReason}
                 onChange={(e) => setAppealReason(e.target.value)}
                 placeholder="연락 시도 내역, 상황 설명 등을 구체적으로 작성해주세요."
                 rows={5}
-                className="w-full bg-neutral-800 text-white text-[14px] rounded-xl p-3 resize-none border border-neutral-700 focus:border-neutral-500 focus:outline-none placeholder:text-neutral-600"
+                className="w-full bg-muted text-foreground text-[14px] rounded-xl p-3 resize-none border border-border focus:border-border focus:outline-none placeholder:text-muted-foreground"
               />
-              <p className={`text-[11px] mt-1 text-right ${appealReason.trim().length >= 20 ? "text-green-500" : "text-neutral-600"}`}>
+              <p className={`text-[11px] mt-1 text-right ${appealReason.trim().length >= 20 ? "text-money" : "text-muted-foreground"}`}>
                 {appealReason.trim().length} / 20+자
               </p>
             </div>
 
-            <p className="text-[12px] text-neutral-500">
+            <p className="text-[12px] text-muted-foreground">
               제출 후 영업일 3일 내 검토되며, 결과는 알림으로 안내됩니다.
             </p>
 
             <Button
               onClick={submitAppeal}
               disabled={submitting || appealReason.trim().length < 20}
-              className="w-full bg-white text-black font-black rounded-2xl h-12 text-[15px] disabled:opacity-40"
+              className="w-full bg-inverse text-inverse-foreground font-black rounded-2xl h-12 text-[15px] disabled:opacity-40"
             >
               {submitting ? "제출 중..." : "이의제기 제출"}
             </Button>
@@ -360,7 +360,7 @@ function NoshowHistoryCard({
   const appealInfo = appeal ? APPEAL_STATUS_LABEL[appeal.status] : null;
 
   return (
-    <div className="bg-[#1C1C1E] rounded-2xl overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border overflow-hidden">
       <button
         onClick={() => setShowDetail((v) => !v)}
         className="w-full p-4 flex items-start justify-between text-left hover:bg-white/5 transition-colors"
@@ -368,41 +368,41 @@ function NoshowHistoryCard({
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
-            <span className="text-[14px] font-bold text-white">{penaltyLabel}</span>
+            <span className="text-[14px] font-bold text-foreground">{penaltyLabel}</span>
             {appealInfo && (
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${appealInfo.className}`}>
                 {appealInfo.label}
               </span>
             )}
           </div>
-          <p className="text-[12px] text-neutral-500 ml-6">
+          <p className="text-[12px] text-muted-foreground ml-6">
             {eventDate} · {clubName}
           </p>
           {history.blocked_until && (
-            <p className="text-[12px] text-neutral-600 ml-6 mt-0.5">
+            <p className="text-[12px] text-muted-foreground ml-6 mt-0.5">
               정지 해제: {dayjs(history.blocked_until).format("YYYY.MM.DD HH:mm")}
             </p>
           )}
         </div>
         <ChevronRight
-          className={`w-4 h-4 text-neutral-600 mt-0.5 transition-transform ${showDetail ? "rotate-90" : ""}`}
+          className={`w-4 h-4 text-muted-foreground mt-0.5 transition-transform ${showDetail ? "rotate-90" : ""}`}
         />
       </button>
 
       {showDetail && (
-        <div className="px-4 pb-4 pt-0 border-t border-neutral-800/50">
+        <div className="px-4 pb-4 pt-0 border-t border-border/50">
           <div className="mt-3 space-y-2">
             {history.auction && (
               <div className="flex items-center justify-between text-[12px]">
-                <span className="text-neutral-500">낙찰가</span>
-                <span className="text-white font-bold">
+                <span className="text-muted-foreground">낙찰가</span>
+                <span className="text-foreground font-bold">
                   {new Intl.NumberFormat("ko-KR").format(history.auction.current_bid)}원
                 </span>
               </div>
             )}
             <div className="flex items-center justify-between text-[12px]">
-              <span className="text-neutral-500">처리일시</span>
-              <span className="text-neutral-300">
+              <span className="text-muted-foreground">처리일시</span>
+              <span className="text-foreground/80">
                 {dayjs(history.created_at).format("YYYY.MM.DD HH:mm")}
               </span>
             </div>
@@ -412,18 +412,18 @@ function NoshowHistoryCard({
           {appeal && (
             <div className={`mt-3 p-3 rounded-xl ${appeal.status === "accepted" ? "bg-green-500/10" : appeal.status === "rejected" ? "bg-red-500/10" : "bg-amber-500/10"}`}>
               <div className="flex items-center gap-1.5 mb-1">
-                {appeal.status === "pending" && <Clock className="w-3.5 h-3.5 text-amber-400" />}
-                {appeal.status === "accepted" && <CheckCircle2 className="w-3.5 h-3.5 text-green-400" />}
+                {appeal.status === "pending" && <Clock className="w-3.5 h-3.5 text-brand-amber" />}
+                {appeal.status === "accepted" && <CheckCircle2 className="w-3.5 h-3.5 text-money" />}
                 {appeal.status === "rejected" && <XCircle className="w-3.5 h-3.5 text-red-400" />}
                 <span className={`text-[12px] font-bold ${APPEAL_STATUS_LABEL[appeal.status].className.split(" ")[0]}`}>
                   {APPEAL_STATUS_LABEL[appeal.status].label}
                 </span>
               </div>
               {appeal.admin_response && (
-                <p className="text-[12px] text-neutral-400 ml-5">{appeal.admin_response}</p>
+                <p className="text-[12px] text-muted-foreground ml-5">{appeal.admin_response}</p>
               )}
               {appeal.status === "pending" && (
-                <p className="text-[11px] text-neutral-500 ml-5">영업일 3일 내 검토됩니다</p>
+                <p className="text-[11px] text-muted-foreground ml-5">영업일 3일 내 검토됩니다</p>
               )}
             </div>
           )}
@@ -435,7 +435,7 @@ function NoshowHistoryCard({
                 e.stopPropagation();
                 onAppeal();
               }}
-              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-neutral-700 text-[13px] text-neutral-300 hover:bg-white/5 transition-colors font-bold"
+              className="mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-border text-[13px] text-foreground/80 hover:bg-white/5 transition-colors font-bold"
             >
               <MessageSquare className="w-4 h-4" />
               이의제기하기

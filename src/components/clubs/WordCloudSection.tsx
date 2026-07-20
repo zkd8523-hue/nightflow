@@ -363,10 +363,10 @@ export function WordCloudSection({ clubId }: Props) {
       {/* 헤더 */}
       <header className="mb-4 flex items-start justify-between gap-2">
         <div>
-          <h2 className="text-[19px] font-black text-white leading-tight">
+          <h2 className="text-[19px] font-black text-foreground leading-tight">
             여기 하면 떠오르는 단어?
           </h2>
-          <p className="text-[13px] text-neutral-500 mt-1">
+          <p className="text-[13px] text-muted-foreground mt-1">
             5자 리뷰를 남겨보세요.
           </p>
         </div>
@@ -374,7 +374,7 @@ export function WordCloudSection({ clubId }: Props) {
           <button
             onClick={() => setShowMine((v) => !v)}
             className={`shrink-0 mt-1 inline-flex items-center gap-0.5 text-[13px] font-bold transition-colors ${
-              showMine ? "text-white" : "text-neutral-500 hover:text-white"
+              showMine ? "text-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             내 리뷰
@@ -387,17 +387,17 @@ export function WordCloudSection({ clubId }: Props) {
 
       {/* 내 리뷰 펼침 (탭 눌렀을 때만) */}
       {showMine && myWords.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-4 justify-center rounded-2xl bg-neutral-900/60 p-3">
+        <div className="flex flex-wrap gap-2 mb-4 justify-center rounded-2xl bg-card/60 p-3">
           {myWords.map((w, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-neutral-800 text-neutral-200 text-[13px] font-bold"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-muted text-foreground text-[13px] font-bold"
             >
               {w}
               <button
                 onClick={() => removeMyWord(i)}
                 disabled={saving}
-                className="text-neutral-500 hover:text-white disabled:opacity-40"
+                className="text-muted-foreground hover:text-foreground disabled:opacity-40"
                 aria-label="삭제"
               >
                 <X className="w-3.5 h-3.5" />
@@ -410,26 +410,26 @@ export function WordCloudSection({ clubId }: Props) {
       {/* 워드클라우드 */}
       <div className="flex flex-wrap gap-x-3 gap-y-2 items-baseline justify-center py-4 min-h-[90px] content-center mb-3">
         {loading ? (
-          <span className="text-[13px] text-neutral-600">불러오는 중...</span>
+          <span className="text-[13px] text-muted-foreground">불러오는 중...</span>
         ) : entries.length === 0 ? (
           // 예시 워드클라우드 — 3층 고정. 2층의 "리뷰가 이렇게 보여요"가 문장으로 읽힘, 1·3층은 예시 단어
           <div className="flex flex-col items-center gap-y-2 select-none pointer-events-none">
             {/* 1층 */}
             <div className="flex items-baseline justify-center gap-x-2.5">
-              <span className="font-bold text-neutral-300 leading-none" style={{ fontSize: 17, textShadow: "0 0 9px rgba(236,72,153,.45)" }}>음악</span>
-              <span className="font-medium text-neutral-500 leading-none" style={{ fontSize: 13 }}>사랑</span>
+              <span className="font-bold text-foreground/80 leading-none" style={{ fontSize: 17, textShadow: "0 0 9px rgba(236,72,153,.45)" }}>음악</span>
+              <span className="font-medium text-muted-foreground leading-none" style={{ fontSize: 13 }}>사랑</span>
             </div>
             {/* 2층 — 안내 문장 */}
             <div className="flex items-baseline justify-center gap-x-2.5">
-              <span className="font-black text-white leading-none" style={{ fontSize: 30, textShadow: "0 0 18px rgba(236,72,153,.8)" }}>리뷰가</span>
-              <span className="font-bold text-neutral-200 leading-none" style={{ fontSize: 19, textShadow: "0 0 11px rgba(236,72,153,.55)" }}>이렇게</span>
-              <span className="font-black text-white leading-none" style={{ fontSize: 25, textShadow: "0 0 15px rgba(236,72,153,.7)" }}>보여요</span>
+              <span className="font-black text-foreground leading-none" style={{ fontSize: 30, textShadow: "0 0 18px rgba(236,72,153,.8)" }}>리뷰가</span>
+              <span className="font-bold text-foreground leading-none" style={{ fontSize: 19, textShadow: "0 0 11px rgba(236,72,153,.55)" }}>이렇게</span>
+              <span className="font-black text-foreground leading-none" style={{ fontSize: 25, textShadow: "0 0 15px rgba(236,72,153,.7)" }}>보여요</span>
             </div>
             {/* 3층 */}
             <div className="flex items-baseline justify-center gap-x-2.5">
-              <span className="font-bold text-neutral-300 leading-none" style={{ fontSize: 18, textShadow: "0 0 10px rgba(236,72,153,.5)" }}>자유</span>
-              <span className="font-medium text-neutral-500 leading-none" style={{ fontSize: 14 }}>책임</span>
-              <span className="font-medium text-neutral-600 leading-none" style={{ fontSize: 12 }}>준법</span>
+              <span className="font-bold text-foreground/80 leading-none" style={{ fontSize: 18, textShadow: "0 0 10px rgba(236,72,153,.5)" }}>자유</span>
+              <span className="font-medium text-muted-foreground leading-none" style={{ fontSize: 14 }}>책임</span>
+              <span className="font-medium text-muted-foreground leading-none" style={{ fontSize: 12 }}>준법</span>
             </div>
           </div>
         ) : (
@@ -442,10 +442,10 @@ export function WordCloudSection({ clubId }: Props) {
             // 점수 기준으로 색/굵기 (모두 동일하게 보임)
             const color =
               c >= 5
-                ? "text-white"
+                ? "text-foreground"
                 : c >= 2
-                  ? "text-neutral-200"
-                  : "text-neutral-300";
+                  ? "text-foreground/90"
+                  : "text-foreground/80";
             const weight = c >= 5 ? "font-black" : c >= 2 ? "font-bold" : "font-bold";
 
             // 글로우: 1점부터 켜짐, 점수 클수록 강하게
@@ -484,8 +484,8 @@ export function WordCloudSection({ clubId }: Props) {
       {/* 인라인 입력 */}
       <div>
         {!full ? (
-          <div className="flex items-center gap-2 rounded-full bg-[#1C1C1E] border border-neutral-700 focus-within:border-white/60 px-4 py-3 transition-colors">
-            <Plus className="w-4 h-4 shrink-0 text-neutral-500" />
+          <div className="flex items-center gap-2 rounded-full bg-card border border-border focus-within:border-white/60 px-4 py-3 transition-colors">
+            <Plus className="w-4 h-4 shrink-0 text-muted-foreground" />
             <input
               ref={inputRef}
               value={current}
@@ -505,10 +505,10 @@ export function WordCloudSection({ clubId }: Props) {
                   ? `'${hint.mood}'  ex) ${hint.ex}`
                   : "하나 더 띄우기"
               }
-              className="flex-1 bg-transparent text-white text-[15px] placeholder:text-neutral-600 focus:outline-none disabled:opacity-50"
+              className="flex-1 bg-transparent text-foreground text-[15px] placeholder:text-muted-foreground focus:outline-none disabled:opacity-50"
             />
             {current.length > 0 && (
-              <span className="text-[11px] text-neutral-600 tabular-nums">
+              <span className="text-[11px] text-muted-foreground tabular-nums">
                 {nonSpaceLen(current)}/{MAX_WORD_LEN}
               </span>
             )}
@@ -517,14 +517,14 @@ export function WordCloudSection({ clubId }: Props) {
                 onClick={addCurrent}
                 disabled={saving}
                 aria-label="띄우기"
-                className="flex items-center justify-center w-7 h-7 rounded-full bg-white text-black disabled:bg-neutral-700 disabled:text-neutral-500 transition-colors"
+                className="flex items-center justify-center w-7 h-7 rounded-full bg-inverse text-inverse-foreground disabled:bg-muted disabled:text-muted-foreground transition-colors"
               >
                 <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
               </button>
             )}
           </div>
         ) : (
-          <p className="text-center text-[12px] text-neutral-600 py-2">
+          <p className="text-center text-[12px] text-muted-foreground py-2">
             최대 {MAX_WORDS}개까지 남겼어요 ✨
           </p>
         )}

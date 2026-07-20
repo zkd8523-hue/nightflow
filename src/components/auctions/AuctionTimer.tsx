@@ -19,10 +19,10 @@ export const AuctionTimer = memo(function AuctionTimer({ endTime, status, startT
   // 경매 예정 (카운트다운 끝남 또는 시작 시간 이미 지남)
   if (status === "scheduled" && remaining === 0) {
     return (
-      <div className="text-center py-4 rounded-xl bg-neutral-900/50 border border-neutral-800/50">
-        <span className="text-[13px] text-neutral-500 font-bold">{isInstant ? "판매 예정" : "경매 예정"}</span>
+      <div className="text-center py-4 rounded-xl bg-card/50 border border-border/50">
+        <span className="text-[13px] text-muted-foreground font-bold">{isInstant ? "판매 예정" : "경매 예정"}</span>
         {startTimeLabel && (
-          <p className="text-[15px] text-white font-bold mt-1">{startTimeLabel}</p>
+          <p className="text-[15px] text-foreground font-bold mt-1">{startTimeLabel}</p>
         )}
       </div>
     );
@@ -31,8 +31,8 @@ export const AuctionTimer = memo(function AuctionTimer({ endTime, status, startT
   // 경매 종료 / 마감 처리중
   if (remaining === 0) {
     return (
-      <div className="text-center py-2 bg-neutral-800 rounded-md">
-        <span className="text-sm font-medium text-neutral-400">
+      <div className="text-center py-2 bg-muted rounded-md">
+        <span className="text-sm font-medium text-muted-foreground">
           {status === "active" ? "마감 처리중" : isInstant ? "판매 종료" : "경매 종료"}
         </span>
       </div>
@@ -67,7 +67,7 @@ export const AuctionTimer = memo(function AuctionTimer({ endTime, status, startT
         </span>
       </div>
       {status === "scheduled" && startTimeLabel && (
-        <p className="text-[11px] text-neutral-500 mt-1">{startTimeLabel}</p>
+        <p className="text-[11px] text-muted-foreground mt-1">{startTimeLabel}</p>
       )}
     </div>
   );

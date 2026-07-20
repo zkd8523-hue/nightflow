@@ -77,33 +77,33 @@ export function AreaVerifySheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-6"
+        className="bg-card border-border rounded-t-3xl pb-6"
       >
         <SheetHeader className="pb-2">
-          <SheetTitle className="text-white text-[16px] text-left">
+          <SheetTitle className="text-foreground text-[16px] text-left">
             {reason === "shot"
               ? "🔴 클럽 지정 LIVE는 현장 인증자만 올릴 수 있어요"
               : "지금 위치를 확인할게요"}
           </SheetTitle>
           {reason === "shot" && (
-            <p className="text-left text-[12px] text-neutral-400 pt-1">
+            <p className="text-left text-[12px] text-muted-foreground pt-1">
               지금 강남·홍대·이태원에 있다면 인증하고 LIVE를 올려보세요
             </p>
           )}
         </SheetHeader>
 
         <div className="mt-3 space-y-4">
-          <div className="flex items-start gap-3 p-4 rounded-2xl bg-[#0A0A0A] border border-neutral-800">
-            <MapPin className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-4 rounded-2xl bg-background border border-border">
+            <MapPin className="w-5 h-5 text-brand-amber shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <p className="text-[14px] text-white font-bold">
+              <p className="text-[14px] text-foreground font-bold">
                 {IS_DEV
                   ? "[테스트 환경] 위치 우회 인증"
                   : "현재 위치 기준으로 자동 입장돼요"}
               </p>
               {IS_DEV ? (
                 <div className="space-y-2">
-                  <p className="text-[12px] text-neutral-400 leading-relaxed">
+                  <p className="text-[12px] text-muted-foreground leading-relaxed">
                     비프로덕션 환경이라 GPS 호출 없이 바로 인증됩니다.
                     <br />
                     원하는 지역을 선택해주세요.
@@ -118,8 +118,8 @@ export function AreaVerifySheet({
                           onClick={() => setDevSelectedArea(a.code)}
                           className={`px-2.5 py-1 rounded-full text-[12px] font-bold border transition-colors ${
                             selected
-                              ? "bg-amber-500/20 border-amber-500 text-amber-300"
-                              : "bg-[#1C1C1E] border-neutral-700 text-neutral-300 hover:border-neutral-500"
+                              ? "bg-amber-500/20 border-amber-500 text-brand-amber"
+                              : "bg-card border-border text-foreground/80 hover:border-border"
                           }`}
                         >
                           {a.label}
@@ -129,14 +129,14 @@ export function AreaVerifySheet({
                   </div>
                 </div>
               ) : (
-                <p className="text-[12px] text-neutral-400 leading-relaxed">
-                  <b className="text-amber-400">강남·홍대·이태원</b>이면 해당
+                <p className="text-[12px] text-muted-foreground leading-relaxed">
+                  <b className="text-brand-amber">강남·홍대·이태원</b>이면 해당
                   지역방으로 자동 배치됩니다.
                   <br />
-                  인증은 <b className="text-amber-400">2시간</b> 동안 유효하고,
+                  인증은 <b className="text-brand-amber">2시간</b> 동안 유효하고,
                   만료 전 자동 갱신돼요.
                   <br />
-                  <span className="text-neutral-500 text-[11px]">
+                  <span className="text-muted-foreground text-[11px]">
                     ※ 좌표는 저장되지 않고 지역 코드만 보관됩니다
                   </span>
                 </p>
@@ -147,7 +147,7 @@ export function AreaVerifySheet({
           <button
             onClick={handleVerify}
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-black bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-black bg-inverse text-inverse-foreground disabled:bg-muted disabled:text-muted-foreground transition-colors"
           >
             {loading ? (
               <>

@@ -141,22 +141,22 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
   return createPortal(
     // data-no-pull-refresh="strict": 전역 PullToRefresh의 document 터치 리스너가
     // 멀티터치(핀치)를 단일 터치로 오인해 preventDefault를 걸어 핀치줌과 충돌하는 것을 차단.
-    <div className="fixed inset-0 z-[200] bg-black flex flex-col" role="dialog" aria-modal="true" data-no-pull-refresh="strict">
+    <div className="fixed inset-0 z-[200] bg-background flex flex-col" role="dialog" aria-modal="true" data-no-pull-refresh="strict">
       {/* 상단 바 — 클럽명을 크게(남은 폭 전부). 클럽이 바뀌면 key로 재애니메이션돼 전환이 바로 느껴짐 */}
-      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-black/90 backdrop-blur-sm border-b border-neutral-800 shrink-0">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-black/90 backdrop-blur-sm border-b border-border shrink-0">
         <div key={groupIdx} className="min-w-0 flex-1 animate-in fade-in slide-in-from-right-3 duration-300">
           <p className="flex items-baseline gap-1.5 min-w-0">
-            <span className="text-[20px] font-black text-white truncate tracking-tight">
+            <span className="text-[20px] font-black text-foreground truncate tracking-tight">
               {club.name || t("클럽", "Club")}
             </span>
-            <span className="text-[12px] font-bold text-neutral-500 shrink-0">{t("가격표", "Price list")}</span>
+            <span className="text-[12px] font-bold text-muted-foreground shrink-0">{t("가격표", "Price list")}</span>
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label={t("닫기", "Close")}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-neutral-900 hover:bg-neutral-800 text-white shrink-0"
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-card hover:bg-muted text-foreground shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
@@ -219,7 +219,7 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
                 type="button"
                 onClick={() => goToPage(pageIdx - 1)}
                 aria-label={t("이전 페이지", "Previous page")}
-                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-white"
+                className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-foreground"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
@@ -230,7 +230,7 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
                 type="button"
                 onClick={goForward}
                 aria-label={pageIdx < sources.length - 1 ? t("다음 페이지", "Next page") : t("다음 오퍼 비교", "Next offer")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-white"
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-9 h-9 flex items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-foreground"
               >
                 <ChevronRight className="w-5 h-5" />
               </button>
@@ -246,7 +246,7 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
                     onClick={() => goToPage(i)}
                     aria-label={t(`${i + 1}번째 페이지로 이동`, `Go to page ${i + 1}`)}
                     className={`h-1.5 rounded-full transition-all ${
-                      i === pageIdx ? "w-5 bg-amber-400" : "w-1.5 bg-neutral-500 hover:bg-neutral-400"
+                      i === pageIdx ? "w-5 bg-amber-400" : "w-1.5 bg-muted hover:bg-neutral-400"
                     }`}
                   />
                 ))}
@@ -254,23 +254,23 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
             )}
           </>
         ) : (
-          <p className="text-center text-[13px] text-neutral-500 py-12">
+          <p className="text-center text-[13px] text-muted-foreground py-12">
             {t("가격표 이미지를 불러올 수 없어요", "Couldn't load the price list image")}
           </p>
         )}
       </div>
 
       {/* 하단 고정 — 오퍼 요약 + 상담 CTA */}
-      <div className="shrink-0 bg-[#1C1C1E] border-t border-neutral-800 px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] space-y-2 max-h-[45vh] overflow-y-auto">
+      <div className="shrink-0 bg-card border-t border-border px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+12px)] space-y-2 max-h-[45vh] overflow-y-auto">
         {club.name && (
-          <p key={groupIdx} className="text-[13px] font-black text-white truncate animate-in fade-in slide-in-from-right-2 duration-300">
+          <p key={groupIdx} className="text-[13px] font-black text-foreground truncate animate-in fade-in slide-in-from-right-2 duration-300">
             {club.name}
           </p>
         )}
         {myBudget != null && (
-          <p className="text-[13px] font-bold text-neutral-300">
+          <p className="text-[13px] font-bold text-foreground/80">
             {t("내 예산", "My budget")}{" "}
-            <span className="text-white">{myBudget.toLocaleString()}{t("원", "")}</span>
+            <span className="text-foreground">{myBudget.toLocaleString()}{t("원", "")}</span>
           </p>
         )}
         {(liquors.length > 0 || sellingPoints.length > 0 || extras.length > 0) && (
@@ -287,7 +287,7 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
                 {sellingPoints.map((inc) => (
                   <span
                     key={inc}
-                    className="text-[12px] font-semibold px-2.5 py-1 rounded-[7px] bg-amber-500/12 text-amber-200 border border-amber-500/25"
+                    className="text-[12px] font-semibold px-2.5 py-1 rounded-[7px] bg-amber-500/12 text-brand-amber border border-amber-500/25"
                   >
                     {isForeigner ? toEnglishInclude(inc) : inc} 🤫
                   </span>
@@ -299,7 +299,7 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
                 {extras.map((inc) => (
                   <span
                     key={inc}
-                    className="text-[11px] font-medium px-2 py-0.5 rounded-[7px] bg-neutral-900 text-neutral-300 border border-neutral-700/70"
+                    className="text-[11px] font-medium px-2 py-0.5 rounded-[7px] bg-card text-foreground/80 border border-border/70"
                   >
                     {isForeigner ? toEnglishInclude(inc) : inc}
                   </span>
@@ -309,7 +309,7 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
           </div>
         )}
         {offer.comment && (
-          <p className="text-[12px] text-neutral-400">
+          <p className="text-[12px] text-muted-foreground">
             &ldquo;{isForeigner ? (commentEn ?? offer.comment) : offer.comment}&rdquo;
           </p>
         )}
@@ -326,13 +326,13 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
               <button
                 type="button"
                 onClick={() => goToOffer(0)}
-                className="flex-1 flex flex-col items-center justify-center h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white leading-tight"
+                className="flex-1 flex flex-col items-center justify-center h-11 rounded-xl bg-muted hover:bg-muted text-foreground leading-tight"
               >
                 <span className="flex items-center gap-1 font-bold text-[13px]">
                   <RotateCcw className="w-3.5 h-3.5" />
                   {t("첫 오퍼 보기", "First offer")}
                 </span>
-                <span className="text-[10px] font-medium text-neutral-400">
+                <span className="text-[10px] font-medium text-muted-foreground">
                   {t("마지막 오퍼예요", "Last offer")}
                 </span>
               </button>
@@ -340,7 +340,7 @@ export function OfferMenuCompareSheet({ onClose, groups, startGroupKey, lang = "
               <button
                 type="button"
                 onClick={() => goToOffer(seqPos + 1)}
-                className="flex-1 flex items-center justify-center gap-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-[13px]"
+                className="flex-1 flex items-center justify-center gap-1 h-11 rounded-xl bg-muted hover:bg-muted text-foreground font-bold text-[13px]"
               >
                 {t("다음 오퍼", "Next offer")}
                 <ChevronRight className="w-4 h-4" />

@@ -223,9 +223,9 @@ export function ChatMessageItem({
 
   return (
     <div
-      className={`group/msg relative px-4 hover:bg-[#1A1424]/60 transition-colors ${
+      className={`group/msg relative px-4 hover:bg-muted/60 dark:hover:bg-[#1A1424]/60 transition-colors ${
         groupedWithPrev ? "pt-0.5 pb-1" : "pt-2 pb-2"
-      } ${pressing ? "bg-[#1A1424]/80" : ""}`}
+      } ${pressing ? "bg-muted/60 dark:bg-[#1A1424]/80" : ""}`}
     >
       <div className={`flex items-start gap-2 ${isMine ? "justify-end" : ""}`}>
         {/* 아바타 — 내 글은 카톡처럼 표시하지 않음 */}
@@ -235,7 +235,7 @@ export function ChatMessageItem({
           <button
             type="button"
             onClick={() => setPeekOpen(true)}
-            className="relative w-9 h-9 rounded-full overflow-hidden bg-neutral-800 shrink-0 hover:opacity-80 transition-opacity"
+            className="relative w-9 h-9 rounded-full overflow-hidden bg-muted shrink-0 hover:opacity-80 transition-opacity"
             aria-label={`${displayName} 프로필 보기`}
           >
             {author?.profile_image ? (
@@ -247,7 +247,7 @@ export function ChatMessageItem({
                 className="object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/50 text-[13px] font-black">
+              <div className="w-full h-full flex items-center justify-center text-foreground/50 text-[13px] font-black">
                 {displayName.charAt(0)}
               </div>
             )}
@@ -260,22 +260,22 @@ export function ChatMessageItem({
               <button
                 type="button"
                 onClick={() => setPeekOpen(true)}
-                className="text-[13px] font-medium text-neutral-300 truncate hover:underline"
+                className="text-[13px] font-medium text-foreground/80 truncate hover:underline"
               >
                 {displayName}
                 {isMine && (
-                  <span className="ml-1 text-[11px] text-amber-400 font-bold">
+                  <span className="ml-1 text-[11px] text-brand-amber font-bold">
                     나
                   </span>
                 )}
               </button>
               {message.author_area && (
-                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/15 text-green-300 text-[10px] font-bold leading-none">
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-green-500/15 text-money text-[10px] font-bold leading-none">
                   <MapPin className="w-2.5 h-2.5" />
                   {ROOM_LABEL[message.author_area]}
                 </span>
               )}
-              <span className="text-[11px] text-neutral-500 shrink-0">
+              <span className="text-[11px] text-muted-foreground shrink-0">
                 · {timeShort(message.created_at)}
               </span>
             </div>
@@ -291,7 +291,7 @@ export function ChatMessageItem({
                 }`}
                 style={{ opacity: Math.min(1, Math.abs(dragX) / 56) }}
               >
-                <CornerDownRight className="w-4 h-4 text-neutral-400" />
+                <CornerDownRight className="w-4 h-4 text-muted-foreground" />
               </span>
             )}
             {/* 본문 + 미디어 — 더블탭/길게누름 영역 */}
@@ -330,7 +330,7 @@ export function ChatMessageItem({
                     className={`inline-block max-w-full px-3 py-1.5 rounded-2xl text-[14px] leading-snug whitespace-pre-wrap break-words transition-colors ${
                       isMine
                         ? "rounded-tr-sm bg-amber-400 text-black"
-                        : "rounded-tl-sm bg-white text-black"
+                        : "rounded-tl-sm bg-white text-black border border-border dark:border-transparent"
                     } ${pressing ? (isMine ? "bg-amber-300" : "bg-neutral-200") : ""}`}
                     data-chat-body-text
                   />
@@ -364,7 +364,7 @@ export function ChatMessageItem({
                         onReact?.(emoji as ChatReactionEmoji);
                       }}
                       className={`inline-flex items-center gap-0.5 px-1 py-0.5 text-[11px] transition-colors ${
-                        mine ? "text-amber-300" : "text-neutral-400 hover:text-white"
+                        mine ? "text-brand-amber" : "text-muted-foreground hover:text-foreground"
                       }`}
                       aria-label={`${emoji} ${count}개`}
                     >
@@ -382,7 +382,7 @@ export function ChatMessageItem({
                 <button
                   type="button"
                   onClick={() => onOpenReplies?.(message)}
-                  className="inline-flex items-center justify-center w-6 h-6 rounded-full text-neutral-500 hover:text-white hover:bg-neutral-900 transition-colors"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-full text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
                   aria-label="답글"
                   title="답글"
                 >
@@ -398,7 +398,7 @@ export function ChatMessageItem({
                   }
                   setActionOpen(true);
                 }}
-                className="inline-flex items-center justify-center w-6 h-6 rounded-full text-neutral-500 hover:text-amber-400 hover:bg-neutral-900 transition-colors"
+                className="inline-flex items-center justify-center w-6 h-6 rounded-full text-muted-foreground hover:text-brand-amber hover:bg-card transition-colors"
                 aria-label="이모지 반응 추가"
                 title="이모지 반응"
               >
@@ -409,7 +409,7 @@ export function ChatMessageItem({
                 <button
                   type="button"
                   onClick={handleDelete}
-                  className="inline-flex items-center justify-center w-6 h-6 rounded-full text-neutral-500 hover:text-red-400 hover:bg-neutral-900 transition-colors"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded-full text-muted-foreground hover:text-red-400 hover:bg-card transition-colors"
                   aria-label="삭제"
                   title="삭제"
                 >

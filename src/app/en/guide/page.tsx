@@ -268,7 +268,7 @@ export default function EnglishLanding() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
@@ -309,7 +309,7 @@ export default function EnglishLanding() {
       <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
         {/* Brand */}
         <div className="text-center">
-          <span className="text-2xl font-black tracking-tight text-white">
+          <span className="text-2xl font-black tracking-tight text-foreground">
             NightFlow
           </span>
         </div>
@@ -321,7 +321,7 @@ export default function EnglishLanding() {
             <br />
             Seoul&apos;s best clubs
           </h1>
-          <p className="text-[15px] text-neutral-400 leading-relaxed">
+          <p className="text-[15px] text-muted-foreground leading-relaxed">
             Seoul club booking made VIP-easy. No connections, no Korean, no
             broker. NightFlow gets you the best tables at Gangnam, Hongdae,
             Itaewon clubs — at fair, upfront prices. Book like a regular from
@@ -338,16 +338,16 @@ export default function EnglishLanding() {
             {PAINS.map((p) => (
               <div
                 key={p.title}
-                className="flex gap-4 p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800"
+                className="flex gap-4 p-5 rounded-2xl bg-card border border-border"
               >
                 <div className="shrink-0 text-2xl leading-none pt-0.5">
                   {p.icon}
                 </div>
                 <div className="space-y-1">
-                  <p className="font-bold text-[15px] text-neutral-200">
+                  <p className="font-bold text-[15px] text-foreground">
                     {p.title}
                   </p>
-                  <p className="text-[13px] text-neutral-500 leading-relaxed">
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">
                     {p.body}
                   </p>
                 </div>
@@ -362,7 +362,7 @@ export default function EnglishLanding() {
           </Link>
           <Link
             href="/login?lang=en"
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
             Skip all this — be the VIP
           </Link>
@@ -370,21 +370,21 @@ export default function EnglishLanding() {
 
         {/* How it works */}
         <section className="space-y-6">
-          <h2 className="text-[13px] font-bold tracking-[0.2em] text-neutral-500 uppercase text-center">
+          <h2 className="text-[13px] font-bold tracking-[0.2em] text-muted-foreground uppercase text-center">
             How Seoul club booking works
           </h2>
           <div className="space-y-4">
             {STEPS.map((s) => (
               <div
                 key={s.n}
-                className="flex gap-4 p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800"
+                className="flex gap-4 p-5 rounded-2xl bg-card border border-border"
               >
-                <div className="shrink-0 w-9 h-9 rounded-full bg-white text-black font-black flex items-center justify-center">
+                <div className="shrink-0 w-9 h-9 rounded-full bg-inverse text-inverse-foreground font-black flex items-center justify-center">
                   {s.n}
                 </div>
                 <div className="space-y-1">
                   <p className="font-bold text-[15px]">{s.title}</p>
-                  <p className="text-[13px] text-neutral-400 leading-relaxed">
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">
                     {s.body}
                   </p>
                 </div>
@@ -398,7 +398,7 @@ export default function EnglishLanding() {
           <h2 className="text-2xl font-black tracking-tight">
             VIP club booking, fair prices
           </h2>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             We contact the club directly on your behalf and lock in the best
             table for your budget. You see the price upfront and pay the
             club directly. No booking fee, no broker cut. Just the best
@@ -413,7 +413,7 @@ export default function EnglishLanding() {
             <h2 className="text-2xl font-black tracking-tight">
               Want the full VIP night?
             </h2>
-            <p className="text-[14px] text-neutral-400 leading-relaxed">
+            <p className="text-[14px] text-muted-foreground leading-relaxed">
               Roll in with your friends, spend ₩500,000+, and make the best
               memories of your trip. Here&apos;s what a night out really costs in
               Seoul — no more guessing.
@@ -423,37 +423,37 @@ export default function EnglishLanding() {
             {PRICE_TIERS.map((t) => (
               <div
                 key={t.label}
-                className="flex gap-4 p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800"
+                className="flex gap-4 p-5 rounded-2xl bg-card border border-border"
               >
                 <div className="shrink-0 text-2xl leading-none pt-0.5">
                   {t.icon}
                 </div>
                 <div className="flex-1 space-y-1">
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="font-bold text-[15px] text-neutral-200">
+                    <p className="font-bold text-[15px] text-foreground">
                       {t.label}
                     </p>
-                    <p className="font-black text-[14px] text-amber-400 whitespace-nowrap">
+                    <p className="font-black text-[14px] text-brand-amber whitespace-nowrap">
                       {t.price}
                     </p>
                   </div>
-                  <p className="text-[11px] text-neutral-600 tabular-nums">
+                  <p className="text-[11px] text-muted-foreground tabular-nums">
                     ≈ {krwToAll(t.krwAmount)}
                   </p>
-                  <p className="text-[13px] text-neutral-500 leading-relaxed">
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">
                     {t.desc}
                   </p>
                 </div>
               </div>
             ))}
           </div>
-          <p className="text-center text-[13px] text-neutral-500 leading-relaxed">
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
             Set your budget — we&apos;ll find the best table to match.
             The more you bring, the more VIP the night.
           </p>
           <Link
             href="/login?lang=en"
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
             Book with NightFlow
           </Link>
@@ -464,7 +464,7 @@ export default function EnglishLanding() {
           <h2 className="text-2xl font-black tracking-tight text-center">
             Know before you go
           </h2>
-          <p className="text-center text-[13px] text-neutral-500 leading-relaxed">
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
             Seoul nightlife is amazing — but tourists do get scammed. Here&apos;s
             how to stay safe.
           </p>
@@ -472,13 +472,13 @@ export default function EnglishLanding() {
             {TIPS.map((t) => (
               <details
                 key={t.q}
-                className="group rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden"
+                className="group rounded-2xl bg-card border border-border overflow-hidden"
               >
                 <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer list-none select-none">
-                  <span className="font-bold text-[15px] text-neutral-200">
+                  <span className="font-bold text-[15px] text-foreground">
                     {t.q}
                   </span>
-                  <span className="text-neutral-500 transition-transform group-open:rotate-180">
+                  <span className="text-muted-foreground transition-transform group-open:rotate-180">
                     ▾
                   </span>
                 </summary>
@@ -486,7 +486,7 @@ export default function EnglishLanding() {
                   {t.items.map((it, i) => (
                     <p
                       key={i}
-                      className="text-[13px] text-neutral-400 leading-relaxed"
+                      className="text-[13px] text-muted-foreground leading-relaxed"
                     >
                       • {it}
                     </p>
@@ -495,7 +495,7 @@ export default function EnglishLanding() {
               </details>
             ))}
           </div>
-          <p className="text-center text-[13px] text-neutral-500 leading-relaxed">
+          <p className="text-center text-[13px] text-muted-foreground leading-relaxed">
             Or skip all the risk — NightFlow is the verified channel. Real
             clubs, upfront prices, no touts.
           </p>
@@ -505,11 +505,11 @@ export default function EnglishLanding() {
         <section className="space-y-3 pt-2">
           <Link
             href="/login?lang=en"
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
           >
             Get VIP access — sign up free
           </Link>
-          <p className="text-[12px] text-neutral-600 text-center leading-relaxed">
+          <p className="text-[12px] text-muted-foreground text-center leading-relaxed">
             19+ only · Bring your passport to the venue.
             <br />
             Make the night more beautiful.

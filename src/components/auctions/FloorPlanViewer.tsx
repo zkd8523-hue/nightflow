@@ -18,7 +18,7 @@ function getViewerMarkerStyle(type: TableType, isHighlighted: boolean) {
     return "bg-amber-500 border-amber-300 text-black shadow-amber-500/40 shadow-lg";
   }
   // 비선택 마커를 타입 무관하게 매우 희미하게 (비교 심리 방지)
-  return "bg-white/5 border-white/8 text-white/15";
+  return "bg-white/5 border-white/8 text-foreground/15";
 }
 
 export function FloorPlanViewer({
@@ -57,7 +57,7 @@ export function FloorPlanViewer({
             type="button"
             onClick={() => setIsZoomed(true)}
             aria-label="테이블 위치 크게 보기"
-            className="relative rounded-xl overflow-hidden border border-neutral-800 group block w-full cursor-zoom-in"
+            className="relative rounded-xl overflow-hidden border border-border group block w-full cursor-zoom-in"
           >
             <img
               src={floorPlanUrl}
@@ -90,8 +90,8 @@ export function FloorPlanViewer({
 
             {/* 확대 힌트 배지 */}
             <div className="absolute top-2 right-2 z-30 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-1 rounded-full opacity-90 group-hover:opacity-100 transition-opacity">
-              <ZoomIn className="w-3 h-3 text-white" />
-              <span className="text-[10px] font-bold text-white">크게 보기</span>
+              <ZoomIn className="w-3 h-3 text-foreground" />
+              <span className="text-[10px] font-bold text-foreground">크게 보기</span>
             </div>
           </button>
         )}
@@ -99,7 +99,7 @@ export function FloorPlanViewer({
         {highlightLabel && (
           <div className="flex items-center gap-2 justify-center">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
-            <span className="text-xs text-amber-400 font-bold">
+            <span className="text-xs text-brand-amber font-bold">
               {highlightLabel}
             </span>
           </div>
@@ -175,16 +175,16 @@ export function FloorPlanViewer({
             aria-label="닫기"
             className="fixed top-4 right-4 z-[130] w-10 h-10 flex items-center justify-center rounded-full bg-white/15 backdrop-blur-sm hover:bg-white/25 transition-colors"
           >
-            <X className="w-5 h-5 text-white" />
+            <X className="w-5 h-5 text-foreground" />
           </button>
 
           {highlightLabel && (
             <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[130] flex items-center gap-2 bg-black/80 backdrop-blur-sm px-4 py-2 rounded-full pointer-events-none shadow-lg">
               <div className="w-2 h-2 rounded-full bg-amber-500" />
-              <span className="text-sm text-amber-400 font-bold">
+              <span className="text-sm text-brand-amber font-bold">
                 {highlightLabel}
               </span>
-              <span className="text-xs text-neutral-400">테이블 위치</span>
+              <span className="text-xs text-muted-foreground">테이블 위치</span>
             </div>
           )}
         </div>,

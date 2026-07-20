@@ -8,9 +8,9 @@ import { Card } from "@/components/ui/card";
 const REASON_LABELS: Record<string, { label: string; color: string }> = {
   inappropriate_content: { label: "부적절 콘텐츠", color: "bg-red-500/20 text-red-400" },
   scam_suspect: { label: "사기 의심", color: "bg-orange-500/20 text-orange-400" },
-  harassment: { label: "괴롭힘·욕설", color: "bg-amber-500/20 text-amber-400" },
+  harassment: { label: "괴롭힘·욕설", color: "bg-amber-500/20 text-brand-amber" },
   spam: { label: "스팸/반복", color: "bg-purple-500/20 text-purple-400" },
-  other: { label: "기타", color: "bg-neutral-700/30 text-neutral-300" },
+  other: { label: "기타", color: "bg-muted/30 text-foreground/80" },
 };
 
 const SHOW_LIMIT = 200;
@@ -68,19 +68,19 @@ export default async function AdminUserBlocksPage() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto max-w-2xl px-4 py-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
           <Link
             href="/admin"
-            className="p-2 -ml-2 hover:bg-neutral-800 rounded-xl transition-colors"
+            className="p-2 -ml-2 hover:bg-muted rounded-xl transition-colors"
           >
-            <ChevronLeft className="w-5 h-5 text-neutral-400" />
+            <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
           <div>
             <h1 className="text-xl font-black tracking-tight">사용자 차단 관리</h1>
-            <p className="text-[12px] text-neutral-500 mt-0.5">
+            <p className="text-[12px] text-muted-foreground mt-0.5">
               유저가 신고한 차단 사유 모니터링 · 최근 {SHOW_LIMIT}건
             </p>
           </div>
@@ -88,29 +88,29 @@ export default async function AdminUserBlocksPage() {
 
         {/* 통계 카드 */}
         <div className="grid grid-cols-3 gap-3 mb-6">
-          <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
-            <p className="text-2xl font-black text-white">{total}</p>
-            <p className="text-[11px] text-neutral-500 font-medium mt-1">전체 차단</p>
+          <Card className="bg-card border-border/50 p-4 text-center">
+            <p className="text-2xl font-black text-foreground">{total}</p>
+            <p className="text-[11px] text-muted-foreground font-medium mt-1">전체 차단</p>
           </Card>
-          <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
-            <p className="text-2xl font-black text-amber-400">{last24h}</p>
-            <p className="text-[11px] text-neutral-500 font-medium mt-1">최근 24h</p>
+          <Card className="bg-card border-border/50 p-4 text-center">
+            <p className="text-2xl font-black text-brand-amber">{last24h}</p>
+            <p className="text-[11px] text-muted-foreground font-medium mt-1">최근 24h</p>
           </Card>
           <Card
             className={`p-4 text-center border ${
               dangerUsers > 0
                 ? "bg-red-500/10 border-red-500/40"
-                : "bg-[#1C1C1E] border-neutral-800/50"
+                : "bg-card border-border/50"
             }`}
           >
             <p
               className={`text-2xl font-black ${
-                dangerUsers > 0 ? "text-red-400" : "text-neutral-600"
+                dangerUsers > 0 ? "text-red-400" : "text-muted-foreground"
               }`}
             >
               {dangerUsers}
             </p>
-            <p className="text-[11px] text-neutral-500 font-medium mt-1">
+            <p className="text-[11px] text-muted-foreground font-medium mt-1">
               3회 이상 차단
             </p>
           </Card>
@@ -147,11 +147,11 @@ export default async function AdminUserBlocksPage() {
                           className="flex items-center justify-between bg-black/30 rounded-lg px-3 py-2"
                         >
                           <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-bold text-white">
+                            <span className="text-[13px] font-bold text-foreground">
                               {display}
                             </span>
                             {u?.role && (
-                              <span className="text-[10px] px-1.5 py-0.5 bg-neutral-800 text-neutral-400 rounded">
+                              <span className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
                                 {u.role.toUpperCase()}
                               </span>
                             )}
@@ -179,11 +179,11 @@ export default async function AdminUserBlocksPage() {
         {/* 차단 목록 */}
         {!blocks || blocks.length === 0 ? (
           <div className="text-center py-16 space-y-3">
-            <Ban className="w-10 h-10 text-neutral-700 mx-auto" />
-            <p className="text-[15px] font-bold text-neutral-400">
+            <Ban className="w-10 h-10 text-muted-foreground mx-auto" />
+            <p className="text-[15px] font-bold text-muted-foreground">
               아직 차단 기록이 없습니다
             </p>
-            <p className="text-[12px] text-neutral-600">
+            <p className="text-[12px] text-muted-foreground">
               유저가 다른 사용자를 차단하면 여기에 표시됩니다
             </p>
           </div>
@@ -216,7 +216,7 @@ export default async function AdminUserBlocksPage() {
                   className={`p-4 border ${
                     isHighRisk
                       ? "bg-red-500/5 border-red-500/30"
-                      : "bg-[#1C1C1E] border-neutral-800/50"
+                      : "bg-card border-border/50"
                   }`}
                 >
                   <div className="flex items-start justify-between mb-2">
@@ -232,7 +232,7 @@ export default async function AdminUserBlocksPage() {
                         </span>
                       )}
                     </div>
-                    <span className="text-[11px] text-neutral-600 font-medium">
+                    <span className="text-[11px] text-muted-foreground font-medium">
                       {new Date(block.created_at).toLocaleString("ko-KR", {
                         month: "2-digit",
                         day: "2-digit",
@@ -244,39 +244,39 @@ export default async function AdminUserBlocksPage() {
 
                   <div className="space-y-1.5 text-[13px]">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-neutral-500 font-medium w-12">
+                      <span className="text-muted-foreground font-medium w-12">
                         피차단
                       </span>
-                      <span className="text-white font-bold">
+                      <span className="text-foreground font-bold">
                         {blocked?.display_name ||
                           blocked?.name ||
                           block.blocked_id.slice(0, 8)}
                       </span>
                       {blocked?.role && (
-                        <span className="text-[10px] px-1.5 py-0.5 bg-neutral-800 text-neutral-400 rounded">
+                        <span className="text-[10px] px-1.5 py-0.5 bg-muted text-muted-foreground rounded">
                           {blocked.role.toUpperCase()}
                         </span>
                       )}
                       <Link
                         href={`/admin/users?q=${block.blocked_id}`}
-                        className="ml-auto text-[11px] text-amber-400 hover:text-amber-300 font-bold"
+                        className="ml-auto text-[11px] text-brand-amber hover:text-brand-amber font-bold"
                       >
                         프로필 →
                       </Link>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-neutral-500 font-medium w-12">
+                      <span className="text-muted-foreground font-medium w-12">
                         차단자
                       </span>
-                      <span className="text-neutral-300">
+                      <span className="text-foreground/80">
                         {blocker?.display_name ||
                           blocker?.name ||
                           block.blocker_id.slice(0, 8)}
                       </span>
                     </div>
                     {block.memo && (
-                      <div className="mt-2 p-2.5 bg-black/30 rounded-lg border border-neutral-800/50">
-                        <p className="text-[12px] text-neutral-300 leading-relaxed whitespace-pre-wrap break-words">
+                      <div className="mt-2 p-2.5 bg-black/30 rounded-lg border border-border/50">
+                        <p className="text-[12px] text-foreground/80 leading-relaxed whitespace-pre-wrap break-words">
                           {block.memo}
                         </p>
                       </div>

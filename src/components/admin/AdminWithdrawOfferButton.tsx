@@ -91,20 +91,20 @@ export function AdminWithdrawOfferButton({ offerId, variant = "compact", onWithd
           if (!v) reset();
         }}
       >
-        <DialogContent className="bg-[#1C1C1E] border-neutral-700 text-white max-w-sm">
+        <DialogContent className="bg-card border-border text-foreground max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-[16px] font-black text-white">
+            <DialogTitle className="text-[16px] font-black text-foreground">
               제안 강제 철회
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3 py-1">
-            <p className="text-[13px] text-neutral-400">
+            <p className="text-[13px] text-muted-foreground">
               파트너에게 알림이 발송되고 슬롯이 회복됩니다.
             </p>
 
             <div className="space-y-2">
-              <p className="text-[12px] font-bold text-neutral-300">
+              <p className="text-[12px] font-bold text-foreground/80">
                 철회 사유 <span className="text-red-400 font-normal">*</span>
               </p>
               <div className="space-y-1.5">
@@ -114,7 +114,7 @@ export function AdminWithdrawOfferButton({ offerId, variant = "compact", onWithd
                     className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${
                       selected === reason
                         ? "bg-red-500/10 border-red-500/40"
-                        : "bg-neutral-900 border-neutral-700 hover:border-neutral-500"
+                        : "bg-card border-border hover:border-border"
                     }`}
                   >
                     <input
@@ -125,7 +125,7 @@ export function AdminWithdrawOfferButton({ offerId, variant = "compact", onWithd
                       onChange={() => setSelected(reason)}
                       className="mt-0.5 accent-red-500"
                     />
-                    <span className="text-[13px] text-white leading-snug">
+                    <span className="text-[13px] text-foreground leading-snug">
                       {reason}
                     </span>
                   </label>
@@ -135,7 +135,7 @@ export function AdminWithdrawOfferButton({ offerId, variant = "compact", onWithd
                   className={`flex items-start gap-2.5 rounded-xl border px-3 py-2.5 cursor-pointer transition-colors ${
                     selected === CUSTOM_KEY
                       ? "bg-red-500/10 border-red-500/40"
-                      : "bg-neutral-900 border-neutral-700 hover:border-neutral-500"
+                      : "bg-card border-border hover:border-border"
                   }`}
                 >
                   <input
@@ -146,7 +146,7 @@ export function AdminWithdrawOfferButton({ offerId, variant = "compact", onWithd
                     onChange={() => setSelected(CUSTOM_KEY)}
                     className="mt-0.5 accent-red-500"
                   />
-                  <span className="text-[13px] text-white leading-snug">
+                  <span className="text-[13px] text-foreground leading-snug">
                     기타 (직접 입력)
                   </span>
                 </label>
@@ -161,9 +161,9 @@ export function AdminWithdrawOfferButton({ offerId, variant = "compact", onWithd
                     rows={3}
                     maxLength={300}
                     autoFocus
-                    className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2.5 text-[13px] text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-neutral-500 transition-colors"
+                    className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-[13px] text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-border transition-colors"
                   />
-                  <p className="text-[11px] text-neutral-600 text-right">
+                  <p className="text-[11px] text-muted-foreground text-right">
                     {customReason.length}/300
                   </p>
                 </div>
@@ -178,7 +178,7 @@ export function AdminWithdrawOfferButton({ offerId, variant = "compact", onWithd
                 reset();
               }}
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl bg-neutral-800 text-neutral-300 text-[13px] font-bold hover:bg-neutral-700 transition-all disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-xl bg-muted text-foreground/80 text-[13px] font-bold hover:bg-muted transition-all disabled:opacity-50"
             >
               취소
             </button>

@@ -202,7 +202,7 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
   puzzle: {
     content: (
       <>
-        퍼즐이 다 모이면 <span className="text-amber-400">깃발</span>로 승격!
+        퍼즐이 다 모이면 <span className="text-brand-amber">깃발</span>로 승격!
         <br />
         깃발에는 파트너들이 시크릿오퍼
         <br />
@@ -213,8 +213,8 @@ const TAB_PROMISES: Record<"today" | "advance" | "puzzle" | "share", TabPromise>
   share: {
     content: (
       <>
-        <div className="text-[15.5px] text-white">예산은 있는데, 인원이 모자라다면?</div>
-        <div className="text-[15.5px] text-white">클릭 한 번으로 파티 참가!</div>
+        <div className="text-[15.5px] text-foreground">예산은 있는데, 인원이 모자라다면?</div>
+        <div className="text-[15.5px] text-foreground">클릭 한 번으로 파티 참가!</div>
       </>
     ),
   },
@@ -239,8 +239,8 @@ const TAB_PROMISES_MD: Record<"today" | "advance" | "puzzle" | "share", TabPromi
   share: {
     content: (
       <>
-        <div className="text-[15.5px] text-white">이번주 조각을 미리 올려보세요!</div>
-        <div className="text-[15.5px] text-white">링크 하나로 공유, 인원관리도 간편해요!</div>
+        <div className="text-[15.5px] text-foreground">이번주 조각을 미리 올려보세요!</div>
+        <div className="text-[15.5px] text-foreground">링크 하나로 공유, 인원관리도 간편해요!</div>
       </>
     ),
     note: "🧩 수수료 0% · 현장 직접 수령",
@@ -816,15 +816,15 @@ export function HomeContent({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-6 pt-7 pb-8 max-w-lg mx-auto max-h-[92vh] overflow-y-auto"
+          className="h-auto bg-card border-border rounded-t-3xl px-6 pt-7 pb-8 max-w-lg mx-auto max-h-[92vh] overflow-y-auto"
         >
           <SheetHeader className="text-center">
-            <SheetTitle className="text-white text-[18px] font-black tracking-tight">
+            <SheetTitle className="text-foreground text-[18px] font-black tracking-tight">
               {reviewPrompt?.clubName
                 ? `${reviewPrompt.clubName}에서의 시간 어떠셨어요?`
                 : "지난번 매치 어떠셨어요?"}
             </SheetTitle>
-            <SheetDescription className="text-neutral-400 text-[13px] font-medium mt-1.5 leading-relaxed">
+            <SheetDescription className="text-muted-foreground text-[13px] font-medium mt-1.5 leading-relaxed">
               리뷰를 남겨주시면 파트너에게 큰 도움이 돼요
             </SheetDescription>
           </SheetHeader>
@@ -847,7 +847,7 @@ export function HomeContent({
                 >
                   <Star
                     className={`w-10 h-10 transition-colors ${
-                      active ? "fill-amber-400 text-amber-400" : "fill-transparent text-neutral-700"
+                      active ? "fill-amber-400 text-brand-amber" : "fill-transparent text-muted-foreground"
                     }`}
                     strokeWidth={1.5}
                   />
@@ -857,7 +857,7 @@ export function HomeContent({
           </div>
           <p
             className={`text-center text-[13px] font-bold mt-1 tracking-tight ${
-              (reviewPromptHover || reviewPromptRating) > 0 ? "text-amber-300" : "text-neutral-600"
+              (reviewPromptHover || reviewPromptRating) > 0 ? "text-brand-amber" : "text-muted-foreground"
             }`}
           >
             {(reviewPromptHover || reviewPromptRating) > 0
@@ -867,8 +867,8 @@ export function HomeContent({
 
           {/* 한마디 */}
           <div className="mt-5 space-y-2">
-            <p className="text-[13px] font-bold text-neutral-300">
-              한마디 <span className="text-[11px] text-neutral-500 font-medium">(선택)</span>
+            <p className="text-[13px] font-bold text-foreground/80">
+              한마디 <span className="text-[11px] text-muted-foreground font-medium">(선택)</span>
             </p>
             <textarea
               value={reviewPromptComment}
@@ -876,9 +876,9 @@ export function HomeContent({
               placeholder="어떤 점이 좋았는지, 다음 손님께 추천 한마디 부탁드려요"
               rows={3}
               maxLength={300}
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 text-[13.5px] text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
+              className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-[13.5px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50 resize-none"
             />
-            <p className="text-[10.5px] text-neutral-600 text-right">{reviewPromptComment.length}/300</p>
+            <p className="text-[10.5px] text-muted-foreground text-right">{reviewPromptComment.length}/300</p>
           </div>
 
           {/* 제출 + 닫기 */}
@@ -893,7 +893,7 @@ export function HomeContent({
             <button
               type="button"
               onClick={resetReviewPrompt}
-              className="w-full h-10 text-neutral-500 hover:text-neutral-300 font-medium text-[13px] transition-colors"
+              className="w-full h-10 text-muted-foreground hover:text-foreground/80 font-medium text-[13px] transition-colors"
             >
               다음에 할게요
             </button>
@@ -905,36 +905,36 @@ export function HomeContent({
       <Sheet open={showMatchedModal} onOpenChange={setShowMatchedModal}>
         <SheetContent
           side="bottom"
-          className="h-auto bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pt-5 pb-8 max-h-[80vh] overflow-y-auto gap-2"
+          className="h-auto bg-background border-border rounded-t-3xl px-5 pt-5 pb-8 max-h-[80vh] overflow-y-auto gap-2"
         >
           <SheetHeader className="text-left p-0 gap-0 mb-1">
-            <SheetTitle className="text-white text-[24px] font-black tracking-tight leading-tight">
+            <SheetTitle className="text-foreground text-[24px] font-black tracking-tight leading-tight">
               😎 이 정도는 받아야죠
             </SheetTitle>
           </SheetHeader>
           {recentMatchedPuzzle && (
             <div className="space-y-3">
-              <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-2 relative">
+              <div className="bg-card rounded-2xl border border-border p-4 space-y-2 relative">
                 <span className="absolute top-3 right-3 text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full leading-none">
                   성사됨
                 </span>
                 <div>
-                  <p className="text-[14px] font-medium text-neutral-400 break-keep">
+                  <p className="text-[14px] font-medium text-muted-foreground break-keep">
                     {recentMatchedPuzzle.notes || `${recentMatchedPuzzle.area}에서 모여요`}
                   </p>
-                  <p className="text-[11px] text-neutral-500 font-medium mt-0.5">
+                  <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
                     {recentMatchedPuzzle.area} · {recentMatchedPuzzle.target_count}명
                   </p>
                 </div>
-                <div className="text-[20px] font-black text-green-400 tracking-tight">
+                <div className="text-[20px] font-black text-money tracking-tight">
                   예산 {(recentMatchedPuzzle.total_budget ?? recentMatchedPuzzle.budget_per_person * recentMatchedPuzzle.target_count).toLocaleString()}원
                 </div>
                 {recentMatchedPuzzle.club_name && (
-                  <div className="pt-2 border-t border-neutral-800 space-y-1.5">
+                  <div className="pt-2 border-t border-border space-y-1.5">
                     <div className="flex items-baseline gap-2 flex-wrap">
-                      <p className="text-[17px] font-black text-amber-300 tracking-tight">{recentMatchedPuzzle.club_name}</p>
+                      <p className="text-[17px] font-black text-brand-amber tracking-tight">{recentMatchedPuzzle.club_name}</p>
                       {recentMatchedPuzzle.md_instagram && (
-                        <p className="text-[11.5px] text-neutral-400 font-medium">
+                        <p className="text-[11.5px] text-muted-foreground font-medium">
                           @{recentMatchedPuzzle.md_instagram}
                         </p>
                       )}
@@ -958,7 +958,7 @@ export function HomeContent({
                               {liquorItems.map((item) => (
                                 <span
                                   key={item}
-                                  className="text-[11.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                                  className="text-[11.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-brand-amber border border-amber-500/30"
                                 >
                                   🍾 {item}
                                 </span>
@@ -970,7 +970,7 @@ export function HomeContent({
                               {extraItems.map((ext) => (
                                 <span
                                   key={ext}
-                                  className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-400 border border-neutral-800"
+                                  className="text-[10px] px-1.5 py-0.5 rounded-full bg-card text-muted-foreground border border-border"
                                 >
                                   {ext}
                                 </span>
@@ -978,7 +978,7 @@ export function HomeContent({
                             </div>
                           )}
                           {recentMatchedPuzzle.offer_comment && (
-                            <p className="text-[12px] text-neutral-300 italic leading-snug pt-1">
+                            <p className="text-[12px] text-foreground/80 italic leading-snug pt-1">
                               &ldquo;{recentMatchedPuzzle.offer_comment}&rdquo;
                             </p>
                           )}
@@ -991,11 +991,11 @@ export function HomeContent({
               {/* 인스타 일반 예약 대비 추가 혜택 — 이 쇼케이스 매치 전용 하드코딩 사실 */}
               <div className="flex items-center justify-center gap-2 px-4 py-0 -mt-2 mb-1">
                 <span className="text-[22px] leading-none">🎉</span>
-                <p className="text-[18px] font-black text-amber-200 leading-snug break-keep text-center tracking-tight">
+                <p className="text-[18px] font-black text-brand-amber leading-snug break-keep text-center tracking-tight">
                   <span className="text-shimmer-gold">
                     당일 예약보다
                   </span>{" "}
-                  <span className="text-amber-300">30만원치 더</span> 받았어요
+                  <span className="text-brand-amber">30만원치 더</span> 받았어요
                 </p>
               </div>
               <div className="text-center space-y-1.5">
@@ -1018,16 +1018,16 @@ export function HomeContent({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-6 pb-10"
+          className="h-auto bg-card border-border rounded-t-3xl px-6 pb-10"
         >
           <SheetHeader className="text-center pt-2">
             <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <PartyPopper className="w-8 h-8 text-amber-500" />
+              <PartyPopper className="w-8 h-8 text-brand-amber" />
             </div>
-            <SheetTitle className="text-white font-black text-2xl">
+            <SheetTitle className="text-foreground font-black text-2xl">
               축하합니다!
             </SheetTitle>
-            <SheetDescription className="text-neutral-400 text-sm leading-relaxed mt-2">
+            <SheetDescription className="text-muted-foreground text-sm leading-relaxed mt-2">
               NightFlow 파트너로 승인되었습니다.
               <br />
               지금 바로 테이블을 등록하고 첫 매출을 만들어보세요.
@@ -1035,22 +1035,22 @@ export function HomeContent({
           </SheetHeader>
 
           <div className="space-y-3 mt-6">
-            <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
-              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">1</div>
-              <p className="text-[13px] text-neutral-300 font-medium">
-                <span className="text-white font-bold">주말(공휴일) 테이블</span>을 경매로 올리세요
+            <div className="flex items-center gap-3 bg-card/50 rounded-xl p-3 border border-border/30">
+              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-money font-black text-sm shrink-0">1</div>
+              <p className="text-[13px] text-foreground/80 font-medium">
+                <span className="text-foreground font-bold">주말(공휴일) 테이블</span>을 경매로 올리세요
               </p>
             </div>
-            <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
-              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">2</div>
-              <p className="text-[13px] text-neutral-300 font-medium">
-                유저들이 실시간으로 <span className="text-white font-bold">입찰 경쟁</span>합니다
+            <div className="flex items-center gap-3 bg-card/50 rounded-xl p-3 border border-border/30">
+              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-money font-black text-sm shrink-0">2</div>
+              <p className="text-[13px] text-foreground/80 font-medium">
+                유저들이 실시간으로 <span className="text-foreground font-bold">입찰 경쟁</span>합니다
               </p>
             </div>
-            <div className="flex items-center gap-3 bg-neutral-900/50 rounded-xl p-3 border border-neutral-800/30">
-              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-green-500 font-black text-sm shrink-0">3</div>
-              <p className="text-[13px] text-neutral-300 font-medium">
-                낙찰되면 <span className="text-white font-bold">유저가 직접 연락</span>드려요
+            <div className="flex items-center gap-3 bg-card/50 rounded-xl p-3 border border-border/30">
+              <div className="w-8 h-8 bg-green-500/10 rounded-lg flex items-center justify-center text-money font-black text-sm shrink-0">3</div>
+              <p className="text-[13px] text-foreground/80 font-medium">
+                낙찰되면 <span className="text-foreground font-bold">유저가 직접 연락</span>드려요
               </p>
             </div>
           </div>
@@ -1058,13 +1058,13 @@ export function HomeContent({
           <div className="space-y-3 mt-6">
             <Button
               onClick={handleGoToCreateAuction}
-              className="w-full h-14 bg-white hover:bg-neutral-200 text-black font-black text-base rounded-2xl transition-all active:scale-[0.98]"
+              className="w-full h-14 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-base rounded-2xl transition-all active:scale-[0.98]"
             >
               경매 올리기
             </Button>
             <button
               onClick={handleDismissMDWelcome}
-              className="w-full text-center text-sm text-neutral-500 hover:text-neutral-300 transition-colors py-2 font-medium"
+              className="w-full text-center text-sm text-muted-foreground hover:text-foreground/80 transition-colors py-2 font-medium"
             >
               나중에 둘러볼게요
             </button>
@@ -1086,8 +1086,8 @@ export function HomeContent({
 
     // 탭별 Tip 콘텐츠 (풀 화면과 일관)
     const userPuzzleTipContent = (
-      <div className="text-[14.5px] text-white">
-        오퍼 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
+      <div className="text-[14.5px] text-foreground">
+        오퍼 받아보고, 별로면 패스해도 <span className="text-brand-amber font-black">OK!</span>
       </div>
     );
     const mdPuzzleTipContent = (
@@ -1095,8 +1095,8 @@ export function HomeContent({
     );
     const mdShareTipContent = (
       <>
-        <div className="text-white">이번주 조각을 미리 올려보세요!</div>
-        <div className="text-white">링크 하나로 공유, 인원관리도 간편해요!</div>
+        <div className="text-foreground">이번주 조각을 미리 올려보세요!</div>
+        <div className="text-foreground">링크 하나로 공유, 인원관리도 간편해요!</div>
       </>
     );
     const compactTipContent: Record<"puzzle" | "share", React.ReactNode> = {
@@ -1131,7 +1131,7 @@ export function HomeContent({
         </Link>
         {opts.dateLabel && (
           <div className="flex items-center gap-1.5 shrink-0">
-            <h3 className="text-[15px] font-black text-white tracking-tight">
+            <h3 className="text-[15px] font-black text-foreground tracking-tight">
               {opts.dateLabel}
             </h3>
           </div>
@@ -1139,7 +1139,7 @@ export function HomeContent({
         <Link
           href={detailHref(opts.detailTab)}
           aria-label={opts.count && opts.count > 0 ? `${opts.count}개 더보기` : "더보기"}
-          className="ml-auto -my-1.5 -mr-2 shrink-0 self-center text-[12px] text-neutral-400 hover:text-white active:text-white font-bold inline-flex items-center gap-0.5 px-2 py-2.5 rounded-lg active:bg-white/5 transition-colors"
+          className="ml-auto -my-1.5 -mr-2 shrink-0 self-center text-[12px] text-muted-foreground hover:text-foreground active:text-foreground font-bold inline-flex items-center gap-0.5 px-2 py-2.5 rounded-lg active:bg-white/5 transition-colors"
         >
           {opts.count && opts.count > 0 ? `${opts.count}개 더보기` : "더보기"}
           <ChevronRight className="w-3.5 h-3.5" />
@@ -1165,8 +1165,8 @@ export function HomeContent({
 
           {/* MD 팁박스 — 홈에서 제거 (상세 "더보기"에는 유지). false로 차단 */}
           {false && isMdOrAdmin && visibleCompactTip && (
-            <div className="order-1 bg-neutral-800 border-amber-400/50 rounded-xl px-3 py-2 mb-2 [border-width:0.5px]">
-              <div className="text-[14px] text-neutral-100 font-black leading-snug break-keep"><ArrowDown className="w-3.5 h-3.5 inline-block mr-1 text-amber-400 relative -top-px animate-bounce" />유저들의 예산이 기다리고 있어요</div>
+            <div className="order-1 bg-muted border-amber-400/50 rounded-xl px-3 py-2 mb-2 [border-width:0.5px]">
+              <div className="text-[14px] text-foreground font-black leading-snug break-keep"><ArrowDown className="w-3.5 h-3.5 inline-block mr-1 text-brand-amber relative -top-px animate-bounce" />유저들의 예산이 기다리고 있어요</div>
             </div>
           )}
 
@@ -1177,23 +1177,23 @@ export function HomeContent({
                 <div
                   ref={tipBoxRef}
                   data-no-pull-refresh
-                  className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 ${(showTopGuide || showGuide || isCompactOfferSlide) ? "" : "pr-[88px]"} ${recentMatchedPuzzle ? "pt-3.5 pb-5" : "pt-2.5 pb-2"}`}
+                  className={`relative bg-gradient-to-br from-amber-400/10 via-card to-card border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 ${(showTopGuide || showGuide || isCompactOfferSlide) ? "" : "pr-[88px]"} ${recentMatchedPuzzle ? "pt-3.5 pb-5" : "pt-2.5 pb-2"}`}
                 >
                   {(() => {
                     const compactSlides: React.ReactNode[] = [
-                      <div key="new" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">예약금 Zero, 수수료 Zero</div>,
+                      <div key="new" className="text-[14px] text-foreground font-black leading-snug break-keep">예약금 Zero, 수수료 Zero</div>,
                       ...(recentMatchedPuzzle ? [
                         <button
                           key="offer"
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
-                          className="w-full text-[14px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
+                          className="w-full text-[14px] text-foreground font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-foreground transition-colors"
                         >
                           <span className="underline underline-offset-4 decoration-2 decoration-amber-400/70">어떤 오퍼 받을지 궁금해?</span>
                           <span aria-hidden>👈</span>
                         </button>
                       ] : []),
-                      <div key="tip" className="text-[14px] text-neutral-100 font-black leading-snug break-keep">{visibleCompactTip}</div>,
+                      <div key="tip" className="text-[14px] text-foreground font-black leading-snug break-keep">{visibleCompactTip}</div>,
                     ];
                     const slideCount = compactSlides.length;
                     const safeRotation = tipRotation % slideCount;
@@ -1264,7 +1264,7 @@ export function HomeContent({
                               onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
                               className="pointer-events-auto p-2.5"
                             >
-                              <span className={`block w-2 h-2 rounded-full transition-colors ${safeRotation === i ? "bg-amber-400" : "bg-neutral-600"}`} />
+                              <span className={`block w-2 h-2 rounded-full transition-colors ${safeRotation === i ? "bg-amber-400" : "bg-muted"}`} />
                             </button>
                           ))}
                         </div>
@@ -1275,7 +1275,7 @@ export function HomeContent({
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
-                      className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-amber-300 hover:bg-amber-400/25 hover:text-amber-200 active:scale-95 transition-all"
+                      className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-brand-amber hover:bg-amber-400/25 hover:text-brand-amber active:scale-95 transition-all"
                     >
                       이용방법
                     </button>
@@ -1283,11 +1283,11 @@ export function HomeContent({
                 </div>
               )}
               {showGuide && (
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative">
+                <div className="bg-card border border-border rounded-3xl p-4 relative">
                   <button
                     onClick={dismissGuide}
                     aria-label="가이드 닫기"
-                    className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors z-10"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -1295,10 +1295,10 @@ export function HomeContent({
                     {compactSteps.map((step, idx) => (
                       <div
                         key={idx}
-                        className="bg-neutral-700/60 border border-neutral-600 rounded-2xl p-3 flex flex-row items-center gap-3 relative overflow-hidden"
+                        className="bg-muted/60 border border-border rounded-2xl p-3 flex flex-row items-center gap-3 relative overflow-hidden"
                       >
                         {idx === 0 && currentTab === "puzzle" && !isMdOrAdmin && (
-                          <span className="absolute top-0 right-0 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-tr-2xl rounded-bl-xl rounded-tl-none rounded-br-none leading-none z-10">
+                          <span className="absolute top-0 right-0 text-[10px] font-black text-emerald-400 bg-card border border-emerald-500/50 px-2 py-1 rounded-tr-2xl rounded-bl-xl rounded-tl-none rounded-br-none leading-none z-10">
                             모든 서비스 무료
                           </span>
                         )}
@@ -1306,15 +1306,15 @@ export function HomeContent({
                           {step.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-[14.5px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
-                          <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
+                          <h3 className="text-[14.5px] font-black text-foreground mb-0.5 break-keep">{step.title}</h3>
+                          <p className={`text-[12px] text-muted-foreground font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
                             {step.desc.split("\n").map((line, lineIdx, arr) => {
                               const parts = line.split(/(\*\*[^*]+\*\*)/g);
                               return (
                                 <span key={lineIdx}>
                                   {parts.map((part, pIdx) =>
                                     /^\*\*[^*]+\*\*$/.test(part) ? (
-                                      <span key={pIdx} className="text-neutral-200 font-semibold">
+                                      <span key={pIdx} className="text-foreground/90 font-semibold">
                                         {part.slice(2, -2)}
                                       </span>
                                     ) : (
@@ -1347,15 +1347,18 @@ export function HomeContent({
           )}
 
           {/* ── 깃발 섹션 헤더 한 줄: 버튼 + 날짜 + 더보기 ── */}
-          {renderSectionRow({ icon: "🚩", label: "깃발", detailTab: "puzzle", dateLabel: puzzleHeaderDate, count: flagPuzzles.length })}
+          {/* mt: 바로 위 LIVE 캐러셀의 구분선과 배지가 너무 붙어 보여서 여백 추가 */}
+          <div className="mt-0.5">
+            {renderSectionRow({ icon: "🚩", label: "깃발", detailTab: "puzzle", dateLabel: puzzleHeaderDate, count: flagPuzzles.length })}
+          </div>
 
           {/* 첫 진입 인라인 가이드 — 깃발 캐러셀 위 (한번 닫으면 영구 숨김) */}
           {showTopGuide && (
-            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative mt-4 mb-4">
+            <div className="bg-card border border-border rounded-3xl p-4 relative mt-4 mb-4">
               <button
                 onClick={dismissTopGuide}
                 aria-label="가이드 닫기"
-                className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
+                className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors z-10"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1363,21 +1366,21 @@ export function HomeContent({
                 {compactSteps.map((step, idx) => (
                   <div
                     key={idx}
-                    className="bg-neutral-700/60 border border-neutral-600 rounded-2xl p-3 flex flex-row items-center gap-3"
+                    className="bg-muted/60 border border-border rounded-2xl p-3 flex flex-row items-center gap-3"
                   >
                     <div className={`w-11 h-11 rounded-xl ${step.color} flex items-center justify-center shrink-0`}>
                       {step.icon}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-[14.5px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
-                      <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
+                      <h3 className="text-[14.5px] font-black text-foreground mb-0.5 break-keep">{step.title}</h3>
+                      <p className={`text-[12px] text-muted-foreground font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
                         {step.desc.split("\n").map((line, lineIdx, arr) => {
                           const parts = line.split(/(\*\*[^*]+\*\*)/g);
                           return (
                             <span key={lineIdx}>
                               {parts.map((part, pIdx) =>
                                 /^\*\*[^*]+\*\*$/.test(part) ? (
-                                  <span key={pIdx} className="text-neutral-200 font-semibold">
+                                  <span key={pIdx} className="text-foreground/90 font-semibold">
                                     {part.slice(2, -2)}
                                   </span>
                                 ) : (
@@ -1448,7 +1451,7 @@ export function HomeContent({
 
         {/* 오늘 어디갈래? + HOT DEAL 섹션 + 이하 전체 배경 */}
         {/* pb는 <main>의 pb-16(BottomNav 가림 방지)과 별개로, 섹션 끝과 푸터 사이 최소 간격만. */}
-        <div className="-mx-4 px-4 pt-3 pb-6 bg-[#1A1A1E]">
+        <div className="-mx-4 px-4 pt-3 pb-6 bg-section-alt">
           <ClubBenefitSection />
           {/* MD 전용 게스트 간판 행동 유도 CTA — 일반 유저에겐 null이라 래퍼도 렌더 안 함 */}
           {isMdOrAdmin && (
@@ -1494,8 +1497,8 @@ export function HomeContent({
             <div className="text-[15.5px]">유저들의 예산이 기다리고 있어요 💰</div>
           );
           const userPuzzleTipContent = (
-            <div className="text-[14.5px] text-white">
-              오퍼 받아보고, 별로면 패스해도 <span className="text-amber-300 font-black">OK!</span>
+            <div className="text-[14.5px] text-foreground">
+              오퍼 받아보고, 별로면 패스해도 <span className="text-brand-amber font-black">OK!</span>
             </div>
           );
           const overriddenTabPromises = isMdOrAdmin
@@ -1515,21 +1518,21 @@ export function HomeContent({
             <section className="space-y-2 -mx-2 mb-3">
               {/* TIP 박스 — 항시 노출 (매치 깃발 있으면 슬라이드) */}
               {overriddenTabPromises[currentTab]?.content && (
-                <div className={`relative bg-gradient-to-br from-amber-400/10 via-neutral-900 to-neutral-900 border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${((currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && !isDetailOfferSlide) ? "pr-[88px]" : ""}`}>
+                <div className={`relative bg-gradient-to-br from-amber-400/10 via-card to-card border border-amber-400/60 shadow-[0_0_0_1px_rgba(251,191,36,0.08),0_4px_16px_-6px_rgba(251,191,36,0.25)] rounded-2xl px-3.5 pt-2.5 pb-2 ${((currentTab === "puzzle" || currentTab === "advance" || currentTab === "share") && !isDetailOfferSlide) ? "pr-[88px]" : ""}`}>
                   {(() => {
                     // compact와 동일한 3장 슬라이드 — 인트로 + (매치 있으면) "오퍼 궁금해?" + 본문
                     const introText = "예약금 Zero, 수수료 Zero";
                     const detailSlides: React.ReactNode[] = [
                       // 조각 탭은 인트로("오픈채팅으로 찾기 어려우셨다면?") 페이지 제거 — tip 슬라이드만 노출
                       ...(currentTab !== "share" ? [
-                        <div key="new" className="text-[15.5px] text-neutral-100 font-black leading-snug break-keep">{introText}</div>,
+                        <div key="new" className="text-[15.5px] text-foreground font-black leading-snug break-keep">{introText}</div>,
                       ] : []),
                       ...(!isMdOrAdmin && currentTab !== "share" && recentMatchedPuzzle ? [
                         <button
                           key="offer"
                           type="button"
                           onClick={(e) => { e.stopPropagation(); setShowMatchedModal(true); }}
-                          className="w-full text-[15.5px] text-neutral-100 font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-white transition-colors"
+                          className="w-full text-[15.5px] text-foreground font-black leading-snug break-keep text-left inline-flex items-center gap-1 hover:text-foreground transition-colors"
                         >
                           <span className="underline underline-offset-4 decoration-2 decoration-amber-400/70">어떤 오퍼 받을지 궁금해?</span>
                           <span aria-hidden>👈</span>
@@ -1537,7 +1540,7 @@ export function HomeContent({
                       ] : []),
                       // "오퍼 받아보고, 별로면 패스해도 OK!" 슬라이드는 유저용 깃발 탭에서만 제거 (요청: 3페이지만 없애기). 조각/MD 탭은 유지.
                       ...(!(currentTab === "puzzle" && !isMdOrAdmin) ? [
-                        <div key="tip" className="text-[15.5px] text-neutral-100 font-black leading-snug whitespace-pre-line break-keep">
+                        <div key="tip" className="text-[15.5px] text-foreground font-black leading-snug whitespace-pre-line break-keep">
                           {overriddenTabPromises[currentTab].content}
                         </div>,
                       ] : []),
@@ -1612,7 +1615,7 @@ export function HomeContent({
                                 onClick={(e) => { e.stopPropagation(); changeTipRotation(i); }}
                                 className="px-2.5 py-1.5"
                               >
-                                <span className={`block w-2 h-2 rounded-full transition-colors ${safeRotation === i ? "bg-amber-400" : "bg-neutral-600"}`} />
+                                <span className={`block w-2 h-2 rounded-full transition-colors ${safeRotation === i ? "bg-amber-400" : "bg-muted"}`} />
                               </button>
                             ))}
                           </div>
@@ -1624,7 +1627,7 @@ export function HomeContent({
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setGuideMode("full"); setShowGuide(v => !v); }}
-                      className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-amber-300 hover:bg-amber-400/25 hover:text-amber-200 active:scale-95 transition-all"
+                      className="absolute top-1/2 -translate-y-1/2 right-2.5 inline-flex items-center gap-0.5 px-2.5 py-1.5 rounded-full bg-amber-400/15 border border-amber-400/40 text-[10.5px] font-bold text-brand-amber hover:bg-amber-400/25 hover:text-brand-amber active:scale-95 transition-all"
                     >
                       이용방법
                     </button>
@@ -1633,11 +1636,11 @@ export function HomeContent({
               )}
               {/* 이용방법 가이드 — "ⓘ 이용방법" 클릭 시 토글 */}
               {showGuide && (
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-4 relative">
+                <div className="bg-card border border-border rounded-3xl p-4 relative">
                   <button
                     onClick={dismissGuide}
                     aria-label="가이드 닫기"
-                    className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors z-10"
+                    className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors z-10"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -1645,10 +1648,10 @@ export function HomeContent({
                     {visibleSteps.map((step, idx) => (
                       <div
                         key={idx}
-                        className="bg-neutral-700/60 border border-neutral-600 rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default relative overflow-hidden"
+                        className="bg-muted/60 border border-border rounded-2xl p-3 flex flex-row items-center gap-3 cursor-default relative overflow-hidden"
                       >
                         {idx === 0 && (currentTab === "puzzle" || currentTab === "share") && !isMdOrAdmin && (
-                          <span className="absolute top-0 right-0 text-[10px] font-black text-emerald-400 bg-[#1C1C1E] border border-emerald-500/50 px-2 py-1 rounded-tr-2xl rounded-bl-xl rounded-tl-none rounded-br-none leading-none z-10">
+                          <span className="absolute top-0 right-0 text-[10px] font-black text-emerald-400 bg-card border border-emerald-500/50 px-2 py-1 rounded-tr-2xl rounded-bl-xl rounded-tl-none rounded-br-none leading-none z-10">
                             모든 서비스 무료
                           </span>
                         )}
@@ -1656,15 +1659,15 @@ export function HomeContent({
                           {step.icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-[14.5px] font-black text-white mb-0.5 break-keep">{step.title}</h3>
-                          <p className={`text-[12px] text-neutral-400 font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
+                          <h3 className="text-[14.5px] font-black text-foreground mb-0.5 break-keep">{step.title}</h3>
+                          <p className={`text-[12px] text-muted-foreground font-medium break-keep whitespace-pre-line ${idx === 1 ? "leading-relaxed" : "leading-snug"}`}>
                             {step.desc.split("\n").map((line, lineIdx, arr) => {
                               const parts = line.split(/(\*\*[^*]+\*\*)/g);
                               return (
                                 <span key={lineIdx}>
                                   {parts.map((part, pIdx) =>
                                     /^\*\*[^*]+\*\*$/.test(part) ? (
-                                      <span key={pIdx} className="text-neutral-200 font-semibold">
+                                      <span key={pIdx} className="text-foreground/90 font-semibold">
                                         {part.slice(2, -2)}
                                       </span>
                                     ) : (
@@ -1735,7 +1738,7 @@ export function HomeContent({
 
         {!isLoading && !(currentTab === "puzzle" && puzzles.length === 0) && currentTab !== "share" && (currentTab === "puzzle" || !user) && (auctions.active.length > 0 || currentTab === "puzzle") && (
           <div className="text-center -mt-20 pb-3 relative z-10">
-            <p className="text-[14.5px] text-neutral-200 font-semibold mb-1">
+            <p className="text-[14.5px] text-foreground/90 font-semibold mb-1">
               {currentTab === "puzzle"
                 ? "최고의 테이블을 잡으세요."
                 : "3초만에 로그인하고 입찰하기"}
@@ -1745,14 +1748,14 @@ export function HomeContent({
                 className={
                   currentTab === "puzzle"
                     ? "h-10 px-8 bg-amber-500 text-black font-bold text-sm rounded-full hover:bg-amber-400"
-                    : "h-10 px-8 bg-white text-black font-bold text-sm rounded-full hover:bg-neutral-200"
+                    : "h-10 px-8 bg-inverse text-inverse-foreground font-bold text-sm rounded-full hover:opacity-90"
                 }
               >
                 {currentTab === "puzzle" ? "⛳ 깃발꽂기" : "로그인"}
               </Button>
             </Link>
             {currentTab === "puzzle" && (
-              <p className="text-[10px] text-neutral-600 mt-2">
+              <p className="text-[10px] text-muted-foreground mt-2">
                 모든 서비스 무료
               </p>
             )}

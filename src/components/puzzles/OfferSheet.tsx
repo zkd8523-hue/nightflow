@@ -374,22 +374,22 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
     <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleCloseAttempt(); }}>
       <SheetContent
         side="bottom"
-        className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-5 pb-10 max-h-[92vh] overflow-y-auto"
+        className="bg-card border-t border-border rounded-t-3xl px-5 pb-10 max-h-[92vh] overflow-y-auto"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <SheetHeader className="p-0 mb-3">
           <div className="flex items-center gap-2 pr-8">
-            <SheetTitle className="text-white text-[17px] font-black text-left">
+            <SheetTitle className="text-foreground text-[17px] font-black text-left">
               {editingOffer ? "시크릿오퍼 수정" : "시크릿오퍼"}{puzzle.is_recruiting_party ? " 🧩" : ""}
             </SheetTitle>
-            <span className="flex items-center gap-1 text-[10px] text-amber-400 font-bold flex-shrink-0">
+            <span className="flex items-center gap-1 text-[10px] text-brand-amber font-bold flex-shrink-0">
               <Lock className="w-3 h-3" />
               방장에게만 공개돼요
             </span>
           </div>
           {(puzzle.music_preference === "hiphop" || puzzle.music_preference === "edm") && (
-            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 text-[11px] font-bold w-fit">
+            <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-muted text-foreground/80 text-[11px] font-bold w-fit">
               <Music className="w-3 h-3" />
               {puzzle.music_preference === "hiphop" ? "힙합" : "EDM"} 선호
             </span>
@@ -398,25 +398,25 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
         {/* 슬롯 & 크레딧 상태 */}
         <div className="mb-4">
-          <div className="bg-neutral-900/60 border border-neutral-800 rounded-xl px-4 py-2.5 flex justify-between items-center">
+          <div className="bg-card/60 border border-border rounded-xl px-4 py-2.5 flex justify-between items-center">
             <button
               type="button"
               onClick={() => activeOffers > 0 && setShowSlotDropdown((v) => !v)}
               className="flex items-center gap-1.5 text-left"
             >
               <div>
-                <p className="text-[11px] text-neutral-500">활성 오퍼</p>
-                <p className="text-[14px] font-black text-white">
+                <p className="text-[11px] text-muted-foreground">활성 오퍼</p>
+                <p className="text-[14px] font-black text-foreground">
                   {activeOffers}건 진행 중
                 </p>
               </div>
               {activeOffers > 0 && (
-                <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${showSlotDropdown ? "rotate-180" : ""}`} />
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showSlotDropdown ? "rotate-180" : ""}`} />
               )}
             </button>
             <div className="text-right">
-              <p className="text-[11px] text-neutral-500">크레딧 잔액</p>
-              <p className={`text-[14px] font-black ${credits !== null && credits < 30 ? "text-red-400" : "text-amber-400"}`}>
+              <p className="text-[11px] text-muted-foreground">크레딧 잔액</p>
+              <p className={`text-[14px] font-black ${credits !== null && credits < 30 ? "text-red-400" : "text-brand-amber"}`}>
                 {credits !== null ? `${credits} 크레딧` : "..."}
               </p>
             </div>
@@ -424,15 +424,15 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           {/* 활성 오퍼 드롭다운 */}
           {showSlotDropdown && (
-            <div className="mt-1 border border-neutral-800 rounded-xl overflow-hidden">
+            <div className="mt-1 border border-border rounded-xl overflow-hidden">
               {activeOfferList.length === 0 && (
-                <p className="px-4 py-3 text-[12px] text-neutral-500">활성 오퍼가 없습니다.</p>
+                <p className="px-4 py-3 text-[12px] text-muted-foreground">활성 오퍼가 없습니다.</p>
               )}
               {activeOfferList.map((offer) => (
-                <div key={offer.id} className="flex items-center justify-between px-4 py-3 border-b border-neutral-800/60 last:border-0 bg-neutral-900/40">
+                <div key={offer.id} className="flex items-center justify-between px-4 py-3 border-b border-border/60 last:border-0 bg-card/40">
                   <div>
-                    <p className="text-[13px] font-bold text-white">{offer.puzzle_title}</p>
-                    <p className="text-[11px] text-neutral-500">{offer.table_type} · {offer.proposed_price.toLocaleString()}원</p>
+                    <p className="text-[13px] font-bold text-foreground">{offer.puzzle_title}</p>
+                    <p className="text-[11px] text-muted-foreground">{offer.table_type} · {offer.proposed_price.toLocaleString()}원</p>
                   </div>
                   <button
                     type="button"
@@ -462,7 +462,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           {/* 클럽 선택 */}
           <div className="space-y-2">
-            <p className="text-[11px] font-bold text-neutral-500 tracking-wide">클럽 선택</p>
+            <p className="text-[11px] font-bold text-muted-foreground tracking-wide">클럽 선택</p>
             {myClubs.length === 0 ? (
               <Link
                 href="/md/clubs/new"
@@ -481,8 +481,8 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
                     onClick={() => setSelectedClubId(club.id)}
                     className={`px-4 py-2 rounded-xl text-[13px] font-bold transition-all ${
                       selectedClubId === club.id
-                        ? "bg-white text-black"
-                        : "bg-neutral-800 text-neutral-400 border border-neutral-700 hover:border-neutral-500 hover:text-white"
+                        ? "bg-inverse text-inverse-foreground"
+                        : "bg-muted text-muted-foreground border border-border hover:border-border hover:text-foreground"
                     }`}
                   >
                     {club.name}
@@ -496,17 +496,17 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           {/* 제안 금액 (예산 정가 고정) — 조각(파티원 모집)은 인원에 따라 총액이 변동되므로 숨김 */}
           {!puzzle.is_recruiting_party && (
           <div className="space-y-2">
-            <p className="text-[11px] font-bold text-neutral-500 tracking-wide">제안 금액</p>
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl h-11 px-4 flex items-center justify-between">
-              <span className="text-white font-bold text-[15px]">
+            <p className="text-[11px] font-bold text-muted-foreground tracking-wide">제안 금액</p>
+            <div className="bg-card border border-border rounded-xl h-11 px-4 flex items-center justify-between">
+              <span className="text-foreground font-bold text-[15px]">
                 {currentBudget.toLocaleString()}원
               </span>
-              <span className="text-[11px] text-neutral-500 font-bold flex items-center gap-1">
+              <span className="text-[11px] text-muted-foreground font-bold flex items-center gap-1">
                 <Lock className="w-3 h-3" />
                 예산 고정
               </span>
             </div>
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-[11px] text-muted-foreground">
               깃발 예산과 동일한 금액으로만 제안할 수 있어요. 보틀·서비스 구성으로 차별화하세요.
             </p>
           </div>
@@ -525,7 +525,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           {/* 테이블 구성 */}
           <div className="space-y-2">
-            <p className="text-[11px] font-bold text-neutral-500 tracking-wide">테이블 구성</p>
+            <p className="text-[11px] font-bold text-muted-foreground tracking-wide">테이블 구성</p>
             <div className="flex flex-wrap gap-1.5">
               {EXTRAS_OPTIONS.map((item) => (
                 <button
@@ -535,7 +535,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
                   className={`px-3 py-1.5 rounded-full text-[12px] font-bold flex items-center gap-1 transition-all ${
                     extraItems.includes(item)
                       ? "bg-green-500 text-black"
-                      : "bg-neutral-800 text-neutral-500 border border-neutral-800 hover:border-neutral-600 hover:text-white"
+                      : "bg-muted text-muted-foreground border border-border hover:border-border hover:text-white"
                   }`}
                 >
                   {extraItems.includes(item) && <Check className="w-3 h-3" />}
@@ -557,7 +557,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               <button
                 type="button"
                 onClick={() => setShowCustomExtraInput((v) => !v)}
-                className="px-3 py-1.5 rounded-full text-[12px] font-bold bg-neutral-800 text-neutral-500 border border-neutral-700 hover:border-neutral-500 hover:text-white transition-all"
+                className="px-3 py-1.5 rounded-full text-[12px] font-bold bg-muted text-muted-foreground border border-border hover:border-border hover:text-foreground transition-all"
               >
                 + 직접 입력
               </button>
@@ -584,7 +584,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
                       setShowCustomExtraInput(false);
                     }
                   }}
-                  className="bg-neutral-900 border-neutral-700 text-white text-[13px] h-9"
+                  className="bg-card border-border text-foreground text-[13px] h-9"
                 />
                 <button
                   type="button"
@@ -602,7 +602,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
                     setCustomExtra("");
                     setShowCustomExtraInput(false);
                   }}
-                  className="px-3 h-9 rounded-xl bg-white text-black text-[12px] font-bold flex-shrink-0"
+                  className="px-3 h-9 rounded-xl bg-inverse text-inverse-foreground text-[12px] font-bold flex-shrink-0"
                 >
                   추가
                 </button>
@@ -613,7 +613,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           {/* MD 코멘트 */}
           <div className="space-y-2">
-            <p className="text-[11px] font-bold text-neutral-500 tracking-wide">
+            <p className="text-[11px] font-bold text-muted-foreground tracking-wide">
               파트너 코멘트 <span className="font-normal">{puzzle.is_recruiting_party ? "(필수)" : "(선택)"}</span>
             </p>
             <textarea
@@ -622,17 +622,17 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               placeholder="방장에게 전달할 메시지 (전화·카톡·인스타·URL 금지)"
               rows={3}
               maxLength={200}
-              className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-[13px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50 resize-none"
             />
             {/* 자주 쓰는 문장 (최대 5개, 기기 저장). 칩 클릭 = 코멘트 채우기 */}
             {(savedComments.length > 0 || comment.trim().length > 0) && (
               <div className="flex flex-wrap items-center gap-1.5">
                 {savedComments.map((p) => (
-                  <span key={p.id} className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 rounded-full bg-neutral-800 border border-neutral-700 max-w-full">
+                  <span key={p.id} className="inline-flex items-center gap-1 pl-3 pr-1.5 py-1 rounded-full bg-muted border border-border max-w-full">
                     <button
                       type="button"
                       onClick={() => setComment(p.content)}
-                      className="text-[12px] text-neutral-300 hover:text-white truncate max-w-[160px] text-left"
+                      className="text-[12px] text-foreground/80 hover:text-foreground truncate max-w-[160px] text-left"
                     >
                       {p.content}
                     </button>
@@ -640,7 +640,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
                       type="button"
                       onClick={() => removeSavedComment(p.id)}
                       aria-label="문장 삭제"
-                      className="text-neutral-500 hover:text-red-400 shrink-0"
+                      className="text-muted-foreground hover:text-red-400 shrink-0"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -650,7 +650,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
                   <button
                     type="button"
                     onClick={saveCurrentComment}
-                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-neutral-800 border border-dashed border-neutral-600 text-[12px] font-bold text-neutral-400 hover:text-white hover:border-neutral-400 transition-colors"
+                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-muted border border-dashed border-border text-[12px] font-bold text-muted-foreground hover:text-foreground hover:border-neutral-400 transition-colors"
                   >
                     + 멘트 저장하기
                   </button>
@@ -661,15 +661,15 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
 
           {/* 크레딧 안내 */}
           <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl px-4 py-3">
-            <p className="text-[12px] text-amber-400/80 leading-relaxed">
+            <p className="text-[12px] text-brand-amber dark:text-brand-amber/80 leading-relaxed">
               ✓ 제안 전송은 무료입니다.<br />
               {offerChatOn ? (
                 <>
-                  ✓ 매칭되면 <strong className="text-amber-400">{matchCost} 크레딧</strong> 1회 ({puzzle.is_recruiting_party ? "상담 시작 또는 수락 시" : "대화 첫 답장 또는 수락 시"})<br />
+                  ✓ 매칭되면 <strong className="text-brand-amber">{matchCost} 크레딧</strong> 1회 ({puzzle.is_recruiting_party ? "상담 시작 또는 수락 시" : "대화 첫 답장 또는 수락 시"})<br />
                 </>
               ) : (
                 <>
-                  ✓ 방장이 수락하면 <strong className="text-amber-400">30 크레딧</strong>이 차감됩니다.<br />
+                  ✓ 방장이 수락하면 <strong className="text-brand-amber">30 크레딧</strong>이 차감됩니다.<br />
                 </>
               )}
               ✓ 거절/미선택 시 크레딧은 차감되지 않아요.
@@ -686,7 +686,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
                   ? `${puzzle.is_recruiting_party ? "상담하려면" : "대화 답장하려면"} 크레딧이 필요해요 (${credits}/${matchCost}). 제안은 지금도 무료로 보낼 수 있어요.`
                   : `크레딧이 부족합니다 (${credits}/30). 충전 후 제안할 수 있어요.`}
               </p>
-              <span className="flex items-center gap-0.5 shrink-0 text-[12px] font-black text-amber-400">
+              <span className="flex items-center gap-0.5 shrink-0 text-[12px] font-black text-brand-amber">
                 충전 <ArrowRight className="w-3.5 h-3.5" />
               </span>
             </Link>
@@ -695,7 +695,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
           <Button
             onClick={handleSubmit}
             disabled={loading || myClubs.length === 0 || currentBudget <= 0 || (puzzle.is_recruiting_party ? !comment.trim() : selectedIncludes.length === 0) || (!editingOffer && !offerChatOn && credits !== null && credits < 30)}
-            className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
+            className="w-full h-13 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-[15px] rounded-2xl transition-all active:scale-[0.98]"
           >
             {loading ? (editingOffer ? "수정 중..." : "전송 중...") : (editingOffer ? "수정 저장" : "제안서 보내기")}
           </Button>
@@ -722,11 +722,11 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         }
       }}
     >
-      <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
+      <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl px-5 pb-10">
         <SheetHeader className="text-left pb-2 p-0">
-          <SheetTitle className="text-white text-[17px] font-black">이 구성을 템플릿으로 저장할까요?</SheetTitle>
+          <SheetTitle className="text-foreground text-[17px] font-black">이 구성을 템플릿으로 저장할까요?</SheetTitle>
         </SheetHeader>
-        <p className="text-neutral-400 text-[13px] mb-4">다음 제안 때 한 번에 불러올 수 있어요.</p>
+        <p className="text-muted-foreground text-[13px] mb-4">다음 제안 때 한 번에 불러올 수 있어요.</p>
 
         {/* 이미 저장된 템플릿 (참고용, 접이식) — 중복 저장/한도 인지 */}
         {existingPresets.length > 0 && (
@@ -736,15 +736,15 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
               onClick={() => setShowPresetList((v) => !v)}
               className="w-full flex items-center justify-between px-1 py-0.5"
             >
-              <p className="text-[11px] text-neutral-500 font-bold tracking-wide">
-                내 템플릿 <span className={existingPresets.length >= 10 ? "text-red-400" : "text-neutral-600"}>{existingPresets.length}/10</span>
+              <p className="text-[11px] text-muted-foreground font-bold tracking-wide">
+                내 템플릿 <span className={existingPresets.length >= 10 ? "text-red-400" : "text-muted-foreground"}>{existingPresets.length}/10</span>
               </p>
-              <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${showPresetList ? "rotate-180" : ""}`} />
+              <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showPresetList ? "rotate-180" : ""}`} />
             </button>
             {showPresetList && (
-              <div className="mt-1.5 max-h-32 overflow-y-auto rounded-xl border border-neutral-800 divide-y divide-neutral-800/60">
+              <div className="mt-1.5 max-h-32 overflow-y-auto rounded-xl border border-border divide-y divide-neutral-800/60">
                 {existingPresets.map((p) => (
-                  <div key={p.id} className="px-3 py-2 text-[12px] text-neutral-400 truncate">
+                  <div key={p.id} className="px-3 py-2 text-[12px] text-muted-foreground truncate">
                     {p.name}
                   </div>
                 ))}
@@ -757,20 +757,20 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
         )}
 
         <div className="mb-4 space-y-1.5">
-          <p className="text-[11px] text-neutral-500 font-bold tracking-wide">새 템플릿</p>
+          <p className="text-[11px] text-muted-foreground font-bold tracking-wide">새 템플릿</p>
           <Input
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
             placeholder={puzzle.is_recruiting_party ? "예: 주말 조각 기본 멘트" : "예: 평일 50만원 / 주말 100만원"}
             maxLength={30}
-            className="bg-neutral-900 border-neutral-800 h-11 text-amber-400 font-bold text-[14px]"
+            className="bg-card border-border h-11 text-brand-amber font-bold text-[14px]"
           />
         </div>
 
         <div className="flex gap-3">
           <Button
             variant="outline"
-            className="flex-1 border-neutral-700 text-neutral-400 hover:text-white"
+            className="flex-1 border-border text-muted-foreground hover:text-foreground"
             disabled={savingTemplate}
             onClick={() => {
               setShowSavePrompt(false);
@@ -780,7 +780,7 @@ export function OfferSheet({ puzzle, open, onClose, onSubmitted, editingOffer }:
             아니오
           </Button>
           <Button
-            className="flex-1 bg-white text-black hover:bg-neutral-100 font-black"
+            className="flex-1 bg-inverse text-inverse-foreground hover:opacity-90 font-black"
             disabled={savingTemplate}
             onClick={async () => {
               setSavingTemplate(true);

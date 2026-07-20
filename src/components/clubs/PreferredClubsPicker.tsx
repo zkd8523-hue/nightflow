@@ -157,11 +157,11 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT }: Pro
         <div className="grid grid-cols-3 gap-2 mb-3 w-full">
           {value.map((item, idx) => (
             <div key={idx} className="relative">
-              <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-900">
+              <div className="relative aspect-square rounded-xl overflow-hidden bg-card border border-border">
                 {item.kind === "club" && item.club.thumbnail_url ? (
                   <Image src={thumb(item.club.thumbnail_url, 144)!} alt={item.club.name} fill sizes="120px" unoptimized className="object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/40 text-xl font-black">
+                  <div className="w-full h-full flex items-center justify-center text-foreground/40 text-xl font-black">
                     {(item.kind === "club" ? item.club.name : item.name).charAt(0)}
                   </div>
                 )}
@@ -173,12 +173,12 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT }: Pro
                 <button
                   onClick={() => removeAt(idx)}
                   aria-label="삭제"
-                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 backdrop-blur flex items-center justify-center text-white hover:bg-black"
+                  className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 backdrop-blur flex items-center justify-center text-foreground hover:bg-background"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <div className="mt-1 text-[11px] font-bold text-white truncate">
+              <div className="mt-1 text-[11px] font-bold text-foreground truncate">
                 {item.kind === "club" ? item.club.name : item.name}
               </div>
             </div>
@@ -192,7 +192,7 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT }: Pro
           <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
             {browseAvailable.slice(0, browseVisible).map((c) => (
               <button key={c.id} onClick={() => addClub(c)} className="shrink-0 w-[72px] text-left">
-                <div className="relative w-[72px] h-[72px] rounded-xl overflow-hidden bg-neutral-900">
+                <div className="relative w-[72px] h-[72px] rounded-xl overflow-hidden bg-card">
                   {c.thumbnail_url ? (
                     <Image
                       src={thumb(c.thumbnail_url, 144)!}
@@ -204,18 +204,18 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT }: Pro
                       className="object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white/40 text-lg font-black">
+                    <div className="w-full h-full flex items-center justify-center text-foreground/40 text-lg font-black">
                       {c.name.charAt(0)}
                     </div>
                   )}
                 </div>
-                <div className="mt-1 text-[11px] font-bold text-white truncate">{c.name}</div>
+                <div className="mt-1 text-[11px] font-bold text-foreground truncate">{c.name}</div>
               </button>
             ))}
             {browseVisible < browseAvailable.length && (
               <button
                 onClick={() => setBrowseVisible((v) => v + BROWSE_STEP)}
-                className="shrink-0 w-[72px] h-[72px] rounded-xl border border-dashed border-neutral-700 flex items-center justify-center text-[12px] font-bold text-neutral-400 hover:bg-neutral-900"
+                className="shrink-0 w-[72px] h-[72px] rounded-xl border border-dashed border-border flex items-center justify-center text-[12px] font-bold text-muted-foreground hover:bg-card"
               >
                 더보기
               </button>
@@ -228,18 +228,18 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT }: Pro
       {!atMax && (
         <>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               maxLength={40}
               placeholder="클럽 이름으로 검색"
-              className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl pl-9 pr-3 py-2.5 text-[14px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600"
+              className="w-full bg-background border border-border rounded-xl pl-9 pr-3 py-2.5 text-[14px] text-foreground placeholder-neutral-600 focus:outline-none focus:border-border"
             />
           </div>
 
-          {searching && <p className="mt-2 text-[12px] text-neutral-500">검색 중...</p>}
+          {searching && <p className="mt-2 text-[12px] text-muted-foreground">검색 중...</p>}
 
           {!searching && results.length > 0 && (
             <div className="mt-2 space-y-1 max-h-60 overflow-y-auto">
@@ -247,20 +247,20 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT }: Pro
                 <button
                   key={c.id}
                   onClick={() => addClub(c)}
-                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-900 text-left"
+                  className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-card text-left"
                 >
-                  <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-neutral-900 shrink-0">
+                  <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-card shrink-0">
                     {c.thumbnail_url ? (
                       <Image src={thumb(c.thumbnail_url, 96)!} alt={c.name} fill sizes="40px" unoptimized className="object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white/40 text-sm font-black">
+                      <div className="w-full h-full flex items-center justify-center text-foreground/40 text-sm font-black">
                         {c.name.charAt(0)}
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-bold text-white truncate">{c.name}</div>
-                    <div className="text-[12px] text-neutral-500">{c.area}</div>
+                    <div className="text-[14px] font-bold text-foreground truncate">{c.name}</div>
+                    <div className="text-[12px] text-muted-foreground">{c.area}</div>
                   </div>
                 </button>
               ))}
@@ -273,10 +273,10 @@ export function PreferredClubsPicker({ value, onChange, max = MAX_DEFAULT }: Pro
               onClick={() => addWish(q)}
               className="mt-2 w-full flex items-center gap-2 p-2.5 rounded-lg border border-dashed border-amber-500/40 bg-amber-500/5 hover:bg-amber-500/10 text-left"
             >
-              <span className="text-[13px] text-amber-200 flex-1">
+              <span className="text-[13px] text-brand-amber flex-1">
                 <span className="font-bold">&lsquo;{q}&rsquo;</span>가 안보이나요? 추가요청하기
               </span>
-              <Plus className="w-4 h-4 text-amber-400 shrink-0" />
+              <Plus className="w-4 h-4 text-brand-amber shrink-0" />
             </button>
           )}
         </>

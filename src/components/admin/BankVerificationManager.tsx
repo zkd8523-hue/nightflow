@@ -115,7 +115,7 @@ export function BankVerificationManager({
     const getStatusBadge = (status: string) => {
         if (status === "verified") {
             return (
-                <Badge className="bg-green-500/10 text-green-500 border-green-500/30 text-xs font-bold">
+                <Badge className="bg-green-500/10 text-money border-green-500/30 text-xs font-bold">
                     <CheckCircle className="w-3 h-3 mr-1" /> 승인
                 </Badge>
             );
@@ -128,7 +128,7 @@ export function BankVerificationManager({
             );
         }
         return (
-            <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-xs font-bold">
+            <Badge className="bg-amber-500/10 text-brand-amber border-amber-500/30 text-xs font-bold">
                 <ShieldAlert className="w-3 h-3 mr-1" /> 대기
             </Badge>
         );
@@ -138,59 +138,59 @@ export function BankVerificationManager({
         <div className="space-y-8">
             {/* 검증 대기 통계 */}
             <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5">
-                    <p className="text-neutral-500 text-sm font-bold mb-1">검증 대기</p>
-                    <p className="text-3xl font-black text-amber-500">{pendingVerifications.length}건</p>
+                <div className="bg-card border border-border rounded-2xl p-5">
+                    <p className="text-muted-foreground text-sm font-bold mb-1">검증 대기</p>
+                    <p className="text-3xl font-black text-brand-amber">{pendingVerifications.length}건</p>
                 </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5">
-                    <p className="text-neutral-500 text-sm font-bold mb-1">처리 완료</p>
-                    <p className="text-3xl font-black text-green-500">{recentVerifications.length}건</p>
+                <div className="bg-card border border-border rounded-2xl p-5">
+                    <p className="text-muted-foreground text-sm font-bold mb-1">처리 완료</p>
+                    <p className="text-3xl font-black text-money">{recentVerifications.length}건</p>
                 </div>
             </div>
 
             {/* 검증 대기 목록 */}
             <div>
-                <h2 className="text-xl font-black text-white mb-4">검증 대기 중</h2>
+                <h2 className="text-xl font-black text-foreground mb-4">검증 대기 중</h2>
                 {pendingVerifications.length === 0 ? (
-                    <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-12 text-center">
-                        <p className="text-neutral-500">검증 대기 중인 요청이 없습니다</p>
+                    <div className="bg-card border border-border rounded-2xl p-12 text-center">
+                        <p className="text-muted-foreground">검증 대기 중인 요청이 없습니다</p>
                     </div>
                 ) : (
-                    <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
+                    <div className="bg-card border border-border rounded-2xl overflow-hidden">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-neutral-800">
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">파트너</th>
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">예금주</th>
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">은행</th>
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">계좌번호</th>
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">요청일</th>
-                                    <th className="text-center p-4 text-sm font-bold text-neutral-400">액션</th>
+                                <tr className="border-b border-border">
+                                    <th className="text-left p-4 text-sm font-bold text-muted-foreground">파트너</th>
+                                    <th className="text-left p-4 text-sm font-bold text-muted-foreground">예금주</th>
+                                    <th className="text-left p-4 text-sm font-bold text-muted-foreground">은행</th>
+                                    <th className="text-left p-4 text-sm font-bold text-muted-foreground">계좌번호</th>
+                                    <th className="text-left p-4 text-sm font-bold text-muted-foreground">요청일</th>
+                                    <th className="text-center p-4 text-sm font-bold text-muted-foreground">액션</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {pendingVerifications.map((v) => (
                                     <tr
                                         key={v.id}
-                                        className="border-b border-neutral-800/50 hover:bg-neutral-900/50 transition-colors"
+                                        className="border-b border-border/50 hover:bg-card/50 transition-colors"
                                     >
                                         <td className="p-4">
                                             <div>
-                                                <p className="font-bold text-white">{v.md?.name || "-"}</p>
-                                                <p className="text-xs text-neutral-500">{v.md?.phone || v.md?.email || "-"}</p>
+                                                <p className="font-bold text-foreground">{v.md?.name || "-"}</p>
+                                                <p className="text-xs text-muted-foreground">{v.md?.phone || v.md?.email || "-"}</p>
                                             </div>
                                         </td>
                                         <td className="p-4">
-                                            <span className="text-sm font-bold text-white">{v.account_holder}</span>
+                                            <span className="text-sm font-bold text-foreground">{v.account_holder}</span>
                                         </td>
                                         <td className="p-4">
-                                            <span className="text-sm font-medium text-white">{v.bank_name}</span>
+                                            <span className="text-sm font-medium text-foreground">{v.bank_name}</span>
                                         </td>
                                         <td className="p-4">
-                                            <span className="text-sm font-mono text-neutral-400">{v.bank_account}</span>
+                                            <span className="text-sm font-mono text-muted-foreground">{v.bank_account}</span>
                                         </td>
                                         <td className="p-4">
-                                            <span className="text-xs text-neutral-500">
+                                            <span className="text-xs text-muted-foreground">
                                                 {dayjs(v.created_at).format("YYYY-MM-DD HH:mm")}
                                             </span>
                                         </td>
@@ -214,45 +214,45 @@ export function BankVerificationManager({
 
             {/* 최근 처리 이력 */}
             <div>
-                <h2 className="text-xl font-black text-white mb-4">최근 처리 이력</h2>
+                <h2 className="text-xl font-black text-foreground mb-4">최근 처리 이력</h2>
                 {recentVerifications.length === 0 ? (
-                    <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-12 text-center">
-                        <p className="text-neutral-500">처리 이력이 없습니다</p>
+                    <div className="bg-card border border-border rounded-2xl p-12 text-center">
+                        <p className="text-muted-foreground">처리 이력이 없습니다</p>
                     </div>
                 ) : (
-                    <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
+                    <div className="bg-card border border-border rounded-2xl overflow-hidden">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-neutral-800">
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">파트너</th>
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">은행 정보</th>
-                                    <th className="text-center p-4 text-sm font-bold text-neutral-400">상태</th>
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">처리자</th>
-                                    <th className="text-left p-4 text-sm font-bold text-neutral-400">처리일</th>
+                                <tr className="border-b border-border">
+                                    <th className="text-left p-4 text-sm font-bold text-muted-foreground">파트너</th>
+                                    <th className="text-left p-4 text-sm font-bold text-muted-foreground">은행 정보</th>
+                                    <th className="text-center p-4 text-sm font-bold text-muted-foreground">상태</th>
+                                    <th className="text-left p-4 text-sm font-bold text-muted-foreground">처리자</th>
+                                    <th className="text-left p-4 text-sm font-bold text-muted-foreground">처리일</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {recentVerifications.map((v) => (
                                     <tr
                                         key={v.id}
-                                        className="border-b border-neutral-800/50 hover:bg-neutral-900/50 transition-colors"
+                                        className="border-b border-border/50 hover:bg-card/50 transition-colors"
                                     >
                                         <td className="p-4">
-                                            <span className="font-bold text-white">{v.md?.name || "-"}</span>
+                                            <span className="font-bold text-foreground">{v.md?.name || "-"}</span>
                                         </td>
                                         <td className="p-4">
                                             <div>
-                                                <p className="text-sm text-white">{v.bank_name}</p>
-                                                <p className="text-xs text-neutral-500 font-mono">{v.bank_account}</p>
+                                                <p className="text-sm text-foreground">{v.bank_name}</p>
+                                                <p className="text-xs text-muted-foreground font-mono">{v.bank_account}</p>
                                             </div>
                                         </td>
                                         <td className="p-4 text-center">{getStatusBadge(v.verification_status)}</td>
                                         <td className="p-4">
-                                            <span className="text-sm text-neutral-400">{v.verifier?.name || "-"}</span>
+                                            <span className="text-sm text-muted-foreground">{v.verifier?.name || "-"}</span>
                                         </td>
                                         <td className="p-4">
                                             <div>
-                                                <p className="text-xs text-neutral-400">
+                                                <p className="text-xs text-muted-foreground">
                                                     {v.verified_at ? dayjs(v.verified_at).format("YYYY-MM-DD HH:mm") : "-"}
                                                 </p>
                                                 {v.rejection_reason && (
@@ -270,38 +270,38 @@ export function BankVerificationManager({
 
             {/* 검증 처리 Sheet */}
             <Sheet open={!!selectedVerification} onOpenChange={(open) => !open && setSelectedVerification(null)}>
-                <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl">
+                <SheetContent side="bottom" className="h-auto bg-card border-border rounded-t-3xl">
                     <SheetHeader className="text-left">
-                        <SheetTitle className="text-white font-black text-xl">계좌 검증</SheetTitle>
-                        <SheetDescription className="text-neutral-400">
+                        <SheetTitle className="text-foreground font-black text-xl">계좌 검증</SheetTitle>
+                        <SheetDescription className="text-muted-foreground">
                             {selectedVerification?.md?.name}님의 계좌 정보를 확인하고 승인/거부합니다
                         </SheetDescription>
                     </SheetHeader>
                     {selectedVerification && (
                         <div className="space-y-4 mt-6">
-                            <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
+                            <div className="bg-card/50 rounded-2xl p-4 space-y-3 border border-border/50">
                                 <div className="flex justify-between items-center">
-                                    <span className="text-neutral-500 text-sm font-bold">파트너</span>
-                                    <span className="font-bold text-white">{selectedVerification.md?.name}</span>
+                                    <span className="text-muted-foreground text-sm font-bold">파트너</span>
+                                    <span className="font-bold text-foreground">{selectedVerification.md?.name}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-neutral-500 text-sm font-bold">예금주명</span>
-                                    <span className="font-bold text-white">{selectedVerification.account_holder}</span>
+                                    <span className="text-muted-foreground text-sm font-bold">예금주명</span>
+                                    <span className="font-bold text-foreground">{selectedVerification.account_holder}</span>
                                 </div>
-                                <div className="h-px bg-neutral-800" />
+                                <div className="h-px bg-muted" />
                                 <div className="flex justify-between items-center">
-                                    <span className="text-neutral-500 text-sm font-bold">은행</span>
-                                    <span className="font-bold text-white">{selectedVerification.bank_name}</span>
+                                    <span className="text-muted-foreground text-sm font-bold">은행</span>
+                                    <span className="font-bold text-foreground">{selectedVerification.bank_name}</span>
                                 </div>
                                 <div className="flex justify-between items-center">
-                                    <span className="text-neutral-500 text-sm font-bold">계좌번호</span>
-                                    <span className="font-mono text-white">{selectedVerification.bank_account}</span>
+                                    <span className="text-muted-foreground text-sm font-bold">계좌번호</span>
+                                    <span className="font-mono text-foreground">{selectedVerification.bank_account}</span>
                                 </div>
                             </div>
 
                             <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
-                                <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                                <div className="text-[13px] text-amber-400 font-medium leading-relaxed">
+                                <AlertTriangle className="w-5 h-5 text-brand-amber flex-shrink-0 mt-0.5" />
+                                <div className="text-[13px] text-brand-amber font-medium leading-relaxed">
                                     <p className="font-bold mb-1">검증 시 확인 사항:</p>
                                     <ul className="list-disc list-inside space-y-0.5">
                                         <li>예금주명이 파트너 본인 이름과 일치하는지 확인</li>
@@ -312,12 +312,12 @@ export function BankVerificationManager({
                             </div>
 
                             <div className="space-y-1">
-                                <p className="text-sm font-bold text-neutral-400">거부 사유 (거부 시 필수)</p>
+                                <p className="text-sm font-bold text-muted-foreground">거부 사유 (거부 시 필수)</p>
                                 <Textarea
                                     placeholder="예: 예금주명 불일치, 계좌번호 오류 등"
                                     value={rejectionReason}
                                     onChange={(e) => setRejectionReason(e.target.value)}
-                                    className="bg-neutral-900 border-neutral-800 text-white min-h-[80px]"
+                                    className="bg-card border-border text-foreground min-h-[80px]"
                                 />
                             </div>
 

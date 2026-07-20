@@ -94,15 +94,15 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
 
   const getButtonStyle = () => {
     if (!isActive || loading) {
-      return "bg-neutral-800 text-neutral-500 shadow-none cursor-not-allowed";
+      return "bg-muted text-muted-foreground shadow-none cursor-not-allowed";
     }
     if (isHighestBidder) {
-      return "bg-green-500/10 text-green-400 shadow-none border border-green-500/20 cursor-default";
+      return "bg-green-500/10 text-money shadow-none border border-green-500/20 cursor-default";
     }
     if (bidAmount < minBid) {
-      return "bg-neutral-800 text-neutral-500 shadow-none cursor-not-allowed";
+      return "bg-muted text-muted-foreground shadow-none cursor-not-allowed";
     }
-    return "bg-white hover:bg-neutral-200 text-black shadow-xl";
+    return "bg-inverse hover:opacity-90 text-inverse-foreground shadow-xl";
   };
 
   const handlePresetClick = (amount: number) => {
@@ -209,7 +209,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
 
   return (
     <>
-      <Card className="p-3 space-y-2.5 bg-[#1C1C1E] border-neutral-800/50">
+      <Card className="p-3 space-y-2.5 bg-card border-border/50">
         {showDirectInput && (
           <Input
             ref={inputRef}
@@ -222,7 +222,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               setBidAmount(parseInt(raw) || 0);
             }}
             onFocus={handleInputFocus}
-            className="bg-neutral-900/80 border-neutral-800 h-11 text-white font-bold focus:ring-neutral-500 text-sm w-full"
+            className="bg-card/80 border-border h-11 text-foreground font-bold focus:ring-neutral-500 text-sm w-full"
           />
         )}
 
@@ -248,7 +248,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
                 });
                 router.push(`/login?redirect=/auctions/${auction.id}`);
               }}
-              className="w-full h-12 text-base font-black rounded-xl bg-white text-black hover:bg-neutral-200 shadow-xl animate-pulse"
+              className="w-full h-12 text-base font-black rounded-xl bg-inverse text-inverse-foreground hover:opacity-90 shadow-xl animate-pulse"
             >
               로그인하고 입찰하기
             </Button>
@@ -268,7 +268,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               {getButtonContent()}
             </Button>
           )}
-          <div className="flex items-center justify-center gap-1.5 text-[12px] text-green-400 font-semibold">
+          <div className="flex items-center justify-center gap-1.5 text-[12px] text-money font-semibold">
             <ShieldCheck className="w-3.5 h-3.5" />
             결제 없이 입찰 · 낙찰되면 파트너가 안내해요
           </div>
@@ -281,7 +281,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               setShowDirectInput(true);
               setTimeout(() => inputRef.current?.focus(), 50);
             }}
-            className="w-full text-center text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors py-1"
+            className="w-full text-center text-[11px] text-muted-foreground hover:text-foreground/80 transition-colors py-1"
           >
             다른 금액으로 입찰 ∨
           </button>
@@ -291,23 +291,23 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
 
       {/* 확인 시트 */}
       <Sheet open={showConfirm} onOpenChange={setShowConfirm}>
-        <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl">
+        <SheetContent side="bottom" className="h-auto bg-card border-border rounded-t-3xl">
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">
+            <SheetTitle className="text-foreground font-black text-xl">
               입찰 확인
             </SheetTitle>
           </SheetHeader>
           <div className="space-y-4 mt-6">
-            <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-2 border border-neutral-800/50">
-              <p className="text-sm text-neutral-400 font-bold truncate">{auction.title}</p>
-              <p className="font-black text-4xl text-white tracking-tight">
+            <div className="bg-card/50 rounded-2xl p-4 space-y-2 border border-border/50">
+              <p className="text-sm text-muted-foreground font-bold truncate">{auction.title}</p>
+              <p className="font-black text-4xl text-foreground tracking-tight">
                 {formatPrice(bidAmount)}
               </p>
-              <div className="h-px bg-neutral-800/30 my-2" />
+              <div className="h-px bg-muted/30 my-2" />
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-neutral-400 shrink-0" />
-                <p className="text-[12px] text-neutral-400 font-medium">
-                  낙찰되면 <span className="text-white font-bold">안내 문자</span>가 가요 · 파트너에게 연락하면 끝!
+                <ShieldCheck className="w-4 h-4 text-muted-foreground shrink-0" />
+                <p className="text-[12px] text-muted-foreground font-medium">
+                  낙찰되면 <span className="text-foreground font-bold">안내 문자</span>가 가요 · 파트너에게 연락하면 끝!
                 </p>
               </div>
             </div>
@@ -319,16 +319,16 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               const isNearEnd = getRemainingSeconds(auction) <= autoExtendMin * 60;
               if (isNearEnd) {
                 return extensionsLeft > 0 ? (
-                  <div className="flex items-center gap-2 bg-neutral-900/50 border border-neutral-800/50 rounded-xl p-3">
-                    <Timer className="w-4 h-4 text-neutral-400 shrink-0" />
-                    <p className="text-[12px] text-neutral-400 font-bold">
+                  <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-xl p-3">
+                    <Timer className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <p className="text-[12px] text-muted-foreground font-bold">
                       이 입찰로 경매가 {autoExtendMin}분 연장됩니다 ({extensionsLeft}회 남음)
                     </p>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 bg-neutral-900/50 border border-neutral-800/50 rounded-xl p-3">
-                    <Timer className="w-4 h-4 text-neutral-400 shrink-0" />
-                    <p className="text-[12px] text-neutral-300 font-bold">
+                  <div className="flex items-center gap-2 bg-card/50 border border-border/50 rounded-xl p-3">
+                    <Timer className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <p className="text-[12px] text-foreground/80 font-bold">
                       연장 소진! 더 이상 연장되지 않습니다
                     </p>
                   </div>
@@ -337,7 +337,7 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               return null;
             })()}
 
-            <p className="text-[11px] text-neutral-500 text-center">
+            <p className="text-[11px] text-muted-foreground text-center">
               최종 낙찰 후 미연락·노쇼 시 이용이 제한될 수 있습니다.
             </p>
 
@@ -345,19 +345,19 @@ export const BidPanel = memo(forwardRef<BidPanelRef, BidPanelProps>(function Bid
               <Button
                 variant="outline"
                 onClick={() => setShowConfirm(false)}
-                className="h-14 rounded-2xl border-neutral-800 text-neutral-400 font-bold"
+                className="h-14 rounded-2xl border-border text-muted-foreground font-bold"
               >
                 취소
               </Button>
               <Button
                 onClick={handleBidSubmit}
                 disabled={loading}
-                className="h-14 rounded-2xl font-black text-lg text-black bg-white hover:bg-neutral-200"
+                className="h-14 rounded-2xl font-black text-lg text-inverse-foreground bg-inverse hover:opacity-90"
               >
                 {loading ? "처리 중..." : "입찰하기"}
               </Button>
             </div>
-            <p className="text-center text-[12px] text-neutral-500 font-medium mt-3">
+            <p className="text-center text-[12px] text-muted-foreground font-medium mt-3">
               🛡 결제 없이 입찰 · 낙찰 시 파트너가 안내
             </p>
           </div>

@@ -28,22 +28,22 @@ export default function JaGuestsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/ja" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/ja" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">ソウルクラブ ゲストリスト</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">ソウルのトップクラブの入場料をスキップ。本物のMDからの週次ゲストディール — 無料入場、割引入場、無料ドリンクチケット。韓国語不要、ブローカーなし。</p>
+          <p className="text-[14px] text-muted-foreground leading-relaxed">ソウルのトップクラブの入場料をスキップ。本物のMDからの週次ゲストディール — 無料入場、割引入場、無料ドリンクチケット。韓国語不要、ブローカーなし。</p>
         </header>
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">ソウルクラブ ゲストリストとは？</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">韓国クラブMD（プロモーター）が毎週ゲストリストを運営 — 特定時間まで無料または割引入場。地元民はこの方法で₩20,000–30,000の入場料を回避。難点：従来はInstagramかKakaoTalkで韓国MDに連絡が必要。</p>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">NightFlowなら江南・弘大・梨泰院クラブの週次ゲストディールを一箇所に集約 — 日本語インターフェース、各MDへのワンタップコピペメッセージ。</p>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">韓国クラブMD（プロモーター）が毎週ゲストリストを運営 — 特定時間まで無料または割引入場。地元民はこの方法で₩20,000–30,000の入場料を回避。難点：従来はInstagramかKakaoTalkで韓国MDに連絡が必要。</p>
+          <p className="text-[13px] text-muted-foreground leading-relaxed">NightFlowなら江南・弘大・梨泰院クラブの週次ゲストディールを一箇所に集約 — 日本語インターフェース、各MDへのワンタップコピペメッセージ。</p>
         </section>
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">獲得できるもの</h2>
-          <ul className="space-y-2 text-[13px] text-neutral-300">
+          <ul className="space-y-2 text-[13px] text-foreground/80">
             <li>• 特定時間前の無料入場（通常深夜12時まで）</li>
             <li>• 無料時間後の入場料割引</li>
             <li>• 一部クラブで無料ドリンクチケット</li>
@@ -53,7 +53,7 @@ export default function JaGuestsPage() {
         </section>
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">ソウル ゲストリストの使い方</h2>
-          <ol className="space-y-2 text-[13px] text-neutral-300 list-decimal pl-5">
+          <ol className="space-y-2 text-[13px] text-foreground/80 list-decimal pl-5">
             <li>NightFlowで週次ゲストディールを閲覧</li>
             <li>クラブを選ぶ — 江南、弘大、または梨泰院</li>
             <li>「メッセージコピー」をタップ — 事前作成された日本語/英語リクエスト</li>
@@ -63,7 +63,7 @@ export default function JaGuestsPage() {
           </ol>
         </section>
         <section className="text-center pt-4 space-y-3">
-          <Link href="/ja/clubs" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">今週のゲストディールを見る →</Link>
+          <Link href="/ja/clubs" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">今週のゲストディールを見る →</Link>
           <Link href="/ja/faq" className="text-[12px] text-blue-400 hover:underline">FAQを見る →</Link>
         </section>
       </div>

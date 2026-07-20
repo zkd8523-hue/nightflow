@@ -117,18 +117,18 @@ export function ChatReplySheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 max-h-[90vh] flex flex-col"
+        className="bg-background border-border rounded-t-3xl p-0 max-h-[90vh] flex flex-col"
       >
-        <SheetHeader className="px-4 pt-4 pb-2 border-b border-neutral-800 shrink-0">
-          <SheetTitle className="text-white text-[15px] text-left">
+        <SheetHeader className="px-4 pt-4 pb-2 border-b border-border shrink-0">
+          <SheetTitle className="text-foreground text-[15px] text-left">
             답글
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto bg-[#0A0A0A]">
+        <div className="flex-1 overflow-y-auto bg-background">
           {/* A: 부모 메시지 강조 박스 — 살짝 보랏빛 배경 + 두꺼운 하단 보더 */}
           {parent && (
-            <div className="bg-[#1A1424]/40 border-b-4 border-[#2D1B3D]">
+            <div className="bg-muted/50 border-b-4 border-border dark:bg-[#1A1424]/40 dark:border-[#2D1B3D]">
               <ChatMessageItem
                 message={parent}
                 currentUserId={user?.id}
@@ -144,20 +144,20 @@ export function ChatReplySheet({
 
           {/* B: 답글 N개 헤더 — 명확한 분리 */}
           {!loading && replies.length > 0 && (
-            <div className="px-4 pt-3 pb-1 text-[13px] font-bold text-neutral-400">
+            <div className="px-4 pt-3 pb-1 text-[13px] font-bold text-muted-foreground">
               답글 {replies.length}개
             </div>
           )}
 
           {/* 답글 목록 */}
           {loading ? (
-            <div className="py-10 text-center text-[13px] text-neutral-500">
+            <div className="py-10 text-center text-[13px] text-muted-foreground">
               불러오는 중...
             </div>
           ) : replies.length === 0 ? (
             <div className="py-10 text-center">
-              <p className="text-[13px] text-neutral-400">아직 답글이 없어요</p>
-              <p className="text-[11px] text-neutral-600 mt-1">
+              <p className="text-[13px] text-muted-foreground">아직 답글이 없어요</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
                 첫 답글을 남겨보세요!
               </p>
             </div>
@@ -186,11 +186,11 @@ export function ChatReplySheet({
         </div>
 
         {/* 입력바 */}
-        <div className="border-t border-neutral-800 bg-[#0A0A0A] px-3 py-2.5 shrink-0">
+        <div className="border-t border-border bg-background px-3 py-2.5 shrink-0">
           {!user ? (
             <button
               onClick={() => router.push(`/login?redirect=/chat`)}
-              className="w-full py-3 rounded-full text-[14px] font-black bg-white text-black"
+              className="w-full py-3 rounded-full text-[14px] font-black bg-inverse text-inverse-foreground"
             >
               로그인하고 답글 달기
             </button>
@@ -212,12 +212,12 @@ export function ChatReplySheet({
                 placeholder="답글을 입력하세요"
                 rows={1}
                 maxLength={MAX_LEN}
-                className="flex-1 bg-neutral-900 border border-neutral-800 rounded-2xl px-3 py-2 text-white text-[14px] placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600 resize-none max-h-32"
+                className="flex-1 bg-card border border-border rounded-2xl px-3 py-2 text-foreground text-[14px] placeholder:text-muted-foreground focus:outline-none focus:border-border resize-none max-h-32"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || sending}
-                className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
+                className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-inverse text-inverse-foreground disabled:bg-muted disabled:text-muted-foreground transition-colors"
                 aria-label="전송"
               >
                 <Send className="w-4 h-4" />

@@ -165,12 +165,12 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
     const { remaining: contactRemaining } = useCountdown(showContactTimer ? auction.contact_deadline : null);
 
     return (
-        <Card className="overflow-hidden bg-[#1C1C1E] border-neutral-800/50 hover:border-neutral-700 transition-all p-3 cursor-pointer active:scale-[0.98]" onClick={handleCardClick}>
+        <Card className="overflow-hidden bg-card border-border/50 hover:border-border transition-all p-3 cursor-pointer active:scale-[0.98]" onClick={handleCardClick}>
             <div className="flex gap-3">
                 {/* 조각은 날짜별 그룹 헤더 아래에 묶여 표시되므로 카드 안 썸네일/날짜는 생략(중복).
                     일반 경매·핫딜만 클럽 썸네일 노출. */}
                 {!isShare && (
-                    <Link href={`/auctions/${auction.id}`} className="w-16 h-16 rounded-lg bg-neutral-900 overflow-hidden flex-shrink-0 relative border border-neutral-800">
+                    <Link href={`/auctions/${auction.id}`} className="w-16 h-16 rounded-lg bg-card overflow-hidden flex-shrink-0 relative border border-border">
                         <AuctionImage
                             auctionThumbnail={auction.thumbnail_url}
                             clubThumbnail={club?.thumbnail_url}
@@ -188,15 +188,15 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                 {/* 정산 상태 배지 (종료된 경매만 표시) */}
                                 {auction.status === "won" ? null
                                 : auction.status === "confirmed" ? (
-                                    <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-green-500/20 text-green-400 border-green-500/30">
+                                    <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-green-500/20 text-money border-green-500/30">
                                         ✅ 판매완료
                                     </Badge>
                                 ) : auction.status === "unsold" ? (
-                                    <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-neutral-800 text-neutral-500 border-neutral-700">
+                                    <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-muted text-muted-foreground border-border">
                                         {isInstant ? "미판매" : "유찰"}
                                     </Badge>
                                 ) : auction.status === "cancelled" ? (
-                                    <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-neutral-800 text-neutral-600 border-neutral-700">
+                                    <Badge className="text-[9px] px-1.5 py-0 h-4 font-bold bg-muted text-muted-foreground border-border">
                                         취소
                                     </Badge>
                                 ) : null}
@@ -213,26 +213,26 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                 </Link>
                             )}
                             <Link href={`/auctions/${auction.id}`} className="block">
-                                <h3 className="font-black text-[18px] text-white truncate leading-tight">
+                                <h3 className="font-black text-[18px] text-foreground truncate leading-tight">
                                     {isShare ? (auction.table_info || "조각") : club?.name}
                                 </h3>
                             </Link>
                         </div>
                         <div className="flex items-center -mr-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-500 hover:text-green-500" onClick={handleShare} title="스토리에 공유">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-money" onClick={handleShare} title="스토리에 공유">
                                 <Share2 className="w-[16px] h-[16px]" />
                             </Button>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-500">
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
                                         <MoreVertical className="w-[18px] h-[18px]" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-[#2C2C2E] border-neutral-700 min-w-[140px]">
+                                <DropdownMenuContent align="end" className="bg-muted border-border min-w-[140px]">
                                     {!isEnded && auction.bid_count === 0 && (auction.chat_interest_count ?? 0) === 0 && (
                                         <DropdownMenuItem
                                             onClick={() => router.push(`/md/auctions/${auction.id}/edit`)}
-                                            className="text-white focus:text-white focus:bg-neutral-700"
+                                            className="text-foreground focus:text-foreground focus:bg-muted"
                                         >
                                             <Edit2 className="w-4 h-4 mr-2" />
                                             수정
@@ -254,17 +254,17 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                         <div className="min-w-0">
                             {isShare ? (
                                 <>
-                                    <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">인당</div>
+                                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-0.5">인당</div>
                                     <div className="flex items-baseline gap-1">
-                                        <span className="text-[20px] font-black leading-none text-white">
+                                        <span className="text-[20px] font-black leading-none text-foreground">
                                             {formatNumber(auction.price_per_seat ?? 0)}
                                         </span>
-                                        <span className="text-[12px] font-bold text-neutral-400">원</span>
+                                        <span className="text-[12px] font-bold text-muted-foreground">원</span>
                                     </div>
                                 </>
                             ) : (
                                 <>
-                                    <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
+                                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-0.5">
                                         {isActive
                                           ? (isInstant ? "판매가" : "현재가")
                                           : ["won", "confirmed"].includes(auction.status)
@@ -273,10 +273,10 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                         }
                                     </div>
                                     <div className="flex items-baseline gap-1">
-                                        <span className={`text-[20px] font-black leading-none ${auction.status === "unsold" || auction.status === "cancelled" ? "text-neutral-600" : "text-white"}`}>
+                                        <span className={`text-[20px] font-black leading-none ${auction.status === "unsold" || auction.status === "cancelled" ? "text-muted-foreground" : "text-foreground"}`}>
                                             {formatNumber(currentPrice)}
                                         </span>
-                                        <span className="text-[12px] font-bold text-neutral-400">원</span>
+                                        <span className="text-[12px] font-bold text-muted-foreground">원</span>
                                     </div>
                                 </>
                             )}
@@ -287,34 +287,34 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                 /* 현황 · 확정 인원 · 하트를 한 줄로 가로 배치 (컴팩트) */
                                 <div className="flex items-end gap-3">
                                     <div>
-                                        <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">현황</div>
-                                        <div className="text-[13px] text-neutral-300 font-bold leading-none">{(auction.seats_claimed ?? 0) + externalCount}/{totalSeats}명</div>
+                                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-0.5">현황</div>
+                                        <div className="text-[13px] text-foreground/80 font-bold leading-none">{(auction.seats_claimed ?? 0) + externalCount}/{totalSeats}명</div>
                                     </div>
                                     <div>
-                                        <div className="text-[10px] text-neutral-500 font-bold mb-0.5">확정 인원</div>
+                                        <div className="text-[10px] text-muted-foreground font-bold mb-0.5">확정 인원</div>
                                         <div className="flex items-center gap-1.5 justify-end">
                                             <button
                                                 type="button"
                                                 disabled={externalCount <= 0 || savingExternal}
                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateExternalCount(Math.max(0, externalCount - 1)); }}
-                                                className="w-6 h-6 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                className="w-6 h-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                             >
-                                                <Minus className="w-3 h-3 text-white" />
+                                                <Minus className="w-3 h-3 text-foreground" />
                                             </button>
-                                            <span className={`text-[13px] font-black w-4 text-center ${savingExternal ? "text-neutral-500" : "text-white"}`}>
+                                            <span className={`text-[13px] font-black w-4 text-center ${savingExternal ? "text-muted-foreground" : "text-foreground"}`}>
                                                 {externalCount}
                                             </span>
                                             <button
                                                 type="button"
                                                 disabled={externalCount + (auction.seats_claimed ?? 0) >= totalSeats || savingExternal}
                                                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); updateExternalCount(externalCount + 1); }}
-                                                className="w-6 h-6 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                                className="w-6 h-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                             >
-                                                <Plus className="w-3 h-3 text-white" />
+                                                <Plus className="w-3 h-3 text-foreground" />
                                             </button>
                                         </div>
                                     </div>
-                                    <span className="text-[11px] text-neutral-500 font-medium flex items-center gap-0.5 pb-0.5 shrink-0">
+                                    <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-0.5 pb-0.5 shrink-0">
                                         <Heart className="w-3 h-3 text-red-500 fill-red-500" /> {favoriteCount}
                                     </span>
                                 </div>
@@ -322,21 +322,21 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                 <>
                                     {auction.bid_count > 0 && !isInstant && (
                                         <>
-                                            <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-0.5">
+                                            <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-0.5">
                                                 현황
                                             </div>
-                                            <div className="text-[13px] text-neutral-300 font-bold">
+                                            <div className="text-[13px] text-foreground/80 font-bold">
                                                 입찰 {auction.bid_count}회
                                             </div>
                                         </>
                                     )}
                                     <div className="flex items-center justify-end gap-2 mt-0.5">
-                                        <span className="text-[11px] text-neutral-500 font-medium flex items-center gap-0.5">
+                                        <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-0.5">
                                             <Heart className="w-3 h-3 text-red-500 fill-red-500" /> {favoriteCount}
                                         </span>
                                     </div>
                                     {isActive && !isInstant && topBidder && (
-                                        <div className="text-[12px] font-bold mt-0.5 text-green-500">
+                                        <div className="text-[12px] font-bold mt-0.5 text-money">
                                             👤 {topBidder.bidder_name}
                                         </div>
                                     )}
@@ -348,15 +348,15 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
             </div>
 
             {/* Footer Actions */}
-            <div className="mt-2 pt-2 border-t border-neutral-800/60 flex items-center justify-between">
+            <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     {isActive && !isShare && (
-                        <div className="flex items-center gap-2 bg-neutral-900/50 px-3 py-1.5 rounded-full border border-neutral-800/50">
+                        <div className="flex items-center gap-2 bg-card/50 px-3 py-1.5 rounded-full border border-border/50">
                             <InlineTimer endTime={endTime} status="active" />
                         </div>
                     )}
                     {isExpired && (
-                        <span className="text-[12px] text-neutral-500 font-bold">종료</span>
+                        <span className="text-[12px] text-muted-foreground font-bold">종료</span>
                     )}
                     {isScheduled && !isActive && (
                         <div className="text-[12px] text-blue-400 font-bold">
@@ -385,7 +385,7 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                     )}
                     {auction.status === "unsold" && (
                         <Link href={`/md/auctions/new?repost=${auction.id}`}>
-                            <Button size="sm" variant="outline" className="h-8 px-3 rounded-lg border-amber-500/30 text-amber-400 hover:bg-amber-950/30 hover:border-amber-400">
+                            <Button size="sm" variant="outline" className="h-8 px-3 rounded-lg border-amber-500/30 text-brand-amber hover:bg-amber-950/30 hover:border-amber-400">
                                 <RotateCcw className="w-3.5 h-3.5 mr-1" />
                                 재등록
                             </Button>
@@ -397,12 +397,12 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
 
             {/* 판매완료 — 경로 선택 Sheet */}
             <Sheet open={showCompleteConfirm} onOpenChange={(o) => { setShowCompleteConfirm(o); if (!o) setSaleChannel(null); }}>
-                <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-12 outline-none">
+                <SheetContent side="bottom" className="h-auto bg-card border-border rounded-t-[32px] p-6 pb-12 outline-none">
                   <div className="flex flex-col">
-                    <div className="w-10 h-1 bg-neutral-700 rounded-full mx-auto mb-3" />
+                    <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-3" />
                     <SheetHeader className="text-left p-0 gap-0.5 mb-3">
-                        <SheetTitle className="text-white font-black text-xl">판매완료</SheetTitle>
-                        <SheetDescription className="text-neutral-500 text-sm">판매 경로를 선택해주세요</SheetDescription>
+                        <SheetTitle className="text-foreground font-black text-xl">판매완료</SheetTitle>
+                        <SheetDescription className="text-muted-foreground text-sm">판매 경로를 선택해주세요</SheetDescription>
                     </SheetHeader>
                     {/* 경로 선택 */}
                     <div className="space-y-2 mb-3">
@@ -416,8 +416,8 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                                 onClick={() => setSaleChannel(value)}
                                 className={`w-full h-14 rounded-2xl font-bold text-base transition-all text-left px-5 border ${
                                     saleChannel === value
-                                        ? "bg-white text-black border-white"
-                                        : "bg-neutral-900 text-neutral-300 border-neutral-800 hover:border-neutral-600 hover:text-white"
+                                        ? "bg-inverse text-inverse-foreground border-white"
+                                        : "bg-card text-foreground/80 border-border hover:border-border hover:text-foreground"
                                 }`}
                             >
                                 {label}
@@ -430,14 +430,14 @@ export const MDAuctionCard = memo(function MDAuctionCard({ auction, onDelete, to
                         <Button
                             variant="outline"
                             onClick={() => { setShowCompleteConfirm(false); setSaleChannel(null); }}
-                            className="h-12 rounded-2xl border-neutral-800 bg-neutral-900/50 text-neutral-400 font-bold hover:bg-neutral-800"
+                            className="h-12 rounded-2xl border-border bg-card/50 text-muted-foreground font-bold hover:bg-muted"
                         >
                             취소
                         </Button>
                         <Button
                             disabled={!saleChannel || completing}
                             onClick={() => saleChannel && performComplete(saleChannel)}
-                            className="h-12 rounded-2xl font-black text-base bg-white hover:bg-neutral-200 text-black disabled:opacity-30"
+                            className="h-12 rounded-2xl font-black text-base bg-inverse hover:opacity-90 text-inverse-foreground disabled:opacity-30"
                         >
                             판매완료
                         </Button>

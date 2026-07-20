@@ -55,22 +55,22 @@ export function ShareAuctionGroups({ auctions, onDelete, clubFavCounts }: Props)
                 const d = key ? dayjs(key) : null;
                 const label = d ? `${d.month() + 1}/${d.date()}(${DOWS[d.day()]})` : "날짜 미정";
                 return (
-                    <div key={key} className="rounded-xl overflow-hidden border border-neutral-800/60">
+                    <div key={key} className="rounded-xl overflow-hidden border border-border/60">
                         <button
                             type="button"
                             onClick={() => toggle(key)}
-                            className="w-full flex items-center justify-between px-3 py-2.5 bg-neutral-900/60 hover:bg-neutral-900 transition-colors"
+                            className="w-full flex items-center justify-between px-3 py-2.5 bg-card/60 hover:bg-card transition-colors"
                         >
                             <span className="flex items-center gap-2">
-                                <span className="text-[13px] font-black text-white">{label}</span>
-                                <span className="text-[11px] text-neutral-500 font-bold">{items.length}개</span>
+                                <span className="text-[13px] font-black text-foreground">{label}</span>
+                                <span className="text-[11px] text-muted-foreground font-bold">{items.length}개</span>
                             </span>
                             <ChevronDown
-                                className={`w-4 h-4 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}
+                                className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
                             />
                         </button>
                         {open && (
-                            <div className="p-2 space-y-2 bg-neutral-950/30">
+                            <div className="p-2 space-y-2 bg-background/30">
                                 {items.map((auction) => (
                                     <MDAuctionCard
                                         key={auction.id}

@@ -29,18 +29,18 @@ export function ContactTimer({ deadline }: { deadline: string | null }) {
 
   const colorMap = {
     normal: {
-      bg: "bg-neutral-900",
-      border: "border-neutral-700",
-      text: "text-white",
-      label: "text-neutral-400",
-      icon: "text-neutral-400",
+      bg: "bg-card",
+      border: "border-border",
+      text: "text-foreground",
+      label: "text-muted-foreground",
+      icon: "text-muted-foreground",
     },
     warning: {
       bg: "bg-amber-500/10",
       border: "border-amber-500/30",
-      text: "text-amber-400",
-      label: "text-amber-400/70",
-      icon: "text-amber-400",
+      text: "text-brand-amber",
+      label: "text-brand-amber dark:text-brand-amber/70",
+      icon: "text-brand-amber",
     },
     critical: {
       bg: "bg-red-500/10",

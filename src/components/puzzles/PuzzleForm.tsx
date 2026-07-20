@@ -43,7 +43,7 @@ function CurrencyHint({ amount, convertLabel = "환산" }: { amount: number; con
       <button
         type="button"
         onClick={() => { setOpen((v) => !v); setSelected(null); }}
-        className="text-[11px] font-bold text-neutral-500 hover:text-neutral-300 bg-neutral-800 hover:bg-neutral-700 px-2 py-0.5 rounded-md transition-colors"
+        className="text-[11px] font-bold text-muted-foreground hover:text-foreground/80 bg-muted hover:bg-muted px-2 py-0.5 rounded-md transition-colors"
       >
         {convertLabel}
       </button>
@@ -54,7 +54,7 @@ function CurrencyHint({ amount, convertLabel = "환산" }: { amount: number; con
               key={c.code}
               type="button"
               onClick={() => setSelected(c.code)}
-              className="text-[11px] font-bold text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 px-2 py-0.5 rounded-md transition-colors"
+              className="text-[11px] font-bold text-muted-foreground hover:text-foreground bg-muted hover:bg-muted px-2 py-0.5 rounded-md transition-colors"
             >
               {c.symbol}
             </button>
@@ -63,7 +63,7 @@ function CurrencyHint({ amount, convertLabel = "환산" }: { amount: number; con
       )}
       {selected && singleConversion && (
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[12px] font-bold text-amber-400 tabular-nums">≈ {singleConversion}</span>
+          <span className="text-[12px] font-bold text-brand-amber tabular-nums">≈ {singleConversion}</span>
           <div className="flex items-center gap-1">
             {CURRENCIES.map((c) => (
               <button
@@ -72,15 +72,15 @@ function CurrencyHint({ amount, convertLabel = "환산" }: { amount: number; con
                 onClick={() => setSelected(c.code)}
                 className={`text-[11px] font-bold px-2 py-0.5 rounded-md transition-colors ${
                   c.code === selected
-                    ? "bg-neutral-600 text-white"
-                    : "bg-neutral-800 text-neutral-500 hover:bg-neutral-700 hover:text-white"
+                    ? "bg-muted text-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 {c.symbol}
               </button>
             ))}
           </div>
-          <span className="text-[10px] text-neutral-600 w-full">Rates as of {RATE_AS_OF} · approximate</span>
+          <span className="text-[10px] text-muted-foreground w-full">Rates as of {RATE_AS_OF} · approximate</span>
         </div>
       )}
     </div>
@@ -863,12 +863,12 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     if (isForeigner) {
       return (
         <div className="space-y-6 pb-12">
-          <div className="bg-[#1C1C1E] rounded-3xl p-6 space-y-5">
+          <div className="bg-card rounded-3xl border border-border p-6 space-y-5">
             <div className="space-y-1.5">
-              <h2 className="text-[20px] font-black text-white leading-snug tracking-tight">
+              <h2 className="text-[20px] font-black text-foreground leading-snug tracking-tight">
                 Is your Korea trip confirmed,<br />or are you already in Korea?
               </h2>
-              <p className="text-[13px] text-neutral-500 leading-relaxed">
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
                 Seoul clubs send real offers — only for confirmed visitors.
               </p>
             </div>
@@ -876,14 +876,14 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
               <button
                 type="button"
                 onClick={() => { trackEvent('foreign_trip_gate_qualified'); setTripStatus("qualified"); }}
-                className="w-full h-14 rounded-2xl bg-white text-black font-black text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-200 active:scale-[0.99] transition-all"
+                className="w-full h-14 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.99] transition-all"
               >
                 ✅ Yes — booked or already in Korea
               </button>
               <button
                 type="button"
                 onClick={() => { trackEvent('foreign_trip_gate_planning'); setTripStatus("planning"); }}
-                className="w-full h-14 rounded-2xl bg-neutral-800 border border-neutral-700 text-neutral-300 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-neutral-700/60 active:scale-[0.99] transition-all"
+                className="w-full h-14 rounded-2xl bg-muted border border-border text-foreground/80 font-bold text-[15px] flex items-center justify-center gap-2 hover:bg-muted/60 active:scale-[0.99] transition-all"
               >
                 🗓️ Not yet, just planning
               </button>
@@ -901,13 +901,13 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           type="button"
           onClick={() => router.push("/start")}
           aria-label="뒤로"
-          className="inline-flex items-center gap-1 -ml-1 mb-6 px-2 py-1.5 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+          className="inline-flex items-center gap-1 -ml-1 mb-6 px-2 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
           <span className="text-[14px] font-bold">뒤로</span>
         </button>
         <div className="mb-6">
-          <h1 className="text-2xl font-black text-white tracking-tight break-keep">
+          <h1 className="text-2xl font-black text-foreground tracking-tight break-keep">
             일정이 확정됐나요?
           </h1>
         </div>
@@ -916,14 +916,14 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           <button
             type="button"
             onClick={() => router.push("/")}
-            className="flex flex-col text-left rounded-3xl border border-neutral-700 bg-neutral-800/40 p-5 active:scale-[0.98] transition-transform"
+            className="flex flex-col text-left rounded-3xl border border-border bg-muted/40 p-5 active:scale-[0.98] transition-transform"
           >
             <span className="text-[34px] leading-none">🤔</span>
-            <p className="text-[18px] font-black text-white mt-3">아직 고민 중</p>
-            <p className="text-[12.5px] text-neutral-400 mt-1.5 leading-relaxed break-keep flex-1">
+            <p className="text-[18px] font-black text-foreground mt-3">아직 고민 중</p>
+            <p className="text-[12.5px] text-muted-foreground mt-1.5 leading-relaxed break-keep flex-1">
               오퍼는 2~3일 전에 받아도 충분해요. 일정이 확정되면 그때 깃발을 꽂아주세요 🎉
             </p>
-            <span className="mt-4 inline-flex items-center justify-center h-10 rounded-xl bg-neutral-700 text-neutral-200 text-[13px] font-black">
+            <span className="mt-4 inline-flex items-center justify-center h-10 rounded-xl bg-muted text-foreground text-[13px] font-black">
               다음에 올게요
             </span>
           </button>
@@ -935,8 +935,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             className="flex flex-col text-left rounded-3xl border border-amber-500/50 bg-amber-500/[0.06] p-5 active:scale-[0.98] transition-transform"
           >
             <span className="text-[34px] leading-none">✅</span>
-            <p className="text-[18px] font-black text-white mt-3">네,<br />확정됐어요</p>
-            <p className="text-[12.5px] text-neutral-400 mt-1.5 leading-relaxed break-keep flex-1">
+            <p className="text-[18px] font-black text-foreground mt-3">네,<br />확정됐어요</p>
+            <p className="text-[12.5px] text-muted-foreground mt-1.5 leading-relaxed break-keep flex-1">
               날짜·인원·예산 정해졌어요.
             </p>
             <span className="mt-4 inline-flex items-center justify-center h-10 rounded-xl bg-amber-500 text-black text-[13px] font-black">
@@ -952,20 +952,20 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
   if (showTripGate && isForeigner && tripStatus === "planning") {
     return (
       <div className="space-y-6 pb-12">
-        <div className="bg-[#1C1C1E] rounded-3xl p-7 space-y-5 text-center">
+        <div className="bg-card rounded-3xl border border-border p-7 space-y-5 text-center">
           <div className="text-[40px]">🗓️</div>
           <div className="space-y-2">
-            <h2 className="text-[20px] font-black text-white tracking-tight">
+            <h2 className="text-[20px] font-black text-foreground tracking-tight">
               Trip not locked in yet?
             </h2>
-            <p className="text-[14px] text-neutral-400 leading-relaxed">
-              No rush — Seoul clubs send offers <span className="text-white font-bold">fast, even same-day.</span> Come back the moment your trip is confirmed and you'll still be right on time. 🎉
+            <p className="text-[14px] text-muted-foreground leading-relaxed">
+              No rush — Seoul clubs send offers <span className="text-foreground font-bold">fast, even same-day.</span> Come back the moment your trip is confirmed and you'll still be right on time. 🎉
             </p>
           </div>
           <button
             type="button"
             onClick={() => router.push("/en")}
-            className="w-full h-13 py-3.5 rounded-2xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 active:scale-[0.99] transition-all"
+            className="w-full h-13 py-3.5 rounded-2xl bg-inverse text-inverse-foreground font-black text-[15px] hover:opacity-90 active:scale-[0.99] transition-all"
           >
             Back to home
           </button>
@@ -978,9 +978,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
     <div className="space-y-8 pb-12">
       {/* 성별 안내는 파티원 모집(퍼즐) 모드에서만 표시. 깃발(인원 확정) 모드에서는 불필요 */}
       {isRecruitingParty && !shareMode && genderLoaded && !myGender && (
-        <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-3">
-          <p className="text-[13px] font-bold text-white">{t("성별 정보가 필요해요", "We need your gender")}</p>
-          <p className="text-[12px] text-neutral-400 leading-relaxed">
+        <div className="bg-muted/50 border border-border rounded-2xl p-4 space-y-3">
+          <p className="text-[13px] font-bold text-foreground">{t("성별 정보가 필요해요", "We need your gender")}</p>
+          <p className="text-[12px] text-muted-foreground leading-relaxed">
             {t(
               "파티원 모집은 성별 슬롯 기반으로 매칭돼요. 성별을 설정하면 바로 올릴 수 있어요.",
               "Recruiting is matched by gender slots. Set your gender to start."
@@ -989,7 +989,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           <button
             type="button"
             onClick={() => setGenderModalOpen(true)}
-            className="w-full h-11 rounded-xl bg-white text-black font-black text-[14px] hover:bg-neutral-200 active:scale-[0.99] transition-all"
+            className="w-full h-11 rounded-xl bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 active:scale-[0.99] transition-all"
           >
             {t("성별 설정하기", "Set gender")}
           </button>
@@ -999,15 +999,15 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       <Sheet open={genderModalOpen} onOpenChange={() => { /* 닫기 차단 */ }}>
         <SheetContent
           side="bottom"
-          className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl text-white"
+          className="bg-card border-t border-border rounded-t-3xl text-foreground"
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <SheetHeader>
-            <SheetTitle className="text-white text-[18px] font-black">
+            <SheetTitle className="text-foreground text-[18px] font-black">
               {t("퍼즐 매칭을 위해 성별을 알려주세요", "Tell us your gender for matching")}
             </SheetTitle>
-            <SheetDescription className="text-neutral-400 text-[12px]">
+            <SheetDescription className="text-muted-foreground text-[12px]">
               {t("한 번 설정하면 변경할 수 없어요", "This can't be changed once set")}
             </SheetDescription>
           </SheetHeader>
@@ -1020,10 +1020,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                 key={value}
                 type="button"
                 onClick={() => handleSaveMyGender(value)}
-                className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all bg-neutral-800 border-neutral-700 hover:${color === 'pink' ? 'border-pink-500 bg-pink-500/10' : 'border-green-500 bg-green-500/10'}`}
+                className={`h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-1 transition-all bg-muted border-border hover:${color === 'pink' ? 'border-pink-500 bg-pink-500/10' : 'border-green-500 bg-green-500/10'}`}
               >
                 <span className="text-2xl">{emoji}</span>
-                <span className="text-[15px] font-bold text-white">{label}</span>
+                <span className="text-[15px] font-bold text-foreground">{label}</span>
               </button>
             ))}
           </div>
@@ -1032,8 +1032,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
       {/* 방문희망날짜 */}
       <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold mb-2">
-          <Calendar className="w-4 h-4 text-green-500" />
+        <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+          <Calendar className="w-4 h-4 text-money" />
           <span>{t("방문희망날짜", "Visit date")}</span>
         </div>
         <DateTimeSheet
@@ -1049,8 +1049,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
       {/* 지역 */}
       <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold mb-2">
-          <MapPin className="w-4 h-4 text-green-500" />
+        <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+          <MapPin className="w-4 h-4 text-money" />
           <span>{t("지역", "Area")}</span>
         </div>
         <div>
@@ -1070,15 +1070,15 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                   aria-disabled={comingSoon}
                   className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
                     area === a
-                      ? "bg-white text-black border-transparent"
+                      ? "bg-inverse text-inverse-foreground border-transparent"
                       : comingSoon
-                      ? "bg-neutral-900 text-neutral-600 border-neutral-800 opacity-60"
-                      : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                      ? "bg-card text-muted-foreground border-border opacity-60"
+                      : "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {aL(a)}
                   {comingSoon && (
-                    <span className="ml-1.5 text-[10px] text-amber-400/80">
+                    <span className="ml-1.5 text-[10px] text-brand-amber dark:text-brand-amber/80">
                       {t("준비중", "Soon")}
                     </span>
                   )}
@@ -1092,14 +1092,14 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                 onClick={() => handleAreaChange("서울 어디든")}
                 className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all border ${
                   area === "서울 어디든"
-                    ? "bg-white text-black border-transparent"
-                    : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                    ? "bg-inverse text-inverse-foreground border-transparent"
+                    : "bg-card text-muted-foreground border-border hover:bg-muted hover:text-foreground"
                 }`}
               >
                 {aL("서울 어디든")}
               </button>
               {area === "서울 어디든" && !shareMode && (
-                <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 text-[11px] text-amber-400/80 leading-relaxed whitespace-nowrap">
+                <p className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 text-[11px] text-brand-amber dark:text-brand-amber/80 leading-relaxed whitespace-nowrap">
                   {t("* 가장 많은 옵션을 받아봐요 *", "* Most offers *")}
                 </p>
               )}
@@ -1110,8 +1110,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
       {/* 인원 설정 */}
       <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold mb-2">
-          <Users className="w-4 h-4 text-green-500" />
+        <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+          <Users className="w-4 h-4 text-money" />
           <span>{t("인원 설정", "Group size")}</span>
         </div>
         <div className="space-y-4">
@@ -1120,78 +1120,78 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 {/* 남성 */}
-                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-3">
                   <button
                     type="button"
                     onClick={() => { if (targetMale > 0 && totalPeople > 1) setTargetMale(targetMale - 1); }}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
+                    className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
                     disabled={targetMale <= 0 || totalPeople <= 1}
                   >
-                    <Minus className="w-3.5 h-3.5 text-white" />
+                    <Minus className="w-3.5 h-3.5 text-foreground" />
                   </button>
-                  <span className="text-[14px] font-black text-white">{t("남", "M")} {targetMale}</span>
+                  <span className="text-[14px] font-black text-foreground">{t("남", "M")} {targetMale}</span>
                   <button
                     type="button"
                     onClick={() => { if (totalPeople < 10) setTargetMale(targetMale + 1); }}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
+                    className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
                     disabled={totalPeople >= 10}
                   >
-                    <Plus className="w-3.5 h-3.5 text-white" />
+                    <Plus className="w-3.5 h-3.5 text-foreground" />
                   </button>
                 </div>
                 {/* 여성 */}
-                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-3">
                   <button
                     type="button"
                     onClick={() => { if (targetFemale > 0 && totalPeople > 1) setTargetFemale(targetFemale - 1); }}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
+                    className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
                     disabled={targetFemale <= 0 || totalPeople <= 1}
                   >
-                    <Minus className="w-3.5 h-3.5 text-white" />
+                    <Minus className="w-3.5 h-3.5 text-foreground" />
                   </button>
-                  <span className="text-[14px] font-black text-white">{t("여", "F")} {targetFemale}</span>
+                  <span className="text-[14px] font-black text-foreground">{t("여", "F")} {targetFemale}</span>
                   <button
                     type="button"
                     onClick={() => { if (totalPeople < 10) setTargetFemale(targetFemale + 1); }}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-40"
+                    className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-40"
                     disabled={totalPeople >= 10}
                   >
-                    <Plus className="w-3.5 h-3.5 text-white" />
+                    <Plus className="w-3.5 h-3.5 text-foreground" />
                   </button>
                 </div>
               </div>
-              <p className="text-[12px] text-neutral-400">
-                {t("총", "Total")} <span className="font-black text-white">{totalPeople}{t("명", "")}</span>
+              <p className="text-[12px] text-muted-foreground">
+                {t("총", "Total")} <span className="font-black text-foreground">{totalPeople}{t("명", "")}</span>
               </p>
             </div>
           ) : (
             /* ON 모드 (퍼즐): 단순 인원 picker */
             <>
               <div className="space-y-2">
-                <p className="text-[11px] text-neutral-400">{t("최대 인원 (본인 포함)", "Max headcount (including you)")}</p>
-                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
+                <p className="text-[11px] text-muted-foreground">{t("최대 인원 (본인 포함)", "Max headcount (including you)")}</p>
+                <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-4">
                   <button
                     type="button"
                     onClick={() => setTargetCount(Math.max(2, targetCount - 1))}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                    className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
                   >
-                    <Minus className="w-3.5 h-3.5 text-white" />
+                    <Minus className="w-3.5 h-3.5 text-foreground" />
                   </button>
-                  <span className="text-[15px] font-black text-white">{targetCount}{t("명", " people")}</span>
+                  <span className="text-[15px] font-black text-foreground">{targetCount}{t("명", " people")}</span>
                   <button
                     type="button"
                     onClick={() => setTargetCount(Math.min(6, targetCount + 1))}
-                    className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                    className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
                   >
-                    <Plus className="w-3.5 h-3.5 text-white" />
+                    <Plus className="w-3.5 h-3.5 text-foreground" />
                   </button>
                 </div>
               </div>
 
               {/* 동행 일행 */}
-              <div className="space-y-3 pt-3 border-t border-neutral-800">
+              <div className="space-y-3 pt-3 border-t border-border">
                 <label className="flex items-center justify-between gap-3 cursor-pointer">
-                  <span className="text-[13px] font-bold text-white">
+                  <span className="text-[13px] font-bold text-foreground">
                     {puzzle?.host_is_md
                       ? t("이미 모아진 인원이 있나요?", "Already have members?")
                       : t("이미 일행이 있나요?", "Already with friends?")}
@@ -1207,15 +1207,15 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                   />
                 </label>
                 {hasGuest && (
-                  <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
+                  <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-4">
                     <button
                       type="button"
                       onClick={() => setGuestCount(Math.max(1, guestCount - 1))}
-                      className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                      className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
                     >
-                      <Minus className="w-3.5 h-3.5 text-white" />
+                      <Minus className="w-3.5 h-3.5 text-foreground" />
                     </button>
-                    <span className="text-[15px] font-black text-white">
+                    <span className="text-[15px] font-black text-foreground">
                       {puzzle?.host_is_md
                         ? t(`${guestCount}명`, `${guestCount}`)
                         : t(`일행 ${guestCount}명`, `${guestCount} friend${guestCount > 1 ? "s" : ""}`)}
@@ -1223,9 +1223,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                     <button
                       type="button"
                       onClick={() => setGuestCount(Math.min(targetCount - 1, guestCount + 1))}
-                      className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                      className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
                     >
-                      <Plus className="w-3.5 h-3.5 text-white" />
+                      <Plus className="w-3.5 h-3.5 text-foreground" />
                     </button>
                   </div>
                 )}
@@ -1233,7 +1233,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
               {/* 모집 요약 */}
               {effectiveTargetCount - effectiveCurrentCount > 0 && (
-                <p className="text-[12px] text-green-400 font-bold">
+                <p className="text-[12px] text-money font-bold">
                   🧩 {t(`총 ${effectiveTargetCount - effectiveCurrentCount}명을 구해요`, `Looking for ${effectiveTargetCount - effectiveCurrentCount} more`)}
                 </p>
               )}
@@ -1244,11 +1244,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
       {/* 예산 (모드에 따라 총액 or 인당) */}
       <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold mb-2">
-          <Coins className="w-4 h-4 text-green-500" />
+        <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+          <Coins className="w-4 h-4 text-money" />
           <span>{isRecruitingParty ? t("인당 예산", "Budget per person") : t("총 예산", "Total budget")}</span>
         </div>
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
           <div className="relative">
             <Input
               type="text"
@@ -1268,10 +1268,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                 maybeShowBudgetCap(budgetAmount);
               }}
               placeholder={isRecruitingParty ? t("예) 100,000", "e.g. 100,000") : t("예) 500,000", "e.g. 500,000")}
-              className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500 pr-12"
+              className="bg-card border-border h-11 text-foreground font-bold focus:ring-amber-500 pr-12"
             />
             {isRecruitingParty && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-neutral-500 font-bold pointer-events-none">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground font-bold pointer-events-none">
                 {t("/인", "/pp")}
               </span>
             )}
@@ -1289,7 +1289,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                   setBudgetInputStr(next.toLocaleString());
                   maybeShowBudgetCap(next);
                 }}
-                className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-[13px]"
+                className="h-10 px-0 bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-amber-500/50 font-bold text-[13px]"
               >
                 {isForeigner ? `+₩${(preset / 10000).toFixed(0)}0k` : `+${(preset / 10000).toFixed(0)}만`}
               </Button>
@@ -1299,17 +1299,17 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
               variant="outline"
               size="sm"
               onClick={() => { setBudgetAmount(0); setBudgetInputStr(""); }}
-              className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-[13px]"
+              className="h-10 px-0 bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:border-red-500/50 font-bold text-[13px]"
             >
               {t("초기화", "Clear")}
             </Button>
           </div>
           {/* 예산 요약 — 박스 없이 인라인 */}
           {isRecruitingParty && (
-            <p className="text-[13px] font-bold text-white">
-              {t("인당", "Per person")} <span className="text-amber-400">{isForeigner ? `₩${budgetAmount.toLocaleString()}` : `${budgetAmount.toLocaleString()}원`}</span>
+            <p className="text-[13px] font-bold text-foreground">
+              {t("인당", "Per person")} <span className="text-brand-amber">{isForeigner ? `₩${budgetAmount.toLocaleString()}` : `${budgetAmount.toLocaleString()}원`}</span>
               {" "}× {effectiveTargetCount}{t("명", "")} = {t("총", "Total")}{" "}
-              <span className="text-green-400">{isForeigner ? `₩${totalBudget.toLocaleString()}` : `${totalBudget.toLocaleString()}원`}</span>
+              <span className="text-money">{isForeigner ? `₩${totalBudget.toLocaleString()}` : `${totalBudget.toLocaleString()}원`}</span>
             </p>
           )}
           {/* 외국인용 환율 힌트 */}
@@ -1317,15 +1317,15 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             <CurrencyHint amount={isRecruitingParty ? totalBudget : budgetAmount} convertLabel="Convert" />
           )}
           <p className="font-medium -my-2">
-            <span className="text-[14px] text-neutral-400">{t("파트너가 예산에 맞춰 서비스를 구성해요", "Club offers match your budget")}</span>
+            <span className="text-[14px] text-muted-foreground">{t("파트너가 예산에 맞춰 서비스를 구성해요", "Club offers match your budget")}</span>
             {!isRecruitingParty && (
               <>
-                <span className="text-[12px] text-neutral-400"> {t("(최소 금액 50만원)", "(minimum ₩500,000)")}</span>
+                <span className="text-[12px] text-muted-foreground"> {t("(최소 금액 50만원)", "(minimum ₩500,000)")}</span>
                 {!shareMode && !isForeigner && (
                   <button
                     type="button"
                     onClick={() => setShowShareCta((v) => !v)}
-                    className="ml-2 text-[12px] text-green-400 underline underline-offset-2 hover:text-green-300"
+                    className="ml-2 text-[12px] text-money underline underline-offset-2 hover:text-money"
                   >
                     예산이 50 언더라면?
                   </button>
@@ -1338,10 +1338,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
         {/* 50만원 장벽 회유 — "예산이 50 언더라면?" 클릭 시 조각으로 유도. 외국인 제외(조각 미제공) */}
         {!shareMode && !isForeigner && showShareCta && (
           <div className="bg-green-500/10 border border-green-500/25 rounded-2xl p-4">
-            <p className="text-[13.5px] font-black text-white break-keep">
+            <p className="text-[13.5px] font-black text-foreground break-keep">
               조각을 이용하면 파티원을 모아 예약할 수 있어요
             </p>
-            <p className="text-[12.5px] text-neutral-300 mt-1 leading-relaxed break-keep">
+            <p className="text-[12.5px] text-foreground/80 mt-1 leading-relaxed break-keep">
               인당 7만원부터 시작되며, 깃발과 똑같은 오퍼를 받아요.
             </p>
             <button
@@ -1357,8 +1357,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
       {/* 취향 태그 — 파티원 모집 중일 때만. MD 직통 조각(host_is_md)은 취향 선호가 무의미하므로 숨김 */}
       {isRecruitingParty && !puzzle?.host_is_md && <section className="space-y-4">
-        <div className="flex items-center gap-2 text-white font-bold mb-2">
-          <Sparkles className="w-4 h-4 text-green-500" />
+        <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+          <Sparkles className="w-4 h-4 text-money" />
           <span>{t("이런 분들을 선호해요", "Who you prefer")}</span>
         </div>
 
@@ -1366,7 +1366,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           {/* 성별 선호 — 조각은 성별 슬롯을 쓰지 않으므로 숨김 */}
           {!shareMode && (
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("성별", "Gender")}</p>
+            <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("성별", "Gender")}</p>
             <div className="flex gap-1.5 flex-wrap">
               {GENDER_OPTIONS.map((opt) => (
                 <button
@@ -1375,8 +1375,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                   onClick={() => setGenderPref(opt.value)}
                   className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
                     genderPref === opt.value
-                      ? "bg-white text-black"
-                      : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                      ? "bg-inverse text-inverse-foreground"
+                      : "bg-card text-muted-foreground border border-border hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {isForeigner ? opt.en : opt.label}
@@ -1387,7 +1387,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           )}
 
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("연령", "Age")}</p>
+            <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("연령", "Age")}</p>
             <div className="flex gap-1.5 flex-wrap">
               {AGE_OPTIONS.map((opt) => {
                 const selected = agePref.includes(opt.value);
@@ -1399,8 +1399,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                     aria-pressed={selected}
                     className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
                       selected
-                        ? "bg-white text-black"
-                        : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                        ? "bg-inverse text-inverse-foreground"
+                        : "bg-card text-muted-foreground border border-border hover:bg-muted hover:text-foreground"
                     }`}
                   >
                     {isForeigner ? opt.en : opt.label}
@@ -1411,7 +1411,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           </div>
 
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("음악", "Music")}</p>
+            <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("음악", "Music")}</p>
             <div className="flex gap-1.5 flex-wrap">
               {MUSIC_OPTIONS.map((opt) => (
                 <button
@@ -1420,8 +1420,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                   onClick={() => setMusicPref(opt.value)}
                   className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
                     musicPref === opt.value
-                      ? "bg-white text-black"
-                      : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                      ? "bg-inverse text-inverse-foreground"
+                      : "bg-card text-muted-foreground border border-border hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {isForeigner ? opt.en : opt.label}
@@ -1431,7 +1431,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           </div>
 
           <div className="flex items-center gap-3">
-            <p className="text-[11px] text-neutral-400 w-8 shrink-0">{t("바이브", "Vibe")}</p>
+            <p className="text-[11px] text-muted-foreground w-8 shrink-0">{t("바이브", "Vibe")}</p>
             <div className="flex gap-1.5 flex-wrap">
               {VIBE_OPTIONS.map((opt) => (
                 <button
@@ -1440,8 +1440,8 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                   onClick={() => setVibePref(opt.value)}
                   className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all ${
                     vibePref === opt.value
-                      ? "bg-white text-black"
-                      : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:bg-neutral-800 hover:text-white"
+                      ? "bg-inverse text-inverse-foreground"
+                      : "bg-card text-muted-foreground border border-border hover:bg-muted hover:text-foreground"
                   }`}
                 >
                   {isForeigner ? opt.en : opt.label}
@@ -1454,15 +1454,15 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
       {/* 팀 소개 (한 줄 메모) */}
       <section className="space-y-4">
-        <div className="flex items-baseline gap-2 text-white font-bold mb-2">
-          <MessageCircle className="w-4 h-4 text-green-500 self-center" />
+        <div className="flex items-baseline gap-2 text-foreground font-bold mb-2">
+          <MessageCircle className="w-4 h-4 text-money self-center" />
           <span>{isRecruitingParty ? (shareMode ? t("조각 소개", "About your group") : t("퍼즐 소개", "About your group")) : t("깃발 제목", "Flag title")}</span>
           {isRecruitingParty && (
-            <span className="text-[11px] text-neutral-500 font-normal">
+            <span className="text-[11px] text-muted-foreground font-normal">
               {t("참여자와 파트너가 가장 먼저 읽어요", "First thing clubs see")}
             </span>
           )}
-          <span className={`ml-auto text-[11px] font-normal ${notes.length >= 60 ? "text-amber-500" : "text-neutral-500"}`}>
+          <span className={`ml-auto text-[11px] font-normal ${notes.length >= 60 ? "text-brand-amber" : "text-muted-foreground"}`}>
             {notes.length}/60
           </span>
         </div>
@@ -1478,7 +1478,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             placeholder={isRecruitingParty
               ? t("예) 매너 좋으신 분만. 신나게 놀 분.", "e.g. Respectful crowd only. Here to party.")
               : t("예) 4명, 메인테이블 원해요", "e.g. 4 people, main table preferred")}
-            className="bg-neutral-900 border-neutral-800 h-12 text-[14px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal"
+            className="bg-card border-border h-12 text-[14px] font-bold text-foreground focus:ring-amber-500 placeholder:text-muted-foreground placeholder:font-normal"
             maxLength={60}
           />
         </div>
@@ -1486,9 +1486,9 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
       {/* 덧붙이는 말 — notes(제목 60자)와 별개, MD 오퍼 코멘트와 동일한 UI 재사용. 카드엔 안 뜨고 상세에서만 노출 */}
       <section className="space-y-4 -mt-4">
-        <div className="flex items-baseline gap-2 text-white font-bold mb-2">
-          <span>{t("덧붙이는 말", "Additional note")}<span className="text-[11px] font-normal text-neutral-500 ml-0.5">{t("(선택)", "(optional)")}</span></span>
-          <span className={`ml-auto text-[11px] font-normal ${leaderComment.length >= 200 ? "text-amber-500" : "text-neutral-500"}`}>
+        <div className="flex items-baseline gap-2 text-foreground font-bold mb-2">
+          <span>{t("덧붙이는 말", "Additional note")}<span className="text-[11px] font-normal text-muted-foreground ml-0.5">{t("(선택)", "(optional)")}</span></span>
+          <span className={`ml-auto text-[11px] font-normal ${leaderComment.length >= 200 ? "text-brand-amber" : "text-muted-foreground"}`}>
             {leaderComment.length}/200
           </span>
         </div>
@@ -1502,7 +1502,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             )}
             rows={3}
             maxLength={200}
-            className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-3 text-[13px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
+            className="w-full bg-card border border-border rounded-xl px-3 py-3 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50 resize-none"
           />
         </div>
       </section>
@@ -1510,11 +1510,11 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       {/* 카톡 오픈채팅 — 파티원 모집 중일 때만. 조각(shareMode)은 인앱 채팅 사용으로 숨김 */}
       {isRecruitingParty && !shareMode && (
         <section className="space-y-4">
-          <div className="flex items-baseline gap-2 text-white font-bold mb-2">
+          <div className="flex items-baseline gap-2 text-foreground font-bold mb-2">
             <MessageCircle className="w-4 h-4 text-yellow-400 self-center" />
             <span>{t("카톡 오픈채팅 링크", "KakaoTalk open chat link")}</span>
             {isEditMode && (
-              <span className="text-[11px] text-neutral-500 font-normal">{t("수정 불가", "Can't edit")}</span>
+              <span className="text-[11px] text-muted-foreground font-normal">{t("수정 불가", "Can't edit")}</span>
             )}
           </div>
           <div className="space-y-3">
@@ -1525,7 +1525,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
               placeholder="https://open.kakao.com/..."
               readOnly={isEditMode}
               disabled={isEditMode}
-              className="bg-neutral-900 border-neutral-800 h-11 text-[13px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal disabled:opacity-70 disabled:cursor-not-allowed"
+              className="bg-card border-border h-11 text-[13px] font-bold text-foreground focus:ring-amber-500 placeholder:text-muted-foreground placeholder:font-normal disabled:opacity-70 disabled:cursor-not-allowed"
             />
             {!isEditMode && <KakaoOpenChatGuide suggestedTitle={suggestedChatTitle} />}
           </div>
@@ -1534,14 +1534,14 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
       {/* 요약 미리보기 */}
       <section className="space-y-4">
-        <div className="flex items-baseline gap-2 text-white mb-2">
-          <Sparkles className="w-4 h-4 text-green-500 self-center" />
+        <div className="flex items-baseline gap-2 text-foreground mb-2">
+          <Sparkles className="w-4 h-4 text-money self-center" />
           <span className="text-[18px] font-bold">{shareMode ? t("요약", "Summary") : t("깃발 요약", "Summary")}</span>
         </div>
         <div className="bg-green-500/10 border border-green-500/20 rounded-xl p-4 space-y-3">
           {/* 보조: 날짜 · 지역 (한 줄) — green 톤 통일, 명도로 위계 */}
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-[13px] font-bold text-green-400/80 truncate">
+            <span className="text-[13px] font-bold text-money dark:text-money/80 truncate">
               {eventDate
                 ? (isForeigner
                     ? `${dayjs(eventDate).format("MMM D")} (${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dayjs(eventDate).day()]})`
@@ -1554,20 +1554,20 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
 
           {/* 핵심: 총 예산 (+ 인원) */}
           {isRecruitingParty ? (
-            <p className="text-[20px] font-black text-green-500 leading-tight break-keep">
+            <p className="text-[20px] font-black text-money leading-tight break-keep">
               {isForeigner
                 ? `₩${budgetAmount.toLocaleString()}/pp × ${effectiveTargetCount}`
                 : `인당 ${budgetAmount.toLocaleString()}원 × ${effectiveTargetCount}명`}
-              <span className="block text-[13px] font-bold text-green-500/80 mt-0.5">
+              <span className="block text-[13px] font-bold text-money dark:text-money/80 mt-0.5">
                 {isForeigner
                   ? `= ₩${totalBudget.toLocaleString()} total`
                   : `= 총 ${totalBudget.toLocaleString()}원`}
               </span>
             </p>
           ) : (
-            <p className="text-[20px] font-black text-green-500 leading-tight break-keep">
+            <p className="text-[20px] font-black text-money leading-tight break-keep">
               {isForeigner ? `₩${totalBudget.toLocaleString()}` : `${totalBudget.toLocaleString()}원`}
-              <span className="ml-2 text-[13px] font-bold text-green-500/60 align-middle">
+              <span className="ml-2 text-[13px] font-bold text-money dark:text-money/60 align-middle">
                 {totalPeople}{t("명", " people")}
               </span>
             </p>
@@ -1605,7 +1605,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             setShowSubmitConfirm(true);
           }}
           disabled={submitting || (isEditMode && !isDirty) || (isRecruitingParty && !myGender && !shareMode)}
-          className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full h-14 rounded-2xl bg-inverse text-inverse-foreground font-black text-lg hover:opacity-90 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
           {submitting ? t(isEditMode ? "수정 중..." : "등록 중...", isEditMode ? "Saving..." : "Submitting...") : (
             <>
@@ -1618,7 +1618,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           {!submitting && !isEditMode && <ArrowRight className="w-5 h-5" />}
         </Button>
         {!isEditMode && (
-          <p className="text-center text-[12px] text-neutral-500 font-medium mt-2.5">
+          <p className="text-center text-[12px] text-muted-foreground font-medium mt-2.5">
             {t("🆓 100% 무료 · 결제 없음", "🆓 100% free · no payment")}
           </p>
         )}
@@ -1628,15 +1628,15 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       <Sheet open={showClubsSheet} onOpenChange={setShowClubsSheet}>
         <SheetContent
           side="bottom"
-          className="h-auto max-h-[85vh] max-w-lg mx-auto gap-2 overflow-y-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-10 outline-none"
+          className="h-auto max-h-[85vh] max-w-lg mx-auto gap-2 overflow-y-auto bg-card border-border rounded-t-[32px] p-6 pb-10 outline-none"
         >
           <SheetHeader className="text-left space-y-1.5 p-0">
-            <SheetTitle className="text-white font-black text-[21px] leading-snug tracking-tight flex items-baseline gap-1.5">
+            <SheetTitle className="text-foreground font-black text-[21px] leading-snug tracking-tight flex items-baseline gap-1.5">
               <span aria-hidden className="text-lg">🕺</span>
               <span>{t("당신의 취향을 알려주세요!", "Tell us your taste!")}</span>
-              <span className="text-[11px] font-bold text-neutral-500 tracking-normal">{t("최대 3개", "up to 3")}</span>
+              <span className="text-[11px] font-bold text-muted-foreground tracking-normal">{t("최대 3개", "up to 3")}</span>
             </SheetTitle>
-            <SheetDescription className="text-[12.5px] text-neutral-500 font-medium leading-relaxed">
+            <SheetDescription className="text-[12.5px] text-muted-foreground font-medium leading-relaxed">
               {t("프로필에 표시되고, 오퍼에 반영될 수 있어요.",
                  "Shown on your profile and factored into offers.")}
             </SheetDescription>
@@ -1653,7 +1653,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                 handleSubmit();
               }}
               disabled={preferredClubs.length === 0}
-              className="h-14 rounded-2xl font-black text-lg shadow-lg flex items-center justify-center bg-white hover:bg-neutral-200 text-black disabled:bg-neutral-800 disabled:text-neutral-500 disabled:shadow-none disabled:cursor-not-allowed disabled:opacity-100"
+              className="h-14 rounded-2xl font-black text-lg shadow-lg flex items-center justify-center bg-inverse hover:opacity-90 text-inverse-foreground disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:cursor-not-allowed disabled:opacity-100"
             >
               {t("선택 완료", "Done")}
             </Button>
@@ -1663,7 +1663,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                 setShowClubsSheet(false);
                 handleSubmit();
               }}
-              className="mx-auto px-5 h-9 rounded-full border border-neutral-700 text-white text-[13px] font-bold hover:bg-neutral-800 transition-colors flex items-center gap-1.5"
+              className="mx-auto px-5 h-9 rounded-full border border-border text-foreground text-[13px] font-bold hover:bg-muted transition-colors flex items-center gap-1.5"
             >
               {t("넘어가기", "Skip")}
               <ArrowRight className="w-4 h-4" />
@@ -1711,18 +1711,18 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       <Sheet open={showLateTodayDialog} onOpenChange={setShowLateTodayDialog}>
         <SheetContent
           side="bottom"
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-12 outline-none"
+          className="h-auto bg-card border-border rounded-t-[32px] p-6 pb-12 outline-none"
         >
           <SheetHeader className="text-left space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/10">
-                <Flag className="w-5 h-5 text-amber-500" />
+                <Flag className="w-5 h-5 text-brand-amber" />
               </div>
-              <SheetTitle className="text-white font-black text-xl tracking-tight">
+              <SheetTitle className="text-foreground font-black text-xl tracking-tight">
                 {t("오늘 깃발은 오후 8시까지였어요", "Today's request deadline was 8pm")}
               </SheetTitle>
             </div>
-            <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1">
+            <SheetDescription className="text-muted-foreground font-medium leading-relaxed mt-1">
               {t("지금 당장 가고 싶다면 얼리버드(즉시 매칭)도 확인해보세요.", "Want to go out tonight? Try early bird (instant match).")}
             </SheetDescription>
           </SheetHeader>
@@ -1730,7 +1730,7 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           <div className="flex flex-col gap-3 mt-8">
             <Button
               onClick={handleMoveToTomorrow}
-              className="h-14 rounded-2xl bg-white hover:bg-neutral-200 text-black font-black text-lg shadow-lg flex items-center justify-center gap-2"
+              className="h-14 rounded-2xl bg-inverse hover:opacity-90 text-inverse-foreground font-black text-lg shadow-lg flex items-center justify-center gap-2"
             >
               <Flag className="w-5 h-5" />
               {t("내일 깃발로 등록", "Request for tomorrow")}
@@ -1738,13 +1738,13 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
             <Button
               variant="outline"
               onClick={handleGoToEarlybird}
-              className="h-14 rounded-2xl border-neutral-800 bg-neutral-900/50 text-white font-bold hover:bg-neutral-800"
+              className="h-14 rounded-2xl border-border bg-card/50 text-foreground font-bold hover:bg-muted"
             >
               {t("얼리버드 보기", "See early bird")}
             </Button>
             <button
               onClick={() => setShowLateTodayDialog(false)}
-              className="text-sm text-neutral-500 py-2"
+              className="text-sm text-muted-foreground py-2"
             >
               {t("취소", "Cancel")}
             </button>
@@ -1762,18 +1762,18 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
       >
         <SheetContent
           side="bottom"
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-12 outline-none"
+          className="h-auto bg-card border-border rounded-t-[32px] p-6 pb-12 outline-none"
         >
           <SheetHeader className="text-left space-y-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-500/10">
-                <Flag className="w-5 h-5 text-amber-500" />
+                <Flag className="w-5 h-5 text-brand-amber" />
               </div>
-              <SheetTitle className="text-white font-black text-xl tracking-tight">
+              <SheetTitle className="text-foreground font-black text-xl tracking-tight">
                 {t("첫 깃발은 300만원까지 올릴 수 있어요", "First flag caps at ₩3,000,000")}
               </SheetTitle>
             </div>
-            <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1">
+            <SheetDescription className="text-muted-foreground font-medium leading-relaxed mt-1">
               {t("첫 매치가 성사되면 금액 제한이 풀려요. 당장 더 큰 예산을 원한다면 문의하기를 눌러주세요.",
                  "The cap lifts after your first match. Want a bigger budget now? Tap Contact us below.")}
             </SheetDescription>
@@ -1782,14 +1782,14 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
           <div className="flex flex-col gap-3 mt-8">
             <Button
               onClick={handleAckBudgetCap}
-              className="h-12 rounded-2xl bg-white hover:bg-neutral-200 text-black font-black text-base shadow-lg flex items-center justify-center gap-2"
+              className="h-12 rounded-2xl bg-inverse hover:opacity-90 text-inverse-foreground font-black text-base shadow-lg flex items-center justify-center gap-2"
             >
               {t("확인했어요", "Got it")}
             </Button>
             {!showContactOptions ? (
               <button
                 onClick={() => setShowContactOptions(true)}
-                className="text-sm text-neutral-400 py-2 font-medium hover:text-neutral-200"
+                className="text-sm text-muted-foreground py-2 font-medium hover:text-foreground/90"
               >
                 {t("문의하기", "Contact us")}
               </button>
@@ -1798,14 +1798,14 @@ export function PuzzleForm({ userId, puzzle, shareMode = false }: { userId: stri
                 <Button
                   variant="outline"
                   onClick={() => window.open("https://instagram.com/nightflow.kr", "_blank")}
-                  className="h-12 rounded-2xl border-neutral-800 bg-neutral-900/50 text-white font-bold hover:bg-neutral-800"
+                  className="h-12 rounded-2xl border-border bg-card/50 text-foreground font-bold hover:bg-muted"
                 >
                   {t("인스타그램", "Instagram")}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleContactForCap}
-                  className="h-12 rounded-2xl border-neutral-800 bg-neutral-900/50 text-white font-bold hover:bg-neutral-800"
+                  className="h-12 rounded-2xl border-border bg-card/50 text-foreground font-bold hover:bg-muted"
                 >
                   {t("문의하기(인앱)", "In-app")}
                 </Button>

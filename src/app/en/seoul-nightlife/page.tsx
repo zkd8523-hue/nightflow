@@ -75,20 +75,20 @@ export default function EnSeoulNightlifePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/en" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/en" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">Seoul Nightlife Guide</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             Where to go, what to book, and how to actually enjoy Seoul nightlife as a foreign traveler. No broker tax, no Korean required.
           </p>
         </header>
 
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">Seoul Nightlife by District</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             Seoul nightlife isn&apos;t one thing — it&apos;s four different scenes in four neighborhoods, each with their own vibe, crowd, and prices.
           </p>
           <div className="space-y-3">
@@ -98,9 +98,9 @@ export default function EnSeoulNightlifePage() {
               { name: "Itaewon", vibe: "International, English-friendly, house & electronic music", link: "/en/clubs/itaewon" },
               { name: "Apgujeong & Cheongdam", vibe: "High-end VIP lounges, champagne service, ₩2M+ tables", link: "/en/clubs/apgujeong" },
             ].map((d) => (
-              <Link key={d.name} href={d.link} className="block p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-neutral-600 transition-colors">
-                <p className="font-bold text-[15px] text-neutral-100 mb-1">{d.name}</p>
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{d.vibe}</p>
+              <Link key={d.name} href={d.link} className="block p-5 rounded-2xl bg-card border border-border hover:border-border transition-colors">
+                <p className="font-bold text-[15px] text-foreground mb-1">{d.name}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{d.vibe}</p>
               </Link>
             ))}
           </div>
@@ -108,7 +108,7 @@ export default function EnSeoulNightlifePage() {
 
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">What a Seoul Night Out Costs</h2>
-          <ul className="space-y-2 text-[13px] text-neutral-300">
+          <ul className="space-y-2 text-[13px] text-foreground/80">
             <li>• Walk-in casual: ₩30,000–80,000 per person</li>
             <li>• Hongdae VIP table (6 ppl): ₩50,000–100,000 each</li>
             <li>• Gangnam main VIP (4–6 ppl): ₩150,000–300,000 each</li>
@@ -119,21 +119,21 @@ export default function EnSeoulNightlifePage() {
 
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">How to Book Without Korean</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             Pick your club (or just tell us your vibe) — date, group size, and budget. We contact the club directly and lock in the best table for your budget, in English. Show up, walk in.
           </p>
-          <Link href="/en" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors">
+          <Link href="/en" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             🍾 Book with NightFlow
           </Link>
         </section>
 
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">More Guides</h2>
-          <ul className="space-y-1 text-[13px] text-neutral-400">
-            <li><Link className="hover:text-white" href="/en/vip-tables">Seoul VIP Table Booking →</Link></li>
-            <li><Link className="hover:text-white" href="/en/guests">Seoul Club Guest List →</Link></li>
-            <li><Link className="hover:text-white" href="/en/kpop-clubs">K-Pop Clubs in Seoul →</Link></li>
-            <li><Link className="hover:text-white" href="/en/faq">Seoul Club FAQ →</Link></li>
+          <ul className="space-y-1 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/en/vip-tables">Seoul VIP Table Booking →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/guests">Seoul Club Guest List →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/kpop-clubs">K-Pop Clubs in Seoul →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/faq">Seoul Club FAQ →</Link></li>
           </ul>
         </section>
       </div>

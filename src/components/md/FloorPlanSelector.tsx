@@ -19,9 +19,9 @@ function getMarkerStyle(type: TableType, isSelected: boolean) {
     case "VIP":
       return "bg-purple-500/40 border-purple-500/60 text-purple-300";
     case "Premium":
-      return "bg-amber-500/30 border-amber-500/50 text-amber-400/70";
+      return "bg-amber-500/30 border-amber-500/50 text-brand-amber dark:text-brand-amber/70";
     default:
-      return "bg-white/20 border-white/30 text-white/60";
+      return "bg-white/20 border-white/30 text-foreground/60";
   }
 }
 
@@ -34,12 +34,12 @@ export function FloorPlanSelector({
   return (
     <div className="space-y-2">
       <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2">
-        <p className="text-[11px] text-amber-400 font-bold">
+        <p className="text-[11px] text-brand-amber font-bold">
           테이블을 터치하여 선택하세요
         </p>
       </div>
 
-      <div className="relative rounded-xl overflow-hidden border border-neutral-800">
+      <div className="relative rounded-xl overflow-hidden border border-border">
         <img
           src={floorPlanUrl}
           alt="클럽 플로어맵"
@@ -75,8 +75,8 @@ export function FloorPlanSelector({
 
       {selectedLabel && (
         <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/30 rounded-lg">
-          <MapPin className="w-3.5 h-3.5 text-amber-400" />
-          <span className="text-xs text-amber-400 font-bold">
+          <MapPin className="w-3.5 h-3.5 text-brand-amber" />
+          <span className="text-xs text-brand-amber font-bold">
             선택: {selectedLabel}
           </span>
         </div>

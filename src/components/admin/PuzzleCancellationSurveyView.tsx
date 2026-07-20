@@ -93,31 +93,31 @@ export async function PuzzleCancellationSurveyView({ from, to, trigger, category
           { label: "선택 만료", value: triggerCountMap.selecting_expired ?? 0 },
           { label: "이유 모름", value: Number(noAnswerCount) },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-[#1C1C1E] rounded-2xl px-4 py-4 text-center">
-            <p className="text-[28px] font-black text-white">{value}</p>
-            <p className="text-[12px] text-neutral-400 mt-0.5">{label}</p>
+          <div key={label} className="bg-card rounded-2xl border border-border px-4 py-4 text-center">
+            <p className="text-[28px] font-black text-foreground">{value}</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">{label}</p>
           </div>
         ))}
       </div>
 
       {/* 사유별 막대 */}
       {(stats || []).length > 0 && (
-        <div className="bg-[#1C1C1E] rounded-2xl p-5 space-y-3">
+        <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
           <div className="flex items-center justify-between">
-            <p className="text-[13px] font-black text-white">사유 분포</p>
-            <p className="text-[10px] text-neutral-500">복수선택 가능 · 합계 100% 초과 가능</p>
+            <p className="text-[13px] font-black text-foreground">사유 분포</p>
+            <p className="text-[10px] text-muted-foreground">복수선택 가능 · 합계 100% 초과 가능</p>
           </div>
           {(stats || []).map((row) => (
             <div key={row.reason_category} className="space-y-1">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] text-neutral-300 truncate max-w-[60%]">
+                <span className="text-[13px] text-foreground/80 truncate max-w-[60%]">
                   {row.label ?? REASON_LABEL[row.reason_category] ?? row.reason_category}
                 </span>
-                <span className="text-[12px] text-neutral-500 font-bold shrink-0">
+                <span className="text-[12px] text-muted-foreground font-bold shrink-0">
                   {row.cnt}건 ({row.ratio}%)
                 </span>
               </div>
-              <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full bg-amber-500 rounded-full transition-all"
                   style={{ width: `${(Number(row.cnt) / maxBar) * 100}%` }}
@@ -131,44 +131,44 @@ export async function PuzzleCancellationSurveyView({ from, to, trigger, category
       {/* 응답 리스트 */}
       <div className="space-y-2">
         {(rows || []).length === 0 ? (
-          <div className="text-center py-16 text-neutral-500">
+          <div className="text-center py-16 text-muted-foreground">
             <p>해당 기간에 응답이 없습니다</p>
           </div>
         ) : (
           (rows || []).map((row) => (
-            <div key={row.id} className="bg-[#1C1C1E] rounded-2xl px-4 py-4 space-y-1.5">
+            <div key={row.id} className="bg-card rounded-2xl border border-border px-4 py-4 space-y-1.5">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[12px] font-bold text-white">
+                  <span className="text-[12px] font-bold text-foreground">
                     {(Array.isArray(row.users) ? row.users[0]?.name : (row.users as { name: string } | null)?.name) ?? "알 수 없음"}
                   </span>
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-400">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
                     {TRIGGER_LABEL[row.trigger_type] ?? row.trigger_type}
                   </span>
                   {(row.reason_categories ?? []).map((c: PuzzleCancelReason) => (
                     <span
                       key={c}
-                      className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400"
+                      className="text-[12px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-brand-amber"
                     >
                       {REASON_LABEL[c] ?? c}
                     </span>
                   ))}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-[11px] text-neutral-600">
+                  <span className="text-[11px] text-muted-foreground">
                     {formatDatetime(row.responded_at)}
                   </span>
                   <DeleteSurveyButton surveyId={row.id} />
                 </div>
               </div>
               {row.reason_text && (
-                <p className="text-[12px] text-neutral-400 bg-neutral-900 rounded-xl px-3 py-2">
+                <p className="text-[12px] text-muted-foreground bg-card rounded-xl border border-border px-3 py-2">
                   {row.reason_text}
                 </p>
               )}
               <a
                 href={`/flags/${row.puzzle_id}`}
-                className="block text-[11px] text-amber-400 hover:underline"
+                className="block text-[11px] text-brand-amber hover:underline"
               >
                 깃발 상세 보기 →
               </a>
@@ -182,7 +182,7 @@ export async function PuzzleCancellationSurveyView({ from, to, trigger, category
         <div className="flex justify-center">
           <a
             href={`?tab=surveys&from=${from}&to=${to}${trigger ? `&trigger=${trigger}` : ""}${category ? `&category=${category}` : ""}&page=${page + 1}`}
-            className="px-5 py-2 rounded-xl bg-neutral-800 text-neutral-300 text-[13px] font-bold hover:bg-neutral-700 transition-colors"
+            className="px-5 py-2 rounded-xl bg-muted text-foreground/80 text-[13px] font-bold hover:bg-muted transition-colors"
           >
             다음 페이지
           </a>

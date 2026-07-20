@@ -62,33 +62,33 @@ function getFallbackUrl(type: InAppNotification["type"]): string | null {
 function getNotificationIcon(type: InAppNotification["type"]) {
   switch (type) {
     case "md_approved":
-      return <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />;
+      return <CheckCircle2 className="w-4 h-4 text-money shrink-0" />;
     case "md_rejected":
       return <XCircle className="w-4 h-4 text-red-500 shrink-0" />;
     case "outbid":
-      return <Gavel className="w-4 h-4 text-amber-500 shrink-0" />;
+      return <Gavel className="w-4 h-4 text-brand-amber shrink-0" />;
     case "auction_won":
-      return <Trophy className="w-4 h-4 text-green-500 shrink-0" />;
+      return <Trophy className="w-4 h-4 text-money shrink-0" />;
     case "fallback_won":
-      return <Trophy className="w-4 h-4 text-amber-500 shrink-0" />;
+      return <Trophy className="w-4 h-4 text-brand-amber shrink-0" />;
     case "contact_deadline_warning":
-      return <Clock className="w-4 h-4 text-amber-500 shrink-0" />;
+      return <Clock className="w-4 h-4 text-brand-amber shrink-0" />;
     case "noshow_penalty":
       return <AlertTriangle className="w-4 h-4 text-red-500 shrink-0" />;
     case "contact_expired_no_fault":
       return <Clock className="w-4 h-4 text-blue-500 shrink-0" />;
     case "contact_expired_user_attempted":
-      return <Clock className="w-4 h-4 text-amber-500 shrink-0" />;
+      return <Clock className="w-4 h-4 text-brand-amber shrink-0" />;
     case "cancellation_confirmed":
-      return <XCircle className="w-4 h-4 text-neutral-400 shrink-0" />;
+      return <XCircle className="w-4 h-4 text-muted-foreground shrink-0" />;
     case "md_winner_cancelled":
-      return <XCircle className="w-4 h-4 text-amber-500 shrink-0" />;
+      return <XCircle className="w-4 h-4 text-brand-amber shrink-0" />;
     case "md_winner_noshow":
-      return <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />;
+      return <AlertTriangle className="w-4 h-4 text-brand-amber shrink-0" />;
     case "md_new_bid":
-      return <TrendingUp className="w-4 h-4 text-green-500 shrink-0" />;
+      return <TrendingUp className="w-4 h-4 text-money shrink-0" />;
     default:
-      return <Bell className="w-4 h-4 text-neutral-500 shrink-0" />;
+      return <Bell className="w-4 h-4 text-muted-foreground shrink-0" />;
   }
 }
 
@@ -257,7 +257,7 @@ export function Header({
 
   return (
     <header
-      className="border-b border-neutral-800 bg-[#0A0A0A] sticky top-0 z-50"
+      className="border-b border-border bg-background sticky top-0 z-50"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
       <div className="container mx-auto max-w-lg px-4 h-[52px] flex items-center justify-between">
@@ -266,7 +266,7 @@ export function Header({
             <Link
               href={backHref}
               aria-label="뒤로가기"
-              className="w-9 h-9 -ml-2 flex items-center justify-center rounded-full text-white hover:bg-neutral-800 transition-colors shrink-0"
+              className="w-9 h-9 -ml-2 flex items-center justify-center rounded-full text-foreground hover:bg-muted transition-colors shrink-0"
             >
               <ChevronLeft className="w-5 h-5" />
             </Link>
@@ -274,11 +274,11 @@ export function Header({
           <div className="flex flex-col gap-0.5 min-w-0">
           {compact && customTitle ? (
             <div className="flex items-baseline gap-2 min-w-0">
-              <span className="shrink-0 text-lg font-black tracking-tighter leading-none bg-gradient-to-r from-[#A78BFA] to-[#F472B6] bg-clip-text text-transparent">
+              <span className="shrink-0 text-lg font-black tracking-tighter leading-none bg-gradient-to-r from-[#7C3AED] to-[#DB2777] dark:from-[#A78BFA] dark:to-[#F472B6] bg-clip-text text-transparent">
                 {customTitle}
               </span>
               {customSubtitle && (
-                <span className="text-[12px] text-neutral-400 font-medium tracking-tight truncate">
+                <span className="text-[12px] text-muted-foreground font-medium tracking-tight truncate">
                   {customSubtitle}
                 </span>
               )}
@@ -287,12 +287,12 @@ export function Header({
             <>
               <Link
                 href="/"
-                className="text-lg font-black tracking-tighter text-white leading-none flex items-baseline gap-1.5"
+                className="text-lg font-black tracking-tighter text-foreground leading-none flex items-baseline gap-1.5"
                 aria-label="나이트플로우 홈 (베타)"
               >
                 NightFlow
               </Link>
-              <p className="text-[13px] text-neutral-400 font-medium tracking-tight whitespace-nowrap">
+              <p className="text-[13px] text-muted-foreground font-medium tracking-tight whitespace-nowrap">
                 밤이 더 밝아진다, 나플
               </p>
             </>
@@ -301,17 +301,17 @@ export function Header({
         </div>
 
         {isLoading ? (
-          <Link href="/login" className="w-9 h-9 bg-neutral-800 animate-pulse rounded-lg" aria-label="로딩 중 - 클릭하면 로그인 페이지" />
+          <Link href="/login" className="w-9 h-9 bg-muted animate-pulse rounded-lg" aria-label="로딩 중 - 클릭하면 로그인 페이지" />
         ) : user ? (
           <>
             <div className="flex items-center gap-1">
               {!compact && ((user.role === "md" && user.md_status === "approved") || user.role === "admin") && (
                 <Link
                   href="/md/dashboard"
-                  className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-white hover:bg-neutral-200 transition-colors shadow-sm"
+                  className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-inverse hover:opacity-90 transition-colors shadow-sm"
                 >
-                  <LayoutDashboard className="w-3.5 h-3.5 text-black" />
-                  <span className="text-[12px] font-black text-black whitespace-nowrap">파트너 대시보드</span>
+                  <LayoutDashboard className="w-3.5 h-3.5 text-inverse-foreground" />
+                  <span className="text-[12px] font-black text-inverse-foreground whitespace-nowrap">파트너 대시보드</span>
                 </Link>
               )}
               {!compact && user.md_status === "pending" && (
@@ -319,25 +319,25 @@ export function Header({
                   href="/md/apply"
                   className="h-9 px-3.5 flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
                 >
-                  <Clock className="w-3.5 h-3.5 text-amber-500" />
-                  <span className="text-[12px] font-bold text-amber-400">승인 대기 중</span>
+                  <Clock className="w-3.5 h-3.5 text-brand-amber" />
+                  <span className="text-[12px] font-bold text-brand-amber">승인 대기 중</span>
                 </Link>
               )}
               {!compact && user.role === "user" && user.md_status !== "pending" && pathname !== "/start" && !pathname?.startsWith("/auctions/") && !pathname?.startsWith("/flags/") && !pathname?.startsWith("/messages") && !pathname?.startsWith("/u/") && !pathname?.startsWith("/profile") && (
                 <Link
                   href="/start"
-                  className="h-9 px-3.5 flex items-center rounded-lg border border-neutral-600 bg-transparent hover:bg-neutral-800 transition-colors"
+                  className="h-9 px-3.5 flex items-center rounded-lg border border-border bg-transparent hover:bg-muted transition-colors"
                   aria-label="예약하기"
                 >
-                  <span className="text-sm font-black text-white whitespace-nowrap">예약하기</span>
+                  <span className="text-sm font-black text-foreground whitespace-nowrap">예약하기</span>
                 </Link>
               )}
               <button
                 onClick={() => setMenuOpen(true)}
-                className="relative w-11 h-11 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
+                className="relative w-11 h-11 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
                 aria-label="메뉴 열기"
               >
-                <Menu className="w-5 h-5 text-neutral-300" />
+                <Menu className="w-5 h-5 text-foreground/80" />
                 {(unreadCount > 0 || supportUnread) && (
                   <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
                 )}
@@ -348,50 +348,50 @@ export function Header({
               <SheetContent
                 side="right"
                 data-no-pull-refresh="strict"
-                className="w-[280px] bg-[#0A0A0A] border-neutral-800 p-0 flex flex-col h-full"
+                className="w-[280px] bg-background border-border p-0 flex flex-col h-full"
                 style={{ paddingTop: 'env(safe-area-inset-top)' }}
                 onTouchStart={onTouchStart}
                 onTouchMove={onTouchMove}
                 onTouchEnd={onTouchEnd}
               >
-                <SheetHeader className="p-6 pb-2 border-b border-neutral-800/50 shrink-0">
+                <SheetHeader className="p-6 pb-2 border-b border-border/50 shrink-0">
                   <div
                     className="flex items-center gap-3 text-left cursor-pointer"
                     onClick={() => { setMenuOpen(false); router.push(`/u/${user.id}`); }}
                   >
-                    <div className="relative w-12 h-12 rounded-full overflow-hidden bg-neutral-800 shrink-0 ring-1 ring-neutral-700">
+                    <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted shrink-0 ring-1 ring-border">
                       {user.profile_image ? (
                         <Image src={user.profile_image} alt="" fill sizes="48px" className="object-cover" />
                       ) : (
-                        <div className="w-full h-full grid place-items-center text-neutral-500">
+                        <div className="w-full h-full grid place-items-center text-muted-foreground">
                           <User className="w-6 h-6" />
                         </div>
                       )}
                     </div>
                     <div className="min-w-0">
-                      <SheetTitle className="text-white font-black hover:text-neutral-300 transition-colors truncate">
+                      <SheetTitle className="text-foreground font-black hover:text-foreground/80 transition-colors truncate">
                         {user.display_name || user.name || "사용자"}
                       </SheetTitle>
                       {(user.role === "md" || user.role === "admin") ? (
-                        <p className="text-[12px] text-neutral-500">
+                        <p className="text-[12px] text-muted-foreground">
                           {user.role === "md" ? "파트너" : "관리자"}
                         </p>
                       ) : (
-                        <p className="text-[12px] text-neutral-500">프로필 보기</p>
+                        <p className="text-[12px] text-muted-foreground">프로필 보기</p>
                       )}
                     </div>
-                    <ChevronRight className="w-5 h-5 text-neutral-500 ml-auto shrink-0 mr-4" />
+                    <ChevronRight className="w-5 h-5 text-muted-foreground ml-auto shrink-0 mr-4" />
                   </div>
                 </SheetHeader>
 
                 {/* 스크롤 가능한 영역 */}
                 <div className="flex-1 overflow-y-auto overscroll-none">
                   {/* 알림 섹션 */}
-                  <div className="p-4 border-b border-neutral-800/50">
+                  <div className="p-4 border-b border-border/50">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <Bell className="w-4 h-4 text-neutral-400" />
-                        <span className="text-[13px] font-bold text-neutral-300">알림</span>
+                        <Bell className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-[13px] font-bold text-foreground/80">알림</span>
                         {unreadCount > 0 && (
                           <span className="text-[11px] font-bold text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded-full">
                             {unreadCount}
@@ -402,7 +402,7 @@ export function Header({
                         {notifications.length > 0 && unreadCount > 0 && (
                           <button
                             onClick={markAllAsRead}
-                            className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors"
+                            className="text-[11px] text-muted-foreground hover:text-foreground/80 transition-colors"
                           >
                             모두 읽음
                           </button>
@@ -414,7 +414,7 @@ export function Header({
                                 deleteAllNotifications();
                               }
                             }}
-                            className="text-[11px] text-neutral-500 hover:text-red-400 transition-colors"
+                            className="text-[11px] text-muted-foreground hover:text-red-400 transition-colors"
                           >
                             모두 지우기
                           </button>
@@ -430,7 +430,7 @@ export function Header({
                     </div>
 
                     {notifications.length === 0 ? (
-                      <p className="text-[12px] text-neutral-600 py-3 text-center">
+                      <p className="text-[12px] text-muted-foreground py-3 text-center">
                         새로운 알림이 없습니다
                       </p>
                     ) : (
@@ -445,20 +445,20 @@ export function Header({
                               className={`w-full flex items-start gap-2.5 p-2.5 rounded-lg text-left transition-colors ${
                                 notification.is_read
                                   ? "opacity-50 hover:opacity-70"
-                                  : "bg-neutral-800/30 hover:bg-neutral-800/50"
+                                  : "bg-muted/30 hover:bg-muted/50"
                               }`}
                             >
                               <div className="mt-0.5">
                                 {getNotificationIcon(notification.type)}
                               </div>
                               <div className="flex-1 min-w-0 pr-6">
-                                <p className="text-[12px] font-bold text-neutral-200 truncate">
+                                <p className="text-[12px] font-bold text-foreground truncate">
                                   {notification.title}
                                 </p>
-                                <p className="text-[11px] text-neutral-500 line-clamp-2 mt-0.5">
+                                <p className="text-[11px] text-muted-foreground line-clamp-2 mt-0.5">
                                   {notification.message}
                                 </p>
-                                <p className="text-[10px] text-neutral-600 mt-1">
+                                <p className="text-[10px] text-muted-foreground mt-1">
                                   {timeAgo(notification.created_at)}
                                 </p>
                               </div>
@@ -468,10 +468,10 @@ export function Header({
                             </button>
                             <button
                               onClick={(e) => handleDeleteNotification(e, notification.id)}
-                              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-md bg-neutral-900/80 hover:bg-red-500/20 transition-colors"
+                              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-md bg-card/80 hover:bg-red-500/20 transition-colors"
                               aria-label="알림 삭제"
                             >
-                              <X className="w-3.5 h-3.5 text-neutral-400 hover:text-red-400" />
+                              <X className="w-3.5 h-3.5 text-muted-foreground hover:text-red-400" />
                             </button>
                           </div>
                         ))}
@@ -486,17 +486,17 @@ export function Header({
                         <Link
                           href="/admin"
                           onClick={() => setMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                         >
-                          <ShieldCheck className="w-5 h-5 text-green-500" />
+                          <ShieldCheck className="w-5 h-5 text-money" />
                           <span className="text-[15px] font-bold">Admin</span>
                         </Link>
                         <Link
                           href="/admin/mds"
                           onClick={() => setMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                         >
-                          <User className="w-5 h-5 text-amber-500" />
+                          <User className="w-5 h-5 text-brand-amber" />
                           <span className="text-[15px] font-bold">파트너 승인</span>
                           {pendingMDCount > 0 && (
                             <span className="ml-auto bg-red-500 text-white text-[10px] font-black rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
@@ -507,7 +507,7 @@ export function Header({
                         <Link
                           href="/admin/support"
                           onClick={() => setMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                         >
                           <Headset className="w-5 h-5 text-blue-400" />
                           <span className="text-[15px] font-bold">고객 문의</span>
@@ -515,7 +515,7 @@ export function Header({
                         <Link
                           href="/admin/foreign"
                           onClick={() => setMenuOpen(false)}
-                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                          className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                         >
                           <Globe className="w-5 h-5 text-red-400" />
                           <span className="text-[15px] font-bold">외국인 요청</span>
@@ -532,7 +532,7 @@ export function Header({
                       <Link
                         href="/md/dashboard"
                         onClick={() => setMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                        className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                       >
                         <LayoutDashboard className="w-5 h-5 text-blue-500" />
                         <span className="text-[15px] font-bold">파트너 대시보드</span>
@@ -542,7 +542,7 @@ export function Header({
                     <Link
                       href="/favorites"
                       onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
                       <Heart className="w-5 h-5 text-rose-500" />
                       <span className="text-[15px] font-bold">찜 목록</span>
@@ -551,7 +551,7 @@ export function Header({
                     <Link
                       href="/faq"
                       onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
                       <HelpCircle className="w-5 h-5 text-sky-500" />
                       <span className="text-[15px] font-bold">자주 묻는 질문</span>
@@ -560,9 +560,9 @@ export function Header({
                     <Link
                       href="/contact"
                       onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Headset className="w-5 h-5 text-green-500" />
+                      <Headset className="w-5 h-5 text-money" />
                       <span className="text-[15px] font-bold">고객 문의</span>
                       {supportUnread && (
                         <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
@@ -572,17 +572,17 @@ export function Header({
                     <Link
                       href="/settings"
                       onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Settings className="w-5 h-5 text-amber-500" />
+                      <Settings className="w-5 h-5 text-brand-amber" />
                       <span className="text-[15px] font-bold">설정</span>
                     </Link>
 
-                    <div className="h-px bg-neutral-800/50 my-2" />
+                    <div className="h-px bg-muted/50 my-2" />
 
                     <button
                       onClick={handleLogout}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-500 hover:bg-neutral-800/50 hover:text-red-400 transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-red-400 transition-colors"
                     >
                       <LogOut className="w-5 h-5" />
                       <span className="text-[15px] font-bold">로그아웃</span>
@@ -592,13 +592,13 @@ export function Header({
 
                 {/* 화면 최하단 고정: MD·파트너 신청 */}
                 {user.role === "user" && user.md_status !== "pending" && (
-                  <div className="shrink-0 border-t border-neutral-800/50 p-3">
+                  <div className="shrink-0 border-t border-border/50 p-3">
                     <Link
                       href="/md/apply"
                       onClick={() => setMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-neutral-300 hover:bg-neutral-800/50 hover:text-white transition-colors"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Star className="w-5 h-5 text-amber-500" />
+                      <Star className="w-5 h-5 text-brand-amber" />
                       <span className="text-[15px] font-bold">파트너 신청</span>
                     </Link>
                   </div>
@@ -608,7 +608,7 @@ export function Header({
           </>
         ) : (
           <Link href="/login" className="relative z-[60]">
-            <Button size="sm" className="h-9 rounded-lg bg-white text-black font-bold hover:bg-neutral-200">
+            <Button size="sm" className="h-9 rounded-lg bg-inverse text-inverse-foreground font-bold hover:opacity-90">
               로그인
             </Button>
           </Link>

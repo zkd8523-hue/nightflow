@@ -62,13 +62,13 @@ export function LivePollEditor({ initial, onDone, onCancel, onDelete }: Props) {
 
   return (
     <div className="fixed inset-0 z-[130] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center">
-      <div className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
+      <div className="w-full max-w-lg bg-card rounded-t-3xl sm:rounded-3xl border border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-white text-[16px] font-black">설문 만들기</h3>
+          <h3 className="text-foreground text-[16px] font-black">설문 만들기</h3>
           <button
             type="button"
             onClick={onCancel}
-            className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-400"
+            className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground"
             aria-label="닫기"
           >
             <X className="w-4 h-4" />
@@ -82,14 +82,14 @@ export function LivePollEditor({ initial, onDone, onCancel, onDelete }: Props) {
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="질문을 입력하세요 (예: 오늘 여기 어때요?)"
           maxLength={60}
-          className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-3 text-white text-[15px] font-bold placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500"
+          className="w-full bg-card border border-border rounded-xl px-3 py-3 text-foreground text-[15px] font-bold placeholder:text-muted-foreground focus:outline-none focus:border-border"
         />
 
         {/* 옵션 */}
         <div className="space-y-2">
           {options.map((o, i) => (
             <div key={o.id} className="flex items-center gap-2">
-              <span className="w-6 text-center text-[13px] font-black text-neutral-500">
+              <span className="w-6 text-center text-[13px] font-black text-muted-foreground">
                 {i + 1}
               </span>
               <input
@@ -98,13 +98,13 @@ export function LivePollEditor({ initial, onDone, onCancel, onDelete }: Props) {
                 onChange={(e) => setOptionText(o.id, e.target.value)}
                 placeholder={`선택지 ${i + 1}`}
                 maxLength={30}
-                className="flex-1 bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2.5 text-white text-[14px] placeholder:text-neutral-600 focus:outline-none focus:border-neutral-500"
+                className="flex-1 bg-card border border-border rounded-xl px-3 py-2.5 text-foreground text-[14px] placeholder:text-muted-foreground focus:outline-none focus:border-border"
               />
               {options.length > MIN_OPTIONS && (
                 <button
                   type="button"
                   onClick={() => removeOption(o.id)}
-                  className="w-8 h-8 rounded-lg bg-neutral-800 flex items-center justify-center text-neutral-500"
+                  className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-muted-foreground"
                   aria-label="선택지 삭제"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -116,7 +116,7 @@ export function LivePollEditor({ initial, onDone, onCancel, onDelete }: Props) {
             <button
               type="button"
               onClick={addOption}
-              className="flex items-center gap-1.5 text-[13px] font-bold text-neutral-400 px-2 py-1.5"
+              className="flex items-center gap-1.5 text-[13px] font-bold text-muted-foreground px-2 py-1.5"
             >
               <Plus className="w-4 h-4" />
               선택지 추가
@@ -130,7 +130,7 @@ export function LivePollEditor({ initial, onDone, onCancel, onDelete }: Props) {
             type="button"
             onClick={handleDone}
             disabled={!canSave}
-            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-white text-black text-[15px] font-black disabled:opacity-40"
+            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-inverse text-inverse-foreground text-[15px] font-black disabled:opacity-40"
           >
             <Check className="w-4 h-4" />
             {initial ? "수정" : "추가"}

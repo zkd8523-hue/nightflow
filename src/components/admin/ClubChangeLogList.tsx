@@ -79,8 +79,8 @@ export function ClubChangeLogList({ rows }: Props) {
 
   if (rows.length === 0) {
     return (
-      <div className="text-center py-16 bg-[#1C1C1E] rounded-2xl border border-neutral-800">
-        <p className="text-sm text-neutral-500">변경 이력이 없어요</p>
+      <div className="text-center py-16 bg-card rounded-2xl border border-border">
+        <p className="text-sm text-muted-foreground">변경 이력이 없어요</p>
       </div>
     );
   }
@@ -100,32 +100,32 @@ export function ClubChangeLogList({ rows }: Props) {
         return (
           <div
             key={row.id}
-            className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-2"
+            className="bg-card border border-border rounded-2xl p-4 space-y-2"
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 text-[11px] text-neutral-500">
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
                   <FieldIcon className="w-3 h-3" />
                   <span className="font-bold">{fieldLabel}</span>
                   <span>·</span>
                   <span>{formatRelative(row.created_at)}</span>
                 </div>
-                <p className="text-[14px] text-white font-bold mt-1">
+                <p className="text-[14px] text-foreground font-bold mt-1">
                   {row.club ? (
                     <Link
                       href={`/clubs/${row.club.id}`}
-                      className="hover:text-amber-300 transition-colors"
+                      className="hover:text-brand-amber transition-colors"
                     >
                       {row.club.name}
                     </Link>
                   ) : "(삭제된 클럽)"}
                   {row.club?.area && (
-                    <span className="text-[12px] text-neutral-500 font-medium ml-1.5">
+                    <span className="text-[12px] text-muted-foreground font-medium ml-1.5">
                       {row.club.area}
                     </span>
                   )}
                 </p>
-                <p className="text-[11px] text-neutral-500 mt-0.5">
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   변경자: {row.changer_name}
                 </p>
               </div>
@@ -145,18 +145,18 @@ export function ClubChangeLogList({ rows }: Props) {
             </div>
             <div className="bg-black/30 rounded-xl p-3 space-y-1.5">
               <div>
-                <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">
+                <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
                   변경 전
                 </span>
-                <p className="text-[12px] text-neutral-400 mt-0.5 break-words">
+                <p className="text-[12px] text-muted-foreground mt-0.5 break-words">
                   {formatValue(row.field, row.old_value)}
                 </p>
               </div>
-              <div className="border-t border-neutral-800/50 pt-1.5">
-                <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">
+              <div className="border-t border-border/50 pt-1.5">
+                <span className="text-[10px] text-brand-amber font-bold uppercase tracking-wider">
                   변경 후
                 </span>
-                <p className="text-[12px] text-white mt-0.5 break-words">
+                <p className="text-[12px] text-foreground mt-0.5 break-words">
                   {formatValue(row.field, row.new_value)}
                 </p>
               </div>

@@ -69,7 +69,7 @@ function GridBody({ items }: Props) {
 
     return (
       <div
-        className="mt-2 rounded-2xl overflow-hidden border border-neutral-800 bg-neutral-900 w-[200px] max-w-full"
+        className="mt-2 rounded-2xl overflow-hidden border border-border bg-card w-[200px] max-w-full"
         style={{ aspectRatio: String(aspect) }}
       >
         <MediaCell item={item} aspect="cover" index={0} />
@@ -79,7 +79,7 @@ function GridBody({ items }: Props) {
 
   if (count === 2) {
     return (
-      <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-neutral-800 w-[200px] max-w-full">
+      <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-border w-[200px] max-w-full">
         <MediaCell item={items[0]} aspect="square" index={0} />
         <MediaCell item={items[1]} aspect="square" index={1} />
       </div>
@@ -88,7 +88,7 @@ function GridBody({ items }: Props) {
 
   if (count === 3) {
     return (
-      <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-neutral-800 aspect-[4/3] w-[200px] max-w-full">
+      <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-border aspect-[4/3] w-[200px] max-w-full">
         <MediaCell item={items[0]} aspect="cover" index={0} />
         <div className="grid grid-rows-2 gap-0.5">
           <MediaCell item={items[1]} aspect="cover" index={1} />
@@ -100,7 +100,7 @@ function GridBody({ items }: Props) {
 
   // 4개
   return (
-    <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-neutral-800 w-[200px] max-w-full">
+    <div className="mt-2 grid grid-cols-2 gap-0.5 rounded-2xl overflow-hidden border border-border w-[200px] max-w-full">
       {items.slice(0, 4).map((it, i) => (
         <MediaCell key={i} item={it} aspect="square" index={i} />
       ))}
@@ -118,8 +118,8 @@ function MediaCell({ item, aspect, index }: CellProps) {
   const openViewer = useContext(ViewerContext);
   const containerClass =
     aspect === "square"
-      ? "relative aspect-square w-full bg-neutral-900"
-      : "relative w-full h-full bg-neutral-900";
+      ? "relative aspect-square w-full bg-card"
+      : "relative w-full h-full bg-card";
 
   if (item.type === "image") {
     return (
@@ -179,7 +179,7 @@ function ChatVideo({ item }: { item: ChatMediaItem; aspect: CellProps["aspect"] 
     return () => io.disconnect();
   }, []);
 
-  const videoClass = "absolute inset-0 w-full h-full object-cover bg-black";
+  const videoClass = "absolute inset-0 w-full h-full object-cover bg-background";
 
   return (
     <>
@@ -208,7 +208,7 @@ function ChatVideo({ item }: { item: ChatMediaItem; aspect: CellProps["aspect"] 
           e.stopPropagation();
           setMuted((m) => !m);
         }}
-        className="absolute bottom-2 right-2 z-10 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-white"
+        className="absolute bottom-2 right-2 z-10 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-foreground"
         aria-label={muted ? "음소거 해제" : "음소거"}
       >
         {muted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
@@ -217,13 +217,13 @@ function ChatVideo({ item }: { item: ChatMediaItem; aspect: CellProps["aspect"] 
       {!playing && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-12 h-12 rounded-full bg-black/50 flex items-center justify-center">
-            <Play className="w-5 h-5 text-white fill-white" />
+            <Play className="w-5 h-5 text-foreground fill-white" />
           </div>
         </div>
       )}
       {/* 동영상 길이 배지 */}
       {item.duration && (
-        <div className="absolute top-2 left-2 z-10 px-1.5 py-0.5 rounded bg-black/60 text-white text-[10px] font-bold">
+        <div className="absolute top-2 left-2 z-10 px-1.5 py-0.5 rounded bg-black/60 text-foreground text-[10px] font-bold">
           {Math.round(item.duration)}초
         </div>
       )}
@@ -249,18 +249,18 @@ function LocationCard({ item }: { item: ChatMediaItem }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="mt-2 flex items-center gap-2.5 rounded-2xl border border-neutral-700 bg-neutral-900/60 px-3 py-2.5 hover:bg-neutral-900 transition-colors"
+      className="mt-2 flex items-center gap-2.5 rounded-2xl border border-border bg-card/60 px-3 py-2.5 hover:bg-card transition-colors"
     >
-      <span className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center shrink-0">
+      <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
         <MapPin className="w-4 h-4 text-red-400" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-black text-white">위치 공유</span>
-        <span className="block text-[12px] text-neutral-400 truncate">
+        <span className="block text-[13px] font-black text-foreground">위치 공유</span>
+        <span className="block text-[12px] text-muted-foreground truncate">
           {item.label ?? "지도에서 보기"}
         </span>
       </span>
-      <ExternalLink className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+      <ExternalLink className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
     </a>
   );
 }

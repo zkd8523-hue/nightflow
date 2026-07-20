@@ -35,8 +35,8 @@ export default function DeleteAccountPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-border border-t-white rounded-full animate-spin" />
       </div>
     );
   }
@@ -88,17 +88,17 @@ export default function DeleteAccountPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-lg px-4 py-6">
         {/* 헤더 */}
         <div className="flex items-center gap-3 mb-6">
           <Link
             href="/profile"
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
-          <h1 className="text-xl font-black text-white">회원탈퇴</h1>
+          <h1 className="text-xl font-black text-foreground">회원탈퇴</h1>
         </div>
 
         {/* Admin 차단 */}
@@ -110,7 +110,7 @@ export default function DeleteAccountPage() {
                 관리자 계정
               </h2>
             </div>
-            <p className="text-[13px] text-neutral-400 leading-relaxed">
+            <p className="text-[13px] text-muted-foreground leading-relaxed">
               관리자 계정은 탈퇴할 수 없습니다.
               <br />
               다른 관리자에게 문의해주세요.
@@ -121,25 +121,25 @@ export default function DeleteAccountPage() {
         {!isAdmin && (
           <div className="space-y-3.5">
             {/* 계정 요약 */}
-            <Card className="bg-[#1C1C1E] border-neutral-800 p-5 gap-0 space-y-2">
-              <h2 className="text-[15px] font-black text-white">계정 정보</h2>
+            <Card className="bg-card border-border p-5 gap-0 space-y-2">
+              <h2 className="text-[15px] font-black text-foreground">계정 정보</h2>
               <div className="space-y-1.5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500 font-medium">이름</span>
-                  <span className="text-white font-bold">
+                  <span className="text-muted-foreground font-medium">이름</span>
+                  <span className="text-foreground font-bold">
                     {user.name || "미설정"}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-neutral-500 font-medium">가입일</span>
-                  <span className="text-white font-bold">
+                  <span className="text-muted-foreground font-medium">가입일</span>
+                  <span className="text-foreground font-bold">
                     {dayjs(user.created_at).format("YYYY년 M월 D일")}
                   </span>
                 </div>
                 {isMD && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-neutral-500 font-medium">역할</span>
-                    <span className="text-amber-400 font-bold">파트너</span>
+                    <span className="text-muted-foreground font-medium">역할</span>
+                    <span className="text-brand-amber font-bold">파트너</span>
                   </div>
                 )}
               </div>
@@ -148,12 +148,12 @@ export default function DeleteAccountPage() {
             {/* 30일 복구 안내 */}
             <Card className="bg-amber-500/5 border-amber-500/20 p-5 gap-0 space-y-2">
               <div className="flex items-center gap-2">
-                <RotateCcw className="w-4 h-4 text-amber-400" />
-                <h3 className="text-sm font-black text-amber-400">
+                <RotateCcw className="w-4 h-4 text-brand-amber" />
+                <h3 className="text-sm font-black text-brand-amber">
                   30일 이내 복구 가능
                 </h3>
               </div>
-              <p className="text-[13px] text-neutral-400 leading-relaxed">
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
                 탈퇴 후 30일 이내에 다시 로그인하면 계정을 복구할 수 있습니다.
                 30일이 지나면 모든 데이터가 영구적으로 삭제됩니다.
               </p>
@@ -182,7 +182,7 @@ export default function DeleteAccountPage() {
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2.5">
                     <AlertTriangle className="w-3.5 h-3.5 text-red-400/70 mt-0.5 shrink-0" />
-                    <span className="text-[13px] text-neutral-400 font-medium">
+                    <span className="text-[13px] text-muted-foreground font-medium">
                       {item}
                     </span>
                   </li>
@@ -194,17 +194,17 @@ export default function DeleteAccountPage() {
             {isMD && (
               <Card className="bg-amber-500/5 border-amber-500/20 p-5 gap-0 space-y-2">
                 <div className="flex items-center gap-2">
-                  <ShieldAlert className="w-4 h-4 text-amber-400" />
-                  <h3 className="text-sm font-black text-amber-400">
+                  <ShieldAlert className="w-4 h-4 text-brand-amber" />
+                  <h3 className="text-sm font-black text-brand-amber">
                     파트너 계정 안내
                   </h3>
                 </div>
                 <ul className="space-y-1.5">
-                  <li className="text-[13px] text-neutral-400 font-medium leading-relaxed">
+                  <li className="text-[13px] text-muted-foreground font-medium leading-relaxed">
                     진행 중인 경매(활성/예정/낙찰 진행)가 있는 경우 탈퇴할 수
                     없습니다.
                   </li>
-                  <li className="text-[13px] text-neutral-400 font-medium leading-relaxed">
+                  <li className="text-[13px] text-muted-foreground font-medium leading-relaxed">
                     소속 클럽과의 연결이 해제됩니다.
                   </li>
                 </ul>
@@ -235,13 +235,13 @@ export default function DeleteAccountPage() {
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl"
+          className="h-auto bg-card border-border rounded-t-3xl"
         >
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">
+            <SheetTitle className="text-foreground font-black text-xl">
               정말 탈퇴하시겠습니까?
             </SheetTitle>
-            <SheetDescription className="text-neutral-400">
+            <SheetDescription className="text-muted-foreground">
               확인을 위해 아래에 &quot;회원탈퇴&quot;를 입력해주세요
             </SheetDescription>
           </SheetHeader>
@@ -249,10 +249,10 @@ export default function DeleteAccountPage() {
           <div className="space-y-3.5 px-4">
             {/* 복구 안내 */}
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5">
-              <p className="text-[13px] text-amber-400 font-bold">
+              <p className="text-[13px] text-brand-amber font-bold">
                 30일 이내에 로그인하면 계정을 복구할 수 있습니다
               </p>
-              <p className="text-[12px] text-neutral-500 font-medium mt-1">
+              <p className="text-[12px] text-muted-foreground font-medium mt-1">
                 30일 후 모든 데이터가 영구 삭제됩니다
               </p>
             </div>
@@ -263,7 +263,7 @@ export default function DeleteAccountPage() {
               value={confirmText}
               onChange={(e) => setConfirmText(e.target.value)}
               placeholder="회원탈퇴"
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3 text-[14px] text-white placeholder:text-neutral-600 focus:outline-none focus:border-red-500 transition-colors"
+              className="w-full bg-card border border-border rounded-xl px-4 py-3 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-red-500 transition-colors"
               autoComplete="off"
             />
 
@@ -276,7 +276,7 @@ export default function DeleteAccountPage() {
                   setConfirmText("");
                 }}
                 disabled={loading}
-                className="h-12 border-neutral-700 text-neutral-300 font-black rounded-xl hover:bg-neutral-800"
+                className="h-12 border-border text-foreground/80 font-black rounded-xl hover:bg-muted"
               >
                 돌아가기
               </Button>

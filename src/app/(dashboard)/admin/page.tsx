@@ -233,7 +233,7 @@ export default async function AdminDashboardPage() {
       label: "파트너 관리",
       value: `${totalMDs || 0}명`,
       icon: Store,
-      color: "text-green-500",
+      color: "text-money",
       bgColor: "bg-green-500/10",
       badge: pendingMDs ? `${pendingMDs}명 대기` : null,
       href: "/admin/mds",
@@ -242,7 +242,7 @@ export default async function AdminDashboardPage() {
       label: "등록 클럽",
       value: `${totalClubs || 0}곳`,
       icon: Store,
-      color: "text-amber-500",
+      color: "text-brand-amber",
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/clubs",
@@ -269,7 +269,7 @@ export default async function AdminDashboardPage() {
       label: "조각 현황",
       value: `${shareTotal || 0}건`,
       icon: LayoutGrid,
-      color: "text-green-400",
+      color: "text-money",
       bgColor: "bg-green-500/10",
       badge: shareActive ? `${shareActive}건 모집 중` : null,
       href: "/admin/puzzles?kind=share",
@@ -287,7 +287,7 @@ export default async function AdminDashboardPage() {
       label: "게스트 간판 배정",
       value: "관리",
       icon: CalendarCheck,
-      color: "text-amber-400",
+      color: "text-brand-amber",
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/hotdeal-slots",
@@ -313,7 +313,7 @@ export default async function AdminDashboardPage() {
       label: "마케팅 수신 동의",
       value: `${marketingConsented || 0}명`,
       icon: Megaphone,
-      color: "text-amber-400",
+      color: "text-brand-amber",
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/marketing",
@@ -342,7 +342,7 @@ export default async function AdminDashboardPage() {
       label: "이의제기",
       value: `${pendingAppeals || 0}건`,
       icon: AlertCircle,
-      color: "text-amber-500",
+      color: "text-brand-amber",
       bgColor: "bg-amber-500/10",
       badge: pendingAppeals ? `${pendingAppeals}건 대기` : null,
       href: "/admin/appeals",
@@ -387,7 +387,7 @@ export default async function AdminDashboardPage() {
       label: "클럽 요청 (영업 리드)",
       value: `${totalClubRequests || 0}건`,
       icon: Sparkles,
-      color: "text-amber-400",
+      color: "text-brand-amber",
       bgColor: "bg-amber-500/10",
       badge: recentClubRequests ? `최근 7일 ${recentClubRequests}건` : null,
       href: "/admin/club-requests",
@@ -396,7 +396,7 @@ export default async function AdminDashboardPage() {
       label: "5자리뷰 현황",
       value: "보기",
       icon: Star,
-      color: "text-amber-400",
+      color: "text-brand-amber",
       bgColor: "bg-amber-500/10",
       badge: null,
       href: "/admin/reviews",
@@ -405,8 +405,8 @@ export default async function AdminDashboardPage() {
       label: "사용자 차단",
       value: `${totalUserBlocks || 0}건`,
       icon: Ban,
-      color: dangerUserCount > 0 ? "text-red-500" : "text-neutral-400",
-      bgColor: dangerUserCount > 0 ? "bg-red-500/10" : "bg-neutral-500/10",
+      color: dangerUserCount > 0 ? "text-red-500" : "text-muted-foreground",
+      bgColor: dangerUserCount > 0 ? "bg-red-500/10" : "bg-muted/10",
       badge: dangerUserCount > 0
         ? `⚠ 3회+ ${dangerUserCount}명`
         : recentUserBlocks
@@ -417,49 +417,49 @@ export default async function AdminDashboardPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* 헤더 */}
         <div className="mb-8">
           <Link
             href="/"
-            className="inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-white transition-colors mb-4"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
           >
             ← 홈으로
           </Link>
-          <h1 className="text-4xl font-black text-white mb-2">Admin Dashboard</h1>
-          <p className="text-neutral-500">NightFlow 플랫폼 관리</p>
+          <h1 className="text-4xl font-black text-foreground mb-2">Admin Dashboard</h1>
+          <p className="text-muted-foreground">NightFlow 플랫폼 관리</p>
         </div>
 
         {/* 지역별 현황 (접이식) */}
-        <details className="group mb-8 bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
-          <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none hover:bg-neutral-900/50 transition-colors">
-            <h2 className="text-base font-black text-white">지역별 현황</h2>
-            <span className="text-neutral-500 text-sm font-bold group-open:rotate-180 transition-transform">▼</span>
+        <details className="group mb-8 bg-card border border-border rounded-2xl overflow-hidden">
+          <summary className="flex items-center justify-between px-5 py-3.5 cursor-pointer list-none hover:bg-card/50 transition-colors">
+            <h2 className="text-base font-black text-foreground">지역별 현황</h2>
+            <span className="text-muted-foreground text-sm font-bold group-open:rotate-180 transition-transform">▼</span>
           </summary>
-          <div className="border-t border-neutral-800 overflow-x-auto">
+          <div className="border-t border-border overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-neutral-800">
-                  <th className="text-left px-5 py-3 text-neutral-500 font-bold">지역</th>
-                  <th className="text-right px-4 py-3 text-neutral-500 font-bold">클럽</th>
-                  <th className="text-right px-4 py-3 text-neutral-500 font-bold">파트너</th>
-                  <th className="text-right px-4 py-3 text-neutral-500 font-bold">경매</th>
-                  <th className="text-right px-5 py-3 text-neutral-500 font-bold">평균 입찰</th>
-                  <th className="text-right px-5 py-3 text-neutral-500 font-bold">평균 관심</th>
+                <tr className="border-b border-border">
+                  <th className="text-left px-5 py-3 text-muted-foreground font-bold">지역</th>
+                  <th className="text-right px-4 py-3 text-muted-foreground font-bold">클럽</th>
+                  <th className="text-right px-4 py-3 text-muted-foreground font-bold">파트너</th>
+                  <th className="text-right px-4 py-3 text-muted-foreground font-bold">경매</th>
+                  <th className="text-right px-5 py-3 text-muted-foreground font-bold">평균 입찰</th>
+                  <th className="text-right px-5 py-3 text-muted-foreground font-bold">평균 관심</th>
                 </tr>
               </thead>
               <tbody>
                 {areaStats.length === 0 ? (
-                  <tr><td colSpan={6} className="text-center py-8 text-neutral-600">데이터 없음</td></tr>
+                  <tr><td colSpan={6} className="text-center py-8 text-muted-foreground">데이터 없음</td></tr>
                 ) : areaStats.map((s, i) => (
-                  <tr key={s.area} className={i < areaStats.length - 1 ? "border-b border-neutral-800/50" : ""}>
-                    <td className="px-5 py-3.5 font-bold text-white">{s.area}</td>
-                    <td className="px-4 py-3.5 text-right text-neutral-300">{s.clubs}</td>
-                    <td className="px-4 py-3.5 text-right text-neutral-300">{s.mds}</td>
-                    <td className="px-4 py-3.5 text-right text-neutral-300">{s.auctions}</td>
-                    <td className="px-5 py-3.5 text-right font-bold text-amber-400">{s.avgBids}</td>
-                    <td className="px-5 py-3.5 text-right font-bold text-green-400">{s.avgInterest}</td>
+                  <tr key={s.area} className={i < areaStats.length - 1 ? "border-b border-border/50" : ""}>
+                    <td className="px-5 py-3.5 font-bold text-foreground">{s.area}</td>
+                    <td className="px-4 py-3.5 text-right text-foreground/80">{s.clubs}</td>
+                    <td className="px-4 py-3.5 text-right text-foreground/80">{s.mds}</td>
+                    <td className="px-4 py-3.5 text-right text-foreground/80">{s.auctions}</td>
+                    <td className="px-5 py-3.5 text-right font-bold text-brand-amber">{s.avgBids}</td>
+                    <td className="px-5 py-3.5 text-right font-bold text-money">{s.avgInterest}</td>
                   </tr>
                 ))}
               </tbody>

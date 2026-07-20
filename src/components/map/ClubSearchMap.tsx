@@ -136,10 +136,10 @@ export function ClubSearchMap({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="클럽 이름으로 검색 (예: 강남 클럽 XYZ)"
-            className="bg-neutral-900 border-neutral-800 h-11 text-white pl-10"
+            className="bg-card border-border h-11 text-foreground pl-10"
             disabled={isSearching}
           />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         </div>
 
         <button
@@ -161,11 +161,11 @@ export function ClubSearchMap({
       {/* 검색 결과 표시 */}
       {result && (
         <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg flex items-start gap-3">
-          <Check className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+          <Check className="w-5 h-5 text-money mt-0.5 flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-white truncate">{result.name}</p>
-            <p className="text-neutral-400 text-xs truncate">{result.address}</p>
-            <p className="text-neutral-500 text-[10px] mt-1">
+            <p className="font-bold text-foreground truncate">{result.name}</p>
+            <p className="text-muted-foreground text-xs truncate">{result.address}</p>
+            <p className="text-muted-foreground text-[10px] mt-1">
               위도: {result.lat.toFixed(4)}, 경도: {result.lng.toFixed(4)}
             </p>
           </div>
@@ -174,13 +174,13 @@ export function ClubSearchMap({
 
       {/* 지도 */}
       <div className="space-y-2">
-        <label className="text-neutral-400 text-xs font-bold uppercase">
+        <label className="text-muted-foreground text-xs font-bold uppercase">
           <MapPin className="w-3 h-3 inline mr-1" />
           위치 확인
         </label>
         <div
           ref={mapRef}
-          className="w-full h-64 rounded-xl bg-neutral-900 border border-neutral-800"
+          className="w-full h-64 rounded-xl bg-card border border-border"
         />
       </div>
     </div>

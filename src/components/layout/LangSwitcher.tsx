@@ -55,7 +55,7 @@ export function LangSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white transition-colors"
+        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
         aria-label="Select language"
       >
         <span className="text-base leading-none" aria-hidden="true">{currentOption.flag}</span>
@@ -64,7 +64,7 @@ export function LangSwitcher() {
       </button>
 
       {open && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 rounded-xl bg-neutral-900 border border-neutral-700 overflow-hidden shadow-xl z-20">
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-40 rounded-xl bg-card border border-border overflow-hidden shadow-xl z-20">
           {OPTIONS.map((o) => (
             <a
               key={o.lang}
@@ -72,15 +72,15 @@ export function LangSwitcher() {
               onClick={() => { try { localStorage.setItem("nf_lang_pref", o.lang); } catch { /* noop */ } }}
               className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
                 o.lang === current
-                  ? "text-white bg-neutral-800"
-                  : "text-neutral-300 hover:bg-neutral-800"
+                  ? "text-foreground bg-muted"
+                  : "text-foreground/80 hover:bg-muted"
               }`}
             >
               <span className="flex items-center gap-2">
                 <span aria-hidden="true">{o.flag}</span>
                 <span>{o.label}</span>
               </span>
-              {o.lang === current && <Check className="w-3.5 h-3.5 text-green-400" />}
+              {o.lang === current && <Check className="w-3.5 h-3.5 text-money" />}
             </a>
           ))}
         </div>

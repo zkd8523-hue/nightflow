@@ -203,18 +203,18 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   );
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* pb-24: Sticky CTA 높이만큼 하단 여백 */}
       <div className="max-w-lg mx-auto px-4 py-12 pb-24 space-y-6">
 
         {/* Header */}
         <header className="space-y-3">
-          <Link href={homeHref} className="inline-block text-[13px] text-neutral-500 hover:text-white transition-colors">
+          <Link href={homeHref} className="inline-block text-[13px] text-muted-foreground hover:text-foreground transition-colors">
             ← NightFlow
           </Link>
           <div className="space-y-1">
             <h1 className="text-[28px] font-black tracking-tight">{guideTitle}</h1>
-            <p className="text-[13px] text-neutral-500">{shownCount} {clubsSuffix}</p>
+            <p className="text-[13px] text-muted-foreground">{shownCount} {clubsSuffix}</p>
           </div>
 
           {/* 정렬 버튼 (추천순 default = MD 있는 클럽 우선 / 리뷰 많은순 / 평점순) */}
@@ -232,8 +232,8 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   }}
                   className={`px-3 py-1.5 rounded-full text-[12px] font-bold transition-colors ${
                     sortKey === k
-                      ? "bg-white text-black"
-                      : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                      ? "bg-inverse text-inverse-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   {k === "recommend" ? sortRecommendLabel : k === "reviews" ? sortPopularLabel : sortRatingLabel}
@@ -254,8 +254,8 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                       onClick={() => setVenueType((v) => (v === opt.key ? null : opt.key))}
                       className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition-colors ${
                         venueType === opt.key
-                          ? "bg-white text-black"
-                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                          ? "bg-inverse text-inverse-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                       }`}
                     >
                       {TAG_LABEL_I18N[opt.key]?.[lang] ?? opt.label}
@@ -272,8 +272,8 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                       onClick={() => setGenre((v) => (v === opt.key ? null : opt.key))}
                       className={`text-[11px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 transition-colors ${
                         genre === opt.key
-                          ? "bg-white text-black"
-                          : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                          ? "bg-inverse text-inverse-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
                       }`}
                     >
                       {TAG_LABEL_I18N[opt.key]?.[lang] ?? opt.label}
@@ -283,7 +283,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                     <button
                       type="button"
                       onClick={() => { setVenueType(null); setGenre(null); }}
-                      className="text-[10px] text-neutral-500 hover:text-white shrink-0 ml-auto pl-2 underline underline-offset-2"
+                      className="text-[10px] text-muted-foreground hover:text-foreground shrink-0 ml-auto pl-2 underline underline-offset-2"
                     >
                       {resetFiltersLabel}
                     </button>
@@ -296,15 +296,15 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
 
         {/* 지역별 가로 스크롤 (한국 가이드처럼 강남/홍대 두 줄) */}
         {totalCount === 0 && (
-          <p className="text-center text-neutral-500 py-12">{noClubs}</p>
+          <p className="text-center text-muted-foreground py-12">{noClubs}</p>
         )}
         {totalCount > 0 && shownCount === 0 && (
           <div className="text-center py-12 space-y-3">
-            <p className="text-neutral-500">{noMatchLabel}</p>
+            <p className="text-muted-foreground">{noMatchLabel}</p>
             <button
               type="button"
               onClick={() => { setVenueType(null); setGenre(null); }}
-              className="text-[12px] font-bold text-white bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-full"
+              className="text-[12px] font-bold text-foreground bg-muted hover:bg-muted px-4 py-2 rounded-full"
             >
               {resetFiltersLabel}
             </button>
@@ -314,7 +314,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
           <section key={g.ko} className="space-y-3">
             <div className="flex items-baseline gap-2">
               <h2 className="text-[18px] font-black">{areaI18n(g.ko, lang)}</h2>
-              <span className="text-[13px] text-neutral-500">{g.items.length}</span>
+              <span className="text-[13px] text-muted-foreground">{g.items.length}</span>
             </div>
             {/* key: 정렬/필터 바뀌면 DOM 리마운트 → scrollLeft 리셋 (안 그러면 가로 스크롤 위치가 남아서
                 리스트만 바뀌고 앞쪽 클럽들이 화면 밖으로 밀려남) */}
@@ -337,16 +337,16 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                   }}
                   className="shrink-0 w-[140px] snap-start text-left active:opacity-70 transition-opacity"
                 >
-                  <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden bg-neutral-800 border border-neutral-800">
+                  <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden bg-muted border border-border">
                     {club.thumbnail_url ? (
                       <Image src={club.thumbnail_url} alt={displayClubName(club)} fill className="object-cover" sizes="140px" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[11px] font-bold">{noImage}</div>
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[11px] font-bold">{noImage}</div>
                     )}
                   </div>
-                  <p className="text-[13px] font-bold text-white mt-2 truncate">{displayClubName(club)}</p>
+                  <p className="text-[13px] font-bold text-foreground mt-2 truncate">{displayClubName(club)}</p>
                   {club.google_rating != null && (
-                    <p className="text-[12px] text-amber-400 mt-0.5">⭐ {club.google_rating.toFixed(1)}</p>
+                    <p className="text-[12px] text-brand-amber mt-0.5">⭐ {club.google_rating.toFixed(1)}</p>
                   )}
                 </button>
               ))}
@@ -357,14 +357,14 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
         {/* Bottom CTA — 한국어 트랙에서만 노출. 외국인 트랙은 Sticky CTA(하단 fixed)로 대체됨. */}
         {lang === "ko" && (
           <div className="space-y-4 pt-4 pb-8">
-            <p className="text-center text-[14px] text-neutral-400">{notSureCopy}</p>
+            <p className="text-center text-[14px] text-muted-foreground">{notSureCopy}</p>
             <Link
               href={bottomCtaHref}
-              className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors"
+              className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors"
             >
               {ctaLabel}
             </Link>
-            <p className="text-center text-[12px] text-neutral-600 leading-relaxed">
+            <p className="text-center text-[12px] text-muted-foreground leading-relaxed">
               {ctaSubLine1}<br />
               {ctaSubLine2}
             </p>
@@ -377,7 +377,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
         {/* 외국인 트랙: Sticky CTA와 겹치지 않게 서브카피 + Language 스위처를 페이지 하단에 배치 (텍스트 링크만). */}
         {lang !== "ko" && shownCount > 0 && (
           <div className="pt-4 pb-8 space-y-3">
-            <p className="text-center text-[12px] text-neutral-500 leading-relaxed">
+            <p className="text-center text-[12px] text-muted-foreground leading-relaxed">
               {ctaSubLine1}<br />
               {ctaSubLine2}
             </p>
@@ -392,7 +392,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
       {lang !== "ko" && shownCount > 0 && (
         <div
           className="fixed left-0 right-0 bottom-0 z-40 px-4 pb-4 pt-6 pointer-events-none
-                     bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A] via-[60%] to-transparent"
+                     bg-gradient-to-t from-background via-background via-[60%] to-transparent"
           style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 16px)" }}
         >
           <div className="max-w-lg mx-auto pointer-events-auto">
@@ -413,7 +413,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
 
       {/* 클럽 상세 바텀시트 (카드 클릭 시) — 가격표·영업시간·평점 + 구글 리뷰 + 예약 CTA */}
       <Sheet open={!!selectedClub} onOpenChange={(o) => !o && setSelectedClub(null)}>
-        <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
+        <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl max-h-[88vh] overflow-y-auto p-0">
           {selectedClub && (() => {
             const club = selectedClub;
             const clubFlagHref = buildFlagHref(lang, club.area);
@@ -428,7 +428,7 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
                     // 닫힌 지역(OPEN_FLAG_AREAS 미포함)은 폼에서 area 선택 불가 → 예약 CTA 대신 "Coming soon" 안내.
                     !isFlagAreaOpen(club.area) ? (
                       <div className="mt-2 space-y-2">
-                        <div className="flex items-center justify-center gap-1.5 w-full py-3.5 rounded-xl bg-neutral-900 border border-amber-500/30 text-amber-400 font-black text-[15px]">
+                        <div className="flex items-center justify-center gap-1.5 w-full py-3.5 rounded-xl bg-card border border-amber-500/30 text-brand-amber font-black text-[15px]">
                           🚀 {t(
                             "이태원은 준비중이에요",
                             "Coming soon to NightFlow",

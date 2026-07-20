@@ -195,10 +195,10 @@ export default async function ShareAreaPage({ params }: PageProps) {
       />
       {/* SEO H1 — 시각엔 작게 표시되지만 검색엔진엔 강한 신호 */}
       <header className="mb-6 space-y-2">
-        <h1 className="text-2xl font-black text-white tracking-tight">
+        <h1 className="text-2xl font-black text-foreground tracking-tight">
           {area} 조각
         </h1>
-        <p className="text-sm text-neutral-400 leading-relaxed">
+        <p className="text-sm text-muted-foreground leading-relaxed">
           {area} 클럽 조각·합석 일행 모집 매물 모음
         </p>
       </header>
@@ -222,20 +222,20 @@ export default async function ShareAreaPage({ params }: PageProps) {
 
       {/* 진행 중인 조각 매물 */}
       <section className="space-y-3 mb-8">
-        <h2 className="text-base font-bold text-white">
+        <h2 className="text-base font-bold text-foreground">
           모집 중인 {area} 조각
           {shareItems.length > 0 && (
-            <span className="text-neutral-500 text-sm font-normal ml-2">
+            <span className="text-muted-foreground text-sm font-normal ml-2">
               ({shareItems.length}건)
             </span>
           )}
         </h2>
         {shareItems.length === 0 ? (
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-6 text-center">
-            <p className="text-neutral-400 text-sm mb-2 leading-relaxed">
+          <div className="bg-card border border-border rounded-2xl p-6 text-center">
+            <p className="text-muted-foreground text-sm mb-2 leading-relaxed">
               현재 진행 중인 {area} 조각 매물이 없어요
             </p>
-            <p className="text-neutral-500 text-xs mb-5 leading-relaxed">
+            <p className="text-muted-foreground text-xs mb-5 leading-relaxed">
               {area} 무료입장·특가 등 실시간 정보를 확인해보실래요?
             </p>
             <Link href="/">
@@ -260,24 +260,24 @@ export default async function ShareAreaPage({ params }: PageProps) {
                 <li key={item.id}>
                   <Link
                     href={`/auctions/${item.id}`}
-                    className="block bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 hover:bg-neutral-900 transition-colors"
+                    className="block bg-card border border-border rounded-2xl p-4 hover:bg-card transition-colors"
                   >
                     <div className="flex justify-between items-start gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-white font-bold text-[15px] truncate">
+                        <p className="text-foreground font-bold text-[15px] truncate">
                           {head}
                         </p>
                         {item.title && (
-                          <p className="text-neutral-400 text-xs mt-1 line-clamp-2">
+                          <p className="text-muted-foreground text-xs mt-1 line-clamp-2">
                             {item.title}
                           </p>
                         )}
                       </div>
                       <div className="text-right shrink-0">
-                        <p className="text-green-500 font-black text-base">
+                        <p className="text-money font-black text-base">
                           ₩{formatPrice(item.start_price)}
                         </p>
-                        <p className="text-neutral-500 text-[10px]">1인</p>
+                        <p className="text-muted-foreground text-[10px]">1인</p>
                       </div>
                     </div>
                   </Link>
@@ -291,9 +291,9 @@ export default async function ShareAreaPage({ params }: PageProps) {
       {/* 지역 인기 클럽 — 영구 콘텐츠 */}
       {areaClubs.length > 0 && (
         <section className="space-y-3 mb-8">
-          <h2 className="text-base font-bold text-white">
+          <h2 className="text-base font-bold text-foreground">
             {area} 인기 클럽
-            <span className="text-neutral-500 text-sm font-normal ml-2">
+            <span className="text-muted-foreground text-sm font-normal ml-2">
               ({areaClubs.length}곳)
             </span>
           </h2>
@@ -309,9 +309,9 @@ export default async function ShareAreaPage({ params }: PageProps) {
                 <li key={c.id}>
                   <Link
                     href={`/clubs/${c.id}`}
-                    className="block bg-[#1C1C1E] border border-neutral-800 rounded-xl overflow-hidden hover:bg-neutral-900 transition-colors"
+                    className="block bg-card border border-border rounded-xl overflow-hidden hover:bg-card transition-colors"
                   >
-                    <div className="relative w-full aspect-[4/3] bg-neutral-900">
+                    <div className="relative w-full aspect-[4/3] bg-card border border-border">
                       {c.thumbnail_url ? (
                         <Image
                           src={c.thumbnail_url}
@@ -322,7 +322,7 @@ export default async function ShareAreaPage({ params }: PageProps) {
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <span className="text-neutral-700 text-2xl font-black">
+                          <span className="text-muted-foreground text-2xl font-black">
                             {display.charAt(0)}
                           </span>
                         </div>
@@ -330,17 +330,17 @@ export default async function ShareAreaPage({ params }: PageProps) {
                       {favCount > 0 && (
                         <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm px-2 py-0.5 rounded-full">
                           <Heart className="w-3 h-3 fill-red-500 text-red-500" />
-                          <span className="text-white text-[11px] font-bold">
+                          <span className="text-foreground text-[11px] font-bold">
                             {formatCount(favCount)}
                           </span>
                         </div>
                       )}
                     </div>
                     <div className="px-3 py-2">
-                      <p className="text-white font-bold text-sm truncate">
+                      <p className="text-foreground font-bold text-sm truncate">
                         {display}
                       </p>
-                      <p className="text-neutral-500 text-[10px] mt-0.5 truncate">
+                      <p className="text-muted-foreground text-[10px] mt-0.5 truncate">
                         {c.name}
                       </p>
                     </div>
@@ -357,7 +357,7 @@ export default async function ShareAreaPage({ params }: PageProps) {
         <Link href="/">
           <Button
             variant="ghost"
-            className="w-full bg-neutral-900 text-white font-bold rounded-2xl h-12 hover:bg-neutral-800"
+            className="w-full bg-card text-foreground font-bold rounded-2xl border border-border h-12 hover:bg-muted"
           >
             전체 조각 보기
             <ArrowRight className="w-4 h-4 ml-1" />

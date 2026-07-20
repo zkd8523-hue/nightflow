@@ -81,25 +81,25 @@ export default async function AdminClubInfoReportsPage() {
   const pendingCount = rows.filter((r) => r.status === "pending").length;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pb-20">
+    <div className="min-h-screen bg-background pb-20">
       <div className="max-w-3xl mx-auto p-5">
         <Link
           href="/admin"
-          className="inline-flex items-center gap-1 text-neutral-500 text-sm font-bold hover:text-white transition-colors mb-3"
+          className="inline-flex items-center gap-1 text-muted-foreground text-sm font-bold hover:text-foreground transition-colors mb-3"
         >
           <ChevronLeft className="w-4 h-4" />
           관리자 홈
         </Link>
         <div className="flex items-center gap-2 mb-2">
-          <Flag className="w-5 h-5 text-amber-400" />
-          <h1 className="text-2xl font-black text-white tracking-tight">클럽 정보 신고</h1>
+          <Flag className="w-5 h-5 text-brand-amber" />
+          <h1 className="text-2xl font-black text-foreground tracking-tight">클럽 정보 신고</h1>
           {pendingCount > 0 && (
             <span className="ml-1 text-[12px] font-black px-2 py-0.5 rounded-full bg-red-500/20 text-red-300">
               {pendingCount} pending
             </span>
           )}
         </div>
-        <p className="text-[12px] text-neutral-500 mb-5">
+        <p className="text-[12px] text-muted-foreground mb-5">
           유저/파트너가 신고한 클럽 정보 오류. 검토 후 클럽 정보를 직접 수정하고 처리 상태를 갱신하세요.
         </p>
 

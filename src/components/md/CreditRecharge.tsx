@@ -125,13 +125,13 @@ export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
   return (
     <div className="space-y-5">
       {/* 현재 잔액 */}
-      <div className="rounded-2xl bg-[#1C1C1E] border border-neutral-800 p-5">
-        <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">
+      <div className="rounded-2xl bg-card border border-border p-5">
+        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
           보유 크레딧
         </p>
-        <p className="text-3xl font-black text-amber-500">
+        <p className="text-3xl font-black text-brand-amber">
           {currentCredits ?? 0}
-          <span className="text-base font-bold text-neutral-400 ml-1">크레딧</span>
+          <span className="text-base font-bold text-muted-foreground ml-1">크레딧</span>
         </p>
       </div>
 
@@ -148,13 +148,13 @@ export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
       </div>
 
       {/* 이용/제공기간/환불 안내 (PG·카드사 심사 요건: 결제금액·서비스 제공기간·환불정보 노출) */}
-      <div className="rounded-xl bg-neutral-900/60 border border-neutral-800 p-4 text-xs text-neutral-500 leading-relaxed space-y-2">
+      <div className="rounded-xl bg-card/60 border border-border p-4 text-xs text-muted-foreground leading-relaxed space-y-2">
         {/* 서비스 제공 기간 — 카카오페이 요구 형식(제공 시작/이용기간/자동갱신) 명시 */}
-        <div className="rounded-lg bg-neutral-800/50 border border-neutral-700/60 p-3 space-y-1">
-          <p className="text-neutral-300 font-bold">서비스 제공 기간</p>
-          <p>· 제공 시작: <span className="text-neutral-400">결제 완료 즉시</span> 계정에 크레딧 적립 (별도 제공 대기 없음)</p>
-          <p>· 이용 기간: <span className="text-neutral-400">충전일로부터 무기한</span> — 충전한 크레딧은 사용 시점까지 소멸되지 않습니다.</p>
-          <p>· 자동 갱신: <span className="text-neutral-400">없음</span> (정기결제·자동충전 아님 / 1회성 충전)</p>
+        <div className="rounded-lg bg-muted/50 border border-border/60 p-3 space-y-1">
+          <p className="text-foreground/80 font-bold">서비스 제공 기간</p>
+          <p>· 제공 시작: <span className="text-muted-foreground">결제 완료 즉시</span> 계정에 크레딧 적립 (별도 제공 대기 없음)</p>
+          <p>· 이용 기간: <span className="text-muted-foreground">충전일로부터 무기한</span> — 충전한 크레딧은 사용 시점까지 소멸되지 않습니다.</p>
+          <p>· 자동 갱신: <span className="text-muted-foreground">없음</span> (정기결제·자동충전 아님 / 1회성 충전)</p>
         </div>
         <p>· 크레딧은 1개당 100원이며, 부가세가 포함된 금액입니다.</p>
         <p>· 사용하지 않은 크레딧은 충전일로부터 7일 이내 고객센터를 통해 전액 환불 가능합니다.</p>
@@ -165,7 +165,7 @@ export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
       <button
         onClick={handlePay}
         disabled={loading}
-        className="w-full rounded-full bg-white text-black font-black py-4 flex items-center justify-center gap-2 disabled:opacity-60 transition-opacity"
+        className="w-full rounded-full bg-inverse text-inverse-foreground font-black py-4 flex items-center justify-center gap-2 disabled:opacity-60 transition-opacity"
       >
         {loading ? (
           <>
@@ -180,7 +180,7 @@ export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
         )}
       </button>
 
-      <p className="text-center text-[11px] text-neutral-600">
+      <p className="text-center text-[11px] text-muted-foreground">
         카카오페이로 안전하게 결제됩니다.
       </p>
     </div>
@@ -202,30 +202,30 @@ function ProductRow({
       className={`w-full rounded-2xl border p-4 flex items-center justify-between transition-colors ${
         selected
           ? "border-amber-500 bg-amber-500/10"
-          : "border-neutral-800 bg-[#1C1C1E] hover:border-neutral-700"
+          : "border-border bg-card hover:border-border"
       }`}
     >
       <div className="flex items-center gap-3">
         <div
           className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-            selected ? "border-amber-500 bg-amber-500" : "border-neutral-600"
+            selected ? "border-amber-500 bg-amber-500" : "border-border"
           }`}
         >
           {selected && <Check className="w-3 h-3 text-black" strokeWidth={3} />}
         </div>
         <div className="text-left">
-          <p className="font-bold text-white">
+          <p className="font-bold text-foreground">
             크레딧 {product.credits}개
             {product.recommended && (
-              <span className="ml-2 text-[10px] font-black text-amber-500 bg-amber-500/15 px-2 py-0.5 rounded-full align-middle">
+              <span className="ml-2 text-[10px] font-black text-brand-amber bg-amber-500/15 px-2 py-0.5 rounded-full align-middle">
                 인기
               </span>
             )}
           </p>
-          <p className="text-xs text-neutral-500">{product.name}</p>
+          <p className="text-xs text-muted-foreground">{product.name}</p>
         </div>
       </div>
-      <p className="font-black text-white">{formatPrice(product.amount)}</p>
+      <p className="font-black text-foreground">{formatPrice(product.amount)}</p>
     </button>
   );
 }

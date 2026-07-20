@@ -74,7 +74,7 @@ export function StoryShareView({ auction }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-black flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* 상단 헤더 (스크린샷 영역 밖) */}
       <header className="flex items-center justify-between px-4 py-3 bg-black/80 backdrop-blur z-20 sticky top-0">
         <button
@@ -82,16 +82,16 @@ export function StoryShareView({ auction }: Props) {
           className="w-10 h-10 flex items-center justify-center rounded-full bg-white/10 active:scale-95 transition-transform"
           aria-label="닫기"
         >
-          <X className="w-5 h-5 text-white" />
+          <X className="w-5 h-5 text-foreground" />
         </button>
         <div className="flex items-center gap-1.5 text-xs font-medium">
           {linkCopied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-green-400" />
-              <span className="text-green-400">링크 복사됨</span>
+              <Check className="w-3.5 h-3.5 text-money" />
+              <span className="text-money">링크 복사됨</span>
             </>
           ) : (
-            <span className="text-white/60">준비 중...</span>
+            <span className="text-foreground/60">준비 중...</span>
           )}
         </div>
       </header>
@@ -99,12 +99,12 @@ export function StoryShareView({ auction }: Props) {
       {/* 메인 영역: 9:16 비율 스크린샷 캔버스 */}
       <main className="flex-1 flex items-center justify-center px-2 py-4">
         <div
-          className="w-full max-w-[460px] rounded-3xl bg-[#0A0A0A] flex flex-col overflow-hidden"
+          className="w-full max-w-[460px] rounded-3xl bg-background flex flex-col overflow-hidden"
           style={{ aspectRatio: "9 / 16" }}
         >
           {/* 중앙 정렬: NightFlow 로고 + AuctionCard 붙임 */}
           <div className="flex-1 flex flex-col items-center justify-center gap-3 px-4 pointer-events-none select-none">
-            <div className="text-3xl font-black tracking-tight text-white">
+            <div className="text-3xl font-black tracking-tight text-foreground">
               NightFlow
             </div>
             <div className="w-full">
@@ -118,13 +118,13 @@ export function StoryShareView({ auction }: Props) {
       <footer className="px-6 py-4 bg-black/80 backdrop-blur space-y-2 z-20 sticky bottom-0">
         <div className="flex items-start gap-2.5">
           <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <Camera className="w-4 h-4 text-white" />
+            <Camera className="w-4 h-4 text-foreground" />
           </div>
           <div className="flex-1">
-            <div className="text-[14px] font-black text-white">
+            <div className="text-[14px] font-black text-foreground">
               화면을 캡처해서 인스타 스토리에 올려주세요
             </div>
-            <div className="text-[12px] text-white/60 mt-0.5">
+            <div className="text-[12px] text-foreground/60 mt-0.5">
               링크는 이미 복사돼있어요. 스토리 링크 스티커에 붙여넣기만 하면 끝!
             </div>
           </div>

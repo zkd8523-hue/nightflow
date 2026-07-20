@@ -159,24 +159,24 @@ export function DateTimeSheet({
       <button
         type="button"
         onClick={() => handleOpenChange(true)}
-        className="w-full bg-neutral-900 border border-neutral-800 h-11 rounded-md px-3 text-left text-white text-sm flex items-center justify-between hover:border-neutral-700 transition-colors"
+        className="w-full bg-card border border-border h-11 rounded-md px-3 text-left text-foreground text-sm flex items-center justify-between hover:border-border transition-colors"
       >
-        <span className={value ? "text-white" : "text-neutral-500"}>
+        <span className={value ? "text-foreground" : "text-muted-foreground"}>
           {displayText}
         </span>
-        <CalendarIcon className="w-4 h-4 text-neutral-500" />
+        <CalendarIcon className="w-4 h-4 text-muted-foreground" />
       </button>
 
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-8 pt-4 max-h-[92vh] overflow-y-auto"
+          className="bg-card border-border rounded-t-3xl px-5 pb-8 pt-4 max-h-[92vh] overflow-y-auto"
         >
          <div className="max-w-sm mx-auto w-full">
           <SheetHeader className="p-0 mb-3">
-            <div className="w-10 h-1 bg-neutral-700 rounded-full mx-auto mb-3" />
-            <SheetTitle className="text-white text-base font-bold text-center">
+            <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-3" />
+            <SheetTitle className="text-foreground text-base font-bold text-center">
               {label}
             </SheetTitle>
             <SheetDescription className="sr-only">
@@ -201,8 +201,8 @@ export function DateTimeSheet({
                   }}
                   className={`flex-1 h-11 rounded-xl text-[13px] font-bold transition-all ${
                     tempDateStr === opt.value
-                      ? "bg-white text-black"
-                      : "bg-neutral-900 text-neutral-400 border border-neutral-800"
+                      ? "bg-inverse text-inverse-foreground"
+                      : "bg-card text-muted-foreground border border-border"
                   }`}
                 >
                   {opt.label}
@@ -213,7 +213,7 @@ export function DateTimeSheet({
 
           {/* 달력 (datetime / date-only 모드에서) */}
           {!isTimeOnly && !isDate2 && (
-            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-2">
+            <div className="bg-card/50 border border-border rounded-2xl p-2">
               <Calendar
                 mode="single"
                 selected={tempDate}
@@ -236,7 +236,7 @@ export function DateTimeSheet({
           {/* 시간 선택 (date-only 모드에서는 숨김) */}
           {!isDateOnly && (
             <div className="mt-4">
-              <div className="flex items-center gap-1.5 text-neutral-400 text-[11px] font-bold uppercase mb-2">
+              <div className="flex items-center gap-1.5 text-muted-foreground text-[11px] font-bold uppercase mb-2">
                 <Clock className="w-3.5 h-3.5" />
                 입장 시간
               </div>
@@ -250,7 +250,7 @@ export function DateTimeSheet({
                     min={activeOpt?.minTime}
                     max={activeOpt?.maxTime}
                     onChange={(e) => setTempTime(e.target.value)}
-                    className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 text-white text-base [color-scheme:dark] focus:outline-none focus:border-green-500/50"
+                    className="w-full bg-card border border-border rounded-xl px-4 py-3 text-foreground text-base [color-scheme:dark] focus:outline-none focus:border-green-500/50"
                   />
                 );
               })()}
@@ -261,7 +261,7 @@ export function DateTimeSheet({
             type="button"
             onClick={handleConfirm}
             disabled={!canConfirm}
-            className="w-full h-12 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 disabled:opacity-40 disabled:cursor-not-allowed mt-5"
+            className="w-full h-12 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed mt-5"
           >
             확인
           </Button>

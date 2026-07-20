@@ -80,20 +80,20 @@ export default function EnGuestsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/en" className="text-[12px] text-neutral-500 hover:text-white">
+          <Link href="/en" className="text-[12px] text-muted-foreground hover:text-foreground">
             ← NightFlow
           </Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">
             Seoul Club Guest List
           </h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             Skip the cover charge at Seoul&apos;s top clubs. Weekly guest deals
             from real club MDs — free entry, discounted covers, free drink
             tickets. No Korean needed, no broker.
@@ -102,13 +102,13 @@ export default function EnGuestsPage() {
 
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">What is a Seoul Club Guest List?</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             Korean club MDs (promoters) run weekly guest lists — usually free
             entry or discounted cover until a specific time. Locals use these
             to avoid the ₩20,000–30,000 cover charge. The catch: you traditionally
             need a Korean MD contact via Instagram or KakaoTalk.
           </p>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             NightFlow shows you the weekly guest deals across Gangnam, Hongdae,
             Itaewon clubs in one place — in English, with one-tap copy-paste
             messages to each MD.
@@ -117,7 +117,7 @@ export default function EnGuestsPage() {
 
         <section className="space-y-4">
           <h2 className="text-[20px] font-black">What You Get</h2>
-          <ul className="space-y-2 text-[13px] text-neutral-300">
+          <ul className="space-y-2 text-[13px] text-foreground/80">
             <li>• Free entry before specific time (usually until 12 AM)</li>
             <li>• Discounted cover charge after the free window</li>
             <li>• Free drink ticket at some clubs</li>
@@ -128,7 +128,7 @@ export default function EnGuestsPage() {
 
         <section className="space-y-3">
           <h2 className="text-[20px] font-black">How to Use Seoul Guest List</h2>
-          <ol className="space-y-2 text-[13px] text-neutral-300 list-decimal pl-5">
+          <ol className="space-y-2 text-[13px] text-foreground/80 list-decimal pl-5">
             <li>Browse weekly guest deals on NightFlow</li>
             <li>Pick a club — Gangnam, Hongdae, or Itaewon</li>
             <li>Tap &quot;Copy Message&quot; — pre-written English request</li>
@@ -141,7 +141,7 @@ export default function EnGuestsPage() {
         <section className="text-center pt-4 space-y-3">
           <Link
             href="/en/clubs"
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             See this week&apos;s guest deals →
           </Link>

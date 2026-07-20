@@ -28,7 +28,7 @@ export default function ChatPage() {
 
   return (
     <div
-      className={`max-w-lg mx-auto bg-[#0A0A0A] flex flex-col overflow-hidden ${
+      className={`max-w-lg mx-auto bg-background flex flex-col overflow-hidden ${
         composerFocused
           ? "h-[calc(100dvh-env(safe-area-inset-bottom))]"
           : "h-[calc(100dvh-56px-env(safe-area-inset-bottom))]"
@@ -49,8 +49,8 @@ export default function ChatPage() {
                 onClick={() => setRoom(r.code)}
                 className={`px-2.5 py-1 rounded-full text-[11px] font-black transition-colors ${
                   room === r.code
-                    ? "bg-white text-black"
-                    : "bg-neutral-800 text-neutral-400 hover:text-white"
+                    ? "bg-inverse text-inverse-foreground"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {r.label}

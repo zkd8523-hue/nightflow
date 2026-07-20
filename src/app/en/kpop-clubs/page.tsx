@@ -111,20 +111,20 @@ export default function EnKpopClubsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/en" className="text-[12px] text-neutral-500 hover:text-white">
+          <Link href="/en" className="text-[12px] text-muted-foreground hover:text-foreground">
             ← NightFlow
           </Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">
             K-Pop Clubs in Seoul
           </h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             Where K-pop fans actually go in Seoul. Honest guide to the
             nightclubs spinning idol hits all night — Hongdae, Gangnam, real
             prices, English-friendly venues.
@@ -137,14 +137,14 @@ export default function EnKpopClubsPage() {
             {KPOP_VENUES.map((v) => (
               <div
                 key={v.name}
-                className="p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800 space-y-2"
+                className="p-5 rounded-2xl bg-card border border-border space-y-2"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-bold text-[15px] text-neutral-100">{v.name}</p>
-                  <p className="text-[12px] text-neutral-500">{v.district}</p>
+                  <p className="font-bold text-[15px] text-foreground">{v.name}</p>
+                  <p className="text-[12px] text-muted-foreground">{v.district}</p>
                 </div>
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{v.vibe}</p>
-                <p className="text-[12px] text-amber-400">Best for: {v.bestFor}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{v.vibe}</p>
+                <p className="text-[12px] text-brand-amber">Best for: {v.bestFor}</p>
               </div>
             ))}
           </div>
@@ -152,7 +152,7 @@ export default function EnKpopClubsPage() {
 
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">Booking Tips for K-Pop Tourists</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             Most K-pop tourists head to NB2 in Hongdae. It works — but the line
             on weekends can be 90 minutes. If you want guaranteed entry and a
             table, book with NightFlow and we contact Hongdae K-pop clubs
@@ -160,7 +160,7 @@ export default function EnKpopClubsPage() {
           </p>
           <Link
             href="/en"
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             🍾 Book with NightFlow
           </Link>
@@ -168,11 +168,11 @@ export default function EnKpopClubsPage() {
 
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">Related Guides</h2>
-          <ul className="space-y-1 text-[13px] text-neutral-400">
-            <li><Link className="hover:text-white" href="/en/clubs/hongdae">Hongdae Clubs — Full guide →</Link></li>
-            <li><Link className="hover:text-white" href="/en/clubs/gangnam">Gangnam Clubs — Full guide →</Link></li>
-            <li><Link className="hover:text-white" href="/en/vip-tables">Seoul VIP Table Booking →</Link></li>
-            <li><Link className="hover:text-white" href="/en/faq">Seoul Club FAQ →</Link></li>
+          <ul className="space-y-1 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/en/clubs/hongdae">Hongdae Clubs — Full guide →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/clubs/gangnam">Gangnam Clubs — Full guide →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/vip-tables">Seoul VIP Table Booking →</Link></li>
+            <li><Link className="hover:text-foreground" href="/en/faq">Seoul Club FAQ →</Link></li>
           </ul>
         </section>
       </div>

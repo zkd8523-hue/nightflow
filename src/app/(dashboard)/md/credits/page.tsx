@@ -29,22 +29,22 @@ export default async function MDCreditsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-background">
       <div className="max-w-lg mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6">
           <Link
             href="/md/dashboard"
-            className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800"
+            className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border"
           >
-            <ChevronLeft className="w-5 h-5 text-neutral-400" />
+            <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
-          <h1 className="text-xl font-black text-white">크레딧 충전</h1>
+          <h1 className="text-xl font-black text-foreground">크레딧 충전</h1>
         </div>
 
         <CreditRecharge currentCredits={mdUser.md_credits ?? 0} />
 
         {/* 결제페이지 사업자정보 상시 노출 (PG/카드사 심사 요건) */}
-        <div className="mt-10 pt-6 border-t border-neutral-900">
+        <div className="mt-10 pt-6 border-t border-border">
           <BusinessInfo />
         </div>
       </div>

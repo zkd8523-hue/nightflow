@@ -8,7 +8,7 @@ import { type Lang } from "@/lib/i18n";
 export function OfferCommentText({
   comment,
   lang = "ko",
-  className = "text-[12px] text-neutral-400 italic",
+  className = "text-[12px] text-muted-foreground italic",
 }: {
   comment: string;
   lang?: Lang;

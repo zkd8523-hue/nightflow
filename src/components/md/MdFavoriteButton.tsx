@@ -19,12 +19,12 @@ export function MdFavoriteButton({ mdId }: MdFavoriteButtonProps) {
         e.stopPropagation();
         toggleFavoriteMd(mdId);
       }}
-      className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-neutral-800/80 border border-neutral-700/50 hover:border-neutral-500 active:bg-neutral-700/80 transition-colors"
+      className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-muted/80 border border-border/50 hover:border-border active:bg-muted/80 transition-colors"
       title={favorited ? "파트너 찜 해제" : "파트너 찜하기"}
     >
       <Heart
         className={`w-4 h-4 transition-colors ${
-          favorited ? "text-red-500 fill-red-500" : "text-neutral-400"
+          favorited ? "text-red-500 fill-red-500" : "text-muted-foreground"
         }`}
       />
     </button>

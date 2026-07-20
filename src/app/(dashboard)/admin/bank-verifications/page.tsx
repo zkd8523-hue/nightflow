@@ -40,11 +40,11 @@ export default async function BankVerificationsPage() {
         .limit(20);
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] text-white">
+        <div className="min-h-screen bg-background text-foreground">
             <div className="max-w-7xl mx-auto px-4 py-8">
                 <div className="mb-8">
-                    <h1 className="text-3xl font-black text-white mb-2">계좌 검증 관리</h1>
-                    <p className="text-neutral-500">파트너 정산 계좌 실명 확인 및 승인/거부</p>
+                    <h1 className="text-3xl font-black text-foreground mb-2">계좌 검증 관리</h1>
+                    <p className="text-muted-foreground">파트너 정산 계좌 실명 확인 및 승인/거부</p>
                 </div>
 
                 <BankVerificationManager

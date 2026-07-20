@@ -21,8 +21,8 @@ export function PriceRangeFilter({ value, onChange }: PriceRangeFilterProps) {
   return (
     <div className="space-y-3 px-1 pb-1">
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-bold text-neutral-400">가격</span>
-        <span className="text-[12px] font-bold text-white tabular-nums">
+        <span className="text-[12px] font-bold text-muted-foreground">가격</span>
+        <span className="text-[12px] font-bold text-foreground tabular-nums">
           {formatPriceRangeLabel(value)}
         </span>
       </div>
@@ -46,8 +46,8 @@ export function PriceRangeFilter({ value, onChange }: PriceRangeFilterProps) {
               onClick={() => onChange(preset.range)}
               className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                 active
-                  ? "bg-white text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  ? "bg-inverse text-inverse-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               {preset.label}

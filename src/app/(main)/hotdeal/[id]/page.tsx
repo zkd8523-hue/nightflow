@@ -91,7 +91,7 @@ export default async function HotdealDetailPage({ params }: Props) {
   if (!SHOW_TEST_CLUBS && /운영자/.test(clubName)) return notFound();
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-background">
       <HotdealDetail hotdeal={data as unknown as DailyHotdeal & { club: { id: string; name: string; area: string | null; thumbnail_url: string | null; floor_plan_url: string | null; address: string | null; instagram: string | null } }} />
     </div>
   );

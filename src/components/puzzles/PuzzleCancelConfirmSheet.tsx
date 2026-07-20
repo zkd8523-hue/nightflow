@@ -112,15 +112,15 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
       <Sheet open={open} onOpenChange={handleOpenChange}>
         <SheetContent
           side="bottom"
-          className="rounded-t-3xl bg-[#1C1C1E] border-neutral-700 pb-10 overflow-hidden"
+          className="rounded-t-3xl bg-card border-border pb-10 overflow-hidden"
         >
           <div className="space-y-5 pt-2">
             <div className="flex flex-col items-center gap-3 text-center px-2">
-              <div className="w-14 h-14 rounded-full bg-neutral-800 flex items-center justify-center">
-                <Flag className="w-7 h-7 text-white" />
+              <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                <Flag className="w-7 h-7 text-foreground" />
               </div>
-              <p className="text-[20px] font-black text-white">일정이 바뀌셨군요</p>
-              <p className="text-[14px] text-neutral-400 leading-relaxed">
+              <p className="text-[20px] font-black text-foreground">일정이 바뀌셨군요</p>
+              <p className="text-[14px] text-muted-foreground leading-relaxed">
                 새로운 날짜로 다시 깃발을 꽂아보실래요?
               </p>
             </div>
@@ -128,14 +128,14 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
             <div className="space-y-2 px-1">
               <Link
                 href={replantHref ?? "#"}
-                className="block w-full py-4 rounded-2xl bg-white text-black font-black text-[16px] text-center active:scale-[0.98] transition-all"
+                className="block w-full py-4 rounded-2xl bg-inverse text-inverse-foreground font-black text-[16px] text-center active:scale-[0.98] transition-all"
               >
                 계속하기 ›
               </Link>
               <button
                 type="button"
                 onClick={() => { onGoList?.(); }}
-                className="w-full py-3 text-[14px] text-neutral-400 hover:text-white transition-colors font-bold"
+                className="w-full py-3 text-[14px] text-muted-foreground hover:text-foreground transition-colors font-bold"
               >
                 홈으로
               </button>
@@ -150,13 +150,13 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl bg-[#1C1C1E] border-neutral-700 pb-10 overflow-hidden"
+        className="rounded-t-3xl bg-card border-border pb-10 overflow-hidden"
       >
         <div className="space-y-5 pt-2">
           {/* 헤더 */}
           <div className="space-y-1 text-center">
-            <p className="text-[20px] font-black text-white">정말 {kind}을 내리시겠어요?</p>
-            <p className="text-[13px] text-neutral-400">
+            <p className="text-[20px] font-black text-foreground">정말 {kind}을 내리시겠어요?</p>
+            <p className="text-[13px] text-muted-foreground">
               {shareMode
                 ? "제안한 파트너들에게 알림이 발송됩니다"
                 : "이유를 알려주시면 서비스 개선에 큰 도움이 돼요. (선택)"}
@@ -176,8 +176,8 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
                     onClick={() => selectReason(value)}
                     className={`w-full text-left px-4 py-3 rounded-2xl text-[15px] font-bold transition-all border ${
                       active
-                        ? "bg-white text-black border-white"
-                        : "bg-neutral-900 text-neutral-300 border-neutral-700"
+                        ? "bg-inverse text-inverse-foreground border-white"
+                        : "bg-card text-foreground/80 border-border"
                     }`}
                   >
                     {label}
@@ -196,7 +196,7 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
                             className={`flex-1 py-2.5 rounded-xl text-[13px] font-bold transition-all border ${
                               on
                                 ? "bg-amber-500 text-black border-amber-500"
-                                : "bg-neutral-900 text-neutral-400 border-neutral-700"
+                                : "bg-card text-muted-foreground border-border"
                             }`}
                           >
                             {opt}
@@ -215,7 +215,7 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
           {!shareMode && (
             <div className="px-1">
               {detail && (
-                <p className="text-[12px] text-amber-400 px-1 mb-2 font-medium">
+                <p className="text-[12px] text-brand-amber px-1 mb-2 font-medium">
                   {detail.hint}
                 </p>
               )}
@@ -225,13 +225,13 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
                 onChange={(e) => setText(e.target.value.slice(0, 300))}
                 placeholder={detail ? detail.placeholder : "직접 입력하기"}
                 rows={3}
-                className={`w-full bg-neutral-900 border rounded-2xl px-4 py-3 text-[14px] text-white placeholder-neutral-500 resize-none outline-none transition-colors ${
+                className={`w-full bg-card border rounded-2xl px-4 py-3 text-[14px] text-foreground placeholder-neutral-500 resize-none outline-none transition-colors ${
                   wantsDetail
                     ? "border-amber-500/60 focus:border-amber-500"
-                    : "border-neutral-700 focus:border-neutral-500"
+                    : "border-border focus:border-border"
                 }`}
               />
-              <p className="text-right text-[11px] text-neutral-600 mt-1">{text.length}/300</p>
+              <p className="text-right text-[11px] text-muted-foreground mt-1">{text.length}/300</p>
             </div>
           )}
 
@@ -249,7 +249,7 @@ export function PuzzleCancelConfirmSheet({ open, onOpenChange, submitting, onCon
               type="button"
               onClick={() => onOpenChange(false)}
               disabled={submitting}
-              className="w-full py-3 text-[14px] text-neutral-400 hover:text-white transition-colors font-bold"
+              className="w-full py-3 text-[14px] text-muted-foreground hover:text-foreground transition-colors font-bold"
             >
               ‹ 돌아가기
             </button>

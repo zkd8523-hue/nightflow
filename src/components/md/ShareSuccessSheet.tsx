@@ -172,8 +172,8 @@ export function ShareSuccessSheet({
       id: "more",
       label: "더보기",
       icon: Share2,
-      iconColor: "text-neutral-400",
-      bgColor: "bg-neutral-800/50 border-neutral-700/30",
+      iconColor: "text-muted-foreground",
+      bgColor: "bg-muted/50 border-border/30",
       handler: handleWebShare,
       available: typeof navigator !== "undefined" && !!navigator.share,
     },
@@ -183,17 +183,17 @@ export function ShareSuccessSheet({
 
   return (
     <Drawer open={isOpen} onOpenChange={handleDrawerClose}>
-      <DrawerContent className="bg-[#1C1C1E] border-neutral-800 outline-none px-6 pb-10">
+      <DrawerContent className="bg-card border-border outline-none px-6 pb-10">
         <DrawerHeader className="text-center space-y-3 pt-4">
           <div className="flex justify-center">
             <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
-              <PartyPopper className="w-8 h-8 text-green-500" />
+              <PartyPopper className="w-8 h-8 text-money" />
             </div>
           </div>
-          <DrawerTitle className="text-white font-black text-2xl tracking-tight">
+          <DrawerTitle className="text-foreground font-black text-2xl tracking-tight">
             조각 등록 성공!
           </DrawerTitle>
-          <DrawerDescription className="text-neutral-400 font-medium text-[14px]">
+          <DrawerDescription className="text-muted-foreground font-medium text-[14px]">
             지금 바로 공유해서 자리를 채워보세요!
           </DrawerDescription>
         </DrawerHeader>
@@ -210,10 +210,10 @@ export function ShareSuccessSheet({
                 disabled={!!sharing}
                 className={`flex flex-col items-center gap-2 p-3 rounded-2xl border transition-all active:scale-[0.95] ${opt.bgColor} ${sharing && !isLoading ? "opacity-50" : ""}`}
               >
-                <div className="w-10 h-10 rounded-full bg-neutral-900/50 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-card/50 flex items-center justify-center">
                   <Icon className={`w-5 h-5 ${opt.iconColor}`} />
                 </div>
-                <span className="text-[11px] font-bold text-neutral-300">
+                <span className="text-[11px] font-bold text-foreground/80">
                   {isLoading ? "..." : opt.label}
                 </span>
               </button>
@@ -227,7 +227,7 @@ export function ShareSuccessSheet({
             <Button
               onClick={() => { onOpenChange(false); onContinue(); }}
               variant="outline"
-              className="w-full h-14 rounded-2xl border-green-500/30 text-green-400 font-black text-base hover:bg-green-950/20 hover:border-green-400 flex items-center justify-center gap-2"
+              className="w-full h-14 rounded-2xl border-green-500/30 text-money font-black text-base hover:bg-green-950/20 hover:border-green-400 flex items-center justify-center gap-2"
             >
               <RotateCcw className="w-5 h-5" />
               다른 테이블도 등록하기
@@ -235,7 +235,7 @@ export function ShareSuccessSheet({
           )}
           <Button
             onClick={handleGoToDashboard}
-            className="w-full h-14 rounded-2xl bg-white text-black font-black text-base hover:bg-neutral-200 flex items-center justify-center gap-2"
+            className="w-full h-14 rounded-2xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 flex items-center justify-center gap-2"
           >
             대시보드로 이동
             <ArrowRight className="w-5 h-5" />

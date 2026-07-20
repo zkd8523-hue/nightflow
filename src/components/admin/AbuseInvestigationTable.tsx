@@ -39,10 +39,10 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  open: "text-green-400",
-  matched: "text-amber-400",
-  accepted: "text-amber-400",
-  cancelled: "text-neutral-500",
+  open: "text-money",
+  matched: "text-brand-amber",
+  accepted: "text-brand-amber",
+  cancelled: "text-muted-foreground",
   expired: "text-red-400",
 };
 
@@ -76,16 +76,16 @@ export function AbuseInvestigationTable({ rows }: Props) {
 
   if (rows.length === 0) {
     return (
-      <div className="text-center py-20 text-neutral-500">
+      <div className="text-center py-20 text-muted-foreground">
         <p>깃발을 올린 유저가 없습니다</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
       {/* 헤더 */}
-      <div className="grid grid-cols-[1fr_70px_70px_1.5fr_30px] gap-2 px-4 py-3 border-b border-neutral-800 text-[11px] font-bold text-neutral-500">
+      <div className="grid grid-cols-[1fr_70px_70px_1.5fr_30px] gap-2 px-4 py-3 border-b border-border text-[11px] font-bold text-muted-foreground">
         <div>유저</div>
         <div className="text-right">게시</div>
         <div className="text-right">수락</div>
@@ -97,37 +97,37 @@ export function AbuseInvestigationTable({ rows }: Props) {
       {rows.map((row) => {
         const isOpen = expanded.has(row.leader_id);
         return (
-          <div key={row.leader_id} className="border-b border-neutral-800/60 last:border-b-0">
+          <div key={row.leader_id} className="border-b border-border/60 last:border-b-0">
             <button
               type="button"
               onClick={() => toggle(row.leader_id)}
-              className="w-full grid grid-cols-[1fr_70px_70px_1.5fr_30px] gap-2 px-4 py-3.5 items-center hover:bg-neutral-900/50 transition-colors text-left"
+              className="w-full grid grid-cols-[1fr_70px_70px_1.5fr_30px] gap-2 px-4 py-3.5 items-center hover:bg-card/50 transition-colors text-left"
             >
               <div className="min-w-0">
-                <p className="text-[13px] font-bold text-white truncate">{row.leader_name}</p>
-                <p className="text-[11px] text-neutral-600 mt-0.5">
+                <p className="text-[13px] font-bold text-foreground truncate">{row.leader_name}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
                   최근 {formatDateTime(row.last_puzzle_at)}
                 </p>
               </div>
               <div className="text-right">
-                <span className="text-[14px] font-black text-white">{row.total_puzzles}</span>
-                <span className="text-[11px] text-neutral-500 ml-0.5">건</span>
+                <span className="text-[14px] font-black text-foreground">{row.total_puzzles}</span>
+                <span className="text-[11px] text-muted-foreground ml-0.5">건</span>
               </div>
               <div className="text-right">
                 <span
                   className={`text-[14px] font-black ${
                     row.accepted_count === 0
                       ? "text-red-400"
-                      : "text-green-400"
+                      : "text-money"
                   }`}
                 >
                   {row.accepted_count}
                 </span>
-                <span className="text-[11px] text-neutral-500 ml-0.5">건</span>
+                <span className="text-[11px] text-muted-foreground ml-0.5">건</span>
               </div>
               <div className="min-w-0">
                 {row.accepted_md_summary.length === 0 ? (
-                  <span className="text-[12px] text-neutral-600">-</span>
+                  <span className="text-[12px] text-muted-foreground">-</span>
                 ) : (
                   <div className="flex flex-wrap gap-1">
                     {row.accepted_md_summary.map((md) => (
@@ -136,7 +136,7 @@ export function AbuseInvestigationTable({ rows }: Props) {
                         className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
                           md.count >= 2
                             ? "bg-red-500/20 text-red-300"
-                            : "bg-neutral-800 text-neutral-300"
+                            : "bg-muted text-foreground/80"
                         }`}
                       >
                         {md.md_name}
@@ -146,7 +146,7 @@ export function AbuseInvestigationTable({ rows }: Props) {
                   </div>
                 )}
               </div>
-              <div className="flex justify-end text-neutral-500">
+              <div className="flex justify-end text-muted-foreground">
                 {isOpen ? (
                   <ChevronDown className="w-4 h-4" />
                 ) : (
@@ -156,43 +156,43 @@ export function AbuseInvestigationTable({ rows }: Props) {
             </button>
 
             {isOpen && (
-              <div className="bg-[#141414] border-t border-neutral-800/60 px-4 py-3 space-y-2">
+              <div className="bg-background border-t border-border/60 px-4 py-3 space-y-2">
                 {row.puzzles.map((p) => (
                   <div
                     key={p.id}
-                    className="bg-[#1C1C1E] border border-neutral-800/80 rounded-lg px-3 py-2.5"
+                    className="bg-card border border-border/80 rounded-lg px-3 py-2.5"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[11px] text-neutral-500 font-mono">
+                          <span className="text-[11px] text-muted-foreground font-mono">
                             {formatDateTime(p.created_at)}
                           </span>
-                          <span className="text-[11px] text-neutral-600">·</span>
-                          <span className="text-[12px] font-bold text-neutral-300">
+                          <span className="text-[11px] text-muted-foreground">·</span>
+                          <span className="text-[12px] font-bold text-foreground/80">
                             {formatEventDate(p.event_date)} {p.area}
                           </span>
                           <span
                             className={`text-[10px] font-bold ${
-                              STATUS_COLOR[p.status] || "text-neutral-500"
+                              STATUS_COLOR[p.status] || "text-muted-foreground"
                             }`}
                           >
                             · {STATUS_LABEL[p.status] || p.status}
                           </span>
                         </div>
                         {p.notes && (
-                          <p className="text-[12px] text-neutral-400 mt-1 break-words">
+                          <p className="text-[12px] text-muted-foreground mt-1 break-words">
                             {p.notes}
                           </p>
                         )}
                         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                          <span className="text-[11px] text-neutral-500">
+                          <span className="text-[11px] text-muted-foreground">
                             제안 {p.offer_count}건
                           </span>
                           {p.accepted_md_name && (
                             <>
-                              <span className="text-[11px] text-neutral-600">·</span>
-                              <span className="text-[11px] text-amber-400 font-bold">
+                              <span className="text-[11px] text-muted-foreground">·</span>
+                              <span className="text-[11px] text-brand-amber font-bold">
                                 수락: {p.accepted_md_name}
                               </span>
                             </>
@@ -201,7 +201,7 @@ export function AbuseInvestigationTable({ rows }: Props) {
                       </div>
                       <Link
                         href={`/flags/${p.id}`}
-                        className="text-[11px] text-neutral-500 hover:text-white shrink-0 underline"
+                        className="text-[11px] text-muted-foreground hover:text-foreground shrink-0 underline"
                       >
                         상세
                       </Link>

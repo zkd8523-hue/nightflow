@@ -271,7 +271,7 @@ export function LiveEditView({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[110] bg-black flex flex-col">
+    <div className="fixed inset-0 z-[110] bg-background flex flex-col">
       {/* 미디어 + 오버레이 스테이지 */}
       <div
         ref={stageRef}
@@ -325,7 +325,7 @@ export function LiveEditView({
                       e.stopPropagation();
                       removeImage(ov.id);
                     }}
-                    className="absolute -top-3 -left-3 w-7 h-7 rounded-full bg-black/70 flex items-center justify-center text-white"
+                    className="absolute -top-3 -left-3 w-7 h-7 rounded-full bg-black/70 flex items-center justify-center text-foreground"
                     aria-label="이미지 삭제"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -392,7 +392,7 @@ export function LiveEditView({
         <button
           type="button"
           onClick={onClose}
-          className="pointer-events-auto w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white active:scale-90 transition-transform"
+          className="pointer-events-auto w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-foreground active:scale-90 transition-transform"
           aria-label="닫기"
         >
           <X className="w-5 h-5" />
@@ -419,7 +419,7 @@ export function LiveEditView({
         </ToolButton>
         {/* 이미지 추가 — label+input 직결 (WebView의 programmatic click 차단 우회) */}
         <label
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white active:scale-90 transition-transform cursor-pointer"
+          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-foreground active:scale-90 transition-transform cursor-pointer"
           aria-label="이미지 추가"
         >
           <ImagePlus className="w-5 h-5" />
@@ -432,7 +432,7 @@ export function LiveEditView({
 
 
       {/* 하단: 액션 — 캡션 입력창 제거(텍스트는 T 오버레이로 넣는다) */}
-      <div className="relative z-10 mt-auto bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-16 pb-6 px-4 space-y-3">
+      <div className="relative z-10 mt-auto bg-gradient-to-t from-background/90 via-background/50 to-transparent pt-16 pb-6 px-4 space-y-3">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -447,7 +447,7 @@ export function LiveEditView({
               onPost("", overlays, imageOverlays, poll);
             }}
             disabled={uploading}
-            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-white text-black text-[15px] font-black active:scale-95 transition-transform disabled:opacity-70"
+            className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-full bg-inverse text-inverse-foreground text-[15px] font-black active:scale-95 transition-transform disabled:opacity-70"
           >
             {uploading ? (
               <>
@@ -462,7 +462,7 @@ export function LiveEditView({
             type="button"
             onClick={onRetake}
             disabled={uploading}
-            className="flex items-center justify-center gap-1.5 px-5 py-3 rounded-full bg-white/15 backdrop-blur text-white text-[14px] font-bold active:scale-95 transition-transform disabled:opacity-50"
+            className="flex items-center justify-center gap-1.5 px-5 py-3 rounded-full bg-white/15 backdrop-blur text-foreground text-[14px] font-bold active:scale-95 transition-transform disabled:opacity-50"
           >
             <RotateCcw className="w-4 h-4" />
             다시 촬영
@@ -499,7 +499,7 @@ function ToolButton({ label, onClick, children }: { label: string; onClick: () =
     <button
       type="button"
       onClick={onClick}
-      className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white active:scale-90 transition-transform"
+      className="w-10 h-10 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-foreground active:scale-90 transition-transform"
       aria-label={label}
     >
       {children}
@@ -511,12 +511,12 @@ function ToolButton({ label, onClick, children }: { label: string; onClick: () =
 function PollStickerPreview({ poll }: { poll: ShotPoll }) {
   return (
     <div className="rounded-2xl bg-black/55 backdrop-blur border border-white/15 p-3 space-y-2 pointer-events-none">
-      <div className="text-white text-[14px] font-black text-center leading-tight break-words">
+      <div className="text-foreground text-[14px] font-black text-center leading-tight break-words">
         {poll.question || "질문"}
       </div>
       <div className="space-y-1.5">
         {poll.options.map((o) => (
-          <div key={o.id} className="rounded-full bg-white/15 text-white text-[13px] font-bold text-center py-2 px-3 truncate">
+          <div key={o.id} className="rounded-full bg-white/15 text-foreground text-[13px] font-bold text-center py-2 px-3 truncate">
             {o.text || "선택지"}
           </div>
         ))}

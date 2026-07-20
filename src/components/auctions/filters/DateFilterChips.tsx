@@ -71,8 +71,8 @@ export function DateFilterChips({ eventDates, value, onChange }: DateFilterChips
             onClick={() => onChange(chip.key)}
             className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
               active
-                ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                ? "bg-inverse text-inverse-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
             {chip.label}

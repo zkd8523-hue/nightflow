@@ -52,7 +52,7 @@ function FilterRow({
 }) {
   return (
     <div data-no-pull-refresh className="flex items-center gap-2 overflow-x-auto scrollbar-hide touch-pan-x touch-pan-y">
-      <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">{label}</span>
+      <span className="text-[11px] font-bold text-muted-foreground whitespace-nowrap flex-shrink-0">{label}</span>
       {chips.map((chip) => {
         const active = chip.value === value;
         return (
@@ -61,8 +61,8 @@ function FilterRow({
             onClick={() => onChange(chip.value)}
             className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
               active
-                ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                ? "bg-inverse text-inverse-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
             {chip.label}
@@ -253,8 +253,8 @@ export function PuzzleList({
           onClick={() => setHideOffered((v) => !v)}
           className={`text-[11px] font-bold px-3 h-7 leading-none rounded-full transition-colors whitespace-nowrap ${
             hideOffered
-              ? "bg-white text-black"
-              : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+              ? "bg-inverse text-inverse-foreground"
+              : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
           오퍼 안한 것만
@@ -266,8 +266,8 @@ export function PuzzleList({
           onChange={(e) => onSortModeChange(e.target.value as "none" | "popular" | "budget" | "recent")}
           className={`appearance-none text-[11px] font-bold pl-3 pr-7 h-7 leading-none rounded-full transition-colors whitespace-nowrap cursor-pointer focus:outline-none box-border ${
             externalSortMode === "none"
-              ? "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
-              : "bg-white text-black"
+              ? "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
+              : "bg-inverse text-inverse-foreground"
           }`}
         >
           <option value="none">정렬</option>
@@ -275,7 +275,7 @@ export function PuzzleList({
           <option value="budget">예산순</option>
           <option value="recent">최신순</option>
         </select>
-        <ChevronDown className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 ${externalSortMode === "none" ? "text-neutral-400" : "text-black"}`} />
+        <ChevronDown className={`pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 ${externalSortMode === "none" ? "text-muted-foreground" : "text-black"}`} />
       </div>
     </div>
   ) : null;
@@ -292,7 +292,7 @@ export function PuzzleList({
                 setSeatFilter("all");
                 setDateFilter("all");
               }}
-              className="text-[11px] font-bold text-neutral-400 hover:text-white transition-colors px-2"
+              className="text-[11px] font-bold text-muted-foreground hover:text-foreground transition-colors px-2"
             >
               초기화
             </button>
@@ -302,8 +302,8 @@ export function PuzzleList({
               onClick={() => setFilterSheetOpen(true)}
               className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
                 hasActiveFilter
-                  ? "bg-white text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700 hover:text-white"
+                  ? "bg-inverse text-inverse-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
               aria-label="필터"
             >
@@ -318,9 +318,9 @@ export function PuzzleList({
 
       {/* 필터 Sheet */}
       <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
-        <SheetContent side="bottom" showCloseButton={false} className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10">
+        <SheetContent side="bottom" showCloseButton={false} className="bg-card border-border rounded-t-3xl px-5 pb-10">
           <SheetHeader className="pt-2 pb-4">
-            <SheetTitle className="text-white font-black text-lg text-left">필터</SheetTitle>
+            <SheetTitle className="text-foreground font-black text-lg text-left">필터</SheetTitle>
           </SheetHeader>
           <div className="space-y-5">
             <FilterRow
@@ -337,7 +337,7 @@ export function PuzzleList({
             />
             {eventDates.length > 1 && (
               <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-neutral-500 whitespace-nowrap flex-shrink-0">날짜</span>
+                <span className="text-[11px] font-bold text-muted-foreground whitespace-nowrap flex-shrink-0">날짜</span>
                 <DateFilterChips
                   eventDates={eventDates}
                   value={dateFilter}
@@ -346,7 +346,7 @@ export function PuzzleList({
               </div>
             )}
             {nbiFilter === "value" && (
-              <p className="text-[11px] text-amber-400/80 px-1">
+              <p className="text-[11px] text-brand-amber dark:text-brand-amber/80 px-1">
                 💡 가성비 ({NBI_BANDS.value.label}) 퍼즐엔 방장수고비를 받지 않아요.
               </p>
             )}
@@ -360,7 +360,7 @@ export function PuzzleList({
                 disabled={!hasActiveFilter}
                 className={`text-[12px] font-bold transition-colors ${
                   hasActiveFilter
-                    ? "text-neutral-400 hover:text-white"
+                    ? "text-muted-foreground hover:text-foreground"
                     : "text-transparent pointer-events-none"
                 }`}
               >
@@ -369,7 +369,7 @@ export function PuzzleList({
             </div>
             <button
               onClick={() => setFilterSheetOpen(false)}
-              className="w-full h-16 bg-white text-black font-black text-[14px] rounded-2xl"
+              className="w-full h-16 bg-inverse text-inverse-foreground font-black text-[14px] rounded-2xl"
             >
               {filteredPuzzles.length}건 보기
             </button>
@@ -382,7 +382,7 @@ export function PuzzleList({
         <div className="space-y-3 mb-8">
           <div className="flex items-center gap-2 px-1 pt-1">
             <BadgeCheck className="w-4 h-4 text-blue-400 flex-shrink-0" />
-            <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">파트너 직통</h3>
+            <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">파트너 직통</h3>
             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-400">
               {pinnedPartnerPuzzles.length}
             </span>
@@ -407,7 +407,7 @@ export function PuzzleList({
               </Link>
             ))}
           </div>
-          {listPuzzles.length > 0 && <div className="border-t border-neutral-800 mt-2" />}
+          {listPuzzles.length > 0 && <div className="border-t border-border mt-2" />}
         </div>
       )}
 
@@ -418,15 +418,15 @@ export function PuzzleList({
           <div className="space-y-2 text-center">
             {hasActiveFilter ? (
               <>
-                <p className="text-[15px] font-bold text-neutral-300">조건에 맞는 퍼즐이 없어요</p>
-                <p className="text-[12px] text-neutral-500 leading-relaxed">필터를 조정해보세요</p>
+                <p className="text-[15px] font-bold text-foreground/80">조건에 맞는 퍼즐이 없어요</p>
+                <p className="text-[12px] text-muted-foreground leading-relaxed">필터를 조정해보세요</p>
                 <button
                   onClick={() => {
                     setNbiFilter("all");
                     setSeatFilter("all");
                     setDateFilter("all");
                   }}
-                  className="inline-flex items-center gap-1.5 mt-3 bg-neutral-800 hover:bg-neutral-700 text-white rounded-full px-5 py-2 text-[12px] font-bold transition-colors"
+                  className="inline-flex items-center gap-1.5 mt-3 bg-muted hover:bg-muted text-foreground rounded-full px-5 py-2 text-[12px] font-bold transition-colors"
                 >
                   필터 초기화
                 </button>
@@ -434,8 +434,8 @@ export function PuzzleList({
             ) : shareMode ? (
               <>
                 <span className="text-[40px] leading-none">🧩</span>
-                <p className="text-[15px] font-bold text-white">아직 등록된 조각이 없어요</p>
-                <p className="text-[12px] text-neutral-500 leading-relaxed">먼저 조각을 올려서 인원을 모아보세요</p>
+                <p className="text-[15px] font-bold text-foreground">아직 등록된 조각이 없어요</p>
+                <p className="text-[12px] text-muted-foreground leading-relaxed">먼저 조각을 올려서 인원을 모아보세요</p>
                 {userRole !== "md" && userRole !== "admin" && (
                   <Link
                     href={userRole ? "/shares/new" : "/login?redirect=/shares/new"}
@@ -492,8 +492,8 @@ export function PuzzleList({
                   {/* 조각(AuctionList)과 동일한 날짜 헤더·카드 간격 */}
                   <div className="flex items-center gap-2.5 px-1 pt-1 pb-0 mb-1.5">
                     <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
-                    <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>{dday}</span>
+                    <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">{dateLabel}</h3>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${dday === "오늘" ? "bg-amber-500/20 text-brand-amber" : "bg-muted text-muted-foreground"}`}>{dday}</span>
                     {idx === 0 && sortSelectEl}
                   </div>
                   <div className="flex flex-col gap-6">
@@ -541,7 +541,7 @@ export function PuzzleList({
                         <button
                           type="button"
                           onClick={() => setRecentCollapsed((v) => !v)}
-                          className="flex items-center gap-1.5 text-[16px] font-black text-white tracking-tight hover:text-neutral-300 transition-colors whitespace-nowrap"
+                          className="flex items-center gap-1.5 text-[16px] font-black text-foreground tracking-tight hover:text-foreground/80 transition-colors whitespace-nowrap"
                           aria-label={recentCollapsed ? "펼치기" : "접기"}
                         >
                           {recentTitle}
@@ -552,7 +552,7 @@ export function PuzzleList({
                       {recentDeadline && (
                         <p
                           suppressHydrationWarning
-                          className="text-[12px] font-semibold text-neutral-400 pl-4 leading-none"
+                          className="text-[12px] font-semibold text-muted-foreground pl-4 leading-none"
                         >
                           {recentDeadline}
                         </p>
@@ -578,8 +578,8 @@ export function PuzzleList({
                               <div key={date} className="space-y-3">
                                 <div className="flex items-center gap-2 px-1">
                                   <div className="w-1 h-[14px] bg-amber-500 rounded-full flex-shrink-0" />
-                                  <span className="text-[14px] font-black text-white tracking-tight">{dateLabel}</span>
-                                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${dday === "오늘" ? "bg-amber-500/20 text-amber-400" : "bg-neutral-800 text-neutral-400"}`}>{dday}</span>
+                                  <span className="text-[14px] font-black text-foreground tracking-tight">{dateLabel}</span>
+                                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${dday === "오늘" ? "bg-amber-500/20 text-brand-amber" : "bg-muted text-muted-foreground"}`}>{dday}</span>
                                 </div>
                                 {items.map((puzzle) => (
                                   <Link key={puzzle.id} href={`/flags/${puzzle.id}`} className="block" onClick={(e) => { e.stopPropagation(); trackEvent('puzzle_card_click', { puzzle_id: puzzle.id, area: puzzle.area, is_recruiting: puzzle.is_recruiting_party, source: 'recent' }); }}>
@@ -594,7 +594,7 @@ export function PuzzleList({
                       </div>
                     )}
                   {recentPuzzles.length > 0 && rest.length > 0 && (
-                    <div className="border-t border-neutral-800 mt-2" />
+                    <div className="border-t border-border mt-2" />
                   )}
                   </div>
                 )}
@@ -624,12 +624,12 @@ export function PuzzleList({
                   <div className="flex flex-col gap-1.5 px-1 pt-1 pb-0 mb-1.5">
                     <div className="flex items-center gap-2.5">
                       <div className="w-1 h-[14px] bg-amber-500 rounded-full mt-[1px] flex-shrink-0" />
-                      <h3 className="text-[16px] font-black text-white tracking-tight whitespace-nowrap">{dateLabel}</h3>
+                      <h3 className="text-[16px] font-black text-foreground tracking-tight whitespace-nowrap">{dateLabel}</h3>
                       <span
                         className={`text-[11px] font-bold px-2 py-0.5 rounded-full mt-[1px] whitespace-nowrap flex-shrink-0 ${
                           dday === "오늘"
-                            ? "bg-amber-500/20 text-amber-400"
-                            : "bg-neutral-800 text-neutral-400"
+                            ? "bg-amber-500/20 text-brand-amber"
+                            : "bg-muted text-muted-foreground"
                         }`}
                       >
                         {dday}
@@ -639,7 +639,7 @@ export function PuzzleList({
                     {deadline && (
                       <p
                         suppressHydrationWarning
-                        className="text-[12px] font-semibold text-neutral-400 pl-3 leading-none"
+                        className="text-[12px] font-semibold text-muted-foreground pl-3 leading-none"
                       >
                         {deadline}
                       </p>
@@ -684,7 +684,7 @@ export function PuzzleList({
         <Link
           href={shareMode ? (userRole ? "/shares/new" : "/login?redirect=/shares/new") : (userRole ? "/flags/new" : "/login?redirect=/flags/new")}
           onClick={() => trackEvent("puzzle_cta_click", { source: "list_float" })}
-          className={`fixed bottom-24 right-4 flex items-center gap-2 bg-white hover:bg-neutral-200 text-black rounded-full pl-4 pr-3 py-3 shadow-lg z-40 border-2 border-black transition-opacity duration-200 ${
+          className={`fixed bottom-24 right-4 flex items-center gap-2 bg-inverse hover:opacity-90 text-inverse-foreground rounded-full pl-4 pr-3 py-3 shadow-lg z-40 border-2 border-black transition-opacity duration-200 ${
             listEndVisible ? "opacity-0 pointer-events-none" : "opacity-100"
           }`}
         >

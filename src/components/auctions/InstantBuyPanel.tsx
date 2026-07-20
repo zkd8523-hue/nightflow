@@ -137,11 +137,11 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
 
   return (
     <>
-      <Card className="p-3 space-y-2.5 bg-[#1C1C1E] border-neutral-800/50">
+      <Card className="p-3 space-y-2.5 bg-card border-border/50">
         {/* 예약가 */}
         <div className="px-1">
-          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">예약가</p>
-          <div className="flex items-baseline font-black text-white tracking-tighter leading-none mt-1">
+          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">예약가</p>
+          <div className="flex items-baseline font-black text-foreground tracking-tighter leading-none mt-1">
             <span className="text-[32px]">{formatNumber(price)}</span>
             <span className="text-[18px] ml-0.5 font-bold">원</span>
           </div>
@@ -160,7 +160,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
             className={`w-full h-12 text-base font-black rounded-xl transition-all active:scale-[0.98] ${
               isActive && !loading
                 ? "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_0_20px_rgba(245,158,11,0.3)]"
-                : "bg-neutral-800 text-neutral-500 shadow-none cursor-not-allowed"
+                : "bg-muted text-muted-foreground shadow-none cursor-not-allowed"
             }`}
             onClick={() => setShowConfirm(true)}
             disabled={!isActive || loading}
@@ -172,8 +172,8 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
         {/* 신뢰 + 안내 */}
         {isActive && (
           <div className="flex items-center justify-center gap-1.5 -mt-5">
-            <ShieldCheck className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
-            <p className="text-[11px] text-neutral-500 font-medium tracking-tight">
+            <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <p className="text-[11px] text-muted-foreground font-medium tracking-tight">
               결제는 파트너와 직접 진행합니다
             </p>
           </div>
@@ -182,31 +182,31 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
 
       {/* 확인 시트: 예약 확인 */}
       <Sheet open={showConfirm} onOpenChange={setShowConfirm}>
-        <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl">
+        <SheetContent side="bottom" className="h-auto bg-card border-border rounded-t-3xl">
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">
+            <SheetTitle className="text-foreground font-black text-xl">
               파트너 연락처 확인
             </SheetTitle>
-            <SheetDescription className="text-neutral-400">
+            <SheetDescription className="text-muted-foreground">
               테이블을 자세히 안내받고 일정을 편하게 조율해 보세요.
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-4">
-            <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
+            <div className="bg-card/50 rounded-2xl p-4 space-y-3 border border-border/50">
               <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-sm font-bold">상품</span>
-                <span className="font-bold text-white text-right max-w-[200px] truncate">{auction.title}</span>
+                <span className="text-muted-foreground text-sm font-bold">상품</span>
+                <span className="font-bold text-foreground text-right max-w-[200px] truncate">{auction.title}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-neutral-500 text-sm font-bold">예약가</span>
-                <span className="font-black text-2xl text-amber-400">
+                <span className="text-muted-foreground text-sm font-bold">예약가</span>
+                <span className="font-black text-2xl text-brand-amber">
                   {formatPrice(price)}
                 </span>
               </div>
-              <div className="h-px bg-neutral-800/30" />
+              <div className="h-px bg-muted/30" />
               <div className="flex items-start gap-2 pt-1">
-                <ShieldCheck className="w-4 h-4 text-neutral-400 mt-0.5" />
-                <p className="text-[11px] text-neutral-400 leading-relaxed font-medium">
+                <ShieldCheck className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <p className="text-[11px] text-muted-foreground leading-relaxed font-medium">
                   계속하기를 누르면 파트너 연락처가 표시됩니다.
                 </p>
               </div>
@@ -216,7 +216,7 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
               <Button
                 variant="outline"
                 onClick={() => setShowConfirm(false)}
-                className="h-14 rounded-2xl border-neutral-800 text-neutral-400 font-bold"
+                className="h-14 rounded-2xl border-border text-muted-foreground font-bold"
               >
                 취소
               </Button>
@@ -234,12 +234,12 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
 
       {/* MD 연락처 시트 */}
       <Sheet open={showContact} onOpenChange={setShowContact}>
-        <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl">
+        <SheetContent side="bottom" className="h-auto bg-card border-border rounded-t-3xl">
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">
+            <SheetTitle className="text-foreground font-black text-xl">
               {mdContact?.name ? `${mdContact.name} 파트너 연락처` : "파트너 연락처"}
             </SheetTitle>
-            <SheetDescription className="text-neutral-400">
+            <SheetDescription className="text-muted-foreground">
               파트너에게 직접 연락하여 방문을 확정하세요
             </SheetDescription>
           </SheetHeader>
@@ -282,14 +282,14 @@ export const InstantBuyPanel = memo(function InstantBuyPanel({
             )}
 
             {visibleMethods.length === 0 && (
-              <div className="text-center py-6 text-neutral-500 text-sm">
+              <div className="text-center py-6 text-muted-foreground text-sm">
                 연락처 정보가 없습니다. 잠시 후 다시 시도해주세요.
               </div>
             )}
 
             <div className="flex items-center justify-center gap-1.5 pt-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
-              <p className="text-[11px] text-neutral-500 font-medium">
+              <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <p className="text-[11px] text-muted-foreground font-medium">
                 결제는 파트너와 직접 진행합니다
               </p>
             </div>

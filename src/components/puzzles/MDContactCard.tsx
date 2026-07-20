@@ -59,20 +59,20 @@ export function MDContactCard({ md, onContactClick, lang = "ko" }: MDContactCard
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => onContactClick?.("dm")}
-          className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-neutral-900 border border-neutral-800 active:bg-neutral-800 transition-colors"
+          className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-card border border-border active:bg-muted transition-colors"
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-full bg-pink-500/15 flex items-center justify-center flex-shrink-0">
               <Instagram className="w-4 h-4 text-pink-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold text-neutral-500 uppercase">{t("인스타그램 DM", "Instagram DM")}</p>
-              <p className="text-[14px] font-bold text-white truncate">
+              <p className="text-[11px] font-bold text-muted-foreground uppercase">{t("인스타그램 DM", "Instagram DM")}</p>
+              <p className="text-[14px] font-bold text-foreground truncate">
                 @{extractInstagramHandle(md.instagram)}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-[12px] font-bold text-white flex-shrink-0">
+          <div className="flex items-center gap-1 text-[12px] font-bold text-foreground flex-shrink-0">
             {t("열기", "Open")}
             <ChevronRight className="w-4 h-4" />
           </div>
@@ -85,18 +85,18 @@ export function MDContactCard({ md, onContactClick, lang = "ko" }: MDContactCard
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => onContactClick?.("kakao")}
-          className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-neutral-900 border border-neutral-800 active:bg-neutral-800 transition-colors"
+          className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-card border border-border active:bg-muted transition-colors"
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-full bg-yellow-500/15 flex items-center justify-center flex-shrink-0">
               <MessageCircle className="w-4 h-4 text-yellow-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold text-neutral-500 uppercase">{t("카카오 오픈채팅", "KakaoTalk open chat")}</p>
-              <p className="text-[14px] font-bold text-white truncate">{t("파트너 채팅방 입장", "Join chat")}</p>
+              <p className="text-[11px] font-bold text-muted-foreground uppercase">{t("카카오 오픈채팅", "KakaoTalk open chat")}</p>
+              <p className="text-[14px] font-bold text-foreground truncate">{t("파트너 채팅방 입장", "Join chat")}</p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-[12px] font-bold text-white flex-shrink-0">
+          <div className="flex items-center gap-1 text-[12px] font-bold text-foreground flex-shrink-0">
             {t("입장", "Join")}
             <ChevronRight className="w-4 h-4" />
           </div>
@@ -107,20 +107,20 @@ export function MDContactCard({ md, onContactClick, lang = "ko" }: MDContactCard
         <a
           href={`tel:${md.phone}`}
           onClick={() => onContactClick?.("phone")}
-          className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-neutral-900 border border-neutral-800 active:bg-neutral-800 transition-colors"
+          className="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-card border border-border active:bg-muted transition-colors"
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-full bg-green-500/15 flex items-center justify-center flex-shrink-0">
-              <Phone className="w-4 h-4 text-green-400" />
+              <Phone className="w-4 h-4 text-money" />
             </div>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold text-neutral-500 uppercase">{t("전화", "Phone")}</p>
-              <p className="text-[14px] font-bold text-white truncate">
+              <p className="text-[11px] font-bold text-muted-foreground uppercase">{t("전화", "Phone")}</p>
+              <p className="text-[14px] font-bold text-foreground truncate">
                 {formatPhone(md.phone)}
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-[12px] font-bold text-white flex-shrink-0">
+          <div className="flex items-center gap-1 text-[12px] font-bold text-foreground flex-shrink-0">
             {t("전화", "Call")}
             <ChevronRight className="w-4 h-4" />
           </div>

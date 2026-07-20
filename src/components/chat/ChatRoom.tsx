@@ -443,23 +443,23 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
 
   // 컴포저 JSX (메시지 리스트 아래로 렌더)
   const composer = (
-    <div className="shrink-0 bg-[#0A0A0A] border-t border-neutral-800">
+    <div className="shrink-0 bg-background border-t border-border">
       <div className="max-w-lg mx-auto px-3 py-2">
         {/* 미디어 미리보기 */}
         {attachedPuzzle && (
-          <div className="mb-2 flex items-center gap-2 rounded-2xl border border-neutral-700 bg-[#1C1C1E] px-3 py-2.5">
+          <div className="mb-2 flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2.5">
             <span className="min-w-0 flex-1">
-              <span className="block text-[13px] font-black text-white truncate">
+              <span className="block text-[13px] font-black text-foreground truncate">
                 🧩 {attachedPuzzle.event_date.slice(5).replace("-", "/")} · {attachedPuzzle.area}
               </span>
-              <span className="block text-[11px] text-neutral-400">
+              <span className="block text-[11px] text-muted-foreground">
                 {attachedPuzzle.current_count}/{attachedPuzzle.target_count}명 모집 중
               </span>
             </span>
             <button
               type="button"
               onClick={() => setAttachedPuzzle(null)}
-              className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white shrink-0"
+              className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-foreground shrink-0"
               aria-label="조각 첨부 삭제"
             >
               <X className="w-3.5 h-3.5" />
@@ -471,7 +471,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
             {media.map((m, i) => (
               <div
                 key={i}
-                className="relative w-16 h-16 rounded-lg overflow-hidden bg-neutral-900 border border-neutral-800"
+                className="relative w-16 h-16 rounded-lg overflow-hidden bg-card border border-border"
               >
                 {m.type === "image" ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -490,7 +490,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
                       preload="metadata"
                     />
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px]">
+                      <div className="w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-foreground text-[10px]">
                         ▶
                       </div>
                     </div>
@@ -499,7 +499,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
                 <button
                   type="button"
                   onClick={() => removeMedia(i)}
-                  className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center text-white"
+                  className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 flex items-center justify-center text-foreground"
                   aria-label="삭제"
                 >
                   <X className="w-3 h-3" />
@@ -513,8 +513,8 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
           {/* 클럽태그 안내 (# 눌렀지만 아직 클럽명 입력 전) */}
           {hashtagToken && hashtagToken.token.length === 0 && (
             <div className="absolute left-0 right-0 bottom-full mb-2 z-20 flex justify-center">
-              <div className="px-3 py-2 rounded-full bg-neutral-800 border border-neutral-700 text-[12px] text-neutral-300 shadow-lg">
-클럽을 <span className="text-amber-400 font-bold">태그</span>할 수 있어요 🏷️
+              <div className="px-3 py-2 rounded-full bg-muted border border-border text-[12px] text-foreground/80 shadow-lg">
+클럽을 <span className="text-brand-amber font-bold">태그</span>할 수 있어요 🏷️
               </div>
             </div>
           )}
@@ -557,7 +557,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
             disabled={uploading || media.length >= CHAT_MEDIA_MAX_COUNT}
           />
           {/* 입력 pill */}
-          <div className="flex-1 min-w-0 flex items-end gap-1 bg-neutral-900 rounded-3xl pl-4 pr-1.5 py-1.5">
+          <div className="flex-1 min-w-0 flex items-end gap-1 bg-card rounded-3xl border border-border pl-4 pr-1.5 py-1.5">
             <textarea
               ref={textareaRef}
               value={input}
@@ -598,7 +598,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
               placeholder="메시지 입력"
               rows={1}
               maxLength={MAX_LEN}
-              className="flex-1 min-w-0 bg-transparent text-white text-[16px] placeholder:text-neutral-500 focus:outline-none resize-none leading-snug py-1.5 max-h-28"
+              className="flex-1 min-w-0 bg-transparent text-foreground text-[16px] placeholder:text-muted-foreground focus:outline-none resize-none leading-snug py-1.5 max-h-28"
             />
             <button
               type="button"
@@ -620,7 +620,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
                   setHashtagToken({ token: "", start: cursor - 1, end: cursor });
                 }, 0);
               }}
-              className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center text-amber-400 hover:bg-neutral-800 transition-colors"
+              className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center text-brand-amber hover:bg-muted transition-colors"
               aria-label="클럽 태그"
             >
               <Hash className="w-4 h-4" />
@@ -636,7 +636,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
               sending ||
               uploading
             }
-            className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
+            className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center bg-inverse text-inverse-foreground disabled:bg-muted disabled:text-muted-foreground transition-colors"
             aria-label="전송"
           >
             {sending ? (
@@ -648,7 +648,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
         </div>
         {/* 글자수 (한도 임박 시에만) */}
         {input.length >= 450 && (
-          <div className="mt-1 pr-12 text-right text-[11px] text-amber-400">
+          <div className="mt-1 pr-12 text-right text-[11px] text-brand-amber">
             {input.length}/{MAX_LEN}
           </div>
         )}
@@ -707,8 +707,8 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
 
       {/* 지역방 + 미인증 = 항상 보이는 인증 학습 안내 (글 유무 무관) */}
       {requiresVerification && !verifiedForRoom && (
-        <div className="py-6 px-6 text-center border-b border-neutral-900">
-          <p className="text-[15px] text-white font-bold">
+        <div className="py-6 px-6 text-center border-b border-border">
+          <p className="text-[15px] text-foreground font-bold">
             현위치 인증자만 참여할 수 있어요
           </p>
           <button
@@ -748,12 +748,12 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
         }}
       >
       {loading ? (
-        <div className="py-10 text-center text-[13px] text-neutral-500">
+        <div className="py-10 text-center text-[13px] text-muted-foreground">
           불러오는 중...
         </div>
       ) : messages.length === 0 ? (
         <div className="py-10 px-6 text-center">
-          <p className="text-[13px] text-neutral-500">
+          <p className="text-[13px] text-muted-foreground">
             {room === "all"
               ? "첫 LIVE를 남겨보세요!"
               : `지금 ${ROOM_LABEL[room]}에 있다면 첫 LIVE를 남겨보세요!`}

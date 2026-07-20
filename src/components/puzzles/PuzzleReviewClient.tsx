@@ -103,13 +103,13 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
   const activeRating = hoverRating || rating;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pb-32">
+    <div className="min-h-screen bg-background text-foreground pb-32">
       {/* 헤더 */}
-      <div className="sticky top-0 z-10 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-neutral-900">
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border">
         <div className="flex items-center gap-3 px-4 h-14 max-w-lg mx-auto">
           <button
             onClick={() => router.back()}
-            className="w-9 h-9 -ml-2 rounded-full flex items-center justify-center hover:bg-neutral-900 active:scale-95 transition"
+            className="w-9 h-9 -ml-2 rounded-full flex items-center justify-center hover:bg-card active:scale-95 transition"
             aria-label="뒤로"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -120,20 +120,20 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
 
       <div className="max-w-lg mx-auto px-4 py-5 space-y-6">
         {/* 매치 요약 카드 */}
-        <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-2">
-          <p className="text-[11px] text-neutral-500 font-medium tracking-wide">매치된 깃발</p>
-          <p className="text-[14px] font-bold text-neutral-100 break-keep">
+        <div className="bg-card rounded-2xl border border-border p-4 space-y-2">
+          <p className="text-[11px] text-muted-foreground font-medium tracking-wide">매치된 깃발</p>
+          <p className="text-[14px] font-bold text-foreground break-keep">
             {puzzle.notes || `${puzzle.area}에서 모여요`}
           </p>
-          <p className="text-[11.5px] text-neutral-500 font-medium">
+          <p className="text-[11.5px] text-muted-foreground font-medium">
             {formatEventDate(puzzle.event_date)} · {puzzle.area} · {puzzle.target_count}명 · 예산{" "}
             {totalBudget.toLocaleString()}원
           </p>
           {clubName && (
-            <div className="pt-2 border-t border-neutral-800">
-              <p className="text-[16px] font-black text-amber-300 tracking-tight">{clubName}</p>
+            <div className="pt-2 border-t border-border">
+              <p className="text-[16px] font-black text-brand-amber tracking-tight">{clubName}</p>
               {(mdName || mdInstagram) && (
-                <p className="text-[11.5px] text-neutral-500 font-medium mt-0.5">
+                <p className="text-[11.5px] text-muted-foreground font-medium mt-0.5">
                   담당파트너 {mdName ? mdName : ""}{mdInstagram ? ` @${mdInstagram}` : ""}
                 </p>
               )}
@@ -143,7 +143,7 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
 
         {/* 별점 */}
         <div className="space-y-3 text-center">
-          <h2 className="text-[14px] font-bold text-neutral-300">담당자는 어땠나요?</h2>
+          <h2 className="text-[14px] font-bold text-foreground/80">담당자는 어땠나요?</h2>
           <div className="flex items-center justify-center gap-1.5">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
@@ -158,8 +158,8 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
                 <Star
                   className={`w-9 h-9 ${
                     n <= activeRating
-                      ? "fill-amber-400 text-amber-400"
-                      : "fill-transparent text-neutral-700"
+                      ? "fill-amber-400 text-brand-amber"
+                      : "fill-transparent text-muted-foreground"
                   }`}
                   strokeWidth={1.5}
                 />
@@ -168,7 +168,7 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
           </div>
           <p
             className={`text-[13px] font-bold tracking-tight ${
-              activeRating > 0 ? "text-amber-300" : "text-neutral-600"
+              activeRating > 0 ? "text-brand-amber" : "text-muted-foreground"
             }`}
           >
             {activeRating > 0 ? RATING_LABELS[activeRating] : "별을 눌러 평가해주세요"}
@@ -177,8 +177,8 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
 
         {/* 태그 */}
         <div className="space-y-2">
-          <h2 className="text-[14px] font-bold text-neutral-300">
-            좋았던 점 <span className="text-[11px] text-neutral-500 font-medium">(선택)</span>
+          <h2 className="text-[14px] font-bold text-foreground/80">
+            좋았던 점 <span className="text-[11px] text-muted-foreground font-medium">(선택)</span>
           </h2>
           <div className="flex flex-wrap gap-2">
             {REVIEW_TAGS.map((tag) => {
@@ -191,7 +191,7 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
                   className={`text-[12.5px] font-bold px-3 py-2 rounded-full transition-colors ${
                     active
                       ? "bg-amber-500 text-black"
-                      : "bg-neutral-900 text-neutral-400 hover:bg-neutral-800 border border-neutral-800"
+                      : "bg-card text-muted-foreground hover:bg-muted border border-border"
                   }`}
                 >
                   {tag}
@@ -203,8 +203,8 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
 
         {/* 멘트 */}
         <div className="space-y-2">
-          <h2 className="text-[14px] font-bold text-neutral-300">
-            한마디 <span className="text-[11px] text-neutral-500 font-medium">(선택)</span>
+          <h2 className="text-[14px] font-bold text-foreground/80">
+            한마디 <span className="text-[11px] text-muted-foreground font-medium">(선택)</span>
           </h2>
           <textarea
             value={comment}
@@ -212,14 +212,14 @@ export function PuzzleReviewClient({ puzzle, acceptedOffer }: PuzzleReviewProps)
             placeholder="어떤 점이 좋았는지, 다음 손님께 추천 한마디 부탁드려요"
             rows={4}
             maxLength={300}
-            className="w-full bg-[#1C1C1E] border border-neutral-800 rounded-xl px-3 py-2.5 text-[13.5px] text-neutral-100 placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
+            className="w-full bg-card border border-border rounded-xl px-3 py-2.5 text-[13.5px] text-foreground/90 placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50 resize-none"
           />
-          <p className="text-[10.5px] text-neutral-600 text-right">{comment.length}/300</p>
+          <p className="text-[10.5px] text-muted-foreground text-right">{comment.length}/300</p>
         </div>
       </div>
 
       {/* 하단 고정 CTA */}
-      <div className="fixed inset-x-0 bg-[#0A0A0A]/95 backdrop-blur-sm border-t border-neutral-900 z-30" style={{ bottom: "calc(env(safe-area-inset-bottom) + 64px)" }}>
+      <div className="fixed inset-x-0 bg-background/95 backdrop-blur-sm border-t border-border z-30" style={{ bottom: "calc(env(safe-area-inset-bottom) + 64px)" }}>
         <div className="max-w-lg mx-auto px-4 py-3">
           <Button
             onClick={handleSubmit}

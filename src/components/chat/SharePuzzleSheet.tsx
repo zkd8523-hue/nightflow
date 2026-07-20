@@ -54,28 +54,28 @@ export function SharePuzzleSheet({ open, onOpenChange, userId, onSelect }: Props
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[70vh] overflow-y-auto"
+        className="bg-background border-border rounded-t-3xl p-0 pb-6 max-h-[70vh] overflow-y-auto"
       >
         <SheetHeader className="px-4 pt-4 pb-2">
-          <SheetTitle className="text-white text-[16px] text-left">내 조각 공유</SheetTitle>
+          <SheetTitle className="text-foreground text-[16px] text-left">내 조각 공유</SheetTitle>
         </SheetHeader>
-        <p className="px-4 text-[12px] text-neutral-400 mb-3">
+        <p className="px-4 text-[12px] text-muted-foreground mb-3">
           고르면 입력창에 붙어요. 한마디 적어서 같이 보내세요.
         </p>
 
         <div className="px-4 space-y-2">
           {loading ? (
-            <p className="py-8 text-center text-[13px] text-neutral-500">불러오는 중...</p>
+            <p className="py-8 text-center text-[13px] text-muted-foreground">불러오는 중...</p>
           ) : puzzles.length === 0 ? (
             <div className="py-8 flex flex-col items-center gap-3">
-              <p className="text-[13px] text-neutral-500">모집 중인 조각이 없어요</p>
+              <p className="text-[13px] text-muted-foreground">모집 중인 조각이 없어요</p>
               <button
                 type="button"
                 onClick={() => {
                   onOpenChange(false);
                   router.push("/shares/new");
                 }}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white text-black text-[13px] font-black"
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-inverse text-inverse-foreground text-[13px] font-black"
               >
                 <Plus className="w-4 h-4" />
                 조각 만들기
@@ -95,15 +95,15 @@ export function SharePuzzleSheet({ open, onOpenChange, userId, onSelect }: Props
                     onSelect(p);
                     onOpenChange(false);
                   }}
-                  className="w-full text-left rounded-2xl border border-neutral-800 bg-[#1C1C1E] p-3.5 hover:border-neutral-700 transition-colors"
+                  className="w-full text-left rounded-2xl border border-border bg-card p-3.5 hover:border-border transition-colors"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-white text-[14px] font-black truncate">
+                    <span className="text-foreground text-[14px] font-black truncate">
                       {dayjs(p.event_date).format("M/D")} · {p.area} ·{" "}
                       {formatPrice(perPerson)}/인
                     </span>
                   </div>
-                  <p className="text-[12px] text-neutral-400 mt-0.5">
+                  <p className="text-[12px] text-muted-foreground mt-0.5">
                     {p.current_count}/{p.target_count}명 모집 중
                   </p>
                 </button>

@@ -103,23 +103,23 @@ export function ShotCommentSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 max-h-[80vh] flex flex-col z-[110]"
+        className="bg-background border-border rounded-t-3xl p-0 max-h-[80vh] flex flex-col z-[110]"
       >
-        <SheetHeader className="px-4 pt-4 pb-3 border-b border-neutral-800 shrink-0">
-          <SheetTitle className="text-white text-[15px] text-left">
+        <SheetHeader className="px-4 pt-4 pb-3 border-b border-border shrink-0">
+          <SheetTitle className="text-foreground text-[15px] text-left">
             댓글 {comments.length > 0 && `(${comments.length})`}
           </SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto py-2">
           {loading ? (
-            <div className="py-10 text-center text-[13px] text-neutral-500">
+            <div className="py-10 text-center text-[13px] text-muted-foreground">
               불러오는 중...
             </div>
           ) : comments.length === 0 ? (
             <div className="py-10 text-center">
-              <p className="text-[13px] text-neutral-400">아직 댓글이 없어요</p>
-              <p className="text-[11px] text-neutral-600 mt-1">
+              <p className="text-[13px] text-muted-foreground">아직 댓글이 없어요</p>
+              <p className="text-[11px] text-muted-foreground mt-1">
                 첫 댓글을 남겨보세요
               </p>
             </div>
@@ -129,7 +129,7 @@ export function ShotCommentSheet({
                 const isMine = c.author_id === currentUserId;
                 return (
                   <li key={c.id} className="px-4 py-3 flex items-start gap-2">
-                    <div className="relative w-8 h-8 rounded-full overflow-hidden bg-neutral-800 shrink-0">
+                    <div className="relative w-8 h-8 rounded-full overflow-hidden bg-muted shrink-0">
                       {c.author?.profile_image ? (
                         <Image
                           src={c.author.profile_image}
@@ -139,21 +139,21 @@ export function ShotCommentSheet({
                           className="object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white/50 text-[11px] font-black">
+                        <div className="w-full h-full flex items-center justify-center text-foreground/50 text-[11px] font-black">
                           {(c.author?.display_name ?? "익").charAt(0)}
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[12px] font-bold text-neutral-300 truncate">
+                        <span className="text-[12px] font-bold text-foreground/80 truncate">
                           {c.author?.display_name ?? "익명"}
                         </span>
-                        <span className="text-[10px] text-neutral-500">
+                        <span className="text-[10px] text-muted-foreground">
                           {timeShort(c.created_at)}
                         </span>
                       </div>
-                      <p className="text-[14px] text-white mt-0.5 whitespace-pre-wrap break-words">
+                      <p className="text-[14px] text-foreground mt-0.5 whitespace-pre-wrap break-words">
                         {c.content}
                       </p>
                     </div>
@@ -161,7 +161,7 @@ export function ShotCommentSheet({
                       <button
                         type="button"
                         onClick={() => handleDelete(c.id)}
-                        className="shrink-0 p-1 text-neutral-500 hover:text-red-400"
+                        className="shrink-0 p-1 text-muted-foreground hover:text-red-400"
                         aria-label="삭제"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -175,11 +175,11 @@ export function ShotCommentSheet({
           )}
         </div>
 
-        <div className="border-t border-neutral-800 bg-[#0A0A0A] px-3 py-2.5 shrink-0">
+        <div className="border-t border-border bg-background px-3 py-2.5 shrink-0">
           {!currentUserId ? (
             <button
               onClick={onRequireLogin}
-              className="w-full py-3 rounded-full text-[14px] font-black bg-white text-black"
+              className="w-full py-3 rounded-full text-[14px] font-black bg-inverse text-inverse-foreground"
             >
               로그인하고 댓글 달기
             </button>
@@ -198,12 +198,12 @@ export function ShotCommentSheet({
                 placeholder="댓글 입력"
                 rows={1}
                 maxLength={MAX_LEN}
-                className="flex-1 bg-neutral-900 border border-neutral-800 rounded-2xl px-3 py-2 text-white text-[14px] placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600 resize-none max-h-32"
+                className="flex-1 bg-card border border-border rounded-2xl px-3 py-2 text-foreground text-[14px] placeholder:text-muted-foreground focus:outline-none focus:border-border resize-none max-h-32"
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || sending}
-                className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
+                className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-inverse text-inverse-foreground disabled:bg-muted disabled:text-muted-foreground transition-colors"
                 aria-label="전송"
               >
                 <Send className="w-4 h-4" />

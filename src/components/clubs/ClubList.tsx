@@ -271,11 +271,11 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
             type="button"
             onClick={() => router.back()}
             aria-label="뒤로가기"
-            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-900 -ml-2"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-card -ml-2"
           >
-            <ArrowLeft className="w-5 h-5 text-white" />
+            <ArrowLeft className="w-5 h-5 text-foreground" />
           </button>
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">
+          <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tight">
             전국 클럽 가이드
           </h1>
         </header>
@@ -289,8 +289,8 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
           view === "map"
             ? // 뷰포트 전체가 아니라 콘텐츠 폭(max-w-3xl)에 맞춰 중앙정렬 —
               // 넓은 화면(데스크톱 브라우저)에서 검색바가 좌우로 삐져나가는 문제 방지
-              "fixed left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-3xl z-30 bg-[#1C1C1E]/90 backdrop-blur-md p-2.5 space-y-2 shadow-lg rounded-2xl"
-            : "bg-[#1C1C1E] p-2.5 space-y-2 shadow-sm rounded-2xl"
+              "fixed left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-3xl z-30 bg-card/90 backdrop-blur-md p-2.5 space-y-2 shadow-lg rounded-2xl"
+            : "bg-card p-2.5 space-y-2 shadow-sm rounded-2xl border border-border"
         }`}
         style={
           view === "map"
@@ -304,20 +304,20 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               type="button"
               onClick={() => changeView("list")}
               aria-label="목록으로"
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-neutral-900 hover:bg-neutral-800 active:scale-95 transition flex-shrink-0"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-card hover:bg-muted active:scale-95 transition flex-shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 text-white" />
+              <ArrowLeft className="w-4 h-4 text-foreground" />
             </button>
           )}
-          <div className="flex-1 min-w-0 flex items-center bg-neutral-900 rounded-full pl-3 pr-1.5 h-9">
-            <Search className="w-3.5 h-3.5 text-neutral-500 flex-shrink-0" />
+          <div className="flex-1 min-w-0 flex items-center bg-card rounded-full pl-3 pr-1.5 h-9">
+            <Search className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="클럽명·지역 검색"
               // text-[16px]: iOS 사파리 16px 미만 input 자동 확대(레이아웃 밀림) 방지
-              className="flex-1 bg-transparent border-0 outline-none px-2 text-[16px] font-medium text-white placeholder:text-neutral-500 min-w-0"
+              className="flex-1 bg-transparent border-0 outline-none px-2 text-[16px] font-medium text-foreground placeholder:text-muted-foreground min-w-0"
               aria-label="클럽 검색"
             />
             {query && (
@@ -325,7 +325,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
                 type="button"
                 onClick={() => setQuery("")}
                 aria-label="검색어 지우기"
-                className="w-6 h-6 flex items-center justify-center rounded-full text-neutral-500 hover:bg-neutral-800"
+                className="w-6 h-6 flex items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -339,8 +339,8 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
             aria-expanded={filtersOpen}
             className={`relative flex items-center justify-center w-9 h-9 rounded-full transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
               filtersOpen || activeFilterCount > 0
-                ? "bg-white text-black"
-                : "bg-neutral-900 text-neutral-400 hover:bg-neutral-800"
+                ? "bg-inverse text-inverse-foreground"
+                : "bg-card text-muted-foreground hover:bg-muted"
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -354,7 +354,7 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
           <div
             role="tablist"
             aria-label="보기 방식"
-            className="flex items-center h-9 rounded-full bg-neutral-900 p-0.5 flex-shrink-0"
+            className="flex items-center h-9 rounded-full bg-card p-0.5 flex-shrink-0"
           >
             <button
               type="button"
@@ -363,8 +363,8 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               onClick={() => changeView("list")}
               className={`flex items-center justify-center gap-1 px-3 h-8 rounded-full text-[12px] font-black transition ${
                 view === "list"
-                  ? "bg-white text-black"
-                  : "text-neutral-400 hover:text-neutral-200"
+                  ? "bg-inverse text-inverse-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -377,8 +377,8 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
               onClick={() => changeView("map")}
               className={`flex items-center justify-center gap-1 px-3 h-8 rounded-full text-[12px] font-black transition ${
                 view === "map"
-                  ? "bg-white text-black"
-                  : "text-neutral-400 hover:text-neutral-200"
+                  ? "bg-inverse text-inverse-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <MapIcon className="w-3.5 h-3.5" />
@@ -404,13 +404,13 @@ export function ClubList({ clubs, activeCountMap, hotdealMap = {}, benefitTagsMa
         />
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 space-y-3">
-          <p className="text-neutral-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             조건에 맞는 클럽이 없습니다
           </p>
           <button
             type="button"
             onClick={() => setFilters({ areas: [], genres: [], venueTypes: [] })}
-            className="text-xs font-bold text-white bg-neutral-800 hover:bg-neutral-700 px-4 py-2 rounded-full"
+            className="text-xs font-bold text-foreground bg-muted hover:bg-muted px-4 py-2 rounded-full"
           >
             필터 초기화
           </button>
@@ -469,20 +469,20 @@ function AreaCarousel({
 
   return (
     <section>
-      <h2 className="text-[15px] font-black text-white mb-3 px-1 flex items-center gap-2">
+      <h2 className="text-[15px] font-black text-foreground mb-3 px-1 flex items-center gap-2">
         {hasHotplace ? (
           <Link
             href={`/clubs?area=${encodeURIComponent(area)}`}
-            className="inline-flex items-center gap-0.5 hover:text-amber-400 active:text-amber-400 transition-colors"
+            className="inline-flex items-center gap-0.5 hover:text-brand-amber active:text-brand-amber transition-colors"
             aria-label={`${area} 클럽 전체 보기`}
           >
             {area}
-            <ChevronRight className="w-4 h-4 text-neutral-500 -mb-0.5" strokeWidth={3} />
+            <ChevronRight className="w-4 h-4 text-muted-foreground -mb-0.5" strokeWidth={3} />
           </Link>
         ) : (
           area
         )}
-        <span className="text-neutral-500 text-[11px] font-medium">
+        <span className="text-muted-foreground text-[11px] font-medium">
           {clubs.length}
         </span>
       </h2>
@@ -500,13 +500,13 @@ function AreaCarousel({
           ))}
         </div>
         {/* "더 있어요" 시각 힌트 — 우측 그라데이션 페이드 */}
-        <div className="pointer-events-none absolute top-0 right-0 h-[175px] w-8 bg-gradient-to-l from-[#0A0A0A] to-transparent" />
+        <div className="pointer-events-none absolute top-0 right-0 h-[175px] w-8 bg-gradient-to-l from-background to-transparent" />
         {/* 데스크톱 전용 좌우 버튼 */}
         <button
           type="button"
           onClick={() => scrollBy(-1)}
           aria-label="이전"
-          className="hidden md:flex absolute left-1 top-[88px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
+          className="hidden md:flex absolute left-1 top-[88px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-border items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -514,7 +514,7 @@ function AreaCarousel({
           type="button"
           onClick={() => scrollBy(1)}
           aria-label="다음"
-          className="hidden md:flex absolute right-1 top-[88px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
+          className="hidden md:flex absolute right-1 top-[88px] -translate-y-1/2 w-10 h-10 rounded-full bg-black/70 backdrop-blur-sm border border-border items-center justify-center text-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/90 z-10"
         >
           <ChevronRight className="w-5 h-5" />
         </button>
@@ -544,7 +544,7 @@ function ClubCard({
       href={`/clubs/${club.id}`}
       className="flex-shrink-0 w-[140px] snap-start snap-always group/card"
     >
-      <div className="relative w-[140px] h-[175px] rounded-2xl overflow-hidden bg-neutral-900">
+      <div className="relative w-[140px] h-[175px] rounded-2xl overflow-hidden bg-card">
         {club.thumbnail_url ? (
           <Image
             src={club.thumbnail_url}
@@ -572,9 +572,9 @@ function ClubCard({
             </span>
           </div>
         )}
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background/80 to-transparent" />
         {distance !== undefined && (
-          <span className="absolute bottom-2 left-2 inline-flex items-center px-1.5 py-0.5 rounded-full bg-black/70 backdrop-blur-sm text-white text-[10px] font-black leading-none">
+          <span className="absolute bottom-2 left-2 inline-flex items-center px-1.5 py-0.5 rounded-full bg-black/70 backdrop-blur-sm text-foreground text-[10px] font-black leading-none">
             {distance < 1
               ? `${Math.round(distance * 1000)}m`
               : `${distance.toFixed(1)}km`}
@@ -583,7 +583,7 @@ function ClubCard({
       </div>
       <div className="mt-2 px-0.5 space-y-0.5">
         <div className="flex items-center justify-between gap-1.5">
-          <p className="text-white text-[14px] font-black truncate flex-1">
+          <p className="text-foreground text-[14px] font-black truncate flex-1">
             {club.name}
           </p>
           {favCount > 0 && (
@@ -594,7 +594,7 @@ function ClubCard({
           )}
         </div>
         {metaLine && (
-          <p className="text-neutral-500 text-[11px] font-medium truncate">
+          <p className="text-muted-foreground text-[11px] font-medium truncate">
             {metaLine}
           </p>
         )}
@@ -605,7 +605,7 @@ function ClubCard({
               return (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[9px] font-black leading-none"
+                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-brand-amber border border-amber-500/30 text-[9px] font-black leading-none"
                 >
                   {emoji && <span>{emoji}</span>}
                   {label}
@@ -635,7 +635,7 @@ function ImageFallback({ name }: { name: string }) {
     <div
       className={`w-full h-full bg-gradient-to-br ${gradients[hash]} flex items-center justify-center`}
     >
-      <span className="text-[40px] font-black text-white/40 select-none">
+      <span className="text-[40px] font-black text-foreground/40 select-none">
         {initial}
       </span>
     </div>

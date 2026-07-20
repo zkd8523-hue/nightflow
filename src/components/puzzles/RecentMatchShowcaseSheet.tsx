@@ -66,28 +66,28 @@ export function RecentMatchShowcaseSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-auto bg-[#0A0A0A] border-neutral-800 rounded-t-3xl px-5 pt-5 pb-8 max-h-[80vh] overflow-y-auto gap-2"
+        className="h-auto bg-background border-border rounded-t-3xl px-5 pt-5 pb-8 max-h-[80vh] overflow-y-auto gap-2"
       >
         <SheetHeader className="text-left p-0 gap-0 mb-1">
-          <SheetTitle className="text-white text-[24px] font-black tracking-tight leading-tight">
+          <SheetTitle className="text-foreground text-[24px] font-black tracking-tight leading-tight">
             😎 이 정도는 받아야죠
           </SheetTitle>
         </SheetHeader>
         {recentMatchedPuzzle && (
           <div className="space-y-3">
-            <div className="bg-[#1C1C1E] rounded-2xl p-4 space-y-2 relative">
+            <div className="bg-card rounded-2xl border border-border p-4 space-y-2 relative">
               <span className="absolute top-3 right-3 text-[10px] font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full leading-none">
                 성사됨
               </span>
               <div>
-                <p className="text-[14px] font-medium text-neutral-400 break-keep">
+                <p className="text-[14px] font-medium text-muted-foreground break-keep">
                   {recentMatchedPuzzle.notes || `${recentMatchedPuzzle.area}에서 모여요`}
                 </p>
-                <p className="text-[11px] text-neutral-500 font-medium mt-0.5">
+                <p className="text-[11px] text-muted-foreground font-medium mt-0.5">
                   {recentMatchedPuzzle.area} · {recentMatchedPuzzle.target_count}명
                 </p>
               </div>
-              <div className="text-[20px] font-black text-green-400 tracking-tight">
+              <div className="text-[20px] font-black text-money tracking-tight">
                 예산{" "}
                 {(
                   recentMatchedPuzzle.total_budget ??
@@ -96,13 +96,13 @@ export function RecentMatchShowcaseSheet({
                 원
               </div>
               {recentMatchedPuzzle.club_name && (
-                <div className="pt-2 border-t border-neutral-800 space-y-1.5">
+                <div className="pt-2 border-t border-border space-y-1.5">
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="text-[17px] font-black text-amber-300 tracking-tight">
+                    <p className="text-[17px] font-black text-brand-amber tracking-tight">
                       {recentMatchedPuzzle.club_name}
                     </p>
                     {recentMatchedPuzzle.md_instagram && (
-                      <p className="text-[11.5px] text-neutral-400 font-medium">
+                      <p className="text-[11.5px] text-muted-foreground font-medium">
                         @{recentMatchedPuzzle.md_instagram}
                       </p>
                     )}
@@ -129,7 +129,7 @@ export function RecentMatchShowcaseSheet({
                             {liquorItems.map((item) => (
                               <span
                                 key={item}
-                                className="text-[11.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                                className="text-[11.5px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-brand-amber border border-amber-500/30"
                               >
                                 🍾 {item}
                               </span>
@@ -141,7 +141,7 @@ export function RecentMatchShowcaseSheet({
                             {extraItems.map((ext) => (
                               <span
                                 key={ext}
-                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-900 text-neutral-400 border border-neutral-800"
+                                className="text-[10px] px-1.5 py-0.5 rounded-full bg-card text-muted-foreground border border-border"
                               >
                                 {ext}
                               </span>
@@ -149,7 +149,7 @@ export function RecentMatchShowcaseSheet({
                           </div>
                         )}
                         {recentMatchedPuzzle.offer_comment && (
-                          <p className="text-[12px] text-neutral-300 italic leading-snug pt-1">
+                          <p className="text-[12px] text-foreground/80 italic leading-snug pt-1">
                             &ldquo;{recentMatchedPuzzle.offer_comment}&rdquo;
                           </p>
                         )}
@@ -162,9 +162,9 @@ export function RecentMatchShowcaseSheet({
             {/* 인스타 일반 예약 대비 추가 혜택 — 이 쇼케이스 매치 전용 하드코딩 사실 */}
             <div className="flex items-center justify-center gap-2 px-4 py-0 -mt-2 mb-1">
               <span className="text-[22px] leading-none">🎉</span>
-              <p className="text-[18px] font-black text-amber-200 leading-snug break-keep text-center tracking-tight">
+              <p className="text-[18px] font-black text-brand-amber leading-snug break-keep text-center tracking-tight">
                 <span className="text-shimmer-gold">당일 예약보다</span>{" "}
-                <span className="text-amber-300">30만원치 더</span> 받았어요
+                <span className="text-brand-amber">30만원치 더</span> 받았어요
               </p>
             </div>
             <div className="text-center space-y-1.5">

@@ -75,10 +75,10 @@ export function ChatShareSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[80vh] flex flex-col"
+        className="bg-background border-border rounded-t-3xl p-0 pb-6 max-h-[80vh] flex flex-col"
       >
-        <SheetHeader className="px-4 pt-4 pb-2 border-b border-neutral-800 shrink-0">
-          <SheetTitle className="text-white text-[16px] text-left">
+        <SheetHeader className="px-4 pt-4 pb-2 border-b border-border shrink-0">
+          <SheetTitle className="text-foreground text-[16px] text-left">
             어느 방으로 공유할까요?
           </SheetTitle>
         </SheetHeader>
@@ -86,16 +86,16 @@ export function ChatShareSheet({
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
           {shareableRooms.length === 0 ? (
             <div className="py-8 text-center">
-              <p className="text-[13px] text-neutral-400">
+              <p className="text-[13px] text-muted-foreground">
                 공유할 수 있는 방이 없어요
               </p>
               {source && source.room === "all" && (
-                <p className="text-[11px] text-neutral-600 mt-1">
+                <p className="text-[11px] text-muted-foreground mt-1">
                   지역 인증을 하면 지역방으로 공유할 수 있어요
                 </p>
               )}
               {source && source.room !== "all" && (
-                <p className="text-[11px] text-neutral-600 mt-1">
+                <p className="text-[11px] text-muted-foreground mt-1">
                   지역방끼리는 공유할 수 없어요
                 </p>
               )}
@@ -113,8 +113,8 @@ export function ChatShareSheet({
                       onClick={() => setSelectedRoom(r.code)}
                       className={`w-full flex items-center gap-2 px-3 py-3 rounded-2xl border transition-colors ${
                         selected
-                          ? "bg-amber-500/15 border-amber-500 text-amber-300"
-                          : "bg-[#1C1C1E] border-neutral-800 text-neutral-300 hover:border-neutral-600"
+                          ? "bg-amber-500/15 border-amber-500 text-brand-amber"
+                          : "bg-card border-border text-foreground/80 hover:border-border"
                       }`}
                     >
                       <MapPin className="w-4 h-4" />
@@ -135,9 +135,9 @@ export function ChatShareSheet({
                     placeholder="한 마디 추가 (선택)"
                     rows={2}
                     maxLength={300}
-                    className="w-full bg-[#1C1C1E] border border-neutral-800 rounded-2xl px-3 py-2 text-white text-[14px] placeholder:text-neutral-600 focus:outline-none focus:border-neutral-600 resize-none"
+                    className="w-full bg-card border border-border rounded-2xl px-3 py-2 text-foreground text-[14px] placeholder:text-muted-foreground focus:outline-none focus:border-border resize-none"
                   />
-                  <div className="text-right text-[10px] text-neutral-600">
+                  <div className="text-right text-[10px] text-muted-foreground">
                     {comment.length}/300
                   </div>
                 </div>
@@ -148,11 +148,11 @@ export function ChatShareSheet({
 
         {/* 공유 버튼 */}
         {shareableRooms.length > 0 && (
-          <div className="px-4 pt-2 border-t border-neutral-800 shrink-0">
+          <div className="px-4 pt-2 border-t border-border shrink-0">
             <button
               onClick={handleShare}
               disabled={!selectedRoom || sending}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-black bg-white text-black disabled:bg-neutral-800 disabled:text-neutral-600 transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-full text-[14px] font-black bg-inverse text-inverse-foreground disabled:bg-muted disabled:text-muted-foreground transition-colors"
             >
               <Send className="w-4 h-4" />
               {sending ? "공유 중..." : "공유하기"}

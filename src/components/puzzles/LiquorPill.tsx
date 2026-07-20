@@ -24,7 +24,7 @@ export function LiquorPill({ includeText, products, isForeigner = false }: Liquo
         onClick={() => setOpen(true)}
         className="inline-flex items-center gap-1 text-[13px] font-bold px-2.5 py-1 rounded-[7px] bg-amber-500/8 border border-amber-400/25"
       >
-        <span className="bg-gradient-to-b from-amber-200 to-amber-500 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-b from-amber-700 to-amber-600 dark:from-amber-200 dark:to-amber-500 bg-clip-text text-transparent">
           {isForeigner ? toEnglishInclude(includeText) : includeText}
         </span>
       </button>

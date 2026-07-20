@@ -155,16 +155,16 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleCloseAttempt(); }}>
       <SheetContent
         side="bottom"
-        className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-5 pb-10"
+        className="bg-card border-t border-border rounded-t-3xl px-5 pb-10"
       >
         <SheetHeader className="mb-3">
-          <SheetTitle className="text-white text-[17px] font-black text-left">
+          <SheetTitle className="text-foreground text-[17px] font-black text-left">
             파티원 합류하기
           </SheetTitle>
-          <p className="text-[13px] text-neutral-400 text-left">
+          <p className="text-[13px] text-muted-foreground text-left">
             {formatDate(puzzle.event_date)} · {puzzle.area} · {perPerson.toLocaleString()}원/인
           </p>
-          <p className="text-[13px] text-neutral-500 text-left">
+          <p className="text-[13px] text-muted-foreground text-left">
             {genderNeutral
               ? `👥 ${puzzle.current_count}/${puzzle.target_count}명`
               : `🧑 남 ${puzzle.current_male ?? 0}/${puzzle.target_male ?? 0} · 👩 여 ${puzzle.current_female ?? 0}/${puzzle.target_female ?? 0}`}
@@ -173,9 +173,9 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
 
         {/* 성별 미입력 시: 조각으로 안내 (성별 무관 조각에선 불필요) */}
         {genderLoaded && !myGender && !genderNeutral && (
-          <div className="space-y-2 mb-5 bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4">
-            <p className="text-[13px] font-bold text-white">성별 정보가 필요해요</p>
-            <p className="text-[12px] text-neutral-400 leading-relaxed">
+          <div className="space-y-2 mb-5 bg-muted/50 border border-border rounded-2xl p-4">
+            <p className="text-[13px] font-bold text-foreground">성별 정보가 필요해요</p>
+            <p className="text-[12px] text-muted-foreground leading-relaxed">
               깃발은 성별 슬롯 기반으로 매칭돼요. 조각 매물에 먼저 참여하면서 성별을 설정하면 깃발도 합류할 수 있어요.
             </p>
           </div>
@@ -189,13 +189,13 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
                 {genderNeutral ? "자리가 모두 마감됐어요" : (myGender === "female" ? "여자 자리가 모두 마감됐어요" : "남자 자리가 모두 마감됐어요")}
               </p>
             ) : maxGuest === 0 ? (
-              <p className="text-[12px] text-neutral-500 bg-neutral-900/50 rounded-xl px-4 py-3">
+              <p className="text-[12px] text-muted-foreground bg-card/50 rounded-xl px-4 py-3">
                 {genderNeutral ? "자리가 1명 남아 동행 없이 본인만 참여 가능합니다" : `${myGender === "female" ? "여자" : "남자"} 자리가 1명 남아 동행 없이 본인만 참여 가능합니다`}
               </p>
             ) : (
               <>
                 <label className="inline-flex items-center gap-2 cursor-pointer">
-                  <span className="text-[14px] font-bold text-white">
+                  <span className="text-[14px] font-bold text-foreground">
                     동행이 있으신가요?
                   </span>
                   <input
@@ -211,23 +211,23 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
 
                 {hasGuest && (
                   <>
-                    <div className="flex items-center justify-between bg-neutral-900 border border-neutral-700 rounded-xl px-4 py-3">
+                    <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 py-3">
                       <button
                         onClick={() => setGuestCount(Math.max(1, guestCount - 1))}
-                        className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                        className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
                       >
-                        <Minus className="w-4 h-4 text-white" />
+                        <Minus className="w-4 h-4 text-foreground" />
                       </button>
-                      <span className="text-[16px] font-black text-white">동행 {guestCount}명</span>
+                      <span className="text-[16px] font-black text-foreground">동행 {guestCount}명</span>
                       <button
                         onClick={() => setGuestCount(Math.min(maxGuest, guestCount + 1))}
-                        className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors"
+                        className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
                       >
-                        <Plus className="w-4 h-4 text-white" />
+                        <Plus className="w-4 h-4 text-foreground" />
                       </button>
                     </div>
                     {!genderNeutral && (
-                      <p className="text-[11px] text-neutral-500">
+                      <p className="text-[11px] text-muted-foreground">
                         동행은 본인과 같은 {myGender === "female" ? "여자" : "남자"} 슬롯으로 카운트돼요
                       </p>
                     )}
@@ -238,9 +238,9 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
 
             {/* 예산 미리보기 — 동행 있을 때만(1명이면 헤더의 인당가와 중복) */}
             {totalJoining > 1 && (
-              <div className="bg-neutral-900/80 border border-neutral-700 rounded-xl p-3">
-                <p className="text-[12px] text-neutral-500 mb-0.5">예상 비용</p>
-                <p className="text-[17px] font-black text-green-400">
+              <div className="bg-card/80 border border-border rounded-xl p-3">
+                <p className="text-[12px] text-muted-foreground mb-0.5">예상 비용</p>
+                <p className="text-[17px] font-black text-money">
                   {totalJoining}명 × {perPerson.toLocaleString()}원 = {totalBudget.toLocaleString()}원
                 </p>
               </div>
@@ -249,7 +249,7 @@ export function PuzzleJoinSheet({ puzzle, open, onClose }: PuzzleJoinSheetProps)
             <Button
               onClick={handleJoin}
               disabled={submitting || slotFull}
-              className="w-full h-13 bg-white hover:bg-neutral-200 text-black font-black text-[15px] rounded-2xl transition-all active:scale-[0.98] disabled:bg-neutral-700 disabled:text-neutral-500"
+              className="w-full h-13 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-[15px] rounded-2xl transition-all active:scale-[0.98] disabled:bg-muted disabled:text-muted-foreground"
             >
               {submitting ? "뭉치는 중..." : "파티원 합류하기"}
             </Button>

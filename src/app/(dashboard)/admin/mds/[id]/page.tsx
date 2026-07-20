@@ -45,10 +45,10 @@ export default async function MDDetailPage({
 
   if (!mdUser || (mdUser.role !== "md" && mdUser.md_status === null)) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <div className="text-center">
-          <p className="text-neutral-400 mb-4">파트너를 찾을 수 없습니다</p>
-          <Link href="/admin/mds" className="text-white underline">
+          <p className="text-muted-foreground mb-4">파트너를 찾을 수 없습니다</p>
+          <Link href="/admin/mds" className="text-foreground underline">
             목록으로 돌아가기
           </Link>
         </div>
@@ -109,11 +109,11 @@ export default async function MDDetailPage({
     .limit(20);
 
   const offerStatusMap: Record<string, { label: string; color: string }> = {
-    pending: { label: "제안 중", color: "text-green-500" },
-    accepted: { label: "수락됨", color: "text-amber-500" },
-    rejected: { label: "거절됨", color: "text-neutral-500" },
-    withdrawn: { label: "철회됨", color: "text-neutral-500" },
-    expired: { label: "미선택", color: "text-neutral-600" },
+    pending: { label: "제안 중", color: "text-money" },
+    accepted: { label: "수락됨", color: "text-brand-amber" },
+    rejected: { label: "거절됨", color: "text-muted-foreground" },
+    withdrawn: { label: "철회됨", color: "text-muted-foreground" },
+    expired: { label: "미선택", color: "text-muted-foreground" },
   };
 
   const hasHealthData = !!mdData;
@@ -124,34 +124,34 @@ export default async function MDDetailPage({
 
   const metrics = hasHealthData
     ? [
-        { label: "총 경매", value: `${mdData.total_auctions}건`, color: "text-white" },
-        { label: "낙찰", value: `${mdData.won_auctions}건`, color: "text-white" },
+        { label: "총 경매", value: `${mdData.total_auctions}건`, color: "text-foreground" },
+        { label: "낙찰", value: `${mdData.won_auctions}건`, color: "text-foreground" },
         {
           label: "낙찰 총액",
           value: mdData.total_won_amount > 0 ? formatPrice(mdData.total_won_amount) : "—",
-          color: "text-green-500",
+          color: "text-money",
         },
         {
           label: "낙찰률",
           value: mdData.total_auctions > 0 ? `${mdData.sell_through_rate}%` : "—",
           color:
             mdData.sell_through_rate >= 60
-              ? "text-green-500"
+              ? "text-money"
               : mdData.sell_through_rate >= 40
-                ? "text-amber-500"
+                ? "text-brand-amber"
                 : mdData.total_auctions > 0
                   ? "text-red-500"
-                  : "text-neutral-600",
+                  : "text-muted-foreground",
         },
         {
           label: "노쇼",
           value: `${mdData.noshow_count}건`,
-          color: mdData.noshow_count > 0 ? "text-red-500" : "text-neutral-600",
+          color: mdData.noshow_count > 0 ? "text-red-500" : "text-muted-foreground",
         },
         {
           label: "방문확인률",
           value: mdData.confirm_rate > 0 ? `${mdData.confirm_rate}%` : "—",
-          color: "text-white",
+          color: "text-foreground",
         },
         {
           label: "취소율",
@@ -160,46 +160,46 @@ export default async function MDDetailPage({
             mdData.cancel_rate > 25
               ? "text-red-500"
               : mdData.cancel_rate > 10
-                ? "text-amber-500"
-                : "text-white",
+                ? "text-brand-amber"
+                : "text-foreground",
         },
-        { label: "마지막 활동", value: lastActive, color: mdData.flag_dormant ? "text-red-500" : "text-white" },
+        { label: "마지막 활동", value: lastActive, color: mdData.flag_dormant ? "text-red-500" : "text-foreground" },
       ]
     : [];
 
   const statusMap: Record<string, { label: string; color: string }> = {
-    active: { label: "진행중", color: "text-green-500" },
-    won: { label: "낙찰", color: "text-green-500" },
-    unsold: { label: "유찰", color: "text-neutral-500" },
+    active: { label: "진행중", color: "text-money" },
+    won: { label: "낙찰", color: "text-money" },
+    unsold: { label: "유찰", color: "text-muted-foreground" },
     cancelled: { label: "취소", color: "text-red-500" },
-    scheduled: { label: "예정", color: "text-amber-500" },
-    draft: { label: "초안", color: "text-neutral-600" },
-    confirmed: { label: "방문확인", color: "text-green-500" },
+    scheduled: { label: "예정", color: "text-brand-amber" },
+    draft: { label: "초안", color: "text-muted-foreground" },
+    confirmed: { label: "방문확인", color: "text-money" },
   };
 
   const mdName = mdData?.name || mdUser.display_name || mdUser.name || "알 수 없음";
   const mdArea = mdData?.area || mdUser.area || "미지정";
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
+    <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
       <div className="max-w-3xl mx-auto px-6 space-y-8">
         {/* Header */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <Link
               href="/admin/mds"
-              className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 hover:border-neutral-700 transition-colors"
+              className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border hover:border-border transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 text-neutral-400" />
+              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
             </Link>
-            <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-widest text-[11px]">
+            <div className="flex items-center gap-2 text-muted-foreground font-bold uppercase tracking-widest text-[11px]">
               <ShieldAlert className="w-3.5 h-3.5" />
               Partner Detail
             </div>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-neutral-800 flex items-center justify-center text-xl font-black text-white">
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-xl font-black text-foreground">
               {mdName[0] || "?"}
             </div>
             <div className="flex-1">
@@ -212,12 +212,12 @@ export default async function MDDetailPage({
                   </span>
                 )}
                 {mdUser.md_status === "revoked" && (
-                  <span className="text-[10px] font-black text-neutral-500 bg-neutral-500/10 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-black text-muted-foreground bg-muted/10 px-2 py-0.5 rounded-full">
                     REVOKED
                   </span>
                 )}
               </div>
-              <div className="text-neutral-400 text-sm">
+              <div className="text-muted-foreground text-sm">
                 {mdArea}
                 {hasHealthData && <> · {getGradeLabel(mdData.grade)}</>}
                 {" · "}가입 {dayjs(mdData?.joined_at || mdUser.created_at).fromNow()}
@@ -227,7 +227,7 @@ export default async function MDDetailPage({
                   {mdUser.phone && (
                     <a
                       href={`tel:${mdUser.phone}`}
-                      className="inline-flex items-center gap-1 text-neutral-300 hover:text-white transition-colors"
+                      className="inline-flex items-center gap-1 text-foreground/80 hover:text-foreground transition-colors"
                     >
                       <Phone className="w-3.5 h-3.5 shrink-0" />
                       {mdUser.phone}
@@ -238,7 +238,7 @@ export default async function MDDetailPage({
                       href={`https://instagram.com/${mdUser.instagram.replace(/^@/, "")}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-neutral-300 hover:text-white transition-colors"
+                      className="inline-flex items-center gap-1 text-foreground/80 hover:text-foreground transition-colors"
                     >
                       <Instagram className="w-3.5 h-3.5 shrink-0" />
                       @{mdUser.instagram.replace(/^@/, "")}
@@ -250,10 +250,10 @@ export default async function MDDetailPage({
             </div>
             {hasHealthData && mdData.health_score !== null && (
               <div className="text-right">
-                <div className="text-3xl font-black text-white">
+                <div className="text-3xl font-black text-foreground">
                   {mdData.health_score}
                 </div>
-                <div className="text-xs text-neutral-500">Health Score</div>
+                <div className="text-xs text-muted-foreground">Health Score</div>
               </div>
             )}
           </div>
@@ -265,9 +265,9 @@ export default async function MDDetailPage({
             {metrics.map((m) => (
               <Card
                 key={m.label}
-                className="bg-[#1C1C1E] border-neutral-800 p-3 text-center"
+                className="bg-card border-border p-3 text-center"
               >
-                <div className="text-xs text-neutral-500 mb-1">{m.label}</div>
+                <div className="text-xs text-muted-foreground mb-1">{m.label}</div>
                 <div className={`text-sm font-bold ${m.color}`}>{m.value}</div>
               </Card>
             ))}
@@ -304,36 +304,36 @@ export default async function MDDetailPage({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black">등록 클럽</h2>
-            <span className="text-xs text-neutral-500 font-bold">{ownedClubs?.length ?? 0}개</span>
+            <span className="text-xs text-muted-foreground font-bold">{ownedClubs?.length ?? 0}개</span>
           </div>
           {ownedClubs && ownedClubs.length > 0 ? (
             <div className="space-y-2">
               {ownedClubs.map((c) => {
                 const isDefault = c.id === defaultClubRow?.default_club_id;
                 return (
-                  <Card key={c.id} className="bg-[#1C1C1E] border-neutral-800 p-4">
+                  <Card key={c.id} className="bg-card border-border p-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-14 h-14 rounded-xl bg-neutral-900 border border-neutral-800 overflow-hidden shrink-0 flex items-center justify-center">
+                      <div className="w-14 h-14 rounded-xl bg-card border border-border overflow-hidden shrink-0 flex items-center justify-center">
                         {c.thumbnail_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={c.thumbnail_url} alt={c.name} className="w-full h-full object-cover" />
                         ) : (
-                          <Building2 className="w-5 h-5 text-neutral-700" />
+                          <Building2 className="w-5 h-5 text-muted-foreground" />
                         )}
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-black text-white truncate">{c.name}</p>
+                          <p className="text-sm font-black text-foreground truncate">{c.name}</p>
                           {isDefault && (
-                            <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">DEFAULT</span>
+                            <span className="text-[9px] font-bold text-brand-amber bg-amber-500/10 px-1.5 py-0.5 rounded">DEFAULT</span>
                           )}
                           {c.area && (
-                            <span className="text-[10px] text-neutral-500 font-bold">{c.area}</span>
+                            <span className="text-[10px] text-muted-foreground font-bold">{c.area}</span>
                           )}
                         </div>
-                        <p className="text-xs text-neutral-400">{c.address || "주소 미입력"}</p>
+                        <p className="text-xs text-muted-foreground">{c.address || "주소 미입력"}</p>
                         {c.address_detail && (
-                          <p className="text-xs text-neutral-500 flex items-center gap-1">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
                             <MapPinned className="w-3 h-3" />
                             {c.address_detail}
                           </p>
@@ -343,7 +343,7 @@ export default async function MDDetailPage({
                             href={c.floor_plan_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-white transition-colors mt-1"
+                            className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors mt-1"
                           >
                             플로어맵 <ExternalLink className="w-3 h-3" />
                           </a>
@@ -355,7 +355,7 @@ export default async function MDDetailPage({
               })}
             </div>
           ) : (
-            <div className="text-center py-6 text-sm text-neutral-500">
+            <div className="text-center py-6 text-sm text-muted-foreground">
               등록된 클럽이 없습니다
             </div>
           )}
@@ -377,20 +377,20 @@ export default async function MDDetailPage({
               }>).map((a) => {
                 const s = statusMap[a.status] || {
                   label: a.status,
-                  color: "text-neutral-500",
+                  color: "text-muted-foreground",
                 };
                 return (
                   <div
                     key={a.id}
-                    className="bg-[#1C1C1E] rounded-xl p-3 flex items-center justify-between"
+                    className="bg-card rounded-xl border border-border p-3 flex items-center justify-between"
                   >
                     <div>
-                      <div className="text-sm text-neutral-400">
+                      <div className="text-sm text-muted-foreground">
                         {dayjs(a.auction_date || a.created_at).format(
                           "M/D (ddd)",
                         )}
                       </div>
-                      <div className="text-sm text-white">
+                      <div className="text-sm text-foreground">
                         시작가 {formatPrice(a.start_price || 0)}
                         {(a.current_bid || 0) > 0 &&
                           ` → ${formatPrice(a.current_bid!)}`}
@@ -400,7 +400,7 @@ export default async function MDDetailPage({
                       <div className={`text-sm font-bold ${s.color}`}>
                         {s.label}
                       </div>
-                      <div className="text-xs text-neutral-600">
+                      <div className="text-xs text-muted-foreground">
                         입찰 {a.bid_count || 0}건
                       </div>
                     </div>
@@ -409,7 +409,7 @@ export default async function MDDetailPage({
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-neutral-500">
+            <div className="text-center py-8 text-muted-foreground">
               얼리버드 내역이 없습니다
             </div>
           )}
@@ -431,28 +431,28 @@ export default async function MDDetailPage({
                 const club = o.club as { name?: string } | null;
                 const s = offerStatusMap[o.status] || {
                   label: o.status,
-                  color: "text-neutral-500",
+                  color: "text-muted-foreground",
                 };
                 return (
                   <Link
                     key={o.id}
                     href={`/admin/puzzles?tab=list${puzzle?.area ? `&area=${encodeURIComponent(puzzle.area)}` : ""}`}
-                    className="block bg-[#1C1C1E] rounded-xl p-3 hover:bg-neutral-900 transition-colors"
+                    className="block bg-card rounded-xl border border-border p-3 hover:bg-card transition-colors"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-neutral-400">
+                        <div className="text-sm text-muted-foreground">
                           {puzzle?.event_date
                             ? dayjs(puzzle.event_date).format("M/D (ddd)")
                             : dayjs(o.created_at).format("M/D (ddd)")}
                           {puzzle?.area && <> · {puzzle.area}</>}
                           {club?.name && <> · {club.name}</>}
                         </div>
-                        <div className="text-sm text-white truncate">
+                        <div className="text-sm text-foreground truncate">
                           {o.table_type} · {formatPrice(o.proposed_price)}
                         </div>
                         {puzzle?.notes && (
-                          <div className="text-xs text-neutral-600 truncate">
+                          <div className="text-xs text-muted-foreground truncate">
                             "{puzzle.notes}"
                           </div>
                         )}
@@ -461,7 +461,7 @@ export default async function MDDetailPage({
                         <div className={`text-sm font-bold ${s.color}`}>
                           {s.label}
                         </div>
-                        <div className="text-xs text-neutral-600">
+                        <div className="text-xs text-muted-foreground">
                           {dayjs(o.created_at).fromNow()}
                         </div>
                       </div>
@@ -471,7 +471,7 @@ export default async function MDDetailPage({
               })}
             </div>
           ) : (
-            <div className="text-center py-8 text-neutral-500">
+            <div className="text-center py-8 text-muted-foreground">
               깃발 제안 내역이 없습니다
             </div>
           )}

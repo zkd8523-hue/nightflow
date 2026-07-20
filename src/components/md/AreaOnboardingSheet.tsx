@@ -69,34 +69,34 @@ export function AreaOnboardingSheet({ userId, onClose }: AreaOnboardingSheetProp
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm">
       <div
-        className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-300"
+        className="w-full max-w-lg bg-card rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-300"
         style={{ paddingBottom: "calc(2rem + 3.5rem + env(safe-area-inset-bottom))" }}
       >
         {/* 헤더 */}
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-amber-400" />
-            <h2 className="text-[17px] font-black text-white">관심 지역 설정</h2>
+            <MapPin className="w-5 h-5 text-brand-amber" />
+            <h2 className="text-[17px] font-black text-foreground">관심 지역 설정</h2>
           </div>
           <button
             onClick={handleLater}
             disabled={saving}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-800 transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
           >
-            <X className="w-4 h-4 text-neutral-500" />
+            <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
-        <p className="text-[13px] text-neutral-400 leading-relaxed mb-5">
+        <p className="text-[13px] text-muted-foreground leading-relaxed mb-5">
           선택한 지역에 새 깃발이 꽂히면 푸시 알림을 받아요.
           <br />
-          <span className="text-amber-400/80">
+          <span className="text-brand-amber dark:text-brand-amber/80">
             ※ &lsquo;서울 어디든&rsquo; 깃발은 서울권(강남/홍대/이태원/건대) 1개라도 선택하면 자동 수신됩니다.
           </span>
         </p>
 
         {/* 서울권 */}
         <div className="mb-4">
-          <p className="text-[11px] text-neutral-500 mb-2">서울권</p>
+          <p className="text-[11px] text-muted-foreground mb-2">서울권</p>
           <div className="flex flex-wrap gap-2">
             {SEOUL_AREAS.map((area) => {
               const isSel = selected.includes(area);
@@ -107,8 +107,8 @@ export function AreaOnboardingSheet({ userId, onClose }: AreaOnboardingSheetProp
                   onClick={() => toggle(area)}
                   className={`px-3 py-1.5 rounded-full text-[13px] font-bold border transition-colors ${
                     isSel
-                      ? "bg-white text-black border-white"
-                      : "bg-transparent text-neutral-400 border-neutral-700 hover:border-neutral-500"
+                      ? "bg-inverse text-inverse-foreground border-white"
+                      : "bg-transparent text-muted-foreground border-border hover:border-border"
                   }`}
                 >
                   {area}
@@ -120,7 +120,7 @@ export function AreaOnboardingSheet({ userId, onClose }: AreaOnboardingSheetProp
 
         {/* 광역시·기타 */}
         <div className="mb-6">
-          <p className="text-[11px] text-neutral-500 mb-2">광역시·기타</p>
+          <p className="text-[11px] text-muted-foreground mb-2">광역시·기타</p>
           <div className="flex flex-wrap gap-2">
             {REGIONAL_AREAS.map((area) => {
               const isSel = selected.includes(area);
@@ -131,8 +131,8 @@ export function AreaOnboardingSheet({ userId, onClose }: AreaOnboardingSheetProp
                   onClick={() => toggle(area)}
                   className={`px-3 py-1.5 rounded-full text-[13px] font-bold border transition-colors ${
                     isSel
-                      ? "bg-white text-black border-white"
-                      : "bg-transparent text-neutral-400 border-neutral-700 hover:border-neutral-500"
+                      ? "bg-inverse text-inverse-foreground border-white"
+                      : "bg-transparent text-muted-foreground border-border hover:border-border"
                   }`}
                 >
                   {area}
@@ -147,14 +147,14 @@ export function AreaOnboardingSheet({ userId, onClose }: AreaOnboardingSheetProp
           <button
             onClick={handleLater}
             disabled={saving}
-            className="flex-1 py-3 rounded-xl text-[14px] font-bold text-neutral-400 hover:text-white transition-colors disabled:opacity-50"
+            className="flex-1 py-3 rounded-xl text-[14px] font-bold text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
           >
             나중에
           </button>
           <button
             onClick={handleSave}
             disabled={saving || selected.length === 0}
-            className="flex-[2] py-3 rounded-xl text-[14px] font-black bg-white text-black disabled:opacity-50"
+            className="flex-[2] py-3 rounded-xl text-[14px] font-black bg-inverse text-inverse-foreground disabled:opacity-50"
           >
             {saving ? "저장 중..." : `저장 ${selected.length > 0 ? `(${selected.length})` : ""}`}
           </button>

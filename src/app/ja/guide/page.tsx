@@ -35,7 +35,7 @@ export default function JaGuidePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <div className="sr-only">
         <h1>韓国クラブ予約ガイド — 江南・弘大・梨泰院でVIPに (ソウル)</h1>
@@ -47,11 +47,11 @@ export default function JaGuidePage() {
       </div>
       <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
         <div className="text-center">
-          <Link href="/ja" className="text-2xl font-black tracking-tight text-white">NightFlow</Link>
+          <Link href="/ja" className="text-2xl font-black tracking-tight text-foreground">NightFlow</Link>
         </div>
         <header className="space-y-5 text-center">
           <h1 className="text-[34px] font-black tracking-tight leading-[1.15]">ソウルの最高のクラブで<br />VIPに</h1>
-          <p className="text-[15px] text-neutral-400 leading-relaxed">韓国クラブ予約を簡単に。コネ不要、韓国語不要、ブローカーなし。NightFlowで江南・弘大・梨泰院クラブの最高の席を — 公平で透明な価格で。初日から地元民のように予約。</p>
+          <p className="text-[15px] text-muted-foreground leading-relaxed">韓国クラブ予約を簡単に。コネ不要、韓国語不要、ブローカーなし。NightFlowで江南・弘大・梨泰院クラブの最高の席を — 公平で透明な価格で。初日から地元民のように予約。</p>
         </header>
         <section className="space-y-6">
           <h2 className="text-2xl font-black tracking-tight text-center">観光客扱いにうんざり？</h2>
@@ -61,11 +61,11 @@ export default function JaGuidePage() {
               { icon: "💸", title: "観光客価格", body: "ウォークインかブローカーか、自分が騙されているか分からない。比較も交渉もできない。" },
               { icon: "🧍", title: "外で行列", body: "コネなし、ルームなし、ゲストリストなし。寒い中待つあなたを地元民が追い越して入場。" },
             ].map((p) => (
-              <div key={p.title} className="flex gap-4 p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800">
+              <div key={p.title} className="flex gap-4 p-5 rounded-2xl bg-card border border-border">
                 <div className="shrink-0 text-2xl leading-none pt-0.5">{p.icon}</div>
                 <div className="space-y-1">
-                  <p className="font-bold text-[15px] text-neutral-200">{p.title}</p>
-                  <p className="text-[13px] text-neutral-500 leading-relaxed">{p.body}</p>
+                  <p className="font-bold text-[15px] text-foreground">{p.title}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{p.body}</p>
                 </div>
               </div>
             ))}
@@ -73,26 +73,26 @@ export default function JaGuidePage() {
           <Link href="/ja/clubs" className="block text-center text-[13px] text-blue-400 underline">ソウルクラブの本物の価格を見る →</Link>
         </section>
         <section className="space-y-6">
-          <h2 className="text-[13px] font-bold tracking-[0.2em] text-neutral-500 uppercase text-center">ソウルクラブ予約の流れ</h2>
+          <h2 className="text-[13px] font-bold tracking-[0.2em] text-muted-foreground uppercase text-center">ソウルクラブ予約の流れ</h2>
           <div className="space-y-4">
             {[
               { n: "1", title: "クラブを選ぶ", body: "行きたいクラブを選んでください（または雰囲気だけ伝えてください）— 日付、予算、人数。" },
               { n: "2", title: "私たちが直接予約します", body: "NightFlowが直接クラブに連絡し、予算内で一番良い席を確保 — 本物の価格、ブローカー手数料なし。" },
               { n: "3", title: "VIPのように入場", body: "最高のルームが予約済み、列なし、ブローカーなし。Instagramでクラブと連絡、ドアでパスポートを見せる (19+)。" },
             ].map((s) => (
-              <div key={s.n} className="flex gap-4 p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800">
-                <div className="shrink-0 w-9 h-9 rounded-full bg-white text-black font-black flex items-center justify-center">{s.n}</div>
+              <div key={s.n} className="flex gap-4 p-5 rounded-2xl bg-card border border-border">
+                <div className="shrink-0 w-9 h-9 rounded-full bg-inverse text-inverse-foreground font-black flex items-center justify-center">{s.n}</div>
                 <div className="space-y-1">
                   <p className="font-bold text-[15px]">{s.title}</p>
-                  <p className="text-[13px] text-neutral-400 leading-relaxed">{s.body}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{s.body}</p>
                 </div>
               </div>
             ))}
           </div>
         </section>
         <section className="space-y-3 pt-2">
-          <Link href="/ja" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors">VIPアクセス取得 — 無料登録</Link>
-          <p className="text-[12px] text-neutral-600 text-center leading-relaxed">19+ · パスポート持参<br />夜をもっと美しく</p>
+          <Link href="/ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">VIPアクセス取得 — 無料登録</Link>
+          <p className="text-[12px] text-muted-foreground text-center leading-relaxed">19+ · パスポート持参<br />夜をもっと美しく</p>
         </section>
       </div>
     </div>

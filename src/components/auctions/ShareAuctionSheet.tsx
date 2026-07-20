@@ -198,8 +198,8 @@ export function ShareAuctionSheet({
       id: "more",
       label: "더보기",
       icon: Share2,
-      iconColor: "text-neutral-400",
-      bgColor: "bg-neutral-800/50 border-neutral-700/30",
+      iconColor: "text-muted-foreground",
+      bgColor: "bg-muted/50 border-border/30",
       handler: handleWebShare,
       available: typeof navigator !== "undefined" && !!navigator.share,
     },
@@ -209,13 +209,13 @@ export function ShareAuctionSheet({
 
   return (
     <Drawer open={isOpen} onOpenChange={onOpenChange}>
-      <DrawerContent className="bg-[#1C1C1E] border-neutral-800 outline-none px-6 pb-10">
+      <DrawerContent className="bg-card border-border outline-none px-6 pb-10">
         <DrawerHeader className="text-center pt-4 pb-0">
           <DrawerTitle
             className={
               isShareListing
                 ? "sr-only"
-                : "text-white font-black text-lg tracking-tight"
+                : "text-foreground font-black text-lg tracking-tight"
             }
           >
             {isShareListing
@@ -225,8 +225,8 @@ export function ShareAuctionSheet({
           <DrawerDescription
             className={
               isShareListing
-                ? "text-white font-black text-lg tracking-tight"
-                : "text-neutral-500 text-[13px] font-medium"
+                ? "text-foreground font-black text-lg tracking-tight"
+                : "text-muted-foreground text-[13px] font-medium"
             }
           >
             {isShareListing
@@ -252,10 +252,10 @@ export function ShareAuctionSheet({
                   sharing && !isLoading ? "opacity-50" : ""
                 }`}
               >
-                <div className="w-10 h-10 rounded-full bg-neutral-900/50 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-card/50 flex items-center justify-center">
                   <Icon className={`w-5 h-5 ${opt.iconColor}`} />
                 </div>
-                <span className="text-[11px] font-bold text-neutral-300">
+                <span className="text-[11px] font-bold text-foreground/80">
                   {isLoading ? "..." : opt.label}
                 </span>
               </button>

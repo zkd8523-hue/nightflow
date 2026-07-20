@@ -39,7 +39,7 @@ export const LastBidIndicator = memo(function LastBidIndicator({ lastBidTime }: 
   if (!lastBidTime || !elapsed) return null;
 
   return (
-    <div className="text-xs text-neutral-500 font-medium">
+    <div className="text-xs text-muted-foreground font-medium">
       {elapsed}
     </div>
   );

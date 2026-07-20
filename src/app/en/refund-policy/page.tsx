@@ -20,20 +20,20 @@ export const metadata: Metadata = {
 
 export default function EnRefundPolicyPage() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-start pt-20 px-4 pb-20">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-20 px-4 pb-20">
       <div className="max-w-3xl w-full space-y-8">
         <div className="flex items-center gap-4 mb-8">
-          <Link href="/en" className="text-[14px] text-neutral-500 hover:text-white">← Back</Link>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <ScrollText className="w-6 h-6 text-amber-500" />
+          <Link href="/en" className="text-[14px] text-muted-foreground hover:text-foreground">← Back</Link>
+          <h1 className="text-2xl font-black text-foreground tracking-tight flex items-center gap-2">
+            <ScrollText className="w-6 h-6 text-brand-amber" />
             Refund & Cancellation Policy
           </h1>
         </div>
 
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-8 space-y-8 text-neutral-300 text-[15px] leading-relaxed font-medium">
+        <div className="bg-card border border-border rounded-3xl p-8 space-y-8 text-foreground/80 text-[15px] leading-relaxed font-medium">
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-white">1. Scope</h2>
+            <h2 className="text-lg font-black text-foreground">1. Scope</h2>
             <p>
               This policy applies to all pre-paid transactions made by foreign users through
               the NightFlow platform. Korean domestic users transact directly with club managers
@@ -42,30 +42,30 @@ export default function EnRefundPolicyPage() {
           </section>
 
           <section className="space-y-4">
-            <h2 className="text-lg font-black text-white">2. Refund Schedule</h2>
+            <h2 className="text-lg font-black text-foreground">2. Refund Schedule</h2>
             <p>
               Refunds for foreign user reservations are calculated based on the time remaining
-              until the <span className="text-white font-bold">scheduled event time</span>.
+              until the <span className="text-foreground font-bold">scheduled event time</span>.
             </p>
 
             <div className="space-y-3 mt-4">
               <div className="bg-green-500/10 border border-green-500/30 rounded-2xl p-4 flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-money mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-bold text-green-300">More than 48 hours before event</p>
-                  <p className="text-[13px] text-neutral-400 mt-1">
-                    <span className="text-white font-bold">100% refund</span>
+                  <p className="font-bold text-money">More than 48 hours before event</p>
+                  <p className="text-[13px] text-muted-foreground mt-1">
+                    <span className="text-foreground font-bold">100% refund</span>
                     {" "}(payment processing fees absorbed by NightFlow)
                   </p>
                 </div>
               </div>
 
               <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">
-                <Clock className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
+                <Clock className="w-5 h-5 text-brand-amber mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-bold text-amber-300">24 to 48 hours before event</p>
-                  <p className="text-[13px] text-neutral-400 mt-1">
-                    <span className="text-white font-bold">50% refund</span>
+                  <p className="font-bold text-brand-amber">24 to 48 hours before event</p>
+                  <p className="text-[13px] text-muted-foreground mt-1">
+                    <span className="text-foreground font-bold">50% refund</span>
                   </p>
                 </div>
               </div>
@@ -74,8 +74,8 @@ export default function EnRefundPolicyPage() {
                 <XCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="font-bold text-red-300">Less than 24 hours or no-show</p>
-                  <p className="text-[13px] text-neutral-400 mt-1">
-                    <span className="text-white font-bold">No refund (0%)</span>
+                  <p className="text-[13px] text-muted-foreground mt-1">
+                    <span className="text-foreground font-bold">No refund (0%)</span>
                   </p>
                 </div>
               </div>
@@ -83,11 +83,11 @@ export default function EnRefundPolicyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-white">3. Refund Process</h2>
+            <h2 className="text-lg font-black text-foreground">3. Refund Process</h2>
             <ol className="space-y-2 list-decimal pl-5">
               <li>Request cancellation through your account or customer support</li>
               <li>Refund rate is calculated automatically based on time until event</li>
-              <li>NightFlow processes approved refunds within <span className="text-white font-bold">3 business days</span> (compliant with Korean Act on Consumer Protection in Electronic Commerce, Article 18)</li>
+              <li>NightFlow processes approved refunds within <span className="text-foreground font-bold">3 business days</span> (compliant with Korean Act on Consumer Protection in Electronic Commerce, Article 18)</li>
               <li>Approved refunds are returned to the original payment method</li>
               <li>Actual settlement to your card account may take an additional 3-5 business days per card issuer policy</li>
               <li>WeChat Pay, Alipay+ refunds may take an additional 7-14 days due to international payment network policies, which the user acknowledges at the time of payment</li>
@@ -95,16 +95,16 @@ export default function EnRefundPolicyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-white">4. Cancellation by Club (MD)</h2>
+            <h2 className="text-lg font-black text-foreground">4. Cancellation by Club (MD)</h2>
             <p>
               If a reservation is cancelled due to the club's reasons, the user is entitled to a
-              <span className="text-white font-bold"> 100% refund</span>. The responsible MD may
+              <span className="text-foreground font-bold"> 100% refund</span>. The responsible MD may
               receive penalties under company policy.
             </p>
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-white">5. Payment Processing</h2>
+            <h2 className="text-lg font-black text-foreground">5. Payment Processing</h2>
             <p>
               All foreign user payments are processed through certified payment service providers.
               NightFlow does not store your card information directly. All payment data is handled
@@ -118,7 +118,7 @@ export default function EnRefundPolicyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-white">6. Dispute Resolution</h2>
+            <h2 className="text-lg font-black text-foreground">6. Dispute Resolution</h2>
             <ol className="space-y-2 list-decimal pl-5">
               <li>Step 1: Contact our customer support at {BUSINESS_INFO.email}</li>
               <li>Step 2: NightFlow will review and respond within 7 business days</li>
@@ -127,7 +127,7 @@ export default function EnRefundPolicyPage() {
           </section>
 
           <section className="space-y-3">
-            <h2 className="text-lg font-black text-white">7. Policy Changes</h2>
+            <h2 className="text-lg font-black text-foreground">7. Policy Changes</h2>
             <p>
               NightFlow may update this policy as necessary. Changes will be announced on the
               website at least 7 days before they take effect. Material changes that may
@@ -135,9 +135,9 @@ export default function EnRefundPolicyPage() {
             </p>
           </section>
 
-          <section className="space-y-3 pt-6 border-t border-neutral-800">
-            <h2 className="text-lg font-black text-white">Business Information</h2>
-            <div className="text-[13px] text-neutral-400 space-y-1">
+          <section className="space-y-3 pt-6 border-t border-border">
+            <h2 className="text-lg font-black text-foreground">Business Information</h2>
+            <div className="text-[13px] text-muted-foreground space-y-1">
               <p>Company: {BUSINESS_INFO.companyName} (MadDawid)</p>
               <p>CEO: {BUSINESS_INFO.ceo}</p>
               <p>Business Registration No.: {BUSINESS_INFO.businessNumber}</p>
@@ -148,20 +148,20 @@ export default function EnRefundPolicyPage() {
             </div>
           </section>
 
-          <section className="space-y-2 pt-4 border-t border-neutral-800">
-            <p className="text-[13px] text-neutral-500">
+          <section className="space-y-2 pt-4 border-t border-border">
+            <p className="text-[13px] text-muted-foreground">
               Effective from June 30, 2026.
             </p>
           </section>
         </div>
 
         <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 flex-shrink-0" />
-          <div className="text-[13px] text-neutral-300">
-            <p className="font-bold text-amber-300 mb-1">Need help?</p>
+          <AlertCircle className="w-5 h-5 text-brand-amber mt-0.5 flex-shrink-0" />
+          <div className="text-[13px] text-foreground/80">
+            <p className="font-bold text-brand-amber mb-1">Need help?</p>
             <p>
               Contact us at{" "}
-              <a href={`mailto:${BUSINESS_INFO.email}`} className="text-amber-400 underline hover:text-amber-300">
+              <a href={`mailto:${BUSINESS_INFO.email}`} className="text-brand-amber underline hover:text-brand-amber">
                 {BUSINESS_INFO.email}
               </a>
             </p>

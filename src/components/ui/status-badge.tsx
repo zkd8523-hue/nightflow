@@ -11,13 +11,13 @@ export const StatusBadge = memo(function StatusBadge({ status, size = "sm" }: St
     pending: {
       label: "승인대기",
       bg: "bg-amber-500/20",
-      text: "text-amber-400",
+      text: "text-brand-amber",
       icon: "⏳",
     },
     approved: {
       label: "승인완료",
       bg: "bg-green-500/20",
-      text: "text-green-400",
+      text: "text-money",
       icon: "✓",
     },
     rejected: {

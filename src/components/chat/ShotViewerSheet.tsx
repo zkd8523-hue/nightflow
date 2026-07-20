@@ -333,7 +333,7 @@ export function ShotViewerSheet({
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="bg-black border-none p-0 h-[100dvh] max-h-[100dvh] overflow-hidden"
+          className="bg-background border-none p-0 h-[100dvh] max-h-[100dvh] overflow-hidden"
         >
           {/* 큐브 뷰포트 — perspective로 3D 깊이 부여 */}
           <div
@@ -408,12 +408,12 @@ export function ShotViewerSheet({
           {/* 엔드카드 — 홈에서 마지막까지 다 보면 와글로 유도 */}
           {endCardOpen && endCardTo && (
             <div className="absolute inset-0 z-40 bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center gap-7 px-8 text-center">
-              <h2 className="text-white text-[21px] font-black leading-tight">
+              <h2 className="text-foreground text-[21px] font-black leading-tight">
                 LIVE를 다 봤어요
               </h2>
 
               {/* 가치 안내 — 거기 가면 뭘 할 수 있는지 */}
-              <div className="flex items-center gap-3 text-white text-[15px] font-bold">
+              <div className="flex items-center gap-3 text-foreground text-[15px] font-bold">
                 <span className="text-[17px]">💬</span>
                 지금 노는 사람들과 바로 대화
               </div>
@@ -427,14 +427,14 @@ export function ShotViewerSheet({
                     // history.state가 바뀌어 back() 가드에 걸려 이동이 유지됨.
                     router.push(endCardTo);
                   }}
-                  className="w-full px-7 py-3.5 rounded-full bg-white text-black text-[15px] font-black active:scale-95 transition-transform"
+                  className="w-full px-7 py-3.5 rounded-full bg-inverse text-inverse-foreground text-[15px] font-black active:scale-95 transition-transform"
                 >
                   더보기 →
                 </button>
                 <button
                   type="button"
                   onClick={() => onIndexChange(null)}
-                  className="text-neutral-500 text-[13px]"
+                  className="text-muted-foreground text-[13px]"
                 >
                   닫기
                 </button>
@@ -958,7 +958,7 @@ function ShotViewerContent({
           if (isPausedRef.current) return;
           onPrev();
         }}
-        className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 items-center justify-center text-white transition-colors"
+        className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 items-center justify-center text-foreground transition-colors"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
@@ -972,7 +972,7 @@ function ShotViewerContent({
           if (isPausedRef.current) return;
           onPlaybackEnd(); // 다음, 마지막이면 닫힘 (인스타 웹 화살표와 동일)
         }}
-        className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 items-center justify-center text-white transition-colors"
+        className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 items-center justify-center text-foreground transition-colors"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
@@ -980,7 +980,7 @@ function ShotViewerContent({
       {/* 상단 헤더 — 영상 '위' 별도 영역 (인스타식): 게이지 + 프로필 + 클럽명 */}
       {/* safe-area(상태표시줄/노치) 만큼 위 여백 확보 */}
       <div
-        className="relative shrink-0 z-20 pb-2 px-3 bg-black"
+        className="relative shrink-0 z-20 pb-2 px-3 bg-background"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)" }}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
@@ -1016,7 +1016,7 @@ function ShotViewerContent({
             }}
             className="flex items-center gap-2 min-w-0 pointer-events-auto active:opacity-80 transition"
           >
-            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-neutral-800 shrink-0 ring-2 ring-amber-500">
+            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-muted shrink-0 ring-2 ring-amber-500">
               {shot.author?.profile_image ? (
                 <Image
                   src={shot.author.profile_image}
@@ -1026,13 +1026,13 @@ function ShotViewerContent({
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/60 text-[12px] font-black">
+                <div className="w-full h-full flex items-center justify-center text-foreground/60 text-[12px] font-black">
                   {(shot.author?.display_name ?? "익").charAt(0)}
                 </div>
               )}
             </div>
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-white text-[13px] font-black truncate drop-shadow-lg">
+              <span className="text-foreground text-[13px] font-black truncate drop-shadow-lg">
                 {shot.author?.display_name ?? "익명"}
               </span>
               {/* 파트너 배지 — role='md'면 항상 표시 (클럽 무관, '이 유저는 파트너'라는 표식).
@@ -1043,7 +1043,7 @@ function ShotViewerContent({
                   파트너
                 </span>
               )}
-              <span className="text-[10px] text-white/60 drop-shadow-lg shrink-0">
+              <span className="text-[10px] text-foreground/60 drop-shadow-lg shrink-0">
                 {remaining}
               </span>
             </div>
@@ -1054,7 +1054,7 @@ function ShotViewerContent({
                 <button
                   type="button"
                   onPointerDown={(e) => e.stopPropagation()}
-                  className="pointer-events-auto w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10"
+                  className="pointer-events-auto w-9 h-9 rounded-full flex items-center justify-center text-foreground hover:bg-white/10"
                   aria-label="더보기"
                 >
                   <MoreVertical className="w-5 h-5" />
@@ -1062,13 +1062,13 @@ function ShotViewerContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 align="end"
-                className="bg-[#1C1C1E] border-neutral-800 text-white"
+                className="bg-card border-border text-foreground"
               >
                 {isMine ? (
                   <DropdownMenuItem
                     onClick={handleDelete}
                     disabled={deleting}
-                    className="cursor-pointer text-red-400 focus:bg-neutral-800 focus:text-red-400"
+                    className="cursor-pointer text-red-400 focus:bg-muted focus:text-red-400"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     삭제
@@ -1076,7 +1076,7 @@ function ShotViewerContent({
                 ) : (
                   <DropdownMenuItem
                     onClick={handleReport}
-                    className="cursor-pointer text-amber-400 focus:bg-neutral-800 focus:text-amber-400"
+                    className="cursor-pointer text-brand-amber focus:bg-muted focus:text-brand-amber"
                   >
                     <Flag className="w-4 h-4 mr-2" />
                     신고
@@ -1092,7 +1092,7 @@ function ShotViewerContent({
                 e.stopPropagation();
                 onClose();
               }}
-              className="pointer-events-auto w-9 h-9 rounded-full flex items-center justify-center text-white hover:bg-white/10"
+              className="pointer-events-auto w-9 h-9 rounded-full flex items-center justify-center text-foreground hover:bg-white/10"
               aria-label="닫기"
             >
               <X className="w-5 h-5" />
@@ -1111,7 +1111,7 @@ function ShotViewerContent({
                 e.stopPropagation();
                 router.push(`/clubs/${shot.club?.id ?? shot.club_id}`);
               }}
-              className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/55 backdrop-blur border border-white/20 text-white text-[12px] font-black active:scale-95 transition max-w-[85%]"
+              className="pointer-events-auto inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/55 backdrop-blur border border-white/20 text-foreground text-[12px] font-black active:scale-95 transition max-w-[85%]"
             >
               <Zap className="w-3 h-3 fill-red-400 text-red-400 shrink-0" />
               <span className="truncate">
@@ -1119,14 +1119,14 @@ function ShotViewerContent({
                   ? `${shot.club.area ? shot.club.area + " · " : ""}${shot.club.name}`
                   : "LIVE"}
               </span>
-              <ChevronRight className="w-3.5 h-3.5 text-white/50 shrink-0" />
+              <ChevronRight className="w-3.5 h-3.5 text-foreground/50 shrink-0" />
             </button>
           </div>
         )}
       </div>
 
       {/* 미디어 — 헤더 아래 남은 공간을 꽉 채움 (인스타 스토리식 edge-to-edge cover) */}
-      <div className="relative flex-1 min-h-0 flex items-center justify-center bg-black">
+      <div className="relative flex-1 min-h-0 flex items-center justify-center bg-background">
         {shot.media_type === "image" ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -1221,8 +1221,8 @@ function ShotViewerContent({
 
         {/* 캡션 — 미디어 하단(하단 바 위) 오버레이 */}
         {shot.caption && (
-          <div className="absolute bottom-0 inset-x-0 z-10 p-4 pt-10 pr-14 bg-gradient-to-t from-black/80 via-black/30 to-transparent pointer-events-none">
-            <p className="text-white text-[14px] leading-relaxed whitespace-pre-wrap drop-shadow-lg">
+          <div className="absolute bottom-0 inset-x-0 z-10 p-4 pt-10 pr-14 bg-gradient-to-t from-background/80 via-background/30 to-transparent pointer-events-none">
+            <p className="text-foreground text-[14px] leading-relaxed whitespace-pre-wrap drop-shadow-lg">
               {shot.caption}
             </p>
           </div>
@@ -1278,7 +1278,7 @@ function ShotViewerContent({
               e.stopPropagation();
               setSoundOn((v) => !v);
             }}
-            className="pointer-events-auto w-9 h-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-white active:scale-90 transition-transform"
+            className="pointer-events-auto w-9 h-9 rounded-full bg-black/40 backdrop-blur flex items-center justify-center text-foreground active:scale-90 transition-transform"
             aria-label={soundOn ? "음소거" : "소리 켜기"}
           >
             {soundOn ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
@@ -1289,7 +1289,7 @@ function ShotViewerContent({
 
       {/* 하단 검은 바 (인스타 스토리식) — 나도 갈래 + 메시지(댓글) + 하트 */}
       <div
-        className="relative shrink-0 z-20 bg-black px-3 pt-2.5 flex flex-col gap-2"
+        className="relative shrink-0 z-20 bg-background px-3 pt-2.5 flex flex-col gap-2"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)" }}
         onPointerDown={(e) => e.stopPropagation()}
         onPointerUp={(e) => e.stopPropagation()}
@@ -1300,7 +1300,7 @@ function ShotViewerContent({
             <button
               type="button"
               onClick={() => setActivityOpen(true)}
-              className="flex-1 inline-flex items-center gap-4 px-4 py-2.5 text-white text-[14px] font-bold active:opacity-70 transition-opacity"
+              className="flex-1 inline-flex items-center gap-4 px-4 py-2.5 text-foreground text-[14px] font-bold active:opacity-70 transition-opacity"
             >
               <span className="inline-flex items-center gap-1.5">
                 <Eye className="w-5 h-5" />
@@ -1356,7 +1356,7 @@ function ShotViewerContent({
               onPointerUp={(e) => e.stopPropagation()}
               placeholder="메시지 보내기"
               maxLength={300}
-              className="flex-1 min-w-0 px-4 py-2.5 rounded-full bg-transparent border border-white/40 text-white text-[14px] placeholder:text-white/60 focus:outline-none focus:border-white/70"
+              className="flex-1 min-w-0 px-4 py-2.5 rounded-full bg-transparent border border-white/40 text-foreground text-[14px] placeholder:text-foreground/60 focus:outline-none focus:border-white/70"
             />
             {commentInput.trim() && (
               <button
@@ -1364,7 +1364,7 @@ function ShotViewerContent({
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={sendInlineComment}
                 disabled={commentSending}
-                className="shrink-0 px-3 py-2 text-[14px] font-black text-white disabled:text-white/40"
+                className="shrink-0 px-3 py-2 text-[14px] font-black text-foreground disabled:text-foreground/40"
               >
                 보내기
               </button>
@@ -1383,7 +1383,7 @@ function ShotViewerContent({
             >
               <Heart
                 className={`w-7 h-7 transition-transform duration-150 ${
-                  liked ? "fill-red-500 text-red-500 scale-110" : "text-white"
+                  liked ? "fill-red-500 text-red-500 scale-110" : "text-foreground"
                 }`}
               />
               {/* 좋아요 개수는 당분간 숨김 — 초기엔 숫자가 낮게 보여
@@ -1395,9 +1395,9 @@ function ShotViewerContent({
               className="shrink-0 w-10 flex flex-col items-center justify-center gap-0.5 active:scale-90 transition-transform"
               aria-label="댓글"
             >
-              <MessageCircle className="w-7 h-7 text-white" />
+              <MessageCircle className="w-7 h-7 text-foreground" />
               {shot.comment_count > 0 && (
-                <span className="text-[10px] font-bold text-white/80 leading-none">{shot.comment_count}</span>
+                <span className="text-[10px] font-bold text-foreground/80 leading-none">{shot.comment_count}</span>
               )}
             </button>
           </div>
@@ -1507,7 +1507,7 @@ function ShotPollWidget({
       }}
     >
       <div className="rounded-2xl bg-black/55 backdrop-blur border border-white/15 p-3 space-y-2">
-        <div className="text-white text-[14px] font-black text-center leading-tight break-words">
+        <div className="text-foreground text-[14px] font-black text-center leading-tight break-words">
           {poll.question}
         </div>
         <div className="space-y-1.5">
@@ -1522,7 +1522,7 @@ function ShotPollWidget({
                 onClick={() => vote(o.id)}
                 disabled={busy}
                 className={`relative w-full overflow-hidden rounded-full text-left px-3 py-2 text-[13px] font-bold transition ${
-                  mine ? "text-white" : "text-white/90"
+                  mine ? "text-foreground" : "text-foreground"
                 } ${voted ? "bg-white/10" : "bg-white/15 active:scale-[0.98]"}`}
               >
                 {/* 결과 바 (투표 후에만) */}
@@ -1540,7 +1540,7 @@ function ShotPollWidget({
             );
           })}
         </div>
-        <div className="text-center text-[10px] text-white/50">
+        <div className="text-center text-[10px] text-foreground/50">
           {voted ? `${total}명 참여` : "탭해서 투표"}
         </div>
       </div>

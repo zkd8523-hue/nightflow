@@ -66,12 +66,12 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-neutral-950/95 backdrop-blur-sm border-t border-neutral-800">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border">
       <div className="max-w-lg mx-auto flex items-center justify-around pb-[env(safe-area-inset-bottom)]">
         {tabs.map(({ label, icon: Icon, href }) => {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
           // 와글 활성 시 보라 시그니처 (MUSIC 가치), 나머지는 흰색
-          const activeClass = "text-white";
+          const activeClass = "text-foreground";
           // "내 정보"=새 오퍼는 NEW 뱃지, "채팅"=안읽은 대화는 점 표시
           const showNewOfferBadge = href === "/profile" && hasNewOffer;
           const showUnreadDot = href === "/messages" && hasUnreadChat;
@@ -80,18 +80,18 @@ export function BottomNav() {
               key={href}
               href={href}
               className={`flex flex-1 flex-col items-center gap-0.5 py-2.5 transition-colors ${
-                isActive ? activeClass : "text-neutral-500"
+                isActive ? activeClass : "text-muted-foreground"
               }`}
             >
               <span className="relative">
                 <Icon className="w-5 h-5" />
                 {showNewOfferBadge && (
-                  <span className="pointer-events-none absolute -top-2.5 -right-5 -rotate-12 px-2 py-0.5 text-[9px] font-black leading-none tracking-widest text-white bg-gradient-to-br from-red-500 to-rose-600 rounded-full shadow-lg shadow-rose-900/50">
+                  <span className="pointer-events-none absolute -top-2.5 -right-5 -rotate-12 px-2 py-0.5 text-[9px] font-black leading-none tracking-widest text-foreground bg-gradient-to-br from-red-500 to-rose-600 rounded-full shadow-lg shadow-rose-900/50">
                     Offer
                   </span>
                 )}
                 {showUnreadDot && (
-                  <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-neutral-950" />
+                  <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-background" />
                 )}
               </span>
               <span className={`font-bold ${label === "LIVE" ? "text-[11px]" : "text-[10px]"}`}>{label}</span>

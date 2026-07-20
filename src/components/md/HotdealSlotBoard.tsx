@@ -143,15 +143,15 @@ function TimeSelect({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
-        className={`w-full h-full px-2 py-1.5 rounded-lg text-[11px] bg-neutral-900 border border-neutral-700 focus:outline-none disabled:cursor-not-allowed flex items-center justify-between gap-1 ${muted ? "text-neutral-600" : "text-white"}`}
+        className={`w-full h-full px-2 py-1.5 rounded-lg text-[11px] bg-card border border-border focus:outline-none disabled:cursor-not-allowed flex items-center justify-between gap-1 ${muted ? "text-muted-foreground" : "text-foreground"}`}
       >
         <span className="truncate">{label}</span>
-        <svg className="w-3 h-3 shrink-0 text-neutral-500" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <svg className="w-3 h-3 shrink-0 text-muted-foreground" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </button>
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 bottom-full mb-1 z-50 bg-[#1C1C1E] border border-neutral-700 rounded-xl overflow-hidden shadow-xl min-w-[110px]">
+          <div className="absolute left-0 bottom-full mb-1 z-50 bg-card border border-border rounded-xl overflow-hidden shadow-xl min-w-[110px]">
             {allOptions.map((t) => {
               const isSelected = (t ?? "") === (value ?? "");
               return (
@@ -159,10 +159,10 @@ function TimeSelect({
                   key={t ?? "null"}
                   type="button"
                   onClick={() => { onChange(t); setOpen(false); }}
-                  className={`w-full text-left px-3 py-2 text-[12px] hover:bg-neutral-800 flex items-center justify-between ${isSelected ? "text-amber-400 font-bold" : "text-white"}`}
+                  className={`w-full text-left px-3 py-2 text-[12px] hover:bg-muted flex items-center justify-between ${isSelected ? "text-brand-amber font-bold" : "text-foreground"}`}
                 >
                   {t ? formatValue(t) : nullLabel}
-                  {isSelected && <span className="text-amber-400 text-[10px]">✓</span>}
+                  {isSelected && <span className="text-brand-amber text-[10px]">✓</span>}
                 </button>
               );
             })}
@@ -517,12 +517,12 @@ export function HotdealSlotBoard({
   };
 
   return (
-    <div className={embedded ? "" : "min-h-screen bg-[#0A0A0A] pb-24"}>
+    <div className={embedded ? "" : "min-h-screen bg-background pb-24"}>
       <div className={embedded ? "" : "max-w-lg mx-auto px-2 py-5"}>
         {!embedded && (
           <Link
             href="/md/dashboard"
-            className="inline-flex items-center gap-1 text-neutral-500 text-sm font-bold hover:text-white transition-colors mb-3"
+            className="inline-flex items-center gap-1 text-muted-foreground text-sm font-bold hover:text-foreground transition-colors mb-3"
           >
             <ChevronLeft className="w-4 h-4" />
             대시보드
@@ -533,13 +533,13 @@ export function HotdealSlotBoard({
         <div className="flex items-center justify-between gap-2 mb-0">
           {embedded ? (
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <p className="text-[17px] text-amber-400 font-black leading-tight">
+              <p className="text-[17px] text-brand-amber font-black leading-tight">
                 이번주 게스트 간판
               </p>
               <button
                 type="button"
                 onClick={() => setShowGuide((v) => !v)}
-                className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
+                className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
               >
                 <span className="text-[12px]">ⓘ</span>
                 이용방법
@@ -548,59 +548,59 @@ export function HotdealSlotBoard({
           ) : (
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-[20px] leading-none">🎫</span>
-              <h1 className="text-2xl font-black text-white tracking-tight">게스트 간판</h1>
+              <h1 className="text-2xl font-black text-foreground tracking-tight">게스트 간판</h1>
             </div>
           )}
-          <p className="text-[11px] text-amber-400 font-bold text-right leading-tight shrink-0">
+          <p className="text-[11px] text-brand-amber font-bold text-right leading-tight shrink-0">
             매주 월 18시 오픈
           </p>
         </div>
 
         {/* 이번 주 날짜 — 제목 바로 아래 좌정렬. 차지한 간판이 있으면 클럽 카드에 주차가 표시되므로 숨김 */}
         {!hasMyClaimThisWeek && (
-          <p className="text-[13px] text-white font-black mt-0.5 mb-3">
+          <p className="text-[13px] text-foreground font-black mt-0.5 mb-3">
             이번 주 {formatWeekRange(thisWeekISO)}
           </p>
         )}
 
         {/* 4단계 시각 가이드 (사용자가 닫을 수 있음) */}
         {showGuide && (
-        <div className="relative bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 mb-4 space-y-3">
+        <div className="relative bg-card border border-border rounded-2xl p-4 mb-4 space-y-3">
           <button
             type="button"
             onClick={dismissGuide}
             aria-label="가이드 닫기"
-            className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors"
+            className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
-          <p className="text-[13px] text-white font-black">이용방법</p>
+          <p className="text-[13px] text-foreground font-black">이용방법</p>
           <div className="space-y-2.5">
             <div className="flex items-start gap-2.5">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
               <div className="flex-1">
-                <p className="text-[12.5px] text-white font-bold leading-snug">&quot;오늘 어디갈래?&quot;에 상위 노출</p>
-                <p className="text-[11px] text-neutral-500 leading-snug">유저가 오늘 갈 클럽 고를 때 혜택 배지로 강조</p>
+                <p className="text-[12.5px] text-foreground font-bold leading-snug">&quot;오늘 어디갈래?&quot;에 상위 노출</p>
+                <p className="text-[11px] text-muted-foreground leading-snug">유저가 오늘 갈 클럽 고를 때 혜택 배지로 강조</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
               <div className="flex-1">
-                <p className="text-[12.5px] text-white font-bold leading-snug">1클럽, 1파트너</p>
-                <p className="text-[11px] text-neutral-500 leading-snug">선착순 한 명의 파트너가 그 주 홍보권을 가져가요</p>
+                <p className="text-[12.5px] text-foreground font-bold leading-snug">1클럽, 1파트너</p>
+                <p className="text-[11px] text-muted-foreground leading-snug">선착순 한 명의 파트너가 그 주 홍보권을 가져가요</p>
               </div>
             </div>
             <div className="flex items-start gap-2.5">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">3</div>
               <div className="flex-1">
-                <p className="text-[12.5px] text-white font-bold leading-snug">요일별 혜택 입력</p>
-                <p className="text-[11px] text-neutral-500 leading-snug">예: 월 여성무료입장 / 토 프리드링크 1잔</p>
+                <p className="text-[12.5px] text-foreground font-bold leading-snug">요일별 혜택 입력</p>
+                <p className="text-[11px] text-muted-foreground leading-snug">예: 월 여성무료입장 / 토 프리드링크 1잔</p>
               </div>
             </div>
             <div className="flex items-center gap-2.5">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0">4</div>
               <div className="flex-1">
-                <p className="text-[12.5px] text-white font-bold leading-snug">더 많은 게스트를 모아보세요</p>
+                <p className="text-[12.5px] text-foreground font-bold leading-snug">더 많은 게스트를 모아보세요</p>
               </div>
             </div>
           </div>
@@ -608,7 +608,7 @@ export function HotdealSlotBoard({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
+            className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-brand-amber text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
           >
             👀 미리보기
           </button>
@@ -619,12 +619,12 @@ export function HotdealSlotBoard({
 
         {/* 다음 주 미리 선점 — 혜택 편집보다 위에 노출 */}
         {mySlotForWeek && (
-          <div className="bg-neutral-800/60 rounded-2xl p-4 mb-4">
+          <div className="bg-muted/60 rounded-2xl p-4 mb-4">
             {myNextWeekSlot ? (
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-[12.5px] font-black text-green-400">✓ 다음 주도 선점됨</p>
-                  <p className="text-[10.5px] text-neutral-500 mt-0.5">
+                  <p className="text-[12.5px] font-black text-money">✓ 다음 주도 선점됨</p>
+                  <p className="text-[10.5px] text-muted-foreground mt-0.5">
                     {formatWeekRange(nextWeekISO)}
                   </p>
                 </div>
@@ -635,7 +635,7 @@ export function HotdealSlotBoard({
                     className={`px-3 py-2 rounded-full text-[11px] font-black transition-colors ${
                       editingNextWeek
                         ? "bg-amber-500 text-black hover:bg-amber-400"
-                        : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                        : "bg-muted text-muted-foreground hover:bg-muted"
                     }`}
                   >
                     다음주 설정
@@ -644,7 +644,7 @@ export function HotdealSlotBoard({
                     type="button"
                     disabled={busy}
                     onClick={handleReleaseNextWeek}
-                    className="px-3 py-2 rounded-full text-[11px] font-bold bg-neutral-800 text-neutral-400 hover:text-red-400 disabled:opacity-40"
+                    className="px-3 py-2 rounded-full text-[11px] font-bold bg-muted text-muted-foreground hover:text-red-400 disabled:opacity-40"
                   >
                     해제
                   </button>
@@ -665,11 +665,11 @@ export function HotdealSlotBoard({
                 <button
                   type="button"
                   disabled
-                  className="w-full h-11 rounded-xl bg-neutral-800 text-neutral-600 text-[12.5px] font-black cursor-not-allowed"
+                  className="w-full h-11 rounded-xl bg-muted text-muted-foreground text-[12.5px] font-black cursor-not-allowed"
                 >
                   다음 주 미리 선점 (현재 {thisWeekDaysSet}/{MIN_DAYS_FOR_NEXT_WEEK}일)
                 </button>
-                <p className="text-[10.5px] text-neutral-500 mt-1.5 leading-snug">
+                <p className="text-[10.5px] text-muted-foreground mt-1.5 leading-snug">
                   이번 주 혜택을 {MIN_DAYS_FOR_NEXT_WEEK}일 이상 입력하면 다음 주 자리도 미리 잡을 수 있어요
                 </p>
               </div>
@@ -694,9 +694,9 @@ export function HotdealSlotBoard({
 
         {/* 클럽 카드 리스트 */}
         {clubs.length === 0 ? (
-          <div className="bg-[#1C1C1E] rounded-2xl px-4 py-8 text-center mt-4">
-            <p className="text-[13px] text-neutral-400 mb-2">소속 클럽이 없어요</p>
-            <p className="text-[11px] text-neutral-600">관리자에게 클럽 연결을 요청해주세요</p>
+          <div className="bg-card rounded-2xl border border-border px-4 py-8 text-center mt-4">
+            <p className="text-[13px] text-muted-foreground mb-2">소속 클럽이 없어요</p>
+            <p className="text-[11px] text-muted-foreground">관리자에게 클럽 연결을 요청해주세요</p>
           </div>
         ) : (
           <div className="space-y-2 mt-2">
@@ -711,25 +711,25 @@ export function HotdealSlotBoard({
               return (
                 <div
                   key={club.id}
-                  className="flex items-center gap-3 bg-[#1C1C1E] rounded-2xl p-3"
+                  className="flex items-center gap-3 bg-card rounded-2xl border border-border p-3"
                 >
                   {club.thumbnail_url ? (
-                    <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-neutral-900 shrink-0">
+                    <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-card shrink-0">
                       <Image src={club.thumbnail_url} alt={club.name} fill sizes="48px" className="object-cover" />
                     </div>
                   ) : (
-                    <div className="w-12 h-12 rounded-xl bg-neutral-900 flex items-center justify-center text-[16px] font-black text-white/60 shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center text-[16px] font-black text-foreground/60 shrink-0">
                       {club.name.charAt(0)}
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-[14px] font-black truncate">{club.name}</p>
+                    <p className="text-foreground text-[14px] font-black truncate">{club.name}</p>
                     {claimedByOther ? (
-                      <p className="text-[10px] text-amber-400/80 font-bold truncate">
+                      <p className="text-[10px] text-brand-amber dark:text-brand-amber/80 font-bold truncate">
                         {(slot && claimerNames[slot.md_id]) || "다른 파트너"}님이 차지
                       </p>
                     ) : (
-                      <p className="text-[10px] text-neutral-500">{club.area ?? "기타"}</p>
+                      <p className="text-[10px] text-muted-foreground">{club.area ?? "기타"}</p>
                     )}
                   </div>
                   <button
@@ -738,11 +738,11 @@ export function HotdealSlotBoard({
                     disabled={disabled}
                     className={`px-3 py-2 rounded-full text-[12px] font-black flex-shrink-0 transition-colors ${
                       claimedByOther
-                        ? "bg-neutral-800 text-neutral-500"
+                        ? "bg-muted text-muted-foreground"
                         : hasMyClaimThisWeek
-                        ? "bg-neutral-800 text-neutral-600"
+                        ? "bg-muted text-muted-foreground"
                         : preOpen
-                        ? "bg-neutral-800 text-neutral-600"
+                        ? "bg-muted text-muted-foreground"
                         : "bg-amber-500 text-black hover:bg-amber-400"
                     }`}
                   >
@@ -942,19 +942,19 @@ function MyClaimedSection({
   };
 
   return (
-    <div className="bg-neutral-800/60 rounded-2xl p-4 mb-4 space-y-3">
+    <div className="bg-muted/60 rounded-2xl p-4 mb-4 space-y-3">
       <div>
-        <p className="text-white text-[15px] font-black">{club?.name ?? "클럽"}</p>
-        <p className="text-[11px] text-neutral-500 mt-0.5">
+        <p className="text-foreground text-[15px] font-black">{club?.name ?? "클럽"}</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">
           내 게스트 간판 · {formatWeekRange(slot.week_start)}
         </p>
-        <p className="text-[11px] text-neutral-500 mt-1 inline-flex items-center gap-1">
-          <Clock className="w-3 h-3 text-amber-400" />
+        <p className="text-[11px] text-muted-foreground mt-1 inline-flex items-center gap-1">
+          <Clock className="w-3 h-3 text-brand-amber" />
           시간별 혜택 설정 가능 (최대 {MAX_SLOTS_PER_DOW}개)
         </p>
       </div>
 
-      <div className="space-y-3 pt-2 border-t border-neutral-700">
+      <div className="space-y-3 pt-2 border-t border-border">
         {visibleDows.map((dow, dowIndex) => {
           const saving = savingDow === dow;
           const dirty = isDirty(dow);
@@ -982,15 +982,15 @@ function MyClaimedSection({
                 className={`${isPast ? "opacity-50" : ""}`}
               >
                 {/* 요일 헤더 */}
-                <div className={`flex items-center gap-2 mb-1.5 ${dowIndex > 0 ? "pt-2.5 border-t border-neutral-700/50" : ""}`}>
-                  <span className={`text-[13px] font-black ${isPast ? "text-neutral-600" : "text-white"}`}>
+                <div className={`flex items-center gap-2 mb-1.5 ${dowIndex > 0 ? "pt-2.5 border-t border-border/50" : ""}`}>
+                  <span className={`text-[13px] font-black ${isPast ? "text-muted-foreground" : "text-foreground"}`}>
                     {DOW_LABELS[dow]}
                   </span>
-                  <span className={`text-[11px] ${isPast ? "text-neutral-700" : "text-neutral-500"}`}>
+                  <span className={`text-[11px] ${isPast ? "text-muted-foreground" : "text-muted-foreground"}`}>
                     {formatMd(d)}
                   </span>
                   {isPast && (
-                    <span className="text-[10px] text-neutral-700 ml-auto">지난 요일</span>
+                    <span className="text-[10px] text-muted-foreground ml-auto">지난 요일</span>
                   )}
                   {/* 요일 삭제 — 저장된 혜택이 있고 수정 전일 때만. 입력칸 위 날짜 행에 배치해 입력 공간 확보 */}
                   {!isPast && !dirty && savedExists && (
@@ -1026,7 +1026,7 @@ function MyClaimedSection({
                         } catch { toast.error("삭제 실패"); }
                         finally { setSavingDow(null); }
                       }}
-                      className="ml-auto h-6 w-6 rounded-full text-neutral-500 hover:text-red-400 flex items-center justify-center disabled:opacity-50"
+                      className="ml-auto h-6 w-6 rounded-full text-muted-foreground hover:text-red-400 flex items-center justify-center disabled:opacity-50"
                       aria-label="요일 삭제"
                     >
                       {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3.5 h-3.5" />}
@@ -1095,7 +1095,7 @@ function MyClaimedSection({
                           }}
                           placeholder={isFirst ? DOW_PLACEHOLDERS[dow] : "이 시간대 혜택"}
                           disabled={saving || isPast}
-                          className="flex-1 min-w-0 resize-none bg-neutral-900 border border-neutral-700 rounded-lg px-2.5 py-1.5 text-[12px] leading-snug text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed"
+                          className="flex-1 min-w-0 resize-none bg-card border border-border rounded-lg px-2.5 py-1.5 text-[12px] leading-snug text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50 disabled:cursor-not-allowed"
                         />
 
                         {/* 우측 액션 버튼 그룹 */}
@@ -1144,7 +1144,7 @@ function MyClaimedSection({
 
                               if (isSaveTarget && dirty && !saving) return (
                                 <button type="button" onClick={() => { setEditingSlot(null); handleSaveDow(dow); }} disabled={!canSave}
-                                  className={`flex-1 px-3 rounded-lg text-[11px] font-black inline-flex items-center justify-center gap-1 transition-colors ${canSave ? "bg-green-500 text-black hover:bg-green-400" : "bg-neutral-800 text-neutral-600 cursor-not-allowed"}`}>
+                                  className={`flex-1 px-3 rounded-lg text-[11px] font-black inline-flex items-center justify-center gap-1 transition-colors ${canSave ? "bg-green-500 text-black hover:bg-green-400" : "bg-muted text-muted-foreground cursor-not-allowed"}`}>
                                   {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                                   {hasAnyText ? "저장" : "비움"}
                                 </button>
@@ -1244,7 +1244,7 @@ function BenefitChips({
             className={`shrink-0 h-7 px-2.5 rounded-full text-[11px] font-bold transition-colors disabled:opacity-50 ${
               active
                 ? "bg-green-500 text-black"
-                : "bg-neutral-900 text-neutral-500 border border-neutral-800 hover:border-neutral-600"
+                : "bg-card text-muted-foreground border border-border hover:border-border"
             }`}
           >
             {p.emoji} {p.label}
@@ -1258,7 +1258,7 @@ function BenefitChips({
           <div
             key={`preset:${label}`}
             className={`shrink-0 h-7 rounded-full text-[11px] font-bold inline-flex items-center transition-colors ${
-              active ? "bg-green-500 text-black" : "bg-neutral-900 text-neutral-400 border border-neutral-800"
+              active ? "bg-green-500 text-black" : "bg-card text-muted-foreground border border-border"
             }`}
           >
             <button
@@ -1275,7 +1275,7 @@ function BenefitChips({
               onClick={() => onRemovePreset(label)}
               aria-label="고정 해제"
               title="고정 해제"
-              className={`h-full pr-2 pl-0.5 disabled:opacity-50 ${active ? "text-black/50 hover:text-black" : "text-neutral-600 hover:text-red-400"}`}
+              className={`h-full pr-2 pl-0.5 disabled:opacity-50 ${active ? "text-black/50 hover:text-black" : "text-muted-foreground hover:text-red-400"}`}
             >
               ×
             </button>
@@ -1313,10 +1313,10 @@ function BenefitChips({
               }}
               placeholder="혜택 직접입력"
               maxLength={20}
-              className="h-7 px-2 rounded-full bg-neutral-900 border border-white text-[11px] text-white placeholder:text-neutral-600 focus:outline-none w-28"
+              className="h-7 px-2 rounded-full bg-card border border-white text-[11px] text-foreground placeholder:text-muted-foreground focus:outline-none w-28"
             />
             <button type="button" onClick={addCustom} disabled={disabled || !customText.trim()}
-              className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-white text-black disabled:opacity-50">
+              className="h-7 px-2.5 rounded-full text-[11px] font-bold bg-inverse text-inverse-foreground disabled:opacity-50">
               추가
             </button>
             <button type="button" onClick={pinCustom} disabled={disabled || !customText.trim()}
@@ -1326,13 +1326,13 @@ function BenefitChips({
           </div>
         ) : (
           <button type="button" disabled={disabled} onClick={() => setCustomOpen(true)}
-            className="h-7 px-2 rounded-full text-[11px] font-bold border border-dashed border-neutral-700 bg-neutral-900 text-neutral-500 hover:border-amber-500/40 hover:text-amber-300 disabled:opacity-50">
+            className="h-7 px-2 rounded-full text-[11px] font-bold border border-dashed border-border bg-card text-muted-foreground hover:border-amber-500/40 hover:text-brand-amber disabled:opacity-50">
             + 직접입력
           </button>
         )}
         {onAddTimeSlot && (
           <button type="button" disabled={disabled} onClick={onAddTimeSlot}
-            className="h-7 w-7 shrink-0 rounded-full text-amber-400 bg-black border border-neutral-800 hover:border-neutral-600 flex items-center justify-center disabled:opacity-50">
+            className="h-7 w-7 shrink-0 rounded-full text-brand-amber bg-background border border-border hover:border-border flex items-center justify-center disabled:opacity-50">
             <Clock className="w-3.5 h-3.5" />
           </button>
         )}

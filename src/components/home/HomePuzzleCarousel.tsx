@@ -123,16 +123,16 @@ export function HomePuzzleCarousel({
     // 지역 필터 때문에 0개 → 깃발꽂기 유도 대신 "전체 보기"로 안내
     if (isAreaFiltered) {
       return (
-        <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
-          <p className="text-[15px] text-white font-bold">{shareMode ? "이 지역엔 아직 조각이 없어요" : "이 지역엔 아직 깃발이 없어요"}</p>
-          <p className="text-[12px] text-neutral-500">
+        <div className="bg-card rounded-3xl border border-border p-6 text-center space-y-3 -mx-4">
+          <p className="text-[15px] text-foreground font-bold">{shareMode ? "이 지역엔 아직 조각이 없어요" : "이 지역엔 아직 깃발이 없어요"}</p>
+          <p className="text-[12px] text-muted-foreground">
             다른 지역을 선택하거나 전체에서 둘러보세요
           </p>
           {onClearAreaFilter && (
             <button
               type="button"
               onClick={onClearAreaFilter}
-              className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-neutral-700 text-white text-[13px] font-black active:scale-95 transition"
+              className="inline-flex items-center gap-1 px-4 py-2 rounded-full bg-muted text-foreground text-[13px] font-black active:scale-95 transition"
             >
               전체 보기
             </button>
@@ -141,10 +141,10 @@ export function HomePuzzleCarousel({
       );
     }
     return (
-      <div className="bg-[#1C1C1E] rounded-3xl p-6 text-center space-y-3 -mx-4">
+      <div className="bg-card rounded-3xl border border-border p-6 text-center space-y-3 -mx-4">
         <div className="space-y-1">
-          <p className="text-[15px] text-white font-bold">{shareMode ? "파티원과 함께 놀아요!" : "아직 등록된 깃발이 없어요"}</p>
-          <p className="text-[12px] text-neutral-500">
+          <p className="text-[15px] text-foreground font-bold">{shareMode ? "파티원과 함께 놀아요!" : "아직 등록된 깃발이 없어요"}</p>
+          <p className="text-[12px] text-muted-foreground">
             {shareMode ? "조각이 모이면 클럽에서 테이블을 제안해요" : "예산·인원·날짜만 정하면 파트너들이 시크릿오퍼를 보내요"}
           </p>
         </div>
@@ -199,7 +199,7 @@ export function HomePuzzleCarousel({
             /* MD 조각: 매출 유도 CTA (등록은 무료, 유저 입장 시 크레딧 과금) */
             <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
               <div className="text-center w-full mt-8">
-                <p className="text-[14.5px] text-neutral-200 font-semibold mb-0.5">
+                <p className="text-[14.5px] text-foreground/90 font-semibold mb-0.5">
                   조각원을 모아 매출을 올려보세요!
                 </p>
                 <Link href="/md/auctions/new">
@@ -207,7 +207,7 @@ export function HomePuzzleCarousel({
                     🧩 조각 올리기
                   </Button>
                 </Link>
-                <p className="text-[10px] text-neutral-300 mt-0.5">등록 무료</p>
+                <p className="text-[10px] text-foreground/80 mt-0.5">등록 무료</p>
               </div>
             </div>
           ) : (
@@ -218,11 +218,11 @@ export function HomePuzzleCarousel({
             aria-label="깃발 더보기"
           >
             <div className="text-center w-full mt-8">
-              <div className="inline-flex items-center gap-1 text-[15px] font-black text-neutral-300 group-hover:text-white transition-colors">
+              <div className="inline-flex items-center gap-1 text-[15px] font-black text-foreground/80 group-hover:text-foreground transition-colors">
                 더보기
                 <ChevronRight className="w-4 h-4" />
               </div>
-              <p className="text-[11px] text-neutral-500 mt-1">{totalCount ?? puzzles.length}개 보러가기</p>
+              <p className="text-[11px] text-muted-foreground mt-1">{totalCount ?? puzzles.length}개 보러가기</p>
             </div>
           </Link>
           )
@@ -231,7 +231,7 @@ export function HomePuzzleCarousel({
             {showFlagCTA && (
               <div className="flex-shrink-0 w-[80%] max-w-[360px] snap-start snap-always flex items-center justify-center">
                 <div className="text-center w-full mt-8">
-                  <p className="text-[14.5px] text-neutral-200 font-semibold mb-0.5">
+                  <p className="text-[14.5px] text-foreground/90 font-semibold mb-0.5">
                     {shareMode ? "파티원과 함께 놀아요!" : "최고의 테이블을 잡으세요."}
                   </p>
                   <Link href={newFlagHref}>
@@ -239,7 +239,7 @@ export function HomePuzzleCarousel({
                       {shareMode ? "🧩 조각 올리기" : "⛳ 깃발꽂기"}
                     </Button>
                   </Link>
-                  <p className="text-[10px] text-neutral-300 mt-0.5">모든 서비스 무료</p>
+                  <p className="text-[10px] text-foreground/80 mt-0.5">모든 서비스 무료</p>
                 </div>
               </div>
             )}

@@ -144,10 +144,10 @@ export function SupportChat({ adminViewUserId }: SupportChatProps) {
         <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
           <Headset className="w-8 h-8 text-blue-400" />
         </div>
-        <p className="text-neutral-300 font-bold">로그인 후 운영팀과 바로 대화할 수 있어요</p>
+        <p className="text-foreground/80 font-bold">로그인 후 운영팀과 바로 대화할 수 있어요</p>
         <Link
           href="/login?redirect=/contact"
-          className="h-11 px-6 flex items-center bg-white text-black font-black rounded-2xl"
+          className="h-11 px-6 flex items-center bg-inverse text-inverse-foreground font-black rounded-2xl"
         >
           로그인
         </Link>
@@ -164,18 +164,18 @@ export function SupportChat({ adminViewUserId }: SupportChatProps) {
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
         {loading ? (
           <div className="flex justify-center py-10">
-            <div className="w-6 h-6 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-border border-t-white rounded-full animate-spin" />
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center text-center py-16 gap-3">
             <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
               <Headset className="w-7 h-7 text-blue-400" />
             </div>
-            <p className="text-[14px] text-neutral-300 font-bold">
+            <p className="text-[14px] text-foreground/80 font-bold">
               {isAdminMode ? "아직 대화가 없어요" : "운영팀에게 궁금한 점을 남겨주세요"}
             </p>
             {!isAdminMode && (
-              <p className="text-[12px] text-neutral-500 leading-relaxed">
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
                 24시간 내 답변드려요
               </p>
             )}
@@ -189,22 +189,22 @@ export function SupportChat({ adminViewUserId }: SupportChatProps) {
               <div key={m.id}>
                 {showDay && (
                   <div className="flex justify-center my-3">
-                    <span className="text-[11px] text-neutral-500 bg-neutral-800/60 px-3 py-1 rounded-full">
+                    <span className="text-[11px] text-muted-foreground bg-muted/60 px-3 py-1 rounded-full">
                       {dayKey(m.created_at)}
                     </span>
                   </div>
                 )}
                 <div className={`flex ${mine ? "justify-end" : "justify-start"} items-end gap-1.5`}>
                   {mine && (
-                    <span className="text-[10px] text-neutral-600 mb-0.5">
+                    <span className="text-[10px] text-muted-foreground mb-0.5">
                       {fmtTime(m.created_at)}
                     </span>
                   )}
                   <div
                     className={`max-w-[78%] px-3.5 py-2.5 rounded-2xl text-[14px] leading-relaxed whitespace-pre-wrap break-words ${
                       mine
-                        ? "bg-white text-black rounded-br-md"
-                        : "bg-[#2A2A2D] text-white rounded-bl-md"
+                        ? "bg-inverse text-inverse-foreground rounded-br-md"
+                        : "bg-muted text-foreground rounded-bl-md"
                     }`}
                   >
                     {!mine && (
@@ -215,7 +215,7 @@ export function SupportChat({ adminViewUserId }: SupportChatProps) {
                     {m.body}
                   </div>
                   {!mine && (
-                    <span className="text-[10px] text-neutral-600 mb-0.5">
+                    <span className="text-[10px] text-muted-foreground mb-0.5">
                       {fmtTime(m.created_at)}
                     </span>
                   )}
@@ -227,7 +227,7 @@ export function SupportChat({ adminViewUserId }: SupportChatProps) {
       </div>
 
       {/* 입력창 */}
-      <div className="shrink-0 border-t border-neutral-800 bg-[#0A0A0A] px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+      <div className="shrink-0 border-t border-border bg-background px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
         <div className="flex items-end gap-2">
           <textarea
             value={input}
@@ -240,12 +240,12 @@ export function SupportChat({ adminViewUserId }: SupportChatProps) {
             }}
             rows={1}
             placeholder={isAdminMode ? "답장 보내기..." : "문의 내용을 입력하세요..."}
-            className="flex-1 resize-none bg-[#1C1C1E] text-white text-[14px] rounded-2xl px-4 py-2.5 max-h-28 outline-none placeholder:text-neutral-600 border border-neutral-800 focus:border-neutral-600"
+            className="flex-1 resize-none bg-card text-foreground text-[14px] rounded-2xl px-4 py-2.5 max-h-28 outline-none placeholder:text-muted-foreground border border-border focus:border-border"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
-            className="shrink-0 w-10 h-10 rounded-full bg-white text-black flex items-center justify-center disabled:opacity-30 transition-opacity"
+            className="shrink-0 w-10 h-10 rounded-full bg-inverse text-inverse-foreground flex items-center justify-center disabled:opacity-30 transition-opacity"
             aria-label="보내기"
           >
             <Send className="w-4 h-4" />

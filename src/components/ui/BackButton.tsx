@@ -30,7 +30,7 @@ export function BackButton({ fallbackHref = "/" }: BackButtonProps) {
       variant="ghost"
       size="icon"
       onClick={handleBack}
-      className="rounded-full bg-neutral-900 border border-neutral-800 text-neutral-400"
+      className="rounded-full bg-card border border-border text-muted-foreground"
     >
       <ArrowLeft className="w-5 h-5" />
     </Button>

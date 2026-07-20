@@ -118,7 +118,7 @@ export function ClubLocationModal({
 
   return (
     <div
-      className="fixed inset-0 z-[300] bg-black flex flex-col"
+      className="fixed inset-0 z-[300] bg-background flex flex-col"
       role="dialog"
       aria-modal="true"
       aria-label={`${clubName} 위치`}
@@ -138,7 +138,7 @@ export function ClubLocationModal({
             {clubName}
           </p>
           {address && (
-            <p className="text-[12px] text-neutral-500 truncate">{address}</p>
+            <p className="text-[12px] text-muted-foreground truncate">{address}</p>
           )}
         </div>
       </header>
@@ -148,14 +148,14 @@ export function ClubLocationModal({
         <div ref={mapRef} className="absolute inset-0" />
         {status === "loading" && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p className="text-sm text-neutral-500">지도 불러오는 중…</p>
+            <p className="text-sm text-muted-foreground">지도 불러오는 중…</p>
           </div>
         )}
         {status === "error" && (
           <div className="absolute inset-0 flex items-center justify-center px-6 pointer-events-none">
             <div className="text-center space-y-2">
-              <p className="text-sm text-neutral-600">지도를 불러올 수 없어요</p>
-              <p className="text-[11px] text-neutral-500">{errorMsg}</p>
+              <p className="text-sm text-muted-foreground">지도를 불러올 수 없어요</p>
+              <p className="text-[11px] text-muted-foreground">{errorMsg}</p>
             </div>
           </div>
         )}
@@ -167,7 +167,7 @@ export function ClubLocationModal({
           href={`https://map.naver.com/v5/search/${naverSearchQuery}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 h-12 rounded-xl bg-[#03C75A] text-white text-[14px] font-bold hover:bg-[#02b052] active:scale-95 transition"
+          className="flex items-center justify-center gap-2 h-12 rounded-xl bg-[#03C75A] text-foreground text-[14px] font-bold hover:bg-[#02b052] active:scale-95 transition"
         >
           <span className="font-black">N</span>
           네이버지도

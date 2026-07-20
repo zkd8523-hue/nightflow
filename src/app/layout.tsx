@@ -198,7 +198,7 @@ export default async function RootLayout({
   };
 
   return (
-    <html lang={htmlLang} className="dark">
+    <html lang={htmlLang} className="dark" suppressHydrationWarning>
       <head>
         {/* 외부 도메인 사전 연결 — DNS+TLS 핸드셰이크를 미리 끝내 첫 API/이미지 응답 단축 */}
         <link rel="preconnect" href="https://ihqztsakxczzsxfvdkpq.supabase.co" crossOrigin="anonymous" />

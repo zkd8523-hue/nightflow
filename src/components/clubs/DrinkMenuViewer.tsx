@@ -161,31 +161,31 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="w-full flex items-center gap-2 px-4 py-2.5 mt-1 text-[13px] text-neutral-300 bg-neutral-900/50 hover:bg-neutral-900 active:scale-[0.99] border border-neutral-800 rounded-xl transition-colors text-left"
+          className="w-full flex items-center gap-2 px-4 py-2.5 mt-1 text-[13px] text-foreground/80 bg-card/50 hover:bg-card active:scale-[0.99] border border-border rounded-xl transition-colors text-left"
         >
           {hasMenu ? (
-            <Wine className="w-3.5 h-3.5 flex-shrink-0 text-neutral-500" />
+            <Wine className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
           ) : (
-            <LayoutGrid className="w-3.5 h-3.5 flex-shrink-0 text-neutral-500" />
+            <LayoutGrid className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
           )}
           <span className="font-bold">{headerLabel}</span>
           <ChevronDown
-            className={`ml-auto w-4 h-4 text-neutral-500 transition-transform ${open ? "rotate-180" : ""}`}
+            className={`ml-auto w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
           />
           <span className="sr-only">{open ? t("접기", "Collapse", "閉じる", "收起") : t("펼치기", "Expand", "開く", "展开")}</span>
         </button>
         {open && (
-          <div className="mt-2 rounded-xl overflow-hidden border border-neutral-800">
+          <div className="mt-2 rounded-xl overflow-hidden border border-border">
             {/* 둘 다 있을 때만 탭 토글 노출 */}
             {hasMenu && hasFloor && (
-              <div className="flex border-b border-neutral-800 bg-[#0A0A0A]">
+              <div className="flex border-b border-border bg-background">
                 <button
                   type="button"
                   onClick={() => setTab("menu")}
                   className={`flex-1 py-2.5 text-[13px] font-bold transition-colors ${
                     tab === "menu"
-                      ? "text-amber-400 border-b-2 border-amber-400 -mb-px"
-                      : "text-neutral-500 hover:text-white"
+                      ? "text-brand-amber border-b-2 border-amber-400 -mb-px"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {priceListLabel}
@@ -195,8 +195,8 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                   onClick={() => setTab("floor")}
                   className={`flex-1 py-2.5 text-[13px] font-bold transition-colors ${
                     tab === "floor"
-                      ? "text-amber-400 border-b-2 border-amber-400 -mb-px"
-                      : "text-neutral-500 hover:text-white"
+                      ? "text-brand-amber border-b-2 border-amber-400 -mb-px"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {tableMapLabel}
@@ -204,7 +204,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
               </div>
             )}
             <div
-              className="relative bg-[#0A0A0A] overflow-hidden"
+              className="relative bg-background overflow-hidden"
               onTouchStart={hasMultiple ? handleSlideTouchStart : undefined}
               onTouchMove={hasMultiple ? handleSlideTouchMove : undefined}
               onTouchEnd={hasMultiple ? handleSlideTouchEnd : undefined}
@@ -239,7 +239,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                         openLightboxAt(i);
                       }}
                       aria-label={t(`사진 ${i + 1} 크게 보기`, `View photo ${i + 1}`, `写真${i + 1}を拡大`, `查看照片 ${i + 1}`)}
-                      className="relative flex-shrink-0 w-full cursor-zoom-in bg-neutral-900"
+                      className="relative flex-shrink-0 w-full cursor-zoom-in bg-card"
                       style={{ aspectRatio: "3 / 4" }}
                     >
                       {shouldLoad ? (
@@ -256,7 +256,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                           fetchPriority={isPriority ? "high" : "low"}
                         />
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-neutral-700 text-[11px]">
+                        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-[11px]">
                           {t("로딩 대기 중…", "Waiting to load…", "読み込み待機中…", "等待加载…")}
                         </div>
                       )}
@@ -268,7 +268,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
               {/* 갱신 날짜 — 가격표 탭에서만, 이미지 우측 하단 오버레이 */}
               {tab === "menu" && updatedLabel && (
                 <div
-                  className="absolute bottom-2 right-2 z-10 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-[10px] font-bold pointer-events-none text-white/90"
+                  className="absolute bottom-2 right-2 z-10 px-2 py-1 rounded-md bg-black/70 backdrop-blur-sm text-[10px] font-bold pointer-events-none text-foreground"
                 >
                   {t(`${updatedLabel} 갱신`, `Updated ${updatedLabel}`, `${updatedLabel} 更新`, `${updatedLabel} 更新`)}
                 </div>
@@ -282,7 +282,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                       type="button"
                       onClick={() => scrollInlineTo(inlineIdx - 1)}
                       aria-label={prevPhotoLabel}
-                      className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-white hover:bg-black/90"
+                      className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-foreground hover:bg-black/90"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
@@ -292,7 +292,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                       type="button"
                       onClick={() => scrollInlineTo(inlineIdx + 1)}
                       aria-label={nextPhotoLabel}
-                      className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-white hover:bg-black/90"
+                      className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 items-center justify-center rounded-full bg-black/70 backdrop-blur-sm text-foreground hover:bg-black/90"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -303,7 +303,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
 
             {/* dot 인디케이터 (다장만) */}
             {hasMultiple && (
-              <div className="flex items-center justify-center gap-1.5 py-2 bg-[#0A0A0A]">
+              <div className="flex items-center justify-center gap-1.5 py-2 bg-background">
                 {sources.map((s, i) => (
                   <button
                     key={s}
@@ -311,14 +311,14 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                     onClick={() => scrollInlineTo(i)}
                     aria-label={t(`사진 ${i + 1}로 이동`, `Go to photo ${i + 1}`, `写真${i + 1}へ`, `跳转到照片 ${i + 1}`)}
                     className={`h-1.5 rounded-full transition-all ${
-                      i === inlineIdx ? "w-6 bg-amber-400" : "w-1.5 bg-neutral-700 hover:bg-neutral-600"
+                      i === inlineIdx ? "w-6 bg-amber-400" : "w-1.5 bg-muted hover:bg-muted"
                     }`}
                   />
                 ))}
               </div>
             )}
 
-            <p className="px-3 py-1.5 text-[10px] text-neutral-600 text-center">
+            <p className="px-3 py-1.5 text-[10px] text-muted-foreground text-center">
               {t("이미지를 탭하면 크게 보기", "Tap to view larger", "タップで拡大表示", "点击查看大图")}
               {hasMultiple ? t(" · 좌우로 스와이프", " · Swipe left/right", " · 左右にスワイプ", " · 左右滑动") : ""}
             </p>
@@ -343,7 +343,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
               setLightbox(false);
             }}
             aria-label={closeLabel}
-            className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+            className="absolute top-4 right-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-card/80 backdrop-blur-sm hover:bg-muted text-foreground"
           >
             <X className="w-5 h-5" strokeWidth={2.5} />
           </button>
@@ -357,7 +357,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                 setLightboxIdx((i) => Math.max(0, i - 1));
               }}
               aria-label={prevPhotoLabel}
-              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+              className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-card/80 backdrop-blur-sm hover:bg-muted text-foreground"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
@@ -372,7 +372,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
                 setLightboxIdx((i) => Math.min(sources.length - 1, i + 1));
               }}
               aria-label={nextPhotoLabel}
-              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-neutral-900/80 backdrop-blur-sm hover:bg-neutral-800 text-white"
+              className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-card/80 backdrop-blur-sm hover:bg-muted text-foreground"
             >
               <ChevronRight className="w-6 h-6" />
             </button>
@@ -380,7 +380,7 @@ export function DrinkMenuViewer({ urls, url, updatedAt, clubName, floorPlanUrl, 
 
           {/* 카운터 */}
           {hasMultiple && (
-            <div className="absolute top-4 left-4 z-30 px-3 py-1.5 rounded-full bg-neutral-900/80 backdrop-blur-sm text-white text-[12px] font-bold">
+            <div className="absolute top-4 left-4 z-30 px-3 py-1.5 rounded-full bg-card/80 backdrop-blur-sm text-foreground text-[12px] font-bold">
               {lightboxIdx + 1} / {sources.length}
             </div>
           )}

@@ -77,7 +77,7 @@ export function MDManagement({
         <div className="space-y-6">
             {/* 이미지 미리보기 다이얼로그 */}
             <Dialog open={!!previewImage} onOpenChange={(open) => !open && setPreviewImage(null)}>
-                <DialogContent className="bg-[#1C1C1E] border-neutral-800 max-w-2xl p-2" showCloseButton={false}>
+                <DialogContent className="bg-card border-border max-w-2xl p-2" showCloseButton={false}>
                     {previewImage && (
                         <img src={previewImage} alt="미리보기" className="w-full h-auto rounded-lg" />
                     )}
@@ -87,7 +87,7 @@ export function MDManagement({
             {/* 심사 대기 MD */}
             {pendingUsers.length > 0 && (
                 <div className="space-y-4">
-                    <h2 className="text-lg font-bold text-amber-400">심사 대기 ({pendingUsers.length})</h2>
+                    <h2 className="text-lg font-bold text-brand-amber">심사 대기 ({pendingUsers.length})</h2>
                     {pendingUsers.map(u => (
                         <PendingMDCard key={u.id} user={u} onUpdate={(updated) => {
                             setUsers(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p));
@@ -98,7 +98,7 @@ export function MDManagement({
 
             {/* MD 활동 모니터링 */}
             <div className="space-y-4">
-                <h2 className="text-lg font-bold text-white">활동 모니터링 ({approvedUsers.length})</h2>
+                <h2 className="text-lg font-bold text-foreground">활동 모니터링 ({approvedUsers.length})</h2>
                 {healthScores && healthScores.length > 0 ? (
                     <MDMonitorList mds={healthScores} clubsMap={clubsMap} defaultClubMap={defaultClubMap} />
                 ) : approvedUsers.length > 0 ? (
@@ -124,19 +124,19 @@ function ImagePreview({
 }) {
     if (!url) {
         return (
-            <div className="h-20 bg-neutral-900 rounded-xl border border-dashed border-neutral-800 flex items-center justify-center">
-                <span className="text-xs text-neutral-600 italic">{label} 미첨부</span>
+            <div className="h-20 bg-card rounded-xl border border-dashed border-border flex items-center justify-center">
+                <span className="text-xs text-muted-foreground italic">{label} 미첨부</span>
             </div>
         );
     }
     return (
         <button
             onClick={() => onPreview(url)}
-            className="relative rounded-xl overflow-hidden border border-neutral-800 group w-full"
+            className="relative rounded-xl overflow-hidden border border-border group w-full"
         >
             <img src={url} alt={label} className="w-full h-20 object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <Eye className="w-5 h-5 text-white" />
+                <Eye className="w-5 h-5 text-foreground" />
             </div>
         </button>
     );
@@ -161,35 +161,35 @@ function MDApplicationCard({
         : clubName;
 
     return (
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 overflow-hidden">
+        <Card className="bg-card border-border/50 overflow-hidden">
             <div className="p-6">
                 {/* 상단: 기본 정보 + 액션 */}
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                     {/* 좌측: 아바타 + 이름 + 메타데이터 */}
                     <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-xl text-neutral-500 shrink-0">
+                        <div className="w-14 h-14 rounded-2xl bg-card border border-border flex items-center justify-center font-black text-xl text-muted-foreground shrink-0">
                             {(user.display_name || user.name || "?").substring(0, 1)}
                         </div>
                         <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
-                                <h3 className="text-xl font-black text-white">{user.display_name || user.name || "이름 없음"}</h3>
-                                <Badge variant="outline" className={`bg-neutral-950 border-neutral-800 text-[10px] py-0 px-2 uppercase font-bold ${
+                                <h3 className="text-xl font-black text-foreground">{user.display_name || user.name || "이름 없음"}</h3>
+                                <Badge variant="outline" className={`bg-background border-border text-[10px] py-0 px-2 uppercase font-bold ${
                                     user.md_status === "suspended" ? "text-red-500 border-red-500/30" :
-                                    user.md_status === "revoked" ? "text-neutral-600 border-neutral-700" :
-                                    "text-neutral-500"
+                                    user.md_status === "revoked" ? "text-muted-foreground border-border" :
+                                    "text-muted-foreground"
                                 }`}>
                                     {user.md_status === "suspended" ? "SUSPENDED" :
                                      user.md_status === "revoked" ? "REVOKED" :
                                      user.md_status}
                                 </Badge>
                             </div>
-                            <p className="text-neutral-500 text-sm font-medium">{user.phone}</p>
+                            <p className="text-muted-foreground text-sm font-medium">{user.phone}</p>
                             <div className="flex items-center gap-3 flex-wrap">
-                                <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold">
                                     <MapPin className="w-3.5 h-3.5" /> {Array.isArray(user.area) ? user.area.join(", ") : user.area || "지역 미정"}
                                 </div>
                                 {clubSummary && (
-                                    <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold">
                                         <Building2 className="w-3.5 h-3.5" /> {clubSummary}
                                     </div>
                                 )}
@@ -198,17 +198,17 @@ function MDApplicationCard({
                                         href={`https://instagram.com/${user.instagram}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold hover:text-white transition-colors"
+                                        className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold hover:text-foreground transition-colors"
                                     >
                                         <Instagram className="w-3.5 h-3.5" /> @{user.instagram}
                                     </a>
                                 )}
                             </div>
                             {/* 신청일 */}
-                            <div className="flex items-center gap-1.5 text-xs text-neutral-600">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <Calendar className="w-3 h-3" />
                                 {dayjs(user.created_at).format("YYYY-MM-DD HH:mm")}
-                                <span className="text-neutral-700">({dayjs(user.created_at).fromNow()})</span>
+                                <span className="text-muted-foreground">({dayjs(user.created_at).fromNow()})</span>
                             </div>
                         </div>
                     </div>
@@ -216,8 +216,8 @@ function MDApplicationCard({
                     {isSimple ? (
                         <div className="flex items-center gap-4 shrink-0">
                             <div className="text-right">
-                                <p className="text-[10px] text-neutral-500 font-bold uppercase mb-0.5">Application Date</p>
-                                <p className="text-xs text-neutral-400 font-medium">{dayjs(user.created_at).format("YYYY-MM-DD")}</p>
+                                <p className="text-[10px] text-muted-foreground font-bold uppercase mb-0.5">Application Date</p>
+                                <p className="text-xs text-muted-foreground font-medium">{dayjs(user.created_at).format("YYYY-MM-DD")}</p>
                             </div>
                             {user.md_status === "approved" && (
                                 <>
@@ -225,7 +225,7 @@ function MDApplicationCard({
                                         <Link
                                             href={`/md/${(user as { md_unique_slug: string }).md_unique_slug}`}
                                             target="_blank"
-                                            className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-300 hover:bg-amber-500/20 hover:text-amber-200 transition-colors"
+                                            className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-brand-amber hover:bg-amber-500/20 hover:text-brand-amber transition-colors"
                                         >
                                             공개 프로필
                                             <ArrowRight className="w-3.5 h-3.5" />
@@ -233,7 +233,7 @@ function MDApplicationCard({
                                     )}
                                     <Link
                                         href={`/admin/mds/${user.id}`}
-                                        className="flex items-center gap-1.5 h-10 px-4 rounded-xl bg-neutral-900 border border-neutral-800 text-xs font-bold text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors"
+                                        className="flex items-center gap-1.5 h-10 px-4 rounded-xl bg-card border border-border text-xs font-bold text-muted-foreground hover:text-foreground hover:border-border transition-colors"
                                     >
                                         상세 / 제재
                                         <ArrowRight className="w-3.5 h-3.5" />
@@ -246,7 +246,7 @@ function MDApplicationCard({
                             <Link
                                 href={`/md/${(user as { md_unique_slug: string }).md_unique_slug}`}
                                 target="_blank"
-                                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-amber-300 hover:bg-amber-500/20 hover:text-amber-200 transition-colors shrink-0 self-start"
+                                className="flex items-center gap-1.5 h-10 px-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-bold text-brand-amber hover:bg-amber-500/20 hover:text-brand-amber transition-colors shrink-0 self-start"
                             >
                                 공개 프로필
                                 <ArrowRight className="w-3.5 h-3.5" />
@@ -259,7 +259,7 @@ function MDApplicationCard({
                 {!isSimple && (
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="mt-4 flex items-center gap-1.5 text-xs text-neutral-500 hover:text-neutral-300 transition-colors font-bold"
+                        className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground/80 transition-colors font-bold"
                     >
                         {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                         상세 정보 {isExpanded ? "접기" : "보기"}
@@ -268,35 +268,35 @@ function MDApplicationCard({
 
                 {/* 확장 상세 영역 */}
                 {!isSimple && isExpanded && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-neutral-800/30">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-border/30">
                         {/* 클럽 정보 */}
-                        <div className="bg-neutral-900/50 rounded-2xl p-4 border border-neutral-800/30 space-y-3">
+                        <div className="bg-card/50 rounded-2xl p-4 border border-border/30 space-y-3">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-[10px] text-neutral-500 font-bold uppercase tracking-wider">
+                                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
                                     <Building2 className="w-3.5 h-3.5" /> Registered Clubs
                                 </div>
                                 {activeClubs.length > 0 && (
-                                    <span className="text-[10px] text-neutral-600 font-bold">{activeClubs.length}개</span>
+                                    <span className="text-[10px] text-muted-foreground font-bold">{activeClubs.length}개</span>
                                 )}
                             </div>
                             {activeClubs.length === 0 ? (
-                                <p className="text-xs text-neutral-600 italic">등록된 클럽 없음 {clubName ? `(신청서: ${clubName})` : ""}</p>
+                                <p className="text-xs text-muted-foreground italic">등록된 클럽 없음 {clubName ? `(신청서: ${clubName})` : ""}</p>
                             ) : (
                                 <div className="space-y-3">
                                     {activeClubs.map((c, idx) => (
-                                        <div key={c.id} className={`space-y-2 ${idx > 0 ? "pt-3 border-t border-neutral-800/40" : ""}`}>
+                                        <div key={c.id} className={`space-y-2 ${idx > 0 ? "pt-3 border-t border-border/40" : ""}`}>
                                             <div className="flex items-start justify-between gap-2">
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-black text-white truncate">{c.name}</p>
+                                                    <p className="text-sm font-black text-foreground truncate">{c.name}</p>
                                                     {c.id === user.default_club_id && (
-                                                        <span className="inline-block text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded mt-0.5">DEFAULT</span>
+                                                        <span className="inline-block text-[9px] font-bold text-brand-amber bg-amber-500/10 px-1.5 py-0.5 rounded mt-0.5">DEFAULT</span>
                                                     )}
                                                 </div>
                                             </div>
                                             <div>
-                                                <p className="text-xs text-neutral-400">{c.address || "주소 미입력"}</p>
+                                                <p className="text-xs text-muted-foreground">{c.address || "주소 미입력"}</p>
                                                 {c.address_detail && (
-                                                    <p className="text-xs text-neutral-500 flex items-center gap-1 mt-0.5">
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                                                         <MapPinned className="w-3 h-3" />
                                                         {c.address_detail}
                                                     </p>
@@ -318,8 +318,8 @@ function MDApplicationCard({
                                     ))}
                                 </div>
                             )}
-                            <div className="space-y-2 pt-3 border-t border-neutral-800/40">
-                                <p className="text-[10px] text-neutral-600 font-bold">파트너 명의 플로어맵</p>
+                            <div className="space-y-2 pt-3 border-t border-border/40">
+                                <p className="text-[10px] text-muted-foreground font-bold">파트너 명의 플로어맵</p>
                                 <ImagePreview
                                     url={user.floor_plan_url}
                                     label="플로어맵"
@@ -329,8 +329,8 @@ function MDApplicationCard({
                         </div>
 
                         {/* 인증 정보 */}
-                        <div className="bg-neutral-900/50 rounded-2xl p-4 border border-neutral-800/30 space-y-3">
-                            <div className="flex items-center gap-2 text-[10px] text-neutral-500 font-bold uppercase tracking-wider">
+                        <div className="bg-card/50 rounded-2xl p-4 border border-border/30 space-y-3">
+                            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
                                 <Instagram className="w-3.5 h-3.5" /> Verification
                             </div>
                             {user.instagram ? (
@@ -338,16 +338,16 @@ function MDApplicationCard({
                                     href={`https://instagram.com/${user.instagram}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-sm font-black text-white hover:text-green-400 transition-colors flex items-center gap-1.5"
+                                    className="text-sm font-black text-foreground hover:text-money transition-colors flex items-center gap-1.5"
                                 >
                                     @{user.instagram}
                                     <ExternalLink className="w-3 h-3" />
                                 </a>
                             ) : (
-                                <p className="text-sm text-neutral-600 italic">미입력</p>
+                                <p className="text-sm text-muted-foreground italic">미입력</p>
                             )}
                             <div className="space-y-2">
-                                <p className="text-[10px] text-neutral-600 font-bold">명함 사진</p>
+                                <p className="text-[10px] text-muted-foreground font-bold">명함 사진</p>
                                 <ImagePreview
                                     url={user.business_card_url}
                                     label="명함"
@@ -441,30 +441,30 @@ function PendingMDCard({
     };
 
     return (
-        <Card className="bg-[#1C1C1E] border-amber-500/20 overflow-hidden">
+        <Card className="bg-card border-amber-500/20 overflow-hidden">
             <div className="p-6 space-y-4">
                 {/* 기본 정보 */}
                 <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center font-black text-xl text-neutral-500 shrink-0">
+                    <div className="w-14 h-14 rounded-2xl bg-card border border-border flex items-center justify-center font-black text-xl text-muted-foreground shrink-0">
                         {(user.display_name || user.name || "?").substring(0, 1)}
                     </div>
                     <div className="space-y-1.5 flex-1">
-                        <h3 className="text-xl font-black text-white">{user.display_name || user.name || "이름 없음"}</h3>
+                        <h3 className="text-xl font-black text-foreground">{user.display_name || user.name || "이름 없음"}</h3>
                         {user.name && user.name !== user.display_name && (
-                            <p className="text-neutral-600 text-xs">실명: {user.name}</p>
+                            <p className="text-muted-foreground text-xs">실명: {user.name}</p>
                         )}
-                        <p className="text-neutral-500 text-sm">{user.phone || "전화번호 미인증"}</p>
+                        <p className="text-muted-foreground text-sm">{user.phone || "전화번호 미인증"}</p>
                         <div className="flex items-center gap-3 flex-wrap">
-                            <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold">
                                 <MapPin className="w-3.5 h-3.5" /> {Array.isArray(user.area) ? user.area.join(", ") : user.area || "지역 미정"}
                             </div>
                             {clubName && (
-                                <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold">
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold">
                                     <Building2 className="w-3.5 h-3.5" /> {clubName}
                                 </div>
                             )}
                             {(user.additional_club_names?.length ?? 0) > 0 && (
-                                <div className="flex items-center gap-1.5 text-xs text-neutral-500 font-bold" title="신청자가 입력한 추가 클럽 (참고용)">
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold" title="신청자가 입력한 추가 클럽 (참고용)">
                                     <Building2 className="w-3.5 h-3.5" /> +{user.additional_club_names!.join(", ")}
                                 </div>
                             )}
@@ -473,7 +473,7 @@ function PendingMDCard({
                                     href={`https://instagram.com/${user.instagram}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 text-xs text-neutral-400 font-bold hover:text-white transition-colors"
+                                    className="flex items-center gap-1.5 text-xs text-muted-foreground font-bold hover:text-foreground transition-colors"
                                 >
                                     <Instagram className="w-3.5 h-3.5" /> @{user.instagram}
                                     <ExternalLink className="w-3 h-3" />
@@ -485,26 +485,26 @@ function PendingMDCard({
                                 href={user.kakao_open_chat_url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 text-xs text-amber-400 font-bold hover:text-amber-300 transition-colors"
+                                className="flex items-center gap-1.5 text-xs text-brand-amber font-bold hover:text-brand-amber transition-colors"
                             >
                                 <MessageCircle className="w-3.5 h-3.5" /> 오픈채팅
                                 <ExternalLink className="w-3 h-3" />
                             </a>
                         )}
-                        <div className="flex items-center gap-1.5 text-xs text-neutral-600">
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Calendar className="w-3 h-3" />
                             {dayjs(user.created_at).format("YYYY-MM-DD HH:mm")}
-                            <span className="text-neutral-700">({dayjs(user.created_at).fromNow()})</span>
+                            <span className="text-muted-foreground">({dayjs(user.created_at).fromNow()})</span>
                         </div>
                     </div>
                 </div>
 
                 {/* 기존 클럽 다중 연결 패널 (여러 클럽 운영 MD) */}
-                <div className="border-t border-neutral-800/30 pt-3 space-y-2">
+                <div className="border-t border-border/30 pt-3 space-y-2">
                     {!showMerge && (
                         <button
                             onClick={() => setShowMerge(true)}
-                            className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-amber-400 transition-colors font-bold"
+                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-brand-amber transition-colors font-bold"
                         >
                             <GitMerge className="w-3.5 h-3.5" /> 기존 클럽 연결{selectedLinkClubs.length > 0 ? ` (${selectedLinkClubs.length})` : ""}
                         </button>
@@ -512,30 +512,30 @@ function PendingMDCard({
                     {showMerge && (
                         <div className="space-y-2">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                                 <input
                                     type="text"
                                     value={clubSearch}
                                     onChange={(e) => searchClubs(e.target.value)}
                                     placeholder="연결할 클럽명 검색..."
-                                    className="w-full bg-neutral-900 border border-neutral-700 rounded-xl pl-8 pr-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50"
+                                    className="w-full bg-card border border-border rounded-xl pl-8 pr-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50"
                                     autoFocus
                                 />
                             </div>
                             {clubResults.filter(c => !selectedLinkClubs.some(s => s.id === c.id)).length > 0 && (
-                                <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
+                                <div className="bg-card border border-border rounded-xl overflow-hidden">
                                     {clubResults.filter(c => !selectedLinkClubs.some(s => s.id === c.id)).map((c) => (
                                         <button
                                             key={c.id}
                                             onClick={() => setSelectedLinkClubs(prev => [...prev, { id: c.id, name: c.name, area: c.area }])}
-                                            className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-neutral-800 transition-colors text-left"
+                                            className="w-full flex items-center justify-between gap-2 px-3 py-2.5 hover:bg-muted transition-colors text-left"
                                         >
-                                            <span className="text-sm text-white font-bold truncate">{c.name}</span>
+                                            <span className="text-sm text-foreground font-bold truncate">{c.name}</span>
                                             <span className="flex items-center gap-2 shrink-0">
-                                                <span className="flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">
+                                                <span className="flex items-center gap-1 text-[11px] font-bold text-brand-amber bg-amber-500/10 px-1.5 py-0.5 rounded">
                                                     <Users className="w-3 h-3" /> 파트너 {c.partnerCount}
                                                 </span>
-                                                <span className="text-xs text-neutral-500">{c.area}</span>
+                                                <span className="text-xs text-muted-foreground">{c.area}</span>
                                             </span>
                                         </button>
                                     ))}
@@ -543,7 +543,7 @@ function PendingMDCard({
                             )}
                             <button
                                 onClick={() => { setShowMerge(false); setClubSearch(""); setClubResults([]); }}
-                                className="text-xs text-neutral-600 hover:text-neutral-400 transition-colors"
+                                className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
                             >
                                 닫기
                             </button>
@@ -553,10 +553,10 @@ function PendingMDCard({
                         <div className="flex flex-wrap gap-1.5">
                             {selectedLinkClubs.map((c) => (
                                 <span key={c.id} className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 rounded-full pl-2.5 pr-1.5 py-1">
-                                    <span className="text-[11px] text-amber-300 font-bold">{c.name}</span>
+                                    <span className="text-[11px] text-brand-amber font-bold">{c.name}</span>
                                     <button
                                         onClick={() => setSelectedLinkClubs(prev => prev.filter(s => s.id !== c.id))}
-                                        className="text-amber-500/60 hover:text-amber-300 transition-colors"
+                                        className="text-brand-amber dark:text-brand-amber/60 hover:text-brand-amber transition-colors"
                                         aria-label="연결 해제"
                                     >
                                         <X className="w-3 h-3" />
@@ -568,7 +568,7 @@ function PendingMDCard({
                 </div>
 
                 {/* 승인/반려 */}
-                <div className="border-t border-neutral-800/30 pt-4 space-y-2">
+                <div className="border-t border-border/30 pt-4 space-y-2">
                     {showRejectInput && (
                         <div className="space-y-2">
                             <textarea
@@ -576,7 +576,7 @@ function PendingMDCard({
                                 onChange={(e) => setRejectReason(e.target.value)}
                                 placeholder="거절 사유 (선택사항 — 신청자에게 표시됩니다)"
                                 rows={2}
-                                className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-red-500/50"
+                                className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-red-500/50"
                             />
                             <div className="flex gap-2">
                                 <button
@@ -589,7 +589,7 @@ function PendingMDCard({
                                 <button
                                     onClick={() => { setShowRejectInput(false); setRejectReason(""); }}
                                     disabled={loading}
-                                    className="px-4 py-3 bg-neutral-800 text-neutral-400 font-bold text-sm rounded-xl hover:bg-neutral-700 transition-colors"
+                                    className="px-4 py-3 bg-muted text-muted-foreground font-bold text-sm rounded-xl hover:bg-muted transition-colors"
                                 >
                                     취소
                                 </button>
@@ -612,7 +612,7 @@ function PendingMDCard({
                             <button
                                 onClick={() => setShowRejectInput(true)}
                                 disabled={loading}
-                                className="px-5 py-3 bg-neutral-800 text-red-400 font-black text-sm rounded-xl hover:bg-red-500/10 hover:text-red-300 border border-transparent hover:border-red-500/20 transition-colors"
+                                className="px-5 py-3 bg-muted text-red-400 font-black text-sm rounded-xl hover:bg-red-500/10 hover:text-red-300 border border-transparent hover:border-red-500/20 transition-colors"
                             >
                                 거절
                             </button>
@@ -626,11 +626,11 @@ function PendingMDCard({
 
 function EmptyAdminState({ label }: { label: string }) {
     return (
-        <div className="py-24 text-center space-y-4 bg-neutral-900/20 rounded-3xl border border-dashed border-neutral-800/50">
-            <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto">
+        <div className="py-24 text-center space-y-4 bg-card/20 rounded-3xl border border-dashed border-border/50">
+            <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto">
                 <Clock className="w-8 h-8 text-neutral-800" />
             </div>
-            <p className="text-neutral-500 font-medium italic">{label}</p>
+            <p className="text-muted-foreground font-medium italic">{label}</p>
         </div>
     );
 }

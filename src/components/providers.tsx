@@ -12,6 +12,7 @@ import { WinAlertBanner } from "@/components/auctions/WinAlertBanner";
 import { NetworkOverlay } from "@/components/NetworkOverlay";
 import { PushPermissionPrompt } from "@/components/PushPermissionPrompt";
 import { initDeepLinkHandler, initBackButtonHandler } from "@/lib/native/deepLink";
+import { ThemeProvider } from "@/components/theme-provider";
 
 function AuthInit() {
   // 앱 전체에서 단 1회만 auth.getUser/onAuthStateChange 실행.
@@ -117,7 +118,7 @@ function LastSeenInit() {
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <ThemeProvider>
       {/* AuthInit 은 반드시 최상단 — 다른 컴포넌트가 useCurrentUser() 로 store 를 읽기 전에 mount */}
       <AuthInit />
       <LastSeenInit />
@@ -130,6 +131,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <FavoritesProvider>
         {children}
       </FavoritesProvider>
-    </>
+    </ThemeProvider>
   );
 }

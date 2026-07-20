@@ -115,20 +115,20 @@ export function UserPeekSheet({
         >
           <DialogTitle className="sr-only">{name} 프로필</DialogTitle>
 
-          <div className="w-full rounded-3xl overflow-hidden bg-[#1C1C1E] border border-neutral-800">
+          <div className="w-full rounded-3xl overflow-hidden bg-card border border-border">
             <div className="p-5 flex flex-col items-center gap-2 text-center">
-              <div className="relative w-20 h-20 rounded-full overflow-hidden bg-neutral-800 ring-1 ring-white/10">
+              <div className="relative w-20 h-20 rounded-full overflow-hidden bg-muted ring-1 ring-white/10">
                 {image ? (
                   <Image src={image} alt={name} fill sizes="80px" className="object-cover" priority />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/50 text-[26px] font-black">
+                  <div className="w-full h-full flex items-center justify-center text-foreground/50 text-[26px] font-black">
                     {name.charAt(0)}
                   </div>
                 )}
               </div>
 
               <div className="flex items-center justify-center gap-1.5 min-w-0 max-w-full">
-                <span className="text-white text-[19px] font-black truncate">{name}</span>
+                <span className="text-foreground text-[19px] font-black truncate">{name}</span>
                 {profile?.role === "md" && (
                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-500 text-white text-[10px] font-black leading-none shrink-0">
                     <BadgeCheck className="w-3 h-3" />
@@ -138,11 +138,11 @@ export function UserPeekSheet({
               </div>
 
               {profile?.bio ? (
-                <p className="text-[13px] text-neutral-400 line-clamp-3 leading-relaxed">
+                <p className="text-[13px] text-muted-foreground line-clamp-3 leading-relaxed">
                   {profile.bio}
                 </p>
               ) : loading ? (
-                <p className="text-[13px] text-neutral-600">불러오는 중...</p>
+                <p className="text-[13px] text-muted-foreground">불러오는 중...</p>
               ) : null}
 
               {(areas.length > 0 || genres.length > 0) && (
@@ -150,7 +150,7 @@ export function UserPeekSheet({
                   {areas.map((a) => (
                     <span
                       key={a}
-                      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-300 text-[11px] font-bold"
+                      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-card text-foreground/80 text-[11px] font-bold"
                     >
                       <MapPin className="w-2.5 h-2.5" />
                       {a}
@@ -159,7 +159,7 @@ export function UserPeekSheet({
                   {genres.map((g) => (
                     <span
                       key={g}
-                      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-300 text-[11px] font-bold"
+                      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-card text-foreground/80 text-[11px] font-bold"
                     >
                       <Music className="w-2.5 h-2.5" />
                       {g}
@@ -170,19 +170,19 @@ export function UserPeekSheet({
             </div>
 
             {/* 액션 — 하단 2분할 */}
-            <div className="flex items-stretch border-t border-neutral-800">
+            <div className="flex items-stretch border-t border-border">
               {!isMe && (
                 <>
                   <button
                     type="button"
                     onClick={openDm}
                     disabled={opening}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-3.5 text-white text-[14px] font-black active:bg-white/5 disabled:text-neutral-600"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-3.5 text-foreground text-[14px] font-black active:bg-white/5 disabled:text-muted-foreground"
                   >
                     <MessageCircle className="w-4 h-4" />
                     {opening ? "여는 중..." : "1:1 채팅"}
                   </button>
-                  <div className="w-px bg-neutral-800" />
+                  <div className="w-px bg-muted" />
                 </>
               )}
               <button
@@ -191,7 +191,7 @@ export function UserPeekSheet({
                   onOpenChange(false);
                   router.push(`/u/${userId}`);
                 }}
-                className="flex-1 flex items-center justify-center gap-0.5 py-3.5 text-neutral-300 text-[14px] font-black active:bg-white/5"
+                className="flex-1 flex items-center justify-center gap-0.5 py-3.5 text-foreground/80 text-[14px] font-black active:bg-white/5"
               >
                 프로필
                 <ChevronRight className="w-4 h-4" />

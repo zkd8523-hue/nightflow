@@ -56,21 +56,21 @@ export default async function AdminAuctionsPage() {
     }));
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
+        <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
             <div className="max-w-6xl mx-auto px-6 space-y-10">
                 {/* Header */}
                 <header className="space-y-2">
                     <div className="flex items-center gap-3">
-                        <Link href="/admin" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 hover:border-neutral-700 transition-colors">
-                            <ChevronLeft className="w-5 h-5 text-neutral-400" />
+                        <Link href="/admin" className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border hover:border-border transition-colors">
+                            <ChevronLeft className="w-5 h-5 text-muted-foreground" />
                         </Link>
-                        <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-widest text-[11px]">
+                        <div className="flex items-center gap-2 text-muted-foreground font-bold uppercase tracking-widest text-[11px]">
                             <Gavel className="w-3.5 h-3.5" />
                             Live Marketplace Ops
                         </div>
                     </div>
                     <h1 className="text-4xl font-black tracking-tighter">퍼즐 관리</h1>
-                    <p className="text-neutral-500 font-medium">퍼즐 현황 모니터링 및 관리 작업을 수행합니다.</p>
+                    <p className="text-muted-foreground font-medium">퍼즐 현황 모니터링 및 관리 작업을 수행합니다.</p>
                 </header>
 
                 {/* Client-side tabs */}

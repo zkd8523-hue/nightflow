@@ -91,13 +91,13 @@ export function HotdealList({ hotdeals }: Props) {
           type="button"
           onClick={() => router.back()}
           aria-label="뒤로가기"
-          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-neutral-900 -ml-2"
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-card -ml-2"
         >
-          <ArrowLeft className="w-5 h-5 text-white" />
+          <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <div className="flex items-center gap-1.5">
-          <Flame className="w-5 h-5 text-amber-400" />
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">
+          <Flame className="w-5 h-5 text-brand-amber" />
+          <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tight">
             Hot Deal Tonight
           </h1>
         </div>
@@ -121,8 +121,8 @@ export function HotdealList({ hotdeals }: Props) {
             onClick={() => setAreaFilter(a)}
             className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
               areaFilter === a
-                ? "bg-white text-black"
-                : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                ? "bg-inverse text-inverse-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted"
             }`}
           >
             {a}
@@ -135,7 +135,7 @@ export function HotdealList({ hotdeals }: Props) {
         <button
           type="button"
           onClick={() => setSortMode(sortMode === "ends_at" ? "price" : "ends_at")}
-          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-neutral-900 text-neutral-300 text-[12px] font-bold"
+          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-card text-foreground/80 text-[12px] font-bold"
         >
           {sortMode === "ends_at" ? "마감 임박순" : "가격 낮은순"}
           <ChevronDown className="w-3 h-3" />
@@ -144,7 +144,7 @@ export function HotdealList({ hotdeals }: Props) {
           <button
             type="button"
             onClick={() => setSelectedBuckets(new Set())}
-            className="text-[11px] text-neutral-500 hover:text-white font-bold underline underline-offset-2"
+            className="text-[11px] text-muted-foreground hover:text-foreground font-bold underline underline-offset-2"
           >
             가격 초기화
           </button>
@@ -163,7 +163,7 @@ export function HotdealList({ hotdeals }: Props) {
               className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors whitespace-nowrap flex-shrink-0 ${
                 active
                   ? "bg-amber-500 text-black"
-                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                  : "bg-muted text-muted-foreground hover:bg-muted"
               }`}
             >
               {b.label}
@@ -177,8 +177,8 @@ export function HotdealList({ hotdeals }: Props) {
         (user?.role === "md" || user?.role === "admin") ? (
           <div className="text-center py-16 space-y-4">
             <div className="space-y-1">
-              <p className="text-[15px] text-white font-black">🔥 핫딜이 비어있어요</p>
-              <p className="text-[12px] text-neutral-500">지금 등록하면 홈에 단독 노출</p>
+              <p className="text-[15px] text-foreground font-black">🔥 핫딜이 비어있어요</p>
+              <p className="text-[12px] text-muted-foreground">지금 등록하면 홈에 단독 노출</p>
             </div>
             <Link
               href="/md/hotdeal-now?new=1"
@@ -190,8 +190,8 @@ export function HotdealList({ hotdeals }: Props) {
           </div>
         ) : (
           <div className="text-center py-16 space-y-2">
-            <p className="text-[14px] text-neutral-400">진행 중인 핫딜이 없어요</p>
-            <p className="text-[11px] text-neutral-600">조건을 바꿔보거나 잠시 후 다시 확인해주세요</p>
+            <p className="text-[14px] text-muted-foreground">진행 중인 핫딜이 없어요</p>
+            <p className="text-[11px] text-muted-foreground">조건을 바꿔보거나 잠시 후 다시 확인해주세요</p>
           </div>
         )
       ) : (
@@ -216,14 +216,14 @@ function HotdealCard({ hotdeal: h, now }: { hotdeal: DailyHotdeal; now: number }
   return (
     <Link
       href={`/hotdeal/${h.id}`}
-      className="flex gap-3 py-4 border-b border-neutral-800/60 active:opacity-70 transition-opacity"
+      className="flex gap-3 py-4 border-b border-border/60 active:opacity-70 transition-opacity"
     >
       {/* 썸네일 */}
-      <div className="relative w-28 h-28 rounded-xl overflow-hidden bg-neutral-800 shrink-0">
+      <div className="relative w-28 h-28 rounded-xl overflow-hidden bg-muted shrink-0">
         {thumb ? (
           <Image src={thumb} alt={h.title} fill sizes="112px" className="object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[28px] font-black text-white/30">
+          <div className="w-full h-full flex items-center justify-center text-[28px] font-black text-foreground/30">
             {h.club?.name?.charAt(0) ?? "?"}
           </div>
         )}
@@ -232,10 +232,10 @@ function HotdealCard({ hotdeal: h, now }: { hotdeal: DailyHotdeal; now: number }
       {/* 텍스트 */}
       <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
         <div className="space-y-1">
-          <p className="text-white font-black text-[15px] leading-snug line-clamp-2">
+          <p className="text-foreground font-black text-[15px] leading-snug line-clamp-2">
             {h.title}
           </p>
-          <p className="text-neutral-500 text-[12px]">
+          <p className="text-muted-foreground text-[12px]">
             {h.club?.area ?? ""}
             {h.nearest_station && <>{h.club?.area ? " · " : ""}{h.nearest_station}역</>}
             {h.walk_minutes && <> 도보 {h.walk_minutes}분</>}
@@ -248,7 +248,7 @@ function HotdealCard({ hotdeal: h, now }: { hotdeal: DailyHotdeal; now: number }
             {(h.liquor_includes ?? []).slice(0, 2).map((tag) => (
               <span
                 key={`liq-${tag}`}
-                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-black"
+                className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-500/15 text-brand-amber border border-amber-500/30 text-[11px] font-black"
               >
                 🍾 {tag}
               </span>
@@ -256,13 +256,13 @@ function HotdealCard({ hotdeal: h, now }: { hotdeal: DailyHotdeal; now: number }
             {(h.table_features ?? []).slice(0, 2).map((tag) => (
               <span
                 key={`feat-${tag}`}
-                className="px-2 py-0.5 bg-neutral-800 text-neutral-400 rounded-full text-[10px] font-bold"
+                className="px-2 py-0.5 bg-muted text-muted-foreground rounded-full text-[10px] font-bold"
               >
                 {tag}
               </span>
             ))}
             {((h.liquor_includes?.length ?? 0) + (h.table_features?.length ?? 0)) > 4 && (
-              <span className="px-1.5 py-0.5 text-neutral-600 text-[10px]">
+              <span className="px-1.5 py-0.5 text-muted-foreground text-[10px]">
                 +{((h.liquor_includes?.length ?? 0) + (h.table_features?.length ?? 0)) - 4}
               </span>
             )}
@@ -271,7 +271,7 @@ function HotdealCard({ hotdeal: h, now }: { hotdeal: DailyHotdeal; now: number }
 
         <div className="space-y-0.5 mt-2">
           <div className="flex items-center gap-1.5">
-            <span className="text-amber-400 text-[11px] font-black inline-flex items-center gap-1">
+            <span className="text-brand-amber text-[11px] font-black inline-flex items-center gap-1">
               <Clock className="w-3 h-3" />
               {countdown}
             </span>
@@ -288,12 +288,12 @@ function HotdealCard({ hotdeal: h, now }: { hotdeal: DailyHotdeal; now: number }
               {discountPct && h.original_price && (
                 <div className="flex items-baseline justify-end gap-1.5">
                   <span className="text-[11px] font-black text-red-400">{discountPct}%</span>
-                  <span className="text-[11px] text-neutral-500 line-through">
+                  <span className="text-[11px] text-muted-foreground line-through">
                     {h.original_price.toLocaleString()}원
                   </span>
                 </div>
               )}
-              <span className="text-[17px] font-black text-white">
+              <span className="text-[17px] font-black text-foreground">
                 {h.price.toLocaleString()}원
               </span>
             </div>

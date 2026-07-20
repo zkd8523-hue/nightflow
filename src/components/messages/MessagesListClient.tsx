@@ -158,30 +158,30 @@ export function MessagesListClient() {
   }, [isLoading, flagOn, router]);
 
   return (
-    <div className="max-w-lg mx-auto min-h-dvh bg-[#0A0A0A] pb-24">
-      <div className="sticky top-0 z-20 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-neutral-800">
+    <div className="max-w-lg mx-auto min-h-dvh bg-background pb-24">
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border">
         <header className="flex items-center gap-2 px-3 py-3">
           <button
             onClick={() => {
               if (typeof window !== "undefined" && window.history.length > 1) router.back();
               else router.push("/");
             }}
-            className="p-1 -ml-1 text-neutral-300"
+            className="p-1 -ml-1 text-foreground/80"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-[16px] font-black text-white">나의 채팅</h1>
+          <h1 className="text-[16px] font-black text-foreground">나의 채팅</h1>
         </header>
         {user && (
-          <div className="grid grid-cols-3 gap-1 p-1 mx-4 mb-2 bg-neutral-900 rounded-full">
+          <div className="grid grid-cols-3 gap-1 p-1 mx-4 mb-2 bg-card rounded-full">
             {/* 1번 메시지(DM) — 항상 노출 (메시지/조각/깃발 3채널 구조) */}
             <button
               onClick={() => { didAutoSelect.current = true; setTab("dm"); }}
-              className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-white" : "text-neutral-500"}`}
+              className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${tab === "dm" ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
             >
               <span>💬 메시지</span>
               {dmThreads.length > 0 && (
-                <span className={`text-[11px] ${tab === "dm" ? "text-neutral-300" : "text-neutral-500"}`}>
+                <span className={`text-[11px] ${tab === "dm" ? "text-foreground/80" : "text-muted-foreground"}`}>
                   {dmThreads.length}
                 </span>
               )}
@@ -205,11 +205,11 @@ export function MessagesListClient() {
                     didAutoSelect.current = true;
                     setTab(s.key as "flag" | "share");
                   }}
-                  className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${active ? "bg-white/10 text-white" : "text-neutral-500"}`}
+                  className={`flex items-center justify-center gap-1.5 py-2 rounded-full text-[13px] font-black transition-colors ${active ? "bg-white/10 text-foreground" : "text-muted-foreground"}`}
                 >
                   <span>{name}</span>
                   {count > 0 && (
-                    <span className={`text-[11px] ${active ? "text-neutral-300" : "text-neutral-500"}`}>
+                    <span className={`text-[11px] ${active ? "text-foreground/80" : "text-muted-foreground"}`}>
                       {count}
                     </span>
                   )}
@@ -222,19 +222,19 @@ export function MessagesListClient() {
       </div>
 
       {isLoading || loading || partyLoading ? (
-        <p className="text-center text-[13px] text-neutral-600 mt-16">불러오는 중…</p>
+        <p className="text-center text-[13px] text-muted-foreground mt-16">불러오는 중…</p>
       ) : !user ? (
-        <p className="text-center text-[13px] text-neutral-500 mt-16">로그인이 필요해요</p>
+        <p className="text-center text-[13px] text-muted-foreground mt-16">로그인이 필요해요</p>
       ) : chats.length === 0 && partyRooms.length === 0 && dmThreads.length === 0 ? (
         <div className="text-center mt-20 px-8">
-          <p className="text-[14px] text-neutral-400 font-bold">아직 대화가 없어요</p>
-          <p className="text-[13px] text-neutral-600 mt-1.5 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground font-bold">아직 대화가 없어요</p>
+          <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed">
             깃발 상세에서 마음에 드는 오퍼에 <br />“대화하기”를 눌러 시작해보세요
           </p>
         </div>
       ) : tab === "dm" ? (
         dmThreads.length === 0 ? (
-          <p className="text-center text-[13px] text-neutral-600 mt-16">메시지가 없어요</p>
+          <p className="text-center text-[13px] text-muted-foreground mt-16">메시지가 없어요</p>
         ) : (
           <div className="px-2 pt-1">
             {dmThreads.map((t) => {
@@ -243,34 +243,34 @@ export function MessagesListClient() {
                 <Link
                   key={t.id}
                   href={`/dm/${t.id}`}
-                  className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-neutral-900 transition-colors"
+                  className="flex items-center gap-3 px-3 py-3 rounded-2xl hover:bg-card transition-colors"
                 >
-                  <div className="relative w-11 h-11 rounded-full overflow-hidden bg-neutral-800 shrink-0">
+                  <div className="relative w-11 h-11 rounded-full overflow-hidden bg-muted shrink-0">
                     {t.counterpart?.profile_image ? (
                       <Image src={t.counterpart.profile_image} alt="" fill sizes="44px" className="object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white/60 text-[14px] font-black">
+                      <div className="w-full h-full flex items-center justify-center text-foreground/60 text-[14px] font-black">
                         {name.charAt(0)}
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-white text-[14px] font-black truncate">{name}</span>
+                      <span className="text-foreground text-[14px] font-black truncate">{name}</span>
                       {/* 수락 게이트 폐지(Migration 470) — 신청/대기중 배지 없음 */}
                     </div>
-                    <p className="text-[13px] text-neutral-500 truncate">{t.last_message ?? ""}</p>
+                    <p className="text-[13px] text-muted-foreground truncate">{t.last_message ?? ""}</p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-neutral-600 shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
                 </Link>
               );
             })}
           </div>
         )
       ) : tab === "share" && partyRooms.length === 0 ? (
-        <p className="text-center text-[13px] text-neutral-600 mt-16">조각 대화가 없어요</p>
+        <p className="text-center text-[13px] text-muted-foreground mt-16">조각 대화가 없어요</p>
       ) : tab === "flag" && activeSection.items.length === 0 ? (
-        <p className="text-center text-[13px] text-neutral-600 mt-16">깃발 대화가 없어요</p>
+        <p className="text-center text-[13px] text-muted-foreground mt-16">깃발 대화가 없어요</p>
       ) : (
         <div>
           {/* 조각 탭: 단체채팅방(파티) — 깃발과 동일한 헤더+행 구조 */}
@@ -279,11 +279,11 @@ export function MessagesListClient() {
             return (
               <div key={room.puzzle_id} className="mb-1">
                 {/* 조각 헤더 — 깃발 헤더와 동일한 톤 */}
-                <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-neutral-900/40">
-                  <p className="text-[13px] font-bold text-neutral-300 truncate">
+                <div className="flex items-center justify-between gap-2 px-4 py-2.5 bg-card/40">
+                  <p className="text-[13px] font-bold text-foreground/80 truncate">
                     {formatDate(room.event_date)}
                   </p>
-                  <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded-full bg-neutral-800 text-neutral-400 font-bold">
+                  <span className="shrink-0 text-[11px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-bold">
                     {room.member_count}/{room.target_count}명
                   </span>
                 </div>
@@ -295,10 +295,10 @@ export function MessagesListClient() {
                   onPointerDown={() => startPress({ kind: "party", puzzleId: room.puzzle_id, isLeader: room.is_leader, label: `${formatDate(room.event_date)} · ${room.area}` })}
                   onPointerUp={cancelPress}
                   onPointerLeave={cancelPress}
-                  className={`flex items-center gap-3 px-4 py-3.5 active:bg-neutral-900/60 ${["expired", "cancelled"].includes(room.puzzle_status) ? "opacity-50" : ""}`}
+                  className={`flex items-center gap-3 px-4 py-3.5 active:bg-card/60 ${["expired", "cancelled"].includes(room.puzzle_status) ? "opacity-50" : ""}`}
                 >
                   {/* 아바타: 클럽 대표 이미지 있으면 이미지, 없으면 지역 첫 글자 */}
-                  <div className="relative w-11 h-11 rounded-full overflow-hidden bg-neutral-800 shrink-0 grid place-items-center text-[14px] font-bold text-neutral-400">
+                  <div className="relative w-11 h-11 rounded-full overflow-hidden bg-muted shrink-0 grid place-items-center text-[14px] font-bold text-muted-foreground">
                     {room.club_thumbnail ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={room.club_thumbnail} alt="" className="w-full h-full object-cover" decoding="async" />
@@ -308,19 +308,19 @@ export function MessagesListClient() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-[14px] font-bold text-white truncate">
+                      <p className="text-[14px] font-bold text-foreground truncate">
                         {room.notes || `${formatDate(room.event_date)} · ${room.area}${budgetText}`}
                       </p>
                       {room.is_leader && (
                         <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold">MY</span>
                       )}
                     </div>
-                    <p className={`text-[13px] truncate mt-0.5 ${room.unread ? "text-neutral-200 font-semibold" : "text-neutral-500"}`}>
+                    <p className={`text-[13px] truncate mt-0.5 ${room.unread ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
                       {room.last_content}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-[11px] text-neutral-600">{chatListTime(room.last_at)}</span>
+                    <span className="text-[11px] text-muted-foreground">{chatListTime(room.last_at)}</span>
                     {room.unread && <span className="w-2 h-2 rounded-full bg-red-500" />}
                   </div>
                 </Link>
@@ -337,19 +337,19 @@ export function MessagesListClient() {
                 {/* 깃발 헤더 — 매칭된 깃발은 녹색 강조 */}
                 <Link
                   href={`/flags/${head.puzzle_id}`}
-                  className="flex items-center justify-between gap-2 px-4 py-2.5 bg-neutral-900/40 active:bg-neutral-900"
+                  className="flex items-center justify-between gap-2 px-4 py-2.5 bg-card/40 active:bg-card"
                 >
-                  <p className="text-[13px] font-bold text-neutral-300 truncate">
+                  <p className="text-[13px] font-bold text-foreground/80 truncate">
                     {formatDate(head.event_date)} · {head.area}{budgetText}
                   </p>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {isMatched && (
-                      <span className="inline-flex items-center gap-0.5 text-[11px] px-2 py-0.5 rounded-full bg-white text-black font-bold">
+                      <span className="inline-flex items-center gap-0.5 text-[11px] px-2 py-0.5 rounded-full bg-inverse text-inverse-foreground font-bold">
                         <Check className="w-3 h-3" />
                         매칭됨
                       </span>
                     )}
-                    <ChevronRight className="w-4 h-4 text-neutral-600" />
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
                 </Link>
                 {/* 이 깃발의 대화들 */}
@@ -368,32 +368,32 @@ export function MessagesListClient() {
                         onPointerDown={isClosed ? undefined : () => startPress({ kind: "offer", offerId: c.offer_id, myRole: c.my_role, label: `${formatDate(head.event_date)} · ${head.area}` })}
                         onPointerUp={cancelPress}
                         onPointerLeave={cancelPress}
-                        className={`flex items-center gap-3 px-4 py-3.5 active:bg-neutral-900/60 ${isClosed ? "opacity-50" : ""}`}
+                        className={`flex items-center gap-3 px-4 py-3.5 active:bg-card/60 ${isClosed ? "opacity-50" : ""}`}
                       >
-                        <div className="relative w-11 h-11 rounded-full overflow-hidden bg-neutral-800 shrink-0">
+                        <div className="relative w-11 h-11 rounded-full overflow-hidden bg-muted shrink-0">
                           {c.counterpart_image ? (
                             <Image src={c.counterpart_image} alt="" fill className="object-cover" sizes="44px" />
                           ) : (
-                            <div className="w-full h-full grid place-items-center text-[14px] font-bold text-neutral-400">
+                            <div className="w-full h-full grid place-items-center text-[14px] font-bold text-muted-foreground">
                               {(c.counterpart_name ?? "?").slice(0, 1)}
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <p className="text-[14px] font-bold text-white truncate">
+                            <p className="text-[14px] font-bold text-foreground truncate">
                               {c.counterpart_name ?? (c.my_role === "leader" ? "파트너" : "방장")}
                             </p>
                             {isClosed && (
-                              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-500 font-bold">종료</span>
+                              <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold">종료</span>
                             )}
                           </div>
-                          <p className={`text-[13px] truncate mt-0.5 ${!isClosed && c.unread ? "text-neutral-200 font-semibold" : "text-neutral-500"}`}>
+                          <p className={`text-[13px] truncate mt-0.5 ${!isClosed && c.unread ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
                             {c.last_content || "사진"}
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-1 shrink-0">
-                          <span className="text-[11px] text-neutral-600">{chatListTime(c.last_at)}</span>
+                          <span className="text-[11px] text-muted-foreground">{chatListTime(c.last_at)}</span>
                           {isClosed ? (
                             <button
                               onClick={(e) => {
@@ -401,7 +401,7 @@ export function MessagesListClient() {
                                 e.stopPropagation();
                                 handleDeleteChat(c.offer_id);
                               }}
-                              className="p-0.5 text-neutral-600 hover:text-red-400 transition-colors"
+                              className="p-0.5 text-muted-foreground hover:text-red-400 transition-colors"
                               aria-label="삭제"
                             >
                               <X className="w-4 h-4" />
@@ -428,15 +428,15 @@ export function MessagesListClient() {
           onClick={() => !leaving && setLeaveTarget(null)}
         >
           <div
-            className="w-full max-w-lg bg-[#1C1C1E] rounded-t-3xl p-5 space-y-4"
+            className="w-full max-w-lg bg-card rounded-t-3xl p-5 space-y-4"
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="space-y-1.5">
-              <p className="text-[16px] font-black text-white">
+              <p className="text-[16px] font-black text-foreground">
                 이 채팅방에서 나갈까요?
               </p>
-              <p className="text-[13px] text-neutral-400 leading-relaxed">
+              <p className="text-[13px] text-muted-foreground leading-relaxed">
                 {leaveTarget.label}
                 <br />
                 {leaveTarget.kind === "party"
@@ -450,7 +450,7 @@ export function MessagesListClient() {
               <button
                 onClick={() => setLeaveTarget(null)}
                 disabled={leaving}
-                className="flex-1 py-3 rounded-xl bg-neutral-800 text-white font-bold text-[14px] disabled:opacity-50"
+                className="flex-1 py-3 rounded-xl bg-muted text-foreground font-bold text-[14px] disabled:opacity-50"
               >
                 취소
               </button>

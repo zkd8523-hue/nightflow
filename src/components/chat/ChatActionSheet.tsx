@@ -76,10 +76,10 @@ export function ChatActionSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl p-0 pb-4 max-h-[60vh]"
+        className="bg-card border-border rounded-t-3xl p-0 pb-4 max-h-[60vh]"
       >
         {/* 이모지 반응 가로 행 */}
-        <div className="px-4 pt-5 pb-3 border-b border-neutral-800">
+        <div className="px-4 pt-5 pb-3 border-b border-border">
           <div className="flex items-center justify-around">
             {CHAT_REACTION_EMOJIS.map((emoji) => {
               const mine = reactionSummary?.mine.has(emoji);
@@ -180,13 +180,13 @@ function ActionRow({
     tone === "danger"
       ? "text-red-400"
       : tone === "warning"
-        ? "text-amber-400"
-        : "text-white";
+        ? "text-brand-amber"
+        : "text-foreground";
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-neutral-800/60 active:bg-neutral-800 transition-colors ${colorClass}`}
+      className={`w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-muted/60 active:bg-muted transition-colors ${colorClass}`}
     >
       <span className="shrink-0">{icon}</span>
       <span className="text-[15px] font-medium">{label}</span>

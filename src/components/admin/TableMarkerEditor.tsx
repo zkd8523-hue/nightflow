@@ -17,9 +17,9 @@ interface TableMarkerEditorProps {
 }
 
 const TABLE_TYPES: { value: TableType; label: string; prefix: string; color: string }[] = [
-    { value: "Standard", label: "일반", prefix: "S", color: "bg-white/20 border-white/30 text-white/80" },
+    { value: "Standard", label: "일반", prefix: "S", color: "bg-white/20 border-white/30 text-foreground/80" },
     { value: "VIP", label: "VIP", prefix: "V", color: "bg-purple-500/40 border-purple-500/60 text-purple-300" },
-    { value: "Premium", label: "프리미엄", prefix: "P", color: "bg-amber-500/30 border-amber-500/50 text-amber-400" },
+    { value: "Premium", label: "프리미엄", prefix: "P", color: "bg-amber-500/30 border-amber-500/50 text-brand-amber" },
 ];
 
 const MAX_MARKERS = 50;
@@ -41,9 +41,9 @@ function getEditorMarkerStyle(type: TableType, isDeleting: boolean) {
         case "VIP":
             return "bg-purple-500/40 border-purple-500/60 text-purple-300";
         case "Premium":
-            return "bg-amber-500/30 border-amber-500/50 text-amber-400";
+            return "bg-amber-500/30 border-amber-500/50 text-brand-amber";
         default:
-            return "bg-white/20 border-white/30 text-white/80";
+            return "bg-white/20 border-white/30 text-foreground/80";
     }
 }
 
@@ -172,11 +172,11 @@ export function TableMarkerEditor({
     // Mobile warning
     if (isMobileWarning) {
         return (
-            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-8 text-center space-y-4">
-                <Monitor className="w-12 h-12 text-neutral-500 mx-auto" />
+            <div className="bg-card border border-border rounded-2xl p-8 text-center space-y-4">
+                <Monitor className="w-12 h-12 text-muted-foreground mx-auto" />
                 <div>
-                    <h3 className="text-white font-bold text-lg">데스크톱에서 사용해주세요</h3>
-                    <p className="text-neutral-500 text-sm mt-2">
+                    <h3 className="text-foreground font-bold text-lg">데스크톱에서 사용해주세요</h3>
+                    <p className="text-muted-foreground text-sm mt-2">
                         테이블 마커 배치는 정밀한 클릭이 필요합니다.<br />
                         PC 또는 태블릿 가로 모드에서 접속해주세요.
                     </p>
@@ -189,8 +189,8 @@ export function TableMarkerEditor({
         <div className="space-y-6">
             {/* Header Info */}
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-2">
-                <p className="text-sm text-amber-400 font-bold">📍 마커 배치 도구</p>
-                <p className="text-xs text-amber-400/80">
+                <p className="text-sm text-brand-amber font-bold">📍 마커 배치 도구</p>
+                <p className="text-xs text-brand-amber dark:text-brand-amber/80">
                     이미지를 클릭하여 테이블 위치를 지정하세요. 마커를 클릭하면 삭제할 수 있습니다.
                 </p>
             </div>
@@ -198,7 +198,7 @@ export function TableMarkerEditor({
             {/* Toolbar */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-2">
-                    <span className="text-xs text-neutral-500 font-bold">
+                    <span className="text-xs text-muted-foreground font-bold">
                         {positions.length} / {MAX_MARKERS} 마커
                     </span>
                     {/* Type quick selector */}
@@ -209,7 +209,7 @@ export function TableMarkerEditor({
                                 type="button"
                                 onClick={() => setNewType(t.value)}
                                 className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${newType === t.value
-                                        ? "bg-white text-black border-white"
+                                        ? "bg-inverse text-inverse-foreground border-white"
                                         : `${t.color} hover:opacity-80`
                                     }`}
                             >
@@ -226,7 +226,7 @@ export function TableMarkerEditor({
                         size="sm"
                         onClick={handleReset}
                         disabled={!hasChanges}
-                        className="h-8 text-xs border-neutral-700 text-neutral-400 hover:text-white hover:border-neutral-500"
+                        className="h-8 text-xs border-border text-muted-foreground hover:text-foreground hover:border-border"
                     >
                         <RotateCcw className="w-3.5 h-3.5 mr-1" />
                         초기화
@@ -245,15 +245,15 @@ export function TableMarkerEditor({
             </div>
 
             {/* Editor Canvas — Desktop view */}
-            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-4">
-                <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold">
+            <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold">
                     <Monitor className="w-4 h-4" />
                     <span>편집 뷰</span>
                 </div>
 
                 <div
                     ref={containerRef}
-                    className="relative rounded-xl overflow-hidden border-2 border-neutral-700 cursor-crosshair"
+                    className="relative rounded-xl overflow-hidden border-2 border-border cursor-crosshair"
                     style={{ minWidth: 600 }}
                     onClick={handleImageClick}
                 >
@@ -266,7 +266,7 @@ export function TableMarkerEditor({
                     />
 
                     {!imageLoaded && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-neutral-900/80">
+                        <div className="absolute inset-0 flex items-center justify-center bg-card/80">
                             <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
                         </div>
                     )}
@@ -295,14 +295,14 @@ export function TableMarkerEditor({
             </div>
 
             {/* Mobile Preview */}
-            <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-4">
-                <div className="flex items-center gap-2 text-neutral-400 text-xs font-bold">
+            <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
+                <div className="flex items-center gap-2 text-muted-foreground text-xs font-bold">
                     <Smartphone className="w-4 h-4" />
                     <span>모바일 미리보기 (375px)</span>
                 </div>
 
                 <div className="mx-auto" style={{ maxWidth: 375 }}>
-                    <div className="relative rounded-xl overflow-hidden border border-neutral-700">
+                    <div className="relative rounded-xl overflow-hidden border border-border">
                         <img
                             src={floorPlanUrl}
                             alt="모바일 미리보기"
@@ -330,8 +330,8 @@ export function TableMarkerEditor({
 
             {/* Marker List Summary */}
             {positions.length > 0 && (
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
-                    <p className="text-xs text-neutral-400 font-bold">등록된 마커 목록</p>
+                <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
+                    <p className="text-xs text-muted-foreground font-bold">등록된 마커 목록</p>
                     <div className="flex flex-wrap gap-1.5">
                         {positions.map(marker => (
                             <span
@@ -339,7 +339,7 @@ export function TableMarkerEditor({
                                 className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-[10px] font-bold ${marker.type === "VIP"
                                         ? "bg-purple-500/20 border-purple-500/30 text-purple-400"
                                         : marker.type === "Premium"
-                                            ? "bg-amber-500/15 border-amber-500/25 text-amber-400"
+                                            ? "bg-amber-500/15 border-amber-500/25 text-brand-amber"
                                             : "bg-white/10 border-white/20 text-white/60"
                                     }`}
                             >
@@ -352,17 +352,17 @@ export function TableMarkerEditor({
 
             {/* New Marker Dialog */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="bg-[#1C1C1E] border-neutral-800 text-white sm:max-w-[400px]">
+                <DialogContent className="bg-card border-border text-foreground sm:max-w-[400px]">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            <Plus className="w-5 h-5 text-amber-500" />
+                            <Plus className="w-5 h-5 text-brand-amber" />
                             마커 추가
                         </DialogTitle>
                     </DialogHeader>
 
                     <div className="space-y-4 py-2">
                         <div className="space-y-2">
-                            <Label className="text-neutral-400 text-xs font-bold">테이블 타입</Label>
+                            <Label className="text-muted-foreground text-xs font-bold">테이블 타입</Label>
                             <div className="flex gap-2">
                                 {TABLE_TYPES.map(t => (
                                     <button
@@ -374,8 +374,8 @@ export function TableMarkerEditor({
                                             setNewLabel(getNextLabel(positions, t.value));
                                         }}
                                         className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all border ${newType === t.value
-                                                ? "bg-white text-black border-white"
-                                                : `bg-neutral-900 text-neutral-500 border-neutral-700 hover:text-white`
+                                                ? "bg-inverse text-inverse-foreground border-white"
+                                                : `bg-card text-muted-foreground border-border hover:text-white`
                                             }`}
                                     >
                                         {t.label}
@@ -385,18 +385,18 @@ export function TableMarkerEditor({
                         </div>
 
                         <div className="space-y-2">
-                            <Label className="text-neutral-400 text-xs font-bold">라벨 (자동 생성 / 수정 가능)</Label>
+                            <Label className="text-muted-foreground text-xs font-bold">라벨 (자동 생성 / 수정 가능)</Label>
                             <Input
                                 value={newLabel}
                                 onChange={(e) => setNewLabel(e.target.value)}
                                 placeholder="예: S1, V2, VIP-A"
-                                className="bg-neutral-900 border-neutral-800 text-white h-10"
+                                className="bg-card border-border text-foreground h-10"
                                 autoFocus
                             />
                         </div>
 
                         {pendingCoord && (
-                            <p className="text-[10px] text-neutral-600">
+                            <p className="text-[10px] text-muted-foreground">
                                 좌표: ({pendingCoord.x.toFixed(1)}%, {pendingCoord.y.toFixed(1)}%)
                             </p>
                         )}
@@ -406,7 +406,7 @@ export function TableMarkerEditor({
                         <Button
                             variant="outline"
                             onClick={() => { setDialogOpen(false); setPendingCoord(null); }}
-                            className="border-neutral-700 text-white hover:bg-neutral-800"
+                            className="border-border text-foreground hover:bg-muted"
                         >
                             취소
                         </Button>

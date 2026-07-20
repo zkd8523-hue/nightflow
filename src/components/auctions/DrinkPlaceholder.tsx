@@ -19,7 +19,7 @@ const DRINK_GRADIENTS: Record<string, { gradient: string; emoji: string }> = {
     rum: { gradient: "from-orange-900/80 via-amber-800/60 to-orange-950/80", emoji: "🏴‍☠️" },
     gin: { gradient: "from-teal-900/80 via-cyan-800/60 to-teal-950/80", emoji: "🌿" },
     etc: { gradient: "from-purple-900/80 via-violet-800/60 to-purple-950/80", emoji: "🍸" },
-    extra: { gradient: "from-neutral-900/80 via-neutral-800/60 to-neutral-950/80", emoji: "🥂" },
+    extra: { gradient: "from-neutral-900/80 via-neutral-800/60 to-background/80", emoji: "🥂" },
 };
 
 /**

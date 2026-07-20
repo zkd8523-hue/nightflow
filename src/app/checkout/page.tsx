@@ -16,26 +16,26 @@ export const metadata: Metadata = {
 
 export default function CheckoutPage() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-start pt-20 px-4 pb-20">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-start pt-20 px-4 pb-20">
       <div className="max-w-2xl w-full space-y-8">
         <div className="text-center space-y-3">
-          <h1 className="text-3xl font-black text-white tracking-tight flex items-center justify-center gap-3">
-            <ShieldCheck className="w-8 h-8 text-green-500" />
+          <h1 className="text-3xl font-black text-foreground tracking-tight flex items-center justify-center gap-3">
+            <ShieldCheck className="w-8 h-8 text-money" />
             결제 안내
           </h1>
-          <p className="text-[14px] text-neutral-400">
+          <p className="text-[14px] text-muted-foreground">
             나플은 이용자의 결제를 중개하지 않습니다.
           </p>
         </div>
 
         {/* 이용자 — 무결제 · 직접 지불 (Model B) */}
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-8 space-y-4">
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <HandCoins className="w-5 h-5 text-amber-500" /> 이용자 — 무결제 · 직접 지불
+        <div className="bg-card border border-border rounded-3xl p-8 space-y-4">
+          <h2 className="text-xl font-black text-foreground flex items-center gap-2">
+            <HandCoins className="w-5 h-5 text-brand-amber" /> 이용자 — 무결제 · 직접 지불
           </h2>
-          <p className="text-[14px] text-neutral-300 leading-relaxed">
+          <p className="text-[14px] text-foreground/80 leading-relaxed">
             깃발(역경매)로 매칭된 뒤,{" "}
-            <span className="text-white font-bold">
+            <span className="text-foreground font-bold">
               테이블 이용 금액은 이용자가 매칭된 클럽(파트너)에게 직접 지불
             </span>
             합니다. 나플은 이 금액을 수령·보관·정산하지 않으며, 별도의 예약 수수료도
@@ -44,21 +44,21 @@ export default function CheckoutPage() {
         </div>
 
         {/* MD(파트너) 크레딧 — 유일한 유료 항목 */}
-        <div className="bg-[#1C1C1E] border border-neutral-800 rounded-3xl p-8 space-y-4">
-          <h2 className="text-xl font-black text-white flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-amber-500" /> 파트너 크레딧
+        <div className="bg-card border border-border rounded-3xl p-8 space-y-4">
+          <h2 className="text-xl font-black text-foreground flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-brand-amber" /> 파트너 크레딧
           </h2>
-          <p className="text-[14px] text-neutral-300 leading-relaxed">
+          <p className="text-[14px] text-foreground/80 leading-relaxed">
             나플의 유일한 유료 항목은{" "}
-            <span className="text-white font-bold">
+            <span className="text-foreground font-bold">
               파트너가 플랫폼 기능(오퍼 제안·매치 등)에 사용하는 크레딧
             </span>
             입니다. 1크레딧 = 100원(부가세 포함)이며, 카카오페이 등 결제대행사(PortOne)를
             통해 충전합니다. 미사용 크레딧은 충전일로부터 7일 이내 전액 환불받을 수 있습니다.
           </p>
-          <p className="text-[13px] text-neutral-500">
+          <p className="text-[13px] text-muted-foreground">
             자세한 내용은{" "}
-            <Link href="/terms" className="text-amber-400 underline hover:text-amber-300">
+            <Link href="/terms" className="text-brand-amber underline hover:text-brand-amber">
               이용약관
             </Link>
             을 참고하세요.

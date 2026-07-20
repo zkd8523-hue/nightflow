@@ -22,7 +22,7 @@ export function PuzzleReportActions({ reportId, status }: PuzzleReportActionsPro
         className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
           status === "approved"
             ? "bg-red-500/15 text-red-400 border border-red-500/20"
-            : "bg-green-500/15 text-green-400 border border-green-500/20"
+            : "bg-green-500/15 text-money border border-green-500/20"
         }`}
       >
         {status === "approved" ? "승인됨" : "기각됨"}
@@ -59,7 +59,7 @@ export function PuzzleReportActions({ reportId, status }: PuzzleReportActionsPro
       <Button
         size="sm"
         variant="outline"
-        className="h-8 px-3 text-[11px] font-bold border-green-500/30 text-green-400 hover:bg-green-500/10"
+        className="h-8 px-3 text-[11px] font-bold border-green-500/30 text-money hover:bg-green-500/10"
         onClick={() => handleAction("dismissed")}
         disabled={!!loading}
       >

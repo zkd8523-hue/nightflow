@@ -76,7 +76,7 @@ export default function ZhGuidePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <div className="sr-only">
         <h1>韩国夜店预订指南 — 在江南、弘大、梨泰院做 VIP (首尔)</h1>
@@ -94,7 +94,7 @@ export default function ZhGuidePage() {
       </div>
       <div className="max-w-lg mx-auto px-6 py-16 space-y-16">
         <div className="text-center">
-          <Link href="/zh" className="text-2xl font-black tracking-tight text-white">NightFlow</Link>
+          <Link href="/zh" className="text-2xl font-black tracking-tight text-foreground">NightFlow</Link>
         </div>
         <header className="space-y-5 text-center">
           <h1 className="text-[34px] font-black tracking-tight leading-[1.15]">
@@ -102,7 +102,7 @@ export default function ZhGuidePage() {
             <br />
             做 VIP
           </h1>
-          <p className="text-[15px] text-neutral-400 leading-relaxed">
+          <p className="text-[15px] text-muted-foreground leading-relaxed">
             韩国夜店预订轻松简单。无关系，无韩语，无中介。NightFlow 让您在江南、弘大、梨泰院夜店获得最佳座位 — 公平、透明的价格。从第一晚就像本地人一样预订。
           </p>
         </header>
@@ -114,11 +114,11 @@ export default function ZhGuidePage() {
               { icon: "💸", title: "游客价格", body: "Walk-in 还是中介，您都不知道是否被宰。无法比较，无法砍价。" },
               { icon: "🧍", title: "在外排队", body: "无关系，无包间，无 guest list。您在冷风中等待，本地人却直接进入。" },
             ].map((p) => (
-              <div key={p.title} className="flex gap-4 p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800">
+              <div key={p.title} className="flex gap-4 p-5 rounded-2xl bg-card border border-border">
                 <div className="shrink-0 text-2xl leading-none pt-0.5">{p.icon}</div>
                 <div className="space-y-1">
-                  <p className="font-bold text-[15px] text-neutral-200">{p.title}</p>
-                  <p className="text-[13px] text-neutral-500 leading-relaxed">{p.body}</p>
+                  <p className="font-bold text-[15px] text-foreground">{p.title}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{p.body}</p>
                 </div>
               </div>
             ))}
@@ -128,7 +128,7 @@ export default function ZhGuidePage() {
           </Link>
         </section>
         <section className="space-y-6">
-          <h2 className="text-[13px] font-bold tracking-[0.2em] text-neutral-500 uppercase text-center">
+          <h2 className="text-[13px] font-bold tracking-[0.2em] text-muted-foreground uppercase text-center">
             首尔夜店预订流程
           </h2>
           <div className="space-y-4">
@@ -137,21 +137,21 @@ export default function ZhGuidePage() {
               { n: "2", title: "我们直接为您预订", body: "NightFlow 直接联系夜店，为您锁定预算内最好的桌位 — 真实价格，无中介加价。" },
               { n: "3", title: "像 VIP 一样入场", body: "最佳包间已预订，无排队，无中介。在 Instagram 联系夜店，到门口出示护照 (19+)。" },
             ].map((s) => (
-              <div key={s.n} className="flex gap-4 p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800">
-                <div className="shrink-0 w-9 h-9 rounded-full bg-white text-black font-black flex items-center justify-center">{s.n}</div>
+              <div key={s.n} className="flex gap-4 p-5 rounded-2xl bg-card border border-border">
+                <div className="shrink-0 w-9 h-9 rounded-full bg-inverse text-inverse-foreground font-black flex items-center justify-center">{s.n}</div>
                 <div className="space-y-1">
                   <p className="font-bold text-[15px]">{s.title}</p>
-                  <p className="text-[13px] text-neutral-400 leading-relaxed">{s.body}</p>
+                  <p className="text-[13px] text-muted-foreground leading-relaxed">{s.body}</p>
                 </div>
               </div>
             ))}
           </div>
         </section>
         <section className="space-y-3 pt-2">
-          <Link href="/zh" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base text-center hover:bg-neutral-200 transition-colors">
+          <Link href="/zh" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base text-center hover:opacity-90 transition-colors">
             获取 VIP 通道 — 免费注册
           </Link>
-          <p className="text-[12px] text-neutral-600 text-center leading-relaxed">
+          <p className="text-[12px] text-muted-foreground text-center leading-relaxed">
             19+ · 携带护照到场
             <br />
             让夜晚更美好

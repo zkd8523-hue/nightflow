@@ -38,7 +38,7 @@ export function LiveIntroModal() {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
       <DialogContent
-        className="bg-[#0A0A0A] border-neutral-800 rounded-3xl max-w-sm p-0 overflow-hidden [&>button]:hidden"
+        className="bg-background border-border rounded-3xl max-w-sm p-0 overflow-hidden [&>button]:hidden"
       >
         <DialogTitle className="sr-only">LIVE 안내</DialogTitle>
         {/* 헤더 아이콘 영역 */}
@@ -52,22 +52,22 @@ export function LiveIntroModal() {
         {/* 본문 */}
         <div className="px-6 pb-6 space-y-4">
           <div className="text-center space-y-1.5">
-            <h2 className="text-white text-[18px] font-black leading-tight">
+            <h2 className="text-foreground text-[18px] font-black leading-tight">
               지금 이 순간을 공유해요! 🎉
             </h2>
-            <p className="text-neutral-300 text-[13px] leading-relaxed">
+            <p className="text-foreground/80 text-[13px] leading-relaxed">
               어디 갈지 고민하는 친구들에게 도움이 돼요
             </p>
           </div>
 
-          <p className="text-[15px] font-bold text-neutral-200 leading-relaxed text-center">
+          <p className="text-[15px] font-bold text-foreground leading-relaxed text-center">
             실시간 분위기를 올리면, 사람들이 찾아와요 🔥
           </p>
 
           <button
             type="button"
             onClick={handleClose}
-            className="w-full py-3 rounded-full bg-white text-black text-[14px] font-black hover:bg-neutral-200 transition-colors"
+            className="w-full py-3 rounded-full bg-inverse text-inverse-foreground text-[14px] font-black hover:opacity-90 transition-colors"
           >
             시작하기
           </button>

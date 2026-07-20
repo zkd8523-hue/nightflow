@@ -13,17 +13,17 @@ interface AdminAuctionPageClientProps {
 export function AdminAuctionPageClient({ auctions }: AdminAuctionPageClientProps) {
   return (
     <Tabs defaultValue="manage" className="w-full">
-      <TabsList className="w-fit bg-neutral-900 border border-neutral-800/50 h-12 p-1 rounded-xl">
+      <TabsList className="w-fit bg-card border border-border/50 h-12 p-1 rounded-xl">
         <TabsTrigger
           value="manage"
-          className="rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white px-6"
+          className="rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground px-6"
         >
           <Gavel className="w-4 h-4 mr-2" />
           퍼즐 관리
         </TabsTrigger>
         <TabsTrigger
           value="monitor"
-          className="rounded-lg font-bold text-neutral-400 data-[state=active]:bg-[#1C1C1E] data-[state=active]:text-white px-6"
+          className="rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground px-6"
         >
           <Radio className="w-4 h-4 mr-2" />
           실시간 입찰

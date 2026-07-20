@@ -109,58 +109,58 @@ export function FlagExplainerSheet({ open, onOpenChange, area, clubName, ctaHref
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl !max-h-[90vh] !gap-0 !p-0 !flex !flex-col"
+        className="bg-background border-border rounded-t-3xl !max-h-[90vh] !gap-0 !p-0 !flex !flex-col"
       >
         <SheetHeader className="sr-only">
           <SheetTitle>{sheetTitle}</SheetTitle>
         </SheetHeader>
         <div className="flex-1 min-h-0 overflow-y-auto px-5 pt-8 pb-8 space-y-5">
           <div className="space-y-1">
-            <h2 className="text-[22px] font-black text-white tracking-tight leading-tight">
+            <h2 className="text-[22px] font-black text-foreground tracking-tight leading-tight">
               {headline}
             </h2>
-            <p className="text-[13px] text-neutral-400 leading-snug">
+            <p className="text-[13px] text-muted-foreground leading-snug">
               {subheadline}
             </p>
           </div>
 
           {/* Step 1: 조건 올리기 */}
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
+          <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0">1</div>
-              <p className="text-[14px] text-white font-bold">{step1Title}</p>
+              <p className="text-[14px] text-foreground font-bold">{step1Title}</p>
             </div>
             <div className="bg-black/40 rounded-xl px-3 py-2.5">
-              <span className="text-neutral-300 text-[13px] font-medium">
+              <span className="text-foreground/80 text-[13px] font-medium">
                 {step1Example}
               </span>
             </div>
           </div>
 
           <div className="flex justify-center">
-            <ArrowDown className="w-5 h-5 text-amber-500" />
+            <ArrowDown className="w-5 h-5 text-brand-amber" />
           </div>
 
           {/* Step 2: MD들이 제안 */}
-          <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 space-y-3">
+          <div className="bg-card border border-border rounded-2xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0">2</div>
-              <p className="text-[14px] text-white font-bold">{step2Title}</p>
+              <p className="text-[14px] text-foreground font-bold">{step2Title}</p>
             </div>
-            <p className="text-[13px] text-neutral-300 leading-snug pl-8">
-              <span className="text-amber-400 font-bold">{step2IncludeLabel}</span> {step2Rest}
+            <p className="text-[13px] text-foreground/80 leading-snug pl-8">
+              <span className="text-brand-amber font-bold">{step2IncludeLabel}</span> {step2Rest}
             </p>
           </div>
 
           <div className="flex justify-center">
-            <ArrowDown className="w-5 h-5 text-amber-500" />
+            <ArrowDown className="w-5 h-5 text-brand-amber" />
           </div>
 
           {/* Step 3: 골라서 연락 */}
           <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 space-y-2">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0">3</div>
-              <p className="text-[14px] text-white font-bold">{step3Title}</p>
+              <p className="text-[14px] text-foreground font-bold">{step3Title}</p>
             </div>
           </div>
 

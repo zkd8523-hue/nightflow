@@ -44,37 +44,37 @@ export function LiquorInfoSheet({ open, onOpenChange, product, includeText }: Li
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       {/* z-[210]: 풀스크린 비교창(z-200) 위에서도 뜨도록 */}
-      <SheetContent side="bottom" className="z-[210] bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+      <SheetContent side="bottom" className="z-[210] bg-card border-border rounded-t-3xl pb-10">
         <SheetHeader>
           <SheetTitle className="sr-only">주류 정보</SheetTitle>
         </SheetHeader>
 
         <div className="flex flex-col items-center gap-3 pt-2">
           {imageUrl ? (
-            <div className="relative w-28 h-28 rounded-2xl overflow-hidden bg-neutral-900">
+            <div className="relative w-28 h-28 rounded-2xl overflow-hidden bg-card">
               <Image src={imageUrl} alt={name} fill className="object-cover" sizes="112px" />
             </div>
           ) : (
-            <div className="w-28 h-28 rounded-2xl bg-neutral-900 flex items-center justify-center text-3xl">
+            <div className="w-28 h-28 rounded-2xl bg-card flex items-center justify-center text-3xl">
               🍾
             </div>
           )}
 
           <div className="text-center space-y-1.5">
-            <p className="text-[17px] font-black text-white">{name}</p>
+            <p className="text-[17px] font-black text-foreground">{name}</p>
             {!product && (
-              <p className="text-[12px] text-neutral-500">{CATEGORY_LABEL[category] ?? "주류"}</p>
+              <p className="text-[12px] text-muted-foreground">{CATEGORY_LABEL[category] ?? "주류"}</p>
             )}
 
             {(product?.origin || product?.abv) && (
               <div className="flex items-center justify-center gap-1.5 pt-0.5">
                 {product?.origin && (
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted text-foreground/80">
                     {product.origin}
                   </span>
                 )}
                 {product?.abv != null && (
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300">
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted text-foreground/80">
                     도수 {product.abv}%
                   </span>
                 )}
@@ -82,24 +82,24 @@ export function LiquorInfoSheet({ open, onOpenChange, product, includeText }: Li
             )}
 
             {description && (
-              <p className="text-[13px] text-neutral-400 pt-1">{description}</p>
+              <p className="text-[13px] text-muted-foreground pt-1">{description}</p>
             )}
           </div>
 
           {product?.accolade && (
-            <p className="text-[12px] text-amber-300/90 italic text-center px-2">
+            <p className="text-[12px] text-brand-amber dark:text-brand-amber/90 italic text-center px-2">
               &ldquo;{product.accolade}&rdquo;
             </p>
           )}
 
           {priceBucket && (
-            <span className="text-[13px] font-bold px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+            <span className="text-[13px] font-bold px-3 py-1.5 rounded-full bg-amber-500/15 text-brand-amber border border-amber-500/30">
               시세 {priceBucket}
             </span>
           )}
 
           {!product && (
-            <p className="text-[11px] text-neutral-600">가격 정보 준비 중이에요</p>
+            <p className="text-[11px] text-muted-foreground">가격 정보 준비 중이에요</p>
           )}
         </div>
       </SheetContent>

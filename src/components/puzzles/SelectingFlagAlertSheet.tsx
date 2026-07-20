@@ -57,25 +57,25 @@ export function SelectingFlagAlertSheet() {
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleDismiss(); }}>
-      <SheetContent side="bottom" className="rounded-t-3xl bg-[#1C1C1E] border-amber-500/30 pb-10">
+      <SheetContent side="bottom" className="rounded-t-3xl bg-card border-amber-500/30 pb-10">
         <div className="space-y-5 pt-4">
           <div className="space-y-1 text-center">
-            <p className="text-[20px] font-black text-white">⏰ 검토 중인 깃발이 있어요</p>
-            <p className="text-[14px] text-amber-400 font-bold">마지막 선택 기회!</p>
+            <p className="text-[20px] font-black text-foreground">⏰ 검토 중인 깃발이 있어요</p>
+            <p className="text-[14px] text-brand-amber font-bold">마지막 선택 기회!</p>
           </div>
-          <p className="text-center text-[36px] font-mono font-black text-white tracking-widest">
+          <p className="text-center text-[36px] font-mono font-black text-foreground tracking-widest">
             {mm}:{ss}
           </p>
           <div className="space-y-2 px-1">
             <button
               onClick={handleGo}
-              className="w-full py-4 rounded-2xl bg-white text-black font-black text-[16px] active:scale-[0.98] transition-transform"
+              className="w-full py-4 rounded-2xl bg-inverse text-inverse-foreground font-black text-[16px] active:scale-[0.98] transition-transform"
             >
               지금 확인하기
             </button>
             <button
               onClick={handleDismiss}
-              className="w-full py-2 text-[13px] text-neutral-500"
+              className="w-full py-2 text-[13px] text-muted-foreground"
             >
               나중에
             </button>

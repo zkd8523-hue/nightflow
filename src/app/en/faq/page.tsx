@@ -118,7 +118,7 @@ export default function EnFaqPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
@@ -130,13 +130,13 @@ export default function EnFaqPage() {
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         {/* Header */}
         <header className="space-y-4 text-center">
-          <Link href="/en" className="text-[12px] text-neutral-500 hover:text-white">
+          <Link href="/en" className="text-[12px] text-muted-foreground hover:text-foreground">
             ← NightFlow
           </Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">
             Seoul Club Booking FAQ
           </h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             Real answers about Seoul nightlife, written for foreign travelers. Prices, dress codes, VIP tables, broker problems — everything you wish someone told you before your first Seoul club night.
           </p>
         </header>
@@ -146,18 +146,18 @@ export default function EnFaqPage() {
           {FAQS.map((f, i) => (
             <details
               key={i}
-              className="group rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden"
+              className="group rounded-2xl bg-card border border-border overflow-hidden"
             >
               <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer list-none select-none">
-                <span className="font-bold text-[15px] text-neutral-100 leading-snug">
+                <span className="font-bold text-[15px] text-foreground leading-snug">
                   {f.q}
                 </span>
-                <span className="text-neutral-500 transition-transform group-open:rotate-180 shrink-0">
+                <span className="text-muted-foreground transition-transform group-open:rotate-180 shrink-0">
                   ▾
                 </span>
               </summary>
               <div className="px-5 pb-5">
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{f.a}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{f.a}</p>
               </div>
             </details>
           ))}
@@ -167,11 +167,11 @@ export default function EnFaqPage() {
         <section className="space-y-3 pt-4 text-center">
           <Link
             href="/en"
-            className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors"
+            className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors"
           >
             🍾 Book with NightFlow
           </Link>
-          <p className="text-[12px] text-neutral-600">
+          <p className="text-[12px] text-muted-foreground">
             19+ only · Bring your passport · No booking fee
           </p>
         </section>

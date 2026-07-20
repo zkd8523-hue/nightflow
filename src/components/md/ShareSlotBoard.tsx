@@ -301,13 +301,13 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
   };
 
   return (
-    <div className={embedded ? "" : "min-h-screen bg-[#0A0A0A] pb-24"}>
+    <div className={embedded ? "" : "min-h-screen bg-background pb-24"}>
       <div className={embedded ? "" : "max-w-lg mx-auto px-4 py-5"}>
         {/* 대시보드 링크 (페이지 단독일 때만) */}
         {!embedded && (
           <Link
             href="/md/dashboard"
-            className="inline-flex items-center gap-1 text-neutral-500 text-sm font-bold hover:text-white transition-colors mb-3"
+            className="inline-flex items-center gap-1 text-muted-foreground text-sm font-bold hover:text-foreground transition-colors mb-3"
           >
             <ChevronLeft className="w-4 h-4" />
             대시보드
@@ -319,13 +319,13 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
         <div className="flex items-center justify-between gap-2 mb-0">
           {embedded ? (
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <p className="text-[17px] text-amber-400 font-black leading-tight">
+              <p className="text-[17px] text-brand-amber font-black leading-tight">
                 이번주 조각 일정
               </p>
               <button
                 type="button"
                 onClick={() => setShowGuide((v) => !v)}
-                className="text-[11px] text-neutral-500 hover:text-white font-bold inline-flex items-center gap-0.5"
+                className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
               >
                 <span className="text-[12px]">ⓘ</span>
                 이용방법
@@ -334,52 +334,52 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
           ) : (
             <div className="flex items-center gap-2 shrink-0">
               <span className="text-[20px] leading-none">🧩</span>
-              <h1 className="text-2xl font-black text-white tracking-tight">나플 조각</h1>
+              <h1 className="text-2xl font-black text-foreground tracking-tight">나플 조각</h1>
             </div>
           )}
-          <p className="text-[11px] text-amber-400 font-bold text-right leading-tight shrink-0">
+          <p className="text-[11px] text-brand-amber font-bold text-right leading-tight shrink-0">
             매주 월 18시 오픈
           </p>
         </div>
 
         {!myClaimedThisWeek && (
-          <p className="text-[13px] text-white font-black mt-0.5 mb-3">
+          <p className="text-[13px] text-foreground font-black mt-0.5 mb-3">
             이번 주 {formatWeekRange(thisWeekISO)}
           </p>
         )}
 
         {/* 안내 가이드 (접기 가능) — 게스트 간판과 동일 패턴 */}
         {showGuide && (
-          <div className="relative bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4 mb-4 space-y-3">
+          <div className="relative bg-card border border-border rounded-2xl p-4 mb-4 space-y-3">
             <button
               type="button"
               onClick={dismissGuide}
               aria-label="가이드 닫기"
-              className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-neutral-500 hover:text-white transition-colors"
+              className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
-            <p className="text-[13px] text-white font-black">이용방법</p>
+            <p className="text-[13px] text-foreground font-black">이용방법</p>
             <div className="space-y-2.5">
               <div className="flex items-start gap-2.5">
                 <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
                 <div className="flex-1">
-                  <p className="text-[12.5px] text-white font-bold leading-snug">자리를 가진 파트너만 조각 등록</p>
-                  <p className="text-[11px] text-neutral-500 leading-snug">이번 주 자리를 차지해야 그 클럽 조각을 올릴 수 있어요</p>
+                  <p className="text-[12.5px] text-foreground font-bold leading-snug">자리를 가진 파트너만 조각 등록</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">이번 주 자리를 차지해야 그 클럽 조각을 올릴 수 있어요</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
                 <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
                 <div className="flex-1">
-                  <p className="text-[12.5px] text-white font-bold leading-snug">1클럽, 1파트너</p>
-                  <p className="text-[11px] text-neutral-500 leading-snug">선착순 한 명이 그 주 조각 등록권을 가져가요</p>
+                  <p className="text-[12.5px] text-foreground font-bold leading-snug">1클럽, 1파트너</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">선착순 한 명이 그 주 조각 등록권을 가져가요</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5">
                 <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">3</div>
                 <div className="flex-1">
-                  <p className="text-[12.5px] text-white font-bold leading-snug">한 번 세팅으로 1주일치 자동 등록</p>
-                  <p className="text-[11px] text-neutral-500 leading-snug">요일표에 옵션을 배치하면 그 주 조각이 매일 자동으로 올라가요</p>
+                  <p className="text-[12.5px] text-foreground font-bold leading-snug">한 번 세팅으로 1주일치 자동 등록</p>
+                  <p className="text-[11px] text-muted-foreground leading-snug">요일표에 옵션을 배치하면 그 주 조각이 매일 자동으로 올라가요</p>
                 </div>
               </div>
             </div>
@@ -387,7 +387,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
             <button
               type="button"
               onClick={() => setPreviewOpen(true)}
-              className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
+              className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-brand-amber text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
             >
               👀 미리보기
             </button>
@@ -400,7 +400,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
         {clubs.length === 0 ? (
           <div className="text-center py-16 space-y-4">
             <p className="text-4xl">🏢</p>
-            <p className="text-neutral-400 text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               소속된 클럽이 없습니다.
               <br />
               관리자에게 파트너 등록을 요청해주세요.
@@ -423,25 +423,25 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
                 return (
                   <div
                     key={club.id}
-                    className="bg-neutral-800/60 rounded-2xl p-4"
+                    className="bg-muted/60 rounded-2xl p-4"
                   >
                     <div>
-                      <p className="text-white text-[15px] font-black">{club.name}</p>
-                      <p className="text-[11px] text-neutral-500 mt-0.5">
+                      <p className="text-foreground text-[15px] font-black">{club.name}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
                         내 조각 · {formatWeekRange(thisWeekISO)}
                       </p>
-                      <p className="text-[11px] text-neutral-500 mt-1">
+                      <p className="text-[11px] text-muted-foreground mt-1">
                         최대 6개까지 세팅 가능
                       </p>
                     </div>
 
                     {/* 다음 주 미리 선점 */}
-                    <div className="mt-3 pt-3 border-t border-neutral-700">
+                    <div className="mt-3 pt-3 border-t border-border">
                       {nextWeekSlot ? (
                         <div className="flex items-center justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-[12px] font-black text-green-400">✓ 다음 주도 선점됨</p>
-                            <p className="text-[10.5px] text-neutral-500 mt-0.5">
+                            <p className="text-[12px] font-black text-money">✓ 다음 주도 선점됨</p>
+                            <p className="text-[10.5px] text-muted-foreground mt-0.5">
                               {formatWeekRange(nextWeekISO)}
                             </p>
                           </div>
@@ -452,7 +452,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
                               className={`px-3 py-2 rounded-full text-[11px] font-black transition-colors ${
                                 editingNextWeek
                                   ? "bg-amber-500 text-black hover:bg-amber-400"
-                                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                                  : "bg-muted text-muted-foreground hover:bg-muted"
                               }`}
                             >
                               다음주 설정
@@ -461,7 +461,7 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
                               type="button"
                               disabled={busy}
                               onClick={handleReleaseNextWeek}
-                              className="px-3 py-2 rounded-full text-[11px] font-bold bg-neutral-800 text-neutral-400 hover:text-red-400 disabled:opacity-40"
+                              className="px-3 py-2 rounded-full text-[11px] font-bold bg-muted text-muted-foreground hover:text-red-400 disabled:opacity-40"
                             >
                               해제
                             </button>
@@ -482,11 +482,11 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
                           <button
                             type="button"
                             disabled
-                            className="w-full h-10 rounded-xl bg-neutral-800 text-neutral-600 text-[12.5px] font-black cursor-not-allowed"
+                            className="w-full h-10 rounded-xl bg-muted text-muted-foreground text-[12.5px] font-black cursor-not-allowed"
                           >
                             다음 주 미리 선점 (현재 {daysSet}/{MIN_DAYS_FOR_NEXT_WEEK}일)
                           </button>
-                          <p className="text-[10.5px] text-neutral-500 mt-1.5 leading-snug">
+                          <p className="text-[10.5px] text-muted-foreground mt-1.5 leading-snug">
                             이번 주 요일표를 {MIN_DAYS_FOR_NEXT_WEEK}일 이상 세팅하면 다음 주 자리도 미리 잡을 수 있어요
                           </p>
                         </div>
@@ -499,26 +499,26 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
               return (
                 <div
                   key={club.id}
-                  className="flex items-center gap-3 bg-[#1C1C1E] rounded-2xl p-3"
+                  className="flex items-center gap-3 bg-card rounded-2xl border border-border p-3"
                 >
                   {/* 썸네일 */}
                   {club.thumbnail_url ? (
-                    <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-neutral-900 shrink-0">
+                    <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-card shrink-0">
                       <Image src={club.thumbnail_url} alt={club.name} fill sizes="48px" className="object-cover" />
                     </div>
                   ) : (
-                    <div className="w-12 h-12 rounded-xl bg-neutral-900 flex items-center justify-center text-[16px] font-black text-white/60 shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-card flex items-center justify-center text-[16px] font-black text-foreground/60 shrink-0">
                       {club.name.charAt(0)}
                     </div>
                   )}
 
                   {/* 클럽 정보 */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-[14px] font-black truncate">{club.name}</p>
+                    <p className="text-foreground text-[14px] font-black truncate">{club.name}</p>
                     {takenByOther ? (
-                      <p className="text-[10px] text-amber-400/80 font-bold truncate">다른 파트너님이 차지</p>
+                      <p className="text-[10px] text-brand-amber dark:text-brand-amber/80 font-bold truncate">다른 파트너님이 차지</p>
                     ) : (
-                      <p className="text-[10px] text-neutral-500">{club.area ?? "기타"}</p>
+                      <p className="text-[10px] text-muted-foreground">{club.area ?? "기타"}</p>
                     )}
                   </div>
 
@@ -529,9 +529,9 @@ export function ShareSlotBoard({ currentUserId, clubs, slots, thisWeekISO, embed
                     onClick={() => handleClaim(club.id, club.name)}
                     className={`px-3 py-2 rounded-full text-[12px] font-black flex-shrink-0 transition-colors inline-flex items-center gap-1 ${
                       takenByOther
-                        ? "bg-neutral-800 text-neutral-500"
+                        ? "bg-muted text-muted-foreground"
                         : beforeOpen
-                        ? "bg-neutral-800 text-neutral-600"
+                        ? "bg-muted text-muted-foreground"
                         : "bg-amber-500 text-black hover:bg-amber-400"
                     }`}
                   >

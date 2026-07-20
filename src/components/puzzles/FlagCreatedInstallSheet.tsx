@@ -44,7 +44,7 @@ export function FlagCreatedInstallSheet() {
     <Sheet open={open} onOpenChange={(v) => setOpen(v)}>
       <SheetContent
         side="bottom"
-        className="rounded-t-3xl border-neutral-800 bg-[#1C1C1E] pb-10"
+        className="rounded-t-3xl border-border bg-card pb-10"
       >
         <SheetHeader>
           <SheetTitle className="sr-only">앱 설치 안내</SheetTitle>
@@ -58,10 +58,10 @@ export function FlagCreatedInstallSheet() {
             className="rounded-2xl"
           />
           <div className="space-y-1.5">
-            <p className="text-lg font-bold text-white">
+            <p className="text-lg font-bold text-foreground">
               {isShare ? "조각 등록 완료! 🧩" : "깃발이 꽂혔어요! 🚩"}
             </p>
-            <p className="text-sm leading-relaxed text-neutral-400">
+            <p className="text-sm leading-relaxed text-muted-foreground">
               {isShare
                 ? "파티원·오퍼가 오면 바로 알림으로 받아보세요."
                 : "오퍼가 오면 바로 알림으로 받아보세요."}
@@ -85,7 +85,7 @@ export function FlagCreatedInstallSheet() {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="w-full py-2 text-sm text-neutral-500 transition-colors hover:text-neutral-300"
+              className="w-full py-2 text-sm text-muted-foreground transition-colors hover:text-foreground/80"
             >
               다음에
             </button>

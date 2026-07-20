@@ -395,23 +395,23 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
         <button
           type="button"
           onClick={() => setExpanded((v) => !v)}
-          className="flex items-center gap-1.5 text-[17px] font-black text-white"
+          className="flex items-center gap-1.5 text-[17px] font-black text-foreground"
         >
-          📍 내 조각 세팅 <span className="text-[13px] text-neutral-500">({list.length}/{MAX_OPTIONS})</span>
-          <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${expanded ? "rotate-180" : ""}`} />
+          📍 내 조각 세팅 <span className="text-[13px] text-muted-foreground">({list.length}/{MAX_OPTIONS})</span>
+          <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} />
         </button>
         <button
           type="button"
           onClick={openCreate}
           disabled={list.length >= MAX_OPTIONS}
-          className="h-8 px-3 rounded-full bg-white text-black font-black text-[12px] hover:bg-neutral-200 disabled:opacity-30 inline-flex items-center gap-1"
+          className="h-8 px-3 rounded-full bg-inverse text-inverse-foreground font-black text-[12px] hover:opacity-90 disabled:opacity-30 inline-flex items-center gap-1"
         >
           <Plus className="w-3.5 h-3.5" /> 세팅 추가
         </button>
       </div>
 
       {!expanded ? null : list.length === 0 ? (
-        <div className="text-center py-6 text-neutral-500 text-[12.5px]">
+        <div className="text-center py-6 text-muted-foreground text-[12.5px]">
           자리 등급별 옵션을 만들어 요일표에 배치하세요.
           <br />예: 메인 6석 200만 / 일반 4석 35만
         </div>
@@ -426,65 +426,65 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
               onDragOver={(e) => handleDragOver(e, i)}
               onDrop={(e) => handleDrop(e, i)}
               onDragEnd={handleDragEnd}
-              className={`flex items-center gap-3 bg-neutral-900 border rounded-xl p-3 transition-all ${
+              className={`flex items-center gap-3 bg-card border rounded-xl p-3 transition-all ${
                 dragIndex === i
-                  ? "opacity-40 border-neutral-700"
+                  ? "opacity-40 border-border"
                   : overIndex === i
-                  ? "border-green-500/60 bg-neutral-800"
-                  : "border-neutral-800"
+                  ? "border-green-500/60 bg-muted"
+                  : "border-border"
               }`}
             >
               {/* 드래그 핸들 */}
-              <div className="cursor-grab active:cursor-grabbing text-neutral-600 shrink-0 touch-none">
+              <div className="cursor-grab active:cursor-grabbing text-muted-foreground shrink-0 touch-none">
                 <GripVertical className="w-4 h-4" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="truncate flex items-baseline gap-1.5">
                   {o.label && (
-                    <span className="text-white text-[14.5px] font-black shrink-0">{o.label}</span>
+                    <span className="text-foreground text-[14.5px] font-black shrink-0">{o.label}</span>
                   )}
-                  <span className="text-amber-400 text-[12px] font-bold">{o.table_info}</span>
+                  <span className="text-brand-amber text-[12px] font-bold">{o.table_info}</span>
                 </p>
-                <p className="text-[11px] text-neutral-400">
+                <p className="text-[11px] text-muted-foreground">
                   {o.total_seats}명 · N{(o.price_per_seat / 10000).toLocaleString()}만원
                   {o.includes.length > 0 && ` · ${o.includes.slice(0, 2).join("/")}${o.includes.length > 2 ? "…" : ""}`}
                 </p>
               </div>
               <div className="flex flex-col items-center gap-1 shrink-0">
                 <button type="button" onClick={() => openEdit(o)} disabled={busy}
-                  className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-300 hover:text-white disabled:opacity-40">
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground/80 hover:text-foreground disabled:opacity-40">
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-[9px] text-neutral-500 leading-none">수정</span>
+                <span className="text-[9px] text-muted-foreground leading-none">수정</span>
               </div>
               <div className="flex flex-col items-center gap-1 shrink-0">
                 <button type="button" onClick={() => handleCopy(o)} disabled={busy || list.length >= MAX_OPTIONS}
-                  className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-300 hover:text-white disabled:opacity-40">
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground/80 hover:text-foreground disabled:opacity-40">
                   <Copy className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-[9px] text-neutral-500 leading-none">복사</span>
+                <span className="text-[9px] text-muted-foreground leading-none">복사</span>
               </div>
               <div className="flex flex-col items-center gap-1 shrink-0">
                 <button type="button" onClick={() => handleDelete(o.id)} disabled={busy}
-                  className="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-neutral-500 hover:text-red-400 disabled:opacity-40">
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-red-400 disabled:opacity-40">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-[9px] text-neutral-500 leading-none">삭제</span>
+                <span className="text-[9px] text-muted-foreground leading-none">삭제</span>
               </div>
             </div>
           ))}
-          <p className="text-right text-[10.5px] text-neutral-600 pr-1">꾹 눌러서 순서 변경 가능</p>
+          <p className="text-right text-[10.5px] text-muted-foreground pr-1">꾹 눌러서 순서 변경 가능</p>
         </div>
       )}
 
       {/* 옵션 입력 Sheet (조각 등록창 시각 패턴 복제) */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="bottom" showCloseButton={false}
-          className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-8 pt-4 max-h-[92vh] overflow-y-auto">
+          className="bg-card border-border rounded-t-3xl px-5 pb-8 pt-4 max-h-[92vh] overflow-y-auto">
           <div className="max-w-sm mx-auto w-full space-y-5">
             <SheetHeader className="p-0 mb-1">
-              <div className="w-10 h-1 bg-neutral-700 rounded-full mx-auto mb-3" />
-              <SheetTitle className="text-white text-base font-bold text-center">
+              <div className="w-10 h-1 bg-muted rounded-full mx-auto mb-3" />
+              <SheetTitle className="text-foreground text-base font-bold text-center">
                 {form.id ? "옵션 수정" : "옵션 추가"}
               </SheetTitle>
               <SheetDescription className="sr-only">조각 옵션 입력</SheetDescription>
@@ -492,24 +492,24 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
 
             {/* 옵션 이름 (필수) */}
             <div className="space-y-2">
-              <p className="text-[12px] text-neutral-400 font-medium">옵션 이름</p>
+              <p className="text-[12px] text-muted-foreground font-medium">옵션 이름</p>
               <Input
                 placeholder="예) 메인 / 일반 / 힙존"
                 value={form.label}
                 onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-                className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold"
+                className="bg-card border-border h-11 text-foreground font-bold"
               />
             </div>
 
             {/* 자리 정보 */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-[12px] text-neutral-400 font-medium">자리 정보</p>
+                <p className="text-[12px] text-muted-foreground font-medium">자리 정보</p>
                 {floorPlanUrl && (
                   <button
                     type="button"
                     onClick={() => setMapOpen((v) => !v)}
-                    className="inline-flex items-center gap-1 text-[11.5px] font-bold text-amber-400 hover:text-amber-300"
+                    className="inline-flex items-center gap-1 text-[11.5px] font-bold text-brand-amber hover:text-brand-amber"
                   >
                     <Map className="w-3.5 h-3.5" />
                     {mapOpen ? "테이블맵 닫기" : "테이블맵 보기"}
@@ -529,31 +529,31 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
                 placeholder="예) 초메인 / 빠통 / A3, B1"
                 value={form.table_info}
                 onChange={(e) => setForm((f) => ({ ...f, table_info: e.target.value }))}
-                className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold"
+                className="bg-card border-border h-11 text-foreground font-bold"
               />
             </div>
 
             {/* 정원 스테퍼 (AuctionForm 패턴 복제) */}
             <div className="space-y-2">
-              <p className="text-[12px] text-neutral-400 font-medium">정원 ({MIN_SEATS}~{MAX_SEATS}명)</p>
-              <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
+              <p className="text-[12px] text-muted-foreground font-medium">정원 ({MIN_SEATS}~{MAX_SEATS}명)</p>
+              <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-4">
                 <button type="button" disabled={form.total_seats <= MIN_SEATS}
                   onClick={() => setForm((f) => ({ ...f, total_seats: Math.max(MIN_SEATS, f.total_seats - 1) }))}
-                  className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30">
-                  <Minus className="w-3.5 h-3.5 text-white" />
+                  className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted disabled:opacity-30">
+                  <Minus className="w-3.5 h-3.5 text-foreground" />
                 </button>
-                <span className="text-[15px] font-black text-white">{form.total_seats}명</span>
+                <span className="text-[15px] font-black text-foreground">{form.total_seats}명</span>
                 <button type="button" disabled={form.total_seats >= MAX_SEATS}
                   onClick={() => setForm((f) => ({ ...f, total_seats: Math.min(MAX_SEATS, f.total_seats + 1) }))}
-                  className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30">
-                  <Plus className="w-3.5 h-3.5 text-white" />
+                  className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted disabled:opacity-30">
+                  <Plus className="w-3.5 h-3.5 text-foreground" />
                 </button>
               </div>
             </div>
 
             {/* 1인 가격 직접 입력 */}
             <div className="space-y-2">
-              <p className="text-[12px] text-neutral-400 font-medium">1인 가격</p>
+              <p className="text-[12px] text-muted-foreground font-medium">1인 가격</p>
               <div className="relative">
                 <Input
                   type="text"
@@ -561,9 +561,9 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
                   placeholder="예) 35"
                   value={form.price_man}
                   onChange={(e) => setForm((f) => ({ ...f, price_man: e.target.value.replace(/[^0-9]/g, "") }))}
-                  className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold pr-14"
+                  className="bg-card border-border h-11 text-foreground font-bold pr-14"
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-neutral-400 font-bold">만원</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-muted-foreground font-bold">만원</span>
               </div>
             </div>
 
@@ -581,14 +581,14 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
 
             {/* 포함사항 토글 칩 (EXTRAS_OPTIONS 재사용) */}
             <div className="space-y-2">
-              <p className="text-[12px] text-neutral-400 font-medium">테이블 구성 (선택)</p>
+              <p className="text-[12px] text-muted-foreground font-medium">테이블 구성 (선택)</p>
               <div className="flex flex-wrap gap-2">
                 {EXTRAS_OPTIONS.map((item) => (
                   <button key={item} type="button" onClick={() => toggleInclude(item)}
                     className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap flex items-center gap-1 transition-all ${
                       form.includes.includes(item)
                         ? "bg-green-500 text-black"
-                        : "bg-neutral-900 text-neutral-500 border border-neutral-800"
+                        : "bg-card text-muted-foreground border border-border"
                     }`}>
                     {form.includes.includes(item) && <Check className="w-3 h-3" />}
                     {item}
@@ -599,41 +599,41 @@ export function ShareOptionManager({ clubId, options, floorPlanUrl }: Props) {
 
             {/* 마감 시각 (익일 N시) */}
             <div className="space-y-2">
-              <p className="text-[12px] text-neutral-400 font-medium">마감 시각</p>
+              <p className="text-[12px] text-muted-foreground font-medium">마감 시각</p>
               <div className="relative">
                 <select
                   value={form.deadline_hour}
                   onChange={(e) => setForm((f) => ({ ...f, deadline_hour: Number(e.target.value) }))}
-                  className="w-full appearance-none bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4 pr-10 text-white font-bold text-[14px] focus:outline-none focus:border-neutral-600"
+                  className="w-full appearance-none bg-card border border-border h-11 rounded-lg px-4 pr-10 text-foreground font-bold text-[14px] focus:outline-none focus:border-border"
                 >
                   {DEADLINE_HOURS.map((h) => (
-                    <option key={h} value={h} className="bg-neutral-900 text-white">
+                    <option key={h} value={h} className="bg-card text-foreground">
                       {deadlineLabel(h)}
                     </option>
                   ))}
                 </select>
-                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 text-[10px]">▼</span>
+                <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground text-[10px]">▼</span>
               </div>
-              <p className="text-[10.5px] text-neutral-500 leading-snug">
+              <p className="text-[10.5px] text-muted-foreground leading-snug">
                 새벽까지 모집하려면 익일 시각으로. 행사 날짜는 그대로 표시돼요.
               </p>
             </div>
 
             {/* 한마디 */}
             <div className="space-y-2">
-              <p className="text-[12px] text-neutral-400 font-medium">한마디 (선택)</p>
+              <p className="text-[12px] text-muted-foreground font-medium">한마디 (선택)</p>
               <Textarea
                 placeholder="예) 입구컷 X, 황제케어"
                 value={form.md_message}
                 maxLength={60}
                 onChange={(e) => setForm((f) => ({ ...f, md_message: e.target.value }))}
-                className="bg-neutral-900 border-neutral-800 text-white resize-none"
+                className="bg-card border-border text-foreground resize-none"
                 rows={2}
               />
             </div>
 
             <Button type="button" onClick={handleSave} disabled={busy}
-              className="w-full h-12 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 disabled:opacity-40">
+              className="w-full h-12 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 disabled:opacity-40">
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "저장"}
             </Button>
           </div>

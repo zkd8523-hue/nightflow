@@ -83,13 +83,13 @@ export default function ZhTwKpopClubsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/zh-tw" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/zh-tw" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">首爾 K-POP 夜店</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             K-POP 粉絲真正會去首爾的地方。整夜播放偶像金曲的夜店誠實指南 — 弘大、江南、真實價格、中文友善場所。
           </p>
         </header>
@@ -97,33 +97,33 @@ export default function ZhTwKpopClubsPage() {
           <h2 className="text-[20px] font-black">首爾頂級 K-POP 夜店</h2>
           <div className="space-y-3">
             {KPOP_VENUES.map((v) => (
-              <div key={v.name} className="p-5 rounded-2xl bg-[#1C1C1E] border border-neutral-800 space-y-2">
+              <div key={v.name} className="p-5 rounded-2xl bg-card border border-border space-y-2">
                 <div className="flex items-baseline justify-between gap-2">
-                  <p className="font-bold text-[15px] text-neutral-100">{v.name}</p>
-                  <p className="text-[12px] text-neutral-500">{v.district}</p>
+                  <p className="font-bold text-[15px] text-foreground">{v.name}</p>
+                  <p className="text-[12px] text-muted-foreground">{v.district}</p>
                 </div>
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{v.vibe}</p>
-                <p className="text-[12px] text-amber-400">最適合: {v.bestFor}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{v.vibe}</p>
+                <p className="text-[12px] text-brand-amber">最適合: {v.bestFor}</p>
               </div>
             ))}
           </div>
         </section>
         <section className="space-y-3 text-center">
           <h2 className="text-[20px] font-black">K-POP 旅客預訂建議</h2>
-          <p className="text-[13px] text-neutral-400 leading-relaxed">
+          <p className="text-[13px] text-muted-foreground leading-relaxed">
             大多數 K-POP 旅客直接前往弘大 NB2。可行 — 但週末排隊可能 90 分鐘。如果您想確保入場並預訂包廂，通過 NightFlow 預訂，我們會直接聯絡弘大 K-POP 夜店，用中文為您確認座位。
           </p>
-          <Link href="/zh-tw" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">
+          <Link href="/zh-tw" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 透過 NightFlow 預訂
           </Link>
         </section>
         <section className="space-y-2 pt-4">
           <h2 className="text-[20px] font-black">相關指南</h2>
-          <ul className="space-y-1 text-[13px] text-neutral-400">
-            <li><Link className="hover:text-white" href="/zh-tw/clubs/hongdae">弘大夜店 — 完整指南 →</Link></li>
-            <li><Link className="hover:text-white" href="/zh-tw/clubs/gangnam">江南夜店 — 完整指南 →</Link></li>
-            <li><Link className="hover:text-white" href="/zh-tw/vip-tables">首爾 VIP 包廂預訂 →</Link></li>
-            <li><Link className="hover:text-white" href="/zh-tw/faq">首爾夜店 FAQ →</Link></li>
+          <ul className="space-y-1 text-[13px] text-muted-foreground">
+            <li><Link className="hover:text-foreground" href="/zh-tw/clubs/hongdae">弘大夜店 — 完整指南 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh-tw/clubs/gangnam">江南夜店 — 完整指南 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh-tw/vip-tables">首爾 VIP 包廂預訂 →</Link></li>
+            <li><Link className="hover:text-foreground" href="/zh-tw/faq">首爾夜店 FAQ →</Link></li>
           </ul>
         </section>
       </div>

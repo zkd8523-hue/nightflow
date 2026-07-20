@@ -31,8 +31,8 @@ interface BidHistoryProps {
 export const BidHistory = memo(function BidHistory({ bids, currentBid, vipUserIds, onBidderClick }: BidHistoryProps) {
   if (bids.length === 0) {
     return (
-      <div className="text-center py-12 bg-neutral-900/30 rounded-3xl border border-dashed border-neutral-800/50">
-        <p className="text-neutral-500 font-medium text-sm">아직 입찰 없음 · 지금이 기회예요 🔥</p>
+      <div className="text-center py-12 bg-card/30 rounded-3xl border border-dashed border-border/50">
+        <p className="text-muted-foreground font-medium text-sm">아직 입찰 없음 · 지금이 기회예요 🔥</p>
       </div>
     );
   }
@@ -49,14 +49,14 @@ export const BidHistory = memo(function BidHistory({ bids, currentBid, vipUserId
               key={bid.id}
               onClick={() => onBidderClick?.(bid.bidder_id)}
               className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${index === 0
-                ? "bg-neutral-900/80 border-neutral-700/50 shadow-lg"
-                : "bg-neutral-900/30 border-neutral-800/30"
-                } ${onBidderClick ? "cursor-pointer hover:border-neutral-600" : ""}`}
+                ? "bg-card/80 border-border/50 shadow-lg"
+                : "bg-card/30 border-border/30"
+                } ${onBidderClick ? "cursor-pointer hover:border-border" : ""}`}
             >
               <div className="flex items-center gap-3">
-                <div className={`relative w-10 h-10 rounded-full bg-neutral-800 border flex items-center justify-center overflow-hidden ${isBidderVip ? "border-white/40" : "border-neutral-700"
+                <div className={`relative w-10 h-10 rounded-full bg-muted border flex items-center justify-center overflow-hidden ${isBidderVip ? "border-white/40" : "border-border"
                   }`}>
-                  <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-neutral-500 uppercase">
+                  <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-muted-foreground uppercase">
                     {getBidderDisplay(bid.bidder).substring(0, 1) || "익"}
                   </span>
                   {bid.bidder?.profile_image && (
@@ -69,27 +69,27 @@ export const BidHistory = memo(function BidHistory({ bids, currentBid, vipUserId
                   )}
                 </div>
                 <div>
-                  <p className="font-bold text-[14px] text-white flex items-center gap-1.5">
+                  <p className="font-bold text-[14px] text-foreground flex items-center gap-1.5">
                     {getBidderDisplay(bid.bidder)}
                     {bid.bidder && "deal_amount_total" in bid.bidder && (
                       <TrustBadge tier={getDealTier((bid.bidder as { deal_amount_total?: number | null }).deal_amount_total ?? 0)} size="sm" />
                     )}
                     {isBidderVip && (
-                      <span className="text-amber-500 text-[11px]" title="VIP">⭐</span>
+                      <span className="text-brand-amber text-[11px]" title="VIP">⭐</span>
                     )}
                   </p>
-                  <p className="text-[11px] text-neutral-500 font-medium">
+                  <p className="text-[11px] text-muted-foreground font-medium">
                     {dayjs(bid.bid_at).fromNow()}
                   </p>
                 </div>
               </div>
               <div className="text-right">
                 <div className="flex flex-col items-end">
-                  <p className={`font-black tracking-tight ${isHighest ? "text-white text-[18px]" : "text-neutral-300 text-[16px]"}`}>
+                  <p className={`font-black tracking-tight ${isHighest ? "text-foreground text-[18px]" : "text-foreground/80 text-[16px]"}`}>
                     {formatPrice(bid.bid_amount)}
                   </p>
                   {isHighest && (
-                    <span className="text-[9px] font-black text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded uppercase tracking-tighter">
+                    <span className="text-[9px] font-black text-foreground/80 bg-muted px-1.5 py-0.5 rounded uppercase tracking-tighter">
                       최고 입찰
                     </span>
                   )}

@@ -107,17 +107,17 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                 <div className="space-y-6">
                     {/* 1. 연락처 정보 */}
                     <div className="space-y-4">
-                        <h3 className="text-white font-bold flex items-center gap-2">
-                            <Smartphone className="w-4 h-4 text-neutral-500" />
+                        <h3 className="text-foreground font-bold flex items-center gap-2">
+                            <Smartphone className="w-4 h-4 text-muted-foreground" />
                             연락처 정보
                         </h3>
                         <div className="space-y-2">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">닉네임 (활동명)</Label>
+                            <Label className="text-muted-foreground text-xs font-bold uppercase">닉네임 (활동명)</Label>
                             <Input
                                 {...form.register("display_name")}
                                 placeholder="경매에 표시될 활동명"
                                 maxLength={16}
-                                className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
+                                className="bg-card border-border text-foreground h-12 focus:ring-white"
                             />
                             {form.formState.errors.display_name && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.display_name?.message?.toString()}</p>
@@ -126,7 +126,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                         {/* 휴대폰 번호 (본인인증은 로그인/가입 단계에서 완료) */}
                         <div className="space-y-2">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">휴대폰 번호</Label>
+                            <Label className="text-muted-foreground text-xs font-bold uppercase">휴대폰 번호</Label>
                             <Input
                                 value={form.watch("phone")}
                                 onChange={(e) => {
@@ -136,7 +136,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                 inputMode="numeric"
                                 maxLength={11}
                                 placeholder="01012345678"
-                                className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
+                                className="bg-card border-border text-foreground h-12 focus:ring-white"
                             />
                             {form.formState.errors.phone && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.phone?.message?.toString()}</p>
@@ -145,9 +145,9 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                         {/* Instagram ID (Required) */}
                         <div className="space-y-2">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">인스타그램 아이디 *</Label>
+                            <Label className="text-muted-foreground text-xs font-bold uppercase">인스타그램 아이디 *</Label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600 font-bold">@</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">@</span>
                                 <Input
                                     {...form.register("instagram", {
                                         onChange: (e) => {
@@ -155,10 +155,10 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                         },
                                     })}
                                     placeholder="your_instagram_id"
-                                    className="bg-neutral-900 border-neutral-800 text-white h-12 pl-8 font-mono focus:ring-white"
+                                    className="bg-card border-border text-foreground h-12 pl-8 font-mono focus:ring-white"
                                 />
                             </div>
-                            <p className="text-neutral-600 text-[10px]">파트너 브랜딩 채널로 사용됩니다 (필수)</p>
+                            <p className="text-muted-foreground text-[10px]">파트너 브랜딩 채널로 사용됩니다 (필수)</p>
                             {form.formState.errors.instagram && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.instagram?.message?.toString()}</p>
                             )}
@@ -166,7 +166,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
 
                         {/* 연락 수단 선택 */}
                         <div className="space-y-3">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">고객에게 표시할 연락 수단을 선택해주세요 (필수, 최소 1개)</Label>
+                            <Label className="text-muted-foreground text-xs font-bold uppercase">고객에게 표시할 연락 수단을 선택해주세요 (필수, 최소 1개)</Label>
                             <div className="flex flex-wrap gap-2">
                                 {([
                                     { value: "dm" as ContactMethodType, label: "인스타 DM", icon: Instagram },
@@ -188,8 +188,8 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                             }}
                                             className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all ${
                                                 isSelected
-                                                    ? "bg-white text-black"
-                                                    : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                                                    ? "bg-inverse text-inverse-foreground"
+                                                    : "bg-muted text-muted-foreground hover:bg-muted"
                                             }`}
                                         >
                                             <Icon className="w-3.5 h-3.5" />
@@ -198,13 +198,13 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                     );
                                 })}
                             </div>
-                            <p className="text-neutral-600 text-[10px]">
+                            <p className="text-muted-foreground text-[10px]">
                                 {preferredMethods.length === 0 ? "최소 1개는 선택해야 신청할 수 있어요" : "선택한 수단만 표시됩니다"}
                             </p>
                             {preferredMethods.includes("kakao") && (
                                 <div className="space-y-2 pt-1">
                                     <div className="flex items-center justify-between">
-                                        <Label className="text-neutral-500 text-xs font-bold uppercase flex items-center gap-1.5">
+                                        <Label className="text-muted-foreground text-xs font-bold uppercase flex items-center gap-1.5">
                                             <MessageCircle className="w-3.5 h-3.5" />
                                             오픈채팅 URL
                                         </Label>
@@ -213,7 +213,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                     <Input
                                         {...form.register("kakao_open_chat_url")}
                                         placeholder="https://open.kakao.com/o/..."
-                                        className="bg-neutral-900 border-neutral-800 text-white h-12 font-mono text-sm focus:ring-white"
+                                        className="bg-card border-border text-foreground h-12 font-mono text-sm focus:ring-white"
                                     />
                                     {form.formState.errors.kakao_open_chat_url && (
                                         <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.kakao_open_chat_url?.message?.toString()}</p>
@@ -227,11 +227,11 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                     {/* 2. 활동 지역 */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-white font-bold flex items-center gap-2">
-                                <MapPin className="w-4 h-4 text-neutral-500" />
+                            <h3 className="text-foreground font-bold flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-muted-foreground" />
                                 주력 활동 지역
                             </h3>
-                            <span className="text-neutral-500 text-[10px]">복수 선택 가능</span>
+                            <span className="text-muted-foreground text-[10px]">복수 선택 가능</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {MAIN_AREAS.map((a) => {
@@ -247,8 +247,8 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                             form.setValue("area", next, { shouldValidate: true });
                                         }}
                                         className={`px-4 py-2 rounded-full border text-sm font-bold transition-all ${isSelected
-                                            ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                                            : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
+                                            ? "bg-inverse text-inverse-foreground border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                                            : "bg-card text-muted-foreground border-border hover:border-border"
                                             }`}
                                     >
                                         {a}
@@ -259,8 +259,8 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                 type="button"
                                 onClick={() => setShowOtherCities(!showOtherCities)}
                                 className={`px-4 py-2 rounded-full border text-sm font-bold transition-all ${hasOtherCity || showOtherCities
-                                    ? "bg-white text-black border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
-                                    : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
+                                    ? "bg-inverse text-inverse-foreground border-white shadow-[0_0_15px_rgba(255,255,255,0.3)]"
+                                    : "bg-card text-muted-foreground border-border hover:border-border"
                                     }`}
                             >
                                 다른 지역
@@ -281,8 +281,8 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                                 form.setValue("area", next, { shouldValidate: true });
                                             }}
                                             className={`px-3 py-1.5 rounded-full border text-xs font-bold transition-all ${isSelected
-                                                ? "bg-white text-black border-white"
-                                                : "bg-neutral-900 text-neutral-500 border-neutral-800 hover:border-neutral-700"
+                                                ? "bg-inverse text-inverse-foreground border-white"
+                                                : "bg-card text-muted-foreground border-border hover:border-border"
                                                 }`}
                                         >
                                             {city}
@@ -299,20 +299,20 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                     {/* 3. 소속 클럽 */}
                     <div className="space-y-4">
                         <div className="flex items-center justify-between">
-                            <h3 className="text-white font-bold flex items-center gap-2">
-                                <Building2 className="w-4 h-4 text-neutral-500" />
+                            <h3 className="text-foreground font-bold flex items-center gap-2">
+                                <Building2 className="w-4 h-4 text-muted-foreground" />
                                 소속 클럽
                             </h3>
-                            <span className="text-neutral-500 text-[10px]">여러 개 등록 가능</span>
+                            <span className="text-muted-foreground text-[10px]">여러 개 등록 가능</span>
                         </div>
 
                         {/* 대표 클럽명 */}
                         <div className="space-y-2">
-                            <Label className="text-neutral-500 text-xs font-bold uppercase">클럽명 *</Label>
+                            <Label className="text-muted-foreground text-xs font-bold uppercase">클럽명 *</Label>
                             <Input
                                 {...form.register("club_name")}
                                 placeholder="예: OCTAGON"
-                                className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white"
+                                className="bg-card border-border text-foreground h-12 focus:ring-white"
                             />
                             {form.formState.errors.club_name && (
                                 <p className="text-red-500 text-[10px] font-bold">{form.formState.errors.club_name?.message?.toString()}</p>
@@ -326,12 +326,12 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                                     value={name}
                                     onChange={(e) => setExtraClubs(prev => prev.map((v, i) => i === idx ? e.target.value : v))}
                                     placeholder={`추가 클럽 ${idx + 1}`}
-                                    className="bg-neutral-900 border-neutral-800 text-white h-12 focus:ring-white flex-1"
+                                    className="bg-card border-border text-foreground h-12 focus:ring-white flex-1"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setExtraClubs(prev => prev.filter((_, i) => i !== idx))}
-                                    className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-500 hover:text-red-400 hover:border-red-500/30 transition-colors flex items-center justify-center shrink-0"
+                                    className="w-12 h-12 rounded-xl bg-card border border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30 transition-colors flex items-center justify-center shrink-0"
                                     aria-label="클럽 삭제"
                                 >
                                     <X className="w-4 h-4" />
@@ -343,12 +343,12 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                             <button
                                 type="button"
                                 onClick={() => setExtraClubs(prev => [...prev, ""])}
-                                className="w-full h-11 rounded-xl border border-dashed border-neutral-700 text-neutral-400 font-bold text-sm hover:border-neutral-500 hover:text-white transition-colors flex items-center justify-center gap-2"
+                                className="w-full h-11 rounded-xl border border-dashed border-border text-muted-foreground font-bold text-sm hover:border-border hover:text-foreground transition-colors flex items-center justify-center gap-2"
                             >
                                 <Plus className="w-4 h-4" /> 클럽 추가
                             </button>
                         )}
-                        <p className="text-neutral-600 text-[10px] leading-relaxed">
+                        <p className="text-muted-foreground text-[10px] leading-relaxed">
                             여러 클럽을 운영하면 클럽명을 추가하세요. 주소 등 상세 정보는 관리자가 등록합니다.
                         </p>
                     </div>
@@ -356,18 +356,18 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                 </div>
 
                 {/* 클럽 정보 사용 동의 */}
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
+                <div className="bg-card border border-border rounded-2xl p-4">
                     <label className="flex items-start gap-3 cursor-pointer">
                         <input
                             type="checkbox"
                             {...form.register("club_info_consent")}
-                            className="mt-1 w-5 h-5 rounded border-neutral-700 bg-neutral-950 accent-green-500 cursor-pointer shrink-0"
+                            className="mt-1 w-5 h-5 rounded border-border bg-background accent-green-500 cursor-pointer shrink-0"
                         />
                         <div className="flex-1 space-y-1.5">
-                            <p className="text-[13px] text-white font-bold leading-snug">
+                            <p className="text-[13px] text-foreground font-bold leading-snug">
                                 클럽 정보 사용에 동의합니다 <span className="text-red-500">*</span>
                             </p>
-                            <p className="text-[11.5px] text-neutral-400 leading-relaxed break-keep">
+                            <p className="text-[11.5px] text-muted-foreground leading-relaxed break-keep">
                                 회원이 등록한 클럽의 상호·로고·이미지·매장 사진을 NightFlow 서비스
                                 운영 및 홍보 목적(앱 내 노출, SNS, 광고)에 사용하는 것에 동의합니다.
                                 회원은 언제든지 사용 중단을 요청할 수 있으며, 회사는 즉시 조치합니다.
@@ -384,7 +384,7 @@ export function MDApplyForm({ initialUser }: { initialUser: User }) {
                 <Button
                     type="submit"
                     disabled={loading || !form.watch("club_info_consent")}
-                    className="w-full h-14 bg-white text-black font-black text-lg hover:bg-neutral-200 rounded-2xl flex items-center justify-center gap-2 group transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-14 bg-inverse text-inverse-foreground font-black text-lg hover:opacity-90 rounded-2xl flex items-center justify-center gap-2 group transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {loading ? "신청 정보를 전송 중..." : (
                         <>

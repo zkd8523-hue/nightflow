@@ -29,15 +29,15 @@ export default async function MDFloorPlanPage() {
 
   if (!club) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] p-4">
+      <div className="min-h-screen bg-background p-4">
         <div className="max-w-2xl mx-auto">
           <div className="space-y-4">
-            <h1 className="text-white text-2xl font-black">플로어맵 관리</h1>
-            <div className="bg-neutral-900/50 border border-neutral-800 rounded-2xl p-6 text-center space-y-4">
-              <p className="text-neutral-400">등록된 클럽이 없습니다.</p>
+            <h1 className="text-foreground text-2xl font-black">플로어맵 관리</h1>
+            <div className="bg-card/50 border border-border rounded-2xl p-6 text-center space-y-4">
+              <p className="text-muted-foreground">등록된 클럽이 없습니다.</p>
               <Link
                 href="/md/clubs/new"
-                className="inline-block px-5 py-2.5 bg-white text-black font-bold text-sm rounded-xl hover:bg-neutral-200 transition-colors"
+                className="inline-block px-5 py-2.5 bg-inverse text-inverse-foreground font-bold text-sm rounded-xl hover:opacity-90 transition-colors"
               >
                 바로 등록하기 →
               </Link>
@@ -49,11 +49,11 @@ export default async function MDFloorPlanPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-2xl mx-auto pb-12">
         <div className="space-y-2 mb-8">
-          <h1 className="text-white text-2xl font-black">{club.name} 플로어맵</h1>
-          <p className="text-neutral-400 text-sm">
+          <h1 className="text-foreground text-2xl font-black">{club.name} 플로어맵</h1>
+          <p className="text-muted-foreground text-sm">
             테이블 위치를 수정하거나 새로운 테이블을 추가할 수 있습니다.
           </p>
         </div>

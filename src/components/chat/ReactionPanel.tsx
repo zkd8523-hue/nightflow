@@ -55,7 +55,7 @@ export function ReactionPanel({
   return (
     <div
       ref={panelRef}
-      className="absolute z-30 -translate-y-full -translate-x-1/2 left-1/2 -top-1 flex items-center gap-0.5 px-2 py-1.5 rounded-full bg-[#2A2A2C] border border-neutral-700 shadow-xl"
+      className="absolute z-30 -translate-y-full -translate-x-1/2 left-1/2 -top-1 flex items-center gap-0.5 px-2 py-1.5 rounded-full bg-muted border border-border shadow-xl"
       onClick={(e) => e.stopPropagation()}
     >
       {CHAT_REACTION_EMOJIS.map((emoji) => {

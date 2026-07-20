@@ -230,7 +230,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
 
   if (activeOptions.length === 0) {
     return (
-      <p className="text-center py-4 text-neutral-500 text-[12.5px]">
+      <p className="text-center py-4 text-muted-foreground text-[12.5px]">
         먼저 위에서 조각 옵션을 만들면 요일에 배치할 수 있어요.
       </p>
     );
@@ -239,9 +239,9 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[13px] font-black text-white">
+        <p className="text-[13px] font-black text-foreground">
           요일표
-          {isNextWeek && <span className="ml-1.5 text-[11px] text-amber-400 font-black">· 다음 주</span>}
+          {isNextWeek && <span className="ml-1.5 text-[11px] text-brand-amber font-black">· 다음 주</span>}
         </p>
         <button
           type="button"
@@ -249,7 +249,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
           disabled={busy}
           className={`h-7 px-3 rounded-full text-[11px] font-black inline-flex items-center gap-1 transition-colors disabled:opacity-50 ${
             allOn
-              ? "bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+              ? "bg-muted text-foreground/80 hover:bg-muted"
               : "bg-amber-500 text-black hover:bg-amber-400"
           }`}
         >
@@ -257,7 +257,7 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
           {allOn ? "모두 끄기" : "모두 켜기"}
         </button>
       </div>
-      <p className="text-[11px] text-neutral-500 -mt-0.5">
+      <p className="text-[11px] text-muted-foreground -mt-0.5">
         {isNextWeek
           ? "다음 주 요일표예요. 여기서 켠 대로 다음 주에 자동으로 올라가요."
           : "요일에 옵션을 켜두면 그 요일에 자동으로 조각이 올라가요."}
@@ -268,10 +268,10 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
           return (
             <div key={dow} className="flex items-start gap-2.5">
               <div className="w-11 pt-1.5 flex flex-col items-center leading-tight shrink-0">
-                <span className={`text-[13px] font-black ${isWeekend ? "text-amber-400" : "text-white"}`}>
+                <span className={`text-[13px] font-black ${isWeekend ? "text-brand-amber" : "text-foreground"}`}>
                   {DOW_LABEL[dow]}
                 </span>
-                <span className="text-[10px] text-neutral-600">{displayDates[dow].md}</span>
+                <span className="text-[10px] text-muted-foreground">{displayDates[dow].md}</span>
               </div>
               <div className="flex-1 min-w-0 flex flex-wrap gap-1.5 py-1">
                 {activeOptions.map((o) => {
@@ -283,12 +283,12 @@ export function ShareWeekdayPlanBoard({ clubId, options, plans }: Props) {
                       disabled={busy}
                       onClick={() => toggle(dow, o.id)}
                       className={`px-2.5 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap flex items-center gap-1 transition-colors disabled:opacity-50 ${
-                        on ? "bg-green-500 text-black" : "bg-neutral-900 text-neutral-500 border border-neutral-800"
+                        on ? "bg-green-500 text-black" : "bg-card text-muted-foreground border border-border"
                       }`}
                     >
                       {savingDow === dow && savingOptionId === o.id && <Loader2 className="w-3 h-3 animate-spin" />}
                       {o.label || o.table_info}
-                      <span className={on ? "text-black/60" : "text-neutral-600"}>
+                      <span className={on ? "text-black/60" : "text-muted-foreground"}>
                         {(o.price_per_seat / 10000).toLocaleString()}
                       </span>
                     </button>

@@ -30,7 +30,7 @@ export function DeleteSurveyButton({ surveyId }: { surveyId: string }) {
       type="button"
       onClick={handleDelete}
       disabled={deleting}
-      className="shrink-0 p-1.5 rounded-lg text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
+      className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40"
       aria-label="설문 응답 삭제"
     >
       <Trash2 className="w-4 h-4" />

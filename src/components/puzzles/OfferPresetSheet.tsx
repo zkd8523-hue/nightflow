@@ -69,32 +69,32 @@ export function OfferPresetSheet({ open, onOpenChange, onApply, kind }: OfferPre
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl px-5 pb-10 max-h-[85vh] overflow-y-auto"
+        className="bg-card border-border rounded-t-3xl px-5 pb-10 max-h-[85vh] overflow-y-auto"
       >
         <SheetHeader className="text-left pb-3 p-0">
-          <SheetTitle className="text-white text-[17px] font-black flex items-center gap-2">
-            <Bookmark className="w-4 h-4 text-amber-400" />
+          <SheetTitle className="text-foreground text-[17px] font-black flex items-center gap-2">
+            <Bookmark className="w-4 h-4 text-brand-amber" />
             템플릿 불러오기
           </SheetTitle>
-          <p className="text-[12px] text-neutral-500">저장한 구성을 탭 한 번으로 채워요. (저장은 제안서 보낼 때 물어봐요)</p>
+          <p className="text-[12px] text-muted-foreground">저장한 구성을 탭 한 번으로 채워요. (저장은 제안서 보낼 때 물어봐요)</p>
         </SheetHeader>
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+            <Loader2 className="w-6 h-6 animate-spin text-brand-amber" />
           </div>
         ) : presets.length === 0 ? (
           <div className="text-center py-8">
-            <Bookmark className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
-            <p className="text-neutral-500 text-sm">저장된 템플릿이 없어요.</p>
-            <p className="text-neutral-600 text-xs mt-1">제안서를 보낼 때 &lsquo;템플릿으로 저장&rsquo;을 누르면 여기에 쌓여요.</p>
+            <Bookmark className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">저장된 템플릿이 없어요.</p>
+            <p className="text-muted-foreground text-xs mt-1">제안서를 보낼 때 &lsquo;템플릿으로 저장&rsquo;을 누르면 여기에 쌓여요.</p>
           </div>
         ) : (
           <div className="space-y-2">
             {presets.map((preset) => (
               <div
                 key={preset.id}
-                className="flex items-center justify-between bg-neutral-900 rounded-xl px-4 py-3"
+                className="flex items-center justify-between bg-card rounded-xl border border-border px-4 py-3"
               >
                 <button
                   className="flex-1 text-left min-w-0"
@@ -103,13 +103,13 @@ export function OfferPresetSheet({ open, onOpenChange, onApply, kind }: OfferPre
                     onOpenChange(false);
                   }}
                 >
-                  <p className="text-white font-bold text-[14px] truncate">{preset.name}</p>
-                  <p className="text-neutral-500 text-[12px] mt-0.5 truncate">{presetSummary(preset)}</p>
+                  <p className="text-foreground font-bold text-[14px] truncate">{preset.name}</p>
+                  <p className="text-muted-foreground text-[12px] mt-0.5 truncate">{presetSummary(preset)}</p>
                 </button>
                 <div className="flex items-center gap-2 ml-3 flex-shrink-0">
                   <button
                     onClick={() => handleDelete(preset.id)}
-                    className="text-neutral-600 hover:text-red-400 transition-colors p-1"
+                    className="text-muted-foreground hover:text-red-400 transition-colors p-1"
                     disabled={deleting === preset.id}
                     aria-label="템플릿 삭제"
                   >
@@ -119,7 +119,7 @@ export function OfferPresetSheet({ open, onOpenChange, onApply, kind }: OfferPre
                       <Trash2 className="w-4 h-4" />
                     )}
                   </button>
-                  <ChevronRight className="w-4 h-4 text-neutral-600" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </div>
               </div>
             ))}

@@ -22,18 +22,18 @@ export function SurveyDateRangeFilter({ from, to, preservedParams }: Props) {
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-[11px] text-neutral-500 font-bold w-8">기간</span>
+      <span className="text-[11px] text-muted-foreground font-bold w-8">기간</span>
       <input
         type="date"
         defaultValue={from}
-        className="bg-neutral-800 text-white text-[12px] rounded-lg px-2 py-1 border border-neutral-700 outline-none"
+        className="bg-muted text-foreground text-[12px] rounded-lg px-2 py-1 border border-border outline-none"
         onChange={(e) => navigate({ from: e.target.value })}
       />
-      <span className="text-neutral-600 text-[12px]">~</span>
+      <span className="text-muted-foreground text-[12px]">~</span>
       <input
         type="date"
         defaultValue={to}
-        className="bg-neutral-800 text-white text-[12px] rounded-lg px-2 py-1 border border-neutral-700 outline-none"
+        className="bg-muted text-foreground text-[12px] rounded-lg px-2 py-1 border border-border outline-none"
         onChange={(e) => navigate({ to: e.target.value })}
       />
     </div>

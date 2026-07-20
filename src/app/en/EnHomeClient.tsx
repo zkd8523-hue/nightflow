@@ -77,10 +77,10 @@ function formatBudget(total: number | null, perPerson: number, count: number): s
 
 // ── My requests (로그인 외국인 유저의 내 컨시어지 요청, foreign_requests 기반) ──
 const MY_STATUS_LABEL: Record<string, { label: string; ja: string; zh: string; cls: string }> = {
-  new: { label: "Received", ja: "受付済み", zh: "已收到", cls: "bg-green-500/20 text-green-400 border-green-500/30" },
-  contacted: { label: "In progress", ja: "対応中", zh: "处理中", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
-  done: { label: "Confirmed", ja: "確定", zh: "已确认", cls: "bg-amber-500/20 text-amber-400 border-amber-500/30" },
-  cancelled: { label: "Cancelled", ja: "キャンセル", zh: "已取消", cls: "bg-neutral-700/40 text-neutral-400 border-neutral-700" },
+  new: { label: "Received", ja: "受付済み", zh: "已收到", cls: "bg-green-500/20 text-money border-green-500/30" },
+  contacted: { label: "In progress", ja: "対応中", zh: "处理中", cls: "bg-amber-500/20 text-brand-amber border-amber-500/30" },
+  done: { label: "Confirmed", ja: "確定", zh: "已确认", cls: "bg-amber-500/20 text-brand-amber border-amber-500/30" },
+  cancelled: { label: "Cancelled", ja: "キャンセル", zh: "已取消", cls: "bg-muted/40 text-muted-foreground border-border" },
 };
 
 // 언어 Context — 서버(page.tsx)에서 initialLang을 확정해 EnHomeClient에 prop 주입.
@@ -120,9 +120,9 @@ function MyRequestsTab() {
   if (!isLoading && !user) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-[15px] font-bold text-neutral-300">{tr("Log in to see your requests")}</p>
-        <p className="text-[13px] text-neutral-500">{tr("Track your requests and our replies.")}</p>
-        <Link href={`/login?lang=${lang}`} className="px-7 py-3 rounded-full bg-white text-black font-black text-[14px] hover:bg-neutral-200 transition-colors">
+        <p className="text-[15px] font-bold text-foreground/80">{tr("Log in to see your requests")}</p>
+        <p className="text-[13px] text-muted-foreground">{tr("Track your requests and our replies.")}</p>
+        <Link href={`/login?lang=${lang}`} className="px-7 py-3 rounded-full bg-inverse text-inverse-foreground font-black text-[14px] hover:opacity-90 transition-colors">
           {tr("Log in")}
         </Link>
       </div>
@@ -132,7 +132,7 @@ function MyRequestsTab() {
   if (isLoading || flags === null) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-[13px] text-neutral-500">{tr("Loading…")}</p>
+        <p className="text-[13px] text-muted-foreground">{tr("Loading…")}</p>
       </div>
     );
   }
@@ -140,8 +140,8 @@ function MyRequestsTab() {
   if (flags.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-[15px] font-bold text-neutral-300">{tr("No requests yet")}</p>
-        <p className="text-[13px] text-neutral-500">{tr("Pick a club & we'll book it for you.")}</p>
+        <p className="text-[15px] font-bold text-foreground/80">{tr("No requests yet")}</p>
+        <p className="text-[13px] text-muted-foreground">{tr("Pick a club & we'll book it for you.")}</p>
         <Link href={`/flags/new?lang=${lang}`} className="px-7 py-3 rounded-full bg-amber-500 text-black font-black text-[14px] hover:bg-amber-400 transition-colors">
           {tr("Book with NightFlow")}
         </Link>
@@ -151,7 +151,7 @@ function MyRequestsTab() {
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6 space-y-2.5">
-      <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">{tr("My requests")}</p>
+      <p className="text-[13px] font-black text-foreground/80 uppercase tracking-widest">{tr("My requests")}</p>
       {flags.map((f) => {
         const area = f.area ? areaLabel(f.area, lang) : tr("Anywhere in Seoul");
         const date = formatEventDate(f.event_date);
@@ -160,16 +160,16 @@ function MyRequestsTab() {
         return (
           <div
             key={f.id}
-            className="flex items-center justify-between gap-3 rounded-2xl bg-[#1C1C1E] border border-neutral-800 p-4"
+            className="flex items-center justify-between gap-3 rounded-2xl bg-card border border-border p-4"
           >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-black text-[15px]">{area}</span>
-                <span className="text-neutral-500 text-[12px]">· {date}</span>
+                <span className="text-muted-foreground text-[12px]">· {date}</span>
               </div>
               <div className="flex items-center gap-2 mt-1 text-[13px]">
-                {budget && <span className="font-black text-amber-400">{budget}</span>}
-                <span className="text-neutral-500">{f.group_size} {tr("people")}</span>
+                {budget && <span className="font-black text-brand-amber">{budget}</span>}
+                <span className="text-muted-foreground">{f.group_size} {tr("people")}</span>
               </div>
             </div>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${st.cls}`}>
@@ -191,23 +191,23 @@ function FlagCarouselCard({ flag }: { flag: FlagItem }) {
   return (
     <Link
       href={`/flags/${flag.id}?lang=${lang}`}
-      className="block shrink-0 w-[180px] rounded-2xl bg-[#1C1C1E] border border-neutral-800 p-4 snap-start active:opacity-70 transition-opacity"
+      className="block shrink-0 w-[180px] rounded-2xl bg-card border border-border p-4 snap-start active:opacity-70 transition-opacity"
     >
       <div className="flex items-start justify-between gap-1">
         <div className="min-w-0">
           <p className="font-black text-[15px] leading-tight truncate">{area}</p>
-          <p className="text-[12px] text-neutral-400 mt-0.5">{date}</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5">{date}</p>
         </div>
         {/* 우상단: 한국 국기 (한국인이 올린 깃발 표시) */}
         <span className="text-[18px] leading-none shrink-0">🇰🇷</span>
       </div>
-      <p className="text-[18px] font-black text-amber-400 mt-3">{budget}</p>
-      <div className="flex items-center gap-1.5 mt-1 text-[12px] text-neutral-400">
-        <span className="font-bold text-white">{flag.target_count}{tr(" ppl")}</span>
+      <p className="text-[18px] font-black text-brand-amber mt-3">{budget}</p>
+      <div className="flex items-center gap-1.5 mt-1 text-[12px] text-muted-foreground">
+        <span className="font-bold text-foreground">{flag.target_count}{tr(" ppl")}</span>
         {flag.offerCount > 0 && (
           <>
-            <span className="text-neutral-700">·</span>
-            <span className="text-green-400 font-bold">{flag.offerCount} {tr("offers")}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-money font-bold">{flag.offerCount} {tr("offers")}</span>
           </>
         )}
       </div>
@@ -248,15 +248,15 @@ function ClubThumb({ club }: { club: ClubItem }) {
       href={`/${lang}/clubs?club=${club.id}`}
       className="shrink-0 w-[120px] snap-start active:opacity-70 transition-opacity"
     >
-      <div className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-neutral-800 border border-neutral-800">
+      <div className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-muted border border-border">
         {club.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={club.thumbnail_url} alt={name} loading="lazy" className="w-full h-full object-cover" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-neutral-600 text-[11px] font-bold">{tr("No image")}</div>
+          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[11px] font-bold">{tr("No image")}</div>
         )}
       </div>
-      <p className="text-[12px] font-bold text-neutral-200 mt-1.5 truncate">{name}</p>
+      <p className="text-[12px] font-bold text-foreground mt-1.5 truncate">{name}</p>
     </Link>
   );
 }
@@ -264,12 +264,12 @@ function ClubThumb({ club }: { club: ClubItem }) {
 function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: React.RefObject<HTMLAnchorElement | null> }) {
   const { lang, tr } = useTr();
   return (
-    <div className="pt-5 pb-6 border-b border-neutral-900 space-y-5">
+    <div className="pt-5 pb-6 border-b border-border space-y-5">
       <div className="px-4 flex items-center justify-between gap-2">
-        <p className="text-[22px] font-black text-neutral-100 tracking-tight">{tr("Top clubs in Seoul")}</p>
+        <p className="text-[22px] font-black text-foreground tracking-tight">{tr("Top clubs in Seoul")}</p>
         <Link
           href={`/${lang}/clubs`}
-          className="shrink-0 text-[12px] font-bold text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap"
+          className="shrink-0 text-[12px] font-bold text-brand-amber hover:text-brand-amber transition-colors whitespace-nowrap"
         >
           {tr("See all")} →
         </Link>
@@ -282,7 +282,7 @@ function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: 
             <div className="px-4">
               <p className="text-[15px] leading-snug">
                 <span className="font-black">{r.emoji} {areaLabel(r.ko, lang)}</span>
-                <span className="text-neutral-400 font-medium text-[13px]"> — {tr(r.tagline)}</span>
+                <span className="text-muted-foreground font-medium text-[13px]"> — {tr(r.tagline)}</span>
               </p>
             </div>
             {regionClubs.length > 0 && (
@@ -296,7 +296,7 @@ function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: 
 
       {/* 지역 버튼 → 해당 지역 깃발 등록 바로 */}
       <div className="px-4 space-y-2.5">
-        <p className="text-center text-[13px] font-bold text-neutral-300">{tr("Which area do you want?")}</p>
+        <p className="text-center text-[13px] font-bold text-foreground/80">{tr("Which area do you want?")}</p>
         <div className="grid grid-cols-2 gap-3">
           {REGIONS.map((r) =>
             !isFlagAreaOpen(r.ko) ? (
@@ -304,10 +304,10 @@ function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: 
               <div
                 key={r.ko}
                 aria-disabled
-                className="relative flex items-center justify-center py-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 opacity-50 cursor-not-allowed"
+                className="relative flex items-center justify-center py-4 rounded-2xl bg-card border border-border opacity-50 cursor-not-allowed"
               >
                 <span className="text-[16px] font-black">{areaLabel(r.ko, lang)}</span>
-                <span className="absolute top-1.5 right-2.5 text-[10px] font-bold text-amber-400/80">
+                <span className="absolute top-1.5 right-2.5 text-[10px] font-bold text-brand-amber dark:text-brand-amber/80">
                   {tr("Soon")}
                 </span>
               </div>
@@ -315,7 +315,7 @@ function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: 
               <Link
                 key={r.ko}
                 href={`/flags/new?lang=${lang}&area=${encodeURIComponent(r.ko)}`}
-                className="flex items-center justify-center py-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-amber-500/50 active:scale-[0.98] transition-all"
+                className="flex items-center justify-center py-4 rounded-2xl bg-card border border-border hover:border-amber-500/50 active:scale-[0.98] transition-all"
               >
                 <span className="text-[16px] font-black">{areaLabel(r.ko, lang)}</span>
               </Link>
@@ -324,7 +324,7 @@ function RegionSection({ clubs, bookCtaRef }: { clubs: ClubItem[]; bookCtaRef?: 
           {/* 서울 어디든: 가장 많은 오퍼 */}
           <Link
             href={`/flags/new?lang=${lang}&area=${encodeURIComponent("서울 어디든")}`}
-            className="flex items-center justify-center py-4 rounded-2xl bg-[#1C1C1E] border border-neutral-800 hover:border-amber-500/50 active:scale-[0.98] transition-all"
+            className="flex items-center justify-center py-4 rounded-2xl bg-card border border-border hover:border-amber-500/50 active:scale-[0.98] transition-all"
           >
             <span className="text-[16px] font-black">{areaLabel("서울 어디든", lang)}</span>
           </Link>
@@ -368,12 +368,12 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto relative">
       {/* ① 타겟 후킹 + 설명 (헤더 아래) */}
-      <div className="px-5 pt-6 pb-5 text-center space-y-3 border-b border-neutral-900">
+      <div className="px-5 pt-6 pb-5 text-center space-y-3 border-b border-border">
         <h1 className="text-[24px] font-black leading-[1.18] tracking-tight">
           {tr("Want an unforgettable night in Seoul Club?")}
         </h1>
-        <p className="text-[18px] font-black text-amber-400 pt-1">{tr("You're in the right place.")}</p>
-        <p className="text-[14px] text-neutral-200 leading-relaxed font-medium">
+        <p className="text-[18px] font-black text-brand-amber pt-1">{tr("You're in the right place.")}</p>
+        <p className="text-[14px] text-foreground/90 leading-relaxed font-medium">
           {tr("Pick a club & your budget")}<br />
           {tr("We book it with the club for you.")}<br />
           {tr("No Korean, no hassle.")}
@@ -381,12 +381,12 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
       </div>
 
       {/* ② 신뢰 배지 — 被宰(바가지) 공포 해결. 프리미엄 유지 위해 초록 체크만(붉은색 X) */}
-      <div className="px-5 py-4 border-b border-neutral-900">
+      <div className="px-5 py-4 border-b border-border">
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 max-w-[320px] mx-auto">
           {["No markup", "Real price", "Zero fee", "No deposit"].map((b) => (
             <div key={b} className="flex items-center gap-1.5">
-              <Check className="w-4 h-4 text-green-500 shrink-0" strokeWidth={3} />
-              <span className="text-[13px] font-bold text-neutral-200">{tr(b)}</span>
+              <Check className="w-4 h-4 text-money shrink-0" strokeWidth={3} />
+              <span className="text-[13px] font-bold text-foreground">{tr(b)}</span>
             </div>
           ))}
         </div>
@@ -394,10 +394,10 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
 
       {/* ③ 한국인이 지금 올린 깃발 = 소셜 프루프 (캐러셀) */}
       {flags.length > 0 && (
-        <div className="pt-5 pb-5 border-b border-neutral-900">
+        <div className="pt-5 pb-5 border-b border-border">
           <div className="px-4 mb-3">
-            <p className="text-[14px] font-black text-neutral-200">{tr("🇰🇷 Koreans are doing it right now")}</p>
-            <p className="text-[12px] text-neutral-500 mt-0.5">{tr("Live requests from people in Seoul")}</p>
+            <p className="text-[14px] font-black text-foreground">{tr("🇰🇷 Koreans are doing it right now")}</p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">{tr("Live requests from people in Seoul")}</p>
           </div>
           <div className="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x snap-mandatory">
             {flags.map((f) => <FlagCarouselCard key={f.id} flag={f} />)}
@@ -407,13 +407,13 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
 
       {/* How it works (드롭다운) */}
       <div className="px-4 pb-6">
-        <details className="group rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden">
+        <details className="group rounded-2xl bg-card border border-border overflow-hidden">
           <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer list-none select-none">
             <span className="flex items-center gap-2 font-bold text-[14px]">
-              <Info className="w-4 h-4 text-neutral-400" />
+              <Info className="w-4 h-4 text-muted-foreground" />
               {tr("How it works?")}
             </span>
-            <ChevronDown className="w-4 h-4 text-neutral-500 group-open:rotate-180 transition-transform" />
+            <ChevronDown className="w-4 h-4 text-muted-foreground group-open:rotate-180 transition-transform" />
           </summary>
           <div className="px-4 pb-4 space-y-3">
             {[
@@ -422,19 +422,19 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
               { n: "3", title: "Walk in like a VIP", body: "Best table booked, no line, no broker. Show your passport at the door (19+)." },
             ].map((s) => (
               <div key={s.n} className="flex gap-3">
-                <div className="shrink-0 w-7 h-7 rounded-full bg-white text-black font-black text-[12px] flex items-center justify-center">{s.n}</div>
+                <div className="shrink-0 w-7 h-7 rounded-full bg-inverse text-inverse-foreground font-black text-[12px] flex items-center justify-center">{s.n}</div>
                 <div className="space-y-0.5">
                   <p className="font-bold text-[14px]">{tr(s.title)}</p>
-                  <p className="text-[12px] text-neutral-500 leading-relaxed">{tr(s.body)}</p>
+                  <p className="text-[12px] text-muted-foreground leading-relaxed">{tr(s.body)}</p>
                 </div>
               </div>
             ))}
             {/* Zero 바가지 보장 — How it works 안에 포함 */}
-            <div className="mt-1 pt-3 border-t border-neutral-800">
-              <p className="flex items-center gap-2 text-[13px] font-black text-green-400">{tr("🛡️ Zero rip-off, guaranteed")}</p>
-              <p className="text-[12px] text-neutral-400 leading-relaxed mt-1">
+            <div className="mt-1 pt-3 border-t border-border">
+              <p className="flex items-center gap-2 text-[13px] font-black text-money">{tr("🛡️ Zero rip-off, guaranteed")}</p>
+              <p className="text-[12px] text-muted-foreground leading-relaxed mt-1">
                 {tr("Pay more than the standard price?")}{" "}
-                <span className="font-bold text-white">{tr("We refund you 200%.")}</span>
+                <span className="font-bold text-foreground">{tr("We refund you 200%.")}</span>
               </p>
             </div>
           </div>
@@ -446,7 +446,7 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
 
       {/* Safety tips */}
       <div className="px-4 pb-6 space-y-3">
-        <p className="text-[13px] font-black text-neutral-300 uppercase tracking-widest">{tr("Know before you go")}</p>
+        <p className="text-[13px] font-black text-foreground/80 uppercase tracking-widest">{tr("Know before you go")}</p>
         {[
           {
             title: "🚩 Common scams to watch for",
@@ -465,14 +465,14 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
             ],
           },
         ].map((t) => (
-          <details key={t.title} className="group rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden">
+          <details key={t.title} className="group rounded-2xl bg-card border border-border overflow-hidden">
             <summary className="flex items-center justify-between gap-3 p-4 cursor-pointer list-none select-none">
               <span className="font-bold text-[14px]">{tr(t.title)}</span>
-              <span className="text-neutral-500 group-open:rotate-180 transition-transform text-[12px]">▾</span>
+              <span className="text-muted-foreground group-open:rotate-180 transition-transform text-[12px]">▾</span>
             </summary>
             <div className="px-4 pb-4 space-y-2">
               {t.items.map((it, i) => (
-                <p key={i} className="text-[12px] text-neutral-400 leading-relaxed">• {tr(it)}</p>
+                <p key={i} className="text-[12px] text-muted-foreground leading-relaxed">• {tr(it)}</p>
               ))}
             </div>
           </details>
@@ -484,20 +484,20 @@ function FlagsTab({ flags, clubs }: { flags: FlagItem[]; clubs: ClubItem[] }) {
 
       {/* 19+ 안내 — 하단 CTA 버튼은 상단 amber CTA와 중복이라 제거 */}
       <div className="px-4 pb-6">
-        <p className="text-center text-[11px] text-neutral-600 leading-relaxed">
+        <p className="text-center text-[11px] text-muted-foreground leading-relaxed">
           {tr("19+ only · Bring your passport to the venue.")}
         </p>
       </div>
 
       {/* 푸터 — 언어 전환 + 약관 링크 + 사업자 정보 (법적 필수) */}
-      <footer className="px-4 pt-5 pb-10 border-t border-neutral-900 space-y-4">
+      <footer className="px-4 pt-5 pb-10 border-t border-border space-y-4">
         <div className="flex justify-center">
           <LangSwitcher />
         </div>
-        <nav className="flex flex-wrap justify-center items-center gap-x-5 gap-y-2 text-[12px] text-neutral-500">
-          <Link href={`/terms?lang=${lang}`} className="hover:text-white transition-colors">{tr("Terms")}</Link>
-          <Link href={`/privacy?lang=${lang}`} className="hover:text-white transition-colors">{tr("Privacy")}</Link>
-          <a href="https://www.instagram.com/nightflow.kr" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">{tr("Contact")}</a>
+        <nav className="flex flex-wrap justify-center items-center gap-x-5 gap-y-2 text-[12px] text-muted-foreground">
+          <Link href={`/terms?lang=${lang}`} className="hover:text-foreground transition-colors">{tr("Terms")}</Link>
+          <Link href={`/privacy?lang=${lang}`} className="hover:text-foreground transition-colors">{tr("Privacy")}</Link>
+          <a href="https://www.instagram.com/nightflow.kr" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors">{tr("Contact")}</a>
         </nav>
         <BusinessInfo lang={lang} />
       </footer>
@@ -536,7 +536,7 @@ function MapTab() {
       </div>
       <div className="space-y-2">
         <h3 className="text-[18px] font-black">{tr("Seoul Club Map")}</h3>
-        <p className="text-[13px] text-neutral-500 leading-relaxed">
+        <p className="text-[13px] text-muted-foreground leading-relaxed">
           {tr("Browse clubs in Gangnam and Hongdae.")}<br />
           {tr("See menus, ratings, and opening hours.")}
         </p>
@@ -544,7 +544,7 @@ function MapTab() {
       <div className="w-full space-y-3">
         <Link
           href={`/${lang}/clubs`}
-          className="block w-full py-4 rounded-xl bg-white text-black font-black text-[15px] hover:bg-neutral-200 transition-colors"
+          className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-[15px] hover:opacity-90 transition-colors"
         >
           {tr("🗺️ Open club map")}
         </Link>
@@ -553,9 +553,9 @@ function MapTab() {
             { label: "Gangnam", emoji: "🍾" },
             { label: "Hongdae", emoji: "🎧" },
           ].map((area) => (
-            <div key={area.label} className="rounded-xl bg-[#1C1C1E] border border-neutral-800 p-3 text-center">
+            <div key={area.label} className="rounded-xl bg-card border border-border p-3 text-center">
               <p className="text-xl mb-1">{area.emoji}</p>
-              <p className="text-[12px] font-bold text-white">{tr(area.label)}</p>
+              <p className="text-[12px] font-bold text-foreground">{tr(area.label)}</p>
             </div>
           ))}
         </div>
@@ -595,25 +595,25 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
   ];
 
   return (
-    <div className="flex flex-col h-screen bg-[#0A0A0A] text-white max-w-lg mx-auto">
+    <div className="flex flex-col h-screen bg-background text-foreground max-w-lg mx-auto">
       {/* 헤더 */}
-      <header className="shrink-0 px-4 pt-3 pb-2 flex items-center justify-between border-b border-neutral-800">
+      <header className="shrink-0 px-4 pt-3 pb-2 flex items-center justify-between border-b border-border">
         {tab === "flags" ? (
           <div>
             <span className="text-[17px] font-black tracking-tight">NightFlow</span>
-            <p className="text-[11px] text-neutral-500 leading-none mt-0.5">{tr("The easiest way to book Seoul clubs.")}</p>
+            <p className="text-[11px] text-muted-foreground leading-none mt-0.5">{tr("The easiest way to book Seoul clubs.")}</p>
           </div>
         ) : (
           <button
             onClick={() => setTab("flags")}
-            className="flex items-center gap-1 -ml-1 px-2 py-1.5 rounded-lg text-white hover:bg-neutral-800 transition-colors"
+            className="flex items-center gap-1 -ml-1 px-2 py-1.5 rounded-lg text-foreground hover:bg-muted transition-colors"
           >
             <ChevronLeft className="w-5 h-5" />
             <span className="text-[15px] font-black">NightFlow</span>
           </button>
         )}
         {isLoading ? (
-          <div className="w-[88px] h-9 rounded-full bg-neutral-800 animate-pulse" />
+          <div className="w-[88px] h-9 rounded-full bg-muted animate-pulse" />
         ) : user ? (
           <Link
             href={`/flags/new?lang=${lang}`}
@@ -624,7 +624,7 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
         ) : (
           <Link
             href={`/login?lang=${lang}`}
-            className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-white text-black font-black text-[13px] hover:bg-neutral-200 transition-colors"
+            className="flex items-center gap-1.5 px-5 py-2 rounded-full bg-inverse text-inverse-foreground font-black text-[13px] hover:opacity-90 transition-colors"
           >
             {tr("Log in")}
           </Link>
@@ -640,16 +640,16 @@ function EnHomeInner({ flags, clubs = [] }: { flags: FlagItem[]; clubs?: ClubIte
       </div>
 
       {/* 하단 탭 바 */}
-      <nav className="shrink-0 border-t border-neutral-800 bg-[#0A0A0A] grid grid-cols-4">
+      <nav className="shrink-0 border-t border-border bg-background grid grid-cols-4">
         {tabs.map(({ code, label, icon }) => (
           <button
             key={code}
             onClick={() => setTab(code)}
             className={`flex flex-col items-center gap-1 py-3 text-[10px] font-bold transition-colors ${
-              tab === code ? "text-white" : "text-neutral-600 hover:text-neutral-400"
+              tab === code ? "text-foreground" : "text-muted-foreground hover:text-muted-foreground"
             }`}
           >
-            <span className={tab === code ? "text-white" : "text-neutral-600"}>{icon}</span>
+            <span className={tab === code ? "text-foreground" : "text-muted-foreground"}>{icon}</span>
             {label}
           </button>
         ))}

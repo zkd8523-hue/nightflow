@@ -60,24 +60,24 @@ export function ChatSharedPuzzleCard({ puzzleId, caption }: Props) {
   }, [puzzleId]);
 
   const captionEl = caption ? (
-    <p className="text-[14px] leading-snug text-white whitespace-pre-wrap break-words px-3 pt-2.5">
+    <p className="text-[14px] leading-snug text-foreground whitespace-pre-wrap break-words px-3 pt-2.5">
       {caption}
     </p>
   ) : null;
 
   if (puzzle === undefined) {
     return (
-      <div className="mt-1 rounded-2xl border border-neutral-700 bg-[#1C1C1E] max-w-[260px] overflow-hidden">
+      <div className="mt-1 rounded-2xl border border-border bg-card max-w-[260px] overflow-hidden">
         {captionEl}
-        <div className="m-3 h-14 rounded-xl bg-neutral-800/60 animate-pulse" />
+        <div className="m-3 h-14 rounded-xl bg-muted/60 animate-pulse" />
       </div>
     );
   }
   if (puzzle === null) {
     return (
-      <div className="mt-1 rounded-2xl border border-neutral-800 bg-[#1C1C1E] max-w-[260px] overflow-hidden">
+      <div className="mt-1 rounded-2xl border border-border bg-card max-w-[260px] overflow-hidden">
         {captionEl}
-        <p className="px-3 py-2.5 text-[12px] text-neutral-500">사라진 조각이에요</p>
+        <p className="px-3 py-2.5 text-[12px] text-muted-foreground">사라진 조각이에요</p>
       </div>
     );
   }
@@ -90,32 +90,32 @@ export function ChatSharedPuzzleCard({ puzzleId, caption }: Props) {
   const full = puzzle.current_count >= puzzle.target_count;
 
   return (
-    <div className="mt-1 rounded-2xl border border-neutral-700 bg-[#1C1C1E] max-w-[260px] overflow-hidden">
+    <div className="mt-1 rounded-2xl border border-border bg-card max-w-[260px] overflow-hidden">
       {captionEl}
       <Link
         href={`/flags/${puzzle.id}`}
         onClick={(e) => e.stopPropagation()}
         className={`block px-3 py-2 hover:bg-white/5 transition-colors ${
-          caption ? "mt-1 border-t border-neutral-800" : ""
+          caption ? "mt-1 border-t border-border" : ""
         }`}
       >
       {/* 2줄 고정 — 채팅에서 높이를 적게 먹도록 */}
-      <p className="text-[13px] font-black text-white truncate">
+      <p className="text-[13px] font-black text-foreground truncate">
         🧩 {dayjs(puzzle.event_date).format("M/D")} · {puzzle.area}
       </p>
       <div className="flex items-center justify-between gap-2 mt-0.5">
         <span className="flex items-center gap-2 min-w-0">
-          <span className="text-[12px] font-black text-white shrink-0">
+          <span className="text-[12px] font-black text-foreground shrink-0">
             N{formatNumber(perPerson)}
           </span>
-          <span className="inline-flex items-center gap-0.5 text-[12px] font-bold text-neutral-400 shrink-0">
+          <span className="inline-flex items-center gap-0.5 text-[12px] font-bold text-muted-foreground shrink-0">
             {puzzle.current_count}/{puzzle.target_count}
             <Users className="w-3 h-3" />
           </span>
         </span>
         <span
           className={`inline-flex items-center text-[11px] font-black shrink-0 ${
-            open && !full ? "text-green-400" : "text-neutral-500"
+            open && !full ? "text-money" : "text-muted-foreground"
           }`}
         >
           {!open ? "모집 마감" : full ? "인원 다 참" : "자세히"}

@@ -32,12 +32,12 @@ export function AppDownloadBanner() {
       className="fixed inset-x-0 z-40 pointer-events-none"
       style={{ bottom: "calc(3.5rem + env(safe-area-inset-bottom))" }}
     >
-      <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2.5 border-t border-neutral-700 bg-neutral-800 px-3 py-2.5 shadow-[0_-2px_12px_rgba(0,0,0,0.5)]">
+      <div className="pointer-events-auto mx-auto flex max-w-lg items-center gap-2.5 border-t border-border bg-muted px-3 py-2.5 shadow-[0_-2px_12px_rgba(0,0,0,0.5)]">
         <button
           type="button"
           onClick={dismiss}
           aria-label="앱 다운로드 배너 닫기"
-          className="-ml-0.5 shrink-0 p-1 text-neutral-400 transition-colors hover:text-white"
+          className="-ml-0.5 shrink-0 p-1 text-muted-foreground transition-colors hover:text-foreground"
         >
           <X className="h-5 w-5" />
         </button>
@@ -49,8 +49,8 @@ export function AppDownloadBanner() {
           className="shrink-0 rounded-xl"
         />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold leading-tight text-white">{title}</p>
-          <p className="mt-0.5 text-xs leading-tight text-neutral-400">{subtitle}</p>
+          <p className="text-sm font-bold leading-tight text-foreground">{title}</p>
+          <p className="mt-0.5 text-xs leading-tight text-muted-foreground">{subtitle}</p>
         </div>
         <a
           href={PLAY_STORE_URL}

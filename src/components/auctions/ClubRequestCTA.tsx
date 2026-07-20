@@ -41,7 +41,7 @@ export function ClubRequestCTA({ variant = "list-end", defaultArea }: ClubReques
 
   const triggerNode =
     variant === "text-link" ? (
-      <button className="text-[11px] text-neutral-500 hover:text-neutral-300 transition-colors underline underline-offset-2">
+      <button className="text-[11px] text-muted-foreground hover:text-foreground/80 transition-colors underline underline-offset-2">
         원하는 클럽 입점 요청하기
       </button>
     ) : variant === "empty" ? (
@@ -50,16 +50,16 @@ export function ClubRequestCTA({ variant = "list-end", defaultArea }: ClubReques
         원하는 클럽 요청하기
       </button>
     ) : (
-      <button className="w-full bg-[#1C1C1E] hover:bg-neutral-900 border border-dashed border-neutral-700 rounded-2xl p-5 text-left transition-colors active:scale-[0.99]">
+      <button className="w-full bg-card hover:bg-card border border-dashed border-border rounded-2xl p-5 text-left transition-colors active:scale-[0.99]">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center flex-shrink-0">
-            <Sparkles className="w-5 h-5 text-amber-400" />
+            <Sparkles className="w-5 h-5 text-brand-amber" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-[14px] font-black leading-tight">
+            <p className="text-foreground text-[14px] font-black leading-tight">
               원하는 클럽이 없나요?
             </p>
-            <p className="text-neutral-400 text-[12px] font-medium mt-0.5">
+            <p className="text-muted-foreground text-[12px] font-medium mt-0.5">
               지금 바로 요청해보세요 — 빠르게 입점 협의해드려요
             </p>
           </div>
@@ -70,10 +70,10 @@ export function ClubRequestCTA({ variant = "list-end", defaultArea }: ClubReques
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{triggerNode}</SheetTrigger>
-      <SheetContent side="bottom" className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl max-w-lg mx-auto p-6 space-y-4">
+      <SheetContent side="bottom" className="bg-background border-border rounded-t-3xl max-w-lg mx-auto p-6 space-y-4">
         <div className="space-y-1">
-          <h3 className="text-white text-[18px] font-black">어떤 클럽이 보고 싶으세요?</h3>
-          <p className="text-neutral-400 text-[12px] font-medium leading-relaxed">
+          <h3 className="text-foreground text-[18px] font-black">어떤 클럽이 보고 싶으세요?</h3>
+          <p className="text-muted-foreground text-[12px] font-medium leading-relaxed">
             클럽명을 알려주시면 입점 협의 우선순위에 반영할게요.
           </p>
         </div>
@@ -81,31 +81,31 @@ export function ClubRequestCTA({ variant = "list-end", defaultArea }: ClubReques
         {done ? (
           <div className="py-8 text-center space-y-2">
             <p className="text-3xl">🙌</p>
-            <p className="text-white text-[14px] font-black">요청 접수됐어요!</p>
-            <p className="text-neutral-400 text-[12px]">빠르게 입점 협의해볼게요.</p>
+            <p className="text-foreground text-[14px] font-black">요청 접수됐어요!</p>
+            <p className="text-muted-foreground text-[12px]">빠르게 입점 협의해볼게요.</p>
           </div>
         ) : (
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <label className="text-[12px] font-bold text-neutral-300">클럽명 *</label>
+              <label className="text-[12px] font-bold text-foreground/80">클럽명 *</label>
               <Input
                 value={clubName}
                 onChange={(e) => setClubName(e.target.value)}
                 placeholder="예: OCTAGON, ARENA"
-                className="h-11 bg-neutral-900 border-neutral-800 text-white"
+                className="h-11 bg-card border-border text-foreground"
                 maxLength={60}
                 autoFocus
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[12px] font-bold text-neutral-300">
-                요청 사유 <span className="text-neutral-500 font-medium">(선택)</span>
+              <label className="text-[12px] font-bold text-foreground/80">
+                요청 사유 <span className="text-muted-foreground font-medium">(선택)</span>
               </label>
               <Textarea
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="원하는 날짜, 인원, 예산 등 자유롭게"
-                className="bg-neutral-900 border-neutral-800 text-white min-h-[80px]"
+                className="bg-card border-border text-foreground min-h-[80px]"
                 maxLength={200}
               />
             </div>

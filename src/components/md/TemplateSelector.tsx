@@ -65,30 +65,30 @@ export function TemplateSelector({ mdId, open, onOpenChange, onSelect }: Templat
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10 max-h-[80vh]">
+      <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-10 max-h-[80vh]">
         <SheetHeader className="text-left pb-2">
-          <SheetTitle className="text-white text-lg flex items-center gap-2">
-            <Bookmark className="w-4 h-4 text-amber-400" />
+          <SheetTitle className="text-foreground text-lg flex items-center gap-2">
+            <Bookmark className="w-4 h-4 text-brand-amber" />
             템플릿에서 생성
           </SheetTitle>
         </SheetHeader>
 
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-amber-400" />
+            <Loader2 className="w-6 h-6 animate-spin text-brand-amber" />
           </div>
         ) : templates.length === 0 ? (
           <div className="text-center py-8">
-            <Bookmark className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
-            <p className="text-neutral-500 text-sm">저장된 템플릿이 없습니다.</p>
-            <p className="text-neutral-600 text-xs mt-1">등록 후 "템플릿으로 저장?"을 선택하면 추가됩니다.</p>
+            <Bookmark className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+            <p className="text-muted-foreground text-sm">저장된 템플릿이 없습니다.</p>
+            <p className="text-muted-foreground text-xs mt-1">등록 후 "템플릿으로 저장?"을 선택하면 추가됩니다.</p>
           </div>
         ) : (
           <div className="space-y-2 overflow-y-auto max-h-[60vh]">
             {templates.map((template) => (
               <div
                 key={template.id}
-                className="flex items-center justify-between bg-neutral-900 rounded-xl px-4 py-3"
+                className="flex items-center justify-between bg-card rounded-xl border border-border px-4 py-3"
               >
                 <button
                   className="flex-1 text-left"
@@ -97,8 +97,8 @@ export function TemplateSelector({ mdId, open, onOpenChange, onSelect }: Templat
                     onOpenChange(false);
                   }}
                 >
-                  <p className="text-white font-semibold text-sm">{formatTemplateName(template)}</p>
-                  <p className="text-neutral-500 text-xs mt-0.5">
+                  <p className="text-foreground font-semibold text-sm">{formatTemplateName(template)}</p>
+                  <p className="text-muted-foreground text-xs mt-0.5">
                     {template.club?.name || "클럽 미지정"}
                     {template.total_seats ? ` · ${template.total_seats}인` : ""}
                     {template.price_per_seat ? ` · 인당 ${formatNumber(template.price_per_seat)}원` : ""}
@@ -107,7 +107,7 @@ export function TemplateSelector({ mdId, open, onOpenChange, onSelect }: Templat
                 <div className="flex items-center gap-2 ml-3">
                   <button
                     onClick={() => handleDelete(template.id)}
-                    className="text-neutral-600 hover:text-red-400 transition-colors p-1"
+                    className="text-muted-foreground hover:text-red-400 transition-colors p-1"
                     disabled={deleting === template.id}
                   >
                     {deleting === template.id ? (
@@ -116,7 +116,7 @@ export function TemplateSelector({ mdId, open, onOpenChange, onSelect }: Templat
                       <Trash2 className="w-4 h-4" />
                     )}
                   </button>
-                  <ChevronRight className="w-4 h-4 text-neutral-600" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
                 </div>
               </div>
             ))}

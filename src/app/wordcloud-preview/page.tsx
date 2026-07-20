@@ -207,7 +207,7 @@ export default function WordCloudPreviewPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A] text-white">
+    <main className="min-h-screen bg-background text-foreground">
       <style>{`
         @keyframes word-pop {
           0%   { opacity: 0; transform: translateY(20px) scale(0.3); }
@@ -218,16 +218,16 @@ export default function WordCloudPreviewPage() {
       `}</style>
 
       <div className="max-w-lg mx-auto px-4 py-8">
-        <p className="text-[11px] text-neutral-600 mb-4">
+        <p className="text-[11px] text-muted-foreground mb-4">
           🧪 UI 맛보기 — 실제 저장 안 됨 (mock)
         </p>
 
         {/* ── 헤더 (테두리/카드 없음, 단어만) ── */}
         <header className="mb-6">
-          <h2 className="text-[19px] font-black text-white leading-tight">
+          <h2 className="text-[19px] font-black text-foreground leading-tight">
             이 장소 하면 떠오르는 단어?
           </h2>
-          <p className="text-[13px] text-neutral-500 mt-1">
+          <p className="text-[13px] text-muted-foreground mt-1">
             5자 리뷰를 남겨보세요!
           </p>
         </header>
@@ -241,12 +241,12 @@ export default function WordCloudPreviewPage() {
 
             // 밝기/굵기: 빈도 절대값 기준 (5명+ 강조 / 2~4명 중간 / 1명 약하게)
             const color = isMine
-              ? "text-amber-300"
+              ? "text-brand-amber"
               : c >= 5
-                ? "text-white"
+                ? "text-foreground"
                 : c >= 2
-                  ? "text-neutral-200"
-                  : "text-neutral-500";
+                  ? "text-foreground/90"
+                  : "text-muted-foreground";
             const weight =
               isMine || c >= 5 ? "font-black" : c >= 2 ? "font-bold" : "font-medium";
 
@@ -285,12 +285,12 @@ export default function WordCloudPreviewPage() {
               {myWords.map((w, i) => (
                 <span
                   key={i}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-300 text-[13px] font-bold"
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-500/15 text-brand-amber text-[13px] font-bold"
                 >
                   {w}
                   <button
                     onClick={() => removeMyWord(i)}
-                    className="text-amber-400/60 hover:text-amber-200"
+                    className="text-brand-amber dark:text-brand-amber/60 hover:text-brand-amber"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -301,8 +301,8 @@ export default function WordCloudPreviewPage() {
 
           {/* 입력칸 (2개 다 채우기 전까지 항상 노출) */}
           {!full ? (
-            <div className="flex items-center gap-2 rounded-full bg-[#1C1C1E] border border-neutral-700 focus-within:border-white/60 px-4 py-3 transition-colors">
-              <Plus className="w-4 h-4 shrink-0 text-neutral-500" />
+            <div className="flex items-center gap-2 rounded-full bg-card border border-border focus-within:border-white/60 px-4 py-3 transition-colors">
+              <Plus className="w-4 h-4 shrink-0 text-muted-foreground" />
               <input
                 ref={inputRef}
                 value={current}
@@ -320,21 +320,21 @@ export default function WordCloudPreviewPage() {
                     ? `'${hint.mood}'  ex) ${hint.ex}`
                     : "하나 더 남기기"
                 }
-                className="flex-1 bg-transparent text-white text-[15px] placeholder:text-neutral-600 focus:outline-none"
+                className="flex-1 bg-transparent text-foreground text-[15px] placeholder:text-muted-foreground focus:outline-none"
               />
-              <span className="text-[11px] text-neutral-600 tabular-nums">
+              <span className="text-[11px] text-muted-foreground tabular-nums">
                 {current.length}/{MAX_WORD_LEN}
               </span>
               <button
                 onClick={addCurrent}
                 disabled={!current.trim()}
-                className="text-[13px] font-black text-white disabled:text-neutral-700 transition-colors"
+                className="text-[13px] font-black text-foreground disabled:text-muted-foreground transition-colors"
               >
                 띄우기
               </button>
             </div>
           ) : (
-            <p className="text-center text-[12px] text-neutral-600 py-2">
+            <p className="text-center text-[12px] text-muted-foreground py-2">
               최대 {MAX_WORDS}개까지 남겼어요 ✨
             </p>
           )}

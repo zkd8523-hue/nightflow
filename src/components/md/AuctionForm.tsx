@@ -788,7 +788,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
         >
             {/* Top Toggle: Today vs Advance — instant off 시 신규 등록에서는 숨김 */}
             {showModeToggle && (
-                <div className="flex bg-[#1C1C1E] rounded-xl p-1 border border-neutral-800">
+                <div className="flex bg-card rounded-xl p-1 border border-border">
                     <button
                         type="button"
                         onClick={() => {
@@ -801,7 +801,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         }}
                         className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${auctionMode === "today"
                             ? "bg-amber-500 text-black shadow-sm"
-                            : "text-neutral-500 hover:text-white"
+                            : "text-muted-foreground hover:text-white"
                             }`}
                     >
                         🔥 오늘특가 (타임세일)
@@ -823,8 +823,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             setValue("event_date", ed);
                         }}
                         className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${auctionMode === "advance"
-                            ? "bg-white text-black shadow-sm"
-                            : "text-neutral-500 hover:text-white"
+                            ? "bg-inverse text-inverse-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
                             }`}
                     >
                         📅 얼리버드 경매
@@ -841,10 +841,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="border-neutral-700 text-neutral-400 hover:text-white hover:border-amber-500 gap-1.5 text-xs"
+                  className="border-border text-muted-foreground hover:text-foreground hover:border-amber-500 gap-1.5 text-xs"
                   onClick={() => setShowTemplateSelector(true)}
                 >
-                  <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+                  <Bookmark className="w-3.5 h-3.5 text-brand-amber" />
                   템플릿에서 생성
                 </Button>
               </div>
@@ -852,18 +852,18 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             {/* 1. 클럽 선택 + 대표 이미지 */}
             <section className="space-y-4">
-                <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Building2 className="w-4 h-4 text-green-500" />
+                <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                    <Building2 className="w-4 h-4 text-money" />
                     <span>클럽 선택</span>
                 </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-xl overflow-hidden">
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
                     <input type="file" accept="image/*" id="thumbnail-upload" className="hidden" onChange={handleThumbnailSelect} />
                     <div className={`relative h-12 ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         <div className="absolute inset-0 px-4 flex items-center justify-between pointer-events-none">
-                            <span className={`text-sm font-medium truncate ${selectedClub ? 'text-white' : 'text-neutral-500'}`}>
+                            <span className={`text-sm font-medium truncate ${selectedClub ? 'text-foreground' : 'text-muted-foreground'}`}>
                                 {selectedClub ? `${selectedClub.name} (${selectedClub.area})` : "클럽을 선택하세요"}
                             </span>
-                            <ChevronDown className="w-4 h-4 text-neutral-500 shrink-0 ml-2" />
+                            <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0 ml-2" />
                         </div>
                         <select
                             {...register("club_id")}
@@ -877,8 +877,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         </select>
                     </div>
                     {selectedClub && (
-                        <div className="flex items-center gap-3 border-t border-neutral-800 px-3 py-2.5">
-                            <div className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-700 bg-neutral-900 shrink-0">
+                        <div className="flex items-center gap-3 border-t border-border px-3 py-2.5">
+                            <div className="w-10 h-10 rounded-lg overflow-hidden border border-border bg-card shrink-0">
                                 {(() => {
                                     if (thumbnailPreview) {
                                         return <img src={thumbnailPreview} alt="대표 이미지" className="w-full h-full object-cover" />;
@@ -894,12 +894,12 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     }
                                     return (
                                         <div className="w-full h-full flex items-center justify-center">
-                                            <ImageIcon className="w-4 h-4 text-neutral-700" />
+                                            <ImageIcon className="w-4 h-4 text-muted-foreground" />
                                         </div>
                                     );
                                 })()}
                             </div>
-                            <p className="flex-1 min-w-0 text-[11px] text-neutral-500 truncate">
+                            <p className="flex-1 min-w-0 text-[11px] text-muted-foreground truncate">
                                 {thumbnailPreview
                                     ? "대표이미지 · 커스텀 적용 중"
                                     : partnerThumbnailMap?.[selectedClub.id]
@@ -914,7 +914,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     <button
                                         type="button"
                                         onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); setIsClubImage(false); }}
-                                        className="w-7 h-7 flex items-center justify-center rounded-md text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors"
                                     >
                                         <X className="w-3.5 h-3.5" />
                                     </button>
@@ -923,14 +923,14 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 <button
                                     type="button"
                                     onClick={() => { setThumbnailFile(null); setThumbnailPreview(null); setIsClubImage(false); }}
-                                    className="w-7 h-7 flex items-center justify-center rounded-md text-neutral-500 hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                                    className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
                                 >
                                     <X className="w-3.5 h-3.5" />
                                 </button>
                             ) : (
                                 <label
                                     htmlFor="thumbnail-upload"
-                                    className="text-[11px] text-neutral-500 font-medium px-2.5 py-1 rounded-md bg-neutral-800 hover:bg-neutral-700 cursor-pointer transition-colors shrink-0"
+                                    className="text-[11px] text-muted-foreground font-medium px-2.5 py-1 rounded-md bg-muted hover:bg-muted cursor-pointer transition-colors shrink-0"
                                 >
                                     {partnerThumbnailMap?.[selectedClub.id] || getDrinkCategoryImage(selectedIncludes) ? "변경" : "등록"}
                                 </label>
@@ -944,25 +944,25 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             {/* 2. 테이블 위치 */}
             <section className="space-y-4">
                 <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-4 h-4 text-green-500" />
-                    <span className="text-white font-bold">테이블 위치</span>
+                    <MapPin className="w-4 h-4 text-money" />
+                    <span className="text-foreground font-bold">테이블 위치</span>
                 </div>
 
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
+                <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
                     {hasFloorPlan && !floorPlanExpanded && (
-                        <button type="button" onClick={() => setFloorPlanExpanded(true)} className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-green-400 transition-colors py-1">
+                        <button type="button" onClick={() => setFloorPlanExpanded(true)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-money transition-colors py-1">
                             <span>등록된 플로어맵</span>
                             <ChevronDown className="w-3 h-3" />
                         </button>
                     )}
                     {hasFloorPlan && floorPlanExpanded && (
                         <div className="space-y-2">
-                            <button type="button" onClick={() => setFloorPlanExpanded(false)} className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-green-400 transition-colors py-1">
-                                <MapPin className="w-3.5 h-3.5 text-green-500" />
+                            <button type="button" onClick={() => setFloorPlanExpanded(false)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-money transition-colors py-1">
+                                <MapPin className="w-3.5 h-3.5 text-money" />
                                 <span>플로어맵 닫기</span>
                                 <ChevronDown className="w-3 h-3 rotate-180" />
                             </button>
-                            <div className="rounded-xl overflow-hidden border border-neutral-800">
+                            <div className="rounded-xl overflow-hidden border border-border">
                                 <img
                                     src={floorPlanUrl!}
                                     alt="플로어맵"
@@ -970,7 +970,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                     draggable={false}
                                 />
                             </div>
-                            <label className="flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-neutral-400 hover:text-green-400 cursor-pointer transition-colors">
+                            <label className="flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-muted-foreground hover:text-money cursor-pointer transition-colors">
                                 <RefreshCw className="w-3.5 h-3.5" />
                                 {floorPlanUploading ? "업로드 중..." : "플로어맵 변경"}
                                 <input
@@ -987,17 +987,17 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         </div>
                     )}
                     {!hasFloorPlan && selectedClub && (
-                        <label className="flex flex-col items-center gap-3 p-5 border-2 border-dashed border-neutral-700 rounded-xl cursor-pointer hover:border-green-500/50 hover:bg-green-500/5 transition-all">
-                            <MapPin className="w-8 h-8 text-green-500/60" />
+                        <label className="flex flex-col items-center gap-3 p-5 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-green-500/50 hover:bg-green-500/5 transition-all">
+                            <MapPin className="w-8 h-8 text-money dark:text-money/60" />
                             <div className="text-center">
-                                <p className="text-sm font-bold text-neutral-300">
+                                <p className="text-sm font-bold text-foreground/80">
                                     플로어맵을 등록해보세요
                                 </p>
-                                <p className="text-xs text-neutral-500 mt-1">
+                                <p className="text-xs text-muted-foreground mt-1">
                                     자리 위치를 시각적으로 전달하면<br/>입찰 전환율이 높아집니다
                                 </p>
                             </div>
-                            <span className="text-xs font-bold text-green-500 bg-green-500/10 px-3 py-1.5 rounded-full">
+                            <span className="text-xs font-bold text-money bg-green-500/10 px-3 py-1.5 rounded-full">
                                 {floorPlanUploading ? "업로드 중..." : "이미지 선택"}
                             </span>
                             <input
@@ -1017,7 +1017,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         type="text"
                         disabled={!isTermsEditable}
                         placeholder="예) A3, B~C열, 준메인, 빠통"
-                        className={`bg-neutral-900 border-neutral-800 h-11 rounded-lg text-white ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`bg-card border-border h-11 rounded-lg text-foreground ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
                     />
                     {errors.table_info && <p className="text-red-500 text-xs">{errors.table_info?.message?.toString()}</p>}
                 </div>
@@ -1026,8 +1026,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             {/* 3. 입장 일시 — share 모드 숨김 (모집 마감으로 대체) */}
             {!isShareMode && <section className="space-y-4">
-                <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Calendar className="w-4 h-4 text-green-500" />
+                <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                    <Calendar className="w-4 h-4 text-money" />
                     <span>입장 일시</span>
                 </div>
                 <div className="space-y-3">
@@ -1044,15 +1044,15 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                         setInstantEntry(checked);
                                         setValue("entry_time", checked ? null : "22:00");
                                     }}
-                                    className="w-3.5 h-3.5 rounded border-neutral-700 bg-neutral-900 text-green-500 focus:ring-green-500 accent-green-500"
+                                    className="w-3.5 h-3.5 rounded border-border bg-card text-money focus:ring-green-500 accent-green-500"
                                 />
-                                <span className="text-[10px] text-white font-bold">즉시 입장</span>
+                                <span className="text-[10px] text-foreground font-bold">즉시 입장</span>
                             </label>
                             )}
                         </div>
                         {instantEntry ? (
                             <div className="bg-green-500/10 border border-green-500/20 rounded-xl h-11 flex items-center px-4">
-                                <span className="text-green-500 text-sm font-bold">{isInstantMode ? "예약 후 즉시 입장 가능" : "낙찰 후 즉시 입장 가능"}</span>
+                                <span className="text-money text-sm font-bold">{isInstantMode ? "예약 후 즉시 입장 가능" : "낙찰 후 즉시 입장 가능"}</span>
                             </div>
                         ) : auctionMode === "today" ? (
                             <DateTimeSheet
@@ -1121,8 +1121,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
               <>
                 {/* 1. 방문일시 */}
                 <section className="space-y-4">
-                  <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Calendar className="w-4 h-4 text-green-500" />
+                  <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                    <Calendar className="w-4 h-4 text-money" />
                     <span>방문일시</span>
                   </div>
                   <DateTimeSheet
@@ -1139,15 +1139,15 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
                 {/* 2. 매출설정 */}
                 <section ref={priceSectionRef} className="space-y-4 scroll-mt-24">
-                  <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Coins className="w-4 h-4 text-amber-500" />
+                  <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                    <Coins className="w-4 h-4 text-brand-amber" />
                     <span>조각 설정</span>
                   </div>
-                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-5">
+                  <div className="bg-card border border-border rounded-2xl p-5 space-y-5">
 
                     {/* 목표 매출 */}
                     <div className="space-y-3">
-                      <p className="text-[12px] text-neutral-400 font-medium">목표 매출</p>
+                      <p className="text-[12px] text-muted-foreground font-medium">목표 매출</p>
                       <Input
                         type="text"
                         inputMode="numeric"
@@ -1163,7 +1163,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                           if (totalPrice > 0) setTotalPriceInputStr(totalPrice.toLocaleString());
                         }}
                         disabled={hasBids}
-                        className="bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-amber-500"
+                        className="bg-card border-border h-11 text-foreground font-bold focus:ring-amber-500"
                       />
                       <div className="grid grid-cols-4 gap-1.5">
                         {[500000, 100000, 50000].map((preset) => (
@@ -1178,7 +1178,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                               setTotalPrice(next);
                               setTotalPriceInputStr(next.toLocaleString());
                             }}
-                            className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-amber-500/50 font-bold text-[13px]"
+                            className="h-10 px-0 bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-amber-500/50 font-bold text-[13px]"
                           >
                             +{preset / 10000}만
                           </Button>
@@ -1189,7 +1189,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                           size="sm"
                           disabled={hasBids}
                           onClick={() => { setTotalPrice(0); setTotalPriceInputStr(""); }}
-                          className="h-10 px-0 bg-neutral-900 border-neutral-700 text-neutral-500 hover:bg-neutral-800 hover:text-white hover:border-red-500/50 font-bold text-[13px]"
+                          className="h-10 px-0 bg-card border-border text-muted-foreground hover:bg-muted hover:text-foreground hover:border-red-500/50 font-bold text-[13px]"
                         >
                           초기화
                         </Button>
@@ -1200,16 +1200,16 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                       )}
                     </div>
 
-                    <div className="border-t border-neutral-800" />
+                    <div className="border-t border-border" />
 
                     {/* 인원 */}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <p className="text-[12px] text-neutral-400 font-medium">인원</p>
-                        <p className="text-[11px] text-neutral-500">최소 2명, 최대 6명</p>
+                        <p className="text-[12px] text-muted-foreground font-medium">인원</p>
+                        <p className="text-[11px] text-muted-foreground">최소 2명, 최대 6명</p>
                       </div>
                       {/* 목표 인원 수 picker */}
-                      <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
+                      <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-4">
                         <button
                           type="button"
                           disabled={hasBids || targetCount <= 2}
@@ -1219,11 +1219,11 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             setTargetMale(Math.ceil(next / 2));
                             setTargetFemale(Math.floor(next / 2));
                           }}
-                          className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
-                          <Minus className="w-3.5 h-3.5 text-white" />
+                          <Minus className="w-3.5 h-3.5 text-foreground" />
                         </button>
-                        <span className="text-[15px] font-black text-white">{targetCount}명</span>
+                        <span className="text-[15px] font-black text-foreground">{targetCount}명</span>
                         <button
                           type="button"
                           disabled={hasBids || targetCount >= 6}
@@ -1233,15 +1233,15 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             setTargetMale(Math.ceil(next / 2));
                             setTargetFemale(Math.floor(next / 2));
                           }}
-                          className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
-                          <Plus className="w-3.5 h-3.5 text-white" />
+                          <Plus className="w-3.5 h-3.5 text-foreground" />
                         </button>
                       </div>
                       {/* 확정 인원 */}
-                      <div className="pt-1 border-t border-neutral-800 space-y-3">
+                      <div className="pt-1 border-t border-border space-y-3">
                         <div className="flex items-center justify-between gap-3">
-                          <span className="text-[13px] font-bold text-white">이미 확정된 인원이 있나요?</span>
+                          <span className="text-[13px] font-bold text-foreground">이미 확정된 인원이 있나요?</span>
                           <button
                             type="button"
                             onClick={() => {
@@ -1249,70 +1249,70 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                               setHasExternal(next);
                               if (!next) { setExternalCount(1); setExternalMale(1); setExternalFemale(0); }
                             }}
-                            className={`relative w-11 h-6 rounded-full transition-colors ${hasExternal ? "bg-white" : "bg-neutral-700"}`}
+                            className={`relative w-11 h-6 rounded-full transition-colors ${hasExternal ? "bg-white" : "bg-muted"}`}
                           >
-                            <span className={`absolute top-1 w-4 h-4 rounded-full bg-black transition-all ${hasExternal ? "left-6" : "left-1"}`} />
+                            <span className={`absolute top-1 w-4 h-4 rounded-full bg-background transition-all ${hasExternal ? "left-6" : "left-1"}`} />
                           </button>
                         </div>
                         {hasExternal && !useGenderSlot && (
-                          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-4">
+                          <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-4">
                             <button
                               type="button"
                               disabled={externalCount <= 1}
                               onClick={() => setExternalCount(Math.max(1, externalCount - 1))}
-                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
-                              <Minus className="w-3.5 h-3.5 text-white" />
+                              <Minus className="w-3.5 h-3.5 text-foreground" />
                             </button>
-                            <span className="text-[15px] font-black text-white">확정 {externalCount}명</span>
+                            <span className="text-[15px] font-black text-foreground">확정 {externalCount}명</span>
                             <button
                               type="button"
                               disabled={externalCount >= targetCount - 1}
                               onClick={() => setExternalCount(Math.min(targetCount - 1, externalCount + 1))}
-                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
-                              <Plus className="w-3.5 h-3.5 text-white" />
+                              <Plus className="w-3.5 h-3.5 text-foreground" />
                             </button>
                           </div>
                         )}
                         {hasExternal && useGenderSlot && (
                           <div className="grid grid-cols-2 gap-2">
-                            <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                            <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-3">
                               <button
                                 type="button"
                                 disabled={externalMale <= 0}
                                 onClick={() => setExternalMale(externalMale - 1)}
-                                className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
-                                <Minus className="w-3.5 h-3.5 text-white" />
+                                <Minus className="w-3.5 h-3.5 text-foreground" />
                               </button>
-                              <span className="text-[14px] font-black text-green-400">🧑 {externalMale}</span>
+                              <span className="text-[14px] font-black text-money">🧑 {externalMale}</span>
                               <button
                                 type="button"
                                 disabled={externalMale + externalFemale >= targetCount - 1}
                                 onClick={() => setExternalMale(externalMale + 1)}
-                                className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
-                                <Plus className="w-3.5 h-3.5 text-white" />
+                                <Plus className="w-3.5 h-3.5 text-foreground" />
                               </button>
                             </div>
-                            <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                            <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-3">
                               <button
                                 type="button"
                                 disabled={externalFemale <= 0}
                                 onClick={() => setExternalFemale(externalFemale - 1)}
-                                className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
-                                <Minus className="w-3.5 h-3.5 text-white" />
+                                <Minus className="w-3.5 h-3.5 text-foreground" />
                               </button>
                               <span className="text-[14px] font-black text-pink-400">👩 {externalFemale}</span>
                               <button
                                 type="button"
                                 disabled={externalMale + externalFemale >= targetCount - 1}
                                 onClick={() => setExternalFemale(externalFemale + 1)}
-                                className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
-                                <Plus className="w-3.5 h-3.5 text-white" />
+                                <Plus className="w-3.5 h-3.5 text-foreground" />
                               </button>
                             </div>
                           </div>
@@ -1323,42 +1323,42 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                       {/* 성비 슬롯 picker — 항상 합계 = targetCount */}
                       {useGenderSlot && (
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                          <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-3">
                             <button
                               type="button"
                               disabled={hasBids || targetMale <= 0}
                               onClick={() => { const m = targetMale - 1; setTargetMale(m); setTargetFemale(targetCount - m); }}
-                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
-                              <Minus className="w-3.5 h-3.5 text-white" />
+                              <Minus className="w-3.5 h-3.5 text-foreground" />
                             </button>
-                            <span className="text-[14px] font-black text-green-400">🧑 {targetMale}</span>
+                            <span className="text-[14px] font-black text-money">🧑 {targetMale}</span>
                             <button
                               type="button"
                               disabled={hasBids || targetMale >= targetCount}
                               onClick={() => { const m = targetMale + 1; setTargetMale(m); setTargetFemale(targetCount - m); }}
-                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
-                              <Plus className="w-3.5 h-3.5 text-white" />
+                              <Plus className="w-3.5 h-3.5 text-foreground" />
                             </button>
                           </div>
-                          <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 h-11 rounded-lg px-3">
+                          <div className="flex items-center justify-between bg-card border border-border h-11 rounded-lg px-3">
                             <button
                               type="button"
                               disabled={hasBids || targetFemale <= 0}
                               onClick={() => { const f = targetFemale - 1; setTargetFemale(f); setTargetMale(targetCount - f); }}
-                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
-                              <Minus className="w-3.5 h-3.5 text-white" />
+                              <Minus className="w-3.5 h-3.5 text-foreground" />
                             </button>
                             <span className="text-[14px] font-black text-pink-400">👩 {targetFemale}</span>
                             <button
                               type="button"
                               disabled={hasBids || targetFemale >= targetCount}
                               onClick={() => { const f = targetFemale + 1; setTargetFemale(f); setTargetMale(targetCount - f); }}
-                              className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              className="w-7 h-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             >
-                              <Plus className="w-3.5 h-3.5 text-white" />
+                              <Plus className="w-3.5 h-3.5 text-foreground" />
                             </button>
                           </div>
                         </div>
@@ -1373,7 +1373,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                           : null;
                         return (
                           <div className="flex items-center justify-between">
-                            <p className="text-[12px] text-green-400 font-bold">
+                            <p className="text-[12px] text-money font-bold">
                               {seeking > 0
                                 ? useGenderSlot
                                   ? (() => {
@@ -1387,9 +1387,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             </p>
                             {perPerson !== null ? (
                               <div className="flex items-center gap-2">
-                                <p className={`text-[15px] font-black ${perPerson % 10000 === 0 ? "text-green-400" : "text-amber-400"}`}>
+                                <p className={`text-[15px] font-black ${perPerson % 10000 === 0 ? "text-money" : "text-brand-amber"}`}>
                                   {perPerson.toLocaleString()}원
-                                  <span className="text-[11px] text-neutral-500 font-normal ml-1">/인</span>
+                                  <span className="text-[11px] text-muted-foreground font-normal ml-1">/인</span>
                                 </p>
                                 {/* 만원 단위 올림 버튼 — 만원 단위 아니면 필수 (등록 차단) */}
                                 {perPerson % 10000 !== 0 && (
@@ -1410,7 +1410,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 )}
                               </div>
                             ) : (
-                              <p className="text-[11px] text-neutral-600">N비 미설정</p>
+                              <p className="text-[11px] text-muted-foreground">N비 미설정</p>
                             )}
                           </div>
                         );
@@ -1426,10 +1426,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                           const newTotal = rounded * seats;
                           return (
                             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3 py-2 mt-2">
-                              <p className="text-[12px] text-amber-400 font-bold">
+                              <p className="text-[12px] text-brand-amber font-bold">
                                 ⚠️ 인당 가격을 만원 단위로 맞춰주세요
                               </p>
-                              <p className="text-[11px] text-amber-400/80 mt-0.5 leading-snug">
+                              <p className="text-[11px] text-brand-amber dark:text-brand-amber/80 mt-0.5 leading-snug">
                                 현재 {pp.toLocaleString()}원/인 → <span className="font-bold">{rounded.toLocaleString()}원/인</span>으로 올리면
                                 {" "}목표 매출이 <span className="font-bold">{newTotal.toLocaleString()}원</span>이 됩니다.
                                 <br />위 <span className="font-bold">"↑ 만원 단위"</span> 버튼을 눌러 정리해주세요.
@@ -1440,7 +1440,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         return null;
                       })()}
                       {useGenderSlot && (
-                        <p className="text-[11px] text-neutral-500">성비는 목표값이에요. 초과 인원도 파트너 재량으로 승인할 수 있어요.<br />(ex: 세팅값 남자3·여자1. 현재 남자3·여자0 일때, 남자가 신청시 승인 가능. 최종 남자4·여자0)</p>
+                        <p className="text-[11px] text-muted-foreground">성비는 목표값이에요. 초과 인원도 파트너 재량으로 승인할 수 있어요.<br />(ex: 세팅값 남자3·여자1. 현재 남자3·여자0 일때, 남자가 신청시 승인 가능. 최종 남자4·여자0)</p>
                       )}
                       {errors.total_seats && <p className="text-red-500 text-[11px]">{errors.total_seats.message?.toString()}</p>}
                     </div>
@@ -1462,8 +1462,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                   }}
                 />
                 <section className="space-y-3">
-                  <div className="flex items-center gap-2 text-white font-bold mb-1">
-                    <Check className="w-4 h-4 text-green-500" />
+                  <div className="flex items-center gap-2 text-foreground font-bold mb-1">
+                    <Check className="w-4 h-4 text-money" />
                     <span>테이블 구성</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -1475,7 +1475,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap flex items-center gap-1 transition-all flex-shrink-0 ${
                           selectedIncludes.includes(item)
                             ? "bg-green-500 text-black"
-                            : "bg-neutral-900 text-neutral-500 border border-neutral-800"
+                            : "bg-card text-muted-foreground border border-border"
                         }`}
                       >
                         {selectedIncludes.includes(item) && <Check className="w-3 h-3" />}
@@ -1498,7 +1498,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     <button
                       type="button"
                       onClick={() => setShowCustomExtraSheet(true)}
-                      className="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-neutral-900 text-neutral-400 border border-neutral-800 hover:border-neutral-600 hover:text-white transition-all flex-shrink-0"
+                      className="px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap bg-card text-muted-foreground border border-border hover:border-border hover:text-foreground transition-all flex-shrink-0"
                     >
                       + 직접 입력
                     </button>
@@ -1509,24 +1509,24 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
                 {/* 6. MD 한마디 (직접 입력) */}
                 <section className="space-y-4">
-                  <div className="flex items-baseline gap-2 text-white font-bold mb-2">
+                  <div className="flex items-baseline gap-2 text-foreground font-bold mb-2">
                     <MessageCircle className="w-4 h-4 text-purple-500 self-center" />
                     <span>파트너의 한마디</span>
-                    <span className="text-[11px] text-neutral-500 font-normal">
+                    <span className="text-[11px] text-muted-foreground font-normal">
                       {" "}
-                      <span className={(watch("md_comment") || "").length >= 200 ? "text-amber-500" : ""}>
+                      <span className={(watch("md_comment") || "").length >= 200 ? "text-brand-amber" : ""}>
                         ({(watch("md_comment") || "").length}/200)
                       </span>
                     </span>
                   </div>
-                  <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-4">
+                  <div className="bg-card border border-border rounded-2xl p-4">
                     <Input
                       type="text"
                       value={watch("md_comment") || ""}
                       onChange={(e) => setValue("md_comment", e.target.value)}
                       placeholder="예) 텐션 좋은 분들 환영!"
                       maxLength={200}
-                      className="bg-neutral-900 border-neutral-800 h-12 text-[14px] font-bold text-white focus:ring-amber-500 placeholder:text-neutral-600 placeholder:font-normal"
+                      className="bg-card border-border h-12 text-[14px] font-bold text-foreground focus:ring-amber-500 placeholder:text-muted-foreground placeholder:font-normal"
                     />
                   </div>
                 </section>
@@ -1537,16 +1537,16 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             {/* 4. 가격 설정 (경매/즉시구매 전용) */}
             {!isShareMode && <section className="space-y-4">
-                <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Wine className="w-4 h-4 text-amber-500" />
+                <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                    <Wine className="w-4 h-4 text-brand-amber" />
                     <span>{isInstantMode ? "판매가" : "경매 시작가"}</span>
                 </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-5 space-y-4">
+                <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
                     <div className="space-y-3">
                         {hasBids && (
                             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mb-2">
-                                <p className="text-[12px] text-amber-400 font-bold">🔒 {isInstantMode ? "예약이 있어 조건 변경 불가" : "입찰이 있어 경매 조건 변경 불가"}</p>
-                                <p className="text-[10px] text-amber-400/80 mt-1">{isInstantMode ? "이미 예약이 있어" : `이미 ${initialData.bid_count}회 입찰이 있어`} 가격, 주류, 테이블, 지속시간을 변경할 수 없습니다.</p>
+                                <p className="text-[12px] text-brand-amber font-bold">🔒 {isInstantMode ? "예약이 있어 조건 변경 불가" : "입찰이 있어 경매 조건 변경 불가"}</p>
+                                <p className="text-[10px] text-brand-amber dark:text-brand-amber/80 mt-1">{isInstantMode ? "이미 예약이 있어" : `이미 ${initialData.bid_count}회 입찰이 있어`} 가격, 주류, 테이블, 지속시간을 변경할 수 없습니다.</p>
                             </div>
                         )}
                         <Input
@@ -1563,12 +1563,12 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             onBlur={() => setStartPriceCommitted(true)}
                             onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setStartPriceCommitted(true); } }}
                             placeholder="예: 650,000"
-                            className={`bg-neutral-900 border-neutral-800 h-11 text-white font-bold focus:ring-green-500 ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`bg-card border-border h-11 text-foreground font-bold focus:ring-green-500 ${!isTermsEditable ? 'opacity-50 cursor-not-allowed' : ''}`}
                         />
                         <div className="flex gap-2">
-                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 500000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); setStartPriceCommitted(true); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+50만</Button>
-                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 100000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); setStartPriceCommitted(true); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+10만</Button>
-                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 50000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); setStartPriceCommitted(true); }} className="flex-1 h-9 bg-neutral-900 border-neutral-700 text-neutral-300 hover:bg-neutral-800 hover:text-white hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+5만</Button>
+                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 500000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); setStartPriceCommitted(true); }} className="flex-1 h-9 bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+50만</Button>
+                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 100000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); setStartPriceCommitted(true); }} className="flex-1 h-9 bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+10만</Button>
+                            <Button type="button" variant="outline" size="sm" disabled={!isTermsEditable} onClick={() => { const v = currentStartPrice + 50000; setValue("start_price", v); setStartPriceDisplay(v.toLocaleString()); setStartPriceCommitted(true); }} className="flex-1 h-9 bg-card border-border text-foreground/80 hover:bg-muted hover:text-foreground hover:border-green-500/50 font-bold text-xs disabled:opacity-50 disabled:cursor-not-allowed">+5만</Button>
                         </div>
 
                         {/* 가격 경고 */}
@@ -1605,8 +1605,8 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                         {errors.start_price && currentStartPrice < 1 && <p className="text-red-500 text-[11px]">{errors.start_price?.message?.toString()}</p>}
 
                         {/* 정식가 대비 넛지 — 항상 노출 */}
-                        <p className="text-[11px] text-neutral-500 leading-relaxed">
-                            💡 인스타 공식 주대의 <span className="text-amber-400 font-bold">80~90% 수준</span>으로 시작하면 입찰이 빠르게 붙어요.<br />
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            💡 인스타 공식 주대의 <span className="text-brand-amber font-bold">80~90% 수준</span>으로 시작하면 입찰이 빠르게 붙어요.<br />
                             최소 수익을 미리 확정해보세요!
                         </p>
 
@@ -1617,14 +1617,14 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             {/* 7. 경매 마감 */}
             {!isShareMode && <section className="space-y-4">
-                <div className="flex items-center gap-2 text-white font-bold mb-2">
-                    <Calendar className="w-4 h-4 text-green-500" />
+                <div className="flex items-center gap-2 text-foreground font-bold mb-2">
+                    <Calendar className="w-4 h-4 text-money" />
                     <span>경매 마감</span>
                 </div>
-                <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-3">
+                <div className="bg-card border border-border rounded-2xl p-3">
                     <div className={`space-y-2 ${!isTermsEditable ? 'opacity-50 pointer-events-none' : ''}`}>
                         {auctionMode === "advance" && (
-                            <span className="text-[11px] text-neutral-500">마감은 이벤트 전날까지 가능.</span>
+                            <span className="text-[11px] text-muted-foreground">마감은 이벤트 전날까지 가능.</span>
                         )}
                         {(() => {
                             if (auctionMode === "today") {
@@ -1635,7 +1635,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                             { label: "2시간", value: 120 },
                                             { label: "1시간", value: 60 },
                                         ].map((opt) => (
-                                            <button key={opt.value} type="button" onClick={() => setValue("duration_minutes", opt.value)} className={`h-10 rounded-lg text-xs font-bold transition-all ${watch("duration_minutes") === opt.value ? "bg-neutral-200 text-black" : "bg-neutral-900 text-neutral-500 border border-neutral-800"}`}>
+                                            <button key={opt.value} type="button" onClick={() => setValue("duration_minutes", opt.value)} className={`h-10 rounded-lg text-xs font-bold transition-all ${watch("duration_minutes") === opt.value ? "bg-neutral-200 text-black" : "bg-card text-muted-foreground border border-border"}`}>
                                                 {opt.label}
                                             </button>
                                         ))}
@@ -1669,7 +1669,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                             <button
                                                 type="button"
                                                 onClick={() => setValue("auction_end_at", dayjs().add(5, "minute").toISOString())}
-                                                className={`w-full h-10 rounded-xl text-xs font-black transition-all px-4 text-left border border-dashed ${watch("auction_end_at") && dayjs(watch("auction_end_at")).diff(dayjs(), "minute") <= 6 ? "bg-yellow-500/20 border-yellow-500/60 text-yellow-300" : "bg-neutral-900 border-yellow-500/30 text-yellow-500/70"}`}
+                                                className={`w-full h-10 rounded-xl text-xs font-black transition-all px-4 text-left border border-dashed ${watch("auction_end_at") && dayjs(watch("auction_end_at")).diff(dayjs(), "minute") <= 6 ? "bg-yellow-500/20 border-yellow-500/60 text-yellow-300" : "bg-card border-yellow-500/30 text-yellow-500/70"}`}
                                             >
                                                 ⚡ [DEV] 5분 후 마감 (테스트용)
                                             </button>
@@ -1679,10 +1679,10 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                         <button
                                             type="button"
                                             onClick={() => setValue("auction_end_at", defaultOption.endAtISO)}
-                                            className={`w-full h-14 rounded-xl text-sm font-black transition-all px-4 text-left flex flex-col justify-center ${isDefaultSelected ? "bg-neutral-200 text-black" : "bg-neutral-900 text-neutral-300 border border-neutral-800"}`}
+                                            className={`w-full h-14 rounded-xl text-sm font-black transition-all px-4 text-left flex flex-col justify-center ${isDefaultSelected ? "bg-neutral-200 text-black" : "bg-card text-foreground/80 border border-border"}`}
                                         >
                                             <span>{defaultOption.label}</span>
-                                            <span className={`text-[10px] font-medium mt-0.5 ${isDefaultSelected ? "text-neutral-600" : "text-neutral-500"}`}>
+                                            <span className={`text-[10px] font-medium mt-0.5 ${isDefaultSelected ? "text-muted-foreground" : "text-muted-foreground"}`}>
                                                 가장 긴 노출
                                             </span>
                                         </button>
@@ -1693,7 +1693,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                                 <button
                                                     type="button"
                                                     onClick={() => setShowAllEndOptions(v => !v)}
-                                                    className="w-full text-[11px] text-neutral-500 font-bold py-1.5 hover:text-neutral-300 transition-colors"
+                                                    className="w-full text-[11px] text-muted-foreground font-bold py-1.5 hover:text-foreground/80 transition-colors"
                                                 >
                                                     {showAllEndOptions ? "접기 ▲" : "더 빠른 마감 ▼"}
                                                 </button>
@@ -1705,7 +1705,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                                                 key={opt.endAtISO}
                                                                 type="button"
                                                                 onClick={() => setValue("auction_end_at", opt.endAtISO)}
-                                                                className={`h-11 rounded-lg text-xs font-bold transition-all px-4 text-left ${currentEnd === opt.endAtISO ? "bg-neutral-200 text-black" : "bg-neutral-900 text-neutral-400 border border-neutral-800"}`}
+                                                                className={`h-11 rounded-lg text-xs font-bold transition-all px-4 text-left ${currentEnd === opt.endAtISO ? "bg-neutral-200 text-black" : "bg-card text-muted-foreground border border-border"}`}
                                                             >
                                                                 {opt.label}
                                                             </button>
@@ -1727,7 +1727,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
 
             <div className="mt-12 px-1">
                 <div className="max-w-lg mx-auto">
-                    <Button disabled={isSubmitting || submitted} className="w-full h-14 rounded-2xl bg-white text-black font-black text-lg hover:bg-neutral-200 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60">
+                    <Button disabled={isSubmitting || submitted} className="w-full h-14 rounded-2xl bg-inverse text-inverse-foreground font-black text-lg hover:opacity-90 shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-60">
                         {isSubmitting ? (initialData ? "수정 중..." : "등록 중...") : submitted ? "등록 완료" : (initialData ? (isInstantMode ? "판매 정보 수정하기" : "조각 정보 수정하기") : (isInstantMode ? "오늘특가 등록하기" : "조각 등록하기"))}
                         <ArrowRight className="w-5 h-5" />
                     </Button>
@@ -1748,13 +1748,13 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
             <Sheet open={showCustomExtraSheet} onOpenChange={(open) => { if (!open) { setShowCustomExtraSheet(false); setCustomExtra(""); } }}>
                 <SheetContent
                     side="bottom"
-                    className="bg-[#1C1C1E] border-t border-neutral-800 rounded-t-3xl px-5 pb-10 pt-2"
+                    className="bg-card border-t border-border rounded-t-3xl px-5 pb-10 pt-2"
                 >
                     <SheetHeader className="p-0 mb-4">
-                        <SheetTitle className="text-white text-[17px] font-black text-left">
+                        <SheetTitle className="text-foreground text-[17px] font-black text-left">
                             서비스 직접 입력
                         </SheetTitle>
-                        <p className="text-[12px] text-neutral-500 text-left">
+                        <p className="text-[12px] text-muted-foreground text-left">
                             테이블 구성에 추가할 서비스를 입력해주세요
                         </p>
                     </SheetHeader>
@@ -1777,7 +1777,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             }}
                             placeholder="예: 샴페인 타워, 무대앞 자리, 부스 투어..."
                             maxLength={20}
-                            className="bg-neutral-900 border-neutral-700 text-white text-[14px] h-12"
+                            className="bg-card border-border text-foreground text-[14px] h-12"
                         />
                         <Button
                             type="button"
@@ -1790,7 +1790,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                                 setShowCustomExtraSheet(false);
                             }}
                             disabled={!customExtra.trim()}
-                            className="w-full h-12 bg-white hover:bg-neutral-200 text-black font-black text-[14px] rounded-2xl disabled:bg-neutral-800 disabled:text-neutral-600"
+                            className="w-full h-12 bg-inverse hover:opacity-90 text-inverse-foreground font-black text-[14px] rounded-2xl disabled:bg-muted disabled:text-muted-foreground"
                         >
                             추가
                         </Button>
@@ -1840,27 +1840,27 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                     }
                 }}
             >
-                <SheetContent side="bottom" className="bg-[#1C1C1E] border-neutral-800 rounded-t-3xl pb-10">
+                <SheetContent side="bottom" className="bg-card border-border rounded-t-3xl pb-10">
                     <SheetHeader className="text-left pb-2">
-                        <SheetTitle className="text-white text-lg">템플릿으로 저장할까요?</SheetTitle>
+                        <SheetTitle className="text-foreground text-lg">템플릿으로 저장할까요?</SheetTitle>
                     </SheetHeader>
-                    <p className="text-neutral-400 text-sm mb-4">
+                    <p className="text-muted-foreground text-sm mb-4">
                         다음 등록 시 한 번에 불러올 수 있습니다.
                     </p>
                     <div className="mb-4 space-y-1.5">
-                        <p className="text-[11px] text-neutral-500 font-bold">템플릿 이름</p>
+                        <p className="text-[11px] text-muted-foreground font-bold">템플릿 이름</p>
                         <Input
                             type="text"
                             value={templateNameDraft}
                             onChange={(e) => setTemplateNameDraft(e.target.value)}
                             maxLength={40}
-                            className="bg-neutral-900 border-neutral-800 h-11 text-amber-400 font-bold text-sm focus:ring-amber-500"
+                            className="bg-card border-border h-11 text-brand-amber font-bold text-sm focus:ring-amber-500"
                         />
                     </div>
                     <div className="flex gap-3">
                         <Button
                             variant="outline"
-                            className="flex-1 border-neutral-700 text-neutral-400 hover:text-white"
+                            className="flex-1 border-border text-muted-foreground hover:text-foreground"
                             disabled={templateSaving}
                             onClick={() => {
                                 const v = pendingShareSubmitValues;
@@ -1872,7 +1872,7 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                             아니오
                         </Button>
                         <Button
-                            className="flex-1 bg-white text-black hover:bg-neutral-100 font-bold"
+                            className="flex-1 bg-inverse text-inverse-foreground hover:opacity-90 font-bold"
                             disabled={templateSaving}
                             onClick={async () => {
                                 const v = pendingShareSubmitValues;

@@ -34,11 +34,11 @@ export default async function AdminForeignPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-5">
         <div>
           <h1 className="text-2xl font-black tracking-tight">🌏 외국인 요청</h1>
-          <p className="text-[13px] text-neutral-500 mt-1">
+          <p className="text-[13px] text-muted-foreground mt-1">
             컨시어지 — 클럽 MD에 직접 연락(카톡/전화)해서 자리·가격 확정 후, 아래 연락처로 회신하세요.
           </p>
         </div>

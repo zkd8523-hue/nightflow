@@ -64,7 +64,7 @@ function BannerContent({
     },
     warning: {
       bg: "bg-red-500",
-      text: "text-white",
+      text: "text-foreground",
       icon: <AlertTriangle className="w-4 h-4 shrink-0" />,
       label: `${clubName} 마감 임박!`,
       cta: "지금 연락",
@@ -72,7 +72,7 @@ function BannerContent({
     },
     critical: {
       bg: "bg-red-600",
-      text: "text-white",
+      text: "text-foreground",
       icon: <Clock className="w-4 h-4 shrink-0 animate-pulse" />,
       label: `${clubName}`,
       cta: "지금 연락",

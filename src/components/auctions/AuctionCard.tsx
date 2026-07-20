@@ -165,9 +165,9 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
           })
         }
       >
-        <div className="relative bg-[#1C1C1E] rounded-2xl p-4 space-y-3 active:scale-[0.98] transition-all cursor-pointer">
+        <div className="relative bg-card rounded-2xl border border-border p-4 space-y-3 active:scale-[0.98] transition-all cursor-pointer">
           <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
-            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white text-black text-[11px]" style={{ lineHeight: 1, paddingBottom: '1px', WebkitTextStroke: '1px black' }}>
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-inverse text-inverse-foreground text-[11px]" style={{ lineHeight: 1, paddingBottom: '1px', WebkitTextStroke: '1px black' }}>
               🧩
             </span>
             {isOwner && (
@@ -195,15 +195,15 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
           <div className="flex items-start justify-between">
             <div className="flex flex-col gap-1 flex-1 pr-16">
               <div className="text-[20px] font-black leading-snug break-keep tracking-tight">
-                <span className="text-white">{club?.name}</span>
+                <span className="text-foreground">{club?.name}</span>
                 {club?.area && (
-                  <span className="text-neutral-500 text-[14px] ml-1.5 font-bold tracking-normal align-middle">
+                  <span className="text-muted-foreground text-[14px] ml-1.5 font-bold tracking-normal align-middle">
                     {club.area}
                   </span>
                 )}
               </div>
               {auction.md_message && (
-                <p className="text-[13px] text-neutral-400 font-medium leading-snug break-keep">
+                <p className="text-[13px] text-muted-foreground font-medium leading-snug break-keep">
                   {auction.md_message}
                 </p>
               )}
@@ -215,11 +215,11 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-baseline gap-1.5 flex-wrap min-w-0">
                 {auction.table_info && (
-                  <span className="text-[19px] font-black text-amber-400 break-keep">
+                  <span className="text-[19px] font-black text-brand-amber break-keep">
                     {auction.table_info}
                   </span>
                 )}
-                <span className="text-[17px] font-black text-green-400">
+                <span className="text-[17px] font-black text-money">
                   1인 {(auction.price_per_seat ?? 0).toLocaleString()}원
                 </span>
               </div>
@@ -236,7 +236,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
               return (
                 <div className="space-y-1">
                   {isShareFull && (
-                    <span className="text-[13px] text-green-400 font-bold">조각 완성! 🎉</span>
+                    <span className="text-[13px] text-money font-bold">조각 완성! 🎉</span>
                   )}
                   <div className="flex flex-wrap items-center gap-1.5">
                     {showPieces && slotLayout.map((slot, i) => (
@@ -248,7 +248,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                       </span>
                     )}
                     {showViews && (
-                      <span className={`text-[11px] font-semibold text-amber-400/80 ${showRemaining ? "" : "ml-1"}`}>
+                      <span className={`text-[11px] font-semibold text-brand-amber dark:text-brand-amber/80 ${showRemaining ? "" : "ml-1"}`}>
                         👀 오늘 {todayViews}명이 봤어요
                       </span>
                     )}
@@ -275,25 +275,25 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                     <span key={item}
                       className={`inline-flex px-1.5 py-0.5 rounded-full text-[10px] font-bold border ${
                         liquor.includes(item)
-                          ? "bg-neutral-800 text-neutral-200 border-neutral-700"
-                          : "bg-neutral-800/50 text-neutral-400 border-neutral-700/30"
+                          ? "bg-muted text-foreground border-border"
+                          : "bg-muted/50 text-muted-foreground border-border/30"
                       }`}>
                       {/* 홈(hidePuzzle)에서만 끝 "병" 생략 — 상세는 원본 그대로 */}
                       {hidePuzzle ? item.replace(/병$/, "") : item}
                     </span>
                   ))}
                   {sorted.length > maxShow && (
-                    <span className="text-[10px] text-neutral-500 font-bold">+{sorted.length - maxShow}</span>
+                    <span className="text-[10px] text-muted-foreground font-bold">+{sorted.length - maxShow}</span>
                   )}
                 </div>
                 {!isOwner && (
                   <Button
                     className={`h-9 px-3 rounded-full font-black text-[12px] shrink-0 transition-all active:scale-[0.97] ${
                       isShareFull
-                        ? "bg-neutral-800 text-neutral-500 cursor-not-allowed pointer-events-none"
+                        ? "bg-muted text-muted-foreground cursor-not-allowed pointer-events-none"
                         : isMd
-                          ? "bg-white hover:bg-neutral-100 text-black"
-                          : "bg-amber-500 hover:bg-amber-400 text-black shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
+                          ? "bg-inverse hover:opacity-90 text-inverse-foreground"
+                          : "bg-amber-500 hover:bg-amber-400 text-inverse-foreground shadow-[0_2px_12px_rgba(245,158,11,0.35)]"
                     }`}
                   >
                     {isShareFull ? "마감" : "자세히"}
@@ -318,20 +318,20 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                       { label: "🧑 남자", delta: extMaleDelta, base: baseMale, onInc: () => setExtMaleDelta(d => d + 1), onDec: () => setExtMaleDelta(d => d - 1), color: "text-blue-400" },
                       { label: "👩 여자", delta: extFemaleDelta, base: baseFemale, onInc: () => setExtFemaleDelta(d => d + 1), onDec: () => setExtFemaleDelta(d => d - 1), color: "text-pink-400" },
                     ].map(({ label, delta, base, onInc, onDec, color }) => (
-                      <div key={label} className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl px-3 h-10">
-                        <span className={`text-[11px] font-bold ${saving ? "text-neutral-500" : color}`}>
-                          {label} <span className="text-white">
+                      <div key={label} className="flex items-center justify-between bg-card border border-border rounded-xl px-3 h-10">
+                        <span className={`text-[11px] font-bold ${saving ? "text-muted-foreground" : color}`}>
+                          {label} <span className="text-foreground">
                             {delta > 0 ? `+${delta}` : delta}
                           </span>
                         </span>
                         <div className="flex items-center gap-1.5">
                           <button type="button" disabled={base + delta <= 0 || saving} onClick={onDec}
-                            className="w-5 h-5 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 transition-colors">
-                            <Minus className="w-2.5 h-2.5 text-white" />
+                            className="w-5 h-5 rounded-full bg-muted flex items-center justify-center hover:bg-muted disabled:opacity-30 transition-colors">
+                            <Minus className="w-2.5 h-2.5 text-foreground" />
                           </button>
                           <button type="button" disabled={newTotal >= totalSeats || saving} onClick={onInc}
-                            className="w-5 h-5 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 transition-colors">
-                            <Plus className="w-2.5 h-2.5 text-white" />
+                            className="w-5 h-5 rounded-full bg-muted flex items-center justify-center hover:bg-muted disabled:opacity-30 transition-colors">
+                            <Plus className="w-2.5 h-2.5 text-foreground" />
                           </button>
                         </div>
                       </div>
@@ -340,22 +340,22 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                 </div>
               ) : (
                 // 단순 스테퍼 — 외부 인원 변동분(델타) 입력. 기본 0, +/-로 증감
-                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-xl px-4 h-10">
-                  <span className={`text-[12px] font-bold ${saving ? "text-neutral-500" : "text-neutral-300"}`}>
-                    외부 모집 <span className="text-white">
+                <div className="flex items-center justify-between bg-card border border-border rounded-xl px-4 h-10">
+                  <span className={`text-[12px] font-bold ${saving ? "text-muted-foreground" : "text-foreground/80"}`}>
+                    외부 모집 <span className="text-foreground">
                       {extDelta > 0 ? `+${extDelta}` : extDelta}명
                     </span>
                   </span>
                   <div className="flex items-center gap-2">
                     <button type="button" disabled={totalFilled + extDelta <= 0 || saving}
                       onClick={() => setExtDelta(d => d - 1)}
-                      className="w-6 h-6 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 transition-colors">
-                      <Minus className="w-3 h-3 text-white" />
+                      className="w-6 h-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted disabled:opacity-30 transition-colors">
+                      <Minus className="w-3 h-3 text-foreground" />
                     </button>
                     <button type="button" disabled={totalFilled + extDelta >= totalSeats || saving}
                       onClick={() => setExtDelta(d => d + 1)}
-                      className="w-6 h-6 rounded-full bg-neutral-700 flex items-center justify-center hover:bg-neutral-600 disabled:opacity-30 transition-colors">
-                      <Plus className="w-3 h-3 text-white" />
+                      className="w-6 h-6 rounded-full bg-muted flex items-center justify-center hover:bg-muted disabled:opacity-30 transition-colors">
+                      <Plus className="w-3 h-3 text-foreground" />
                     </button>
                   </div>
                 </div>
@@ -369,7 +369,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
               <Button
                 disabled={saving}
                 onClick={confirmExt}
-                className="w-full h-11 font-black text-[13px] rounded-xl active:scale-[0.98] disabled:opacity-50 bg-white hover:bg-neutral-200 text-black"
+                className="w-full h-11 font-black text-[13px] rounded-xl active:scale-[0.98] disabled:opacity-50 bg-inverse hover:opacity-90 text-inverse-foreground"
               >
                 {saving ? "저장 중..." : "인원 업데이트"}
               </Button>
@@ -391,7 +391,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
   return (
     <div>
       <Link href={`/auctions/${auction.id}`}>
-        <div className={`relative overflow-hidden bg-[#1C1C1E] rounded-2xl p-3 transition-all active:scale-[0.98] cursor-pointer ${isWon ? "won-card-border won-card-glow border border-transparent" : "border border-transparent"} ${auction.status === "unsold" ? "opacity-60" : ""}`}>
+        <div className={`relative overflow-hidden bg-card rounded-2xl p-3 transition-all active:scale-[0.98] cursor-pointer ${isWon ? "won-card-border won-card-glow border border-transparent" : "border border-transparent"} ${auction.status === "unsold" ? "opacity-60" : ""}`}>
           {/* 우측 상단: 찜 (1행) + 입장시간 (2행) */}
           <div className="absolute top-2.5 right-2.5 z-10 flex flex-col items-end gap-1">
             {club && (
@@ -404,7 +404,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
           {/* Row 1: Image + Info */}
           <div className="flex gap-3">
             {/* 110x80 Thumbnail */}
-            <div className="w-[110px] h-[64px] rounded-xl bg-neutral-900 overflow-hidden flex-shrink-0 relative">
+            <div className="w-[110px] h-[64px] rounded-xl bg-card overflow-hidden flex-shrink-0 relative">
               <AuctionImage
                 auctionThumbnail={auction.thumbnail_url}
                 clubThumbnail={club?.thumbnail_url}
@@ -421,11 +421,11 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
               <div>
                 {/* 클럽명 + 영역 (heart 자리 확보) */}
                 <div className="flex items-baseline gap-1.5 pr-10">
-                  <h3 className="font-semibold text-[16px] text-white truncate leading-tight tracking-tight min-w-0">
+                  <h3 className="font-semibold text-[16px] text-foreground truncate leading-tight tracking-tight min-w-0">
                     {club?.name}
                   </h3>
                   {club?.area && (
-                    <span className="flex-shrink-0 text-[10px] text-neutral-500 font-medium">
+                    <span className="flex-shrink-0 text-[10px] text-muted-foreground font-medium">
                       {club.area}
                     </span>
                   )}
@@ -436,13 +436,13 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                   if (!dealCount || dealCount < 3) return null;
                   return (
                     <div className="flex items-center mt-0.5">
-                      <span className="flex-shrink-0 flex items-center gap-0.5 text-[9px] font-bold text-neutral-400">
+                      <span className="flex-shrink-0 flex items-center gap-0.5 text-[9px] font-bold text-muted-foreground">
                         {dealCount >= 30 ? (
                           <Flame className="w-3 h-3 text-orange-500" />
                         ) : dealCount >= 10 ? (
                           <BadgeCheck className="w-3 h-3 text-blue-400" />
                         ) : (
-                          <BadgeCheck className="w-3 h-3 text-neutral-500" />
+                          <BadgeCheck className="w-3 h-3 text-muted-foreground" />
                         )}
                         거래 {dealCount}회
                       </span>
@@ -456,17 +456,17 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                     const liquorOnly = all.filter(item => liquor.includes(item));
                     const hasExtras = all.length > liquorOnly.length;
                     return (
-                      <span className="text-[10px] truncate text-neutral-500">
+                      <span className="text-[10px] truncate text-muted-foreground">
                         {liquorOnly.map((item, i) => (
                           <span key={item}>
-                            {i > 0 && <span className="text-neutral-600 mx-1">&middot;</span>}
-                            <span className="text-amber-400/90 font-medium">
+                            {i > 0 && <span className="text-muted-foreground mx-1">&middot;</span>}
+                            <span className="text-brand-amber dark:text-brand-amber/90 font-medium">
                               {item.replace(/병$/, "")}
                             </span>
                           </span>
                         ))}
                         {hasExtras && (
-                          <span className="text-neutral-600 ml-1">+α</span>
+                          <span className="text-muted-foreground ml-1">+α</span>
                         )}
                       </span>
                     );
@@ -502,23 +502,23 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                   </div>
                 )}
                 {isExpired && (
-                  <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-400 rounded-full border-transparent">
+                  <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-muted text-muted-foreground rounded-full border-transparent">
                     마감
                   </Badge>
                 )}
                 {isWon && (
-                  <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-bold bg-amber-500/20 text-amber-400 rounded-full border border-amber-500/30">
+                  <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-bold bg-amber-500/20 text-brand-amber rounded-full border border-amber-500/30">
                     {isInstant ? <Zap className="w-3 h-3 mr-0.5 fill-amber-400" /> : <Gavel className="w-3 h-3 mr-0.5" />}
                     {isInstant ? "예약완료" : "낙찰"}
                   </Badge>
                 )}
                 {auction.status === "unsold" && (
-                  <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-500 rounded-full border-transparent">
+                  <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-muted text-muted-foreground rounded-full border-transparent">
                     {isInstant ? "미판매" : "유찰"}
                   </Badge>
                 )}
                 {auction.status === "cancelled" && (
-                  <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-neutral-800 text-neutral-600 rounded-full border-transparent">
+                  <Badge className="text-[10px] px-2.5 py-0.5 h-auto font-medium bg-muted text-muted-foreground rounded-full border-transparent">
                     취소
                   </Badge>
                 )}
@@ -528,7 +528,7 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
 
           {/* MD 한마디 (모바일에서도 풀 너비로 잘 보이게 별도 행) */}
           {auction.md_comment && (
-            <div className="flex items-center gap-1 mt-1.5 text-[12px] text-neutral-300 italic">
+            <div className="flex items-center gap-1 mt-1.5 text-[12px] text-foreground/80 italic">
               <span className="shrink-0">💬</span>
               <span className="truncate">{auction.md_comment}</span>
             </div>
@@ -543,28 +543,28 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                   <span className={`flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${
                     seatsLeft === 1
                       ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                      : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                      : "bg-amber-500/20 text-brand-amber border border-amber-500/30"
                   }`}>
                     <Zap className="w-2.5 h-2.5 fill-current" />
                     라스트 {seatsLeft}자리!
                   </span>
                 )}
                 {isShareFull && (
-                  <span className="text-[11px] font-bold text-neutral-500 bg-neutral-800 px-2 py-0.5 rounded-full">마감</span>
+                  <span className="text-[11px] font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">마감</span>
                 )}
               </div>
               {/* 진행 바 */}
-              <div className="w-full h-1.5 bg-neutral-800 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full transition-all ${isShareFull ? "bg-neutral-500" : "bg-amber-500"}`}
+                  className={`h-full rounded-full transition-all ${isShareFull ? "bg-muted" : "bg-amber-500"}`}
                   style={{ width: `${totalSeats > 0 ? Math.min(100, (totalFilled / totalSeats) * 100) : 0}%` }}
                 />
               </div>
               {/* 가격 + CTA */}
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-neutral-500 font-medium leading-none">인당</span>
-                  <div className="text-[22px] font-bold text-white leading-none tracking-tight">
+                  <span className="text-[10px] text-muted-foreground font-medium leading-none">인당</span>
+                  <div className="text-[22px] font-bold text-foreground leading-none tracking-tight">
                     {formatNumber(auction.price_per_seat ?? 0)}원
                   </div>
                 </div>
@@ -573,10 +573,10 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                   disabled={isShareFull}
                   className={`h-8 px-4 rounded-full font-bold text-xs tracking-tight transition-all ${
                     isShareFull
-                      ? "bg-neutral-800 text-neutral-500 cursor-not-allowed"
+                      ? "bg-muted text-muted-foreground cursor-not-allowed"
                       : seatsLeft <= 2
-                        ? "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
-                        : "bg-white text-black hover:bg-neutral-100"
+                        ? "bg-amber-500 text-inverse-foreground hover:bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.4)]"
+                        : "bg-inverse text-inverse-foreground hover:opacity-90"
                   }`}
                 >
                   {isShareFull ? "마감" : "자세히 보기"}
@@ -588,23 +588,23 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
           <div className="flex items-center justify-between mt-1 gap-2">
             <div className="flex flex-col min-w-0">
               {!isInstant && !isCompleted && (
-                <span className="text-[10px] text-neutral-500 font-medium leading-none mb-0.5">
+                <span className="text-[10px] text-muted-foreground font-medium leading-none mb-0.5">
                   {auction.bid_count > 0 ? "현재가" : "시작가"}
                 </span>
               )}
-              <span className={`text-[23px] font-bold leading-none tracking-tight ${isWon ? "text-amber-400" : "text-white"}`}>
+              <span className={`text-[23px] font-bold leading-none tracking-tight ${isWon ? "text-brand-amber" : "text-foreground"}`}>
                 {formatNumber(currentPrice)}원
               </span>
               {(!isInstant && (isUserHighest || isUserOutbid) || (isWon && !isInstant)) && (
                 <div className="flex items-center gap-1 mt-1">
                   {!isInstant && isUserHighest && (
-                    <span className="text-green-400 bg-green-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-green-500/20">최고입찰</span>
+                    <span className="text-money bg-green-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-green-500/20">최고입찰</span>
                   )}
                   {!isInstant && isUserOutbid && (
-                    <span className="text-amber-400 bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">추월됨</span>
+                    <span className="text-brand-amber bg-amber-500/10 px-1.5 py-0 rounded-full text-[10px] font-bold border border-amber-500/20">추월됨</span>
                   )}
                   {isWon && !isInstant && (
-                    <span className="text-[10px] text-amber-500/70">입찰 {auction.bid_count}회</span>
+                    <span className="text-[10px] text-brand-amber dark:text-brand-amber/70">입찰 {auction.bid_count}회</span>
                   )}
                 </div>
               )}
@@ -612,10 +612,10 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
 
             <div className="flex flex-col items-end gap-1 shrink-0">
               {!isInstant && (auction.today_view_count ?? 0) >= 10 && (
-                <span className="text-[10px] text-amber-400/80 font-semibold">👀 오늘 {auction.today_view_count}명</span>
+                <span className="text-[10px] text-brand-amber dark:text-brand-amber/80 font-semibold">👀 오늘 {auction.today_view_count}명</span>
               )}
               {socialProof && (
-                <span className="text-[10px] text-amber-400/60 font-medium">{socialProof}</span>
+                <span className="text-[10px] text-brand-amber dark:text-brand-amber/60 font-medium">{socialProof}</span>
               )}
               <div className="flex items-center gap-2">
                 {isScheduled && (
@@ -628,8 +628,8 @@ export const AuctionCard = memo(function AuctionCard({ auction: propAuction, use
                   className={`h-8 px-4 rounded-full font-bold text-xs tracking-tight transition-all ${isActive
                     ? "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.3)]"
                     : isWon
-                      ? "bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25"
-                      : "bg-neutral-800 text-neutral-400"
+                      ? "bg-amber-500/15 text-brand-amber border border-amber-500/30 hover:bg-amber-500/25"
+                      : "bg-muted text-muted-foreground"
                     }`}
                 >
                   {isActive

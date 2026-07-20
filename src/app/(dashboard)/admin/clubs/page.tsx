@@ -77,10 +77,10 @@ export default async function AdminClubsPage() {
     return (
         <div className="max-w-2xl mx-auto px-6 py-8">
             <div className="flex items-center gap-4 mb-6">
-                <Link href="/" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800">
-                    <ChevronLeft className="w-5 h-5 text-neutral-400" />
+                <Link href="/" className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border">
+                    <ChevronLeft className="w-5 h-5 text-muted-foreground" />
                 </Link>
-                <h1 className="text-xl font-black text-white flex-1">클럽 관리</h1>
+                <h1 className="text-xl font-black text-foreground flex-1">클럽 관리</h1>
                 <GeocodeMissingButton />
                 {clubs && clubs.length > 0 && (
                     <Link
@@ -92,7 +92,7 @@ export default async function AdminClubsPage() {
                 )}
                 <Link
                     href="/admin/clubs/search-misses"
-                    className="px-3 py-1.5 rounded-full bg-neutral-800 hover:bg-neutral-700 text-[12px] text-white font-bold"
+                    className="px-3 py-1.5 rounded-full bg-muted hover:bg-muted text-[12px] text-foreground font-bold"
                 >
                     검색 실패 로그
                 </Link>

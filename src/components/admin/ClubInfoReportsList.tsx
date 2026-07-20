@@ -107,8 +107,8 @@ export function ClubInfoReportsList({ rows }: Props) {
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-full text-[12px] font-bold ${
                 filter === f
-                  ? "bg-white text-black"
-                  : "bg-neutral-900 text-neutral-400 border border-neutral-800"
+                  ? "bg-inverse text-inverse-foreground"
+                  : "bg-card text-muted-foreground border border-border"
               }`}
             >
               {label}
@@ -118,8 +118,8 @@ export function ClubInfoReportsList({ rows }: Props) {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-16 bg-[#1C1C1E] rounded-2xl border border-neutral-800">
-          <p className="text-sm text-neutral-500">신고가 없어요</p>
+        <div className="text-center py-16 bg-card rounded-2xl border border-border">
+          <p className="text-sm text-muted-foreground">신고가 없어요</p>
         </div>
       ) : (
         filtered.map((row) => {
@@ -127,13 +127,13 @@ export function ClubInfoReportsList({ rows }: Props) {
           return (
             <div
               key={row.id}
-              className={`bg-[#1C1C1E] border rounded-2xl p-4 space-y-3 ${
-                isDone ? "border-neutral-800/60 opacity-60" : "border-amber-500/30"
+              className={`bg-card border rounded-2xl p-4 space-y-3 ${
+                isDone ? "border-border/60 opacity-60" : "border-amber-500/30"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 flex-wrap">
+                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
                     <span className="font-bold">
                       {row.category ? CATEGORY_LABELS[row.category] ?? row.category : "기타"}
                     </span>
@@ -143,26 +143,26 @@ export function ClubInfoReportsList({ rows }: Props) {
                     <span className="font-medium">
                       {row.reporter_name}
                       {row.reporter_role === "md" && (
-                        <span className="ml-1 text-[10px] text-amber-300 font-bold">파트너</span>
+                        <span className="ml-1 text-[10px] text-brand-amber font-bold">파트너</span>
                       )}
                       {row.reporter_role === "admin" && (
                         <span className="ml-1 text-[10px] text-purple-300 font-bold">ADMIN</span>
                       )}
                     </span>
                   </div>
-                  <p className="text-[14px] text-white font-bold mt-1">
+                  <p className="text-[14px] text-foreground font-bold mt-1">
                     {row.club ? (
                       <Link
                         href={`/clubs/${row.club.id}`}
                         target="_blank"
-                        className="hover:text-amber-300 transition-colors inline-flex items-center gap-1"
+                        className="hover:text-brand-amber transition-colors inline-flex items-center gap-1"
                       >
                         {row.club.name}
                         <ExternalLink className="w-3 h-3" />
                       </Link>
                     ) : "(삭제된 클럽)"}
                     {row.club?.area && (
-                      <span className="text-[12px] text-neutral-500 font-medium ml-1.5">
+                      <span className="text-[12px] text-muted-foreground font-medium ml-1.5">
                         {row.club.area}
                       </span>
                     )}
@@ -174,7 +174,7 @@ export function ClubInfoReportsList({ rows }: Props) {
                       type="button"
                       onClick={() => handleResolve(row)}
                       disabled={updating === row.id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-500/15 border border-green-500/30 text-green-300 hover:text-green-200 hover:bg-green-500/25 text-[11px] font-black transition-colors disabled:opacity-50"
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-500/15 border border-green-500/30 text-money hover:text-green-200 hover:bg-green-500/25 text-[11px] font-black transition-colors disabled:opacity-50"
                     >
                       {updating === row.id ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -197,17 +197,17 @@ export function ClubInfoReportsList({ rows }: Props) {
               </div>
 
               <div className="bg-black/30 rounded-xl p-3">
-                <p className="text-[13px] text-white whitespace-pre-wrap break-words">
+                <p className="text-[13px] text-foreground whitespace-pre-wrap break-words">
                   {row.message}
                 </p>
               </div>
 
               {isDone && (
-                <div className="flex items-center gap-2 text-[11px] text-neutral-500">
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                   <span
                     className={`px-2 py-0.5 rounded-full font-bold ${
                       row.status === "resolved"
-                        ? "bg-green-500/15 text-green-300"
+                        ? "bg-green-500/15 text-money"
                         : "bg-red-500/15 text-red-300"
                     }`}
                   >
@@ -215,7 +215,7 @@ export function ClubInfoReportsList({ rows }: Props) {
                   </span>
                   {row.reviewed_at && <span>{formatRelative(row.reviewed_at)}</span>}
                   {row.admin_note && (
-                    <span className="text-neutral-400 truncate">— {row.admin_note}</span>
+                    <span className="text-muted-foreground truncate">— {row.admin_note}</span>
                   )}
                 </div>
               )}

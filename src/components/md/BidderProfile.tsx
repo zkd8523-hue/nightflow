@@ -25,8 +25,8 @@ interface BidderProfileProps {
 
 function TrustBadge({ level }: { level: TrustLevel }) {
     const config: Record<TrustLevel, { label: string; className: string }> = {
-        vip: { label: "VIP", className: "bg-amber-500/10 text-amber-500 border-amber-500/30" },
-        normal: { label: "Normal", className: "bg-neutral-800/50 text-neutral-400 border-neutral-700" },
+        vip: { label: "VIP", className: "bg-amber-500/10 text-brand-amber border-amber-500/30" },
+        normal: { label: "Normal", className: "bg-muted/50 text-muted-foreground border-border" },
         caution: { label: "Caution", className: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30" },
         blocked: { label: "Blocked", className: "bg-red-500/10 text-red-500 border-red-500/30" },
     };
@@ -105,18 +105,18 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
     };
 
     const stats = [
-        { label: "낙찰률", value: `${userScore.win_rate}%`, icon: TrendingUp, color: "text-green-500" },
+        { label: "낙찰률", value: `${userScore.win_rate}%`, icon: TrendingUp, color: "text-money" },
         { label: "평균 입찰", value: `${formatNumber(userScore.avg_bid_amount)}원`, icon: TrendingUp, color: "text-blue-500" },
-        { label: "경매 방문", value: `${userScore.confirmed_visits}회`, icon: Eye, color: "text-amber-500" },
-        { label: "경매 노쇼", value: `${userScore.noshow_count}회`, icon: AlertTriangle, color: userScore.noshow_count > 0 ? "text-red-500" : "text-neutral-500" },
-        { label: "깃발 방문", value: `${userScore.puzzle_visited_count ?? 0}회`, icon: Eye, color: "text-green-400" },
+        { label: "경매 방문", value: `${userScore.confirmed_visits}회`, icon: Eye, color: "text-brand-amber" },
+        { label: "경매 노쇼", value: `${userScore.noshow_count}회`, icon: AlertTriangle, color: userScore.noshow_count > 0 ? "text-red-500" : "text-muted-foreground" },
+        { label: "깃발 방문", value: `${userScore.puzzle_visited_count ?? 0}회`, icon: Eye, color: "text-money" },
     ];
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
-            <SheetContent side="bottom" className="h-[75vh] bg-[#1C1C1E] border-neutral-800 rounded-t-3xl sm:max-w-lg sm:mx-auto">
+            <SheetContent side="bottom" className="h-[75vh] bg-card border-border rounded-t-3xl sm:max-w-lg sm:mx-auto">
                 <SheetHeader className="mb-6 text-left">
-                    <SheetTitle className="text-white font-black text-xl">
+                    <SheetTitle className="text-foreground font-black text-xl">
                         입찰자 프로필
                     </SheetTitle>
                 </SheetHeader>
@@ -124,8 +124,8 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                 <div className="space-y-5 overflow-y-auto max-h-[calc(75vh-100px)] pb-6">
                     {/* Profile Header */}
                     <div className="flex items-center gap-4">
-                        <div className="relative w-14 h-14 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
-                            <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-neutral-500">
+                        <div className="relative w-14 h-14 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden">
+                            <span className="absolute inset-0 flex items-center justify-center text-lg font-black text-muted-foreground">
                                 {userScore.display_name?.substring(0, 1) || "?"}
                             </span>
                             {userScore.profile_image && (
@@ -139,11 +139,11 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                         </div>
                         <div className="flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                                <h3 className="text-white font-black text-lg">{userScore.display_name}</h3>
+                                <h3 className="text-foreground font-black text-lg">{userScore.display_name}</h3>
                                 <DealTierBadge tier={userScore.deal_tier} size="md" showLabel />
                                 <TrustBadge level={userScore.trust_level} />
                             </div>
-                            <p className="text-neutral-500 text-xs mt-0.5">
+                            <p className="text-muted-foreground text-xs mt-0.5">
                                 거래 {userScore.deal_count_total ?? 0}회 · 입찰 {userScore.total_bids}회 / 낙찰 {userScore.won_bids}회
                             </p>
                         </div>
@@ -152,10 +152,10 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                     {/* Trust Stats Grid */}
                     <div className="grid grid-cols-2 gap-3">
                         {stats.map((stat) => (
-                            <div key={stat.label} className="bg-neutral-900 border border-neutral-800/50 rounded-2xl p-4">
+                            <div key={stat.label} className="bg-card border border-border/50 rounded-2xl p-4">
                                 <div className="flex items-center gap-2 mb-1">
                                     <stat.icon className={`w-4 h-4 ${stat.color}`} />
-                                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">{stat.label}</p>
+                                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">{stat.label}</p>
                                 </div>
                                 <p className={`text-lg font-black ${stat.color}`}>{stat.value}</p>
                             </div>
@@ -168,7 +168,7 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                         disabled={saving || userScore.trust_level === "blocked"}
                         className={`w-full h-12 rounded-2xl font-black text-base ${
                             isVip
-                                ? "bg-neutral-800 text-amber-500 hover:bg-neutral-700 border border-amber-500/30"
+                                ? "bg-muted text-brand-amber hover:bg-muted border border-amber-500/30"
                                 : "bg-amber-500 text-black hover:bg-amber-400"
                         }`}
                     >
@@ -182,18 +182,18 @@ export function BidderProfile({ isOpen, onClose, userScore, mdId, isVip, vipId, 
                     {/* MD Note */}
                     {isVip && (
                         <div className="space-y-2">
-                            <p className="text-[11px] text-neutral-500 font-bold uppercase tracking-widest">파트너 메모</p>
+                            <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest">파트너 메모</p>
                             <textarea
                                 value={note}
                                 onChange={(e) => setNote(e.target.value)}
                                 placeholder="이 고객에 대한 메모를 남겨주세요..."
-                                className="w-full h-24 bg-neutral-900 border border-neutral-800 rounded-xl p-3 text-sm text-white placeholder:text-neutral-600 resize-none focus:outline-none focus:border-amber-500/50"
+                                className="w-full h-24 bg-card border border-border rounded-xl p-3 text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:border-amber-500/50"
                             />
                             <Button
                                 onClick={handleSaveNote}
                                 disabled={saving}
                                 variant="outline"
-                                className="w-full h-10 rounded-xl bg-neutral-900 border-neutral-800 text-white font-bold hover:bg-neutral-800"
+                                className="w-full h-10 rounded-xl bg-card border-border text-foreground font-bold hover:bg-muted"
                             >
                                 메모 저장
                             </Button>

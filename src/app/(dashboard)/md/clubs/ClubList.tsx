@@ -48,26 +48,26 @@ export function ClubList({ initialClubs }: ClubListProps) {
             {clubs.map((club) => (
                 <div
                     key={club.id}
-                    className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-5 transition-all"
+                    className="bg-card border border-border/50 rounded-2xl p-5 transition-all"
                 >
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                             <div className="space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <h3 className="text-white font-bold text-lg truncate">{club.name}</h3>
-                                    <span className="px-2 py-0.5 bg-neutral-800 text-neutral-400 text-xs rounded-md font-bold flex-shrink-0">
+                                    <h3 className="text-foreground font-bold text-lg truncate">{club.name}</h3>
+                                    <span className="px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-md font-bold flex-shrink-0">
                                         {club.area}
                                     </span>
                                 </div>
 
                                 <div className="space-y-2 text-sm">
-                                    <p className="text-neutral-400 flex items-start gap-2">
-                                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-500" />
+                                    <p className="text-muted-foreground flex items-start gap-2">
+                                        <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0 text-money" />
                                         <span className="break-words">{club.address}</span>
                                     </p>
 
                                     {club.phone && (
-                                        <p className="text-neutral-400 flex items-center gap-2">
+                                        <p className="text-muted-foreground flex items-center gap-2">
                                             <Phone className="w-4 h-4 text-blue-500 flex-shrink-0" />
                                             <span>{club.phone}</span>
                                         </p>
@@ -75,8 +75,8 @@ export function ClubList({ initialClubs }: ClubListProps) {
 
                                     {club.latitude && club.longitude && (
                                         <div className="flex items-center gap-2 px-2 py-1 bg-green-500/10 border border-green-500/20 rounded-lg w-fit">
-                                            <Map className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                                            <span className="text-[11px] text-green-500 font-bold">
+                                            <Map className="w-3.5 h-3.5 text-money flex-shrink-0" />
+                                            <span className="text-[11px] text-money font-bold">
                                                 좌표 등록됨
                                             </span>
                                         </div>
@@ -88,16 +88,16 @@ export function ClubList({ initialClubs }: ClubListProps) {
 
                         <div className="flex flex-col gap-2 flex-shrink-0">
                             <Link href={`/md/clubs/${club.id}/edit`}>
-                                <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center hover:border-neutral-600 transition-colors">
-                                    <Edit className="w-4 h-4 text-neutral-500" />
+                                <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center hover:border-border transition-colors">
+                                    <Edit className="w-4 h-4 text-muted-foreground" />
                                 </div>
                             </Link>
                             {canDelete(club) && (
                                 <button
                                     onClick={() => setDeleteTarget(club)}
-                                    className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center hover:border-red-500/50 hover:bg-red-500/10 transition-colors"
+                                    className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center hover:border-red-500/50 hover:bg-red-500/10 transition-colors"
                                 >
-                                    <Trash2 className="w-4 h-4 text-neutral-500 hover:text-red-500" />
+                                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-red-500" />
                                 </button>
                             )}
                         </div>

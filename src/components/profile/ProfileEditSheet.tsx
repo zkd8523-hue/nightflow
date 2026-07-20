@@ -395,10 +395,10 @@ export function ProfileEditSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#1C1C1E] border-neutral-800 text-white rounded-t-3xl max-w-lg mx-auto p-0 max-h-[90vh] overflow-y-auto"
+        className="bg-card border-border text-foreground rounded-t-3xl max-w-lg mx-auto p-0 max-h-[90vh] overflow-y-auto"
       >
-        <SheetHeader className="p-4 border-b border-neutral-800 sticky top-0 bg-[#1C1C1E] z-10">
-          <SheetTitle className="text-white text-[17px] font-bold text-left">
+        <SheetHeader className="p-4 border-b border-border sticky top-0 bg-card z-10">
+          <SheetTitle className="text-foreground text-[17px] font-bold text-left">
             {SECTION_TITLES[section]}
           </SheetTitle>
         </SheetHeader>
@@ -411,7 +411,7 @@ export function ProfileEditSheet({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingImage}
-              className="relative w-24 h-24 rounded-full overflow-hidden bg-neutral-800 ring-2 ring-neutral-700 active:scale-95 transition-transform disabled:opacity-50"
+              className="relative w-24 h-24 rounded-full overflow-hidden bg-muted ring-2 ring-border active:scale-95 transition-transform disabled:opacity-50"
               aria-label="프로필 사진 변경"
             >
               {profileImage ? (
@@ -423,11 +423,11 @@ export function ProfileEditSheet({
                   className="object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/40 text-3xl font-black">
+                <div className="w-full h-full flex items-center justify-center text-foreground/40 text-3xl font-black">
                   {(displayName || "?").charAt(0)}
                 </div>
               )}
-              <span className="absolute right-0 bottom-0 w-7 h-7 rounded-full bg-white flex items-center justify-center text-black">
+              <span className="absolute right-0 bottom-0 w-7 h-7 rounded-full bg-inverse flex items-center justify-center text-inverse-foreground">
                 <Camera className="w-3.5 h-3.5" />
               </span>
             </button>
@@ -442,7 +442,7 @@ export function ProfileEditSheet({
               <button
                 type="button"
                 onClick={handleImageDelete}
-                className="text-[12px] text-neutral-500 hover:text-neutral-300"
+                className="text-[12px] text-muted-foreground hover:text-foreground/80"
               >
                 기본 이미지로 변경
               </button>
@@ -453,7 +453,7 @@ export function ProfileEditSheet({
           {/* 닉네임 */}
           {showName && (
           <div>
-            <label className="block text-[13px] font-bold text-neutral-400 mb-2">
+            <label className="block text-[13px] font-bold text-muted-foreground mb-2">
               닉네임
             </label>
             <div className="relative">
@@ -463,9 +463,9 @@ export function ProfileEditSheet({
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="닉네임 (2~16자)"
                 maxLength={16}
-                className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl pl-3 pr-16 py-2.5 text-[15px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600"
+                className="w-full bg-background border border-border rounded-xl pl-3 pr-16 py-2.5 text-[15px] text-foreground placeholder-neutral-600 focus:outline-none focus:border-border"
               />
-              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-neutral-500 tabular-nums">
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[12px] text-muted-foreground tabular-nums">
                 {displayName.length} / 16
               </span>
             </div>
@@ -475,7 +475,7 @@ export function ProfileEditSheet({
           {/* 자기소개 */}
           {showBio && (
           <div>
-            <label className="block text-[13px] font-bold text-neutral-400 mb-2">
+            <label className="block text-[13px] font-bold text-muted-foreground mb-2">
               자기소개
             </label>
             <div className="relative">
@@ -484,12 +484,12 @@ export function ProfileEditSheet({
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="자기소개를 입력해주세요"
                 rows={3}
-                className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl px-3 pt-2.5 pb-7 text-[15px] text-white placeholder-neutral-600 resize-none focus:outline-none focus:border-neutral-600"
+                className="w-full bg-background border border-border rounded-xl px-3 pt-2.5 pb-7 text-[15px] text-foreground placeholder-neutral-600 resize-none focus:outline-none focus:border-border"
                 maxLength={MAX_BIO_LENGTH + 50}
               />
               <span
                 className={`pointer-events-none absolute bottom-2.5 right-3 text-[12px] tabular-nums ${
-                  isOverLimit ? "text-red-500" : "text-neutral-500"
+                  isOverLimit ? "text-red-500" : "text-muted-foreground"
                 }`}
               >
                 {bio.length} / {MAX_BIO_LENGTH}
@@ -502,10 +502,10 @@ export function ProfileEditSheet({
           {showMusic && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[13px] font-bold text-neutral-400">
+              <label className="text-[13px] font-bold text-muted-foreground">
                 좋아하는 음악
               </label>
-              <span className="text-[12px] text-neutral-500">
+              <span className="text-[12px] text-muted-foreground">
                 {genres.length} / {MAX_MUSIC_GENRES}
               </span>
             </div>
@@ -518,8 +518,8 @@ export function ProfileEditSheet({
                     onClick={() => toggleGenre(g.code)}
                     className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
                       active
-                        ? "bg-white text-black"
-                        : "bg-neutral-900 text-neutral-300 hover:bg-neutral-800"
+                        ? "bg-inverse text-inverse-foreground"
+                        : "bg-card text-foreground/80 hover:bg-muted"
                     }`}
                   >
                     <span>{g.emoji}</span>
@@ -535,10 +535,10 @@ export function ProfileEditSheet({
           {showArea && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[13px] font-bold text-neutral-400">
+              <label className="text-[13px] font-bold text-muted-foreground">
                 주로 가는 지역
               </label>
-              <span className="text-[12px] text-neutral-500">
+              <span className="text-[12px] text-muted-foreground">
                 {areas.length} / {MAX_PREFERRED_AREAS}
               </span>
             </div>
@@ -551,8 +551,8 @@ export function ProfileEditSheet({
                     onClick={() => toggleArea(area)}
                     className={`px-3 py-1.5 rounded-full text-[13px] font-bold transition-colors ${
                       active
-                        ? "bg-white text-black"
-                        : "bg-neutral-900 text-neutral-300 hover:bg-neutral-800"
+                        ? "bg-inverse text-inverse-foreground"
+                        : "bg-card text-foreground/80 hover:bg-muted"
                     }`}
                   >
                     {area}
@@ -567,10 +567,10 @@ export function ProfileEditSheet({
           {showClub && (
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[13px] font-bold text-neutral-400">
+              <label className="text-[13px] font-bold text-muted-foreground">
                 선호 클럽
               </label>
-              <span className="text-[12px] text-neutral-500">
+              <span className="text-[12px] text-muted-foreground">
                 {favClubs.length} / {MAX_FAVORITE_CLUBS}
               </span>
             </div>
@@ -580,7 +580,7 @@ export function ProfileEditSheet({
               <div className="grid grid-cols-3 gap-2 mb-3">
                 {favClubs.map((c) => (
                   <div key={c.id} className="relative">
-                    <div className="relative aspect-square rounded-xl overflow-hidden bg-neutral-900">
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-card border border-border">
                       {c.thumbnail_url ? (
                         <Image
                           src={c.thumbnail_url}
@@ -590,19 +590,19 @@ export function ProfileEditSheet({
                           className="object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-white/40 text-xl font-black">
+                        <div className="w-full h-full flex items-center justify-center text-foreground/40 text-xl font-black">
                           {c.name.charAt(0)}
                         </div>
                       )}
                       <button
                         onClick={() => removeFavClub(c.id)}
                         aria-label="삭제"
-                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 backdrop-blur flex items-center justify-center text-white hover:bg-black"
+                        className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/70 backdrop-blur flex items-center justify-center text-foreground hover:bg-background"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div className="mt-1 text-[11px] font-bold text-white truncate">
+                    <div className="mt-1 text-[11px] font-bold text-foreground truncate">
                       {c.name}
                     </div>
                   </div>
@@ -614,18 +614,18 @@ export function ProfileEditSheet({
             {favClubs.length < MAX_FAVORITE_CLUBS && (
               <>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
                     value={clubQuery}
                     onChange={(e) => setClubQuery(e.target.value)}
                     placeholder="클럽 이름으로 검색"
-                    className="w-full bg-[#0A0A0A] border border-neutral-800 rounded-xl pl-9 pr-3 py-2.5 text-[14px] text-white placeholder-neutral-600 focus:outline-none focus:border-neutral-600"
+                    className="w-full bg-background border border-border rounded-xl pl-9 pr-3 py-2.5 text-[14px] text-foreground placeholder-neutral-600 focus:outline-none focus:border-border"
                   />
                 </div>
 
                 {searching && (
-                  <p className="mt-2 text-[12px] text-neutral-500">검색 중...</p>
+                  <p className="mt-2 text-[12px] text-muted-foreground">검색 중...</p>
                 )}
 
                 {!searching && clubResults.length > 0 && (
@@ -634,9 +634,9 @@ export function ProfileEditSheet({
                       <button
                         key={c.id}
                         onClick={() => addFavClub(c)}
-                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-900 text-left"
+                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-card text-left"
                       >
-                        <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-neutral-900 shrink-0">
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden bg-card shrink-0">
                           {c.thumbnail_url ? (
                             <Image
                               src={c.thumbnail_url}
@@ -646,16 +646,16 @@ export function ProfileEditSheet({
                               className="object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-white/40 text-sm font-black">
+                            <div className="w-full h-full flex items-center justify-center text-foreground/40 text-sm font-black">
                               {c.name.charAt(0)}
                             </div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[14px] font-bold text-white truncate">
+                          <div className="text-[14px] font-bold text-foreground truncate">
                             {c.name}
                           </div>
-                          <div className="text-[12px] text-neutral-500">
+                          <div className="text-[12px] text-muted-foreground">
                             {c.area}
                           </div>
                         </div>
@@ -665,7 +665,7 @@ export function ProfileEditSheet({
                 )}
 
                 {!searching && clubQuery.trim() && clubResults.length === 0 && (
-                  <p className="mt-2 text-[12px] text-neutral-500">
+                  <p className="mt-2 text-[12px] text-muted-foreground">
                     검색 결과가 없습니다
                   </p>
                 )}
@@ -675,11 +675,11 @@ export function ProfileEditSheet({
           )}
 
           {/* 저장 버튼 */}
-          <div className="flex gap-2 pt-2 sticky bottom-0 bg-[#1C1C1E] pb-2">
+          <div className="flex gap-2 pt-2 sticky bottom-0 bg-card pb-2">
             <button
               onClick={() => onOpenChange(false)}
               disabled={saving}
-              className="flex-1 h-12 rounded-full border border-neutral-700 font-bold text-[15px] hover:bg-neutral-900 disabled:opacity-50"
+              className="flex-1 h-12 rounded-full border border-border font-bold text-[15px] hover:bg-card disabled:opacity-50"
             >
               취소
             </button>
@@ -688,8 +688,8 @@ export function ProfileEditSheet({
               disabled={saving || isOverLimit || !isDirty}
               className={`flex-1 h-12 rounded-full font-black text-[15px] transition-colors ${
                 saving || isOverLimit || !isDirty
-                  ? "bg-neutral-800 text-neutral-500 cursor-not-allowed"
-                  : "bg-white text-black hover:bg-neutral-200"
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : "bg-inverse text-inverse-foreground hover:opacity-90"
               }`}
             >
               {saving ? "저장 중..." : "저장"}

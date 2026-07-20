@@ -134,23 +134,23 @@ export default async function AdminHotdealSlotsPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
+    <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
       <div className="max-w-5xl mx-auto px-6 space-y-8">
         <header className="space-y-2">
           <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 hover:border-neutral-700 transition-colors"
+              className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border hover:border-border transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 text-neutral-400" />
+              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
             </Link>
-            <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-widest text-[11px]">
+            <div className="flex items-center gap-2 text-muted-foreground font-bold uppercase tracking-widest text-[11px]">
               <CalendarCheck className="w-3.5 h-3.5" />
               Guest Sign Assign
             </div>
           </div>
           <h1 className="text-4xl font-black tracking-tighter">게스트 간판 배정</h1>
-          <p className="text-neutral-500 font-medium">
+          <p className="text-muted-foreground font-medium">
             클럽별 담당 파트너를 미리 배정해요. 빈 슬롯은 그대로 두면 파트너가 선착순으로 차지할 수 있어요.
           </p>
         </header>

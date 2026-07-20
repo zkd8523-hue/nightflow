@@ -76,35 +76,35 @@ export default function JaFaqPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }} />
       <div className="max-w-2xl mx-auto px-6 py-16 space-y-12">
         <header className="space-y-4 text-center">
-          <Link href="/ja" className="text-[12px] text-neutral-500 hover:text-white">← NightFlow</Link>
+          <Link href="/ja" className="text-[12px] text-muted-foreground hover:text-foreground">← NightFlow</Link>
           <h1 className="text-[32px] font-black tracking-tight leading-[1.15]">ソウルクラブ予約 FAQ</h1>
-          <p className="text-[14px] text-neutral-400 leading-relaxed">
+          <p className="text-[14px] text-muted-foreground leading-relaxed">
             ソウルナイトライフに関する本物の回答、日本人旅行者向けに整理。価格、ドレスコード、VIPルーム、ブローカー問題 — 初めてソウルでクラブに行く前に知っておくべきこと全て。
           </p>
         </header>
         <section className="space-y-3">
           {FAQS.map((f, i) => (
-            <details key={i} className="group rounded-2xl bg-[#1C1C1E] border border-neutral-800 overflow-hidden">
+            <details key={i} className="group rounded-2xl bg-card border border-border overflow-hidden">
               <summary className="flex items-center justify-between gap-3 p-5 cursor-pointer list-none select-none">
-                <span className="font-bold text-[15px] text-neutral-100 leading-snug">{f.q}</span>
-                <span className="text-neutral-500 transition-transform group-open:rotate-180 shrink-0">▾</span>
+                <span className="font-bold text-[15px] text-foreground leading-snug">{f.q}</span>
+                <span className="text-muted-foreground transition-transform group-open:rotate-180 shrink-0">▾</span>
               </summary>
               <div className="px-5 pb-5">
-                <p className="text-[13px] text-neutral-400 leading-relaxed">{f.a}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{f.a}</p>
               </div>
             </details>
           ))}
         </section>
         <section className="space-y-3 pt-4 text-center">
-          <Link href="/ja" className="block w-full py-4 rounded-xl bg-white text-black font-black text-base hover:bg-neutral-200 transition-colors">
+          <Link href="/ja" className="block w-full py-4 rounded-xl bg-inverse text-inverse-foreground font-black text-base hover:opacity-90 transition-colors">
             🍾 NightFlowで予約する
           </Link>
-          <p className="text-[12px] text-neutral-600">19+ · パスポート持参 · 予約手数料なし</p>
+          <p className="text-[12px] text-muted-foreground">19+ · パスポート持参 · 予約手数料なし</p>
         </section>
       </div>
     </div>

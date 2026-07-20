@@ -333,7 +333,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
     // 노쇼 카운트만 있는 경우 (레거시)
     if (user.noshow_count > 0) {
       return (
-        <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-xs px-2 py-1 border font-bold">
+        <Badge className="bg-amber-500/10 text-brand-amber border-amber-500/30 text-xs px-2 py-1 border font-bold">
           <AlertTriangle className="w-3 h-3 mr-1" />
           노쇼 (레거시)
         </Badge>
@@ -341,7 +341,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
     }
 
     return (
-      <Badge className="bg-green-500/10 text-green-500 border-green-500/30 text-xs px-2 py-1 border font-bold">
+      <Badge className="bg-green-500/10 text-money border-green-500/30 text-xs px-2 py-1 border font-bold">
         <CheckCircle className="w-3 h-3 mr-1" />
         정상
       </Badge>
@@ -356,8 +356,8 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
           onClick={() => setNationalityFilter("domestic")}
           className={`px-4 py-2 rounded-full text-[13px] font-bold transition-colors ${
             nationalityFilter === "domestic"
-              ? "bg-white text-black"
-              : "bg-neutral-800 text-neutral-400 hover:text-white"
+              ? "bg-inverse text-inverse-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground"
           }`}
         >
           🇰🇷 내국인
@@ -366,15 +366,15 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
           onClick={() => setNationalityFilter("foreign")}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold transition-colors ${
             nationalityFilter === "foreign"
-              ? "bg-white text-black"
-              : "bg-neutral-800 text-neutral-400 hover:text-white"
+              ? "bg-inverse text-inverse-foreground"
+              : "bg-muted text-muted-foreground hover:text-foreground"
           }`}
         >
           🌍 외국인
           <span className={`text-[11px] font-black px-1.5 py-0.5 rounded-full ${
             nationalityFilter === "foreign"
               ? "bg-black/20 text-black"
-              : "bg-neutral-700 text-neutral-300"
+              : "bg-muted text-foreground/80"
           }`}>
             {foreignCount}
           </span>
@@ -384,16 +384,16 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
       {/* 필터 */}
       <div className="flex gap-4">
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
             placeholder="이름, 전화번호, 카카오ID 검색..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-[#1C1C1E] border-neutral-800 text-white"
+            className="pl-10 bg-card border-border text-foreground"
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px] bg-[#1C1C1E] border-neutral-800 text-white">
+          <SelectTrigger className="w-[180px] bg-card border-border text-foreground">
             <SelectValue placeholder="상태 필터" />
           </SelectTrigger>
           <SelectContent>
@@ -408,7 +408,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
           </SelectContent>
         </Select>
         <Select value={genderFilter} onValueChange={(v) => setGenderFilter(v as typeof genderFilter)}>
-          <SelectTrigger className="w-[130px] bg-[#1C1C1E] border-neutral-800 text-white">
+          <SelectTrigger className="w-[130px] bg-card border-border text-foreground">
             <SelectValue placeholder="성별" />
           </SelectTrigger>
           <SelectContent>
@@ -420,7 +420,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
         </Select>
         {nationalityFilter === "foreign" && (
           <Select value={visitFilter} onValueChange={(v) => setVisitFilter(v as typeof visitFilter)}>
-            <SelectTrigger className="w-[160px] bg-[#1C1C1E] border-neutral-800 text-white">
+            <SelectTrigger className="w-[160px] bg-card border-border text-foreground">
               <SelectValue placeholder="방문 상태" />
             </SelectTrigger>
             <SelectContent>
@@ -432,7 +432,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
           </Select>
         )}
         <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as typeof sortOrder)}>
-          <SelectTrigger className="w-[170px] bg-[#1C1C1E] border-neutral-800 text-white">
+          <SelectTrigger className="w-[170px] bg-card border-border text-foreground">
             <SelectValue placeholder="정렬" />
           </SelectTrigger>
           <SelectContent>
@@ -445,23 +445,23 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
       </div>
 
       {/* 유저 목록 */}
-      <div className="bg-[#1C1C1E] border border-neutral-800 rounded-2xl overflow-hidden">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
         <div className="overflow-x-auto landscape:max-md:overflow-x-visible">
           <table className="w-full landscape:max-md:table-fixed">
             <thead>
-              <tr className="border-b border-neutral-800 landscape:max-md:text-[11px]">
-                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">이름</th>
-                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">연락처</th>
-                <th className="text-center p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">상태</th>
-                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">가입일</th>
-                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">최근 접속</th>
-                <th className="text-center p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-neutral-400">액션</th>
+              <tr className="border-b border-border landscape:max-md:text-[11px]">
+                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-muted-foreground">이름</th>
+                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-muted-foreground">연락처</th>
+                <th className="text-center p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-muted-foreground">상태</th>
+                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-muted-foreground">가입일</th>
+                <th className="text-left p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-muted-foreground">최근 접속</th>
+                <th className="text-center p-4 landscape:max-md:p-2 text-sm landscape:max-md:text-[11px] font-bold text-muted-foreground">액션</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-12 text-neutral-500">
+                  <td colSpan={6} className="text-center py-12 text-muted-foreground">
                     유저가 없습니다
                   </td>
                 </tr>
@@ -470,13 +470,13 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                   return (
                     <tr
                       key={user.id}
-                      className="border-b border-neutral-800/50 hover:bg-neutral-900/50 transition-colors cursor-pointer"
+                      className="border-b border-border/50 hover:bg-card/50 transition-colors cursor-pointer"
                       onClick={() => setSelectedUser(user)}
                     >
                       <td className="p-4 landscape:max-md:p-2">
                         <div className="flex items-center gap-3">
-                          <div className="relative w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center overflow-hidden">
-                            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-neutral-500 uppercase">{user.name?.substring(0, 1)}</span>
+                          <div className="relative w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center overflow-hidden">
+                            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-muted-foreground uppercase">{user.name?.substring(0, 1)}</span>
                             {user.profile_image && (
                               <img
                                 src={normalizeProfileImage(user.profile_image)!}
@@ -487,10 +487,10 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                             )}
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-white flex items-center gap-1.5 flex-wrap">
+                            <p className="text-sm font-bold text-foreground flex items-center gap-1.5 flex-wrap">
                               {user.display_name || user.name}
                               {user.role === "md" && (
-                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">파트너</span>
+                                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-brand-amber">파트너</span>
                               )}
                               {(user.strike_count || 0) > 0 && (
                                 <span
@@ -501,16 +501,16 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                                 </span>
                               )}
                             </p>
-                            <p className="text-[10px] text-neutral-500 font-mono">{user.kakao_id}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono">{user.kakao_id}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-4 landscape:max-md:p-2">
-                        <p className="text-sm text-neutral-400">{user.phone || "-"}</p>
+                        <p className="text-sm text-muted-foreground">{user.phone || "-"}</p>
                         {/* 이메일은 외국인만 표시. 한국인은 카카오 OAuth로 자동 저장되지만 UI 노출 불필요 (Model B 알림은 알림톡 사용). */}
                         {user.country_code && user.email && (
                           <p
-                            className="text-[11px] text-neutral-400 mt-0.5 truncate max-w-[200px]"
+                            className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[200px]"
                             title={user.email}
                           >
                             ✉️ {user.email}
@@ -523,7 +523,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                         {user.country_code && (
                           <p className="text-[11px] mt-0.5 font-bold">
                             {user.alimtalk_consent ? (
-                              <span className="text-green-400">📢 수신동의</span>
+                              <span className="text-money">📢 수신동의</span>
                             ) : (
                               <span className="text-red-400">🚫 수신거부</span>
                             )}
@@ -532,7 +532,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                         {(() => {
                           const age = getAge(user.birthday);
                           return (
-                            <p className="text-[11px] text-neutral-500 mt-0.5">
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
                               {getGenderLabel(user.gender)}
                               {" · "}
                               {age !== null
@@ -542,7 +542,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                           );
                         })()}
                         {user.country_code && (
-                          <p className="text-[11px] text-neutral-400 mt-0.5">
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
                             <span className="mr-1">{countryFlag(user.country_code)}</span>
                             {countryNameKo(user.country_code)}
                           </p>
@@ -552,7 +552,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                             {visitStatusMap[user.id] === "upcoming" ? (
                               <span className="text-emerald-400 font-bold">✈️ 방문 예정</span>
                             ) : (
-                              <span className="text-neutral-500">🏁 방문 이력</span>
+                              <span className="text-muted-foreground">🏁 방문 이력</span>
                             )}
                           </p>
                         )}
@@ -561,7 +561,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                         {getStatusBadge(user)}
                       </td>
                       <td className="p-4 landscape:max-md:p-2">
-                        <p className="text-xs text-neutral-400">
+                        <p className="text-xs text-muted-foreground">
                           {dayjs(user.created_at).format("YYYY-MM-DD")}
                         </p>
                         {isUserSuspended(user) && (
@@ -573,15 +573,15 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                       <td className="p-4 landscape:max-md:p-2">
                         {user.last_seen_at ? (
                           <>
-                            <p className="text-xs text-neutral-300">
+                            <p className="text-xs text-foreground/80">
                               {dayjs(user.last_seen_at).format("YYYY-MM-DD")}
                             </p>
-                            <p className="text-[10px] text-neutral-500 mt-0.5">
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
                               {dayjs(user.last_seen_at).fromNow()}
                             </p>
                           </>
                         ) : (
-                          <span className="text-xs text-neutral-600">-</span>
+                          <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </td>
                       <td className="p-4 landscape:max-md:p-2 text-center">
@@ -595,7 +595,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                                 handleBlock(user.id, false);
                               }}
                               disabled={loading}
-                              className="text-xs bg-transparent border-green-500/30 text-green-500 hover:bg-green-500/10"
+                              className="text-xs bg-transparent border-green-500/30 text-money hover:bg-green-500/10"
                             >
                               <ShieldCheck className="w-3 h-3 mr-1" />
                               차단 해제
@@ -626,7 +626,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                                     handleResetPenalty(user.id, "strike");
                                   }}
                                   disabled={loading}
-                                  className="text-xs bg-transparent border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                                  className="text-xs bg-transparent border-amber-500/30 text-brand-amber hover:bg-amber-500/10"
                                 >
                                   <RotateCcw className="w-3 h-3 mr-1" />
                                   초기화
@@ -660,21 +660,21 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
 
       {/* 유저 상세 Sheet */}
       <Sheet open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
-        <SheetContent side="right" className="bg-[#1C1C1E] border-neutral-800 w-[500px] overflow-y-auto">
+        <SheetContent side="right" className="bg-card border-border w-[500px] overflow-y-auto">
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">유저 상세</SheetTitle>
-            <SheetDescription className="text-neutral-400">
+            <SheetTitle className="text-foreground font-black text-xl">유저 상세</SheetTitle>
+            <SheetDescription className="text-muted-foreground">
               {selectedUser?.name}님의 활동 내역 및 관리
             </SheetDescription>
           </SheetHeader>
           {selectedUser && (
             <div className="space-y-6 mt-6">
               {/* 기본 정보 */}
-              <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-3 border border-neutral-800/50">
-                <h3 className="text-sm font-black text-white uppercase tracking-tight">기본 정보</h3>
+              <div className="bg-card/50 rounded-2xl p-4 space-y-3 border border-border/50">
+                <h3 className="text-sm font-black text-foreground uppercase tracking-tight">기본 정보</h3>
                 <div className="space-y-2">
                   <div className="flex justify-between items-start gap-3">
-                    <span className="text-neutral-500 text-sm shrink-0">UUID</span>
+                    <span className="text-muted-foreground text-sm shrink-0">UUID</span>
                     <button
                       type="button"
                       onClick={async () => {
@@ -685,25 +685,25 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                           toast.error("복사 실패");
                         }
                       }}
-                      className="font-mono text-[11px] text-neutral-300 hover:text-white text-right break-all cursor-pointer transition-colors"
+                      className="font-mono text-[11px] text-foreground/80 hover:text-foreground text-right break-all cursor-pointer transition-colors"
                       title="클릭하면 클립보드에 복사"
                     >
                       {selectedUser.id}
                     </button>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 text-sm">이름</span>
-                    <span className="font-bold text-white">{selectedUser.name}</span>
+                    <span className="text-muted-foreground text-sm">이름</span>
+                    <span className="font-bold text-foreground">{selectedUser.name}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 text-sm">전화번호</span>
-                    <span className="font-bold text-white">{selectedUser.phone || "-"}</span>
+                    <span className="text-muted-foreground text-sm">전화번호</span>
+                    <span className="font-bold text-foreground">{selectedUser.phone || "-"}</span>
                   </div>
                   {/* 이메일은 외국인만 표시. 한국인 이메일은 카카오 OAuth 자동 저장값이라 관리 의미 없음. */}
                   {selectedUser.country_code && (
                     <div className="flex justify-between items-start gap-3">
-                      <span className="text-neutral-500 text-sm shrink-0">이메일</span>
-                      <span className="font-bold text-white text-sm text-right break-all">
+                      <span className="text-muted-foreground text-sm shrink-0">이메일</span>
+                      <span className="font-bold text-foreground text-sm text-right break-all">
                         {selectedUser.email ? (
                           <>
                             {selectedUser.email}
@@ -712,18 +712,18 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                             )}
                           </>
                         ) : (
-                          <span className="text-neutral-500">-</span>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </span>
                     </div>
                   )}
                   <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 text-sm">성별</span>
-                    <span className="font-bold text-white text-sm">{getGenderLabel(selectedUser.gender)}</span>
+                    <span className="text-muted-foreground text-sm">성별</span>
+                    <span className="font-bold text-foreground text-sm">{getGenderLabel(selectedUser.gender)}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 text-sm">생년월일 / 나이</span>
-                    <span className="font-bold text-white text-sm">
+                    <span className="text-muted-foreground text-sm">생년월일 / 나이</span>
+                    <span className="font-bold text-foreground text-sm">
                       {(() => {
                         const age = getAge(selectedUser.birthday);
                         return age !== null
@@ -733,21 +733,21 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 text-sm">국가</span>
-                    <span className="font-bold text-white text-sm">
+                    <span className="text-muted-foreground text-sm">국가</span>
+                    <span className="font-bold text-foreground text-sm">
                       {selectedUser.country_code ? (
                         <>
                           <span className="mr-1">{countryFlag(selectedUser.country_code)}</span>
                           {countryNameKo(selectedUser.country_code)} ({selectedUser.country_code})
                         </>
                       ) : (
-                        <span className="text-neutral-500">🇰🇷 내국인</span>
+                        <span className="text-muted-foreground">🇰🇷 내국인</span>
                       )}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-neutral-500 text-sm">가입일</span>
-                    <span className="text-white text-sm">
+                    <span className="text-muted-foreground text-sm">가입일</span>
+                    <span className="text-foreground text-sm">
                       {dayjs(selectedUser.created_at).format("YYYY-MM-DD HH:mm")}
                     </span>
                   </div>
@@ -755,15 +755,15 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
               </div>
 
               {/* 패널티 정보 */}
-              <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-4 border border-neutral-800/50">
-                <h3 className="text-sm font-black text-white uppercase tracking-tight">패널티 현황</h3>
+              <div className="bg-card/50 rounded-2xl p-4 space-y-4 border border-border/50">
+                <h3 className="text-sm font-black text-foreground uppercase tracking-tight">패널티 현황</h3>
 
                 {/* Model B 스트라이크 (주요 섹션) */}
                 <div className="bg-red-500/5 border border-red-500/20 rounded-xl p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-white text-sm font-bold">스트라이크 (Model B 활성)</p>
-                      <p className="text-xs text-neutral-500 mt-0.5">
+                      <p className="text-foreground text-sm font-bold">스트라이크 (Model B 활성)</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         누진 제재: 1회=3일 정지, 2회=14일 정지, 3회=60일 정지, 4회=영구 차단
                       </p>
                     </div>
@@ -772,7 +772,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
 
                   {(selectedUser.strike_count || 0) > 0 && selectedUser.last_strike_at && (
                     <div className="flex items-center justify-between pt-2 border-t border-red-500/10">
-                      <span className="text-xs text-neutral-500">마지막 스트라이크</span>
+                      <span className="text-xs text-muted-foreground">마지막 스트라이크</span>
                       <span className="text-xs text-red-400 font-mono">
                         {dayjs(selectedUser.last_strike_at).format("YYYY-MM-DD HH:mm")}
                       </span>
@@ -795,20 +795,20 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
 
                 {/* 레거시 노쇼 (조건부 표시) */}
                 {selectedUser.noshow_count > 0 && (
-                  <div className="bg-neutral-800/30 border border-neutral-700/30 rounded-xl p-3">
+                  <div className="bg-muted/30 border border-border/30 rounded-xl p-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-neutral-500 text-xs font-bold uppercase tracking-tight">레거시 노쇼</p>
-                        <p className="text-xs text-neutral-600 mt-0.5">Model A 시절 기록 (참고용)</p>
+                        <p className="text-muted-foreground text-xs font-bold uppercase tracking-tight">레거시 노쇼</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Model A 시절 기록 (참고용)</p>
                       </div>
-                      <span className="font-black text-2xl text-amber-500">{selectedUser.noshow_count}</span>
+                      <span className="font-black text-2xl text-brand-amber">{selectedUser.noshow_count}</span>
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleResetPenalty(selectedUser.id, "noshow")}
                       disabled={loading}
-                      className="w-full text-xs bg-transparent border-neutral-700 text-neutral-400 hover:bg-neutral-800 mt-2"
+                      className="w-full text-xs bg-transparent border-border text-muted-foreground hover:bg-muted mt-2"
                     >
                       <RotateCcw className="w-3 h-3 mr-1" />
                       노쇼 카운트 초기화
@@ -821,10 +821,10 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                   <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="text-white text-sm font-bold">경고 누적</p>
-                        <p className="text-xs text-neutral-500 mt-0.5">3경고 = 1스트라이크 자동 전환</p>
+                        <p className="text-foreground text-sm font-bold">경고 누적</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">3경고 = 1스트라이크 자동 전환</p>
                       </div>
-                      <span className="font-black text-2xl text-amber-500">{selectedUser.warning_count}/3</span>
+                      <span className="font-black text-2xl text-brand-amber">{selectedUser.warning_count}/3</span>
                     </div>
                   </div>
                 )}
@@ -837,7 +837,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                     </p>
                     {isUserSuspended(selectedUser) && (
                       <>
-                        <p className="text-xs text-neutral-400">
+                        <p className="text-xs text-muted-foreground">
                           정지 해제 예정: {dayjs(selectedUser.blocked_until).format("YYYY-MM-DD HH:mm")}
                         </p>
                         <Button
@@ -857,12 +857,12 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
               </div>
 
               {/* 활동 통계 — 건전성 판단 */}
-              <div className="bg-neutral-900/50 rounded-2xl p-4 space-y-4 border border-neutral-800/50">
-                <h3 className="text-sm font-black text-white uppercase tracking-tight">활동 내역</h3>
+              <div className="bg-card/50 rounded-2xl p-4 space-y-4 border border-border/50">
+                <h3 className="text-sm font-black text-foreground uppercase tracking-tight">활동 내역</h3>
 
                 {statsLoading || !stats ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="w-5 h-5 animate-spin text-neutral-500" />
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -875,30 +875,30 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
 
                       {/* 작성자 활동 */}
                       <div>
-                        <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-2">작성자 (방장)</p>
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2">작성자 (방장)</p>
                         <div className="grid grid-cols-2 gap-2">
-                          <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
-                            <p className="text-[10px] text-neutral-500">꽂은 수</p>
-                            <p className="text-lg font-black text-white">{stats.puzzlesCreated}</p>
+                          <div className="bg-card/60 rounded-lg px-3 py-2">
+                            <p className="text-[10px] text-muted-foreground">꽂은 수</p>
+                            <p className="text-lg font-black text-foreground">{stats.puzzlesCreated}</p>
                           </div>
-                          <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
-                            <p className="text-[10px] text-neutral-500">선택 (성사)</p>
-                            <p className="text-lg font-black text-green-400">
+                          <div className="bg-card/60 rounded-lg px-3 py-2">
+                            <p className="text-[10px] text-muted-foreground">선택 (성사)</p>
+                            <p className="text-lg font-black text-money">
                               {stats.puzzlesAccepted}
                               {stats.puzzlesCreated > 0 && (
-                                <span className="text-[10px] text-neutral-500 font-medium ml-1">
+                                <span className="text-[10px] text-muted-foreground font-medium ml-1">
                                   ({Math.round((stats.puzzlesAccepted / stats.puzzlesCreated) * 100)}%)
                                 </span>
                               )}
                             </p>
                           </div>
-                          <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
-                            <p className="text-[10px] text-neutral-500">스스로 내림</p>
-                            <p className="text-lg font-black text-amber-400">{stats.puzzlesCancelled}</p>
+                          <div className="bg-card/60 rounded-lg px-3 py-2">
+                            <p className="text-[10px] text-muted-foreground">스스로 내림</p>
+                            <p className="text-lg font-black text-brand-amber">{stats.puzzlesCancelled}</p>
                           </div>
-                          <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
-                            <p className="text-[10px] text-neutral-500">만료</p>
-                            <p className="text-lg font-black text-neutral-400">{stats.puzzlesExpired}</p>
+                          <div className="bg-card/60 rounded-lg px-3 py-2">
+                            <p className="text-[10px] text-muted-foreground">만료</p>
+                            <p className="text-lg font-black text-muted-foreground">{stats.puzzlesExpired}</p>
                           </div>
                         </div>
                       </div>
@@ -906,17 +906,17 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                       {/* 참여자 활동 */}
                       {stats.puzzleJoinedCount > 0 && (
                         <div>
-                          <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-2">참여자 (파티원)</p>
+                          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-2">참여자 (파티원)</p>
                           <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
-                              <p className="text-[10px] text-neutral-500 flex items-center gap-1">
+                            <div className="bg-card/60 rounded-lg px-3 py-2">
+                              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                                 <UsersIcon className="w-3 h-3" /> 참여
                               </p>
-                              <p className="text-lg font-black text-white">{stats.puzzleJoinedCount}</p>
+                              <p className="text-lg font-black text-foreground">{stats.puzzleJoinedCount}</p>
                             </div>
-                            <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
-                              <p className="text-[10px] text-neutral-500">노쇼</p>
-                              <p className={`text-lg font-black ${stats.puzzleNoshowCount > 0 ? "text-red-400" : "text-neutral-400"}`}>
+                            <div className="bg-card/60 rounded-lg px-3 py-2">
+                              <p className="text-[10px] text-muted-foreground">노쇼</p>
+                              <p className={`text-lg font-black ${stats.puzzleNoshowCount > 0 ? "text-red-400" : "text-muted-foreground"}`}>
                                 {stats.puzzleNoshowCount}
                               </p>
                             </div>
@@ -925,37 +925,37 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                       )}
 
                       {/* MD 후기 (placeholder) */}
-                      <div className="border-t border-purple-500/10 pt-2 flex items-center gap-2 text-xs text-neutral-500">
+                      <div className="border-t border-purple-500/10 pt-2 flex items-center gap-2 text-xs text-muted-foreground">
                         <Star className="w-3.5 h-3.5" />
-                        <span>파트너 후기: <span className="text-neutral-600">추후 개발 예정</span></span>
+                        <span>파트너 후기: <span className="text-muted-foreground">추후 개발 예정</span></span>
                       </div>
                     </div>
 
                     {/* 얼리버드 (Auctions) */}
                     <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-3 space-y-3">
                       <div className="flex items-center gap-2">
-                        <Gavel className="w-4 h-4 text-amber-400" />
-                        <p className="text-sm font-black text-amber-300">얼리버드 (경매)</p>
+                        <Gavel className="w-4 h-4 text-brand-amber" />
+                        <p className="text-sm font-black text-brand-amber">얼리버드 (경매)</p>
                       </div>
 
                       <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
-                          <p className="text-[10px] text-neutral-500">입찰</p>
-                          <p className="text-lg font-black text-white">{stats.bidsTotal}</p>
+                        <div className="bg-card/60 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-muted-foreground">입찰</p>
+                          <p className="text-lg font-black text-foreground">{stats.bidsTotal}</p>
                         </div>
-                        <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
-                          <p className="text-[10px] text-neutral-500">낙찰</p>
-                          <p className="text-lg font-black text-green-400">
+                        <div className="bg-card/60 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-muted-foreground">낙찰</p>
+                          <p className="text-lg font-black text-money">
                             {stats.bidsWon}
                             {stats.bidsTotal > 0 && (
-                              <span className="text-[10px] text-neutral-500 font-medium ml-1">
+                              <span className="text-[10px] text-muted-foreground font-medium ml-1">
                                 ({Math.round((stats.bidsWon / stats.bidsTotal) * 100)}%)
                               </span>
                             )}
                           </p>
                         </div>
-                        <div className="bg-neutral-900/60 rounded-lg px-3 py-2">
-                          <p className="text-[10px] text-neutral-500 flex items-center gap-1">
+                        <div className="bg-card/60 rounded-lg px-3 py-2">
+                          <p className="text-[10px] text-muted-foreground flex items-center gap-1">
                             <Trophy className="w-3 h-3" /> 방문
                           </p>
                           <p className="text-lg font-black text-emerald-400">{stats.auctionsConfirmed}</p>
@@ -963,9 +963,9 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                       </div>
 
                       {/* MD 후기 (placeholder) */}
-                      <div className="border-t border-amber-500/10 pt-2 flex items-center gap-2 text-xs text-neutral-500">
+                      <div className="border-t border-amber-500/10 pt-2 flex items-center gap-2 text-xs text-muted-foreground">
                         <Star className="w-3.5 h-3.5" />
-                        <span>파트너 후기: <span className="text-neutral-600">추후 개발 예정</span></span>
+                        <span>파트너 후기: <span className="text-muted-foreground">추후 개발 예정</span></span>
                       </div>
                     </div>
                   </div>
@@ -994,7 +994,7 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                 <Button
                   onClick={() => { setDeleteConfirm(selectedUser); setDeleteConfirmText(""); }}
                   disabled={loading}
-                  className="h-12 rounded-2xl font-black bg-neutral-900 hover:bg-red-950 text-red-400 hover:text-red-300 border border-red-500/30 col-span-2"
+                  className="h-12 rounded-2xl font-black bg-card hover:bg-red-950 text-red-400 hover:text-red-300 border border-red-500/30 col-span-2"
                 >
                   <Trash2 className="w-4 h-4 mr-2" /> 유저 영구 삭제
                 </Button>
@@ -1011,28 +1011,28 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
           onClick={() => { if (!loading) { setDeleteConfirm(null); setDeleteConfirmText(""); } }}
         >
           <div
-            className="bg-[#1C1C1E] border border-red-500/30 rounded-3xl p-6 max-w-md w-full space-y-4"
+            className="bg-card border border-red-500/30 rounded-3xl p-6 max-w-md w-full space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 text-red-400">
               <AlertTriangle className="w-5 h-5" />
               <h3 className="text-lg font-black">유저 영구 삭제</h3>
             </div>
-            <div className="space-y-2 text-sm text-neutral-300">
+            <div className="space-y-2 text-sm text-foreground/80">
               <p>
-                <span className="font-black text-white">{deleteConfirm.display_name || deleteConfirm.name || deleteConfirm.id.slice(0, 8)}</span>
+                <span className="font-black text-foreground">{deleteConfirm.display_name || deleteConfirm.name || deleteConfirm.id.slice(0, 8)}</span>
                 {" "}유저를 영구 삭제합니다.
               </p>
               <p className="text-red-400 text-xs leading-relaxed">
                 ⚠️ 30일 grace period 없이 즉시 삭제됩니다. 본인 명의 클럽·경매·입찰·거래·정산·VIP·찜 등 모든 데이터가 같이 삭제되며 복구할 수 없습니다.
               </p>
               {deleteConfirm.role === "md" && (
-                <p className="text-amber-400 text-xs">
+                <p className="text-brand-amber text-xs">
                   이 유저는 파트너입니다. 파트너 명의 클럽과 경매 내역도 모두 삭제됩니다.
                 </p>
               )}
             </div>
-            <label className="flex items-start gap-3 p-3 rounded-xl bg-neutral-900 border border-neutral-800 cursor-pointer hover:border-red-500/40 transition-colors">
+            <label className="flex items-start gap-3 p-3 rounded-xl bg-card border border-border cursor-pointer hover:border-red-500/40 transition-colors">
               <input
                 type="checkbox"
                 checked={deleteConfirmText === "yes"}
@@ -1040,15 +1040,15 @@ export function UserManagement({ users, focusId, visitStatusMap = {} }: UserMana
                 className="mt-0.5 w-4 h-4 rounded accent-red-500"
                 autoFocus
               />
-              <span className="text-[13px] text-neutral-300 leading-relaxed">
-                위 내용을 모두 확인했으며, <span className="font-black text-white">복구할 수 없음</span>을 이해합니다.
+              <span className="text-[13px] text-foreground/80 leading-relaxed">
+                위 내용을 모두 확인했으며, <span className="font-black text-foreground">복구할 수 없음</span>을 이해합니다.
               </span>
             </label>
             <div className="flex gap-2">
               <Button
                 onClick={() => { setDeleteConfirm(null); setDeleteConfirmText(""); }}
                 disabled={loading}
-                className="flex-1 h-11 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-white font-bold"
+                className="flex-1 h-11 rounded-xl bg-muted hover:bg-muted text-foreground font-bold"
               >
                 취소
               </Button>

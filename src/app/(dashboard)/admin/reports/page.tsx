@@ -15,11 +15,11 @@ const AUCTION_REASON_LABELS: Record<string, string> = {
 
 const PUZZLE_REASON_LABELS: Record<string, { label: string; color: string }> = {
   fake_listing: { label: "허위 모임", color: "bg-red-500/15 text-red-400 border border-red-500/20" },
-  scam_suspect: { label: "사기 의심", color: "bg-amber-500/15 text-amber-400 border border-amber-500/20" },
+  scam_suspect: { label: "사기 의심", color: "bg-amber-500/15 text-brand-amber border border-amber-500/20" },
   inappropriate_content: { label: "부적절 콘텐츠", color: "bg-red-500/15 text-red-400 border border-red-500/20" },
   harassment: { label: "괴롭힘·욕설", color: "bg-orange-500/15 text-orange-400 border border-orange-500/20" },
   spam: { label: "스팸/반복", color: "bg-purple-500/15 text-purple-400 border border-purple-500/20" },
-  other: { label: "기타", color: "bg-neutral-800 text-neutral-400 border border-neutral-700/50" },
+  other: { label: "기타", color: "bg-muted text-muted-foreground border border-border/50" },
 };
 
 type SearchParams = Promise<{ tab?: string }>;
@@ -60,32 +60,32 @@ export default async function AdminReportsPage({
     : null;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto max-w-2xl px-4 py-6">
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <Link
             href="/admin"
-            className="p-2 -ml-2 hover:bg-neutral-800 rounded-xl transition-colors"
+            className="p-2 -ml-2 hover:bg-muted rounded-xl transition-colors"
           >
-            <ChevronLeft className="w-5 h-5 text-neutral-400" />
+            <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
           <div>
             <h1 className="text-xl font-black tracking-tight">신고 관리</h1>
-            <p className="text-[12px] text-neutral-500 mt-0.5">
+            <p className="text-[12px] text-muted-foreground mt-0.5">
               경매 {auctionReportCount || 0}건 / 깃발 {puzzleReportCount || 0}건 대기
             </p>
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="grid grid-cols-2 gap-2 mb-6 bg-[#1C1C1E] border border-neutral-800 rounded-2xl p-1">
+        <div className="grid grid-cols-2 gap-2 mb-6 bg-card border border-border rounded-2xl p-1">
           <Link
             href="/admin/reports?tab=auction"
             className={`text-center py-2.5 rounded-xl text-[13px] font-bold transition-colors ${
               activeTab === "auction"
-                ? "bg-white text-black"
-                : "text-neutral-400 hover:text-white"
+                ? "bg-inverse text-inverse-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             경매 신고 ({auctionReportCount || 0})
@@ -94,8 +94,8 @@ export default async function AdminReportsPage({
             href="/admin/reports?tab=puzzle"
             className={`text-center py-2.5 rounded-xl text-[13px] font-bold transition-colors ${
               activeTab === "puzzle"
-                ? "bg-white text-black"
-                : "text-neutral-400 hover:text-white"
+                ? "bg-inverse text-inverse-foreground"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             깃발 신고 ({puzzleReportCount || 0})
@@ -178,29 +178,29 @@ function AuctionReportsView({
     <>
       {/* 통계 카드 */}
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
-          <p className="text-2xl font-black text-amber-400">{pending.length}</p>
-          <p className="text-[11px] text-neutral-500 font-medium mt-1">미처리</p>
+        <Card className="bg-card border-border/50 p-4 text-center">
+          <p className="text-2xl font-black text-brand-amber">{pending.length}</p>
+          <p className="text-[11px] text-muted-foreground font-medium mt-1">미처리</p>
         </Card>
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
+        <Card className="bg-card border-border/50 p-4 text-center">
           <p className="text-2xl font-black text-red-400">
             {resolved.filter((r) => r.status === "approved").length}
           </p>
-          <p className="text-[11px] text-neutral-500 font-medium mt-1">승인됨</p>
+          <p className="text-[11px] text-muted-foreground font-medium mt-1">승인됨</p>
         </Card>
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
-          <p className="text-2xl font-black text-green-400">
+        <Card className="bg-card border-border/50 p-4 text-center">
+          <p className="text-2xl font-black text-money">
             {resolved.filter((r) => r.status === "dismissed").length}
           </p>
-          <p className="text-[11px] text-neutral-500 font-medium mt-1">기각됨</p>
+          <p className="text-[11px] text-muted-foreground font-medium mt-1">기각됨</p>
         </Card>
       </div>
 
       {!reports || reports.length === 0 ? (
         <div className="text-center py-16 space-y-3">
-          <Flag className="w-10 h-10 text-neutral-700 mx-auto" />
-          <p className="text-[15px] font-bold text-neutral-400">아직 신고가 없습니다</p>
-          <p className="text-[12px] text-neutral-600">
+          <Flag className="w-10 h-10 text-muted-foreground mx-auto" />
+          <p className="text-[15px] font-bold text-muted-foreground">아직 신고가 없습니다</p>
+          <p className="text-[12px] text-muted-foreground">
             유저가 경매를 신고하면 여기에 표시됩니다
           </p>
         </div>
@@ -219,7 +219,7 @@ function AuctionReportsView({
             return (
               <div
                 key={report.id}
-                className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3"
+                className="bg-card border border-border/50 rounded-2xl p-4 space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <span
@@ -227,13 +227,13 @@ function AuctionReportsView({
                       report.reason === "fake_listing"
                         ? "bg-red-500/15 text-red-400 border border-red-500/20"
                         : report.reason === "scam_suspect"
-                        ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
-                        : "bg-neutral-800 text-neutral-400 border border-neutral-700/50"
+                        ? "bg-amber-500/15 text-brand-amber border border-amber-500/20"
+                        : "bg-muted text-muted-foreground border border-border/50"
                     }`}
                   >
                     {AUCTION_REASON_LABELS[report.reason] || report.reason}
                   </span>
-                  <span className="text-[11px] text-neutral-600">
+                  <span className="text-[11px] text-muted-foreground">
                     {new Date(report.created_at).toLocaleDateString("ko-KR", {
                       month: "short",
                       day: "numeric",
@@ -246,19 +246,19 @@ function AuctionReportsView({
                 <div className="space-y-1">
                   <Link
                     href={`/auctions/${report.auction_id}`}
-                    className="text-[14px] font-bold text-white hover:text-amber-400 transition-colors"
+                    className="text-[14px] font-bold text-foreground hover:text-brand-amber transition-colors"
                   >
                     {auction?.title || "경매 정보 없음"}
                   </Link>
-                  <div className="flex items-center gap-2 text-[12px] text-neutral-500">
+                  <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
                     <span>클럽: {auction?.club?.name || "-"}</span>
                     <span>파트너: {auction?.md?.name || "-"}</span>
                   </div>
                 </div>
 
                 {report.memo && (
-                  <div className="bg-[#0A0A0A] rounded-xl p-3 border border-neutral-800/50">
-                    <p className="text-[12px] text-neutral-400 leading-relaxed">
+                  <div className="bg-background rounded-xl p-3 border border-border/50">
+                    <p className="text-[12px] text-muted-foreground leading-relaxed">
                       {report.memo}
                     </p>
                   </div>
@@ -266,7 +266,7 @@ function AuctionReportsView({
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <span className="text-[11px] text-neutral-600">
+                    <span className="text-[11px] text-muted-foreground">
                       신고자: {reporter?.name || "알 수 없음"}
                     </span>
                     {countByAuction[report.auction_id] > 1 && (
@@ -345,29 +345,29 @@ function PuzzleReportsView({
   return (
     <>
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
-          <p className="text-2xl font-black text-amber-400">{pending.length}</p>
-          <p className="text-[11px] text-neutral-500 font-medium mt-1">미처리</p>
+        <Card className="bg-card border-border/50 p-4 text-center">
+          <p className="text-2xl font-black text-brand-amber">{pending.length}</p>
+          <p className="text-[11px] text-muted-foreground font-medium mt-1">미처리</p>
         </Card>
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
+        <Card className="bg-card border-border/50 p-4 text-center">
           <p className="text-2xl font-black text-red-400">
             {resolved.filter((r) => r.status === "approved").length}
           </p>
-          <p className="text-[11px] text-neutral-500 font-medium mt-1">승인됨</p>
+          <p className="text-[11px] text-muted-foreground font-medium mt-1">승인됨</p>
         </Card>
-        <Card className="bg-[#1C1C1E] border-neutral-800/50 p-4 text-center">
-          <p className="text-2xl font-black text-green-400">
+        <Card className="bg-card border-border/50 p-4 text-center">
+          <p className="text-2xl font-black text-money">
             {resolved.filter((r) => r.status === "dismissed").length}
           </p>
-          <p className="text-[11px] text-neutral-500 font-medium mt-1">기각됨</p>
+          <p className="text-[11px] text-muted-foreground font-medium mt-1">기각됨</p>
         </Card>
       </div>
 
       {!reports || reports.length === 0 ? (
         <div className="text-center py-16 space-y-3">
-          <Flag className="w-10 h-10 text-neutral-700 mx-auto" />
-          <p className="text-[15px] font-bold text-neutral-400">아직 신고가 없습니다</p>
-          <p className="text-[12px] text-neutral-600">
+          <Flag className="w-10 h-10 text-muted-foreground mx-auto" />
+          <p className="text-[15px] font-bold text-muted-foreground">아직 신고가 없습니다</p>
+          <p className="text-[12px] text-muted-foreground">
             유저가 깃발을 신고하면 여기에 표시됩니다
           </p>
         </div>
@@ -391,7 +391,7 @@ function PuzzleReportsView({
             return (
               <div
                 key={report.id}
-                className="bg-[#1C1C1E] border border-neutral-800/50 rounded-2xl p-4 space-y-3"
+                className="bg-card border border-border/50 rounded-2xl p-4 space-y-3"
               >
                 <div className="flex items-center justify-between">
                   <span
@@ -399,7 +399,7 @@ function PuzzleReportsView({
                   >
                     {reasonMeta.label}
                   </span>
-                  <span className="text-[11px] text-neutral-600">
+                  <span className="text-[11px] text-muted-foreground">
                     {new Date(report.created_at).toLocaleDateString("ko-KR", {
                       month: "short",
                       day: "numeric",
@@ -412,19 +412,19 @@ function PuzzleReportsView({
                 <div className="space-y-1">
                   <Link
                     href={`/flags/${report.puzzle_id}`}
-                    className="text-[14px] font-bold text-white hover:text-amber-400 transition-colors"
+                    className="text-[14px] font-bold text-foreground hover:text-brand-amber transition-colors"
                   >
                     깃발 보기 →
                   </Link>
-                  <div className="flex items-center gap-2 text-[12px] text-neutral-500">
+                  <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
                     <span>방장: {leaderName}</span>
                     <span>상태: {puzzle?.status || "-"}</span>
                   </div>
                 </div>
 
                 {report.memo && (
-                  <div className="bg-[#0A0A0A] rounded-xl p-3 border border-neutral-800/50">
-                    <p className="text-[12px] text-neutral-400 leading-relaxed">
+                  <div className="bg-background rounded-xl p-3 border border-border/50">
+                    <p className="text-[12px] text-muted-foreground leading-relaxed">
                       {report.memo}
                     </p>
                   </div>
@@ -432,7 +432,7 @@ function PuzzleReportsView({
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
-                    <span className="text-[11px] text-neutral-600">
+                    <span className="text-[11px] text-muted-foreground">
                       신고자: {reporter?.display_name || reporter?.name || "알 수 없음"}
                     </span>
                     {countByPuzzle[report.puzzle_id] > 1 && (

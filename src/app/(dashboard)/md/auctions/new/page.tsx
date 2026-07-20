@@ -28,20 +28,20 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
         const isRevoked = userData.md_status === "revoked";
 
         return (
-            <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+            <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="max-w-md mx-auto p-6 text-center space-y-4">
                     <p className="text-4xl">
                         {isRevoked ? "\uD83D\uDEAB" : "\u23F8\uFE0F"}
                     </p>
-                    <h1 className="text-xl font-bold text-white">
+                    <h1 className="text-xl font-bold text-foreground">
                         {isRevoked ? "파트너 자격 박탈" : "활동 정지 중"}
                     </h1>
-                    <p className="text-neutral-400 text-sm">
+                    <p className="text-muted-foreground text-sm">
                         {isRevoked
                             ? "파트너 자격이 박탈되었습니다. 문의사항은 관리자에게 연락해주세요."
                             : "운영 정책 위반으로 활동이 일시 정지되었습니다."}
                     </p>
-                    <Link href={isRevoked ? "/" : "/md/dashboard"} className="inline-block mt-4 px-6 py-3 bg-white text-black font-bold rounded-xl">
+                    <Link href={isRevoked ? "/" : "/md/dashboard"} className="inline-block mt-4 px-6 py-3 bg-inverse text-inverse-foreground font-bold rounded-xl">
                         {isRevoked ? "홈으로 돌아가기" : "대시보드로 돌아가기"}
                     </Link>
                 </div>
@@ -69,20 +69,20 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
     // 클럽 없음 → 신청 유도
     if (approvedClubs.length === 0) {
         return (
-            <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+            <div className="min-h-screen bg-background flex items-center justify-center">
                 <div className="max-w-md mx-auto p-6 text-center space-y-6">
                     <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto">
                         <span className="text-3xl">🏢</span>
                     </div>
                     <div className="space-y-2">
-                        <h1 className="text-xl font-bold text-white">등록된 클럽이 없습니다</h1>
-                        <p className="text-neutral-400 text-sm leading-relaxed">
+                        <h1 className="text-xl font-bold text-foreground">등록된 클럽이 없습니다</h1>
+                        <p className="text-muted-foreground text-sm leading-relaxed">
                             경매를 등록하려면 먼저 클럽을 등록해주세요.
                         </p>
                     </div>
                     <Link
                         href="/md/clubs/new"
-                        className="inline-block px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-neutral-200 transition-colors"
+                        className="inline-block px-6 py-3 bg-inverse text-inverse-foreground font-bold rounded-xl hover:opacity-90 transition-colors"
                     >
                         바로 등록하기 →
                     </Link>
@@ -104,17 +104,17 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: P
     }
 
     return (
-        <div className="min-h-screen bg-[#0A0A0A] pb-20">
+        <div className="min-h-screen bg-background pb-20">
             <div className="max-w-lg mx-auto p-6 pt-12">
                 <div className="flex items-center gap-4 mb-8">
-                    <Link href="/" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800">
-                        <ChevronLeft className="w-5 h-5 text-neutral-400" />
+                    <Link href="/" className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border">
+                        <ChevronLeft className="w-5 h-5 text-muted-foreground" />
                     </Link>
                     <div className="space-y-0.5">
-                        <h1 className="text-2xl font-black text-white tracking-tight">
+                        <h1 className="text-2xl font-black text-foreground tracking-tight">
                             {repostFrom ? "조각 재등록" : "조각 등록"}
                         </h1>
-                        <p className="text-neutral-500 text-sm font-medium">
+                        <p className="text-muted-foreground text-sm font-medium">
                             {repostFrom
                                 ? "설정 그대로, 한 번 더 채워보세요."
                                 : "올리면 저절로 모이는 조각 시스템."}

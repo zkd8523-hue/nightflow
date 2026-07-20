@@ -55,18 +55,18 @@ export function PromptDialog({
 
     return (
         <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-            <SheetContent side="bottom" className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-[32px] p-6 pb-12 outline-none">
+            <SheetContent side="bottom" className="h-auto bg-card border-border rounded-t-[32px] p-6 pb-12 outline-none">
                 <SheetHeader className="text-left space-y-3">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                            <Edit3 className="w-5 h-5 text-amber-500" />
+                            <Edit3 className="w-5 h-5 text-brand-amber" />
                         </div>
-                        <SheetTitle className="text-white font-black text-xl tracking-tight">
+                        <SheetTitle className="text-foreground font-black text-xl tracking-tight">
                             {title}
                         </SheetTitle>
                     </div>
                     {description && (
-                        <SheetDescription className="text-neutral-400 font-medium leading-relaxed mt-1">
+                        <SheetDescription className="text-muted-foreground font-medium leading-relaxed mt-1">
                             {description}
                         </SheetDescription>
                     )}
@@ -82,8 +82,8 @@ export function PromptDialog({
                                     onClick={() => setValue(opt)}
                                     className={`px-3 py-1.5 rounded-full text-sm font-bold transition-all border ${
                                         value === opt
-                                            ? "bg-white text-black border-white"
-                                            : "bg-neutral-900 text-neutral-400 border-neutral-700 hover:border-neutral-500"
+                                            ? "bg-inverse text-inverse-foreground border-white"
+                                            : "bg-card text-muted-foreground border-border hover:border-border"
                                     }`}
                                 >
                                     {opt}
@@ -96,7 +96,7 @@ export function PromptDialog({
                         onChange={(e) => setValue(e.target.value)}
                         placeholder={placeholder}
                         autoFocus
-                        className="bg-neutral-900 border-neutral-800 h-14 text-white font-bold text-lg rounded-2xl focus:ring-amber-500"
+                        className="bg-card border-border h-14 text-foreground font-bold text-lg rounded-2xl focus:ring-amber-500"
                     />
 
                     <div className="grid grid-cols-2 gap-3">
@@ -107,7 +107,7 @@ export function PromptDialog({
                                 onCancel?.();
                                 onOpenChange(false);
                             }}
-                            className="h-14 rounded-2xl border-neutral-800 bg-neutral-900/50 text-neutral-400 font-bold hover:bg-neutral-800"
+                            className="h-14 rounded-2xl border-border bg-card/50 text-muted-foreground font-bold hover:bg-muted"
                         >
                             취소
                         </Button>
@@ -118,7 +118,7 @@ export function PromptDialog({
                                 onOpenChange(false);
                             }}
                             disabled={options ? false : !value.trim()}
-                            className="h-14 rounded-2xl bg-white hover:bg-neutral-200 text-black font-black text-lg shadow-lg"
+                            className="h-14 rounded-2xl bg-inverse hover:opacity-90 text-inverse-foreground font-black text-lg shadow-lg"
                         >
                             {confirmText}
                         </Button>

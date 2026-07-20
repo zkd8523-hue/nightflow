@@ -62,13 +62,13 @@ export function ContactButton({ auctionId, type, url, clubName, tableInfo, curre
     return (
       <Button
         onClick={handleClick}
-        className="w-full h-auto py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90 flex flex-col items-center gap-0.5"
+        className="w-full h-auto py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-foreground rounded-xl hover:opacity-90 flex flex-col items-center gap-0.5"
       >
         <span className="flex items-center gap-2 font-black text-sm">
           <Instagram className="w-4 h-4" />
           DM
         </span>
-        <span className="text-[11px] font-medium text-white/70">복사된 내용을 붙여넣으면 끝!</span>
+        <span className="text-[11px] font-medium text-foreground/70">복사된 내용을 붙여넣으면 끝!</span>
       </Button>
     );
   }
@@ -91,7 +91,7 @@ export function ContactButton({ auctionId, type, url, clubName, tableInfo, curre
   return (
     <Button
       onClick={handleClick}
-      className="w-full h-11 bg-white text-black font-black text-sm rounded-xl flex items-center justify-center gap-2"
+      className="w-full h-11 bg-inverse text-inverse-foreground font-black text-sm rounded-xl flex items-center justify-center gap-2"
     >
       <Phone className="w-4 h-4" />
       전화

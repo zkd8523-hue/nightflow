@@ -7,51 +7,33 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
-  Phone,
   AlertTriangle,
   ShieldAlert,
   Clock,
   ChevronRight,
-  MessageCircle,
-  Instagram,
-  Check,
-  X,
 } from "lucide-react";
-import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { PuzzleCard } from "@/components/puzzles/PuzzleCard";
 import { MyProfileSection } from "@/components/profile/MyProfileSection";
 import { toast } from "sonner";
 import dayjs from "dayjs";
-import type { ContactMethodType, Puzzle } from "@/types/database";
-
-const CONTACT_METHOD_OPTIONS: { value: ContactMethodType; label: string; icon: typeof Instagram }[] = [
-  { value: "dm", label: "인스타 DM", icon: Instagram },
-  { value: "kakao", label: "오픈채팅", icon: MessageCircle },
-  { value: "phone", label: "전화", icon: Phone },
-];
+import type { Puzzle } from "@/types/database";
 
 const FLAG_STATUS: Record<string, { text: string; tone: string }> = {
-  open: { text: "제안 받는중", tone: "text-amber-400" },
-  selecting: { text: "제안 검토중", tone: "text-amber-400" },
-  matched: { text: "매칭 완료", tone: "text-green-400" },
-  accepted: { text: "매칭 완료", tone: "text-green-400" },
-  cancelled: { text: "취소됨", tone: "text-neutral-500" },
-  expired: { text: "만료됨", tone: "text-neutral-500" },
+  open: { text: "제안 받는중", tone: "text-brand-amber" },
+  selecting: { text: "제안 검토중", tone: "text-brand-amber" },
+  matched: { text: "매칭 완료", tone: "text-money" },
+  accepted: { text: "매칭 완료", tone: "text-money" },
+  cancelled: { text: "취소됨", tone: "text-muted-foreground" },
+  expired: { text: "만료됨", tone: "text-muted-foreground" },
 };
 
 export default function ProfilePage() {
-  const { user, isLoading, refetch } = useCurrentUser();
+  const { user, isLoading } = useCurrentUser();
   const router = useRouter();
   const supabase = createClient();
 
   // 닉네임/사진 편집은 /me (공개 프로필) ProfileEditSheet에서 처리
-
-  // MD 비즈니스 연락처 수정
-  const [isEditingBusiness, setIsEditingBusiness] = useState(false);
-  const [instagram, setInstagram] = useState("");
-  const [kakaoUrl, setKakaoUrl] = useState("");
-  const [preferredMethods, setPreferredMethods] = useState<ContactMethodType[]>([]);
-  const [savingBusiness, setSavingBusiness] = useState(false);
+  // MD 파트너 연락처(인스타/카카오)는 자주 안 바꾸는 값이라 설정으로 이동 → PartnerContactSettings
 
   const [myFlags, setMyFlags] = useState<Puzzle[]>([]);
   // 진행중 깃발별 pending 오퍼 수 — 홈 카드와 동일한 "오퍼 N개 중에서 고르는중" 표시용
@@ -178,8 +160,8 @@ export default function ProfilePage() {
 
   if (isLoading && !timedOut) {
     return (
-      <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-neutral-700 border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-border border-t-white rounded-full animate-spin" />
       </div>
     );
   }
@@ -189,68 +171,21 @@ export default function ProfilePage() {
     return null;
   }
 
-  // MD 비즈니스 연락처 수정 시작
-  const handleEditBusiness = () => {
-    setInstagram(user.instagram || "");
-    setKakaoUrl(user.kakao_open_chat_url || "");
-    setPreferredMethods(user.preferred_contact_methods || []);
-    setIsEditingBusiness(true);
-  };
-
-  // MD 비즈니스 연락처 저장 (API 경유 → slug 재생성)
-  const handleSaveBusiness = async () => {
-    const cleanInstagram = instagram.trim().replace(/^@/, "");
-    if (!cleanInstagram) {
-      toast.error("인스타그램 아이디를 입력해주세요");
-      return;
-    }
-    if (!/^[a-zA-Z0-9._]{1,30}$/.test(cleanInstagram)) {
-      toast.error("인스타그램 아이디 형식이 올바르지 않습니다");
-      return;
-    }
-    if (kakaoUrl && !/^https:\/\/open\.kakao\.com\//.test(kakaoUrl)) {
-      toast.error("카카오톡 오픈채팅 URL 형식이 올바르지 않습니다");
-      return;
-    }
-
-    setSavingBusiness(true);
-    try {
-      const res = await fetch("/api/md/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          instagram: cleanInstagram,
-          kakao_open_chat_url: kakaoUrl.trim() || null,
-          preferred_contact_methods: preferredMethods.length > 0 ? preferredMethods : null,
-        }),
-      });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "저장에 실패했습니다");
-      toast.success("파트너 정보가 저장되었습니다");
-      setIsEditingBusiness(false);
-      refetch();
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "저장에 실패했습니다");
-    } finally {
-      setSavingBusiness(false);
-    }
-  };
-
   const isBanned = user.blocked_until && new Date(user.blocked_until) > new Date();
   const isBlocked = user.is_blocked;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-lg px-4 py-6">
         {/* 헤더 */}
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </button>
-          <h1 className="text-xl font-black text-white">MY</h1>
+          <h1 className="text-xl font-black text-foreground">MY</h1>
         </div>
 
         {/* 내 공개 프로필 — /u/[id]와 동일한 화면을 그대로 렌더 */}
@@ -262,181 +197,16 @@ export default function ProfilePage() {
         {(isBlocked || isBanned) && (
           <div className={`rounded-2xl p-4 mb-4 ${isBlocked ? "bg-red-500/10 border border-red-500/20" : "bg-amber-500/10 border border-amber-500/20"}`}>
             <div className="flex items-center gap-2 mb-1">
-              <ShieldAlert className={`w-4 h-4 ${isBlocked ? "text-red-400" : "text-amber-400"}`} />
-              <span className={`text-[13px] font-bold ${isBlocked ? "text-red-400" : "text-amber-400"}`}>
+              <ShieldAlert className={`w-4 h-4 ${isBlocked ? "text-red-400" : "text-brand-amber"}`} />
+              <span className={`text-[13px] font-bold ${isBlocked ? "text-red-400" : "text-brand-amber"}`}>
                 {isBlocked ? "계정이 영구 정지되었습니다" : "이용이 일시 정지되었습니다"}
               </span>
             </div>
             {isBanned && !isBlocked && (
-              <p className="text-[12px] text-neutral-400 ml-6">
+              <p className="text-[12px] text-muted-foreground ml-6">
                 정지 해제: {dayjs(user.blocked_until).format("YYYY년 M월 D일 HH:mm")}
               </p>
             )}
-          </div>
-        )}
-
-        {/* MD 비즈니스 연락처 */}
-        {(user.role === "md" || user.role === "admin") && (
-          <div className="bg-[#1C1C1E] rounded-2xl p-5 mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[15px] font-bold text-white">파트너 정보</h2>
-              {!isEditingBusiness ? (
-                <button
-                  onClick={handleEditBusiness}
-                  className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold"
-                >
-                  수정
-                </button>
-              ) : (
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setIsEditingBusiness(false)}
-                    className="text-[13px] text-neutral-500 hover:text-neutral-300 transition-colors font-bold"
-                  >
-                    취소
-                  </button>
-                  <button
-                    onClick={handleSaveBusiness}
-                    disabled={savingBusiness}
-                    className="text-[13px] text-blue-400 hover:text-blue-300 transition-colors font-bold disabled:opacity-50"
-                  >
-                    {savingBusiness ? "저장 중..." : "저장"}
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-4">
-              {/* 인스타그램 */}
-              <div className="flex items-center gap-3">
-                <Instagram className="w-4 h-4 text-neutral-500 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-[11px] text-neutral-500">인스타그램 *</p>
-                  {isEditingBusiness ? (
-                    <div className="relative mt-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-[14px]">@</span>
-                      <input
-                        type="text"
-                        value={instagram.replace(/^@/, "")}
-                        onChange={(e) =>
-                          setInstagram(e.target.value.replace(/^@/, "").replace(/[^a-zA-Z0-9._]/g, ""))
-                        }
-                        maxLength={30}
-                        placeholder="your_instagram_id"
-                        className="w-full bg-neutral-800 border border-neutral-700 rounded-lg pl-7 pr-3 py-2 text-[14px] text-white focus:outline-none focus:border-blue-500 font-mono"
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-[14px] text-white font-bold">@{user.instagram || "미설정"}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* 카카오 오픈채팅 */}
-              {isEditingBusiness ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-white font-bold text-[13px]">
-                      <MessageCircle className="w-4 h-4 text-green-500" />
-                      카카오 오픈채팅 URL
-                    </div>
-                    <KakaoOpenChatGuide />
-                  </div>
-                  <div className="bg-neutral-800/50 border border-neutral-700 rounded-2xl p-4 space-y-3">
-                    <input
-                      type="url"
-                      value={kakaoUrl}
-                      onChange={(e) => setKakaoUrl(e.target.value)}
-                      placeholder="https://open.kakao.com/o/..."
-                      className="w-full bg-neutral-900 border border-neutral-800 rounded-xl px-3 py-2.5 text-[13px] text-white focus:outline-none focus:border-green-500 font-mono"
-                    />
-                    <p className="text-[11px] text-neutral-500 leading-relaxed">
-                      방 만든 후 URL을 붙여넣어 주세요.<br />
-                      낙찰 고객에게만 공개됩니다.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <MessageCircle className="w-4 h-4 text-neutral-500 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-[11px] text-neutral-500">카카오 오픈채팅</p>
-                    {user.kakao_open_chat_url ? (
-                      <a
-                        href={user.kakao_open_chat_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-3 bg-[#FEE500] text-[#3C1E1E] font-bold text-[13px] rounded-xl hover:bg-[#FDD835] transition-colors mt-1"
-                      >
-                        카카오 오픈채팅 열기
-                      </a>
-                    ) : (
-                      <p className="text-[13px] text-neutral-500">미설정</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* 고객에게 표시할 연락 수단 */}
-              <div>
-                <p className="text-[11px] text-neutral-500 mb-2">고객에게 표시할 연락 수단</p>
-                {isEditingBusiness ? (
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      {CONTACT_METHOD_OPTIONS.map(({ value, label, icon: Icon }) => {
-                        const isSelected = preferredMethods.includes(value);
-                        const isDisabled = value === "kakao" && !kakaoUrl;
-                        return (
-                          <button
-                            key={value}
-                            type="button"
-                            disabled={isDisabled}
-                            onClick={() => {
-                              setPreferredMethods((prev) =>
-                                isSelected ? prev.filter((m) => m !== value) : [...prev, value]
-                              );
-                            }}
-                            className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold transition-all ${
-                              isDisabled
-                                ? "bg-neutral-900 text-neutral-700 cursor-not-allowed"
-                                : isSelected
-                                  ? "bg-white text-black"
-                                  : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
-                            }`}
-                          >
-                            {isSelected && <Check className="w-3 h-3" />}
-                            <Icon className="w-3.5 h-3.5" />
-                            {label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <p className="text-[10px] text-neutral-600 mt-2">
-                      {preferredMethods.length === 0
-                        ? "미선택 시 모든 연락 수단이 표시됩니다"
-                        : "선택한 수단만 고객에게 표시됩니다"}
-                    </p>
-                  </>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {(user.preferred_contact_methods?.length ?? 0) > 0
-                      ? user.preferred_contact_methods!.map((m) => {
-                          const opt = CONTACT_METHOD_OPTIONS.find((o) => o.value === m);
-                          if (!opt) return null;
-                          const Icon = opt.icon;
-                          return (
-                            <span key={m} className="flex items-center gap-1 px-2.5 py-1 bg-neutral-800 rounded-full text-[11px] text-neutral-300 font-bold">
-                              <Icon className="w-3 h-3" />
-                              {opt.label}
-                            </span>
-                          );
-                        })
-                      : <span className="text-[13px] text-neutral-500">모든 수단 표시</span>
-                    }
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         )}
 
@@ -447,12 +217,12 @@ export default function ProfilePage() {
         {/* 내 깃발 — 홈과 동일하게 카드를 페이지 배경 위에 올림(패널 없음) */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[15px] font-bold text-white">내 깃발</h2>
+            <h2 className="text-[15px] font-bold text-foreground">내 깃발</h2>
             {cleanableFlagIds.length > 0 && (
               <button
                 type="button"
                 onClick={() => handleBulkCleanup(cleanableFlagIds)}
-                className="text-[12px] font-bold text-neutral-500 hover:text-neutral-300 transition-colors"
+                className="text-[12px] font-bold text-muted-foreground hover:text-foreground/80 transition-colors"
               >
                 취소·만료 {cleanableFlagIds.length}개 정리
               </button>
@@ -464,7 +234,7 @@ export default function ProfilePage() {
               {/* 모든 내 깃발 — 홈과 동일한 카드. 진행중은 오퍼 현황 노출, 종료는 상태 뱃지+삭제 */}
               {flagsOnly.map((flag) => {
                 const active = isActiveStatus(flag.status);
-                const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-neutral-400" };
+                const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-muted-foreground" };
                 const offers = active ? (flagOfferCounts[flag.id] ?? 0) : 0;
                 const newOffers = Math.max(0, offers - (flagOffersSeen[flag.id] ?? 0));
                 return (
@@ -489,7 +259,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-[13px] text-neutral-500">아직 꽂은 깃발이 없어요</p>
+              <p className="text-[13px] text-muted-foreground">아직 꽂은 깃발이 없어요</p>
             </div>
           )}
 
@@ -497,12 +267,12 @@ export default function ProfilePage() {
           {((user.warning_count || 0) > 0 || (user.strike_count || 0) > 0) && (
             <Link
               href="/my-penalties"
-              className="flex items-center justify-between gap-2 mt-3 p-2.5 bg-neutral-800/50 rounded-lg hover:bg-neutral-800 transition-colors"
+              className="flex items-center justify-between gap-2 mt-3 p-2.5 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
             >
               <div className="flex items-center gap-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <p className="text-[12px] text-neutral-400">
-                  경고 <span className="text-amber-400 font-bold">{user.warning_count || 0}</span>/3
+                <AlertTriangle className="w-3.5 h-3.5 text-brand-amber shrink-0" />
+                <p className="text-[12px] text-muted-foreground">
+                  경고 <span className="text-brand-amber font-bold">{user.warning_count || 0}</span>/3
                   {(user.strike_count || 0) > 0 && (
                     <span className="ml-2">
                       스트라이크 <span className="text-red-400 font-bold">{user.strike_count}</span>
@@ -510,14 +280,14 @@ export default function ProfilePage() {
                   )}
                 </p>
               </div>
-              <ChevronRight className="w-3.5 h-3.5 text-neutral-600 shrink-0" />
+              <ChevronRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
             </Link>
           )}
 
           {isBanned && !isBlocked && (
             <div className="flex items-center gap-2 mt-2 p-2.5 bg-amber-500/5 rounded-lg">
-              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <p className="text-[12px] text-amber-400">
+              <Clock className="w-3.5 h-3.5 text-brand-amber shrink-0" />
+              <p className="text-[12px] text-brand-amber">
                 정지 해제: {dayjs(user.blocked_until).format("YYYY.MM.DD HH:mm")}
               </p>
             </div>
@@ -527,12 +297,12 @@ export default function ProfilePage() {
         {/* 내 조각 — 홈과 동일하게 카드를 페이지 배경 위에 올림(패널 없음) */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[15px] font-bold text-white">내 조각</h2>
+            <h2 className="text-[15px] font-bold text-foreground">내 조각</h2>
             {cleanableShareIds.length > 0 && (
               <button
                 type="button"
                 onClick={() => handleBulkCleanup(cleanableShareIds)}
-                className="text-[12px] font-bold text-neutral-500 hover:text-neutral-300 transition-colors"
+                className="text-[12px] font-bold text-muted-foreground hover:text-foreground/80 transition-colors"
               >
                 취소·만료 {cleanableShareIds.length}개 정리
               </button>
@@ -543,7 +313,7 @@ export default function ProfilePage() {
               {/* 모든 내 조각 — 홈과 동일한 카드. 종료는 상태 뱃지, 내가 만든 종료 조각만 삭제 */}
               {allShares.map(({ flag, joined }) => {
                 const active = isActiveStatus(flag.status);
-                const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-neutral-400" };
+                const st = FLAG_STATUS[flag.status] ?? { text: flag.status, tone: "text-muted-foreground" };
                 return (
                   <div key={flag.id} className={active ? "" : "opacity-70"}>
                     <PuzzleCard
@@ -561,7 +331,7 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="text-center py-6">
-              <p className="text-[13px] text-neutral-500">아직 올린 조각이 없어요</p>
+              <p className="text-[13px] text-muted-foreground">아직 올린 조각이 없어요</p>
             </div>
           )}
         </div>

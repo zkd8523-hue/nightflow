@@ -159,32 +159,32 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] pt-14 pb-24">
+    <div className="min-h-screen bg-background pt-14 pb-24">
       <div className="max-w-lg mx-auto px-4">
         {/* Header */}
         <header className="pt-3 pb-5 flex items-center gap-4">
-          <Link href="/my-wins" className="p-2 -ml-2 rounded-xl hover:bg-neutral-800/50 transition-colors">
-            <ArrowLeft className="w-5 h-5 text-neutral-400" />
+          <Link href="/my-wins" className="p-2 -ml-2 rounded-xl hover:bg-muted/50 transition-colors">
+            <ArrowLeft className="w-5 h-5 text-muted-foreground" />
           </Link>
-          <h1 className="text-xl font-black text-white tracking-tight">{isInstant ? "예약 포기" : "낙찰 포기"}</h1>
+          <h1 className="text-xl font-black text-foreground tracking-tight">{isInstant ? "예약 포기" : "낙찰 포기"}</h1>
         </header>
 
         <div className="space-y-3.5">
           {/* Auction Summary */}
-          <Card className="bg-[#1C1C1E] border-neutral-800 gap-0 p-5 space-y-3">
-            <h2 className="text-lg font-black text-white tracking-tight">
+          <Card className="bg-card border-border gap-0 p-5 space-y-3">
+            <h2 className="text-lg font-black text-foreground tracking-tight">
               {auction.clubName}
             </h2>
-            <div className="flex items-center gap-2 text-xs text-neutral-500 font-bold">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground font-bold">
               <MapPin className="w-3 h-3" />
               {auction.clubArea}
               <span>·</span>
               <Calendar className="w-3 h-3" />
               {formatEventDate(auction.eventDate)}
             </div>
-            <div className="bg-neutral-900/50 rounded-xl p-3.5 border border-neutral-800/50 flex justify-between items-center">
-              <span className="text-neutral-500 text-sm font-bold">{isInstant ? "예약가" : "낙찰가"}</span>
-              <span className="text-xl font-black text-white">
+            <div className="bg-card/50 rounded-xl p-3.5 border border-border/50 flex justify-between items-center">
+              <span className="text-muted-foreground text-sm font-bold">{isInstant ? "예약가" : "낙찰가"}</span>
+              <span className="text-xl font-black text-foreground">
                 {formatPrice(auction.winningPrice)}
               </span>
             </div>
@@ -198,14 +198,14 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
           }`}>
             {/* Progress Bar - 2구간 */}
             <div className="space-y-2">
-              <div className="h-2 bg-neutral-800 rounded-full relative overflow-hidden">
+              <div className="h-2 bg-muted rounded-full relative overflow-hidden">
                 <div
                   className={`absolute left-0 top-0 h-full rounded-full transition-all duration-1000 ${barColor}`}
                   style={{ width: `${isExpired ? 100 : progressPercent}%` }}
                 />
               </div>
-              <div className="flex justify-between text-[10px] font-bold text-neutral-600">
-                <span className={cancelZone === "grace" ? "text-amber-400" : ""}>Grace (전반 50%)</span>
+              <div className="flex justify-between text-[10px] font-bold text-muted-foreground">
+                <span className={cancelZone === "grace" ? "text-brand-amber" : ""}>Grace (전반 50%)</span>
                 <span className={cancelZone === "late" ? "text-red-400" : ""}>Late (후반 50%)</span>
               </div>
             </div>
@@ -222,20 +222,20 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
                   ? "bg-red-500/10 border-red-500/30"
                   : level === "warning"
                     ? "bg-amber-500/10 border-amber-500/30"
-                    : "bg-neutral-900 border-neutral-700"
+                    : "bg-card border-border"
               }`}>
                 <div className="flex items-center gap-2">
                   <Clock className={`w-4 h-4 ${
-                    level === "critical" ? "text-red-400" : level === "warning" ? "text-amber-400" : "text-neutral-400"
+                    level === "critical" ? "text-red-400" : level === "warning" ? "text-brand-amber" : "text-muted-foreground"
                   }`} />
                   <span className={`text-xs font-bold ${
-                    level === "critical" ? "text-red-400/70" : level === "warning" ? "text-amber-400/70" : "text-neutral-400"
+                    level === "critical" ? "text-red-400/70" : level === "warning" ? "text-brand-amber dark:text-brand-amber/70" : "text-muted-foreground"
                   }`}>
                     연락 마감까지
                   </span>
                 </div>
                 <span className={`text-lg font-black tabular-nums tracking-wider ${
-                  level === "critical" ? "text-red-400 animate-pulse" : level === "warning" ? "text-amber-400" : "text-white"
+                  level === "critical" ? "text-red-400 animate-pulse" : level === "warning" ? "text-brand-amber" : "text-foreground"
                 }`}>
                   {formatTimer(remaining)}
                 </span>
@@ -244,18 +244,18 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
           </Card>
 
           {/* Consequences - 구간별 동적 표시 */}
-          <Card className="bg-[#1C1C1E] border-neutral-800 gap-0 p-5 space-y-3">
-            <h3 className="text-sm font-black text-neutral-300">취소 시 안내사항</h3>
+          <Card className="bg-card border-border gap-0 p-5 space-y-3">
+            <h3 className="text-sm font-black text-foreground/80">취소 시 안내사항</h3>
             <ul className="space-y-2.5">
               {/* 구간별 패널티 안내 */}
               <li className="flex items-start gap-2.5">
                 <ShieldAlert className={`w-4 h-4 mt-0.5 shrink-0 ${
-                  willTriggerStrike ? "text-red-500" : "text-amber-500"
+                  willTriggerStrike ? "text-red-500" : "text-brand-amber"
                 }`} />
                 <span className="text-[13px] font-medium leading-relaxed">
-                  <span className={willTriggerStrike ? "text-red-400" : "text-amber-400"}>
-                    경고 <span className="text-white font-bold">+{pendingWarningPoints}점</span> 부과
-                    <span className="text-neutral-500"> (현재 {currentWarnings}/3점)</span>
+                  <span className={willTriggerStrike ? "text-red-400" : "text-brand-amber"}>
+                    경고 <span className="text-foreground font-bold">+{pendingWarningPoints}점</span> 부과
+                    <span className="text-muted-foreground"> (현재 {currentWarnings}/3점)</span>
                   </span>
                 </span>
               </li>
@@ -273,8 +273,8 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
               {/* 차순위 낙찰 안내 (경매만 — instant은 차순위 없음) */}
               {!isInstant && (
                 <li className="flex items-start gap-2.5">
-                  <Users className="w-4 h-4 text-neutral-500 mt-0.5 shrink-0" />
-                  <span className="text-[13px] text-neutral-400 font-medium leading-relaxed">
+                  <Users className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                  <span className="text-[13px] text-muted-foreground font-medium leading-relaxed">
                     차순위 입찰자에게 낙찰이 자동으로 넘어갑니다
                   </span>
                 </li>
@@ -283,9 +283,9 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
           </Card>
 
           {/* Reason */}
-          <Card className="bg-[#1C1C1E] border-neutral-800 gap-0 p-5 space-y-3.5">
-            <label className="text-sm font-black text-neutral-300">
-              취소 사유 <span className="text-neutral-600 font-medium">(선택)</span>
+          <Card className="bg-card border-border gap-0 p-5 space-y-3.5">
+            <label className="text-sm font-black text-foreground/80">
+              취소 사유 <span className="text-muted-foreground font-medium">(선택)</span>
             </label>
             <div className="flex flex-wrap gap-2">
               {cancelReasons.map((r) => (
@@ -297,8 +297,8 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
                   }}
                   className={`px-3 py-2 rounded-xl text-[13px] font-bold border transition-all ${
                     selectedReason === r.key
-                      ? "bg-white text-black border-white"
-                      : "bg-neutral-900 text-neutral-400 border-neutral-700 hover:border-neutral-500"
+                      ? "bg-inverse text-inverse-foreground border-white"
+                      : "bg-card text-muted-foreground border-border hover:border-border"
                   }`}
                 >
                   {r.label}
@@ -311,10 +311,10 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
                   value={extraDetail}
                   onChange={(e) => setExtraDetail(e.target.value.slice(0, 200))}
                   placeholder="취소 사유를 직접 입력해주세요..."
-                  className="bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-600 resize-none h-20 rounded-xl"
+                  className="bg-card border-border text-foreground placeholder:text-muted-foreground resize-none h-20 rounded-xl"
                   autoFocus
                 />
-                <p className="text-[11px] text-neutral-600 text-right font-medium">
+                <p className="text-[11px] text-muted-foreground text-right font-medium">
                   {extraDetail.length}/200
                 </p>
               </>
@@ -338,27 +338,27 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
         <SheetContent
           side="bottom"
           showCloseButton={false}
-          className="h-auto bg-[#1C1C1E] border-neutral-800 rounded-t-3xl"
+          className="h-auto bg-card border-border rounded-t-3xl"
         >
           <SheetHeader className="text-left">
-            <SheetTitle className="text-white font-black text-xl">
+            <SheetTitle className="text-foreground font-black text-xl">
               정말 포기하시겠습니까?
             </SheetTitle>
-            <SheetDescription className="text-neutral-400">
+            <SheetDescription className="text-muted-foreground">
               이 작업은 되돌릴 수 없습니다
             </SheetDescription>
           </SheetHeader>
 
           <div className="space-y-3.5 px-4">
             {/* Summary */}
-            <div className="bg-neutral-900/50 rounded-xl p-3.5 border border-neutral-800/50 space-y-2">
+            <div className="bg-card/50 rounded-xl p-3.5 border border-border/50 space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500 font-medium">클럽</span>
-                <span className="text-white font-bold">{auction.clubName}</span>
+                <span className="text-muted-foreground font-medium">클럽</span>
+                <span className="text-foreground font-bold">{auction.clubName}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-neutral-500 font-medium">{isInstant ? "예약가" : "낙찰가"}</span>
-                <span className="text-white font-bold">{formatPrice(auction.winningPrice)}</span>
+                <span className="text-muted-foreground font-medium">{isInstant ? "예약가" : "낙찰가"}</span>
+                <span className="text-foreground font-bold">{formatPrice(auction.winningPrice)}</span>
               </div>
             </div>
 
@@ -369,14 +369,14 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
                 : "bg-amber-500/10 border border-amber-500/20"
             }`}>
               <p className={`text-[13px] font-black ${
-                willTriggerStrike ? "text-red-400" : "text-amber-400"
+                willTriggerStrike ? "text-red-400" : "text-brand-amber"
               }`}>
                 {willTriggerStrike
                   ? `경고 +${pendingWarningPoints}점 → 스트라이크 1회 부과!`
                   : `경고 +${pendingWarningPoints}점 (${currentWarnings}점 → ${warningsAfterCancel}점 / 3점)`
                 }
               </p>
-              <p className="text-[12px] text-neutral-500 font-medium">
+              <p className="text-[12px] text-muted-foreground font-medium">
                 3경고 누적 시 스트라이크 1회로 전환됩니다
               </p>
             </div>
@@ -387,7 +387,7 @@ export function CancelClient({ auction, currentWarnings }: CancelClientProps) {
                 variant="outline"
                 onClick={() => setShowConfirm(false)}
                 disabled={loading}
-                className="h-12 border-neutral-700 text-neutral-300 font-black rounded-xl hover:bg-neutral-800"
+                className="h-12 border-border text-foreground/80 font-black rounded-xl hover:bg-muted"
               >
                 돌아가기
               </Button>

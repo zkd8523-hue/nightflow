@@ -31,7 +31,7 @@ export function OfferCompareNudge({ onCompare, onClose, lang = "ko" }: OfferComp
           type="button"
           onClick={onClose}
           aria-label={t("닫기", "Close")}
-          className="absolute top-4 right-4 p-1 text-neutral-400 hover:text-neutral-900 transition-colors"
+          className="absolute top-4 right-4 p-1 text-muted-foreground hover:text-neutral-900 transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
@@ -43,7 +43,7 @@ export function OfferCompareNudge({ onCompare, onClose, lang = "ko" }: OfferComp
         <h3 className="text-[19px] font-black text-neutral-900 leading-snug break-keep">
           {t("시크릿오퍼, 정가보다 얼마나 더 받는 걸까요?", "Secret offer — how much more than list price?")}
         </h3>
-        <p className="mt-2 text-[13px] text-neutral-500 leading-relaxed break-keep">
+        <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed break-keep">
           {t(
             "직접 확인하고 고르세요!",
             "See for yourself before you pick!",

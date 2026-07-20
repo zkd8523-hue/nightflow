@@ -105,14 +105,14 @@ export function AdminDashboardGrid({ stats }: { stats: DashboardStat[] }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[12px] text-neutral-500">
+        <p className="text-[12px] text-muted-foreground">
           {edit ? "드래그로 순서 변경 · X로 숨기기" : hiddenCount > 0 ? `숨긴 카드 ${hiddenCount}개` : ""}
         </p>
         <div className="flex gap-2">
           {hiddenCount > 0 && (
             <button
               onClick={() => setHidden([])}
-              className="inline-flex items-center gap-1 text-[12px] font-bold text-neutral-300 px-3 h-8 rounded-full border border-neutral-700 hover:bg-neutral-800"
+              className="inline-flex items-center gap-1 text-[12px] font-bold text-foreground/80 px-3 h-8 rounded-full border border-border hover:bg-muted"
             >
               <RotateCcw className="w-3.5 h-3.5" /> 전체 복원
             </button>
@@ -120,14 +120,14 @@ export function AdminDashboardGrid({ stats }: { stats: DashboardStat[] }) {
           {edit ? (
             <button
               onClick={() => setEdit(false)}
-              className="inline-flex items-center gap-1 text-[12px] font-black text-black px-3 h-8 rounded-full bg-white hover:bg-neutral-200"
+              className="inline-flex items-center gap-1 text-[12px] font-black text-inverse-foreground px-3 h-8 rounded-full bg-inverse hover:opacity-90"
             >
               <Check className="w-3.5 h-3.5" /> 완료
             </button>
           ) : (
             <button
               onClick={() => setEdit(true)}
-              className="inline-flex items-center gap-1 text-[12px] font-bold text-neutral-300 px-3 h-8 rounded-full border border-neutral-700 hover:bg-neutral-800"
+              className="inline-flex items-center gap-1 text-[12px] font-bold text-foreground/80 px-3 h-8 rounded-full border border-border hover:bg-muted"
             >
               <Pencil className="w-3.5 h-3.5" /> 편집
             </button>
@@ -167,19 +167,19 @@ function SortableCard({ stat, edit, draggingRef, onDelete }: { stat: DashboardSt
 
   const inner = (
     <div
-      className={`relative bg-[#1C1C1E] border rounded-2xl p-5 transition-all group ${
-        edit ? "border-neutral-600 scale-[0.98]" : "border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900/50"
-      } ${isDragging ? "shadow-2xl border-neutral-500" : ""}`}
+      className={`relative bg-card border rounded-2xl p-5 transition-all group ${
+        edit ? "border-border scale-[0.98]" : "border-border hover:border-border hover:bg-card/50"
+      } ${isDragging ? "shadow-2xl border-border" : ""}`}
     >
       <div className="flex items-start justify-between mb-3">
         <div className={`${stat.bgColor} p-2 rounded-xl group-hover:scale-110 transition-transform`}>
           <Icon className={`w-5 h-5 ${stat.color}`} />
         </div>
         {stat.badge && !edit && (
-          <span className="text-xs px-2 py-1 bg-amber-500/20 text-amber-500 rounded-full font-bold">{stat.badge}</span>
+          <span className="text-xs px-2 py-1 bg-amber-500/20 text-brand-amber rounded-full font-bold">{stat.badge}</span>
         )}
       </div>
-      <p className="text-neutral-500 text-sm font-bold mb-1">{stat.label}</p>
+      <p className="text-muted-foreground text-sm font-bold mb-1">{stat.label}</p>
       <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
 
       {edit && (

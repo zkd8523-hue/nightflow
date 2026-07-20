@@ -34,18 +34,18 @@ export default function AdminSupportThreadPage() {
 
   return (
     // (dashboard) 레이아웃의 하단 네비(4rem) 위로 채팅이 들어가도록 높이 보정
-    <div className="max-w-lg mx-auto h-[calc(100dvh-4rem)] flex flex-col bg-[#0A0A0A]">
-      <header className="shrink-0 flex items-center gap-2 px-3 py-3 border-b border-neutral-800">
+    <div className="max-w-lg mx-auto h-[calc(100dvh-4rem)] flex flex-col bg-background">
+      <header className="shrink-0 flex items-center gap-2 px-3 py-3 border-b border-border">
         <Link
           href="/admin/support"
-          className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-neutral-800 transition-colors"
+          className="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
           aria-label="뒤로"
         >
-          <ArrowLeft className="w-5 h-5 text-neutral-400" />
+          <ArrowLeft className="w-5 h-5 text-muted-foreground" />
         </Link>
         <div>
-          <h1 className="text-[15px] font-black text-white leading-tight">{name}</h1>
-          <p className="text-[11px] text-neutral-500">고객 문의 답장</p>
+          <h1 className="text-[15px] font-black text-foreground leading-tight">{name}</h1>
+          <p className="text-[11px] text-muted-foreground">고객 문의 답장</p>
         </div>
       </header>
 

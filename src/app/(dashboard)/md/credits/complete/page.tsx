@@ -42,30 +42,30 @@ export default async function CreditCompletePage({
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="max-w-sm w-full text-center space-y-6">
         {ok ? (
-          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
+          <CheckCircle2 className="w-16 h-16 text-money mx-auto" />
         ) : (
           <XCircle className="w-16 h-16 text-red-500 mx-auto" />
         )}
         <div className="space-y-2">
-          <h1 className="text-xl font-black text-white">
+          <h1 className="text-xl font-black text-foreground">
             {ok ? "충전 완료" : "충전 실패"}
           </h1>
-          <p className="text-sm text-neutral-400">{message}</p>
+          <p className="text-sm text-muted-foreground">{message}</p>
         </div>
         <div className="flex flex-col gap-2">
           <Link
             href="/md/dashboard"
-            className="w-full rounded-full bg-white text-black font-black py-3"
+            className="w-full rounded-full bg-inverse text-inverse-foreground font-black py-3"
           >
             대시보드로 이동
           </Link>
           {!ok && (
             <Link
               href="/md/credits"
-              className="w-full rounded-full border border-neutral-700 text-white font-bold py-3"
+              className="w-full rounded-full border border-border text-foreground font-bold py-3"
             >
               다시 충전하기
             </Link>

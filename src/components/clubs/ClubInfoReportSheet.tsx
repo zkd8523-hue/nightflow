@@ -79,22 +79,22 @@ export function ClubInfoReportSheet({ clubId, clubName, open, onOpenChange }: Pr
     >
       <SheetContent
         side="bottom"
-        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl max-w-lg mx-auto p-0 max-h-[80vh] flex flex-col"
+        className="bg-background border-border rounded-t-3xl max-w-lg mx-auto p-0 max-h-[80vh] flex flex-col"
       >
-        <SheetHeader className="px-5 pt-5 pb-3 border-b border-neutral-800">
-          <SheetTitle className="text-white text-[16px] font-black flex items-center gap-2">
-            <Flag className="w-4 h-4 text-amber-400" />
+        <SheetHeader className="px-5 pt-5 pb-3 border-b border-border">
+          <SheetTitle className="text-foreground text-[16px] font-black flex items-center gap-2">
+            <Flag className="w-4 h-4 text-brand-amber" />
             틀린 정보 신고
           </SheetTitle>
-          <p className="text-[11px] text-neutral-500 text-left">
+          <p className="text-[11px] text-muted-foreground text-left">
             {clubName} 정보 중 잘못된 부분을 알려주세요. 검토 후 반영됩니다.
           </p>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
           <div>
-            <div className="text-[12px] text-neutral-400 font-bold mb-2">
-              어떤 정보가 잘못됐나요? <span className="text-neutral-600 font-normal">(선택)</span>
+            <div className="text-[12px] text-muted-foreground font-bold mb-2">
+              어떤 정보가 잘못됐나요? <span className="text-muted-foreground font-normal">(선택)</span>
             </div>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map((c) => (
@@ -105,8 +105,8 @@ export function ClubInfoReportSheet({ clubId, clubName, open, onOpenChange }: Pr
                   disabled={submitting}
                   className={`text-[12px] font-bold px-3 py-1.5 rounded-full transition-colors ${
                     category === c.key
-                      ? "bg-white text-black"
-                      : "bg-neutral-800 text-neutral-400 hover:bg-neutral-700"
+                      ? "bg-inverse text-inverse-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted"
                   }`}
                 >
                   {c.label}
@@ -116,7 +116,7 @@ export function ClubInfoReportSheet({ clubId, clubName, open, onOpenChange }: Pr
           </div>
 
           <div>
-            <div className="text-[12px] text-neutral-400 font-bold mb-2">
+            <div className="text-[12px] text-muted-foreground font-bold mb-2">
               자세한 내용 <span className="text-red-400">*</span>
             </div>
             <textarea
@@ -126,18 +126,18 @@ export function ClubInfoReportSheet({ clubId, clubName, open, onOpenChange }: Pr
               rows={4}
               maxLength={500}
               disabled={submitting}
-              className="w-full bg-neutral-900 border border-neutral-700 rounded-xl px-3 py-2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 resize-none"
+              className="w-full bg-card border border-border rounded-xl px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-500/50 resize-none"
             />
-            <p className="text-[10px] text-neutral-600 mt-1 text-right">{message.length}/500</p>
+            <p className="text-[10px] text-muted-foreground mt-1 text-right">{message.length}/500</p>
           </div>
         </div>
 
-        <div className="px-5 pt-3 pb-5 border-t border-neutral-800 flex gap-2 bg-[#0A0A0A]">
+        <div className="px-5 pt-3 pb-5 border-t border-border flex gap-2 bg-background">
           <button
             type="button"
             onClick={() => onOpenChange(false)}
             disabled={submitting}
-            className="flex-1 h-11 rounded-full bg-neutral-800 hover:bg-neutral-700 text-white font-bold text-[14px]"
+            className="flex-1 h-11 rounded-full bg-muted hover:bg-muted text-foreground font-bold text-[14px]"
           >
             취소
           </button>

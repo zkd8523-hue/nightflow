@@ -56,7 +56,7 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
       <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 space-y-2 text-center">
         <AlertCircle className="w-5 h-5 text-red-500 mx-auto" />
         <p className="text-red-400 font-bold text-sm">연락 시간이 만료되었습니다</p>
-        <p className="text-neutral-500 text-[11px]">차순위 낙찰자에게 넘어갑니다.</p>
+        <p className="text-muted-foreground text-[11px]">차순위 낙찰자에게 넘어갑니다.</p>
       </div>
     );
   }
@@ -67,17 +67,17 @@ export function MyBidCardContact({ auction }: MyBidCardContactProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <div className="w-8 h-8 rounded-full bg-neutral-700 border border-neutral-600 flex items-center justify-center text-xs font-bold text-neutral-400">
+            <div className="w-8 h-8 rounded-full bg-muted border border-border flex items-center justify-center text-xs font-bold text-muted-foreground">
               {md?.name?.substring(0, 1) || "M"}
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#1C1C1E] flex items-center justify-center">
-              <ShieldCheck className="w-2 h-2 text-white" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-card flex items-center justify-center">
+              <ShieldCheck className="w-2 h-2 text-foreground" />
             </div>
           </div>
           <div>
-            <span className="text-white font-bold text-sm">{md?.name || "담당 파트너"}</span>
+            <span className="text-foreground font-bold text-sm">{md?.name || "담당 파트너"}</span>
             {md?.instagram && (
-              <a href={`https://instagram.com/${md.instagram}`} target="_blank" rel="noopener noreferrer" className="block text-neutral-500 text-[11px] font-medium hover:text-neutral-300 transition-colors">@{md.instagram}</a>
+              <a href={`https://instagram.com/${md.instagram}`} target="_blank" rel="noopener noreferrer" className="block text-muted-foreground text-[11px] font-medium hover:text-foreground/80 transition-colors">@{md.instagram}</a>
             )}
           </div>
         </div>

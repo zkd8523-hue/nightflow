@@ -34,44 +34,44 @@ export default async function AdminMarketingPage() {
   const noConsent = total - consented;
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-white pt-12 pb-24">
+    <div className="min-h-screen bg-background text-foreground pt-12 pb-24">
       <div className="max-w-7xl mx-auto px-6 space-y-10">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
-              <Link href="/admin" className="w-10 h-10 rounded-full bg-neutral-900 flex items-center justify-center border border-neutral-800 hover:border-neutral-700 transition-colors">
-                <ChevronLeft className="w-5 h-5 text-neutral-400" />
+              <Link href="/admin" className="w-10 h-10 rounded-full bg-card flex items-center justify-center border border-border hover:border-border transition-colors">
+                <ChevronLeft className="w-5 h-5 text-muted-foreground" />
               </Link>
-              <div className="flex items-center gap-2 text-neutral-500 font-bold uppercase tracking-widest text-[11px]">
+              <div className="flex items-center gap-2 text-muted-foreground font-bold uppercase tracking-widest text-[11px]">
                 <Megaphone className="w-3.5 h-3.5" />
                 Marketing Consent
               </div>
             </div>
             <h1 className="text-4xl font-black tracking-tighter">마케팅 수신 동의</h1>
-            <p className="text-neutral-500 font-medium">유저별 동의 여부 확인 및 발송 대상자 CSV 추출</p>
+            <p className="text-muted-foreground font-medium">유저별 동의 여부 확인 및 발송 대상자 CSV 추출</p>
           </div>
 
           <div className="flex gap-4">
-            <Card className="bg-[#1C1C1E] border-neutral-800 p-4 flex flex-col gap-1 min-w-[120px]">
-              <div className="flex items-center gap-2 text-neutral-500">
+            <Card className="bg-card border-border p-4 flex flex-col gap-1 min-w-[120px]">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <CheckCircle2 className="w-4 h-4" />
                 <span className="text-[11px] font-bold uppercase tracking-wider">동의</span>
               </div>
-              <span className="text-3xl font-black text-green-400">{consented.toLocaleString()}</span>
+              <span className="text-3xl font-black text-money">{consented.toLocaleString()}</span>
             </Card>
-            <Card className="bg-[#1C1C1E] border-neutral-800 p-4 flex flex-col gap-1 min-w-[120px]">
-              <div className="flex items-center gap-2 text-neutral-500">
+            <Card className="bg-card border-border p-4 flex flex-col gap-1 min-w-[120px]">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Phone className="w-4 h-4" />
                 <span className="text-[11px] font-bold uppercase tracking-wider">발송가능</span>
               </div>
-              <span className="text-3xl font-black text-amber-400">{consentedWithPhone.toLocaleString()}</span>
+              <span className="text-3xl font-black text-brand-amber">{consentedWithPhone.toLocaleString()}</span>
             </Card>
-            <Card className="bg-[#1C1C1E] border-neutral-800 p-4 flex flex-col gap-1 min-w-[120px]">
-              <div className="flex items-center gap-2 text-neutral-500">
+            <Card className="bg-card border-border p-4 flex flex-col gap-1 min-w-[120px]">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <XCircle className="w-4 h-4" />
                 <span className="text-[11px] font-bold uppercase tracking-wider">미동의</span>
               </div>
-              <span className="text-3xl font-black text-neutral-500">{noConsent.toLocaleString()}</span>
+              <span className="text-3xl font-black text-muted-foreground">{noConsent.toLocaleString()}</span>
             </Card>
           </div>
         </header>

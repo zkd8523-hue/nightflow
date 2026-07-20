@@ -19,7 +19,7 @@ export function BusinessInfo({ className = "", lang = "ko" }: { className?: stri
 
   return (
     <div
-      className={`text-center text-xs text-neutral-600 leading-relaxed space-y-1 ${className}`}
+      className={`text-center text-xs text-muted-foreground leading-relaxed space-y-1 ${className}`}
     >
       <p>
         {t("상호", "Company", "商号", "公司名称")}: {companyName} · {t("대표", "CEO", "代表者", "法人代表")}: {ceo} · {t("사업자등록번호", "Business reg. no.", "事業者登録番号", "营业执照号")}: {businessNumber}
@@ -30,7 +30,7 @@ export function BusinessInfo({ className = "", lang = "ko" }: { className?: stri
       <p>
         {t("주소", "Address", "住所", "地址")}: {address} · {t("전화", "Tel", "電話", "电话")}: {tel} · {t("이메일", "Email", "メール", "邮箱")}: {email}
       </p>
-      <p className="text-neutral-700 mt-2">
+      <p className="text-muted-foreground mt-2">
         {t(
           "매드다윗은 통신판매중개자로서, 클럽 테이블 예약에 관한 의무와 책임은 파트너(판매자)에게 있습니다.",
           "MadDawid is an online sales intermediary; obligations and liability for club table bookings rest with the MD (seller).",

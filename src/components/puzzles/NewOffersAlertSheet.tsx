@@ -96,17 +96,17 @@ export function NewOffersAlertSheet() {
       }}
     >
       <DialogContent
-        className="max-w-[340px] rounded-3xl bg-[#1C1C1E] border-amber-500/30 p-6"
+        className="max-w-[340px] rounded-3xl bg-card border-amber-500/30 p-6"
       >
         <DialogTitle className="sr-only">신규 오퍼 알림</DialogTitle>
         <div className="space-y-5">
           <div className="space-y-2 text-center">
             <p className="text-[40px] leading-none">💌</p>
-            <p className="text-[20px] font-black text-white">
-              오퍼 <span className="text-amber-400">{data.totalOffers}건</span>이
+            <p className="text-[20px] font-black text-foreground">
+              오퍼 <span className="text-brand-amber">{data.totalOffers}건</span>이
               기다리고 있어요
             </p>
-            <p className="text-[14px] text-neutral-300 leading-relaxed">
+            <p className="text-[14px] text-foreground/80 leading-relaxed">
               마음에 드는 오퍼를 골라 상담해보세요!
             </p>
           </div>
@@ -120,8 +120,8 @@ export function NewOffersAlertSheet() {
             </button>
           </div>
 
-          <p className="text-center text-[12px] text-neutral-600">
-            내 깃발은 언제든 하단 <span className="text-neutral-400">MY</span>{" "}
+          <p className="text-center text-[12px] text-muted-foreground">
+            내 깃발은 언제든 하단 <span className="text-muted-foreground">MY</span>{" "}
             탭에서 확인할 수 있어요
           </p>
         </div>

@@ -164,7 +164,7 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
       ref={sheetRef}
       style={heightStyle}
       data-no-pull-refresh="strict"
-      className={`absolute left-0 bottom-0 bg-[#1C1C1E] rounded-t-3xl shadow-2xl border-t border-neutral-800 z-20 flex flex-col transition-[right] duration-200 ${
+      className={`absolute left-0 bottom-0 bg-card rounded-t-3xl shadow-2xl border-t border-border z-20 flex flex-col transition-[right] duration-200 ${
         detailPanelOpen
           ? "right-0 md:right-[480px] lg:right-[560px]"
           : "right-0"
@@ -179,17 +179,17 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
         className="flex-shrink-0 py-2.5 cursor-grab active:cursor-grabbing flex justify-center"
         style={{ touchAction: "none" }}
       >
-        <div className="w-10 h-1 rounded-full bg-neutral-600" />
+        <div className="w-10 h-1 rounded-full bg-muted" />
       </div>
 
       {/* 헤더 */}
       <div className="flex-shrink-0 px-4 pb-2 flex items-center justify-between">
         <div className="flex items-baseline gap-2 min-w-0">
-          <p className="text-[13px] text-neutral-400 font-bold flex-shrink-0">
+          <p className="text-[13px] text-muted-foreground font-bold flex-shrink-0">
             {clubs.length}곳
           </p>
           {unmappedCount > 0 && (
-            <p className="text-[10px] text-neutral-600 truncate">
+            <p className="text-[10px] text-muted-foreground truncate">
               좌표 미등록 {unmappedCount}곳 제외
             </p>
           )}
@@ -197,7 +197,7 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
         <button
           type="button"
           onClick={() => setSnap(snap === "expanded" ? "collapsed" : "expanded")}
-          className="text-[11px] text-neutral-500 font-medium flex-shrink-0"
+          className="text-[11px] text-muted-foreground font-medium flex-shrink-0"
         >
           {snap === "expanded" ? "지도 더보기" : "전체 보기"}
         </button>
@@ -210,7 +210,7 @@ export const ClubMapSheet = forwardRef<ClubMapSheetHandle, Props>(function ClubM
         style={{ touchAction: "pan-y" }}
       >
         {clubs.length === 0 ? (
-          <p className="text-center text-[12px] text-neutral-500 py-8">
+          <p className="text-center text-[12px] text-muted-foreground py-8">
             표시할 클럽이 없어요
           </p>
         ) : (
@@ -270,10 +270,10 @@ function DetailCard({
         }
       }}
       className={`flex gap-3 items-center p-3 transition-colors cursor-pointer ${
-        isSelected ? "bg-neutral-800/60" : "hover:bg-neutral-900/60"
+        isSelected ? "bg-muted/60" : "hover:bg-card/60"
       }`}
     >
-      <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-neutral-900 flex-shrink-0">
+      <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-card flex-shrink-0">
         {club.thumbnail_url ? (
           <Image
             src={club.thumbnail_url}
@@ -284,7 +284,7 @@ function DetailCard({
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[24px] font-black text-white/30">
+          <div className="w-full h-full flex items-center justify-center text-[24px] font-black text-foreground/30">
             {club.name.charAt(0)}
           </div>
         )}
@@ -292,10 +292,10 @@ function DetailCard({
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2">
           <div className="flex items-baseline gap-1.5 min-w-0 flex-1">
-            <p className="text-white text-[15px] font-black truncate">
+            <p className="text-foreground text-[15px] font-black truncate">
               {club.name}
             </p>
-            <span className="text-[12px] font-medium text-neutral-500 flex-shrink-0">
+            <span className="text-[12px] font-medium text-muted-foreground flex-shrink-0">
               {club.area || "기타"}
             </span>
           </div>
@@ -308,7 +308,7 @@ function DetailCard({
         {hotdealText && (
           <div className="flex items-start gap-1.5 mt-1">
             <span className="text-[11px] leading-tight">🔥</span>
-            <p className="text-amber-300 text-[12px] font-bold leading-snug line-clamp-2">
+            <p className="text-brand-amber text-[12px] font-bold leading-snug line-clamp-2">
               {hotdealText}
             </p>
           </div>
@@ -317,18 +317,18 @@ function DetailCard({
         {/* Line 2: 영업 상태 */}
         <div className="flex items-center gap-1.5 text-[12px] font-medium">
           {opening === "open" ? (
-            <span className="inline-flex items-center gap-1 text-green-500">
+            <span className="inline-flex items-center gap-1 text-money">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
               영업중
             </span>
           ) : opening === "closed" ? (
-            <span className="inline-flex items-center gap-1 text-neutral-500">
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-500" />
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted" />
               영업종료
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-neutral-600">
-              <span className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted" />
               영업시간 준비중
             </span>
           )}
@@ -337,7 +337,7 @@ function DetailCard({
         {/* Line 4: 깃발 (있을 때만) */}
         {flagCount > 0 && (
           <div className="flex items-center gap-1.5 pt-0.5">
-            <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-400 text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 bg-amber-500/15 text-brand-amber text-[10px] font-bold px-1.5 py-0.5 rounded-full">
               <Flag className="w-3 h-3" />
               깃발 {flagCount}
             </span>
