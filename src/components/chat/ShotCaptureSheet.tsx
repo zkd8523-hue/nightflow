@@ -351,7 +351,7 @@ export function ShotCaptureSheet({
         side="bottom"
         // 세로 스크롤이 페이지 pull-to-refresh를 발동시키지 않도록 원천차단
         data-no-pull-refresh="strict"
-        className="bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[90vh] flex flex-col"
+        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[90vh] flex flex-col"
       >
         <SheetHeader className="px-4 pt-4 pb-3 border-b border-neutral-800 shrink-0">
           <SheetTitle className="text-white text-[16px] text-left flex items-center gap-2">
@@ -532,7 +532,7 @@ function ClubPickerSheet({
         onOpenAutoFocus={(e) => e.preventDefault()}
         // 리스트 세로 스크롤이 페이지 pull-to-refresh를 발동시키지 않도록 원천차단
         data-no-pull-refresh="strict"
-        className="bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[85vh] flex flex-col"
+        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[85vh] flex flex-col"
       >
         <SheetHeader className="px-4 pt-4 pb-3 shrink-0">
           <SheetTitle className="text-white text-[16px] text-left flex items-center gap-2">

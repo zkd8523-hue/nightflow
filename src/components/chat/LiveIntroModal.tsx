@@ -38,7 +38,7 @@ export function LiveIntroModal() {
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
       <DialogContent
-        className="bg-[#0B0A11] border-neutral-800 rounded-3xl max-w-sm p-0 overflow-hidden [&>button]:hidden"
+        className="bg-[#0A0A0A] border-neutral-800 rounded-3xl max-w-sm p-0 overflow-hidden [&>button]:hidden"
       >
         <DialogTitle className="sr-only">LIVE 안내</DialogTitle>
         {/* 헤더 아이콘 영역 */}

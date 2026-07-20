@@ -780,6 +780,7 @@ export function ChatRoom({ room, onAreaVerified, loginRedirect, regionFilter }: 
                   message={m}
                   currentUserId={user?.id}
                   isLoggedIn={!!user}
+                  isAdmin={user?.role === "admin"}
                   reactionSummary={reactionSummaries.get(m.id)}
                   replyPreview={replyPreviews.get(m.id)}
                   onReact={(emoji) => toggleReaction(m.id, emoji)}

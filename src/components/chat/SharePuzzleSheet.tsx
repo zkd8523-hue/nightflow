@@ -54,7 +54,7 @@ export function SharePuzzleSheet({ open, onOpenChange, userId, onSelect }: Props
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[70vh] overflow-y-auto"
+        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 pb-6 max-h-[70vh] overflow-y-auto"
       >
         <SheetHeader className="px-4 pt-4 pb-2">
           <SheetTitle className="text-white text-[16px] text-left">내 조각 공유</SheetTitle>

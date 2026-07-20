@@ -43,7 +43,7 @@ export function ClubShotSection({ clubId }: Props) {
   if (shots.length === 0) return null;
 
   return (
-    <section className="px-3 py-3 border-b border-neutral-900 bg-[#0B0A11]">
+    <section className="px-3 py-3 border-b border-neutral-900 bg-[#0A0A0A]">
       <div className="flex items-center gap-1.5 mb-2 px-1">
         <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />
         <span className="text-[12px] font-black text-white">LIVE</span>
@@ -73,7 +73,7 @@ export function ClubShotSection({ clubId }: Props) {
                     : "bg-gradient-to-br from-red-500 via-pink-500 to-amber-500"
                 }`}
               >
-                <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
+                <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0A0A0A]">
                   {shot.media_type === "image" ? (
                     <Image
                       src={shot.media_url}

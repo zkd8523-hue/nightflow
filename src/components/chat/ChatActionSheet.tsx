@@ -22,6 +22,8 @@ interface Props {
   message: ChatMessage;
   /** 본인 메시지 여부 */
   isMine: boolean;
+  /** admin은 남의 글도 삭제 가능 (RLS는 Migration 284에서 이미 허용) */
+  canDelete?: boolean;
   /** 로그인 여부 */
   isLoggedIn: boolean;
   /** 내가 누른 이모지 집계 */
@@ -46,6 +48,7 @@ export function ChatActionSheet({
   onOpenChange,
   message,
   isMine,
+  canDelete,
   isLoggedIn,
   reactionSummary,
   onReact,
@@ -137,7 +140,15 @@ export function ChatActionSheet({
             label="공유"
             onClick={() => requireAuth(onShare)}
           />
-          {isMine ? (
+          {!isMine && (
+            <ActionRow
+              icon={<Flag className="w-5 h-5" />}
+              label="신고"
+              tone="warning"
+              onClick={() => requireAuth(onReport)}
+            />
+          )}
+          {(isMine || canDelete) && (
             <ActionRow
               icon={<Trash2 className="w-5 h-5" />}
               label="삭제"
@@ -146,13 +157,6 @@ export function ChatActionSheet({
                 onDelete?.();
                 onOpenChange(false);
               }}
-            />
-          ) : (
-            <ActionRow
-              icon={<Flag className="w-5 h-5" />}
-              label="신고"
-              tone="warning"
-              onClick={() => requireAuth(onReport)}
             />
           )}
         </div>

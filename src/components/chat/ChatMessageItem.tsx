@@ -46,6 +46,8 @@ interface Props {
   onOpenReplies?: (message: ChatMessage) => void;
   onChange?: () => void;
   onRequireLogin?: () => void;
+  /** admin이면 남의 글도 삭제 버튼 노출 */
+  isAdmin?: boolean;
   hideReplyButton?: boolean;
   groupedWithPrev?: boolean;
 }
@@ -63,10 +65,12 @@ export function ChatMessageItem({
   onOpenReplies,
   onChange,
   onRequireLogin,
+  isAdmin,
   hideReplyButton,
   groupedWithPrev,
 }: Props) {
   const isMine = !!currentUserId && message.author_id === currentUserId;
+  const canDelete = isMine || !!isAdmin;
   const author = message.author;
   const displayName = author?.display_name ?? "익명";
   // 프사/이름 탭 → 바로 이동하지 않고 미리보기 팝업(정보 + 메시지/프로필 선택)
@@ -170,7 +174,10 @@ export function ChatMessageItem({
   }
 
   async function handleDelete() {
-    if (!confirm("이 메시지를 삭제할까요?")) return;
+    const msg = isMine
+      ? "이 메시지를 삭제할까요?"
+      : "다른 사람의 글입니다. 관리자 권한으로 삭제할까요?";
+    if (!confirm(msg)) return;
     const supabase = createClient();
     const { error } = await supabase
       .from("chat_messages")
@@ -397,8 +404,8 @@ export function ChatMessageItem({
               >
                 <SmilePlus className="w-3.5 h-3.5" />
               </button>
-              {/* 본인 글 삭제 (웹 hover — 모바일은 길게 누르기) */}
-              {isMine && (
+              {/* 본인 글 삭제 · admin은 전체 (웹 hover — 모바일은 길게 누르기) */}
+              {canDelete && (
                 <button
                   type="button"
                   onClick={handleDelete}
@@ -412,35 +419,8 @@ export function ChatMessageItem({
             </div>
           </div>
 
-          {/* 답글 카운트 행 — 반응은 말풍선 옆으로 이동, 여기선 답글 버튼만 */}
-          {!hideReplyButton &&
-            hasReplyCount &&
-            !(replyPreview && replyPreview.preview.length > 0) && (
-              <div className="mt-1 flex items-center gap-1 flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => onOpenReplies?.(message)}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors"
-                  aria-label="답글 보기"
-                >
-                  <MessageCircle className="w-3.5 h-3.5" />
-                  <span className="font-bold">답글 {message.reply_count}</span>
-                </button>
-              </div>
-            )}
-
-          {/* 답글 배지 (카톡식 ↳ 댓글 N) — 누르면 답글 스레드 열림 */}
-          {!hideReplyButton && replyPreview && replyPreview.total > 0 && (
-            <button
-              type="button"
-              onClick={() => onOpenReplies?.(message)}
-              className="mt-1.5 inline-flex items-center gap-1 pl-1.5 pr-2.5 py-1 rounded-full bg-neutral-800/90 text-neutral-300 text-[11px] font-bold hover:bg-neutral-700 transition-colors"
-              aria-label="답글 보기"
-            >
-              <CornerDownRight className="w-3 h-3 text-neutral-500" />
-              답글 {replyPreview.total}
-            </button>
-          )}
+          {/* 답글 칩(답글 N / ↳ 답글 N) 제거 — 말풍선마다 붙어 세로 공간을 먹었다.
+              답글 스레드는 말풍선을 밀어서 연다. */}
         </div>
       </div>
 
@@ -463,6 +443,7 @@ export function ChatMessageItem({
         onOpenChange={setActionOpen}
         message={message}
         isMine={isMine}
+        canDelete={canDelete}
         isLoggedIn={isLoggedIn}
         reactionSummary={reactionSummary}
         onReact={(emoji) => onReact?.(emoji)}

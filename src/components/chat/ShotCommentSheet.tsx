@@ -103,7 +103,7 @@ export function ShotCommentSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="bg-[#0B0A11] border-neutral-800 rounded-t-3xl p-0 max-h-[80vh] flex flex-col z-[110]"
+        className="bg-[#0A0A0A] border-neutral-800 rounded-t-3xl p-0 max-h-[80vh] flex flex-col z-[110]"
       >
         <SheetHeader className="px-4 pt-4 pb-3 border-b border-neutral-800 shrink-0">
           <SheetTitle className="text-white text-[15px] text-left">

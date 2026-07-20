@@ -156,7 +156,7 @@ export function ShotCarousel({
   const otherGroups = userGroups.filter((g) => g.key !== "me");
 
   return (
-    <div className="px-3 pt-1 pb-1 border-b border-neutral-900 bg-[#0B0A11]">
+    <div className="px-3 pt-1 pb-1 border-b border-neutral-900 bg-[#0A0A0A]">
       <div className="flex items-center justify-between gap-2 mb-0.5 px-1">
         <div className="flex items-center gap-1.5 shrink-0">
           <Zap className="w-3.5 h-3.5 text-red-400 fill-red-400" />
@@ -187,7 +187,7 @@ export function ShotCarousel({
                   <ShotThumb shot={myGroup.rep} isMine isViewed={myGroup.allViewed} size={size} />
                 ) : (
                   <div className="rounded-full p-[2px] bg-neutral-700" style={{ width: size, height: size }}>
-                    <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
+                    <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0A0A0A]">
                       {currentUserProfile?.profile_image ? (
                         <Image src={currentUserProfile.profile_image} alt="" fill sizes={`${size}px`} className="object-cover" />
                       ) : (
@@ -203,7 +203,7 @@ export function ShotCarousel({
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); onComposeClick?.(); }}
-                className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-amber-500 ring-2 ring-[#0B0A11] flex items-center justify-center active:scale-90 transition-transform"
+                className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-amber-500 ring-2 ring-[#0A0A0A] flex items-center justify-center active:scale-90 transition-transform"
                 aria-label="LIVE 올리기"
               >
                 <Plus className="w-3 h-3 text-black" strokeWidth={3} />
@@ -301,7 +301,7 @@ function ShotThumb({
         : "bg-gradient-to-br from-[#A78BFA] to-[#C084FC]";
   return (
     <div className={`relative rounded-full p-[2px] ${ringClass}`} style={{ width: size, height: size }}>
-      <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0B0A11]">
+      <div className="relative w-full h-full rounded-full overflow-hidden bg-neutral-900 border-2 border-[#0A0A0A]">
         {shot.media_type === "image" ? (
           <Image
             src={shot.media_url}

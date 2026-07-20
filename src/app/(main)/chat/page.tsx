@@ -28,7 +28,7 @@ export default function ChatPage() {
 
   return (
     <div
-      className={`max-w-lg mx-auto bg-[#0B0A11] flex flex-col overflow-hidden ${
+      className={`max-w-lg mx-auto bg-[#0A0A0A] flex flex-col overflow-hidden ${
         composerFocused
           ? "h-[calc(100dvh-env(safe-area-inset-bottom))]"
           : "h-[calc(100dvh-56px-env(safe-area-inset-bottom))]"
