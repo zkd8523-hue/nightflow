@@ -27,6 +27,8 @@ interface SecretOfferCardProps {
   onReject: (offerId: string) => void;
   /** 조각: "무료 상담" 클릭 시 해당 MD를 단체채팅에 초대 */
   onInvite?: (offerId: string) => void;
+  /** 조각: 이 오퍼의 MD가 현재 단체채팅에 초대되어 상담 중인지 */
+  isInvited?: boolean;
   onWithdrawn: () => void;
   onAdminEdit?: (offer: PuzzleOffer) => void;
   lang?: Lang;
@@ -49,6 +51,7 @@ export function SecretOfferCard({
   onAccept,
   onReject,
   onInvite,
+  isInvited = false,
   onWithdrawn,
   onAdminEdit,
   lang = "ko",
@@ -63,8 +66,8 @@ export function SecretOfferCard({
   const t = makeT(lang);
   const commentEn = useTranslatedComment(offer.comment, isForeigner);
   const { products: liquorProducts } = useLiquorProducts();
-  // 골드 칩 CTA("무료 상담")가 뜨는 조건과 동일 — 그 경우엔 시간을 상단 대신
-  // CTA 옆에 붙여서 빈 줄처럼 보이는 헤더 행을 없앰 (다른 상태에선 상단에 유지)
+  // 골드 칩 CTA("무료 상담") / 조각 "상담중" 칩이 뜨는 조건과 동일 — 그 경우엔 시간을 상단 대신
+  // CTA(칩) 옆에 붙여서 빈 줄처럼 보이는 헤더 행을 없앰 (다른 상태에선 상단에 유지)
   const showsGoldCta =
     hideClubHeader &&
     isOpen &&
@@ -219,8 +222,34 @@ export function SecretOfferCard({
           }
         >
           {isRecruitingParty ? (
-            /* 조각: 상담·수락은 단체채팅에서 진행 — CTA는 해당 MD를 단체채팅에 초대하는 것 */
-            hideClubHeader ? (
+            /* 조각: 상담·수락은 단체채팅에서 진행 — CTA는 해당 MD를 단체채팅에 초대하는 것.
+               이미 초대돼 상담 중이면(isInvited) 깃발과 동일하게 "상담중"만 보여줌. */
+            isInvited ? (
+              hideClubHeader ? (
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-muted-foreground font-medium" suppressHydrationWarning>
+                    {formatRelativeTime(offer.created_at)}
+                  </span>
+                  <Link
+                    href={`/party/${offer.puzzle_id}`}
+                    className="inline-flex items-center gap-1.5 rounded-full px-4 h-9 bg-muted hover:bg-muted text-foreground font-bold text-[13px]"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    {t("상담중", "Chatting")}
+                  </Link>
+                </div>
+              ) : (
+                <div className="pt-1">
+                  <Link
+                    href={`/party/${offer.puzzle_id}`}
+                    className="flex items-center justify-center gap-1.5 w-full h-11 rounded-xl bg-muted hover:bg-muted text-foreground font-bold text-[13px]"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    {t("상담중", "Chatting")}
+                  </Link>
+                </div>
+              )
+            ) : hideClubHeader ? (
               <div className="flex items-center justify-between pt-1">
                 <span className="text-[11px] text-muted-foreground font-medium" suppressHydrationWarning>
                   {formatRelativeTime(offer.created_at)}

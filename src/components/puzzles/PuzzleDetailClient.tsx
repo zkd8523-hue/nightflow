@@ -9,6 +9,7 @@ import { TableDetailsCard } from "@/components/auctions/TableDetailsCard";
 import { FloorPlanViewer } from "@/components/auctions/FloorPlanViewer";
 import { FeatureGate } from "@/components/common/FeatureGate";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { MDContactCard } from "./MDContactCard";
@@ -248,6 +249,9 @@ export function PuzzleDetailClient({
   const { products: liquorProducts } = useLiquorProducts(!!myOffer);
   const [showAcceptSheet, setShowAcceptSheet] = useState(false);
   const [pendingAcceptOfferId, setPendingAcceptOfferId] = useState<string | null>(null);
+  const [pendingInviteOfferId, setPendingInviteOfferId] = useState<string | null>(null);
+  // 조각: 현재 단체채팅에 초대된 MD의 오퍼 id (puzzle_party_md, 조각당 최대 1명) — 상담중 표시용
+  const [invitedOfferId, setInvitedOfferId] = useState<string | null>(null);
   const [acceptingMd, setAcceptingMd] = useState<NonNullable<PuzzleOffer["md"]> | null>(null);
   const [showLeaderInfo, setShowLeaderInfo] = useState(false);
   // 방장 상담 횟수 — 리더 정보 시트 열 때만 지연 조회 (서버 크리티컬 패스에서 제외됨)
@@ -457,6 +461,14 @@ export function PuzzleDetailClient({
     setOffers(merged);
     setOffersLoading(false);
 
+    // 조각: 현재 단체채팅에 초대된 MD의 오퍼 — 방장/비방장 모두에게 "상담중" 배지 노출
+    if (isRecruitingParty) {
+      const { data: invitedOfferId } = await supabase.rpc("get_party_invited_offer_id", {
+        p_puzzle_id: puzzle.id,
+      });
+      setInvitedOfferId((invitedOfferId as string | null) ?? null);
+    }
+
     if (currentUserId && (isMd || isAdmin)) {
       const mine = merged.find((o) => o.md_id === currentUserId && o.status === "pending")
         || merged.find((o) => o.md_id === currentUserId && o.status === "accepted")
@@ -468,7 +480,7 @@ export function PuzzleDetailClient({
       const accepted = merged.find((o) => o.id === puzzle.accepted_offer_id) || null;
       setAcceptedOffer(accepted);
     }
-  }, [puzzle.id, puzzle.accepted_offer_id, currentUserId, isLeader, isMd, isAdmin, supabase]);
+  }, [puzzle.id, puzzle.accepted_offer_id, currentUserId, isLeader, isMd, isAdmin, isRecruitingParty, supabase]);
 
   useEffect(() => {
     loadOffers();
@@ -737,7 +749,14 @@ export function PuzzleDetailClient({
 
   // 조각: 카드의 "무료 상담" = 깃발의 1:1 채팅과 동일한 자리의 CTA.
   // 조각은 단체채팅이 상담 채널이라 해당 MD를 단체방에 초대한 뒤 그 방으로 이동시킨다.
-  const handleInviteOffer = async (offerId: string) => {
+  // 클릭 즉시 초대되면 "그냥 채팅방 구경하러 갔는데 벌써 초대돼있다"는 혼동이 생겨 확인 시트를 거친다.
+  const handleInviteOffer = (offerId: string) => {
+    setPendingInviteOfferId(offerId);
+  };
+
+  const confirmInviteOffer = async () => {
+    const offerId = pendingInviteOfferId;
+    if (!offerId) return;
     setActionLoading(true);
     try {
       const { data, error } = await supabase.rpc("invite_md_to_party", {
@@ -1649,15 +1668,6 @@ export function PuzzleDetailClient({
                       : "오퍼를 골라 무료로 상담해보세요"}
                   </p>
                 </FeatureGate>
-                {isRecruitingParty && !isAdmin && (
-                  <Link
-                    href={`/party/${puzzle.id}`}
-                    className="flex items-center justify-center gap-2 w-full py-3 bg-inverse text-inverse-foreground font-black text-[14px] rounded-xl hover:opacity-90 transition-colors"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    {t("단체채팅 바로가기", "Go to group chat")}
-                  </Link>
-                )}
                 <div className="-mx-4 px-4 py-5 divide-y divide-neutral-700 bg-offer-well">
                 {offerGroups.map((group) => {
                   const groupClub = group.club;
@@ -1716,6 +1726,7 @@ export function PuzzleDetailClient({
                               actionLoading={actionLoading}
                               onAccept={handleAcceptOffer}
                               onInvite={handleInviteOffer}
+                              isInvited={offer.id === invitedOfferId}
                               onReject={handleRejectOffer}
                               onWithdrawn={loadOffers}
                               onAdminEdit={isAdmin ? (o) => { setEditingOffer(o); setShowOffer(true); } : undefined}
@@ -1731,6 +1742,15 @@ export function PuzzleDetailClient({
                   );
                 })}
                 </div>
+                {isRecruitingParty && !isAdmin && (
+                  <Link
+                    href={`/party/${puzzle.id}`}
+                    className="flex items-center justify-center gap-2 w-full py-3 bg-inverse text-inverse-foreground font-black text-[14px] rounded-xl hover:opacity-90 transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    {t("채팅방으로 이동하기", "Go to group chat")}
+                  </Link>
+                )}
               </div>
             )}
 
@@ -1771,7 +1791,7 @@ export function PuzzleDetailClient({
                           </span>
                         ) : null}
                       </div>
-                      {offer.leader_chat_started_at && (
+                      {(isRecruitingParty ? offer.id === invitedOfferId : offer.leader_chat_started_at) && (
                         <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-inverse text-inverse-foreground font-bold">상담중</span>
                       )}
                     </div>
@@ -1815,7 +1835,7 @@ export function PuzzleDetailClient({
                       <p className="text-[14px] font-bold text-brand-amber">
                         Offer #{publicOffers.length + i + 1}
                       </p>
-                      {offer.leader_chat_started_at && (
+                      {(isRecruitingParty ? offer.id === invitedOfferId : offer.leader_chat_started_at) && (
                         <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-inverse text-inverse-foreground font-bold">상담중</span>
                       )}
                     </div>
@@ -2255,6 +2275,21 @@ export function PuzzleDetailClient({
         shareMode={isRecruitingParty}
         replantHref="/flags/new"
         onGoList={() => { setShowCancelSheet(false); router.push(isForeigner ? "/en" : "/?tab=puzzle"); }}
+      />
+
+      {/* 조각: 오퍼 카드 "무료 상담" 클릭 시 — 바로 초대하지 않고 먼저 확인 */}
+      <ConfirmDialog
+        isOpen={!!pendingInviteOfferId}
+        onOpenChange={(open) => { if (!open) setPendingInviteOfferId(null); }}
+        onConfirm={confirmInviteOffer}
+        onCancel={() => setPendingInviteOfferId(null)}
+        title={t("이 파트너를 채팅방에 초대할까요?", "Invite this partner to the group chat?")}
+        description={t(
+          `${(offers.find((o) => o.id === pendingInviteOfferId)?.club as { name?: string } | null)?.name || "이 파트너"}가 단체채팅방에 들어와 함께 상담할 수 있어요. 조각당 파트너는 한 번에 한 명만 초대할 수 있어요.`,
+          `${(offers.find((o) => o.id === pendingInviteOfferId)?.club as { name?: string } | null)?.name || "This partner"} will join the group chat to consult with you. Only one partner can be invited at a time.`
+        )}
+        confirmText={t("계속하기", "Continue")}
+        cancelText={t("취소", "Cancel")}
       />
 
       {/* 조각 카톡 공유 시트 (등록 직후 자동 / 공유 버튼 수동) */}
