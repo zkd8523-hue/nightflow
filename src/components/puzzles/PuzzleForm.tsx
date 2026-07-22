@@ -18,6 +18,13 @@ import type { GenderPref, AgePref, VibePref, MusicPref, Puzzle as PuzzleType, Pr
 import { PreferredClubsPicker } from "@/components/clubs/PreferredClubsPicker";
 import { loadPreferredClubs, savePreferredClubs } from "@/lib/clubs/preferredClubs";
 import { trackEvent } from "@/lib/analytics/events";
+import {
+  getOfferDeadline as getOfferDeadlineAt,
+  getExpiresAt as getExpiresAtFor,
+  getOfferDeadlineLabel,
+  getRegistrationDeadline,
+  getRegistrationDeadlineLabel,
+} from "@/lib/utils/puzzleDeadline";
 import { useLeaveConfirm } from "@/hooks/useLeaveConfirm";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { validateTitleDateConsistency } from "@/lib/utils/date";
@@ -554,16 +561,17 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
   // OFF: budgetAmount = 총액, ON: budgetAmount = 인당
   const totalBudget = isRecruitingParty ? budgetAmount * effectiveTargetCount : budgetAmount;
 
-  // offer_deadline: 오퍼 마감 오후 8시 KST (11:00 UTC)
-  // expires_at: 유저 검토 마감 오후 9시 KST (12:00 UTC) — 오퍼 마감 +60분
-  const getOfferDeadline = (date: string) => `${date}T11:00:00.000Z`;
-  const getExpiresAt = (date: string) => `${date}T12:00:00.000Z`;
+  // 마감 규칙은 puzzleDeadline.ts 단일 출처. 깃발 20시 / 조각 자정.
+  const getOfferDeadline = (date: string) => getOfferDeadlineAt(date, isRecruitingParty);
+  const getExpiresAt = (date: string) => getExpiresAtFor(date, isRecruitingParty);
 
-  // 당일 등록인데 오후 8시(오퍼 마감) 이미 지났는지 체크
+  // 당일 등록인데 '등록 마감'이 지났는지 체크 (오퍼 마감과 다름 — 조각은 등록 23시 / 오퍼 새벽 3시).
+  // 조각 마감 시각은 익일로 넘어가므로 isSame(마감, "day")로는 판별이 안 된다.
+  // "오늘 이벤트인데 이미 늦었나"는 마감이 아니라 eventDate를 오늘과 비교해야 한다.
   const isLateForToday = (): boolean => {
     if (!eventDate || isEditMode) return false;
-    const offerDeadline = dayjs(getOfferDeadline(eventDate));
-    return dayjs().isAfter(offerDeadline) && dayjs().isSame(offerDeadline, "day");
+    const cutoff = dayjs(getRegistrationDeadline(eventDate, isRecruitingParty));
+    return dayjs().isAfter(cutoff) && dayjs(eventDate).isSame(dayjs(), "day");
   };
 
   // "내일 깃발로 등록" 클릭 시 날짜만 다음날로 변경
@@ -852,7 +860,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
       if (shareMode) {
         toast.success(t("조각이 올라갔어요! 파티원과 파트너 제안을 받아보세요 🧩", "Your share is up! Get party members and club offers 🧩"));
       } else if (effectiveIsRecruiting) {
-        toast.success(t("퍼즐이 올라갔어요! 당일 오후 8시까지 파티원·파트너 모집, 이후 60분간 검토할 수 있어요 🧩", "Posted! Offers close at 8pm. You have 60 min to review 🧩"));
+        toast.success(t(
+          `퍼즐이 올라갔어요! ${getOfferDeadlineLabel(true)}까지 파티원·파트너 모집, 이후 60분간 검토할 수 있어요 🧩`,
+          "Posted! Offers close at 3am. You have 60 min to review 🧩"
+        ));
       } else if (!showReviewModal) {
         toast.success(t("깃발이 올라갔어요! 🚩", "Done! Top clubs will send you offers 🎉"));
       }
@@ -1730,7 +1741,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
               : t("마음에 드는 오퍼만 고르면 끝!", "Just pick the offer you like!")))}
         description={isEditMode
           ? t("변경된 내용으로 갱신됩니다.", "Your request will be updated.")
-          : t("오퍼는 당일 8시 마감. 60분간 더 검토할 수 있어요.", "Offers close at 8pm today. You have 60 min to review.")}
+          : t(
+              `오퍼는 ${getOfferDeadlineLabel(isRecruitingParty)} 마감. 60분간 더 검토할 수 있어요.`,
+              isRecruitingParty ? "Offers close at 3am. You have 60 min to review." : "Offers close at 8pm today. You have 60 min to review."
+            )}
         confirmText={isEditMode ? t("수정 완료", "Save") : (shareMode ? t("등록 완료", "Post share") : (isRecruitingParty ? t("파티원 모집 시작", "Start recruiting") : t("계속", "Continue")))}
         cancelText={t("다시 확인", "Go back")}
         variant={!isEditMode && !isRecruitingParty ? "celebrate" : "default"}
@@ -1760,7 +1774,10 @@ export function PuzzleForm({ userId, puzzle, shareMode = false, joinedOthers = 0
                 <Flag className="w-5 h-5 text-brand-amber" />
               </div>
               <SheetTitle className="text-foreground font-black text-xl tracking-tight">
-                {t("오늘 깃발은 오후 8시까지였어요", "Today's request deadline was 8pm")}
+                {t(
+                  `오늘 ${isRecruitingParty ? "조각" : "깃발"} 등록은 ${getRegistrationDeadlineLabel(isRecruitingParty)}까지였어요`,
+                  isRecruitingParty ? "Today's share signup closed at 11pm" : "Today's request deadline was 8pm"
+                )}
               </SheetTitle>
             </div>
             <SheetDescription className="text-muted-foreground font-medium leading-relaxed mt-1">

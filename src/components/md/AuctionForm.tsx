@@ -14,6 +14,10 @@ import type { Club, Auction, PriceRecommendation } from "@/types/database";
 import { KakaoOpenChatGuide } from "@/components/shared/KakaoOpenChatGuide";
 import { Calendar, Wine, Check, ArrowRight, ImageIcon, ChevronDown, MapPin, X, RefreshCw, Building2, Users, Bookmark, Minus, Plus, Coins, MessageCircle } from "lucide-react";
 import dayjs from "dayjs";
+import {
+  getOfferDeadline as getPuzzleOfferDeadline,
+  getExpiresAt as getPuzzleExpiresAt,
+} from "@/lib/utils/puzzleDeadline";
 import "dayjs/locale/ko";
 dayjs.locale("ko");
 import { getClubEventDate } from "@/lib/utils/date";
@@ -549,8 +553,9 @@ export function AuctionForm({ clubs, mdId, initialData, repostFrom, defaultClubI
                 const perSeat = values.price_per_seat || 0;
                 const eventDate = values.event_date || dayjs().format("YYYY-MM-DD");
                 const externalTotal = hasExternal ? externalCount : 0; // 성별무관
-                const offerDeadline = `${eventDate}T11:00:00.000Z`;
-                const expiresAt = `${eventDate}T12:00:00.000Z`;
+                // MD 직통은 항상 조각(is_recruiting_party=true) → 자정 마감
+                const offerDeadline = getPuzzleOfferDeadline(eventDate, true);
+                const expiresAt = getPuzzleExpiresAt(eventDate, true);
                 const noteText = (values.md_message || values.md_comment || "").trim() || null;
                 // MD 한마디(md_comment)는 제목(notes)과 별개로 상세의 "MD 한마디" 박스에 노출
                 const mdCommentText = (values.md_comment || "").trim() || null;

@@ -1,4 +1,8 @@
 import dayjs from "dayjs";
+import {
+  getOfferDeadline as getPuzzleOfferDeadline,
+  getOfferDeadlineLabel as getPuzzleOfferDeadlineLabel,
+} from "@/lib/utils/puzzleDeadline";
 
 /** 가격 포맷: 230000 → "230,000원" */
 export function formatPrice(price: number): string {
@@ -74,6 +78,7 @@ type PuzzleLike = {
   event_date: string;
   offer_deadline: string | null;
   expires_at: string;
+  is_recruiting_party?: boolean;
 };
 
 /**
@@ -91,11 +96,13 @@ export function getPuzzleGroupDeadline(puzzles: PuzzleLike[]): string | null {
   );
   if (!hasTodayPuzzle) return null;
 
-  // 8pm KST = 11am UTC, 오늘 날짜로 마감 시각 계산
-  const offerDeadline = dayjs(now.format("YYYY-MM-DD") + "T11:00:00.000Z");
+  // 조각은 자정, 깃발은 오후 8시 마감. 그룹이 섞여 있으면 먼저 닫히는 깃발 기준으로 안내한다.
+  const isShareGroup = puzzles.every((p) => p.is_recruiting_party);
+  const today = now.format("YYYY-MM-DD");
+  const offerDeadline = dayjs(getPuzzleOfferDeadline(today, isShareGroup));
   if (!offerDeadline.isAfter(now)) return null;
 
-  return "오후 8시에 오퍼가 마감됩니다";
+  return `${getPuzzleOfferDeadlineLabel(isShareGroup)}에 오퍼가 마감됩니다`;
 }
 
 /**

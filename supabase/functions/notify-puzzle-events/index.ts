@@ -49,6 +49,17 @@ function formatEventDate(eventDate: string): string {
   return `${m}/${d}`;
 }
 
+// 검토 마감 시각을 KST 라벨로. 깃발은 21시("오후 9시"), 조각은 익일 1시("새벽 1시").
+// 하드코딩 대신 expires_at에서 뽑아 쓰므로 마감 정책이 바뀌어도 문구가 따라간다.
+function formatKstHourLabel(iso: string): string {
+  const kstHour = new Date(new Date(iso).getTime() + 9 * 60 * 60 * 1000).getUTCHours();
+  if (kstHour === 0) return "자정";
+  if (kstHour < 6) return `새벽 ${kstHour}시`;
+  if (kstHour < 12) return `오전 ${kstHour}시`;
+  if (kstHour === 12) return "정오";
+  return `오후 ${kstHour - 12}시`;
+}
+
 function puzzleUrl(puzzleId: string) {
   return `${APP_URL}/flags/${puzzleId}`;
 }
@@ -279,7 +290,7 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
   // 실패한 깃발이 다음 cron에서 재시도되도록 하기 위함. (중복 발송은 alreadySent로 차단)
   const { data: puzzles, error } = await supabase
     .from("puzzles")
-    .select("id, leader_id, area, event_date, status")
+    .select("id, leader_id, area, event_date, status, expires_at, is_recruiting_party")
     .in("status", ["open", "selecting"])
     .not("offer_deadline", "is", null)
     .lte("offer_deadline", nowIso)
@@ -289,7 +300,7 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
 
   if (!puzzles || puzzles.length === 0) return;
 
-  for (const puzzle of puzzles as Array<{ id: string; leader_id: string; area: string; event_date: string; status: string }>) {
+  for (const puzzle of puzzles as Array<{ id: string; leader_id: string; area: string; event_date: string; status: string; expires_at: string; is_recruiting_party: boolean }>) {
    try {
     // 1) 상태 전환: open → selecting (race 방지: status='open' 조건 재확인)
     //    이미 'selecting'인 깃발은 전환을 건너뛰고 알림 단계로 진행한다.
@@ -335,13 +346,16 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
     //    오퍼 개수에 따라 문구 분기: 0개면 '오퍼 없이 마감' 결과 통보,
     //    1개 이상이면 '검토 시작 · 선택하세요' 안내.
     const hasOffers = (offerCount ?? 0) > 0;
+    // 조각은 자정 마감 → 검토 마감이 익일 새벽 1시. 문구를 expires_at에서 뽑는다.
+    const kind = puzzle.is_recruiting_party ? "조각" : "깃발";
+    const reviewLabel = formatKstHourLabel(puzzle.expires_at);
     await supabase.from("in_app_notifications").insert({
       user_id: puzzle.leader_id,
       type: "puzzle_offer_deadline",
       title: hasOffers ? "오퍼 마감 · 검토 시작" : "오퍼 마감 · 결과 안내",
       message: hasOffers
-        ? `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발의 파트너 오퍼가 마감됐어요. 오후 9시까지 선택해주세요.`
-        : `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발이 들어온 오퍼 없이 마감됐어요. 다음에 다시 깃발을 꽂아보세요.`,
+        ? `${puzzle.area} ${formatEventDate(puzzle.event_date)} ${kind}의 파트너 오퍼가 마감됐어요. ${reviewLabel}까지 선택해주세요.`
+        : `${puzzle.area} ${formatEventDate(puzzle.event_date)} ${kind}이 들어온 오퍼 없이 마감됐어요. 다음에 다시 ${kind}을 올려보세요.`,
       action_url: `/flags/${puzzle.id}`,
     });
 
@@ -358,10 +372,10 @@ async function handleOfferDeadline(supabase: ReturnType<typeof createClient>) {
           },
           body: JSON.stringify({
             user_id: puzzle.leader_id,
-            title: hasOffers ? "🍾 깃발 오퍼가 마감됐어요!" : "오퍼 마감 · 결과 안내",
+            title: hasOffers ? `🍾 ${kind} 오퍼가 마감됐어요!` : "오퍼 마감 · 결과 안내",
             body: hasOffers
               ? `시크릿오퍼 ${offerCount}개 💌\n60분 동안 더 고민할 수 있어요.`
-              : `${puzzle.area} ${formatEventDate(puzzle.event_date)} 깃발이 오퍼 없이 마감됐어요`,
+              : `${puzzle.area} ${formatEventDate(puzzle.event_date)} ${kind}이 오퍼 없이 마감됐어요`,
             data: {
               type: hasOffers ? "puzzle_review_started" : "puzzle_offer_deadline_empty",
               puzzle_id: puzzle.id,

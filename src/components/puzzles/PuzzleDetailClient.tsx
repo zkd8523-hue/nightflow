@@ -31,6 +31,7 @@ import { useTranslatedText } from "@/hooks/useTranslatedComment";
 import { TrustBadge } from "@/components/ui/TrustBadge";
 import { getDealTier, isNewUser } from "@/lib/utils/dealTier";
 import { formatRelativeTime, getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
+import { getOfferDeadlineLabel, formatKstHourLabelKo } from "@/lib/utils/puzzleDeadline";
 import { useCountdown } from "@/hooks/useCountdown";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -235,6 +236,8 @@ export function PuzzleDetailClient({
     chat_last_name?: string | null;
     chat_last_is_md?: boolean;
   } | null>(null);
+  // 위 RPC 실패 사유 — 실패를 조용히 삼키면 "불러오는 중…"에 영원히 멈춘다
+  const [partyMdStatusError, setPartyMdStatusError] = useState<string | null>(null);
   const [editingOffer, setEditingOffer] = useState<PuzzleOffer | null>(null);
   // 클럽 그룹 단위로 여는 가격표 비교 창 — 어느 클럽 그룹이 열려있는지 clubKey로 추적
   const [compareGroupKey, setCompareGroupKey] = useState<string | null>(null);
@@ -489,9 +492,16 @@ export function PuzzleDetailClient({
   // admin 전용: 일반 조각의 상담(파티챗) 상태 — 초대 MD·오퍼·과금·채팅 활성 (Migration 444)
   useEffect(() => {
     if (!isAdmin || !isRecruitingParty || puzzle.host_is_md) return;
-    supabase.rpc("admin_get_party_md_status", { p_puzzle_id: puzzle.id }).then(({ data }) => {
-      if (data?.success) setPartyMdStatus(data);
-    });
+    (async () => {
+      try {
+        const { data, error } = await supabase.rpc("admin_get_party_md_status", { p_puzzle_id: puzzle.id });
+        if (error) { setPartyMdStatusError(error.message); return; }
+        if (data?.success) { setPartyMdStatus(data); setPartyMdStatusError(null); return; }
+        setPartyMdStatusError(data?.error ?? "알 수 없는 응답");
+      } catch (e: unknown) {
+        setPartyMdStatusError(e instanceof Error ? e.message : String(e));
+      }
+    })();
   }, [isAdmin, isRecruitingParty, puzzle.host_is_md, puzzle.id, supabase]);
 
   // 방장 상담 횟수 — 리더 정보 시트를 열 때 1회만 조회 (서버 SSR 크리티컬 패스에서 이관).
@@ -1507,7 +1517,9 @@ export function PuzzleDetailClient({
                 <h2 className="text-[16px] font-bold text-foreground">조각 상담 상태</h2>
               </div>
               <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
-                {partyMdStatus === null ? (
+                {partyMdStatusError ? (
+                  <p className="text-[13px] text-red-400 break-words">불러오기 실패: {partyMdStatusError}</p>
+                ) : partyMdStatus === null ? (
                   <p className="text-[13px] text-muted-foreground">불러오는 중…</p>
                 ) : (
                   <>
@@ -1606,15 +1618,17 @@ export function PuzzleDetailClient({
                 </h2>
               </div>
               {puzzle.status === "open" ? (() => {
-                const timeKo = puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h시") : "5시";
-                const timeF = puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h A") : "5 PM";
+                // 실제 offer_deadline 값을 그대로 표시(조각/깃발/레거시 무관).
+                // 단 "3시"는 오후 3시로 오해되므로 새벽/오전/오후를 붙여 뽑는다.
+                const koLabel = puzzle.offer_deadline ? formatKstHourLabelKo(puzzle.offer_deadline) : getOfferDeadlineLabel(isRecruitingParty);
+                const timeF = puzzle.offer_deadline ? dayjs(puzzle.offer_deadline).format("h A") : (isRecruitingParty ? "3 AM" : "8 PM");
                 return (
                   <span className="text-[12px] text-muted-foreground whitespace-nowrap">
                     {t(
-                      `⏰ 당일 ${timeKo} 마감`,
-                      `⏰ Offers close ${timeF} on event day`,
-                      `⏰ 当日${timeF} オファー締切`,
-                      `⏰ 当天${timeF} 报价截止`,
+                      `⏰ ${koLabel} 마감`,
+                      `⏰ Offers close ${timeF}`,
+                      `⏰ ${timeF} オファー締切`,
+                      `⏰ ${timeF} 报价截止`,
                     )}
                   </span>
                 );
@@ -2327,8 +2341,10 @@ export function PuzzleDetailClient({
             </h3>
             <p className="text-muted-foreground text-[13px] leading-relaxed">
               {isForeigner
-                ? "Offers close at 8pm today. You have 60 more minutes to review."
-                : "오퍼는 당일 8시 마감되고, 60분간 더 검토할 수 있어요."}
+                ? (isRecruitingParty
+                  ? "Offers close at 3am. You have 60 more minutes to review."
+                  : "Offers close at 8pm today. You have 60 more minutes to review.")
+                : `오퍼는 ${getOfferDeadlineLabel(isRecruitingParty)} 마감되고, 60분간 더 검토할 수 있어요.`}
             </p>
             {reviewClub && !isForeigner ? (
               <div className="mt-6 pt-5 border-t border-border">

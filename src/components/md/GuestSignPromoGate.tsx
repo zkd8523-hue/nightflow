@@ -7,6 +7,10 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { GuestSignPromoSheet } from "./GuestSignPromoSheet";
 
 const SNOOZE_KEY = "nightflow_guestsign_promo_snoozed_until";
+// X(닫기) 전용 — 24시간 재노출 억제 ("1주일간 보지않기"와 별개)
+const CLOSE_SNOOZE_KEY = "nightflow_guestsign_promo_closed_until";
+// 세션당 1회만 — (main)/(dashboard) 레이아웃을 오가며 리마운트돼도 로그인 세션 중엔 다시 안 뜨게
+const SESSION_SHOWN_KEY = "nightflow_guestsign_promo_shown_session";
 
 /** KST 기준 이번 주 월요일(00:00) — /md/dashboard 서버 쿼리와 동일한 계산식. */
 function thisWeekMondayISO(): string {
@@ -24,7 +28,9 @@ function thisWeekMondayISO(): string {
  * 조건: 소속 클럽 중 이번 주 게스트 간판이 비어있고(아무도 안 걸었고), 내가 이번 주에
  * 이미 다른 클럽으로 걸지 않았을 때만 노출 (md/dashboard 서버 판별 로직과 동일).
  * (main)/(dashboard) 레이아웃 양쪽에 마운트 — ChatUpdateSheet와 동일 패턴.
- * "1주일간 보지않기"는 localStorage 만료 시각으로 재노출 억제, X는 이번 세션만 닫음.
+ * "1주일간 보지않기"는 localStorage 만료 시각으로 재노출 억제, X는 24시간 억제(localStorage).
+ * 레이아웃을 오가며 리마운트돼도 sessionStorage로 "이번 세션에 이미 떴음"을 기억해
+ * 로그인(=새 세션) 시 최초 1회만 노출되고, 페이지 이동만으론 재노출되지 않는다.
  */
 export function GuestSignPromoGate() {
   const { user, isLoading } = useCurrentUser();
@@ -37,8 +43,14 @@ export function GuestSignPromoGate() {
     if (isLoading || !isPartner || !user) return;
     if (typeof window === "undefined") return;
 
+    // 이번 세션에 이미 떴으면(다른 레이아웃으로 리마운트된 경우 포함) 다시 안 띄움
+    if (sessionStorage.getItem(SESSION_SHOWN_KEY)) return;
+
     const snoozedUntil = localStorage.getItem(SNOOZE_KEY);
     if (snoozedUntil && new Date(snoozedUntil) > new Date()) return;
+
+    const closedUntil = localStorage.getItem(CLOSE_SNOOZE_KEY);
+    if (closedUntil && new Date(closedUntil) > new Date()) return;
 
     let cancelled = false;
     (async () => {
@@ -66,6 +78,7 @@ export function GuestSignPromoGate() {
       const hasClaimableClub = clubIds.some((id) => !claimedClubIds.has(id));
 
       if (!mineThisWeek && hasClaimableClub) {
+        sessionStorage.setItem(SESSION_SHOWN_KEY, "1");
         setOpen(true);
       }
     })();
@@ -79,7 +92,12 @@ export function GuestSignPromoGate() {
 
   return (
     <GuestSignPromoSheet
-      onClose={() => setOpen(false)}
+      onClose={() => {
+        const until = new Date();
+        until.setDate(until.getDate() + 1);
+        localStorage.setItem(CLOSE_SNOOZE_KEY, until.toISOString());
+        setOpen(false);
+      }}
       onSnooze={() => {
         const until = new Date();
         until.setDate(until.getDate() + 7);
