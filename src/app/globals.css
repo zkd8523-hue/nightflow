@@ -232,6 +232,20 @@
     animation: breathe 2s ease-in-out infinite;
   }
 
+  /* 게스트 간판 CTA — 은은한 글로우 (확대 없음, 참여 유도) */
+  @keyframes guest-glow {
+    0%, 100% {
+      box-shadow: 0 0 6px rgba(251, 191, 36, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 16px rgba(251, 191, 36, 0.75);
+    }
+  }
+
+  .animate-guest-glow {
+    animation: guest-glow 1.8s ease-in-out infinite;
+  }
+
   /* NEW! 배지 (6시간 이내 등록 깃발) */
   @keyframes new-badge-pop {
     0%, 100% { transform: rotate(-10deg) scale(1); }

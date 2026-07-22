@@ -27,9 +27,15 @@ function fmtDate(iso: string): string {
  * MD 크레딧 충전 내역 — 본인 credit_payments 조회(RLS: 본인만). 펼치기/접기 가능.
  * 계좌이체 신청(pending=확인중) / 적립완료(paid) / 취소(cancelled·failed) 상태 표시.
  */
-export function CreditHistory({ userId }: { userId: string }) {
+export function CreditHistory({
+  userId,
+  defaultOpen = false,
+}: {
+  userId: string;
+  defaultOpen?: boolean;
+}) {
   const [rows, setRows] = useState<CreditPaymentRow[] | null>(null);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   useEffect(() => {
     let alive = true;
@@ -62,8 +68,6 @@ export function CreditHistory({ userId }: { userId: string }) {
     };
   }, [userId]);
 
-  const pendingCount = rows?.filter((r) => r.status === "pending").length ?? 0;
-
   return (
     <div className="space-y-2">
       <button
@@ -72,15 +76,7 @@ export function CreditHistory({ userId }: { userId: string }) {
       >
         <h3 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
           충전 내역
-          {rows && rows.length > 0 && (
-            <span className="ml-1 text-muted-foreground/70">{rows.length}</span>
-          )}
         </h3>
-        {pendingCount > 0 && (
-          <span className="text-[10px] font-black text-brand-amber bg-amber-500/10 px-1.5 py-0.5 rounded-full">
-            확인중 {pendingCount}
-          </span>
-        )}
         <ChevronDown
           className={`w-4 h-4 text-muted-foreground ml-auto transition-transform ${open ? "rotate-180" : ""}`}
         />

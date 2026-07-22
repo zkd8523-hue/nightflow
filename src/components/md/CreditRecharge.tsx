@@ -8,11 +8,14 @@ import {
   BANK_TRANSFER_ACCOUNT,
   type CreditProduct,
 } from "@/lib/payments/credit-products";
+import { CreditHistory } from "@/components/md/CreditHistory";
 import { formatPrice } from "@/lib/utils/format";
 
 interface CreditRechargeProps {
   /** 현재 크레딧 잔액 (표시용) */
   currentCredits: number | null;
+  /** 충전 내역 조회용 MD user id */
+  userId: string;
 }
 
 /**
@@ -21,7 +24,7 @@ interface CreditRechargeProps {
  *       [입금완료·확인 요청] → pending 생성 + 관리자 푸시 → 관리자 통장 확인 후 수기 적립.
  * (PG/카카오페이 경로는 심사 반려 이슈로 UI에서 제거. API 라우트는 유지.)
  */
-export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
+export function CreditRecharge({ currentCredits, userId }: CreditRechargeProps) {
   const [selectedId, setSelectedId] = useState<string>(
     CREDIT_PRODUCTS.find((p) => p.recommended)?.id ?? CREDIT_PRODUCTS[0].id
   );
@@ -83,6 +86,7 @@ export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
       {done ? (
         <RequestDone
           credits={done.credits}
+          userId={userId}
           onReset={() => {
             setDone(null);
             setDepositorName("");
@@ -169,7 +173,15 @@ export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
   );
 }
 
-function RequestDone({ credits, onReset }: { credits: number; onReset: () => void }) {
+function RequestDone({
+  credits,
+  userId,
+  onReset,
+}: {
+  credits: number;
+  userId: string;
+  onReset: () => void;
+}) {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
@@ -192,6 +204,9 @@ function RequestDone({ credits, onReset }: { credits: number; onReset: () => voi
       >
         확인
       </button>
+
+      {/* 충전 내역 (확인 버튼 아래, 기본 접힘) */}
+      <CreditHistory userId={userId} />
     </div>
   );
 }

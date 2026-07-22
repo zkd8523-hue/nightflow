@@ -200,19 +200,7 @@ export function HotdealSlotBoard({
   const [reloadKey, setReloadKey] = useState(0);
   // 소속 클럽 id 집합 (재조회 필터 + 의존성 안정화용)
   const clubIdsKey = useMemo(() => clubs.map((c) => c.id).sort().join(","), [clubs]);
-  const GUIDE_DISMISSED_KEY = "nightflow_guest_sign_guide_dismissed";
-  const [showGuide, setShowGuide] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (localStorage.getItem(GUIDE_DISMISSED_KEY) === "1") setShowGuide(false);
-  }, []);
-  const dismissGuide = () => {
-    setShowGuide(false);
-    if (typeof window !== "undefined") {
-      localStorage.setItem(GUIDE_DISMISSED_KEY, "1");
-    }
-  };
 
   // 내 고정 혜택 프리셋 (직접입력 → 고정한 칩, MD 단위)
   const MAX_BENEFIT_PRESETS = 12;
@@ -491,6 +479,31 @@ export function HotdealSlotBoard({
     }
   };
 
+  const handleReturnThisWeek = async () => {
+    if (!mySlotForWeek || busy) return;
+    if (!window.confirm("이번 주 게스트 간판을 반납할까요?\n반납하면 다른 파트너가 이 자리를 차지할 수 있어요.")) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("release_hotdeal_slot", {
+        p_slot_id: mySlotForWeek.id,
+      });
+      if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result?.success) {
+        toast.error(result?.error || "반납 실패");
+        return;
+      }
+      setClientMySlots((prev) => (prev ?? []).filter((s) => s.id !== mySlotForWeek.id));
+      toast.success("게스트 간판을 반납했어요");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      toast.error("요청 실패");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleReleaseNextWeek = async () => {
     if (!myNextWeekSlot || busy) return;
     if (!window.confirm("다음 주 미리 선점을 해제할까요?")) return;
@@ -533,12 +546,12 @@ export function HotdealSlotBoard({
         <div className="flex items-center justify-between gap-2 mb-0">
           {embedded ? (
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <p className="text-[17px] text-brand-amber font-black leading-tight">
-                이번주 게스트 간판
+              <p className="text-[14px] text-foreground font-black leading-tight">
+                {formatWeekRange(thisWeekISO)}
               </p>
               <button
                 type="button"
-                onClick={() => setShowGuide((v) => !v)}
+                onClick={() => setPreviewOpen(true)}
                 className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-0.5"
               >
                 <span className="text-[12px]">ⓘ</span>
@@ -551,72 +564,9 @@ export function HotdealSlotBoard({
               <h1 className="text-2xl font-black text-foreground tracking-tight">게스트 간판</h1>
             </div>
           )}
-          <p className="text-[11px] text-brand-amber font-bold text-right leading-tight shrink-0">
-            매주 월 18시 오픈
-          </p>
         </div>
-
-        {/* 이번 주 날짜 — 제목 바로 아래 좌정렬. 차지한 간판이 있으면 클럽 카드에 주차가 표시되므로 숨김 */}
-        {!hasMyClaimThisWeek && (
-          <p className="text-[13px] text-foreground font-black mt-0.5 mb-3">
-            이번 주 {formatWeekRange(thisWeekISO)}
-          </p>
-        )}
 
         {/* 4단계 시각 가이드 (사용자가 닫을 수 있음) */}
-        {showGuide && (
-        <div className="relative bg-card border border-border rounded-2xl p-4 mb-4 space-y-3">
-          <button
-            type="button"
-            onClick={dismissGuide}
-            aria-label="가이드 닫기"
-            className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-          <p className="text-[13px] text-foreground font-black">이용방법</p>
-          <div className="space-y-2.5">
-            <div className="flex items-start gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
-              <div className="flex-1">
-                <p className="text-[12.5px] text-foreground font-bold leading-snug">&quot;오늘 어디갈래?&quot;에 상위 노출</p>
-                <p className="text-[11px] text-muted-foreground leading-snug">유저가 오늘 갈 클럽 고를 때 혜택 배지로 강조</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
-              <div className="flex-1">
-                <p className="text-[12.5px] text-foreground font-bold leading-snug">1클럽, 1파트너</p>
-                <p className="text-[11px] text-muted-foreground leading-snug">선착순 한 명의 파트너가 그 주 홍보권을 가져가요</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">3</div>
-              <div className="flex-1">
-                <p className="text-[12.5px] text-foreground font-bold leading-snug">요일별 혜택 입력</p>
-                <p className="text-[11px] text-muted-foreground leading-snug">예: 월 여성무료입장 / 토 프리드링크 1잔</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0">4</div>
-              <div className="flex-1">
-                <p className="text-[12.5px] text-foreground font-bold leading-snug">더 많은 게스트를 모아보세요</p>
-              </div>
-            </div>
-          </div>
-          {/* 실제 노출 화면 미리보기 */}
-          <button
-            type="button"
-            onClick={() => setPreviewOpen(true)}
-            className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-brand-amber text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
-          >
-            👀 미리보기
-          </button>
-        </div>
-        )}
-
-
-
         {/* 다음 주 미리 선점 — 혜택 편집보다 위에 노출 */}
         {mySlotForWeek && (
           <div className="bg-muted/60 rounded-2xl p-4 mb-4">
@@ -674,6 +624,18 @@ export function HotdealSlotBoard({
                 </p>
               </div>
             )}
+
+            {/* 이번 주 차지한 간판 반납 (작은 회색, 우측 정렬) */}
+            <div className="flex justify-end mt-2.5">
+              <button
+                type="button"
+                disabled={busy}
+                onClick={handleReturnThisWeek}
+                className="px-3 py-1.5 rounded-full text-[11px] font-bold bg-background/60 text-muted-foreground hover:text-red-400 disabled:opacity-40 transition-colors"
+              >
+                이번 주 간판 반납
+              </button>
+            </div>
           </div>
         )}
 
@@ -736,14 +698,14 @@ export function HotdealSlotBoard({
                     type="button"
                     onClick={() => handleClaim(club.id)}
                     disabled={disabled}
-                    className={`px-3 py-2 rounded-full text-[12px] font-black flex-shrink-0 transition-colors ${
+                    className={`px-3 py-2 rounded-lg text-[12px] font-black flex-shrink-0 whitespace-nowrap transition-colors ${
                       claimedByOther
                         ? "bg-muted text-muted-foreground"
                         : hasMyClaimThisWeek
                         ? "bg-muted text-muted-foreground"
                         : preOpen
                         ? "bg-muted text-muted-foreground"
-                        : "bg-amber-500 text-black hover:bg-amber-400"
+                        : "bg-amber-500 text-black hover:bg-amber-400 animate-guest-glow"
                     }`}
                   >
                     {claimedByOther
@@ -752,7 +714,7 @@ export function HotdealSlotBoard({
                       ? "주 1간판"
                       : preOpen
                       ? "미오픈"
-                      : "간판 걸기"}
+                      : "이번주 게스트 간판 OPEN"}
                   </button>
                 </div>
               );

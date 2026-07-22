@@ -41,7 +41,7 @@ export default async function MDCreditsPage() {
           <h1 className="text-xl font-black text-foreground">크레딧 충전</h1>
         </div>
 
-        <CreditRecharge currentCredits={mdUser.md_credits ?? 0} />
+        <CreditRecharge currentCredits={mdUser.md_credits ?? 0} userId={authUser.id} />
 
         {/* 결제페이지 사업자정보 상시 노출 (PG/카드사 심사 요건) */}
         <div className="mt-10 pt-6 border-t border-border">

@@ -112,6 +112,15 @@ interface ShareSlotLite {
     expires_at: string;
 }
 
+// 헤더 인사 문구 — 마운트 후 랜덤 선택(SSR/CSR 텍스트 불일치 방지를 위해 useEffect에서 교체)
+const HEADER_GREETINGS = [
+    "오늘밤도 파이팅이에요!",
+    "오늘도 좋은 손님 가득하길!",
+    "오늘 매출 대박나세요!",
+    "즐거운 영업 되세요!",
+    "오늘도 화이팅입니다!",
+];
+
 interface MDDashboardProps {
     user: User;
     /** 홈 CTA(?section=guestsign/share)로 진입 시 초기 탭 지정 */
@@ -166,6 +175,11 @@ export function MDDashboard({
     const [clubFavCounts, setClubFavCounts] = useState<Record<string, number>>({});
     const [mdCredits, setMdCredits] = useState<number | null>(user.md_credits ?? null);
     const [showAreaOnboarding, setShowAreaOnboarding] = useState(false);
+    // 헤더 인사 문구 — 서버 렌더와 동일하게 시작 후, 마운트 시 클라이언트에서만 랜덤 교체
+    const [headerGreeting, setHeaderGreeting] = useState(HEADER_GREETINGS[0]);
+    useEffect(() => {
+        setHeaderGreeting(HEADER_GREETINGS[Math.floor(Math.random() * HEADER_GREETINGS.length)]);
+    }, []);
     // 내 오퍼 카드의 "..." 수정/삭제 메뉴 — 한 번에 하나만 열림
     const [openOfferMenuId, setOpenOfferMenuId] = useState<string | null>(null);
     // 내 오퍼 카드의 세부사항(제안가·구성·코멘트) 드롭다운 — 한 번에 하나만 열림
@@ -176,15 +190,27 @@ export function MDDashboard({
     const [hotdealInlineOpen, setHotdealInlineOpen] = useState(false);
     // 홈 CTA(?section=guestsign / share)로 진입 시 해당 탭을 열어준다.
     const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
-    // 홈 CTA(?section=guestsign)로 진입했을 때만 펼침. 그냥 대시보드 진입 시엔 접힌 상태.
-    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(initialSection === "guestsign");
+    // 게스트 간판 탭 초기 펼침 규칙:
+    //  1) 홈 CTA(?section=...)로 명시 진입 시 → 해당 섹션만 존중
+    //  2) 그냥 대시보드 진입인데, 이번주 게스트 간판을 아직 안 차지했고(참여 유도)
+    //     차지 가능한 클럽이 하나라도 있으면 → 자동 펼침
+    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(() => {
+        if (initialSection) return initialSection === "guestsign";
+        const claimedClubIds = new Set(
+            guestSignSlots.filter((s) => s.week_start === guestSignThisWeekISO).map((s) => s.club_id)
+        );
+        const mineThisWeek = guestSignMySlots.some((s) => s.week_start === guestSignThisWeekISO);
+        const hasClaimableClub = guestSignClubs.some((c) => !claimedClubIds.has(c.id));
+        return !mineThisWeek && hasClaimableClub;
+    });
     const [shareInlineOpen, setShareInlineOpen] = useState(false);
     const supabase = createClient();
 
     // 낙관적 슬롯 상태 — claim 즉시 세팅 영역 표시 (router.refresh() 대기 안 함)
     const [localShareSlots, setLocalShareSlots] = useState(shareSlots);
     const [planBoardResetKey, setPlanBoardResetKey] = useState(0);
-    const [activePuzzleTab, setActivePuzzleTab] = useState<"flag" | "share">("flag");
+    // "all" = 아무 탭도 선택 안 한 기본 상태(깃발+조각 전체). 같은 탭을 다시 누르면 "all"로 돌아감.
+    const [activePuzzleTab, setActivePuzzleTab] = useState<"flag" | "share" | "all">("all");
     // MD 직통 조각(내 조각) — host_is_md 퍼즐. 조각 인라인 "내 조각" 목록용
     const [myShares, setMyShares] = useState<Array<{ id: string; notes: string | null; area: string; event_date: string; current_count: number; target_count: number; status: string }>>([]);
     useEffect(() => {
@@ -396,7 +422,8 @@ export function MDDashboard({
     // 내 오퍼 탭: 깃발 / 조각 분리
     const flagOffers = initialPuzzleOffers.filter((o) => !o.puzzle?.is_recruiting_party);
     const shareOffers = initialPuzzleOffers.filter((o) => !!o.puzzle?.is_recruiting_party);
-    const tabOffers = activePuzzleTab === "share" ? shareOffers : flagOffers;
+    // "all"(미선택) 상태에서는 리스트를 아예 노출하지 않음 — 깃발/조각 중 하나를 골라야 목록이 뜬다.
+    const tabOffers = activePuzzleTab === "share" ? shareOffers : activePuzzleTab === "flag" ? flagOffers : [];
     // 거래 확정 카드(위 섹션)로 빠진 것 제외 — 날짜 헤더 그룹핑용으로 목록을 한 번만 계산
     const visibleOffers = tabOffers.filter(o =>
         !(o.status === "accepted" && o.puzzle?.event_date && o.puzzle.event_date < new Date().toISOString().split("T")[0] && !o.visit_marked_at)
@@ -420,7 +447,7 @@ export function MDDashboard({
                 <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                         <h1 className="text-xl font-black tracking-tight">{user.display_name || user.name} 파트너님</h1>
-                        <p className="text-muted-foreground text-[13px] font-medium">오늘밤도 파이팅이에요!</p>
+                        <p className="text-muted-foreground text-[13px] font-medium">{headerGreeting}</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Link href="/profile" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
@@ -467,7 +494,7 @@ export function MDDashboard({
                         </div>
                     </Link>
                 ) : clubs.length === 1 ? (
-                    <div className="flex items-center gap-2 px-4 py-3 bg-card border border-border rounded-2xl">
+                    <div className="flex items-center gap-2 px-4 py-3 bg-card border border-border rounded-lg">
                         <MapPin className="w-4 h-4 text-brand-amber shrink-0" />
                         <span className="text-[14px] font-bold text-foreground truncate">{clubs[0].name}</span>
                         <span className="text-muted-foreground text-[13px]">&middot;</span>
@@ -501,11 +528,12 @@ export function MDDashboard({
                 )}
             </div>
 
-            {/* 액션 버튼 3종 */}
-            {/* 게스트 간판 — 전체 너비 한 줄 */}
-            <div className="px-4 mt-3">
-                <button
-                    type="button"
+            {/* 액션 버튼 3종 — 바깥 테두리에 "파트너 도구" 레전드(fieldset legend 스타일)로 라벨링 */}
+            <div className="px-4 mt-5 relative">
+                <div className="border border-border rounded-xl p-2 pt-4 space-y-2">
+                    {/* 게스트 간판 — 전체 너비 한 줄 */}
+                    <button
+                        type="button"
                     onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -519,42 +547,47 @@ export function MDDashboard({
                 >
                     <span className="text-[18px] leading-none">🎫</span>
                     <span className="text-[12px] font-black text-foreground">게스트 간판</span>
+                    <span className="text-[12px] font-bold text-muted-foreground">(매주 월 18시 오픈)</span>
                 </button>
-            </div>
-            {/* 조각 | 핫딜 — 반반 */}
-            <div className="px-4 mt-2 grid grid-cols-2 gap-2">
-                <button
-                    type="button"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShareInlineOpen((v) => !v);
-                        setGuestSignInlineOpen(false);
-                        setHotdealInlineOpen(false);
-                    }}
-                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
-                        shareInlineOpen ? "border-green-500" : "border-border"
-                    }`}
-                >
-                    <span className="text-[20px] leading-none">🧩</span>
-                    <span className="text-[12px] font-black text-foreground">조각</span>
-                </button>
-                <button
-                    type="button"
-                    onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setHotdealInlineOpen((v) => !v);
-                        setGuestSignInlineOpen(false);
-                        setShareInlineOpen(false);
-                    }}
-                    className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
-                        hotdealInlineOpen ? "border-amber-500" : "border-border"
-                    }`}
-                >
-                    <span className="text-[20px] leading-none">🔥</span>
-                    <span className="text-[12px] font-black text-foreground">핫딜</span>
-                </button>
+                {/* 조각 | 핫딜 — 반반 */}
+                <div className="grid grid-cols-2 gap-2">
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setShareInlineOpen((v) => !v);
+                            setGuestSignInlineOpen(false);
+                            setHotdealInlineOpen(false);
+                        }}
+                        className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                            shareInlineOpen ? "border-green-500" : "border-border"
+                        }`}
+                    >
+                        <span className="text-[20px] leading-none">🧩</span>
+                        <span className="text-[12px] font-black text-foreground">조각</span>
+                    </button>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setHotdealInlineOpen((v) => !v);
+                            setGuestSignInlineOpen(false);
+                            setShareInlineOpen(false);
+                        }}
+                        className={`col-span-1 flex flex-col items-center justify-center gap-1 h-16 bg-card border rounded-2xl hover:bg-muted active:scale-95 transition-all ${
+                            hotdealInlineOpen ? "border-amber-500" : "border-border"
+                        }`}
+                    >
+                        <span className="text-[20px] leading-none">🔥</span>
+                        <span className="text-[12px] font-black text-foreground">핫딜</span>
+                    </button>
+                </div>
+                </div>
+                <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 bg-background text-[12px] font-black text-muted-foreground whitespace-nowrap">
+                    파트너 도구
+                </span>
             </div>
 
             {/* Hot Deal 인라인 등록 영역 */}
@@ -658,13 +691,23 @@ export function MDDashboard({
             {/* 내 오퍼 (받은 오퍼) — 위 조각 등록과 구분 */}
             <div className="px-4 mt-5">
                 <p className="text-[13px] font-black text-muted-foreground mb-2 px-1 text-center">내 오퍼</p>
-                <Tabs value={activePuzzleTab} onValueChange={(v) => setActivePuzzleTab(v as "flag" | "share")} className="w-full">
+                <Tabs value={activePuzzleTab} className="w-full">
                     <div className="flex items-center gap-2">
                         <TabsList className="flex-1 bg-card border border-border/50 h-11 p-1 rounded-xl">
-                            <TabsTrigger value="flag" className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]">
+                            {/* Radix Tabs는 controlled 상태에서 같은 값 재클릭 시 onValueChange를 호출하지 않으므로
+                                (useControllableState가 동일값 변경을 무시함), 토글-오프는 onClick으로 직접 처리 */}
+                            <TabsTrigger
+                                value="flag"
+                                onClick={() => setActivePuzzleTab((prev) => (prev === "flag" ? "all" : "flag"))}
+                                className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]"
+                            >
                                 ⛳ 깃발 {flagOffers.length > 0 && <span className="ml-0.5 text-brand-amber">{flagOffers.length}</span>}
                             </TabsTrigger>
-                            <TabsTrigger value="share" className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]">
+                            <TabsTrigger
+                                value="share"
+                                onClick={() => setActivePuzzleTab((prev) => (prev === "share" ? "all" : "share"))}
+                                className="flex-1 rounded-lg font-bold text-muted-foreground data-[state=active]:bg-card data-[state=active]:text-foreground transition-colors hover:text-foreground text-[13px]"
+                            >
                                 🧩 조각 {shareOffers.length > 0 && <span className="ml-0.5 text-money">{shareOffers.length}</span>}
                             </TabsTrigger>
                         </TabsList>
@@ -955,12 +998,14 @@ export function MDDashboard({
                                         </div>
                                     );
                                 })
-                            ) : tabOffers.length === 0 ? (
+                            ) : activePuzzleTab === "all" ? null : tabOffers.length === 0 ? (
                                 <div className="py-16 text-center space-y-4 bg-card/30 rounded-3xl border border-dashed border-border/50">
                                     <div className="w-16 h-16 bg-card rounded-full flex items-center justify-center mx-auto text-3xl">
                                         📨
                                     </div>
-                                    <p className="text-muted-foreground font-medium text-sm">{activePuzzleTab === "share" ? "보낸 조각 오퍼가 없습니다" : "보낸 깃발 오퍼가 없습니다"}</p>
+                                    <p className="text-muted-foreground font-medium text-sm">
+                                        {activePuzzleTab === "share" ? "보낸 조각 오퍼가 없습니다" : "보낸 깃발 오퍼가 없습니다"}
+                                    </p>
                                     <p className="text-muted-foreground text-xs px-10 leading-relaxed">
                                         {activePuzzleTab === "share"
                                             ? <>홈 조각 탭에서 유저들이 올린 조각을 확인하고<br/>오퍼를 보내보세요</>
@@ -998,7 +1043,7 @@ export function MDDashboard({
                             </p>
                         </div>
                     </div>
-                    <span className="flex items-center gap-1 rounded-full bg-amber-500 px-4 py-2 text-[13px] font-black text-black group-hover:bg-amber-400 transition-colors">
+                    <span className="flex items-center gap-1 rounded-full bg-white px-4 py-2 text-[13px] font-black text-black group-hover:bg-white/90 transition-colors">
                         <Plus className="w-4 h-4" />충전
                     </span>
                 </Link>

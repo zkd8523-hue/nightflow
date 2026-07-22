@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useNotifications } from "@/hooks/useNotifications";
+import { CreditChargedDialog } from "@/components/md/CreditChargedDialog";
 import { useSupportUnread } from "@/hooks/useSupportUnread";
 import { Button } from "@/components/ui/button";
 import {
@@ -260,6 +261,7 @@ export function Header({
       className="border-b border-border bg-background sticky top-0 z-50"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
+      <CreditChargedDialog />
       <div className="container mx-auto max-w-lg px-4 h-[52px] flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           {compact && backHref && (

@@ -96,6 +96,22 @@ export function useNotifications(userId: string | undefined) {
                       }
                     : undefined,
                 });
+              } else if (newNotification.type === "credit_charged") {
+                // 크레딧 적립 완료 → 전역 축하 팝업(다이얼로그) 트리거
+                if (typeof navigator !== "undefined" && navigator.vibrate) {
+                  navigator.vibrate([200, 100, 200]);
+                }
+                if (typeof window !== "undefined") {
+                  window.dispatchEvent(
+                    new CustomEvent("nightflow:credit-charged", {
+                      detail: {
+                        title: newNotification.title,
+                        message: newNotification.message,
+                        actionUrl: newNotification.action_url,
+                      },
+                    })
+                  );
+                }
               } else if (
                 newNotification.type === "admin_puzzle_expired" ||
                 newNotification.type === "admin_puzzle_cancelled" ||
