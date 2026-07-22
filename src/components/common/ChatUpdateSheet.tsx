@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { MessageCircle } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 
-// 인앱 채팅 도입 안내 (1회). 대상: MD/관리자 또는 깃발 보유 방장.
-const SEEN_KEY = "nf_chat_update_v1_seen";
-
+// 인앱 채팅 도입 안내 (계정당 최초 1회, Migration 482 users.chat_update_v1_seen).
+// 대상: MD/관리자 또는 깃발 보유 방장.
 export function ChatUpdateSheet() {
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading, refetch } = useCurrentUser();
   const chatOn = useOfferChatFlag();
   const [open, setOpen] = useState(false);
 
@@ -19,14 +19,17 @@ export function ChatUpdateSheet() {
 
   useEffect(() => {
     if (isLoading || !user || !chatOn) return;
-    if (typeof window === "undefined") return;
-    if (localStorage.getItem(SEEN_KEY) === "true") return;
+    if (user.chat_update_v1_seen) return;
     setOpen(true);
   }, [user, isLoading, chatOn]);
 
-  const dismiss = () => {
-    if (typeof window !== "undefined") localStorage.setItem(SEEN_KEY, "true");
+  // best-effort: DB 쓰기가 실패해도 사용자를 시트에 가두지 않는다.
+  const dismiss = async () => {
     setOpen(false);
+    if (!user) return;
+    const supabase = createClient();
+    await supabase.from("users").update({ chat_update_v1_seen: true }).eq("id", user.id);
+    refetch();
   };
 
   return (
