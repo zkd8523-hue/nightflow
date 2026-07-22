@@ -50,6 +50,17 @@ export const CREDIT_PRODUCTS: CreditProduct[] = [
 /** 1크레딧 가격(원). 표시·검증 단일 출처. */
 export const CREDIT_UNIT_PRICE = 100;
 
+/**
+ * 계좌이체(무통장입금) 안내 계좌 — 사업용 계좌.
+ * PG 우회 경로: MD가 이 계좌로 직접 입금 → 관리자 통장 확인 후 수기 적립.
+ * 계좌 변경 시 이 상수 한 곳만 수정하면 안내 화면에 반영됨.
+ */
+export const BANK_TRANSFER_ACCOUNT = {
+  bank: "카카오뱅크",
+  number: "3333-37-4374607",
+  holder: "매드다윗(김민기)",
+} as const;
+
 /** id 로 상품 조회. 서버 검증에서 클라이언트가 보낸 금액 위변조 방지에 사용. */
 export function getCreditProduct(id: string): CreditProduct | undefined {
   return CREDIT_PRODUCTS.find((p) => p.id === id);

@@ -20,6 +20,7 @@ import {
   BarChart3,
   Wine,
   Globe,
+  Landmark,
 } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -55,6 +56,7 @@ export default async function AdminDashboardPage() {
     { count: shareActive },
     { count: marketingConsented },
     { count: foreignNew },
+    { count: pendingBankCredits },
   ] = await Promise.all([
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "user"),
     supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "md"),
@@ -84,6 +86,8 @@ export default async function AdminDashboardPage() {
       .neq("role", "admin"),
     // 외국인 컨시어지 신규 요청 (빨간 dot 배지용)
     supabase.from("foreign_requests").select("*", { count: "exact", head: true }).eq("status", "new"),
+    // 계좌이체 크레딧 입금확인 대기
+    supabase.from("credit_payments").select("*", { count: "exact", head: true }).eq("method", "bank_transfer").eq("status", "pending"),
   ]);
 
   // 시간 기반 필터: 종료 시간이 아직 안 지난 경매만 카운트
@@ -282,6 +286,15 @@ export default async function AdminDashboardPage() {
       bgColor: "bg-red-500/10",
       badge: foreignNew ? `🔴 ${foreignNew}건 대기` : null,
       href: "/admin/foreign",
+    },
+    {
+      label: "크레딧 입금확인",
+      value: pendingBankCredits ? `${pendingBankCredits}건 대기` : "관리",
+      icon: Landmark,
+      color: "text-brand-amber",
+      bgColor: "bg-amber-500/10",
+      badge: pendingBankCredits ? `🔴 ${pendingBankCredits}건 대기` : null,
+      href: "/admin/credits",
     },
     {
       label: "게스트 간판 배정",

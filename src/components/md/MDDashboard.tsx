@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { getDDayLabel, formatGenderComposition } from "@/lib/utils/format";
 
 import { createClient } from "@/lib/supabase/client";
+import { CreditHistory } from "@/components/md/CreditHistory";
 import { DateGroup } from "@/components/ui/DateGroup";
 import dayjs from "dayjs";
 import "dayjs/locale/ko";
@@ -1001,9 +1002,7 @@ export function MDDashboard({
                         <Plus className="w-4 h-4" />충전
                     </span>
                 </Link>
-                <p className="text-[12px] text-muted-foreground px-1 -mt-2">
-                    충전 No! 크레딧은 인스타DM 주시면 채워드립니다.
-                </p>
+                <CreditHistory userId={user.id} />
             </div>
 
             {/* Club Selector Sheet (복수 클럽용) */}

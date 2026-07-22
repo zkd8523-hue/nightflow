@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Zap, Check } from "lucide-react";
-import { CREDIT_PRODUCTS, type CreditProduct } from "@/lib/payments/credit-products";
+import { Loader2, Check, Landmark, Copy, CircleCheck } from "lucide-react";
+import {
+  CREDIT_PRODUCTS,
+  BANK_TRANSFER_ACCOUNT,
+  type CreditProduct,
+} from "@/lib/payments/credit-products";
 import { formatPrice } from "@/lib/utils/format";
 
 interface CreditRechargeProps {
@@ -13,112 +16,54 @@ interface CreditRechargeProps {
 }
 
 /**
- * MD 크레딧 충전 — 상품 선택 후 포트원(카카오페이) 결제창 호출.
- *
- * 결제 플로우:
- *  1) 상품 선택 → "결제하기"
- *  2) 서버에 결제 의도 등록(/api/credits/prepare) → paymentId 발급(서버 확정 금액)
- *  3) PortOne.requestPayment() 로 카카오페이 결제창 호출  ← 카드사 심사 증빙 화면
- *  4) 결제 결과 → 서버 검증(/api/credits/verify) → 크레딧 적립
- *
- * 앱(Capacitor) 정책: iOS/Android 인앱에서 디지털 재화를 PG로 결제하면 스토어
- * 정책 위반이므로, 네이티브 앱에서는 결제를 막고 웹(브라우저)으로 유도한다.
+ * MD 크레딧 충전 — 계좌이체(무통장입금) 전용.
+ * 흐름: 계좌 안내를 먼저 노출 → MD가 직접 입금 → 입금자명 입력 →
+ *       [입금완료·확인 요청] → pending 생성 + 관리자 푸시 → 관리자 통장 확인 후 수기 적립.
+ * (PG/카카오페이 경로는 심사 반려 이슈로 UI에서 제거. API 라우트는 유지.)
  */
 export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
-  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string>(
     CREDIT_PRODUCTS.find((p) => p.recommended)?.id ?? CREDIT_PRODUCTS[0].id
   );
   const [loading, setLoading] = useState(false);
+  const [depositorName, setDepositorName] = useState("");
+  const [done, setDone] = useState<{ credits: number } | null>(null);
 
   const selected = CREDIT_PRODUCTS.find((p) => p.id === selectedId)!;
 
-  async function handlePay() {
+  async function handleRequest() {
     if (loading) return;
+    const name = depositorName.trim();
+    if (!name) {
+      toast.error("입금자명을 입력해주세요.");
+      return;
+    }
     setLoading(true);
-
     try {
-      // 1) 앱 환경 차단 (스토어 인앱결제 정책)
-      const { Capacitor } = await import("@capacitor/core");
-      if (Capacitor.isNativePlatform()) {
-        toast.error("크레딧 충전은 웹(브라우저)에서만 가능합니다.", {
-          description: "nightflow.kr 에 로그인 후 충전해주세요.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      // 2) 서버에 결제 의도 등록 → 위변조 방지된 paymentId/금액 수령
-      const prepareRes = await fetch("/api/credits/prepare", {
+      const res = await fetch("/api/credits/bank-transfer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: selected.id }),
+        body: JSON.stringify({ productId: selected.id, depositorName: name }),
       });
-
-      if (!prepareRes.ok) {
-        const err = await prepareRes.json().catch(() => ({}));
-        throw new Error(err.error ?? "결제 준비에 실패했습니다.");
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "요청에 실패했습니다.");
       }
-
-      const { paymentId, amount, orderName, storeId, channelKey } =
-        await prepareRes.json();
-
-      if (!storeId || !channelKey) {
-        throw new Error(
-          "결제 설정이 완료되지 않았습니다. 잠시 후 다시 시도해주세요."
-        );
-      }
-
-      // 3) 포트원 결제창 호출 (카카오페이)
-      const PortOne = (await import("@portone/browser-sdk/v2")).default;
-
-      const response = await PortOne.requestPayment({
-        storeId,
-        channelKey,
-        paymentId,
-        orderName,
-        totalAmount: amount,
-        currency: "CURRENCY_KRW",
-        payMethod: "EASY_PAY",
-        redirectUrl: `${window.location.origin}/md/credits/complete?paymentId=${paymentId}`,
-      });
-
-      // PG 창에서 사용자가 취소하거나 실패한 경우
-      if (response?.code !== undefined) {
-        // 결제 실패 — 서버에 실패 기록 (적립 안 됨)
-        await fetch("/api/credits/cancel", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentId }),
-        }).catch(() => {});
-        toast.error("결제가 취소되었습니다.", {
-          description: response.message,
-        });
-        setLoading(false);
-        return;
-      }
-
-      // 4) 서버 결제 검증 + 크레딧 적립
-      const verifyRes = await fetch("/api/credits/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId }),
-      });
-
-      const verifyData = await verifyRes.json();
-
-      if (!verifyRes.ok || !verifyData.success) {
-        throw new Error(verifyData.error ?? "결제 검증에 실패했습니다.");
-      }
-
-      toast.success(`크레딧 ${selected.credits}개가 충전되었습니다!`);
-      // 충전 완료 화면으로 이동 (충전 페이지에 머물지 않도록).
-      // complete 페이지는 paymentId 로 멱등 재확인하므로 이미 적립돼 있어도 안전.
-      router.push(`/md/credits/complete?paymentId=${encodeURIComponent(paymentId)}`);
+      setDone({ credits: data.credits });
     } catch (e) {
-      const message = e instanceof Error ? e.message : "결제 중 오류가 발생했습니다.";
+      const message = e instanceof Error ? e.message : "요청 중 오류가 발생했습니다.";
       toast.error(message);
+    } finally {
       setLoading(false);
+    }
+  }
+
+  async function copyAccount() {
+    try {
+      await navigator.clipboard.writeText(BANK_TRANSFER_ACCOUNT.number.replace(/-/g, ""));
+      toast.success("계좌번호가 복사되었습니다.");
+    } catch {
+      toast.error("복사에 실패했습니다.");
     }
   }
 
@@ -135,54 +80,127 @@ export function CreditRecharge({ currentCredits }: CreditRechargeProps) {
         </p>
       </div>
 
-      {/* 상품 선택 */}
-      <div className="space-y-3">
-        {CREDIT_PRODUCTS.map((product) => (
-          <ProductRow
-            key={product.id}
-            product={product}
-            selected={product.id === selectedId}
-            onSelect={() => setSelectedId(product.id)}
-          />
-        ))}
-      </div>
+      {done ? (
+        <RequestDone
+          credits={done.credits}
+          onReset={() => {
+            setDone(null);
+            setDepositorName("");
+          }}
+        />
+      ) : (
+        <>
+          {/* 상품 선택 */}
+          <div className="space-y-3">
+            {CREDIT_PRODUCTS.map((product) => (
+              <ProductRow
+                key={product.id}
+                product={product}
+                selected={product.id === selectedId}
+                onSelect={() => setSelectedId(product.id)}
+              />
+            ))}
+          </div>
 
-      {/* 이용/제공기간/환불 안내 (PG·카드사 심사 요건: 결제금액·서비스 제공기간·환불정보 노출) */}
-      <div className="rounded-xl bg-card/60 border border-border p-4 text-xs text-muted-foreground leading-relaxed space-y-2">
-        {/* 서비스 제공 기간 — 카카오페이 요구 형식(제공 시작/이용기간/자동갱신) 명시 */}
-        <div className="rounded-lg bg-muted/50 border border-border/60 p-3 space-y-1">
-          <p className="text-foreground/80 font-bold">서비스 제공 기간</p>
-          <p>· 제공 시작: <span className="text-muted-foreground">결제 완료 즉시</span> 계정에 크레딧 적립 (별도 제공 대기 없음)</p>
-          <p>· 이용 기간: <span className="text-muted-foreground">충전일로부터 무기한</span> — 충전한 크레딧은 사용 시점까지 소멸되지 않습니다.</p>
-          <p>· 자동 갱신: <span className="text-muted-foreground">없음</span> (정기결제·자동충전 아님 / 1회성 충전)</p>
+          {/* 입금 계좌 안내 + 입금자명 (한 박스) */}
+          <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+            <p className="text-sm font-black text-foreground">입금 계좌</p>
+
+            <div className="rounded-xl bg-background/60 border border-border p-4 space-y-2 text-sm">
+              <Row label="은행" value={BANK_TRANSFER_ACCOUNT.bank} />
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">계좌번호</span>
+                <button onClick={copyAccount} className="flex items-center gap-1.5 font-black text-foreground">
+                  {BANK_TRANSFER_ACCOUNT.number}
+                  <Copy className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              </div>
+              <Row label="예금주" value={BANK_TRANSFER_ACCOUNT.holder} />
+              <Row label="입금액" value={formatPrice(selected.amount)} highlight />
+            </div>
+
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              위 계좌로 입금하신 뒤, 아래에 <span className="text-foreground/80 font-bold">[입금완료·확인 요청]</span>을 눌러주세요.
+              <br />평일 기준 <span className="text-foreground/80 font-bold">5분 내</span>로 크레딧을 적립해드립니다.
+            </p>
+
+            {/* 입금자명 입력 */}
+            <div className="pt-1">
+              <label className="text-xs font-bold text-foreground/80">입금자명</label>
+              <p className="text-[11px] text-muted-foreground mb-2">
+                통장에 찍힐 이름을 그대로 입력해주세요. 이 이름으로 입금을 확인합니다.
+              </p>
+              <input
+                value={depositorName}
+                onChange={(e) => setDepositorName(e.target.value)}
+                maxLength={40}
+                placeholder="예: 김나플"
+                className="w-full rounded-xl bg-background border border-border px-4 py-3 text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-amber-500"
+              />
+            </div>
+
+            <p className="text-[11px] text-muted-foreground leading-relaxed border-t border-border pt-3">
+              · 크레딧은 1개당 100원(부가세 포함)입니다.<br />
+              · 관리자가 통장 확인 후 크레딧을 적립합니다. (심야에는 다소 지연될 수 있습니다)<br />
+              · 미사용 크레딧은 충전일로부터 7일 이내 고객센터를 통해 전액 환불 가능합니다.
+            </p>
+          </div>
+
+          <button
+            onClick={handleRequest}
+            disabled={loading}
+            className="w-full rounded-full bg-inverse text-inverse-foreground font-black py-4 flex items-center justify-center gap-2 disabled:opacity-60 transition-opacity"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                요청 중...
+              </>
+            ) : (
+              <>
+                <Landmark className="w-5 h-5" />
+                입금완료 · 확인 요청
+              </>
+            )}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function RequestDone({ credits, onReset }: { credits: number; onReset: () => void }) {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+        <div className="flex items-center gap-2 text-green-500 font-black">
+          <CircleCheck className="w-5 h-5" />
+          입금확인 요청 완료
         </div>
-        <p>· 크레딧은 1개당 100원이며, 부가세가 포함된 금액입니다.</p>
-        <p>· 사용하지 않은 크레딧은 충전일로부터 7일 이내 고객센터를 통해 전액 환불 가능합니다.</p>
-        <p>· 이미 사용한 크레딧은 환불되지 않습니다.</p>
+        <p className="text-sm text-foreground/90 leading-relaxed">
+          관리자가 통장 입금을 확인하면 <span className="font-bold">{credits}크레딧</span>이 적립됩니다.
+          적립이 완료되면 알림으로 알려드립니다. (심야에는 다소 지연될 수 있습니다)
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          아직 입금 전이라면 안내된 계좌로 입금해주세요. 오입금·금액 오류 시 고객센터로 문의해주세요.
+        </p>
       </div>
 
-      {/* 결제 버튼 */}
       <button
-        onClick={handlePay}
-        disabled={loading}
-        className="w-full rounded-full bg-inverse text-inverse-foreground font-black py-4 flex items-center justify-center gap-2 disabled:opacity-60 transition-opacity"
+        onClick={onReset}
+        className="w-full rounded-full bg-card border border-border text-foreground font-bold py-3.5"
       >
-        {loading ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" />
-            결제 진행 중...
-          </>
-        ) : (
-          <>
-            <Zap className="w-5 h-5" />
-            {formatPrice(selected.amount)} 결제하기
-          </>
-        )}
+        확인
       </button>
+    </div>
+  );
+}
 
-      <p className="text-center text-[11px] text-muted-foreground">
-        카카오페이로 안전하게 결제됩니다.
-      </p>
+function Row({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={highlight ? "font-black text-brand-amber" : "font-bold text-foreground"}>{value}</span>
     </div>
   );
 }
@@ -222,7 +240,6 @@ function ProductRow({
               </span>
             )}
           </p>
-          <p className="text-xs text-muted-foreground">{product.name}</p>
         </div>
       </div>
       <p className="font-black text-foreground">{formatPrice(product.amount)}</p>
