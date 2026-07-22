@@ -78,7 +78,6 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
   const [showForm, setShowForm] = useState(() => searchParams.get("new") === "1" || !!searchParams.get("edit"));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [showGuide, setShowGuide] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
 
   // 폼 필드
@@ -114,17 +113,6 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
     table_features: string[];
     liquor_includes: string[];
   } | null>(null);
-
-  // 이용방법 가이드 접기/펼치기 (조각·게스트 간판과 동일 패턴)
-  const GUIDE_DISMISSED_KEY = "nightflow_hotdeal_guide_dismissed";
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (localStorage.getItem(GUIDE_DISMISSED_KEY) === "1") setShowGuide(false);
-  }, []);
-  const dismissGuide = () => {
-    setShowGuide(false);
-    if (typeof window !== "undefined") localStorage.setItem(GUIDE_DISMISSED_KEY, "1");
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -525,61 +513,16 @@ export function HotdealNowManager({ clubs: initialClubs, initialMyHotdeals, embe
           </button>
         )}
 
-        {/* 이용방법 가이드 (폼 안 열렸을 때만) — 조각·게스트 간판과 동일 패턴 */}
+        {/* 이용방법 — 클릭 시 바로 미리보기 (게스트 간판과 동일 패턴) */}
         {!showForm && (
-          showGuide ? (
-            <div className="relative bg-card border border-border rounded-2xl p-4 mb-5 space-y-3">
-              <button
-                type="button"
-                onClick={dismissGuide}
-                aria-label="가이드 닫기"
-                className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-              <p className="text-[13px] text-foreground font-black">이용방법</p>
-              <div className="space-y-2.5">
-                <div className="flex items-start gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">1</div>
-                  <div className="flex-1">
-                    <p className="text-[12.5px] text-foreground font-bold leading-snug">오늘의 스페셜 패키지 등록</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">우리 클럽만의 구성으로 오늘 밤 손님을 모아요</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">2</div>
-                  <div className="flex-1">
-                    <p className="text-[12.5px] text-foreground font-bold leading-snug">홈 최상단 노출</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">유저가 앱 열자마자 보는 자리에 강조돼요</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <div className="w-6 h-6 rounded-full bg-amber-500 text-black text-[11px] font-black flex items-center justify-center shrink-0 mt-0.5">3</div>
-                  <div className="flex-1">
-                    <p className="text-[12.5px] text-foreground font-bold leading-snug">상세에서 인스타·연락처로 직접 문의</p>
-                    <p className="text-[11px] text-muted-foreground leading-snug">선착순 마감으로 빠르게 채워보세요</p>
-                  </div>
-                </div>
-              </div>
-              {/* 실제 노출 화면 미리보기 */}
-              <button
-                type="button"
-                onClick={() => setPreviewOpen(true)}
-                className="w-full mt-1 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 text-brand-amber text-[12.5px] font-black hover:bg-amber-500/15 transition-colors inline-flex items-center justify-center gap-1.5"
-              >
-                👀 미리보기
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowGuide(true)}
-              className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-1 mb-5"
-            >
-              <span className="text-[12px]">ⓘ</span>
-              이용방법
-            </button>
-          )
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="text-[11px] text-muted-foreground hover:text-foreground font-bold inline-flex items-center gap-1 mb-5"
+          >
+            <span className="text-[12px]">ⓘ</span>
+            이용방법
+          </button>
         )}
 
         {showForm && (

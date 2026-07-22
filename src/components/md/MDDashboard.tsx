@@ -190,19 +190,21 @@ export function MDDashboard({
     const [hotdealInlineOpen, setHotdealInlineOpen] = useState(false);
     // 홈 CTA(?section=guestsign / share)로 진입 시 해당 탭을 열어준다.
     const [guestSignSheetOpen, setGuestSignSheetOpen] = useState(false);
+    // 소속 클럽의 이번 주 게스트 간판이 비어있는지(=차지 안 됐고, 차지 가능한 클럽이 있는지).
+    // props(서버 스냅샷)만으로 계산되는 순수값이라 매 렌더 재계산해도 무해함.
+    const guestSignClaimedClubIds = new Set(
+        guestSignSlots.filter((s) => s.week_start === guestSignThisWeekISO).map((s) => s.club_id)
+    );
+    const guestSignMineThisWeek = guestSignMySlots.some((s) => s.week_start === guestSignThisWeekISO);
+    const guestSignUnclaimedThisWeek =
+        !guestSignMineThisWeek && guestSignClubs.some((c) => !guestSignClaimedClubIds.has(c.id));
+
     // 게스트 간판 탭 초기 펼침 규칙:
     //  1) 홈 CTA(?section=...)로 명시 진입 시 → 해당 섹션만 존중
-    //  2) 그냥 대시보드 진입인데, 이번주 게스트 간판을 아직 안 차지했고(참여 유도)
-    //     차지 가능한 클럽이 하나라도 있으면 → 자동 펼침
-    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(() => {
-        if (initialSection) return initialSection === "guestsign";
-        const claimedClubIds = new Set(
-            guestSignSlots.filter((s) => s.week_start === guestSignThisWeekISO).map((s) => s.club_id)
-        );
-        const mineThisWeek = guestSignMySlots.some((s) => s.week_start === guestSignThisWeekISO);
-        const hasClaimableClub = guestSignClubs.some((c) => !claimedClubIds.has(c.id));
-        return !mineThisWeek && hasClaimableClub;
-    });
+    //  2) 그냥 대시보드 진입인데 이번주 게스트 간판이 비어있으면(참여 유도) → 자동 펼침
+    const [guestSignInlineOpen, setGuestSignInlineOpen] = useState(() =>
+        initialSection ? initialSection === "guestsign" : guestSignUnclaimedThisWeek
+    );
     const [shareInlineOpen, setShareInlineOpen] = useState(false);
     const supabase = createClient();
 
