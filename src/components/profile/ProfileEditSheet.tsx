@@ -418,38 +418,38 @@ export function ProfileEditSheet({
           {/* 프로필 사진 (닉네임 섹션에서만 노출) */}
           {showName && (
           <div className="flex flex-col items-center gap-2">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingImage}
-              className="relative w-24 h-24 rounded-full overflow-hidden bg-muted ring-2 ring-border active:scale-95 transition-transform disabled:opacity-50"
-              aria-label="프로필 사진 변경"
-            >
-              {profileImage ? (
-                <Image
-                  src={normalizeProfileImage(profileImage)!}
-                  alt="프로필 사진"
-                  fill
-                  sizes="96px"
-                  className="object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-foreground/40 text-3xl font-black">
-                  {(displayName || "?").charAt(0)}
-                </div>
-              )}
-              <span className="absolute right-0 bottom-0 w-7 h-7 rounded-full bg-inverse flex items-center justify-center text-inverse-foreground">
+            <div className="relative w-24 h-24 shrink-0 active:scale-95 transition-transform">
+              {/* 원형 이미지 (여기에만 overflow-hidden — 카메라 배지가 잘리지 않도록 분리) */}
+              <div className="relative w-full h-full rounded-full overflow-hidden bg-muted ring-2 ring-border">
+                {profileImage ? (
+                  <Image
+                    src={normalizeProfileImage(profileImage)!}
+                    alt="프로필 사진"
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-foreground/40 text-3xl font-black">
+                    {(displayName || "?").charAt(0)}
+                  </div>
+                )}
+              </div>
+              <span className="pointer-events-none absolute right-0 bottom-0 w-7 h-7 rounded-full bg-inverse flex items-center justify-center text-inverse-foreground ring-2 ring-card">
                 <Camera className="w-3.5 h-3.5" />
               </span>
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              // display:none 인풋은 일부 안드로이드 WebView에서 .click()이 무시됨 → sr-only(레이아웃 유지)
-              className="sr-only"
-            />
+              {/* 투명 파일 인풋을 아바타 전체에 덮어 손가락 탭이 인풋에 '직접' 닿게 한다.
+                  JS로 .click()을 대신 호출하면 일부 안드로이드 WebView가 무시해 picker가 안 뜬다. */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploadingImage}
+                aria-label="프로필 사진 변경"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-default"
+              />
+            </div>
             {profileImage && (
               <button
                 type="button"

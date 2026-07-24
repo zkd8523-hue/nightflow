@@ -215,13 +215,7 @@ export function PublicProfileView({
         <div className="flex items-start gap-4 pt-1">
           {/* 원형 프로필 (본인이면 클릭해서 사진 변경) */}
           {isMe ? (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingImage}
-              aria-label="프로필 사진 변경"
-              className="relative w-24 h-24 shrink-0 active:scale-95 transition-transform disabled:opacity-60"
-            >
+            <div className="relative w-24 h-24 shrink-0 active:scale-95 transition-transform">
               {/* 원형 이미지 영역 (여기에만 overflow-hidden) */}
               <div className="relative w-full h-full rounded-full overflow-hidden bg-muted ring-2 ring-border">
                 {profileImage ? (
@@ -244,11 +238,22 @@ export function PublicProfileView({
                   </span>
                 )}
               </div>
-              {/* 카메라 배지 (원 밖에서 잘리지 않도록 버튼 기준 배치) */}
-              <span className="absolute right-0.5 bottom-0.5 w-7 h-7 rounded-full bg-inverse flex items-center justify-center text-inverse-foreground ring-2 ring-background">
+              {/* 카메라 배지 (원 밖에서 잘리지 않도록 컨테이너 기준 배치) */}
+              <span className="pointer-events-none absolute right-0.5 bottom-0.5 w-7 h-7 rounded-full bg-inverse flex items-center justify-center text-inverse-foreground ring-2 ring-background">
                 <Camera className="w-3.5 h-3.5" />
               </span>
-            </button>
+              {/* 투명 파일 인풋을 아바타 전체에 덮어 손가락 탭이 인풋에 '직접' 닿게 한다.
+                  JS로 .click()을 대신 호출하면 일부 안드로이드 WebView가 무시해 picker가 안 뜬다. */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploadingImage}
+                aria-label="프로필 사진 변경"
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-default"
+              />
+            </div>
           ) : (
             <div className="relative w-24 h-24 rounded-full overflow-hidden bg-muted shrink-0 ring-2 ring-border">
               {profileImage ? (
@@ -265,16 +270,6 @@ export function PublicProfileView({
                 </div>
               )}
             </div>
-          )}
-          {isMe && (
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              // display:none 인풋은 일부 안드로이드 WebView에서 .click()이 무시됨 → sr-only(레이아웃 유지)
-              className="sr-only"
-            />
           )}
 
           {/* 이름 + 배지 + 핸들 */}
@@ -365,17 +360,6 @@ export function PublicProfileView({
             ) : null}
           </div>
         </div>
-
-        {/* 본인이면 편집 버튼 */}
-        {isMe && (
-          <button
-            onClick={() => setEditSection("all")}
-            className="mt-4 w-full h-9 rounded-lg bg-muted text-[14px] font-bold hover:bg-muted/70 transition-colors flex items-center justify-center gap-1.5"
-          >
-            <Pencil className="w-3.5 h-3.5" />
-            프로필 편집
-          </button>
-        )}
 
         {/* 음악 + 지역 (인스타 통계 자리 — 가로 2열, 값 없어도 뼈대는 항상 노출) */}
         <div className="mt-5 grid grid-cols-2 gap-4">
@@ -517,6 +501,17 @@ export function PublicProfileView({
             ) : null}
         </div>
         </div>
+
+        {/* 본인이면 프로필 편집 버튼 (프로필 카드 밖, 별도 버튼) */}
+        {isMe && (
+          <button
+            onClick={() => setEditSection("all")}
+            className="mt-4 w-full h-11 rounded-xl bg-muted text-[14px] font-bold hover:bg-muted/70 transition-colors flex items-center justify-center gap-1.5"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+            프로필 편집
+          </button>
+        )}
       </div>
 
       {/* 구분선 */}
