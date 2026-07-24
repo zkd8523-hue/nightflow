@@ -376,7 +376,7 @@ export function Header({
                       </SheetTitle>
                       {(user.role === "md" || user.role === "admin") ? (
                         <p className="text-[12px] text-muted-foreground">
-                          {user.role === "md" ? "파트너" : "관리자"}
+                          {user.role === "md" ? "프로필" : "관리자"}
                         </p>
                       ) : (
                         <p className="text-[12px] text-muted-foreground">프로필 보기</p>
@@ -536,7 +536,7 @@ export function Header({
                         onClick={() => setMenuOpen(false)}
                         className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                       >
-                        <LayoutDashboard className="w-5 h-5 text-blue-500" />
+                        <LayoutDashboard className="w-5 h-5 text-muted-foreground" />
                         <span className="text-[15px] font-bold">파트너 대시보드</span>
                       </Link>
                     )}
@@ -546,7 +546,7 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Heart className="w-5 h-5 text-rose-500" />
+                      <Heart className="w-5 h-5 text-muted-foreground" />
                       <span className="text-[15px] font-bold">찜 목록</span>
                     </Link>
 
@@ -555,7 +555,7 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <HelpCircle className="w-5 h-5 text-sky-500" />
+                      <HelpCircle className="w-5 h-5 text-muted-foreground" />
                       <span className="text-[15px] font-bold">자주 묻는 질문</span>
                     </Link>
 
@@ -564,7 +564,7 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Headset className="w-5 h-5 text-money" />
+                      <Headset className="w-5 h-5 text-muted-foreground" />
                       <span className="text-[15px] font-bold">고객 문의</span>
                       {supportUnread && (
                         <span className="ml-auto w-2 h-2 bg-red-500 rounded-full" />
@@ -576,7 +576,7 @@ export function Header({
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 rounded-xl text-foreground/80 hover:bg-muted/50 hover:text-foreground transition-colors"
                     >
-                      <Settings className="w-5 h-5 text-brand-amber" />
+                      <Settings className="w-5 h-5 text-muted-foreground" />
                       <span className="text-[15px] font-bold">설정</span>
                     </Link>
 

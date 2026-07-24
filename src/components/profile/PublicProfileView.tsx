@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { MUSIC_GENRE_MAP } from "@/lib/users/musicGenres";
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/utils/upload";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ProfileEditSheet, type ProfileEditSection } from "./ProfileEditSheet";
 import { BlockUserButton } from "@/components/users/BlockUserButton";
@@ -115,21 +116,29 @@ export function PublicProfileView({
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("이미지는 2MB 이하만 업로드 가능합니다");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      return;
-    }
-
     setUploadingImage(true);
     try {
-      const ext = file.name.split(".").pop();
+      // 폰카 원본 사진은 보통 수 MB라 그대로 막으면 대부분 업로드가 실패한다.
+      // 다른 업로드 경로(경매/클럽)와 동일하게 먼저 압축한다.
+      const uploadFile = file.type.startsWith("image/")
+        ? await compressImage(file, 1024, 0.8)
+        : file;
+
+      if (uploadFile.size > 5 * 1024 * 1024) {
+        toast.error("이미지는 5MB 이하만 업로드 가능합니다");
+        return;
+      }
+
+      const ext = (uploadFile.name.split(".").pop() || "jpg").toLowerCase();
       const path = `${user.id}/avatar.${ext}`;
       const supabase = createClient();
 
       const { error: uploadError } = await supabase.storage
         .from("avatars")
-        .upload(path, file, { upsert: true });
+        .upload(path, uploadFile, {
+          upsert: true,
+          contentType: uploadFile.type || "image/jpeg",
+        });
       if (uploadError) throw uploadError;
 
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
@@ -263,7 +272,8 @@ export function PublicProfileView({
               type="file"
               accept="image/*"
               onChange={handleImageUpload}
-              className="hidden"
+              // display:none 인풋은 일부 안드로이드 WebView에서 .click()이 무시됨 → sr-only(레이아웃 유지)
+              className="sr-only"
             />
           )}
 
