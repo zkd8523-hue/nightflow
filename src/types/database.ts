@@ -128,6 +128,8 @@ export interface User {
   flag_review_popup_seen: boolean;
   /** 오퍼 채팅 신청 방식 변경 공지(ChatUpdateSheet) 노출 완료 여부 (계정당 1회). Migration 482 */
   chat_update_v1_seen: boolean;
+  /** 제안가 ±20% 범위 설정 안내(PriceRangeOnboardingSheet) 노출 완료 여부 (계정당 1회). Migration 483 */
+  price_range_onboarding_v1_seen: boolean;
   md_rejection_reason: string | null;
   md_unique_slug: string | null;
   bank_account: string | null;

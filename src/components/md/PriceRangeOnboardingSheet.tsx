@@ -3,32 +3,43 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 // 제안가 ±20% 범위 조정 기능(Migration 477) 안내 (1회). 대상: MD/관리자.
-const SEEN_KEY = "nf_price_range_onboarding_v1_seen";
-
+// 노출 여부는 계정 단위(users.price_range_onboarding_v1_seen, Migration 483)로 저장.
 export function PriceRangeOnboardingSheet() {
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading, refetch } = useCurrentUser();
   const [open, setOpen] = useState(false);
 
   const isMd = user?.role === "md" || user?.role === "admin";
 
   useEffect(() => {
     if (isLoading || !user || !isMd) return;
-    if (typeof window === "undefined") return;
-    if (localStorage.getItem(SEEN_KEY) === "true") return;
+    if (user.price_range_onboarding_v1_seen) return;
     setOpen(true);
   }, [user, isLoading, isMd]);
 
-  const dismiss = () => {
-    if (typeof window !== "undefined") localStorage.setItem(SEEN_KEY, "true");
+  // best-effort: DB 쓰기가 실패해도 사용자를 다이얼로그에 가두지 않는다.
+  const dismiss = async () => {
     setOpen(false);
+    if (!user) return;
+    const supabase = createClient();
+    await supabase
+      .from("users")
+      .update({ price_range_onboarding_v1_seen: true })
+      .eq("id", user.id);
+    refetch();
   };
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
-      <DialogContent className="bg-card border-border rounded-3xl p-5">
+      <DialogContent
+        // 다른 팝업 클릭이 이 다이얼로그를 함께 닫지 않도록 외부 상호작용 무시.
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+        className="bg-card border-border rounded-3xl p-5"
+      >
         <DialogHeader className="text-left p-0 gap-0 mb-2">
           <DialogTitle className="text-foreground font-black text-[17px]">
             💰 이젠 제안가를 설정할 수 있어요!

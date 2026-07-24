@@ -17,7 +17,10 @@ interface GuestSignPromoSheetProps {
 export function GuestSignPromoSheet({ onClose, onSnooze, onOpenGuestSign }: GuestSignPromoSheetProps) {
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/70"
+      // pointer-events-auto: Radix Dialog(예: PriceRangeOnboardingSheet)가 동시에 열리면
+      // body에 pointer-events:none을 걸어 이 커스텀 오버레이(포탈 밖)까지 클릭이 죽는다.
+      // 명시적으로 auto를 줘 z-[100] 최상단 모달의 클릭을 항상 살린다.
+      className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/70 pointer-events-auto"
       onClick={onClose}
     >
       <div

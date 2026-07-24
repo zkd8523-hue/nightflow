@@ -36,6 +36,10 @@ export function ChatUpdateSheet() {
     <Sheet open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
       <SheetContent
         side="bottom"
+        // 다른 팝업(위에 겹친 게스트 간판 등) 클릭이 이 시트까지 닫지 않도록 외부 상호작용 무시.
+        // 오직 "확인했어요" 버튼(dismiss)으로만 닫힘.
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
         className="bg-card border-border rounded-t-3xl sm:max-w-lg sm:mx-auto p-5 gap-0"
       >
         <SheetHeader className="text-left mb-3 space-y-0">
