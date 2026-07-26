@@ -4,13 +4,22 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Instagram, MessageCircle, Mail, ChevronDown } from "lucide-react";
 import { SupportChat } from "@/components/support/SupportChat";
+import { useChatComposerStore } from "@/stores/useChatComposerStore";
 
 export function ContactClient() {
   const router = useRouter();
   const [showOther, setShowOther] = useState(false);
+  // 하단 네비(56px)를 띄운 채로 대화. 입력 포커스 시엔 네비가 숨으므로 그만큼 확장.
+  const composerFocused = useChatComposerStore((s) => s.focused);
 
   return (
-    <div className="max-w-lg mx-auto h-dvh flex flex-col bg-background">
+    <div
+      className={`max-w-lg mx-auto flex flex-col bg-background ${
+        composerFocused
+          ? "h-[calc(100dvh-env(safe-area-inset-bottom))]"
+          : "h-[calc(100dvh-56px-env(safe-area-inset-bottom))]"
+      }`}
+    >
       {/* 헤더 */}
       <header className="shrink-0 flex items-center gap-2 px-3 py-3 border-b border-border">
         <button

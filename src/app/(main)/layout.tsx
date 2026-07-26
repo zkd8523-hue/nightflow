@@ -98,8 +98,16 @@ export default function MainLayout({
   // Vision은 풀스크린 매니페스토 — 헤더/푸터/바텀네비 없이 단독 노출
   const isVisionPage = pathname === "/vision";
 
-  // 헤더/푸터/바텀네비를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드 + 외국인 트랙 + 오퍼 채팅)
-  const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner || isMessageDetail || isPartyChat || isDmRoom || isContact;
+  // 채팅방(오퍼/조각/DM/문의)은 자체 헤더를 쓰므로 전역 헤더·푸터는 숨기지만,
+  // 바텀네비는 유지한다 — 대화 중에도 홈/와글로 바로 이동할 수 있어야 함.
+  // 각 채팅방은 네비 높이(56px)만큼 컨테이너를 줄이고, 입력 포커스 시엔
+  // useChatComposerStore로 네비를 숨겨 키보드와 겹치지 않게 한다.
+  const isChatRoom = isMessageDetail || isPartyChat || isDmRoom || isContact;
+
+  // 헤더/푸터를 숨기는 풀스크린 모드 (클럽지도 + Vision + iframe 임베드 + 외국인 트랙 + 채팅방)
+  const isChromeless = isClubMapView || isVisionPage || isEmbedded || isForeigner || isChatRoom;
+  // 바텀네비는 채팅방에서도 노출 (지도/Vision/임베드/외국인 트랙에서만 숨김)
+  const hideBottomNav = isClubMapView || isVisionPage || isEmbedded || isForeigner;
 
   return (
     <PullToRefresh onRefresh={handleRefresh} disabled={isChatPage}>
@@ -108,7 +116,7 @@ export default function MainLayout({
         {!isChromeless && !isChatPage && <Header />}
         <main className={isChromeless ? "" : isChatPage ? "" : "pb-16"}>{children}</main>
         {!isChromeless && !isChatPage && <Footer />}
-        {!isChromeless && <BottomNav />}
+        {!hideBottomNav && <BottomNav />}
         <SelectingFlagAlertSheet />
         <NewOffersAlertSheet />
         <CancellationSurveySheet isOtherSheetOpen={false} />

@@ -11,6 +11,7 @@ import { uploadChatMedia } from "@/lib/utils/uploadChatMedia";
 import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { ChatContentText } from "@/components/chat/ChatContentText";
 import { ContactCardMessage, isContactCardContent, encodeContactCard, type ContactCardMethod } from "@/components/messages/ContactCardMessage";
+import { useComposerNavHide } from "@/hooks/useComposerNavHide";
 import { useOfferMessages } from "@/hooks/useOfferMessages";
 import type { ChatMediaItem, ContactMethodType, OfferMessage } from "@/types/database";
 
@@ -109,6 +110,9 @@ export function MessageRoom({
   offerSummary,
 }: Props) {
   const router = useRouter();
+  // 입력 포커스 중엔 하단 네비를 숨겨 키보드와 겹치지 않게 (와글과 동일)
+  const { focused: composerFocused, onFocus: onComposerFocus, onBlur: onComposerBlur } =
+    useComposerNavHide();
   const {
     messages,
     loading,
@@ -490,9 +494,16 @@ export function MessageRoom({
   const shownMessages = messages.filter((m) => !m.is_deleted);
 
   return (
-    <div className="max-w-lg mx-auto min-h-dvh bg-background flex flex-col">
+    // 하단 네비(56px)를 띄운 채로 대화 — 와글(/chat)과 동일한 높이 계산.
+    <div
+      className={`max-w-lg mx-auto bg-background flex flex-col overflow-hidden ${
+        composerFocused
+          ? "h-[calc(100dvh-env(safe-area-inset-bottom))]"
+          : "h-[calc(100dvh-56px-env(safe-area-inset-bottom))]"
+      }`}
+    >
       {/* 헤더 + 오퍼 요약 (고정) */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
+      <div className="shrink-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border">
         <header className="flex items-center gap-3 px-3 py-3">
           <button onClick={() => router.push("/messages")} className="p-1 -ml-1 text-foreground/80">
             <ArrowLeft className="w-5 h-5" />
@@ -687,11 +698,11 @@ export function MessageRoom({
           </div>
         )
       ) : mdBlocked ? (
-        <div className="px-4 py-4 border-t border-border text-center text-[13px] text-muted-foreground">
+        <div className="shrink-0 px-4 py-4 border-t border-border text-center text-[13px] text-muted-foreground">
           방장이 먼저 대화를 시작하면 답장할 수 있어요.
         </div>
       ) : (
-        <div className="sticky bottom-0 bg-background border-t border-border" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="shrink-0 bg-background border-t border-border">
           {/* 연락처 남기기(유저·MD) / 주소 보내기(MD) */}
           {(contactOptions.length > 0 || (isMd && offerSummary.clubName)) && (
             <div className="flex gap-2 px-3 pt-2.5 overflow-x-auto no-scrollbar">
@@ -788,6 +799,8 @@ export function MessageRoom({
                   handleSend();
                 }
               }}
+              onFocus={onComposerFocus}
+              onBlur={onComposerBlur}
               rows={1}
               placeholder={editingId ? "메시지 수정…" : "메시지 보내기"}
               className="flex-1 min-w-0 resize-none bg-card text-foreground text-[14px] rounded-2xl border border-border px-4 py-2.5 outline-none placeholder:text-muted-foreground max-h-28"

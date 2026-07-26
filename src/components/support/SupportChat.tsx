@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useComposerNavHide } from "@/hooks/useComposerNavHide";
 import { Send, Headset } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage, logError } from "@/lib/utils/error";
@@ -29,6 +30,8 @@ function dayKey(iso: string) {
 }
 
 export function SupportChat({ adminViewUserId }: SupportChatProps) {
+  // 입력 포커스 중엔 하단 네비를 숨김 (와글/채팅방과 동일)
+  const { onFocus: onComposerFocus, onBlur: onComposerBlur } = useComposerNavHide();
   const { user, isLoading } = useCurrentUser();
   const [supabase] = useState(() => createClient());
   const isAdminMode = !!adminViewUserId;
@@ -238,6 +241,8 @@ export function SupportChat({ adminViewUserId }: SupportChatProps) {
                 handleSend();
               }
             }}
+            onFocus={onComposerFocus}
+            onBlur={onComposerBlur}
             rows={1}
             placeholder={isAdminMode ? "답장 보내기..." : "문의 내용을 입력하세요..."}
             className="flex-1 resize-none bg-card text-foreground text-[14px] rounded-2xl px-4 py-2.5 max-h-28 outline-none placeholder:text-muted-foreground border border-border focus:border-border"

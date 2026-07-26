@@ -8,6 +8,7 @@ import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { ArrowLeft, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
+import { useComposerNavHide } from "@/hooks/useComposerNavHide";
 import { useDmThread } from "@/hooks/useDmThread";
 import type { DmMessage } from "@/types/dm";
 import { ChatAttachMenu } from "@/components/chat/ChatAttachMenu";
@@ -44,6 +45,9 @@ function formatDateDivider(d: Date) {
 export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
   const router = useRouter();
   const { thread, messages, loading, send } = useDmThread(threadId, currentUserId);
+  // 입력 포커스 중엔 하단 네비를 숨겨 키보드와 겹치지 않게 (와글과 동일)
+  const { focused: composerFocused, onFocus: onComposerFocus, onBlur: onComposerBlur } =
+    useComposerNavHide();
   const [input, setInput] = useState("");
   const [media, setMedia] = useState<ChatMediaItem[]>([]);
   // 밀어서 답글 대상 (Migration 472)
@@ -110,10 +114,18 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
   }
 
   return (
-    <div className="max-w-lg mx-auto min-h-dvh bg-background flex flex-col">
+    // 하단 네비(56px)를 띄운 채로 대화 — 와글(/chat)과 동일한 높이 계산.
+    // 입력 포커스 시엔 네비가 숨으므로 그만큼 대화 영역을 넓힌다.
+    <div
+      className={`max-w-lg mx-auto bg-background flex flex-col overflow-hidden ${
+        composerFocused
+          ? "h-[calc(100dvh-env(safe-area-inset-bottom))]"
+          : "h-[calc(100dvh-56px-env(safe-area-inset-bottom))]"
+      }`}
+    >
       {/* 헤더 */}
       <div
-        className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border flex items-center gap-2 px-3 py-3"
+        className="shrink-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border flex items-center gap-2 px-3 py-3"
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 8px)" }}
       >
         <button onClick={() => router.back()} aria-label="뒤로" className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-card">
@@ -201,10 +213,7 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
       </div>
 
       {/* 입력 — 수락 게이트 없이 항상 노출 (Migration 470) */}
-      <div
-          className="sticky bottom-0 bg-background border-t border-border"
-          style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-        >
+      <div className="shrink-0 bg-background border-t border-border">
           {replyTarget && (
             <div className="flex items-center gap-2 px-3 pt-3">
               <div className="flex-1 min-w-0 pl-2 border-l-2 border-amber-400">
@@ -254,6 +263,8 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
                 handleSend();
               }
             }}
+            onFocus={onComposerFocus}
+            onBlur={onComposerBlur}
             rows={1}
             placeholder="메시지 보내기"
             className="flex-1 min-w-0 resize-none bg-card text-foreground text-[14px] rounded-2xl border border-border px-4 py-2.5 outline-none placeholder:text-muted-foreground max-h-28"
