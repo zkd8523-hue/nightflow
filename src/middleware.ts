@@ -56,7 +56,9 @@ export async function middleware(request: NextRequest) {
   // UTM 파라미터가 있으면 = 특정 채널 유입(블로그·광고 등) → 링크 원본 유지 (네이버 프리뷰 크롤러가 en으로 잘못 크롤하는 버그 방지)
   if (pathname === "/") {
     const ua = request.headers.get("user-agent") || "";
-    const isBot = BOT_UA_REGEX.test(ua);
+    // UA가 비어있으면 = 실제 브라우저가 아님(스크래퍼/봇). 리다이렉트하면 링크 미리보기가
+    // /en OG를 읽어와 한국어 링크가 영어 카드로 뜨는 버그 → UA 없으면 봇으로 간주해 canonical 유지.
+    const isBot = !ua || BOT_UA_REGEX.test(ua);
     const hasUtm = request.nextUrl.searchParams.has("utm_source")
       || request.nextUrl.searchParams.has("utm_medium")
       || request.nextUrl.searchParams.has("utm_campaign");

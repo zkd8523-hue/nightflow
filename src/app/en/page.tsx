@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
 import { EnHomeClient } from "./EnHomeClient";
+import { orderForeignHome } from "@/lib/clubs/foreignSort";
 
 export const revalidate = 30;
 
@@ -153,7 +154,7 @@ export default async function EnHomePage() {
   // /en/clubs 와 동일한 필터: 삭제·운영자·테스트 클럽 제외 + 썸네일 있는 것만 + 이름 중복 제거
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, name_en, area, thumbnail_url, address")
+    .select("id, name, name_en, area, thumbnail_url, address, featured_rank, google_review_count, partners:club_partners(md_id)")
     .in("area", ["강남", "홍대", "이태원"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -163,37 +164,27 @@ export default async function EnHomePage() {
     .order("google_review_count", { ascending: false, nullsFirst: false })
     .limit(60);
   const seenClubNames = new Set<string>();
-  const clubs = (clubsRaw ?? [])
-    .filter((c) => {
-      const key = c.name.trim().toLowerCase();
-      if (seenClubNames.has(key)) return false;
-      seenClubNames.add(key);
-      return true;
-    })
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      name_en: c.name_en,
-      area: c.area,
-      thumbnail_url: c.thumbnail_url,
-      address: c.address,
-    }));
-
-  // 클럽 정렬: 누적 오퍼 많은 순 (실시간 불필요 — revalidate 30s 캐시로 충분)
-  const clubIds = clubs.map((c) => c.id);
-  if (clubIds.length > 0) {
-    const { data: clubOfferRows } = await supabase
-      .from("puzzle_offers")
-      .select("club_id")
-      .in("club_id", clubIds)
-      .limit(5000);
-    const clubOfferCount: Record<string, number> = {};
-    clubOfferRows?.forEach((r: { club_id: string | null }) => {
-      if (r.club_id) clubOfferCount[r.club_id] = (clubOfferCount[r.club_id] || 0) + 1;
-    });
-    // 동점은 기존 google_review_count 순 유지 (stable sort)
-    clubs.sort((a, b) => (clubOfferCount[b.id] ?? 0) - (clubOfferCount[a.id] ?? 0));
-  }
+  // 목록 "Recommend"와 동일 로직으로 통일: 지역별 MD보유→리뷰순 + featured_rank 고정위치.
+  const clubs = orderForeignHome(
+    (clubsRaw ?? [])
+      .filter((c) => {
+        const key = c.name.trim().toLowerCase();
+        if (seenClubNames.has(key)) return false;
+        seenClubNames.add(key);
+        return true;
+      })
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        name_en: c.name_en,
+        area: c.area,
+        thumbnail_url: c.thumbnail_url,
+        address: c.address,
+        featured_rank: c.featured_rank,
+        google_review_count: c.google_review_count,
+        has_md: (((c as { partners?: unknown[] }).partners?.length) ?? 0) > 0,
+      }))
+  );
 
   const puzzles = puzzlesRaw ?? [];
   let offerCountMap: Record<string, number> = {};

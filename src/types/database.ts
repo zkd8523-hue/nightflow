@@ -359,6 +359,9 @@ export interface Club {
   // Migration 461: 클럽 가이드/지도 노출 차단 (비-클럽 venue용)
   hidden_from_guide?: boolean;
 
+  // Migration 485: 상위노출 랭크 (외국인 트랙 Promoted Listings). 높을수록 최상단, 0=기본
+  featured_rank?: number | null;
+
   // Migration 208: 클럽지도 필터/특징 태그 + 주대표
   tags: string[];  // prefix-grouped: 'genre:hiphop', 'crowd:foreign', etc.
   drink_menu_url: string | null;

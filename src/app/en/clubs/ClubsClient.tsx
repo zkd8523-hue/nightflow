@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ForeignClubDetailPanel, displayClubName } from "@/components/clubs/ForeignClubDetailPanel";
 import { FILTER_GROUPS, makeTag } from "@/lib/clubs/tags";
+import { pinFeatured } from "@/lib/clubs/foreignSort";
 import { TAG_LABEL_I18N } from "@/lib/clubs/tagLabelsI18n";
 import { type Lang, makeT, areaLabel as areaI18n } from "@/lib/i18n";
 import { isFlagAreaOpen } from "@/lib/constants/areas";
@@ -34,6 +35,8 @@ type Club = {
   google_reviews: GoogleReview[] | null;
   /** club_partners에 담당 MD가 있는지 — "Recommend" 정렬용 */
   has_md?: boolean;
+  /** 상위노출 랭크 — 높을수록 모든 정렬에서 최상단 (Promoted Listings) */
+  featured_rank?: number | null;
 };
 
 type GoogleReview = {
@@ -141,8 +144,12 @@ export function ClubsClient({ clubs, lang = "en" }: { clubs: Club[]; lang?: Lang
   const activeFilterCount = (venueType ? 1 : 0) + (genre ? 1 : 0);
 
   // 강남/홍대/이태원 가로 스크롤 (한국 가이드처럼). 해당 지역 클럽 없으면 섹션 생략.
-  const groups = ["강남", "홍대", "이태원"]
-    .map((ko) => ({ ko, items: filtered.filter((c) => c.area === ko) }))
+  // featured_rank(고정 노출 위치)는 Recommend에서만 적용 — 리뷰순/평점순 등 명시적 정렬엔 미적용(공평).
+  const groups = ["이태원", "강남", "홍대"]
+    .map((ko) => {
+      const items = filtered.filter((c) => c.area === ko);
+      return { ko, items: sortKey === "recommend" ? pinFeatured(items) : items };
+    })
     .filter((g) => g.items.length > 0);
   const shownCount = groups.reduce((n, g) => n + g.items.length, 0);
   const totalCount = clubs.length;

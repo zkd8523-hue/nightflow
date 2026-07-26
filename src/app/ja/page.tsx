@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createServerClient } from "@supabase/ssr";
 import { hideTestData } from "@/lib/utils/testData";
 import { EnHomeClient } from "../en/EnHomeClient";
+import { orderForeignHome } from "@/lib/clubs/foreignSort";
 
 export const revalidate = 30;
 
@@ -180,7 +181,7 @@ export default async function JaHomePage() {
   // 강남·홍대 클럽 (지역 섹션 "Spots competing for you"용) — /en 홈과 동일 로직
   const { data: clubsRaw } = await supabase
     .from("clubs")
-    .select("id, name, name_en, area, thumbnail_url, address")
+    .select("id, name, name_en, area, thumbnail_url, address, featured_rank, google_review_count, partners:club_partners(md_id)")
     .in("area", ["강남", "홍대", "이태원"])
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
@@ -190,34 +191,27 @@ export default async function JaHomePage() {
     .order("google_review_count", { ascending: false, nullsFirst: false })
     .limit(60);
   const seenClubNames = new Set<string>();
-  const clubs = (clubsRaw ?? [])
-    .filter((c) => {
-      const key = c.name.trim().toLowerCase();
-      if (seenClubNames.has(key)) return false;
-      seenClubNames.add(key);
-      return true;
-    })
-    .map((c) => ({
-      id: c.id,
-      name: c.name,
-      name_en: c.name_en,
-      area: c.area,
-      thumbnail_url: c.thumbnail_url,
-      address: c.address,
-    }));
-  const clubIds = clubs.map((c) => c.id);
-  if (clubIds.length > 0) {
-    const { data: clubOfferRows } = await supabase
-      .from("puzzle_offers")
-      .select("club_id")
-      .in("club_id", clubIds)
-      .limit(5000);
-    const clubOfferCount: Record<string, number> = {};
-    clubOfferRows?.forEach((r: { club_id: string | null }) => {
-      if (r.club_id) clubOfferCount[r.club_id] = (clubOfferCount[r.club_id] || 0) + 1;
-    });
-    clubs.sort((a, b) => (clubOfferCount[b.id] ?? 0) - (clubOfferCount[a.id] ?? 0));
-  }
+  // 목록 "Recommend"와 동일 로직으로 통일: 지역별 MD보유→리뷰순 + featured_rank 고정위치.
+  const clubs = orderForeignHome(
+    (clubsRaw ?? [])
+      .filter((c) => {
+        const key = c.name.trim().toLowerCase();
+        if (seenClubNames.has(key)) return false;
+        seenClubNames.add(key);
+        return true;
+      })
+      .map((c) => ({
+        id: c.id,
+        name: c.name,
+        name_en: c.name_en,
+        area: c.area,
+        thumbnail_url: c.thumbnail_url,
+        address: c.address,
+        featured_rank: c.featured_rank,
+        google_review_count: c.google_review_count,
+        has_md: (((c as { partners?: unknown[] }).partners?.length) ?? 0) > 0,
+      }))
+  );
 
   const jsonLd = {
     "@context": "https://schema.org",

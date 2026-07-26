@@ -218,6 +218,12 @@ function FlagCarouselCard({ flag }: { flag: FlagItem }) {
 // ── 지역 섹션 (강남=프리미엄 / 홍대=자유) + 클럽 리스트 + 지역 버튼 ──
 const REGIONS = [
   {
+    ko: "이태원",
+    en: "Itaewon",
+    emoji: "🌏",
+    tagline: "Global, borderless night",
+  },
+  {
     ko: "강남",
     en: "Gangnam",
     emoji: "🍾",
@@ -228,12 +234,6 @@ const REGIONS = [
     en: "Hongdae",
     emoji: "🎧",
     tagline: "Young, wild night",
-  },
-  {
-    ko: "이태원",
-    en: "Itaewon",
-    emoji: "🌏",
-    tagline: "Global, borderless night",
   },
 ] as const;
 
