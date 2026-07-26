@@ -25,6 +25,27 @@ function decodeContactCard(content: string): { method: ContactCardMethod; value:
   return { method, value };
 }
 
+/**
+ * 채팅 목록 미리보기용 문구. 연락처 카드가 아니면 null.
+ * 문구는 푸시 알림 미리보기(Migration 442 send_offer_message)와 동일하게 맞춘다.
+ */
+export function contactCardPreview(content: string): string | null {
+  if (!isContactCardContent(content)) return null;
+  const decoded = decodeContactCard(content);
+  switch (decoded?.method) {
+    case "dm":
+      return "인스타그램 연락처를 보냈어요";
+    case "kakao":
+      return "카카오 오픈채팅 링크를 보냈어요";
+    case "phone":
+      return "전화번호를 보냈어요";
+    case "address":
+      return "클럽 위치를 보냈어요";
+    default:
+      return "연락처를 보냈어요";
+  }
+}
+
 function formatPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.length === 11) return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
