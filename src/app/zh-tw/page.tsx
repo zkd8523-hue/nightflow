@@ -183,6 +183,7 @@ export default async function ZhTwHomePage() {
     .is("deleted_at", null)
     .not("name", "ilike", "%운영자%")
     .eq("is_test", false)
+    .eq("hidden_from_guide", false)
     .not("thumbnail_url", "is", null)
     .neq("thumbnail_url", "")
     .order("google_review_count", { ascending: false, nullsFirst: false })
