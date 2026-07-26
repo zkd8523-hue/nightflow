@@ -7,6 +7,7 @@ import { uploadChatMedia, type ChatMediaItem } from "@/lib/utils/uploadChatMedia
 import { ChatMediaGrid } from "@/components/chat/ChatMediaGrid";
 import { ArrowLeft, Send, X } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@/lib/supabase/client";
 import { useDmThread } from "@/hooks/useDmThread";
 import type { DmMessage } from "@/types/dm";
 import { ChatAttachMenu } from "@/components/chat/ChatAttachMenu";
@@ -52,6 +53,16 @@ export function DmRoom({ threadId, currentUserId, onRequireLogin }: Props) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
+
+  // 입장/새 메시지 시 읽음 처리 (Migration 484 — 목록 N 뱃지 해제)
+  // supabase-js 빌더는 lazy thenable이라 반드시 await 해야 요청이 나간다.
+  useEffect(() => {
+    if (loading || !currentUserId) return;
+    (async () => {
+      const { error } = await createClient().rpc("mark_dm_read", { p_thread_id: threadId });
+      if (error) console.error("[mark_dm_read] failed", error);
+    })();
+  }, [threadId, currentUserId, loading, messages.length]);
 
   if (!currentUserId) {
     return (

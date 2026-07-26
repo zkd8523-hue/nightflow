@@ -35,4 +35,6 @@ export interface DmThread {
   counterpart?: DmCounterpart;
   /** 마지막 메시지 미리보기 (목록용) */
   last_message?: string | null;
+  /** 안읽은 메시지 개수 (Migration 484 · 카톡식 N 뱃지) */
+  unread_count?: number;
 }

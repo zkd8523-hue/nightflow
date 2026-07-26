@@ -20,6 +20,8 @@ export interface OfferChatSummary {
   last_at: string;
   last_sender_id: string;
   unread: boolean;
+  /** Migration 484: 안읽은 메시지 개수 (카톡식 N 뱃지). 구버전 RPC면 undefined */
+  unread_count?: number;
 }
 
 /**

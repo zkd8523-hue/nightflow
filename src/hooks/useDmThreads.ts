@@ -43,7 +43,7 @@ export function useDmThreads(currentUserId?: string) {
       supabase.from("public_user_profiles").select("id, display_name, profile_image").in("id", otherIds),
       supabase
         .from("dm_messages")
-        .select("thread_id, content, created_at")
+        .select("thread_id, content, created_at, sender_id, read_at")
         .in("thread_id", threadIds)
         .eq("is_deleted", false)
         .order("created_at", { ascending: false }),
@@ -51,14 +51,25 @@ export function useDmThreads(currentUserId?: string) {
 
     const pMap = new Map((profs ?? []).map((p) => [p.id, p as DmCounterpart]));
     const lastMap = new Map<string, string>();
+    // 안읽음 개수 = 상대가 보냈고 read_at이 비어 있는 메시지 (Migration 484 mark_dm_read)
+    const unreadMap = new Map<string, number>();
     for (const m of msgs ?? []) {
-      if (!lastMap.has(m.thread_id as string)) lastMap.set(m.thread_id as string, (m.content as string) ?? "");
+      const tid = m.thread_id as string;
+      if (!lastMap.has(tid)) lastMap.set(tid, (m.content as string) ?? "");
+      if (m.sender_id !== currentUserId && !m.read_at) {
+        unreadMap.set(tid, (unreadMap.get(tid) ?? 0) + 1);
+      }
     }
 
     setThreads(
       list.map((t) => {
         const otherId = t.requester_id === currentUserId ? t.recipient_id : t.requester_id;
-        return { ...t, counterpart: pMap.get(otherId), last_message: lastMap.get(t.id) ?? null };
+        return {
+          ...t,
+          counterpart: pMap.get(otherId),
+          last_message: lastMap.get(t.id) ?? null,
+          unread_count: unreadMap.get(t.id) ?? 0,
+        };
       })
     );
     setLoading(false);

@@ -12,6 +12,7 @@ import { useOfferChats } from "@/hooks/useOfferChats";
 import { usePartyChats } from "@/hooks/usePartyChats";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 import { useDmThreads } from "@/hooks/useDmThreads";
+import { UnreadBadge, unreadCountOf } from "@/components/chat/UnreadBadge";
 
 function formatDate(d: string): string {
   try {
@@ -139,18 +140,35 @@ export function MessagesListClient() {
   const activeSection = sections.find((s) => s.key === tab)!;
   const didAutoSelect = useRef(false);
 
+  // 탭별 안읽음 합계 (카톡식 N 뱃지)
+  const dmUnread = useMemo(
+    () => dmThreads.reduce((sum, t) => sum + (t.unread_count ?? 0), 0),
+    [dmThreads]
+  );
+  const shareUnread = useMemo(
+    () => partyRooms.reduce((sum, r) => sum + unreadCountOf(r), 0),
+    [partyRooms]
+  );
+  const flagUnread = useMemo(
+    () =>
+      sections[0].items.reduce(
+        (sum, g) =>
+          sum +
+          g.reduce((s, c) => s + (isClosedStatus(c.offer_status) ? 0 : unreadCountOf(c)), 0),
+        0
+      ),
+    [sections]
+  );
+
   // 메시지가 비어 있어도 다른 탭으로 튀지 않는다(기본 탭 고정).
   // 단, 깃발/조각에 안 읽은 대화가 있으면 그쪽을 1회 먼저 보여준다.
   useEffect(() => {
     if (didAutoSelect.current || loading || partyLoading) return;
     didAutoSelect.current = true;
     if (dmThreads.length > 0) return; // 메시지가 있으면 그대로 메시지 탭
-    const [flag] = sections;
-    const flagUnread = flag.items.some((g) => g.some((c) => !isClosedStatus(c.offer_status) && c.unread));
-    const shareUnread = partyRooms.some((r) => r.unread);
-    if (shareUnread) setTab("share");
-    else if (flagUnread) setTab("flag");
-  }, [loading, partyLoading, sections, partyRooms, dmThreads]);
+    if (shareUnread > 0) setTab("share");
+    else if (flagUnread > 0) setTab("flag");
+  }, [loading, partyLoading, shareUnread, flagUnread, dmThreads]);
 
   // 플래그 OFF면 기능 자체가 없음 → 홈으로
   useEffect(() => {
@@ -186,16 +204,15 @@ export function MessagesListClient() {
                 </span>
               )}
               {/* 수락 게이트 폐지(470) — 신청 알림점 제거.
-                  DM은 아직 미읽음 집계가 없어 여기 점을 띄울 근거가 없다. */}
+                  안읽음은 Migration 484부터 개수로 표시. */}
+              <UnreadBadge count={dmUnread} />
             </button>
             {/* 2번 조각 → 3번 깃발 (sections는 flag,share 순이라 역순 렌더) */}
             {[...sections].reverse().map((s) => {
               const isShare = s.key === "share";
               // 조각 탭 = 파티 단체방만(1:1 제거), 깃발 탭 = 1:1 오퍼 채팅
               const count = isShare ? partyRooms.length : s.items.length;
-              const hasUnread = isShare
-                ? partyRooms.some((r) => r.unread)
-                : s.items.some((g) => g.some((c) => !isClosedStatus(c.offer_status) && c.unread));
+              const unreadTotal = isShare ? shareUnread : flagUnread;
               const active = tab === s.key;
               const name = s.key === "flag" ? "🚩 깃발" : "🧩 조각";
               return (
@@ -213,7 +230,7 @@ export function MessagesListClient() {
                       {count}
                     </span>
                   )}
-                  {hasUnread && <span className="w-1.5 h-1.5 rounded-full bg-red-500" />}
+                  <UnreadBadge count={unreadTotal} />
                 </button>
               );
             })}
@@ -259,9 +276,15 @@ export function MessagesListClient() {
                       <span className="text-foreground text-[14px] font-black truncate">{name}</span>
                       {/* 수락 게이트 폐지(Migration 470) — 신청/대기중 배지 없음 */}
                     </div>
-                    <p className="text-[13px] text-muted-foreground truncate">{t.last_message ?? ""}</p>
+                    <p className={`text-[13px] truncate ${(t.unread_count ?? 0) > 0 ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
+                      {t.last_message ?? ""}
+                    </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  {(t.unread_count ?? 0) > 0 ? (
+                    <UnreadBadge count={t.unread_count ?? 0} className="shrink-0" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+                  )}
                 </Link>
               );
             })}
@@ -315,13 +338,13 @@ export function MessagesListClient() {
                         <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 font-bold">MY</span>
                       )}
                     </div>
-                    <p className={`text-[13px] truncate mt-0.5 ${room.unread ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
+                    <p className={`text-[13px] truncate mt-0.5 ${unreadCountOf(room) > 0 ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
                       {room.last_content}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className="text-[11px] text-muted-foreground">{chatListTime(room.last_at)}</span>
-                    {room.unread && <span className="w-2 h-2 rounded-full bg-red-500" />}
+                    <UnreadBadge count={unreadCountOf(room)} />
                   </div>
                 </Link>
               </div>
@@ -388,7 +411,7 @@ export function MessagesListClient() {
                               <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-bold">종료</span>
                             )}
                           </div>
-                          <p className={`text-[13px] truncate mt-0.5 ${!isClosed && c.unread ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
+                          <p className={`text-[13px] truncate mt-0.5 ${!isClosed && unreadCountOf(c) > 0 ? "text-foreground/90 font-semibold" : "text-muted-foreground"}`}>
                             {c.last_content || "사진"}
                           </p>
                         </div>
@@ -407,7 +430,7 @@ export function MessagesListClient() {
                               <X className="w-4 h-4" />
                             </button>
                           ) : (
-                            c.unread && <span className="w-2 h-2 rounded-full bg-red-500" />
+                            <UnreadBadge count={unreadCountOf(c)} />
                           )}
                         </div>
                       </Link>

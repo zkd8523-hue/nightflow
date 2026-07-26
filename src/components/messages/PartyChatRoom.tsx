@@ -256,9 +256,14 @@ export function PartyChatRoom({
   const readOnly = puzzleStatus === "cancelled";
 
   // 입장/새 메시지 시 읽음 처리
+  // ⚠️ supabase-js 빌더는 lazy thenable — await(또는 .then) 하지 않으면 요청이
+  //    아예 나가지 않는다. 이걸 빼먹어서 목록의 안읽음 점이 안 사라졌음.
   useEffect(() => {
     if (loading) return;
-    createClient().rpc("mark_party_read", { p_puzzle_id: puzzleId });
+    (async () => {
+      const { error } = await createClient().rpc("mark_party_read", { p_puzzle_id: puzzleId });
+      if (error) console.error("[mark_party_read] failed", error);
+    })();
   }, [puzzleId, loading, messages.length]);
 
   // 스크롤 맨 아래로

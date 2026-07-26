@@ -9,6 +9,8 @@ import { useNotifications } from "@/hooks/useNotifications";
 import { useOfferChatFlag } from "@/hooks/useOfferChatFlag";
 import { useOfferChats } from "@/hooks/useOfferChats";
 import { usePartyChats } from "@/hooks/usePartyChats";
+import { useDmThreads } from "@/hooks/useDmThreads";
+import { UnreadBadge, unreadCountOf } from "@/components/chat/UnreadBadge";
 import { WagleIcon } from "@/components/icons/WagleIcon";
 import { useChatComposerStore } from "@/stores/useChatComposerStore";
 
@@ -25,11 +27,13 @@ export function BottomNav() {
   // 조각 1:1 오퍼 채팅은 단체방으로 통합돼 목록에서 빠졌으므로 점 계산에서도 제외.
   const { chats: offerChats, reload: reloadOffers } = useOfferChats(user?.id);
   const { rooms: partyRooms, reload: reloadParty } = usePartyChats(user?.id);
-  // 화면 이동 시마다 채팅 안읽음 재조회 (realtime 누락 대비 → 점 stale 방지)
+  const { threads: dmThreads, reload: reloadDm } = useDmThreads(user?.id);
+  // 화면 이동 시마다 채팅 안읽음 재조회 (realtime 누락 대비 → 뱃지 stale 방지)
   useEffect(() => {
     reloadOffers();
     reloadParty();
-  }, [pathname, reloadOffers, reloadParty]);
+    reloadDm();
+  }, [pathname, reloadOffers, reloadParty, reloadDm]);
   // MY(/profile) 진입 시 미확인 오퍼 알림을 읽음 처리 → "Offer" 배지 제거
   useEffect(() => {
     if (pathname !== "/profile") return;
@@ -40,9 +44,18 @@ export function BottomNav() {
   // 종료된 대화는 읽을 수 없으므로 점 계산에서 제외
   const isClosed = (s: string) => s === "expired" || s === "rejected" || s === "withdrawn";
   const isClosedPuzzle = (s: string) => s === "expired" || s === "cancelled";
-  const hasUnreadChat =
-    offerChats.some((c) => !c.is_recruiting_party && !isClosed(c.offer_status) && c.unread) ||
-    partyRooms.some((r) => r.unread && !isClosedPuzzle(r.puzzle_status));
+  // 카톡식 숫자 뱃지 — 깃발 1:1 + 조각 단체방 + DM 안읽음 합계
+  const unreadChatCount =
+    offerChats.reduce(
+      (sum, c) =>
+        sum + (!c.is_recruiting_party && !isClosed(c.offer_status) ? unreadCountOf(c) : 0),
+      0
+    ) +
+    partyRooms.reduce(
+      (sum, r) => sum + (isClosedPuzzle(r.puzzle_status) ? 0 : unreadCountOf(r)),
+      0
+    ) +
+    dmThreads.reduce((sum, t) => sum + (t.unread_count ?? 0), 0);
   const hasNewOffer = notifications.some(
     (n) => !n.is_read && n.type === "puzzle_offer_received"
   );
@@ -72,9 +85,9 @@ export function BottomNav() {
           const isActive = href === "/" ? pathname === "/" : pathname.startsWith(href);
           // 와글 활성 시 보라 시그니처 (MUSIC 가치), 나머지는 흰색
           const activeClass = "text-foreground";
-          // "내 정보"=새 오퍼는 NEW 뱃지, "채팅"=안읽은 대화는 점 표시
+          // "내 정보"=새 오퍼는 NEW 뱃지, "채팅"=안읽은 메시지 개수 뱃지
           const showNewOfferBadge = href === "/profile" && hasNewOffer;
-          const showUnreadDot = href === "/messages" && hasUnreadChat;
+          const chatBadgeCount = href === "/messages" ? unreadChatCount : 0;
           return (
             <Link
               key={href}
@@ -90,8 +103,11 @@ export function BottomNav() {
                     Offer
                   </span>
                 )}
-                {showUnreadDot && (
-                  <span className="absolute -top-1 -right-1.5 w-2 h-2 bg-red-500 rounded-full ring-2 ring-background" />
+                {chatBadgeCount > 0 && (
+                  <UnreadBadge
+                    count={chatBadgeCount}
+                    className="absolute -top-2 -right-3 ring-2 ring-background"
+                  />
                 )}
               </span>
               <span className={`font-bold ${label === "LIVE" ? "text-[11px]" : "text-[10px]"}`}>{label}</span>
