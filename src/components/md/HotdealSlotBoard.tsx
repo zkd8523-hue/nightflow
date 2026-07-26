@@ -714,7 +714,7 @@ export function HotdealSlotBoard({
                       ? "주 1간판"
                       : preOpen
                       ? "미오픈"
-                      : "이번주 게스트 간판 OPEN"}
+                      : "게스트 모으기"}
                   </button>
                 </div>
               );
